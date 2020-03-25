@@ -2,9 +2,11 @@ package com.sjianjun.reader
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.sjianjun.reader.bean.ATest
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.mozilla.javascript.Context
+import org.mozilla.javascript.ScriptableObject
 import sjj.alog.Log
 
 class MainActivity : AppCompatActivity() {
@@ -13,14 +15,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         GlobalScope.launch {
-            delay(2000)
             try {
-                Log.e("=================")
 
             } catch (e: Throwable) {
                 Log.e(e,e)
             }
+
         }
     }
+
+
 
 }
