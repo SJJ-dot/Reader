@@ -1,12 +1,11 @@
 package com.sjianjun.reader
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.sjianjun.reader.http.HttpInterface
-import com.sjianjun.reader.http.createRetrofit
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.mozilla.javascript.Context
+import sjj.alog.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -14,7 +13,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         GlobalScope.launch {
-            createRetrofit().create(HttpInterface::class.java).getRequest("")
+            delay(2000)
+            try {
+                Log.e("=================")
+
+            } catch (e: Throwable) {
+                Log.e(e,e)
+            }
         }
     }
+
 }

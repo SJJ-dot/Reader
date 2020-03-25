@@ -17,7 +17,4 @@ class ExampleUnitTest {
         assertEquals(4, 2 + 2)
     }
 
-    fun loadHtml(url: String) {
-
-    }
 }

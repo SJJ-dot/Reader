@@ -7,7 +7,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
 
-fun createRetrofit(baseUrl: String = "https://github.com/SJJ-dot/Reader"): Retrofit {
+fun createRetrofit(baseUrl: String = "https://github.com/SJJ-dot/Reader/"): Retrofit {
     val client = OkHttpClient
         .Builder()
         .addInterceptor(HttpLoggingInterceptor())
