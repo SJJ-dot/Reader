@@ -6,10 +6,11 @@ import retrofit2.http.*
 interface HttpInterface {
 
     @GET
-    fun get(@Url url: String = "", @HeaderMap header: Map<String, String> = emptyMap(), @QueryMap queryMap: Map<String, String> = emptyMap()): Deferred<String>
+    fun get(@Url url: String, @QueryMap queryMap: Map<String, String> = emptyMap(), @HeaderMap header: Map<String, String> = emptyMap()): Deferred<String>
 
 
     @FormUrlEncoded
     @POST
-    fun post(@Url url: String = "", @HeaderMap header: Map<String, String> = emptyMap(), @FieldMap fieldMap: Map<String, String> = emptyMap()): Deferred<String>
+    fun post(@Url url: String = "", @FieldMap fieldMap: Map<String, String> = emptyMap(), @HeaderMap header: Map<String, String> = emptyMap()): Deferred<String>
+
 }

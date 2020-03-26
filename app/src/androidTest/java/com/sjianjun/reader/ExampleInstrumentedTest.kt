@@ -3,6 +3,7 @@ package com.sjianjun.reader
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sjianjun.reader.bean.ATest
+import com.sjianjun.reader.http.HttpClient
 import com.sjianjun.reader.http.HttpInterface
 import com.sjianjun.reader.http.createRetrofit
 import kotlinx.coroutines.runBlocking
@@ -38,7 +39,7 @@ class ExampleInstrumentedTest {
     @Test
     fun testPost() {
         val get = post("https://log.kxxsc.com/yd/exceptionlog/report")
-        log(get)
+        Log.e(get)
     }
 
     @Test
@@ -58,6 +59,30 @@ class ExampleInstrumentedTest {
         Log.e(evaluateString)
         Log.e(Context.toString(evaluateString))
         Context.exit()
+    }
+
+    @Test
+    fun testJsCallJavaFun() {
+        val context = Context.enter()
+        //android 使用 Dalvik 所以不能优化为class 字节码
+        context.optimizationLevel = -1
+        val scriptable = context.initStandardObjects()
+
+        val http = HttpClient()
+        val jsHttp = Context.javaToJS(http, scriptable)
+        ScriptableObject.putProperty(scriptable, "http", jsHttp)
+
+        val evaluateString = context.evaluateString(scriptable, """
+                    http.get("https://www.biquge5200.cc/95_95192/")
+                """.trimIndent(), null, 0, null)
+        Log.e(evaluateString)
+        Log.e(Context.toString(evaluateString))
+        Context.exit()
+    }
+
+    @Test
+    fun testJavaCallJsFun() {
+
     }
 
     @Test
@@ -88,7 +113,7 @@ class ExampleInstrumentedTest {
         header: Map<String, String> = emptyMap(),
         queryMap: Map<String, String> = emptyMap()
     ) = runBlocking {
-        createRetrofit().create(HttpInterface::class.java).get(url, header, queryMap).await()
+        createRetrofit().create(HttpInterface::class.java).get(url, queryMap, header).await()
     }
 
     fun post(
@@ -96,10 +121,7 @@ class ExampleInstrumentedTest {
         header: Map<String, String> = emptyMap(),
         fieldMap: Map<String, String> = emptyMap()
     ) = runBlocking {
-        createRetrofit().create(HttpInterface::class.java).post(url, header, fieldMap).await()
+        createRetrofit().create(HttpInterface::class.java).post(url, fieldMap, header).await()
     }
 
-    private fun log(msg: String) {
-        println("ExampleInstrumentedTest $msg")
-    }
 }

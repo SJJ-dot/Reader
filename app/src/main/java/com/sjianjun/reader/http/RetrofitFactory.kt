@@ -10,7 +10,7 @@ import retrofit2.Retrofit
 fun createRetrofit(baseUrl: String = "https://github.com/SJJ-dot/Reader/"): Retrofit {
     val client = OkHttpClient
         .Builder()
-        .addInterceptor(HttpLoggingInterceptor())
+        .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
         .build()
 
     val retrofit = Retrofit.Builder()
