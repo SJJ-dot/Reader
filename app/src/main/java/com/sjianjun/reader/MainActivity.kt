@@ -2,9 +2,7 @@ package com.sjianjun.reader
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.sjianjun.reader.http.HttpClient
-import com.sjianjun.reader.http.HttpInterface
-import com.sjianjun.reader.http.createRetrofit
+import com.sjianjun.reader.http.client
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,9 +16,7 @@ class MainActivity : AppCompatActivity() {
 
         GlobalScope.launch {
 
-            val resp = HttpClient().getSync<Resp>("https://log.kxxsc.com/yd/exceptionlog/report")
-
-            assert(resp is Resp)
+            val resp = client.get<String>("https://www.biquge5200.cc/95_95192/")
 
             Log.e(resp)
         }
