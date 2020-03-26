@@ -3,9 +3,7 @@ package com.sjianjun.reader
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sjianjun.reader.bean.ATest
-import com.sjianjun.reader.http.HttpClient
-import com.sjianjun.reader.http.HttpInterface
-import com.sjianjun.reader.http.createRetrofit
+import com.sjianjun.reader.http.client
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -68,7 +66,7 @@ class ExampleInstrumentedTest {
         context.optimizationLevel = -1
         val scriptable = context.initStandardObjects()
 
-        val http = HttpClient()
+        val http = client
         val jsHttp = Context.javaToJS(http, scriptable)
         ScriptableObject.putProperty(scriptable, "http", jsHttp)
 
@@ -113,7 +111,7 @@ class ExampleInstrumentedTest {
         header: Map<String, String> = emptyMap(),
         queryMap: Map<String, String> = emptyMap()
     ) = runBlocking {
-        createRetrofit().create(HttpInterface::class.java).get(url, queryMap, header).await()
+        client.get<String>(url, queryMap, header)
     }
 
     fun post(
@@ -121,7 +119,7 @@ class ExampleInstrumentedTest {
         header: Map<String, String> = emptyMap(),
         fieldMap: Map<String, String> = emptyMap()
     ) = runBlocking {
-        createRetrofit().create(HttpInterface::class.java).post(url, fieldMap, header).await()
+        client.post<String>(url, fieldMap, header)
     }
 
 }

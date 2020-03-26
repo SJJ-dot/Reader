@@ -15,9 +15,20 @@ buildscript {
         // in the individual module build.gradle files
     }
 }
+String localRepo() {
+    if (hasProperty("LOCAL_REPO")) {
+        return LOCAL_REPO
+    }
+    if (System.getenv("LOCAL_REPO") != null) {
+        return new File(System.getenv("LOCAL_REPO")).toURI().toString()
+    }
+    return new File(rootDir, "repository").toURI().toString()
+}
+ext.localRepo = localRepo()
 
 allprojects {
     repositories {
+        maven{url localRepo}
         google()
         jcenter()
         maven { url "https://raw.githubusercontent.com/SJJ-dot/repo/master/repository" }
