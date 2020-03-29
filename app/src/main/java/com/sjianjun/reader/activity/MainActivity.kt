@@ -1,10 +1,10 @@
-package com.sjianjun.reader
+package com.sjianjun.reader.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.sjianjun.reader.R
 import com.sjianjun.reader.http.client
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 

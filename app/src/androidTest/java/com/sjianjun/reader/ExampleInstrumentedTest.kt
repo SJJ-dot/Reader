@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sjianjun.reader.bean.ATest
 import com.sjianjun.reader.http.client
+import com.sjianjun.reader.rhino.js
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -11,7 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.javascript.Context
-import org.mozilla.javascript.ScriptableObject
 import sjj.alog.Log
 
 /**
@@ -42,45 +42,76 @@ class ExampleInstrumentedTest {
 
     @Test
     fun testJava2Js() {
-        val context = Context.enter()
-        //android 使用 Dalvik 所以不能优化为class 字节码
-        context.optimizationLevel = -1
-        val scriptable = context.initStandardObjects()
-
-        val a = ATest()
-        val jsA = Context.javaToJS(a, scriptable)
-        ScriptableObject.putProperty(scriptable, "aaa", jsA)
-
-        val evaluateString = context.evaluateString(scriptable, """
+        js {
+            val a = ATest()
+            putProperty("aaa", javaToJS(a))
+            val evaluateString = evaluateString(
+                """
                     aaa.test()
-                """.trimIndent(), null, 0, null)
-        Log.e(evaluateString)
-        Log.e(Context.toString(evaluateString))
-        Context.exit()
+                """.trimIndent()
+            )
+            Log.e(evaluateString)
+            Log.e(Context.toString(evaluateString))
+        }
+
+
     }
 
+    /**
+     * 测试js调用Java http方法
+     */
+    fun testJsCallJavaHttp() {
+        js {
+            putProperty("http", javaToJS(client))
+            val evaluateString = evaluateString(
+                """
+                    http.get("https://www.biquge5200.cc/95_95192/")
+                """.trimIndent()
+            )
+            Log.e(evaluateString)
+            Log.e(Context.toString(evaluateString))
+        }
+
+    }
+
+    /**
+     * 测试Js中调用Java方法 执行方法的是同一个对象。
+     */
     @Test
     fun testJsCallJavaFun() {
-        val context = Context.enter()
-        //android 使用 Dalvik 所以不能优化为class 字节码
-        context.optimizationLevel = -1
-        val scriptable = context.initStandardObjects()
-
-        val http = client
-        val jsHttp = Context.javaToJS(http, scriptable)
-        ScriptableObject.putProperty(scriptable, "http", jsHttp)
-
-        val evaluateString = context.evaluateString(scriptable, """
-                    http.get("https://www.biquge5200.cc/95_95192/")
-                """.trimIndent(), null, 0, null)
-        Log.e(evaluateString)
-        Log.e(Context.toString(evaluateString))
-        Context.exit()
+        js {
+            putProperty("javaObj", javaToJS(this@ExampleInstrumentedTest))
+            val result = evaluateString(
+                """
+                    javaObj.hello("js")
+                """.trimIndent()
+            )
+            val jsResult = Context.jsToJava(result, String::class.java)
+            assert(hello("java").toString() == jsResult)
+        }
     }
 
+    fun hello(from: String): Int {
+        val id = System.identityHashCode(this)
+        Log.e("this is from $from; id=${id}")
+        return id
+    }
+
+    /**
+     * 测试Java调用js方法
+     */
     @Test
     fun testJavaCallJsFun() {
-
+        js {
+            putProperty("javaObj", javaToJS(this@ExampleInstrumentedTest))
+            val result = evaluateString(
+                """
+                    javaObj.hello("js")
+                """.trimIndent()
+            )
+            val jsResult = Context.jsToJava(result, String::class.java)
+            assert(hello("java").toString() == jsResult)
+        }
     }
 
     @Test
@@ -88,21 +119,17 @@ class ExampleInstrumentedTest {
         val get = get("https://www.biquge5200.cc/95_95192/")
         val doc = Jsoup.parse(get)
 
-
-        val context = Context.enter()
-        //android 使用 Dalvik 所以不能优化为class 字节码
-        context.optimizationLevel = -1
-        val scriptable = context.initStandardObjects()
-
-        val jsDoc = Context.javaToJS(doc, scriptable)
-        ScriptableObject.putProperty(scriptable, "doc", jsDoc)
-
-        val evaluateString = context.evaluateString(scriptable, """
+        js {
+            putProperty("doc", javaToJS(doc))
+            val evaluateString = evaluateString(
+                """
                     doc.getElementById("info")
-                """.trimIndent(), null, 0, null)
-        Log.e(Context.jsToJava(evaluateString, Element::class.java))
-        Log.e(Context.toString(evaluateString))
-        Context.exit()
+                """.trimIndent()
+            )
+            Log.e(Context.jsToJava(evaluateString, Element::class.java))
+            Log.e(Context.toString(evaluateString))
+        }
+
     }
 
 
