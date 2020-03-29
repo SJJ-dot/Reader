@@ -2,7 +2,6 @@ package com.sjianjun.reader
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.sjianjun.reader.bean.ATest
 import com.sjianjun.reader.http.client
 import com.sjianjun.reader.rhino.js
 import kotlinx.coroutines.runBlocking
@@ -166,4 +165,9 @@ class ExampleInstrumentedTest {
         client.post<String>(url, fieldMap, header)
     }
 
+    class ATest {
+        fun test(): String {
+            return "this is A"
+        }
+    }
 }
