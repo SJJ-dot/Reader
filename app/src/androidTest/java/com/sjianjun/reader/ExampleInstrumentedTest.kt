@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.javascript.Context
+import org.mozilla.javascript.Function
 import sjj.alog.Log
 
 /**
@@ -104,13 +105,29 @@ class ExampleInstrumentedTest {
     fun testJavaCallJsFun() {
         js {
             putProperty("javaObj", javaToJS(this@ExampleInstrumentedTest))
-            val result = evaluateString(
+            evaluateString(
                 """
-                    javaObj.hello("js")
+                   function jsFun(value){
+                    return "jsReturn > "+value
+                   }
                 """.trimIndent()
             )
-            val jsResult = Context.jsToJava(result, String::class.java)
-            assert(hello("java").toString() == jsResult)
+            // one
+
+            val result = evaluateString("jsFun('evaluateString')")
+
+            Log.e(jsToJava<String>(result))
+
+            //or
+            val jsFun = get("jsFun")
+            if (jsFun is Function) {
+                val call = jsFun.call(context, scriptable, scriptable, arrayOf("get fun"))
+                Log.e(call)
+            } else {
+                Log.e("not found js Function")
+            }
+
+
         }
     }
 
