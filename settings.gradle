@@ -1,2 +1,2 @@
 rootProject.name='Reader'
-include ':app'
+include ':app', ':refreshbar', ':fastscroller'
