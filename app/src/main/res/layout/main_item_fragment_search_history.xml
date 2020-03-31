@@ -11,6 +11,6 @@
     android:padding="8dp"
     android:singleLine="true"
     android:text="@string/app_name"
-    android:textColor="@color/material_textWhite_secondaryText"
+    android:textColor="@color/material_textBlack_black"
     android:textSize="15sp"
     tools:ignore="RtlHardcoded" />

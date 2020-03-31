@@ -6,12 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.DialogFragment
+import com.sjianjun.reader.utils.Flows
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import sjj.alog.Log
 
-open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
+open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
