@@ -12,7 +12,7 @@ import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : BaseActivity() {
@@ -26,14 +26,14 @@ class MainActivity : BaseActivity() {
 
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_main)
         appBarConfiguration = AppBarConfiguration.Builder(navController.graph)
-            .setOpenableLayout(drawer_layout)
+            .setDrawerLayout(drawer_layout)
             .build()
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
         NavigationUI.setupWithNavController(nav_ui, navController)
         PermissionUtil.requestPermissions(this, arrayOf(Manifest.permission.INTERNET)) { list ->
             if (!list.isGranted()) {
-                show("拒绝授权可能导致程序运行异常！")
+                toastSHORT("拒绝授权可能导致程序运行异常！")
             }
         }
 
