@@ -5,16 +5,26 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.TextView
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.showKeyboard
 import kotlinx.android.synthetic.main.main_fragment_search.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SearchFragment : BaseFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_search
@@ -55,9 +65,7 @@ class SearchFragment : BaseFragment() {
 //                }, {
 //                    toastSHORT("${it.message}")
 //                }).destroy("searchBook")
-                js {
-
-                }
+                queryActor.offer(query)
                 return true
             }
 
@@ -77,37 +85,52 @@ class SearchFragment : BaseFragment() {
             }
         }
 
-//        model = getModel()
-
-//        model.getSearchHistory().observeOnMain().subscribe { history ->
-//            tfl_search_history.removeAllViews()
-//            history.forEach {
-//                val tagView = layoutInflater.inflate(R.layout.item_search_history, tfl_search_history, false) as TextView
-//                tfl_search_history.addView(tagView)
-//                tagView.text = it.content
-//                tagView.setOnClickListener { _ ->
-//                    searchView.setQuery(it.content, true)
-//                }
-//                tagView.setOnLongClickListener { _ ->
-//                    model.deleteSearchHistory(listOf(it)).subscribe()
-//                    true
-//                }
-//            }
-//            tv_search_history_clean.setOnClickListener {
-////                model.deleteSearchHistory(history).subscribe()
-//            }
-//        }.destroy("get Search History")
+        launch {
+            DataManager.getAllSearchHistory().observe(this as LifecycleOwner, Observer<List<SearchHistory>> {
+                tfl_search_history.removeAllViews()
+                it.forEach { history ->
+                    val tagView = layoutInflater.inflate(
+                        R.layout.main_item_fragment_search_history,
+                        tfl_search_history,
+                        false
+                    ) as TextView
+                    tfl_search_history.addView(tagView)
+                    tagView.text = history.query
+                    tagView.setOnClickListener { _ ->
+                        searchView.setQuery(history.query, true)
+                    }
+                    tagView.setOnLongClickListener { _ ->
+                        deleteSearchHistoryActor.offer(listOf(history))
+                        true
+                    }
+                }
+                tv_search_history_clean.setOnClickListener {_->
+                    deleteSearchHistoryActor.offer(it)
+                }
+            })
+        }
     }
 
 
-    private inner class SearchResultBookAdapter : BaseAdapter() {
+    private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
+        DataManager.search(receive())
+    }
+
+    private val deleteSearchHistoryActor = actor<List<SearchHistory>>(capacity = Channel.CONFLATED) {
+        DataManager.deleteSearchHistory(receive())
+    }
+
+    private class SearchResultBookAdapter : BaseAdapter() {
         var data = listOf<SearchResult>()
         override fun getItemCount(): Int = data.size
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.main_item_fragment_search_result
         }
 
-        override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+            position: Int
+        ) {
 //            val bind = DataBindingUtil.bind<ItemBookSearchListBinding>(holder.itemView)
             val bookGroup = data[position]
 
