@@ -1,4 +1,4 @@
-package com.sjianjun.reader.manager
+package com.sjianjun.reader.repository
 
 import androidx.room.Database
 import androidx.room.Room
@@ -6,8 +6,13 @@ import androidx.room.RoomDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.bean.SearchHistory
+import com.sjianjun.reader.bean.SearchResult
 
-@Database(entities = [Book::class, JavaScript::class], version = 1)
+@Database(
+    entities = [Book::class, JavaScript::class, SearchHistory::class, SearchResult::class],
+    version = 1
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
 }
