@@ -5,20 +5,21 @@ import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.SearchHistory
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface Dao {
     @Query("SELECT * FROM JavaScript WHERE source = :source")
-    suspend fun getJavaScriptBySource(source: String): LiveData<JavaScript>
+    fun getJavaScriptBySource(source: String): LiveData<JavaScript>
 
     @Query("SELECT * FROM JavaScript")
-    suspend fun getAllJavaScript(): LiveData<List<JavaScript>>
+    fun getAllJavaScript(): LiveData<List<JavaScript>>
 
     /**
      * 查询全部搜索历史记录
      */
     @Query("SELECT * FROM SearchHistory")
-    suspend fun getAllSearchHistory(): LiveData<List<SearchHistory>>
+    fun getAllSearchHistory(): Flow<List<SearchHistory>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchHistory(history: SearchHistory)

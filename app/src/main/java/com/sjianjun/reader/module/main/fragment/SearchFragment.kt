@@ -7,26 +7,23 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.showKeyboard
 import kotlinx.android.synthetic.main.main_fragment_search.*
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SearchFragment : BaseFragment() {
+    private val searchHistoryList by lazy { DataManager.getAllSearchHistory().toLiveData() }
     override fun getLayoutRes() = R.layout.main_fragment_search
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -44,7 +41,7 @@ class SearchFragment : BaseFragment() {
     }
 
     private fun init(searchView: SearchView) {
-        searchRecyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        searchRecyclerView.layoutManager = LinearLayoutManager(context)
         val resultBookAdapter = SearchResultBookAdapter()
         searchRecyclerView.adapter = resultBookAdapter
         searchView.setOnCloseListener {
@@ -54,17 +51,6 @@ class SearchFragment : BaseFragment() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query.isNullOrEmpty()) return true
-//                model.addSearchHistory(SearchHistory(content = p0)).subscribe()
-//                searchView.clearFocus()
-//                refresh_progress_bar.isAutoLoading = true
-//                model.search(p0).observeOnMain().doAfterTerminate {
-//                    refresh_progress_bar.isAutoLoading = false
-//                }.subscribe({ ls ->
-//                    resultBookAdapter.data = ls
-//                    resultBookAdapter.notifyDataSetChanged()
-//                }, {
-//                    toastSHORT("${it.message}")
-//                }).destroy("searchBook")
                 queryActor.offer(query)
                 return true
             }
@@ -85,39 +71,41 @@ class SearchFragment : BaseFragment() {
             }
         }
 
-        launch {
-            DataManager.getAllSearchHistory().observe(this as LifecycleOwner, Observer<List<SearchHistory>> {
-                tfl_search_history.removeAllViews()
-                it.forEach { history ->
-                    val tagView = layoutInflater.inflate(
-                        R.layout.main_item_fragment_search_history,
-                        tfl_search_history,
-                        false
-                    ) as TextView
-                    tfl_search_history.addView(tagView)
-                    tagView.text = history.query
-                    tagView.setOnClickListener { _ ->
-                        searchView.setQuery(history.query, true)
-                    }
-                    tagView.setOnLongClickListener { _ ->
-                        deleteSearchHistoryActor.offer(listOf(history))
-                        true
-                    }
+        searchHistoryList.observe(this@SearchFragment, Observer<List<SearchHistory>> {
+            tfl_search_history.removeAllViews()
+            it.forEach { history ->
+                val tagView = layoutInflater.inflate(
+                    R.layout.main_item_fragment_search_history,
+                    tfl_search_history,
+                    false
+                ) as TextView
+                tfl_search_history.addView(tagView, 0)
+                tagView.text = history.query
+                tagView.setOnClickListener { _ ->
+                    searchView.setQuery(history.query, true)
                 }
-                tv_search_history_clean.setOnClickListener {_->
-                    deleteSearchHistoryActor.offer(it)
+                tagView.setOnLongClickListener { _ ->
+                    deleteSearchHistoryActor.offer(listOf(history))
+                    true
                 }
-            })
-        }
+            }
+            tv_search_history_clean.setOnClickListener { _ ->
+                deleteSearchHistoryActor.offer(it)
+            }
+        })
     }
 
 
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
-        DataManager.search(receive())
+        while (true) {
+            DataManager.search(receive())
+        }
     }
 
-    private val deleteSearchHistoryActor = actor<List<SearchHistory>>(capacity = Channel.CONFLATED) {
-        DataManager.deleteSearchHistory(receive())
+    private val deleteSearchHistoryActor = actor<List<SearchHistory>>() {
+        while (true) {
+            DataManager.deleteSearchHistory(receive())
+        }
     }
 
     private class SearchResultBookAdapter : BaseAdapter() {
