@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface Dao {
     @Query("SELECT * FROM JavaScript WHERE source = :source")
-    fun getJavaScriptBySource(source: String): LiveData<JavaScript>
+    fun getJavaScriptBySource(source: String): Flow<JavaScript>
 
     @Query("SELECT * FROM JavaScript")
-    fun getAllJavaScript(): LiveData<List<JavaScript>>
+    fun getAllJavaScript(): Flow<List<JavaScript>>
 
     /**
      * 查询全部搜索历史记录

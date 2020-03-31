@@ -1,9 +1,10 @@
 package com.sjianjun.reader.repository
 
 import androidx.lifecycle.LiveData
+import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.rhino.js
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 
 object DataManager {
@@ -24,7 +25,11 @@ object DataManager {
         Log.e("search:$query")
         dao.insertSearchHistory(SearchHistory(query = query))
         js {
+            dao.getAllJavaScript().flatMapMerge {
+                it.asFlow()
+            }.flatMapMerge {
 
+            }
         }
 
     }
