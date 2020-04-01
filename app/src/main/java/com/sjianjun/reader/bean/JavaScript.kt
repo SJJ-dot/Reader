@@ -11,13 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import org.jsoup.Jsoup
+import sjj.alog.Log
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 
 @Entity
 data class JavaScript constructor(
-    @PrimaryKey(autoGenerate = true)
-    var id: Int = 0,
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
@@ -35,11 +34,17 @@ data class JavaScript constructor(
 ) {
 
     constructor(source: String, js: () -> String) : this(source = source, js = js())
+    @PrimaryKey(autoGenerate = true)
+    var id: Int = 0
 
     @Ignore
-    val headerScript = """
+    var headerScript = """
         ${importClassCode<Jsoup>()}
-        
+        ${importClassCode<Log>()}
+        ${importClassCode<SearchResult>()}
+        ${importClassCode<Chapter>()}
+
+        importClass(Packages.java.util.ArrayList)
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String): T? {
@@ -57,11 +62,11 @@ data class JavaScript constructor(
         }
     }
 
-    suspend fun search(query: String): Flow<List<SearchHistory>> {
-        return flow<List<SearchHistory>> {
+    suspend fun search(query: String): Flow<List<SearchResult>> {
+        return flow {
             try {
-                val result = execute<String>(Func.doSearch, query)
-                emit(gson.fromJson(result!!))
+                val result = execute<List<SearchResult>>(Func.doSearch, query)
+                emit(result!!)
             } catch (e: Exception) {
                 emit(emptyList())
             }

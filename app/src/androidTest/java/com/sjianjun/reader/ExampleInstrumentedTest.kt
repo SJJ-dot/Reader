@@ -34,10 +34,10 @@ class ExampleInstrumentedTest {
 
         js {
             val name = Jsoup::class.java.name
-            Log.e(name)
             val res = evaluateString("""
                 importClass(Packages.${name})
-                Jsoup
+                
+                encodeURIComponent
             """.trimIndent())
 
             Log.e(res)
