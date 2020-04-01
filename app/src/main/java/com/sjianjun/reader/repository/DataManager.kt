@@ -4,7 +4,12 @@ import androidx.lifecycle.LiveData
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.rhino.js
+import com.sjianjun.reader.utils.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 
 object DataManager {
@@ -22,16 +27,12 @@ object DataManager {
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
     suspend fun search(query: String) {
-        Log.e("search:$query")
         dao.insertSearchHistory(SearchHistory(query = query))
-        js {
-            dao.getAllJavaScript().flatMapMerge {
-                it.asFlow()
-            }.flatMapMerge {
-
-            }
-        }
-
+        dao.getAllJavaScript().flatMapMerge {
+            it.asFlow()
+        }.flatMapMerge {
+            it.search(query)
+        }.collect()
     }
 
     suspend fun deleteSearchHistory(history: List<SearchHistory>) {
