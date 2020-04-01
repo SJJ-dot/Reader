@@ -3,6 +3,7 @@ package com.sjianjun.reader
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sjianjun.reader.http.client
+import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.js
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
@@ -26,6 +27,21 @@ class ExampleInstrumentedTest {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("com.sjianjun.reader", appContext.packageName)
+    }
+
+    @Test
+    fun testRhinoImport() {
+
+        js {
+            val name = Jsoup::class.java.name
+            Log.e(name)
+            val res = evaluateString("""
+                importClass(Packages.${name})
+                Jsoup
+            """.trimIndent())
+
+            Log.e(res)
+        }
     }
 
     @Test
@@ -60,9 +76,10 @@ class ExampleInstrumentedTest {
     /**
      * 测试js调用Java http方法
      */
+    @Test
     fun testJsCallJavaHttp() {
         js {
-            putProperty("http", javaToJS(client))
+            putProperty("http", javaToJS(http))
             val evaluateString = evaluateString(
                 """
                     http.get("https://www.biquge5200.cc/95_95192/")
@@ -109,11 +126,14 @@ class ExampleInstrumentedTest {
                    function jsFun(value){
                     return "jsReturn > "+value
                    }
+                   function jsFun2(value){
+                                       return "jsReturn > "+value
+                                      }
                 """.trimIndent()
             )
             // one
 
-            val result = evaluateString("jsFun('evaluateString')")
+            val result = evaluateString("jsFun('evaluateString')+jsFun2('test')")
 
             Log.e(jsToJava<String>(result))
 

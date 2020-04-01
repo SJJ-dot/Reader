@@ -12,12 +12,8 @@ import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.utils.launch
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity() {
     private lateinit var navController: NavController
@@ -40,14 +36,6 @@ class MainActivity : BaseActivity() {
                 toastSHORT("拒绝授权可能导致程序运行异常！")
             }
         }
-
-        launch {
-            coroutineContext[Job]
-        }
-        GlobalScope.launch {
-
-        }
-
     }
 
 
