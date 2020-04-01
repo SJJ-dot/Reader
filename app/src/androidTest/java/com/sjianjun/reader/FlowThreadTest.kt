@@ -14,18 +14,22 @@ class FlowThreadTest {
     @Test
     fun testflowOn(): Unit = runBlocking {
 
-        flowOf("test1")
+        flowOf("测试flowOn会不会修改flatMap内部的线程:${Thread.currentThread()}")
             .flatMapMerge {
-                Log.e("$it ${Thread.currentThread()}")
-                search(it)
+                val log = "$it \n flatMapMerge所在线程:${Thread.currentThread()}"
+                flow {
+                    emit("$log \n flow内部所在线程：${Thread.currentThread()}")
+                }
             }.flowOn(Dispatchers.IO)
             .collect {
-                Log.e("$it ${Thread.currentThread()}")
+                Log.e("$it \n collect线程：${Thread.currentThread()}")
             }
 
         flowOf("测试 修改flatMap内部的线程影响 ${Thread.currentThread()}")
             .flatMapMerge {
-                search(it).flowOn(Dispatchers.Default)
+                flow {
+                    emit("$it \n flow内部所在线程：${Thread.currentThread()}")
+                }.flowOn(Dispatchers.Default)
             }.collect {
                 Log.e("$it \ncollect线程：${Thread.currentThread()}")
             }
@@ -40,11 +44,5 @@ class FlowThreadTest {
             Log.e(it)
         }
 
-    }
-
-    suspend fun search(query: String): Flow<String> {
-        return flow {
-            emit("$query \n flow内部所在线程：${Thread.currentThread()}")
-        }
     }
 }
