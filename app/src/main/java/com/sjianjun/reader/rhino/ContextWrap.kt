@@ -1,10 +1,11 @@
 package com.sjianjun.reader.rhino
 
 import org.mozilla.javascript.Context
+import org.mozilla.javascript.ImporterTopLevel
 import org.mozilla.javascript.ScriptableObject
 
 class ContextWrap(val context: Context) {
-    val scriptable = context.initSafeStandardObjects()
+    val scriptable = ImporterTopLevel(context)
     fun evaluateString(source: String): Any? {
         return context.evaluateString(
             scriptable, source, null, 0, null
