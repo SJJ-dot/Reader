@@ -12,41 +12,42 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import org.jsoup.Jsoup
 import sjj.alog.Log
-import sjj.novel.util.fromJson
-import sjj.novel.util.gson
 
 @Entity
 data class JavaScript constructor(
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
+    @JvmField
     var source: String = "",
 
     /**
      * - js 脚本内容
      * - 多余的参数从arguments取
      */
-    var js: String = """
-        function doSearch(http,query){
-            //return "";
-        }
-    """.trimIndent()
+    @JvmField
+    var js: String = ""
 ) {
 
     constructor(source: String, js: () -> String) : this(source = source, js = js())
+
     @PrimaryKey(autoGenerate = true)
+    @JvmField
     var id: Int = 0
 
     @Ignore
+    @JvmField
     var headerScript = """
         ${importClassCode<Jsoup>()}
         ${importClassCode<Log>()}
         ${importClassCode<SearchResult>()}
         ${importClassCode<Chapter>()}
+        ${importClassCode<Book>()}
 
         importClass(Packages.java.util.ArrayList)
     """.trimIndent()
 
+    @Throws(Exception::class)
     inline fun <reified T> execute(func: Func, vararg params: String): T? {
         return js {
             putProperty("http", javaToJS(http))
@@ -62,10 +63,11 @@ data class JavaScript constructor(
         }
     }
 
+    @Throws(Exception::class)
     suspend fun search(query: String): Flow<List<SearchResult>> {
         return flow {
             try {
-                val result = execute<List<SearchResult>>(Func.doSearch, query)
+                val result = execute<List<SearchResult>>(Func.search, query)
                 emit(result!!)
             } catch (e: Exception) {
                 emit(emptyList())
@@ -74,7 +76,7 @@ data class JavaScript constructor(
     }
 
     enum class Func {
-        doSearch
+        search, getDetails, getChapterContent
     }
 
 }

@@ -6,5 +6,6 @@ import androidx.room.PrimaryKey
 @Entity
 data class SearchHistory(
     @PrimaryKey
+    @JvmField
     var query: String = ""
 )

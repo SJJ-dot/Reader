@@ -16,6 +16,7 @@ import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.launch
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineExceptionHandler
 
 class MainActivity : BaseActivity() {
     private lateinit var navController: NavController
@@ -40,7 +41,7 @@ class MainActivity : BaseActivity() {
         }
 
         launch {
-            JavaScriptTest().testJavaScriptSearch()
+            JavaScriptTest().testJavaScript()
         }
 
     }
