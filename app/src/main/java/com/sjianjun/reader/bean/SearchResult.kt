@@ -10,13 +10,20 @@ import androidx.room.PrimaryKey
 @Entity
 class SearchResult {
     @PrimaryKey(autoGenerate = true)
+    @JvmField
     var id: Int = 0
+    @JvmField
+    var source: String = ""
+    @JvmField
     var bookTitle = ""
+    @JvmField
     var bookUrl: String = ""
+    @JvmField
     var bookAuthor = ""
+    @JvmField
     var bookCover: String = ""
-
     @Ignore
+    @JvmField
     var lastChapter: Chapter? = null
 
     override fun toString(): String {

@@ -30,15 +30,29 @@ class ExampleInstrumentedTest {
     }
 
     @Test
+    fun testJs() {
+        js {
+            val res = evaluateString(
+                """
+                "aaaa。bbbbb".split("。")[1]
+            """.trimIndent()
+            )
+            Log.e(res)
+        }
+    }
+
+    @Test
     fun testRhinoImport() {
 
         js {
             val name = Jsoup::class.java.name
-            val res = evaluateString("""
+            val res = evaluateString(
+                """
                 importClass(Packages.${name})
                 
                 encodeURIComponent
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             Log.e(res)
         }
