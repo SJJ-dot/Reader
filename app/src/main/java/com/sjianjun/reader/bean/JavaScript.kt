@@ -45,6 +45,7 @@ data class JavaScript constructor(
         ${importClassCode<Book>()}
 
         importClass(Packages.java.util.ArrayList)
+        importClass(Packages.java.util.HashMap)
     """.trimIndent()
 
     @Throws(Exception::class)
