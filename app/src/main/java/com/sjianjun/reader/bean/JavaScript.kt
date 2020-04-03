@@ -6,10 +6,7 @@ import androidx.room.PrimaryKey
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
 import sjj.alog.Log
 
@@ -18,6 +15,7 @@ data class JavaScript constructor(
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
+    @PrimaryKey
     @JvmField
     var source: String = "",
 
@@ -30,10 +28,6 @@ data class JavaScript constructor(
 ) {
 
     constructor(source: String, js: () -> String) : this(source = source, js = js())
-
-    @PrimaryKey(autoGenerate = true)
-    @JvmField
-    var id: Int = 0
 
     @Ignore
     @JvmField
@@ -48,32 +42,26 @@ data class JavaScript constructor(
         importClass(Packages.java.util.HashMap)
     """.trimIndent()
 
-    @Throws(Exception::class)
-    inline fun <reified T> execute(func: Func, vararg params: String): T? {
+    inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         return js {
             putProperty("http", javaToJS(http))
             evaluateString(headerScript)
             evaluateString(js)
-            val result = if (params.isEmpty()) {
+            val paramList = params.filter { it?.isNotEmpty() == true }
+            val result = if (paramList.isEmpty()) {
                 evaluateString("${func.name}(http)")
             } else {
-                val param = params.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
+                val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
                 evaluateString("${func.name}(http,${param})")
             }
             jsToJava<T>(result)
         }
     }
 
-    @Throws(Exception::class)
-    suspend fun search(query: String): Flow<List<SearchResult>> {
-        return flow {
-            try {
-                val result = execute<List<SearchResult>>(Func.search, query)
-                emit(result!!)
-            } catch (e: Exception) {
-                emit(emptyList())
-            }
-        }.flowOn(Dispatchers.IO)
+    suspend fun search(query: String): List<SearchResult>? {
+        return withIo {
+            execute<List<SearchResult>>(Func.search, query)
+        }
     }
 
     enum class Func {

@@ -10,7 +10,7 @@ import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 
 @Database(
-    entities = [Book::class, JavaScript::class, SearchHistory::class, SearchResult::class],
+    entities = [Book::class, JavaScript::class, SearchHistory::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {

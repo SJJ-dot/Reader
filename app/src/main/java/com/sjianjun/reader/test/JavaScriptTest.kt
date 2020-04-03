@@ -7,7 +7,7 @@ import com.sjianjun.reader.bean.SearchResult
 import kotlinx.coroutines.runBlocking
 import sjj.alog.Log
 
-class JavaScriptTest {
+object JavaScriptTest {
     val javaScript = JavaScript("biquge5200") {
         """
             var source = "biquge5200";
@@ -25,10 +25,7 @@ class JavaScriptTest {
                     result.bookUrl = tr.child(0).child(0).absUrl("href");
                     result.bookAuthor = tr.child(2).text();
                     //没有封面 result.bookCover
-                    var chapter = new Chapter();
-                    chapter.title = tr.child(1).child(0).text();
-                    chapter.url = tr.child(1).child(0).absUrl("href");
-                    result.lastChapter = chapter;
+                    result.latestChapter = tr.child(1).child(0).text();
                     results.add(result);
                 }
 
