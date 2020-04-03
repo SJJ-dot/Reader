@@ -7,23 +7,34 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.showKeyboard
 import kotlinx.android.synthetic.main.main_fragment_search.*
+import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import sjj.alog.Log
 
 class SearchFragment : BaseFragment() {
     private val searchHistoryList by lazy { DataManager.getAllSearchHistory().toLiveData() }
+    private val searchResult = MutableLiveData<List<List<SearchResult>>>()
+
     override fun getLayoutRes() = R.layout.main_fragment_search
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -41,37 +52,14 @@ class SearchFragment : BaseFragment() {
     }
 
     private fun init(searchView: SearchView) {
-        searchRecyclerView.layoutManager = LinearLayoutManager(context)
-        val resultBookAdapter = SearchResultBookAdapter()
-        searchRecyclerView.adapter = resultBookAdapter
-        searchView.setOnCloseListener {
-            searchView.hideKeyboard()
-            NavHostFragment.findNavController(this@SearchFragment).navigateUp()
-        }
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                if (query.isNullOrEmpty()) return true
-                queryActor.offer(query)
-                return true
-            }
+        initSearchView(searchView)
+        initSearchResultList(searchView)
+        initSearchHistory(searchView)
+        Glide.with(this)
+    }
 
-            override fun onQueryTextChange(p0: String?): Boolean {
-                return false
-            }
-        })
-        searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
-            if (hasFocus) {
-                ll_search_history?.visibility = View.VISIBLE
-                searchRecyclerView?.visibility = View.INVISIBLE
-                v.showKeyboard()
-            } else {
-                searchRecyclerView?.visibility = View.VISIBLE
-                ll_search_history?.visibility = View.INVISIBLE
-                v.hideKeyboard()
-            }
-        }
-
-        searchHistoryList.observe(this@SearchFragment, Observer<List<SearchHistory>> {
+    private fun initSearchHistory(searchView: SearchView) {
+        searchHistoryList.observe(this@SearchFragment, Observer {
             tfl_search_history.removeAllViews()
             it.forEach { history ->
                 val tagView = layoutInflater.inflate(
@@ -95,43 +83,91 @@ class SearchFragment : BaseFragment() {
         })
     }
 
+    private fun initSearchView(searchView: SearchView) {
+        searchView.setOnCloseListener {
+            searchView.hideKeyboard()
+            NavHostFragment.findNavController(this@SearchFragment).navigateUp()
+        }
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if (query.isNullOrEmpty()) return true
+                queryActor.offer(query)
+                searchView.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(p0: String?): Boolean {
+                return false
+            }
+        })
+        searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
+            if (hasFocus) {
+                ll_search_history?.visibility = View.VISIBLE
+                searchRecyclerView?.visibility = View.INVISIBLE
+                v.showKeyboard()
+            } else {
+                searchRecyclerView?.visibility = View.VISIBLE
+                ll_search_history?.visibility = View.INVISIBLE
+                v.hideKeyboard()
+            }
+        }
+    }
+
+    private fun initSearchResultList(searchView: SearchView) {
+        searchRecyclerView.layoutManager = LinearLayoutManager(context)
+        val resultBookAdapter = SearchResultBookAdapter(this)
+        resultBookAdapter.setHasStableIds(true)
+        searchRecyclerView.adapter = resultBookAdapter
+        searchResult.observe(this@SearchFragment, Observer {
+            if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
+                resultBookAdapter.data = it
+                resultBookAdapter.notifyDataSetChanged()
+                searchView.clearFocus()
+            }
+        })
+    }
+
 
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
-        while (true) {
-            DataManager.search(receive())
+        for (msg in channel) {
+            refresh_progress_bar.isAutoLoading = true
+            DataManager.search(msg).collect {
+                searchResult.postValue(it)
+            }
+            refresh_progress_bar.isAutoLoading = false
         }
     }
 
     private val deleteSearchHistoryActor = actor<List<SearchHistory>>() {
-        while (true) {
-            DataManager.deleteSearchHistory(receive())
+        for (msg in channel) {
+            DataManager.deleteSearchHistory(msg)
         }
     }
 
-    private class SearchResultBookAdapter : BaseAdapter() {
-        var data = listOf<SearchResult>()
+    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter(), CoroutineScope by fragment {
+        var data = listOf<List<SearchResult>>()
         override fun getItemCount(): Int = data.size
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.main_item_fragment_search_result
         }
 
-        override fun onBindViewHolder(
-            holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
-            position: Int
-        ) {
-//            val bind = DataBindingUtil.bind<ItemBookSearchListBinding>(holder.itemView)
-            val bookGroup = data[position]
-
-//            bookGroup.bookCover.onBackpressureLatest().observeOnMain().subscribe {
-//                Glide.with(this@SearchFragment)
-//                    .applyDefaultRequestOptions(requestOptions)
-//                    .load(it)
-//                    .into(holder.itemView.bookCover)
-//            }
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val searchResult = data[position].first()
+            holder.itemView.bookCover.glide(fragment, searchResult.bookCover)
+            holder.itemView.bookName.text = searchResult.bookTitle
+            holder.itemView.author.text = "作者：${searchResult.bookAuthor}"
+            holder.itemView.lastChapter.text = "最新章节：${searchResult.latestChapter}"
+            holder.itemView.haveRead.text = "来源：${searchResult.source} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
-                //todo
+                launch {
+                    DataManager.saveSearchResult(data[position])
+                }
             }
+        }
+
+        override fun getItemId(position: Int): Long {
+            return data[position].first().id
         }
 
     }

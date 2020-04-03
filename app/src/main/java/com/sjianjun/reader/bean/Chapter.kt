@@ -14,14 +14,14 @@ class Chapter {
     @JvmField
     var bookId = 0
     @JvmField
-    var title = ""
+    var title: String? = null
     @JvmField
-    var url = ""
+    var url: String? = null
 
     /**
      * 章节内容
      */
-    var content = ""
+    var content: String? = null
 
     override fun toString(): String {
         return "Chapter(id=$id, bookId=$bookId, title='$title', url='$url', content='$content')"

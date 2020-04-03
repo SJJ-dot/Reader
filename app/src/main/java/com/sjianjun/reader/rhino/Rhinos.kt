@@ -2,13 +2,17 @@ package com.sjianjun.reader.rhino
 
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.ImporterTopLevel
+import sjj.alog.Log
 
-inline fun <reified T> js(runner: ContextWrap.() -> T): T {
+inline fun <reified T> js(runner: ContextWrap.() -> T): T? {
     val context = Context.enter()
-    try {
+    return try {
         context.optimizationLevel = -1
         val wrap = ContextWrap(context)
-        return wrap.runner()
+        wrap.runner()
+    } catch (e: Throwable) {
+        Log.e("js error :$e", e)
+        null
     } finally {
         Context.exit()
     }
@@ -17,7 +21,8 @@ inline fun <reified T> js(runner: ContextWrap.() -> T): T {
 inline fun <reified T> importClassCode(): String {
     return "importClass(Packages.${T::class.java.name})"
 }
-fun importPackageCode(pkg:String): String {
+
+fun importPackageCode(pkg: String): String {
     return "importClass(Packages.${pkg})"
 }
 

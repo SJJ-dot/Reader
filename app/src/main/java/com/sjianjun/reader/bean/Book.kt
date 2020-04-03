@@ -14,15 +14,17 @@ class Book {
      * 书籍来源[JavaScript.source]
      */
     @JvmField
-    var source: String = ""
+    var source: String? = null
     @JvmField
-    var title: String = ""
+    var title: String? = null
     @JvmField
-    var author: String = ""
+    var author: String? = null
     @JvmField
-    var intro: String = ""
+    var intro: String? = null
     @JvmField
-    var cover: String = ""
+    var cover: String? = null
+    @JvmField
+    var url: String? = null
     @Ignore
     @JvmField
     var chapterList: List<Chapter>? = null

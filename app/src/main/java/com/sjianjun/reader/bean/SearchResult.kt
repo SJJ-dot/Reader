@@ -1,33 +1,32 @@
 package com.sjianjun.reader.bean
 
-import androidx.room.Entity
-import androidx.room.Ignore
-import androidx.room.PrimaryKey
+import com.sjianjun.reader.utils.id
 
 /**
  * 搜索结果
  */
-@Entity
 class SearchResult {
-    @PrimaryKey(autoGenerate = true)
-    @JvmField
-    var id: Int = 0
     @JvmField
     var source: String = ""
     @JvmField
-    var bookTitle = ""
+    var bookTitle: String? = null
     @JvmField
-    var bookUrl: String = ""
+    var bookAuthor: String? = null
     @JvmField
-    var bookAuthor = ""
+    var bookCover: String? = null
     @JvmField
-    var bookCover: String = ""
-    @Ignore
+    var bookUrl: String? = null
+
+    /**
+     * 最新章节 名
+     */
     @JvmField
-    var lastChapter: Chapter? = null
+    var latestChapter: String? = null
+
+    val id: Long by lazy { bookUrl?.id ?: 0 }
 
     override fun toString(): String {
-        return "SearchResult(id=$id, bookTitle='$bookTitle', bookUrl='$bookUrl', bookAuthor='$bookAuthor', bookCover='$bookCover', lastChapter=$lastChapter)"
+        return "SearchResult(id=$id, bookTitle='$bookTitle', bookUrl='$bookUrl', bookAuthor='$bookAuthor', bookCover='$bookCover', latestChapter=$latestChapter)"
     }
 
 
