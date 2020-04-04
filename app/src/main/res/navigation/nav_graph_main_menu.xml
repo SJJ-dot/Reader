@@ -8,7 +8,7 @@
         android:id="@+id/bookShelfFragment"
         android:name="com.sjianjun.reader.module.main.fragment.BookshelfFragment"
         android:label="书架"
-        tools:layout="@layout/main_fragment_book_shelf"/>
+        tools:layout="@layout/main_fragment_book_shelf" />
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.sjianjun.reader.module.main.fragment.SearchFragment"
@@ -24,4 +24,24 @@
         android:name="com.sjianjun.reader.module.main.fragment.AboutFragment"
         android:label="关于"
         tools:layout="@layout/main_fragment_about" />
+
+    <fragment
+        android:id="@+id/bookDetailsFragment"
+        android:name="com.sjianjun.reader.module.main.fragment.BookDetailsFragment"
+        android:label="书籍详情"
+        tools:layout="@layout/main_fragment_book_details">
+        <argument
+            android:name="bookId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bookReaderFragment"
+        android:name="com.sjianjun.reader.module.main.fragment.BookReaderFragment"
+        android:label="阅读器"
+        tools:layout="@layout/main_fragment_book_reaader">
+        <argument
+            android:name="bookId"
+            app:argType="string" />
+    </fragment>
 </navigation>

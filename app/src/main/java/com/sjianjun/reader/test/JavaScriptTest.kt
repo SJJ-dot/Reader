@@ -41,6 +41,7 @@ object JavaScriptTest {
                 book.source = source;
                 //书籍信息
                 var info = parse.getElementById("info");
+                book.url = url;
                 book.title = info.child(0).text();
                 book.author = info.child(1).text().split("：")[1];
                 book.intro = parse.getElementById("intro").text();

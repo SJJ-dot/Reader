@@ -1,9 +1,11 @@
 package com.sjianjun.reader
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.addCallback
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.DialogFragment
 import com.sjianjun.reader.utils.Flows
@@ -13,6 +15,17 @@ import kotlinx.coroutines.cancel
 import sjj.alog.Log
 
 open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope() {
+
+    lateinit var onBackPressed:()->Unit
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (this::onBackPressed.isInitialized) {
+            activity?.onBackPressedDispatcher?.addCallback {
+                onBackPressed()
+            }
+        }
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -28,8 +41,8 @@ open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope()
     @LayoutRes
     open fun getLayoutRes(): Int = 0
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    override fun onDestroy() {
+        super.onDestroy()
         cancel()
     }
 }

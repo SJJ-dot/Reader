@@ -19,9 +19,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.glide
-import com.sjianjun.reader.utils.hideKeyboard
-import com.sjianjun.reader.utils.showKeyboard
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_search.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +41,7 @@ class SearchFragment : BaseFragment() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.fragment_main_search_menu, menu)
+        inflater.inflate(R.menu.main_menu_fragment_search, menu)
         val searchView = menu.findItem(R.id.search_view)?.actionView as SearchView
         searchView.queryHint = "请输入书名或者作者"
         searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
@@ -55,11 +53,10 @@ class SearchFragment : BaseFragment() {
         initSearchView(searchView)
         initSearchResultList(searchView)
         initSearchHistory(searchView)
-        Glide.with(this)
     }
 
     private fun initSearchHistory(searchView: SearchView) {
-        searchHistoryList.observe(this@SearchFragment, Observer {
+        searchHistoryList.observe(viewLifecycleOwner, Observer {
             tfl_search_history.removeAllViews()
             it.forEach { history ->
                 val tagView = layoutInflater.inflate(
@@ -118,7 +115,7 @@ class SearchFragment : BaseFragment() {
         val resultBookAdapter = SearchResultBookAdapter(this)
         resultBookAdapter.setHasStableIds(true)
         searchRecyclerView.adapter = resultBookAdapter
-        searchResult.observe(this@SearchFragment, Observer {
+        searchResult.observe(viewLifecycleOwner, Observer {
             if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
                 resultBookAdapter.data = it
                 resultBookAdapter.notifyDataSetChanged()
@@ -128,7 +125,7 @@ class SearchFragment : BaseFragment() {
     }
 
 
-    private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
+    private val queryActor= actor<String>(capacity = Channel.CONFLATED) {
         for (msg in channel) {
             refresh_progress_bar.isAutoLoading = true
             DataManager.search(msg).collect {
@@ -161,7 +158,10 @@ class SearchFragment : BaseFragment() {
 
             holder.itemView.setOnClickListener { _ ->
                 launch {
-                    DataManager.saveSearchResult(data[position])
+                    val id = DataManager.saveSearchResult(data[position]).firstOrNull()
+                    NavHostFragment.findNavController(fragment).navigate(R.id.bookDetailsFragment,
+                        bundle(BOOK_ID ,id)
+                    )
                 }
             }
         }

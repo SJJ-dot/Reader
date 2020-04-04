@@ -4,13 +4,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.sjianjun.reader.App
-import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.bean.SearchHistory
-import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.bean.*
 
 @Database(
-    entities = [Book::class, JavaScript::class, SearchHistory::class],
+    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {
