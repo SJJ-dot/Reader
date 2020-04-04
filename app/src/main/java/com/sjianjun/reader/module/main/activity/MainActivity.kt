@@ -1,9 +1,12 @@
 package com.sjianjun.reader.module.main.activity
 
 import android.Manifest
+import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.LiveData
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.navigation.ui.AppBarConfiguration
@@ -12,11 +15,24 @@ import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.preferences.DelegateLiveData
+import com.sjianjun.reader.preferences.DelegateSharedPreferences
 import com.sjianjun.reader.utils.toastSHORT
+import com.sjianjun.reader.utils.withIo
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import sjj.alog.Log
+import java.util.concurrent.atomic.AtomicReference
 
 class MainActivity : BaseActivity() {
+
+    var test:String by DelegateSharedPreferences("123test"){getSharedPreferences("test",Context.MODE_PRIVATE)}
+    val testL by DelegateLiveData<String>("123test"){getSharedPreferences("test",Context.MODE_PRIVATE)}
+
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,11 +43,22 @@ class MainActivity : BaseActivity() {
 
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_main)
         appBarConfiguration = AppBarConfiguration.Builder(navController.graph)
-            .setDrawerLayout(drawer_layout)
+            .setOpenableLayout(drawer_layout)
             .build()
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
         NavigationUI.setupWithNavController(nav_ui, navController)
+        navController.addOnDestinationChangedListener { controller, destination, arguments ->
+            when (destination.id) {
+                R.id.bookDetailsFragment -> {
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                }
+                else -> {
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                }
+            }
+        }
+
         PermissionUtil.requestPermissions(this, arrayOf(Manifest.permission.INTERNET)) { list ->
             if (!list.isGranted()) {
                 launch {
@@ -43,9 +70,7 @@ class MainActivity : BaseActivity() {
 //        launch {
 //            JavaScriptTest().testJavaScript()
 //        }
-
     }
-
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {

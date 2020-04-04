@@ -64,6 +64,12 @@ data class JavaScript constructor(
         }
     }
 
+    suspend fun getDetails(bookUrl: String): Book? {
+        return withIo {
+            execute<Book>(Func.getDetails, bookUrl)
+        }
+    }
+
     enum class Func {
         search, getDetails, getChapterContent
     }

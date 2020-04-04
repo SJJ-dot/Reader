@@ -8,14 +8,21 @@ import android.view.View
 import androidx.navigation.fragment.NavHostFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.utils.launchGlobal
+import kotlinx.coroutines.flow.collect
 import sjj.alog.Log
 
 class BookshelfFragment : BaseFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         setHasOptionsMenu(true)
+        launchGlobal {
+            DataManager.getAllBook().collect {
+                Log.e(it)
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
