@@ -72,17 +72,20 @@ class BookDetailsFragment : BaseFragment() {
                 .commitAllowingStateLoss()
             val bookData = DataManager.getBookById(bookId).toLiveData()
             bookData.observe(viewLifecycleOwner, Observer {
-                bookCover.glide(this@BookDetailsFragment, it.cover)
-                bookName.text = it.title
-                author.text = it.author
-                latestChapter.text = it.chapterList?.lastOrNull()?.title
-                intro.text = it.intro
-                launch {
-                    val bookList =
-                        DataManager.getBookByTitleAndAuthor(it.title, it.author).firstOrNull()
-                    originWebsite.text = "来源：${it.source}共${bookList?.size}个源"
+                if (it != null) {
+                    Log.e(it)
+                    bookCover.glide(this@BookDetailsFragment, it.cover)
+                    bookName.text = it.title
+                    author.text = it.author
+                    latestChapter.text = it.chapterList?.lastOrNull()?.title
+                    intro.text = it.intro
+                    launch {
+                        val bookList =
+                            DataManager.getBookByTitleAndAuthor(it.title, it.author).firstOrNull()
+                        originWebsite.text = "来源：${it.source}共${bookList?.size}个源"
+                    }
+                    detailsRefreshLayout.isRefreshing = false
                 }
-                detailsRefreshLayout.isRefreshing = false
             })
         }.apply(bookJobRef::lazySet)
     }

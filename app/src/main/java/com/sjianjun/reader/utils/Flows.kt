@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 interface Flows : CoroutineScope {
-    fun <T> Flow<T>.toLiveData(): MutableLiveData<T> {
-        val liveData = MutableLiveData<T>()
+    fun <T> Flow<T?>.toLiveData(): MutableLiveData<T?> {
+        val liveData = MutableLiveData<T?>()
         launch {
             collect {
                 liveData.postValue(it)

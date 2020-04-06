@@ -58,7 +58,7 @@ class SearchFragment : BaseFragment() {
     private fun initSearchHistory(searchView: SearchView) {
         searchHistoryList.observe(viewLifecycleOwner, Observer {
             tfl_search_history.removeAllViews()
-            it.forEach { history ->
+            it?.forEach { history ->
                 val tagView = layoutInflater.inflate(
                     R.layout.main_item_fragment_search_history,
                     tfl_search_history,
@@ -75,7 +75,7 @@ class SearchFragment : BaseFragment() {
                 }
             }
             tv_search_history_clean.setOnClickListener { _ ->
-                deleteSearchHistoryActor.offer(it)
+                deleteSearchHistoryActor.offer(it?:return@setOnClickListener)
             }
         })
     }
@@ -101,6 +101,7 @@ class SearchFragment : BaseFragment() {
             if (hasFocus) {
                 ll_search_history?.visibility = View.VISIBLE
                 searchRecyclerView?.visibility = View.INVISIBLE
+                searchResult.postValue(emptyList())
                 v.showKeyboard()
             } else {
                 searchRecyclerView?.visibility = View.VISIBLE
@@ -119,7 +120,6 @@ class SearchFragment : BaseFragment() {
             if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
                 resultBookAdapter.data = it
                 resultBookAdapter.notifyDataSetChanged()
-                searchView.clearFocus()
             }
         })
     }

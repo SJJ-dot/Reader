@@ -7,7 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.annotation.LayoutRes
+import androidx.annotation.NonNull
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import com.sjianjun.reader.utils.Flows
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -16,7 +19,7 @@ import sjj.alog.Log
 
 open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope() {
 
-    lateinit var onBackPressed:()->Unit
+    lateinit var onBackPressed: () -> Unit
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -26,6 +29,7 @@ open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope()
             }
         }
     }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -44,5 +48,13 @@ open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope()
     override fun onDestroy() {
         super.onDestroy()
         cancel()
+    }
+
+    fun <T> LiveData<T>.observeViewLifecycle(observer: (data: T) -> Unit) {
+        observeViewLifecycle(Observer { observer(it) })
+    }
+
+    fun <T> LiveData<T>.observeViewLifecycle(observer: Observer<T>) {
+        observe(viewLifecycleOwner, observer)
     }
 }
