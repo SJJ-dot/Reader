@@ -2,10 +2,7 @@ package com.sjianjun.reader.repository
 
 import androidx.room.*
 import androidx.room.Dao
-import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.bean.SearchHistory
+import com.sjianjun.reader.bean.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -19,6 +16,9 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJavaScript(javaScript: List<JavaScript>)
 
+
+    @Query("select * from JavaScript where source in (select source from Book)")
+    fun getHasBookJavaScript(): Flow<List<JavaScript>>
 
     /**
      * 查询全部搜索历史记录
@@ -44,11 +44,20 @@ interface Dao {
     @Query("select * from Book")
     fun getAllBook(): Flow<List<Book>>
 
+    @Query("select * from Book where id in (select readingBookId from ReadingRecord)")
+    fun getAllReadingBook(): Flow<List<Book>>
+
     @Query("select * from Book where id=:id")
     fun getBookById(id: Int): Flow<Book>
 
     @Query("select * from Book where title=:title and author=:author")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
+
+    @Query("select * from Book where url=:url")
+    suspend fun getBookByUrl(url: String): Book
+
+    @Query("select * from Chapter where bookId=:bookId order by id DESC limit 1")
+    fun getLastChapterByBookId(bookId: Int): Flow<Chapter>
 
     /**
      * 查询列表不查章节内容
@@ -60,9 +69,20 @@ interface Dao {
     fun getChapterById(id: Int): Flow<Chapter>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertChapter(chapterList: List<Chapter>): List<Long>
+    suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
 
     @Query("delete from Chapter where bookId=:bookId")
-    fun deleteChapterByBookId(bookId: Int)
+    suspend fun deleteChapterByBookId(bookId: Int)
 
+    @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
+    fun getReadingRecord(bookTitle: String, bookAuthor: String): Flow<ReadingRecord>
+
+    @Query("select * from ReadingRecord")
+    fun getAllReadingRecordList(): Flow<List<ReadingRecord>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReadingRecord(record: ReadingRecord): Long
+
+    @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
+    suspend fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
 }

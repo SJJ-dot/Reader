@@ -7,7 +7,7 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 
 @Database(
-    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class],
+    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ReadingRecord::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {

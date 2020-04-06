@@ -158,7 +158,7 @@ class SearchFragment : BaseFragment() {
 
             holder.itemView.setOnClickListener { _ ->
                 launch {
-                    val id = DataManager.saveSearchResult(data[position]).firstOrNull()
+                    val id = DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(R.id.bookDetailsFragment,
                         bundle(BOOK_ID ,id)
                     )

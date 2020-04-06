@@ -40,8 +40,8 @@ class BookDetailsFragment : BaseFragment() {
         bookId = arguments!!.getString(BOOK_ID)!!.toInt()
 
         onBackPressed = {
-            if (drawer_layout.isDrawerOpen(GravityCompat.END)) {
-                drawer_layout.closeDrawer(GravityCompat.END)
+            if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
+                drawer_layout?.closeDrawer(GravityCompat.END)
             } else {
                 findNavController().popBackStack()
             }

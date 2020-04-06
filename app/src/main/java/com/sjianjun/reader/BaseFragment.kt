@@ -19,16 +19,13 @@ import sjj.alog.Log
 
 open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope() {
 
-    lateinit var onBackPressed: () -> Unit
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (this::onBackPressed.isInitialized) {
-            activity?.onBackPressedDispatcher?.addCallback {
-                onBackPressed()
+    var onBackPressed: (() -> Unit)? = null
+        set(value) {
+            field = value
+            activity?.onBackPressedDispatcher?.addCallback(owner = viewLifecycleOwner) {
+                onBackPressed?.invoke()
             }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
