@@ -16,20 +16,4 @@ class BookConfig {
 
     private val config by lazy { App.app.getSharedPreferences("BookConfig", Context.MODE_PRIVATE) }
 
-    fun deleteBook(book: Book) {
-        config.edit()
-            .remove("ReadingChapter_${book.id}")
-            .apply()
-    }
-
-    val readingChapterId by liveDataMap(-1,{config},"ReadingChapter_")
-
-    /**
-     * 数据
-     */
-    private val readingBookMap = mutableMapOf<String, MutableLiveData<Int>>()
-
-    fun getReadingBookMap(bookTitle: String, author: String) {
-
-    }
 }

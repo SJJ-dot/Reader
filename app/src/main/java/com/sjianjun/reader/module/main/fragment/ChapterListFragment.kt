@@ -24,6 +24,9 @@ class ChapterListFragment : BaseFragment() {
     val chapterListData by lazy {
         DataManager.getChapterList(bookId).toLiveData()
     }
+    val readChapterId by lazy {
+
+    }
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
@@ -34,10 +37,6 @@ class ChapterListFragment : BaseFragment() {
             adapter.data = it?: emptyList()
             adapter.notifyDataSetChanged()
         })
-        globalBookConfig.readingChapterId.getValue(bookId.toString()).observeViewLifecycle {
-            adapter.readingChapterId = it
-            adapter.notifyDataSetChanged()
-        }
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter() {

@@ -1,14 +1,8 @@
 package com.sjianjun.reader.repository
 
-import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.SearchHistory
-import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.test.JavaScriptTest
-import com.sjianjun.reader.utils.flowIo
-import com.sjianjun.reader.utils.launchGlobal
-import com.sjianjun.reader.utils.toBookList
-import com.sjianjun.reader.utils.withIo
+import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import sjj.alog.Log
@@ -25,6 +19,9 @@ object DataManager {
         }
     }
 
+    fun getHasBookJavaScript(): Flow<List<JavaScript>> {
+        return dao.getHasBookJavaScript()
+    }
 
     /**
      * 搜素历史记录
@@ -58,11 +55,7 @@ object DataManager {
                 }
             }.map {
                 //数据分组返回
-                it.forEach { result ->
-                    group.getOrPut(
-                        "bookTitle:${result.bookTitle}-bookAuthor:${result.bookAuthor}",
-                        { mutableListOf() }).add(result)
-                }
+                it.toBookGroup(group)
                 group.values.toList()
             }.flowIo()
         }
@@ -74,14 +67,20 @@ object DataManager {
         }
     }
 
-    suspend fun saveSearchResult(searchResult: List<SearchResult>): List<Long> {
+    suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
         return withIo {
             dao.insertBook(searchResult.toBookList())
             val first = searchResult.first()
-            dao.getBookByTitleAndAuthor(
-                first.bookTitle!!,
-                first.bookAuthor!!
-            ).firstOrNull()?.map { it.id.toLong() } ?: emptyList()
+            val book = dao.getBookByUrl(first.bookUrl!!)
+            val readingRecord = dao.getReadingRecord(book.title, book.author).firstOrNull()
+            if (readingRecord == null) {
+                dao.insertReadingRecord(ReadingRecord().apply {
+                    bookTitle = book.title
+                    bookAuthor = book.author
+                    readingBookId = book.id
+                })
+            }
+            return@withIo book.id.toLong()
         }
     }
 
@@ -90,9 +89,10 @@ object DataManager {
         return withIo {
             val book = dao.getBookById(bookId).firstOrNull() ?: return@withIo false
             Log.e(book)
-            val javaScript = dao.getJavaScriptBySource(book.source!!).first()
+            val javaScript = dao.getJavaScriptBySource(book.source).first()
             val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
             bookDetails.id = bookId
+            Log.e(bookDetails)
             dao.updateBook(bookDetails)
             val chapterList = bookDetails.chapterList ?: return@withIo false
             chapterList.forEach {
@@ -104,17 +104,27 @@ object DataManager {
         }
     }
 
-    suspend fun getAllBook(): Flow<List<Book>> {
+    fun getAllBook(): Flow<List<Book>> {
         return dao.getAllBook()
+    }
+
+    fun getAllReadingBook(): Flow<List<Book>> {
+        return dao.getAllReadingBook()
+    }
+
+    suspend fun deleteBook(book: Book) {
+        withIo {
+            dao.deleteBook(book.title, book.author)
+            dao.deleteChapterByBookId(book.id)
+            dao.deleteReadingRecord(book.title,book.author)
+        }
     }
 
     suspend fun getBookById(id: Int): Flow<Book> {
         return withIo {
-            dao.getBookById(id).flatMapConcat {
-                dao.getChapterListByBookId(id).map { chapterList ->
-                    it.chapterList = chapterList
-                    it
-                }
+            dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList->
+                book.chapterList = chapterList
+                book
             }
         }
     }
@@ -131,6 +141,26 @@ object DataManager {
 
     fun getChapterList(bookId: Int): Flow<List<Chapter>> {
         return dao.getChapterListByBookId(bookId)
+    }
+
+    fun getLastChapterByBookId(bookId: Int): Flow<Chapter> {
+        return dao.getLastChapterByBookId(bookId)
+    }
+
+    fun getChapterById(chapterId: Int): Flow<Chapter> {
+        return dao.getChapterById(chapterId)
+    }
+
+    fun getAllReadingRecordList(): Flow<List<ReadingRecord>> {
+        return dao.getAllReadingRecordList()
+    }
+
+    fun getReadingRecord(book: Book): Flow<ReadingRecord> {
+        return dao.getReadingRecord(book.title, book.author)
+    }
+
+    suspend fun setReadingRecord(record: ReadingRecord): Long {
+        return withIo { dao.insertReadingRecord(record) }
     }
 
 

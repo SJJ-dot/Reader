@@ -9,9 +9,9 @@ class SearchResult {
     @JvmField
     var source: String = ""
     @JvmField
-    var bookTitle: String? = null
+    var bookTitle: String = ""
     @JvmField
-    var bookAuthor: String? = null
+    var bookAuthor: String = ""
     @JvmField
     var bookCover: String? = null
     @JvmField

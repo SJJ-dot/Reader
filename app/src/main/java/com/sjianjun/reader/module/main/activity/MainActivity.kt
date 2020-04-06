@@ -67,10 +67,9 @@ class MainActivity : BaseActivity() {
             }
         }
 
-//        launch {
-//            JavaScriptTest().testJavaScript()
-//        }
     }
+
+
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {

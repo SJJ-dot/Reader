@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
-@Entity(indices = [Index(value = ["author","title","source"],unique = true)])
+@Entity(indices = [Index(value = ["author", "title", "source"], unique = true)])
 class Book {
     @PrimaryKey(autoGenerate = true)
     var id = 0
@@ -14,11 +14,11 @@ class Book {
      * 书籍来源[JavaScript.source]
      */
     @JvmField
-    var source: String? = null
+    var source: String = ""
     @JvmField
-    var title: String? = null
+    var title: String = ""
     @JvmField
-    var author: String? = null
+    var author: String = ""
     @JvmField
     var intro: String? = null
     @JvmField
@@ -33,5 +33,16 @@ class Book {
         return "Book(id=$id, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, url=$url, chapterList=$chapterList)"
     }
 
+    @Ignore
+    var lastChapter:Chapter?=null
+
+    @Ignore
+    var readChapter:Chapter?=null
+
+    /**
+     * 包含本书的书源
+     */
+    @Ignore
+    var javaScriptList:List<JavaScript>?=null
 
 }
