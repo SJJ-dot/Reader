@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.main.fragment
 
 import android.os.Bundle
 import android.view.View
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseFragment
@@ -15,7 +14,6 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_chapter_list.*
-import sjj.alog.Log
 
 
 /**
@@ -32,10 +30,14 @@ class ChapterListFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val adapter = ChapterListAdapter(this)
         chapterList.adapter = adapter
-        chapterListData.observe(viewLifecycleOwner, Observer<List<Chapter>> {
-            adapter.data = it
+        chapterListData.observeViewLifecycle(Observer {
+            adapter.data = it?: emptyList()
             adapter.notifyDataSetChanged()
         })
+        globalBookConfig.readingChapterId.getValue(bookId.toString()).observeViewLifecycle {
+            adapter.readingChapterId = it
+            adapter.notifyDataSetChanged()
+        }
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter() {
@@ -44,6 +46,7 @@ class ChapterListFragment : BaseFragment() {
         }
 
         var data = listOf<Chapter>()
+        var readingChapterId = -1
 
         override fun getItemCount(): Int = data.size
 
@@ -57,7 +60,7 @@ class ChapterListFragment : BaseFragment() {
         ) {
             val c = data[position]
             holder.itemView.text1.text = c.title
-            if (globalBookConfig.getReadingChapter(c.bookId) == c.id) {
+            if (readingChapterId == c.id) {
                 holder.itemView.text1.setTextColorRes(R.color.material_red_700)
             } else {
                 holder.itemView.text1.setTextColorRes(R.color.material_textBlack_secondaryText)
