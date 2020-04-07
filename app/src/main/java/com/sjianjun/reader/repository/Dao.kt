@@ -16,9 +16,8 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJavaScript(javaScript: List<JavaScript>)
 
-
-    @Query("select * from JavaScript where source in (select source from Book)")
-    fun getHasBookJavaScript(): Flow<List<JavaScript>>
+    @Query("select * from JavaScript where source in (select source from Book where title=:bookTitle and author=:bookAuthor)")
+    fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>>
 
     /**
      * 查询全部搜索历史记录
