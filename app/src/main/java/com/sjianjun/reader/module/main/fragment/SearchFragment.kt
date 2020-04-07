@@ -12,7 +12,6 @@ import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -23,11 +22,11 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_search.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import sjj.alog.Log
 
 class SearchFragment : BaseFragment() {
     private val searchHistoryList by lazy { DataManager.getAllSearchHistory().toLiveData() }
@@ -75,7 +74,7 @@ class SearchFragment : BaseFragment() {
                 }
             }
             tv_search_history_clean.setOnClickListener { _ ->
-                deleteSearchHistoryActor.offer(it?:return@setOnClickListener)
+                deleteSearchHistoryActor.offer(it ?: return@setOnClickListener)
             }
         })
     }
@@ -89,6 +88,7 @@ class SearchFragment : BaseFragment() {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query.isNullOrEmpty()) return true
                 queryActor.offer(query)
+                searchResult.postValue(emptyList())
                 searchView.clearFocus()
                 return true
             }
@@ -101,7 +101,6 @@ class SearchFragment : BaseFragment() {
             if (hasFocus) {
                 ll_search_history?.visibility = View.VISIBLE
                 searchRecyclerView?.visibility = View.INVISIBLE
-                searchResult.postValue(emptyList())
                 v.showKeyboard()
             } else {
                 searchRecyclerView?.visibility = View.VISIBLE
@@ -125,13 +124,17 @@ class SearchFragment : BaseFragment() {
     }
 
 
-    private val queryActor= actor<String>(capacity = Channel.CONFLATED) {
+    private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
+        var job: Job? = null
         for (msg in channel) {
             refresh_progress_bar.isAutoLoading = true
-            DataManager.search(msg).collect {
-                searchResult.postValue(it)
+            job?.cancel()
+            job = launch {
+                DataManager.search(msg).collect {
+                    searchResult.postValue(it)
+                }
+                refresh_progress_bar.isAutoLoading = false
             }
-            refresh_progress_bar.isAutoLoading = false
         }
     }
 
@@ -141,7 +144,8 @@ class SearchFragment : BaseFragment() {
         }
     }
 
-    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter(), CoroutineScope by fragment {
+    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter(),
+        CoroutineScope by fragment {
         var data = listOf<List<SearchResult>>()
         override fun getItemCount(): Int = data.size
         override fun itemLayoutRes(viewType: Int): Int {
@@ -159,8 +163,9 @@ class SearchFragment : BaseFragment() {
             holder.itemView.setOnClickListener { _ ->
                 launch {
                     val id = DataManager.saveSearchResult(data[position])
-                    NavHostFragment.findNavController(fragment).navigate(R.id.bookDetailsFragment,
-                        bundle(BOOK_ID ,id)
+                    NavHostFragment.findNavController(fragment).navigate(
+                        R.id.bookDetailsFragment,
+                        bundle(BOOK_ID, id)
                     )
                 }
             }
