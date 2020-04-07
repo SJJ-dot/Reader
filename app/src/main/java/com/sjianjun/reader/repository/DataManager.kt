@@ -4,10 +4,6 @@ import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import sjj.alog.Log
-import java.util.concurrent.Callable
 
 /**
  * 界面数据从数据库订阅刷新
@@ -68,7 +64,7 @@ object DataManager {
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
-        return transaction {
+        return withIo {
             dao.insertBook(searchResult.toBookList())
             val first = searchResult.first()
             val book = dao.getBookByUrl(first.bookUrl!!)
@@ -80,14 +76,13 @@ object DataManager {
                     readingBookId = book.id
                 })
             }
-            return@transaction book.id.toLong()
+            return@withIo book.id.toLong()
         }
     }
 
     suspend fun reloadBookFromNet(bookId: Int): Boolean {
         return withIo {
             val book = dao.getBookById(bookId).firstOrNull() ?: return@withIo false
-            Log.e(book)
             val javaScript = dao.getJavaScriptBySource(book.source).first()
             val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
             bookDetails.id = bookId
@@ -96,18 +91,11 @@ object DataManager {
             chapterList.forEach {
                 it.bookId = bookId
             }
-            Log.e(bookDetails)
-            transaction {
-                dao.updateBook(bookDetails)
-                dao.deleteChapterByBookId(bookId)
-                dao.insertChapter(chapterList)
-            }
+            dao.updateBook(bookDetails)
+            dao.deleteChapterByBookId(bookId)
+            dao.insertChapter(chapterList)
             return@withIo true
         }
-    }
-
-    fun getAllBook(): Flow<List<Book>> {
-        return dao.getAllBook()
     }
 
     fun getAllReadingBook(): Flow<List<Book>> {
@@ -115,29 +103,23 @@ object DataManager {
     }
 
     suspend fun deleteBook(book: Book) {
-        transaction {
-            dao.deleteBook(book.title, book.author)
-            dao.deleteChapterByBookId(book.id)
-            dao.deleteReadingRecord(book.title, book.author)
+        dao.deleteBook(book.title, book.author)
+        dao.deleteChapterByBook(book.title, book.author)
+        dao.deleteReadingRecord(book.title, book.author)
+    }
+
+    fun getBookById(id: Int): Flow<Book> {
+        return dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
+            book.chapterList = chapterList
+            book
         }
     }
 
-    suspend fun getBookById(id: Int): Flow<Book> {
-        return withIo {
-            dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
-                book.chapterList = chapterList
-                book
-            }
-        }
-    }
-
-    suspend fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
+    fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
         if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
             return emptyFlow()
         }
-        return withIo {
-            dao.getBookByTitleAndAuthor(title, author)
-        }
+        return dao.getBookByTitleAndAuthor(title, author)
     }
 
 
@@ -153,17 +135,12 @@ object DataManager {
         return dao.getChapterById(chapterId)
     }
 
-    fun getAllReadingRecordList(): Flow<List<ReadingRecord>> {
-        return dao.getAllReadingRecordList()
-    }
-
     fun getReadingRecord(book: Book): Flow<ReadingRecord> {
         return dao.getReadingRecord(book.title, book.author)
     }
 
     suspend fun setReadingRecord(record: ReadingRecord): Long {
-        return withIo { dao.insertReadingRecord(record) }
+        return dao.insertReadingRecord(record)
     }
-
 
 }

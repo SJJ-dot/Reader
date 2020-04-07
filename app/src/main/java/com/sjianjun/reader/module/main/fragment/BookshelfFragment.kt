@@ -97,7 +97,7 @@ class BookshelfFragment : BaseFragment() {
                         combine(
                             DataManager.getReadingRecord(book).map { record ->
                                 DataManager.getChapterById(
-                                    record.readingBookChapterId
+                                    record?.readingBookChapterId
                                 ).firstOrNull()
                             },
                             DataManager.getLastChapterByBookId(book.id),

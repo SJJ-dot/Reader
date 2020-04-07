@@ -73,6 +73,9 @@ interface Dao {
     @Query("delete from Chapter where bookId=:bookId")
     suspend fun deleteChapterByBookId(bookId: Int)
 
+    @Query("delete from Chapter where bookId in (select id from book where title=:bookTitle and author=:bookAuthor)")
+    suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
+
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun getReadingRecord(bookTitle: String, bookAuthor: String): Flow<ReadingRecord>
 
