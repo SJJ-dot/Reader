@@ -3,11 +3,11 @@ package com.sjianjun.reader.module.main.fragment
 
 import android.os.Bundle
 import android.view.View
-import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
@@ -65,8 +65,7 @@ class ChapterListFragment : BaseFragment() {
                 holder.itemView.mark.setBackgroundColor(R.color.material_grey_500.resColor())
             }
             holder.itemView.setOnClickListener {
-                fragment.findNavController()
-                    .navigate(R.id.bookReaderFragment, bundle(CHAPTER_ID, c.id))
+                fragment.startActivity<BookReaderActivity>(BOOK_ID to c.bookId, CHAPTER_ID to c.id)
             }
         }
 

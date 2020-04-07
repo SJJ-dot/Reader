@@ -30,9 +30,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 class MainActivity : BaseActivity() {
 
-    var test:String by DelegateSharedPreferences("123test"){getSharedPreferences("test",Context.MODE_PRIVATE)}
-    val testL by DelegateLiveData<String>("123test"){getSharedPreferences("test",Context.MODE_PRIVATE)}
-
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
     override fun onCreate(savedInstanceState: Bundle?) {
