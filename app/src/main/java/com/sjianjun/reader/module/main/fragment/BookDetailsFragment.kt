@@ -9,10 +9,12 @@ import androidx.core.view.GravityCompat
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.BOOK_ID
 import com.sjianjun.reader.utils.create
 import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.startActivity
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -33,8 +35,6 @@ class BookDetailsFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
 
-        bookId = arguments!!.getString(BOOK_ID)!!.toInt()
-
         onBackPressed = {
             if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
                 drawer_layout?.closeDrawer(GravityCompat.END)
@@ -47,6 +47,11 @@ class BookDetailsFragment : BaseFragment() {
             refresh()
         }
 
+        reading.setOnClickListener {
+            startActivity<BookReaderActivity>(BOOK_ID, bookId)
+        }
+
+        bookId = arguments!!.getString(BOOK_ID)!!.toInt()
     }
 
     private fun refresh() {

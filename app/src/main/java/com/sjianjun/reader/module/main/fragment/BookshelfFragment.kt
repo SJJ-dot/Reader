@@ -14,11 +14,9 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.BOOK_ID
-import com.sjianjun.reader.utils.bundle
-import com.sjianjun.reader.utils.flowIo
-import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.Job
@@ -151,7 +149,7 @@ class BookshelfFragment : BaseFragment() {
             holder.itemView.bookCover.setOnClickListener(l)
 
             holder.itemView.setOnClickListener {
-                fragment.findNavController().navigate(R.id.bookReaderFragment)
+                fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
             }
         }
     }

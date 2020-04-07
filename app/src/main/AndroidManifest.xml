@@ -5,23 +5,20 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-
         android:name=".App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_xue_xi"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-
-        <!--适配华为（huawei）刘海屏 沉浸式-->
+        <activity android:name=".module.reader.activity.BookReaderActivity" />
+        <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
             android:name="android.notch_support"
-            android:value="true" />
-        <!--适配小米（xiaomi）刘海屏 沉浸式-->
+            android:value="true" /> <!-- 适配小米（xiaomi）刘海屏 沉浸式 -->
         <meta-data
             android:name="notch.config"
             android:value="portrait|landscape" />
-
 
         <activity android:name=".module.main.activity.MainActivity">
             <intent-filter>
