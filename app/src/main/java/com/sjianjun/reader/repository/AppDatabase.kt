@@ -20,18 +20,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
 }
 
-private val executor = Executors.newSingleThreadExecutor()
-
 val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
-    .setQueryExecutor(executor)
-    .setTransactionExecutor(executor)
     .build()
 
 
-suspend inline fun <T> transaction(noinline block: suspend CoroutineScope.() -> T): T {
-    return withSingle {
-        db.runInTransaction(Callable {
-            runBlocking(block = block)
-        })
-    }
+fun <T> transaction(block: suspend CoroutineScope.() -> T): T {
+    return db.runInTransaction(Callable {
+        runBlocking(block = block)
+    })
 }

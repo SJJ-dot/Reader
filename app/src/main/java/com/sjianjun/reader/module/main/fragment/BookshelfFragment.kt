@@ -1,14 +1,11 @@
 package com.sjianjun.reader.module.main.fragment
 
-import android.content.Context
 import android.os.Bundle
-import android.util.SparseArray
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -17,23 +14,15 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.ReadingRecord
-import com.sjianjun.reader.preferences.LiveDataMap
-import com.sjianjun.reader.preferences.LiveDataMapImpl
-import com.sjianjun.reader.preferences.globalBookConfig
-import com.sjianjun.reader.preferences.liveDataMap
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.BOOK_ID
+import com.sjianjun.reader.utils.bundle
+import com.sjianjun.reader.utils.flowIo
+import com.sjianjun.reader.utils.glide
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import sjj.alog.Log
-import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicReference
 
 class BookshelfFragment : BaseFragment() {
@@ -54,11 +43,11 @@ class BookshelfFragment : BaseFragment() {
         }
 
         swipe_refresh.setOnRefreshListener {
-            launch {
+            viewLaunch {
                 bookList.value?.forEach {
                     DataManager.reloadBookFromNet(it.id)
                 }
-                swipe_refresh.isRefreshing = false
+                swipe_refresh?.isRefreshing = false
             }
         }
 
@@ -77,28 +66,27 @@ class BookshelfFragment : BaseFragment() {
             ): Boolean = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                launch {
+                viewLaunch {
                     val book = adapter.data.getOrNull(viewHolder.adapterPosition)
-                    DataManager.deleteBook(book ?: return@launch)
+                    DataManager.deleteBook(book ?: return@viewLaunch)
                 }
             }
 
         })
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
-        launch {
+        viewLaunch {
             //需要最新章节 阅读章节 书源数量
             val book = AtomicReference<Job>()
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 book.get()?.cancel()
-                launch {
+                viewLaunch {
                     it.asFlow().flatMapMerge { book ->
                         combine(
                             DataManager.getReadingRecord(book).map { record ->
-                                DataManager.getChapterById(
-                                    record?.readingBookChapterId
-                                ).firstOrNull()
+                                val id = record?.readingBookChapterId?:return@map null
+                                DataManager.getChapterById(id).first()
                             },
                             DataManager.getLastChapterByBookId(book.id),
                             DataManager.getBookJavaScript(book.title, book.author)

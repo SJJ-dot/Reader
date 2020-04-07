@@ -26,10 +26,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 
 class SearchFragment : BaseFragment() {
-    private val searchHistoryList by lazy { DataManager.getAllSearchHistory().toLiveData() }
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
 
     override fun getLayoutRes() = R.layout.main_fragment_search
@@ -55,28 +54,30 @@ class SearchFragment : BaseFragment() {
     }
 
     private fun initSearchHistory(searchView: SearchView) {
-        searchHistoryList.observe(viewLifecycleOwner, Observer {
-            tfl_search_history.removeAllViews()
-            it?.forEach { history ->
-                val tagView = layoutInflater.inflate(
-                    R.layout.main_item_fragment_search_history,
-                    tfl_search_history,
-                    false
-                ) as TextView
-                tfl_search_history.addView(tagView, 0)
-                tagView.text = history.query
-                tagView.setOnClickListener { _ ->
-                    searchView.setQuery(history.query, true)
+        viewLaunch {
+            DataManager.getAllSearchHistory().collectLatest {
+                tfl_search_history.removeAllViews()
+                it?.forEach { history ->
+                    val tagView = layoutInflater.inflate(
+                        R.layout.main_item_fragment_search_history,
+                        tfl_search_history,
+                        false
+                    ) as TextView
+                    tfl_search_history.addView(tagView, 0)
+                    tagView.text = history.query
+                    tagView.setOnClickListener { _ ->
+                        searchView.setQuery(history.query, true)
+                    }
+                    tagView.setOnLongClickListener { _ ->
+                        deleteSearchHistoryActor.offer(listOf(history))
+                        true
+                    }
                 }
-                tagView.setOnLongClickListener { _ ->
-                    deleteSearchHistoryActor.offer(listOf(history))
-                    true
+                tv_search_history_clean.setOnClickListener { _ ->
+                    deleteSearchHistoryActor.offer(it ?: return@setOnClickListener)
                 }
             }
-            tv_search_history_clean.setOnClickListener { _ ->
-                deleteSearchHistoryActor.offer(it ?: return@setOnClickListener)
-            }
-        })
+        }
     }
 
     private fun initSearchView(searchView: SearchView) {
@@ -127,13 +128,13 @@ class SearchFragment : BaseFragment() {
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
         var job: Job? = null
         for (msg in channel) {
-            refresh_progress_bar.isAutoLoading = true
+            refresh_progress_bar?.isAutoLoading = true
             job?.cancel()
-            job = launch {
+            job = viewLaunch {
                 DataManager.search(msg).collect {
                     searchResult.postValue(it)
                 }
-                refresh_progress_bar.isAutoLoading = false
+                refresh_progress_bar?.isAutoLoading = false
             }
         }
     }
@@ -161,7 +162,7 @@ class SearchFragment : BaseFragment() {
             holder.itemView.haveRead.text = "来源：${searchResult.source} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
-                launch {
+                fragment.viewLaunch {
                     val id = DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,

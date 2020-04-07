@@ -1,23 +1,20 @@
 package com.sjianjun.reader
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.annotation.LayoutRes
-import androidx.annotation.NonNull
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import com.sjianjun.reader.utils.Flows
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import sjj.alog.Log
+import androidx.lifecycle.coroutineScope
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope() {
+open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
 
     var onBackPressed: (() -> Unit)? = null
         set(value) {
@@ -56,5 +53,11 @@ open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope()
 
     fun <T> LiveData<T>.observeViewLifecycle(observer: Observer<T>) {
         observe(viewLifecycleOwner, observer)
+    }
+
+    fun viewLaunch(context: CoroutineContext = EmptyCoroutineContext,
+                   start: CoroutineStart = CoroutineStart.DEFAULT,
+                   block: suspend CoroutineScope.() -> Unit): Job {
+        return lifecycle.coroutineScope.launch(context, start, block)
     }
 }
