@@ -75,10 +75,6 @@ class BookshelfFragment : BaseFragment() {
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean = false
-//            val removeAt = adapter.data.removeAt(viewHolder.adapterPosition)
-//            adapter.data.add(target.adapterPosition,removeAt)
-//            adapter.notifyItemMoved(viewHolder.adapterPosition,target.adapterPosition)
-//            return true
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 launch {
@@ -87,61 +83,35 @@ class BookshelfFragment : BaseFragment() {
                 }
             }
 
-            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
-                super.onSelectedChanged(viewHolder, actionState)
-//                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-//                    val data = adapter.data.map { it.bookSourceRecord }
-//                    data.forEachIndexed { index, bookSourceRecord ->
-//                        bookSourceRecord.sequence = index
-//                    }
-//                    model.updateBookSourceRecordSeq(data)
-//                        .subscribe()
-//                        .destroy("fragment Book shelf update bookSourceRecord sequence")
-//                }
-            }
         })
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
         launch {
             //需要最新章节 阅读章节 书源数量
-            //这里用视图做更方便一些
             val book = AtomicReference<Job>()
             DataManager.getAllReadingBook().collectLatest {
-
+                //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 book.get()?.cancel()
                 launch {
-
-                    it.forEach { book ->
-                        //查询 阅读章节
-                        launch {
-                            DataManager.getReadingRecord(book)
-                                .mapLatest { record ->
-                                    DataManager.getChapterById(record.id).firstOrNull()
-                                }.collectLatest { readChapter ->
-                                    book.readChapter = readChapter
-                                    bookList.postValue(it)
-                                }
+                    it.asFlow().flatMapMerge { book ->
+                        combine(
+                            DataManager.getReadingRecord(book).map { record ->
+                                DataManager.getChapterById(
+                                    record.readingBookChapterId
+                                ).firstOrNull()
+                            },
+                            DataManager.getLastChapterByBookId(book.id),
+                            DataManager.getBookJavaScript(book.title, book.author)
+                        ) { readChapter, lastChapter, js ->
+                            book.readChapter = readChapter
+                            book.lastChapter = lastChapter
+                            book.javaScriptList = js
+                            book
                         }
-                        //最新章节
-                        launch {
-                            DataManager.getLastChapterByBookId(book.id)
-                                .collectLatest { lastChapter ->
-                                    book.lastChapter = lastChapter
-                                    bookList.postValue(it)
-                                }
-                        }
-                        //查询书源
-                        launch {
-                            DataManager.getHasBookJavaScript().collectLatest { list ->
-                                book.javaScriptList = list
-                                bookList.postValue(it)
-                            }
-                        }
+                    }.flowIo().collectLatest { _ ->
+                        bookList.postValue(it)
                     }
                 }.apply(book::lazySet)
-
-                bookList.postValue(it)
-
             }
         }
     }

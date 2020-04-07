@@ -5,7 +5,9 @@ import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import sjj.alog.Log
+import java.util.concurrent.Callable
 
 /**
  * 界面数据从数据库订阅刷新
@@ -19,8 +21,9 @@ object DataManager {
         }
     }
 
-    fun getHasBookJavaScript(): Flow<List<JavaScript>> {
-        return dao.getHasBookJavaScript()
+
+    fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
+        return dao.getBookJavaScript(bookTitle, bookAuthor)
     }
 
     /**
@@ -34,18 +37,15 @@ object DataManager {
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
     suspend fun search(query: String): Flow<List<List<SearchResult>>> {
-        return withIo {
+        return transaction {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
             val allJavaScript = dao.getAllJavaScript().firstOrNull()
             if (allJavaScript.isNullOrEmpty()) {
-                return@withIo emptyFlow<List<List<SearchResult>>>()
+                return@transaction emptyFlow<List<List<SearchResult>>>()
             }
             val group = mutableMapOf<String, MutableList<SearchResult>>()
-            flowOf(allJavaScript).flatMapMerge {
-                //将列表中的数据展开 发送
-                it.asFlow()
-            }.flatMapMerge {
+            allJavaScript.asFlow().flatMapMerge {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
                 flow<List<SearchResult>> {
                     val search = it.search(query)
@@ -68,7 +68,7 @@ object DataManager {
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
-        return withIo {
+        return transaction {
             dao.insertBook(searchResult.toBookList())
             val first = searchResult.first()
             val book = dao.getBookByUrl(first.bookUrl!!)
@@ -80,27 +80,26 @@ object DataManager {
                     readingBookId = book.id
                 })
             }
-            return@withIo book.id.toLong()
+            return@transaction book.id.toLong()
         }
     }
 
     suspend fun reloadBookFromNet(bookId: Int): Boolean {
-
-        return withIo {
-            val book = dao.getBookById(bookId).firstOrNull() ?: return@withIo false
+        return transaction {
+            val book = dao.getBookById(bookId).firstOrNull() ?: return@transaction false
             Log.e(book)
             val javaScript = dao.getJavaScriptBySource(book.source).first()
-            val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
+            val bookDetails = javaScript.getDetails(book.url!!) ?: return@transaction false
             bookDetails.id = bookId
             Log.e(bookDetails)
             dao.updateBook(bookDetails)
-            val chapterList = bookDetails.chapterList ?: return@withIo false
+            val chapterList = bookDetails.chapterList ?: return@transaction false
             chapterList.forEach {
                 it.bookId = bookId
             }
             dao.deleteChapterByBookId(bookId)
             dao.insertChapter(chapterList)
-            return@withIo true
+            return@transaction true
         }
     }
 
@@ -113,16 +112,16 @@ object DataManager {
     }
 
     suspend fun deleteBook(book: Book) {
-        withIo {
+        transaction {
             dao.deleteBook(book.title, book.author)
             dao.deleteChapterByBookId(book.id)
-            dao.deleteReadingRecord(book.title,book.author)
+            dao.deleteReadingRecord(book.title, book.author)
         }
     }
 
     suspend fun getBookById(id: Int): Flow<Book> {
         return withIo {
-            dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList->
+            dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
                 book.chapterList = chapterList
                 book
             }
