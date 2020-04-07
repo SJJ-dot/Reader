@@ -27,6 +27,9 @@ open class BaseFragment : DialogFragment(), Flows, CoroutineScope by MainScope()
             }
         }
 
+    val activity: BaseActivity?
+        get() = super.getActivity() as? BaseActivity
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

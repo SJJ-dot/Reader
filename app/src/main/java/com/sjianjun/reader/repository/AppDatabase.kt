@@ -6,14 +6,10 @@ import androidx.room.RoomDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.utils.withIo
+import com.sjianjun.reader.utils.withSingle
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
-import sjj.alog.Log
 import java.util.concurrent.Callable
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ReadingRecord::class],
@@ -29,13 +25,10 @@ val db = Room.databaseBuilder(
 ).build()
 
 
-suspend inline fun <T> transaction(
-    context: CoroutineContext = EmptyCoroutineContext,
-    noinline block: suspend CoroutineScope.() -> T
-): T {
-    return withIo {
+suspend inline fun <T> transaction(noinline block: suspend CoroutineScope.() -> T): T {
+    return withSingle {
         db.runInTransaction(Callable {
-            runBlocking(context, block)
+            runBlocking(block = block)
         })
     }
 }

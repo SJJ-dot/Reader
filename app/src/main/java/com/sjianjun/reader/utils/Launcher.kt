@@ -19,7 +19,13 @@ public fun launchGlobal(
     return GlobalScope.launch(context, start, block)
 }
 
-suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
+val single = newSingleThreadContext("transaction")
+
+suspend inline fun <T> withSingle(noinline block: suspend CoroutineScope.() -> T): T {
+    return withContext(single + handler, block)
+
+
+}suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
     return withContext(Dispatchers.IO + handler, block)
 }
 

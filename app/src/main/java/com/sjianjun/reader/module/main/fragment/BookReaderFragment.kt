@@ -10,11 +10,11 @@ class BookReaderFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        activity!!.actionBar?.hide()
+        activity?.supportActionBar?.hide()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        activity!!.actionBar?.hide()
+        activity?.supportActionBar?.show()
     }
 }

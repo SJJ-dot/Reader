@@ -37,12 +37,12 @@ object DataManager {
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
     suspend fun search(query: String): Flow<List<List<SearchResult>>> {
-        return transaction {
+        return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
             val allJavaScript = dao.getAllJavaScript().firstOrNull()
             if (allJavaScript.isNullOrEmpty()) {
-                return@transaction emptyFlow<List<List<SearchResult>>>()
+                return@withIo emptyFlow<List<List<SearchResult>>>()
             }
             val group = mutableMapOf<String, MutableList<SearchResult>>()
             allJavaScript.asFlow().flatMapMerge {
@@ -85,21 +85,24 @@ object DataManager {
     }
 
     suspend fun reloadBookFromNet(bookId: Int): Boolean {
-        return transaction {
-            val book = dao.getBookById(bookId).firstOrNull() ?: return@transaction false
+        return withIo {
+            val book = dao.getBookById(bookId).firstOrNull() ?: return@withIo false
             Log.e(book)
             val javaScript = dao.getJavaScriptBySource(book.source).first()
-            val bookDetails = javaScript.getDetails(book.url!!) ?: return@transaction false
+            val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
             bookDetails.id = bookId
-            Log.e(bookDetails)
-            dao.updateBook(bookDetails)
-            val chapterList = bookDetails.chapterList ?: return@transaction false
+
+            val chapterList = bookDetails.chapterList ?: return@withIo false
             chapterList.forEach {
                 it.bookId = bookId
             }
-            dao.deleteChapterByBookId(bookId)
-            dao.insertChapter(chapterList)
-            return@transaction true
+            Log.e(bookDetails)
+            transaction {
+                dao.updateBook(bookDetails)
+                dao.deleteChapterByBookId(bookId)
+                dao.insertChapter(chapterList)
+            }
+            return@withIo true
         }
     }
 
