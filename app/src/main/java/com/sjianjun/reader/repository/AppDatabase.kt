@@ -10,6 +10,7 @@ import com.sjianjun.reader.utils.withSingle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ReadingRecord::class],
@@ -19,10 +20,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
 }
 
-val db = Room.databaseBuilder(
-    App.app,
-    AppDatabase::class.java, "app_database"
-).build()
+private val executor = Executors.newSingleThreadExecutor()
+
+val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
+    .setQueryExecutor(executor)
+    .setTransactionExecutor(executor)
+    .build()
 
 
 suspend inline fun <T> transaction(noinline block: suspend CoroutineScope.() -> T): T {
