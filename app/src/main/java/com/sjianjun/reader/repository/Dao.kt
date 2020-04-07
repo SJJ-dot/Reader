@@ -70,6 +70,9 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
 
+    @Update
+    suspend fun updateChapter(chapter: Chapter)
+
     @Query("delete from Chapter where bookId=:bookId")
     suspend fun deleteChapterByBookId(bookId: Int)
 

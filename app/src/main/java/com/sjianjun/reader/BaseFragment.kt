@@ -58,6 +58,6 @@ open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
     fun viewLaunch(context: CoroutineContext = EmptyCoroutineContext,
                    start: CoroutineStart = CoroutineStart.DEFAULT,
                    block: suspend CoroutineScope.() -> Unit): Job {
-        return lifecycle.coroutineScope.launch(context, start, block)
+        return viewLifecycleOwner.lifecycle.coroutineScope.launch(context, start, block)
     }
 }
