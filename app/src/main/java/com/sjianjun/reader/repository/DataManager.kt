@@ -65,25 +65,27 @@ object DataManager {
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
         return withIo {
-            dao.insertBook(searchResult.toBookList())
-            val first = searchResult.first()
-            val book = dao.getBookByUrl(first.bookUrl!!)
-            val readingRecord = dao.getReadingRecord(book.title, book.author).firstOrNull()
-            if (readingRecord == null) {
-                dao.insertReadingRecord(ReadingRecord().apply {
-                    bookTitle = book.title
-                    bookAuthor = book.author
-                    readingBookId = book.id
-                })
+            transaction {
+                dao.insertBook(searchResult.toBookList())
+                val first = searchResult.first()
+                val book = dao.getBookByUrl(first.bookUrl!!)!!
+                val readingRecord = dao.getReadingRecord(book.title, book.author).first()
+                if (readingRecord == null) {
+                    dao.insertReadingRecord(ReadingRecord().apply {
+                        bookTitle = book.title
+                        bookAuthor = book.author
+                        readingBookId = book.id
+                    })
+                }
+                return@transaction book.id.toLong()
             }
-            return@withIo book.id.toLong()
         }
     }
 
     suspend fun reloadBookFromNet(bookId: Int): Boolean {
         return withIo {
-            val book = dao.getBookById(bookId).firstOrNull() ?: return@withIo false
-            val javaScript = dao.getJavaScriptBySource(book.source).first()
+            val book = dao.getBookById(bookId).first() ?: return@withIo false
+            val javaScript = dao.getJavaScriptBySource(book.source).first()?:return@withIo false
             val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
             bookDetails.id = bookId
 
@@ -91,9 +93,11 @@ object DataManager {
             chapterList.forEach {
                 it.bookId = bookId
             }
-            dao.updateBook(bookDetails)
-            dao.deleteChapterByBookId(bookId)
-            dao.insertChapter(chapterList)
+            transaction {
+                dao.updateBook(bookDetails)
+                dao.deleteChapterByBookId(bookId)
+                dao.insertChapter(chapterList)
+            }
             return@withIo true
         }
     }
@@ -103,14 +107,18 @@ object DataManager {
     }
 
     suspend fun deleteBook(book: Book) {
-        dao.deleteBook(book.title, book.author)
-        dao.deleteChapterByBook(book.title, book.author)
-        dao.deleteReadingRecord(book.title, book.author)
+        withIo {
+            transaction {
+                dao.deleteBook(book.title, book.author)
+                dao.deleteChapterByBook(book.title, book.author)
+                dao.deleteReadingRecord(book.title, book.author)
+            }
+        }
     }
 
-    fun getBookById(id: Int): Flow<Book> {
+    fun getBookById(id: Int): Flow<Book?> {
         return dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
-            book.chapterList = chapterList
+            book?.chapterList = chapterList
             book
         }
     }
@@ -127,15 +135,15 @@ object DataManager {
         return dao.getChapterListByBookId(bookId)
     }
 
-    fun getLastChapterByBookId(bookId: Int): Flow<Chapter> {
+    fun getLastChapterByBookId(bookId: Int): Flow<Chapter?> {
         return dao.getLastChapterByBookId(bookId)
     }
 
-    fun getChapterById(chapterId: Int): Flow<Chapter> {
+    fun getChapterById(chapterId: Int): Flow<Chapter?> {
         return dao.getChapterById(chapterId)
     }
 
-    fun getReadingRecord(book: Book): Flow<ReadingRecord> {
+    fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
         return dao.getReadingRecord(book.title, book.author)
     }
 

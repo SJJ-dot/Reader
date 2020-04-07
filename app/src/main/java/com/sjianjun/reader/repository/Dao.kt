@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface Dao {
     @Query("SELECT * FROM JavaScript WHERE source = :source")
-    fun getJavaScriptBySource(source: String): Flow<JavaScript>
+    fun getJavaScriptBySource(source: String): Flow<JavaScript?>
 
     @Query("SELECT * FROM JavaScript")
     fun getAllJavaScript(): Flow<List<JavaScript>>
@@ -47,16 +47,16 @@ interface Dao {
     fun getAllReadingBook(): Flow<List<Book>>
 
     @Query("select * from Book where id=:id")
-    fun getBookById(id: Int): Flow<Book>
+    fun getBookById(id: Int): Flow<Book?>
 
     @Query("select * from Book where title=:title and author=:author")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
     @Query("select * from Book where url=:url")
-    suspend fun getBookByUrl(url: String): Book
+    suspend fun getBookByUrl(url: String): Book?
 
     @Query("select * from Chapter where bookId=:bookId order by id DESC limit 1")
-    fun getLastChapterByBookId(bookId: Int): Flow<Chapter>
+    fun getLastChapterByBookId(bookId: Int): Flow<Chapter?>
 
     /**
      * 查询列表不查章节内容
@@ -65,7 +65,7 @@ interface Dao {
     fun getChapterListByBookId(bookId: Int): Flow<List<Chapter>>
 
     @Query("select * from Chapter where id=:id")
-    fun getChapterById(id: Int): Flow<Chapter>
+    fun getChapterById(id: Int): Flow<Chapter?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
@@ -77,7 +77,7 @@ interface Dao {
     suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
-    fun getReadingRecord(bookTitle: String, bookAuthor: String): Flow<ReadingRecord>
+    fun getReadingRecord(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
 
     @Query("select * from ReadingRecord")
     fun getAllReadingRecordList(): Flow<List<ReadingRecord>>
