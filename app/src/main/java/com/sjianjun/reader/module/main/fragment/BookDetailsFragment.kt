@@ -11,10 +11,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.BOOK_ID
-import com.sjianjun.reader.utils.create
-import com.sjianjun.reader.utils.glide
-import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -77,7 +74,13 @@ class BookDetailsFragment : BaseFragment() {
                     bookCover?.glide(this@BookDetailsFragment, it.cover)
                     bookName?.text = it.title
                     author?.text = it.author
-                    latestChapter?.text = it.chapterList?.lastOrNull()?.title
+
+                    val last = it.chapterList?.lastOrNull()
+                    latestChapter?.text = last?.title
+                    latestChapter.setOnClickListener {
+                        startActivity<BookReaderActivity>(BOOK_ID to  bookId , CHAPTER_ID to last?.id)
+                    }
+
                     intro?.text = it.intro
                     viewLaunch {
                         val bookList =

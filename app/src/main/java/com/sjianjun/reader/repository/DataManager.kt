@@ -85,7 +85,7 @@ object DataManager {
     suspend fun reloadBookFromNet(bookId: Int): Boolean {
         return withIo {
             val book = dao.getBookById(bookId).first() ?: return@withIo false
-            val javaScript = dao.getJavaScriptBySource(book.source).first()?:return@withIo false
+            val javaScript = dao.getJavaScriptBySource(book.source).first() ?: return@withIo false
             val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
             bookDetails.id = bookId
 
@@ -145,6 +145,28 @@ object DataManager {
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
         return dao.getReadingRecord(book.title, book.author)
+    }
+
+    suspend fun getChapterContent(chapter: Chapter) {
+        return withIo {
+            if (chapter.isLoaded) {
+                val chapterDetails = dao.getChapterById(chapter.id).first()
+                chapter.content = chapterDetails?.content
+                if (chapter.content?.isNotEmpty() == true) {
+                    return@withIo
+                }
+            }
+            val book = dao.getBookById(chapter.bookId).first()
+            val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
+            chapter.content = js?.getChapterContent(chapter.url ?: return@withIo)
+            if (chapter.content?.isNotEmpty() == true) {
+                chapter.isLoaded = true
+                dao.updateChapter(chapter)
+            } else {
+                chapter.content = "章节内容加载失败"
+            }
+
+        }
     }
 
     suspend fun setReadingRecord(record: ReadingRecord): Long {
