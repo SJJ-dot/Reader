@@ -37,14 +37,10 @@ interface Dao {
 
     @Transaction
     suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): Int {
-        Log.e("insertBook")
         insertBook(bookList)
-        Log.e("getBookByUrl")
         val book = getBookByUrl(bookList.first().url!!)!!
-        Log.e("getReadingRecord")
         val readingRecord = getReadingRecord(book.title, book.author)
         if (readingRecord == null) {
-            Log.e("insertReadingRecord")
             insertReadingRecord(ReadingRecord().apply {
                 bookTitle = book.title
                 bookAuthor = book.author
