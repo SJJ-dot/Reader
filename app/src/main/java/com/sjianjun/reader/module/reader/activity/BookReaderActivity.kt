@@ -72,13 +72,13 @@ class BookReaderActivity : BaseActivity() {
             }
             holder.itemView.chapter_title.text = chapter.title
             if (chapter.content?.isNotEmpty() == true) {
-                holder.itemView.chapter_content.text = Html.fromHtml(chapter.content)
+                holder.itemView.chapter_content.text = Html.fromHtml(chapter.content,Html.FROM_HTML_MODE_COMPACT)
             } else {
                 holder.itemView.chapter_content.text = "拼命加载中……"
                 activity.viewLaunch {
                     DataManager.getChapterContent(chapter)
                     if (holder.adapterPosition == position && chapter.content?.isNotEmpty() == true) {
-                        holder.itemView.chapter_content.text = Html.fromHtml(chapter.content)
+                        holder.itemView.chapter_content.text = Html.fromHtml(chapter.content,Html.FROM_HTML_MODE_COMPACT)
                         holder.itemView.layoutParams.height = ActionBar.LayoutParams.WRAP_CONTENT
                         holder.itemView.requestLayout()
 //                        notifyItemChanged(position)
