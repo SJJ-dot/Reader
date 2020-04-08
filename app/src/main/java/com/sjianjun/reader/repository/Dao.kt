@@ -4,6 +4,7 @@ import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 @Dao
 interface Dao {
@@ -34,11 +35,43 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBook(bookList: List<Book>): List<Long>
 
+    @Transaction
+    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): Int {
+        insertBook(bookList)
+        val book = getBookByUrl(bookList.first().url!!)!!
+        val readingRecord = getReadingRecord(book.title, book.author).first()
+        if (readingRecord == null) {
+            insertReadingRecord(ReadingRecord().apply {
+                bookTitle = book.title
+                bookAuthor = book.author
+                readingBookId = book.id
+            })
+            return book.id
+        }
+        return readingRecord.readingBookId
+    }
+
+
     @Query("delete from Book where title=:title and author=:author ")
     suspend fun deleteBook(title: String, author: String)
 
+    @Transaction
+    suspend fun deleteBook(book: Book) {
+        deleteBook(book.title, book.author)
+        deleteChapterByBook(book.title, book.author)
+        deleteReadingRecord(book.title, book.author)
+    }
+
+
     @Update
     suspend fun updateBook(book: Book)
+
+    @Transaction
+    suspend fun updateBookDetails(book: Book) {
+        updateBook(book)
+        deleteChapterByBookId(book.id)
+        insertChapter(book.chapterList ?: return)
+    }
 
     @Query("select * from Book")
     fun getAllBook(): Flow<List<Book>>
