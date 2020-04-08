@@ -4,6 +4,7 @@ import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 
 /**
  * 界面数据从数据库订阅刷新
@@ -65,7 +66,10 @@ object DataManager {
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
         return withIo {
-            dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
+            Log.e("insert SearchResult")
+            val id = dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
+            Log.e("insert SearchResult2")
+            id
         }
     }
 
@@ -123,7 +127,7 @@ object DataManager {
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
-        return dao.getReadingRecord(book.title, book.author)
+        return dao.getReadingRecordFlow(book.title, book.author)
     }
 
     suspend fun getChapterContent(chapter: Chapter) {

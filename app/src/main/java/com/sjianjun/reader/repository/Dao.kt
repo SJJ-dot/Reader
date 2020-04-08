@@ -4,7 +4,7 @@ import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import sjj.alog.Log
 
 @Dao
 interface Dao {
@@ -37,10 +37,14 @@ interface Dao {
 
     @Transaction
     suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): Int {
+        Log.e("insertBook")
         insertBook(bookList)
+        Log.e("getBookByUrl")
         val book = getBookByUrl(bookList.first().url!!)!!
-        val readingRecord = getReadingRecord(book.title, book.author).first()
+        Log.e("getReadingRecord")
+        val readingRecord = getReadingRecord(book.title, book.author)
         if (readingRecord == null) {
+            Log.e("insertReadingRecord")
             insertReadingRecord(ReadingRecord().apply {
                 bookTitle = book.title
                 bookAuthor = book.author
@@ -113,7 +117,10 @@ interface Dao {
     suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
-    fun getReadingRecord(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
+    fun getReadingRecordFlow(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
+
+    @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
+    suspend fun getReadingRecord(bookTitle: String, bookAuthor: String): ReadingRecord?
 
     @Query("select * from ReadingRecord")
     fun getAllReadingRecordList(): Flow<List<ReadingRecord>>
