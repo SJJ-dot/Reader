@@ -65,20 +65,7 @@ object DataManager {
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
         return withIo {
-            transaction {
-                dao.insertBook(searchResult.toBookList())
-                val first = searchResult.first()
-                val book = dao.getBookByUrl(first.bookUrl!!)!!
-                val readingRecord = dao.getReadingRecord(book.title, book.author).first()
-                if (readingRecord == null) {
-                    dao.insertReadingRecord(ReadingRecord().apply {
-                        bookTitle = book.title
-                        bookAuthor = book.author
-                        readingBookId = book.id
-                    })
-                }
-                return@transaction book.id.toLong()
-            }
+            dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
         }
     }
 
@@ -93,11 +80,7 @@ object DataManager {
             chapterList.forEach {
                 it.bookId = bookId
             }
-            transaction {
-                dao.updateBook(bookDetails)
-                dao.deleteChapterByBookId(bookId)
-                dao.insertChapter(chapterList)
-            }
+            dao.updateBookDetails(bookDetails)
             return@withIo true
         }
     }
@@ -108,11 +91,7 @@ object DataManager {
 
     suspend fun deleteBook(book: Book) {
         withIo {
-            transaction {
-                dao.deleteBook(book.title, book.author)
-                dao.deleteChapterByBook(book.title, book.author)
-                dao.deleteReadingRecord(book.title, book.author)
-            }
+            dao.deleteBook(book)
         }
     }
 
