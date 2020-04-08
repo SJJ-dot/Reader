@@ -70,7 +70,6 @@ class BookDetailsFragment : BaseFragment() {
                 .commitAllowingStateLoss()
             DataManager.getBookById(bookId).collectLatest {
                 if (it != null) {
-                    Log.e(it)
                     bookCover?.glide(this@BookDetailsFragment, it.cover)
                     bookName?.text = it.title
                     author?.text = it.author

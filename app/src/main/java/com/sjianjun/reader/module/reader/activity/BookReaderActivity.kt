@@ -17,6 +17,8 @@ import com.sjianjun.reader.utils.CHAPTER_ID
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.onEach
 import sjj.alog.Log
 
 class BookReaderActivity : BaseActivity() {
@@ -26,17 +28,19 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-        appBarLayout.addOnOffsetChangedListener(AppBarLayout.OnOffsetChangedListener { appBarLayout, offset ->
-            Log.e(offset)
-        })
+//        appBarLayout.addOnOffsetChangedListener(AppBarLayout.OnOffsetChangedListener { appBarLayout, offset ->
+//        })
         //先不显示
         drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
         recycle_view.adapter = adapter
         viewLaunch {
-            DataManager.getChapterList(bookId).collectLatest {
+            DataManager.getChapterList(bookId).onEach {
+                val chapter = it.find { chapterId == it.id } ?: it.firstOrNull()
+                DataManager.getChapterContent(chapter?:return@onEach)
+            }.collectLatest {
                 adapter.chapterList = it
                 adapter.notifyDataSetChanged()
-                val  chapterId = chapterId
+                val chapterId = chapterId
                 if (chapterId != null) {
                     val index = it.indexOfFirst { it.id == chapterId }
                     if (index != -1) {
@@ -50,6 +54,9 @@ class BookReaderActivity : BaseActivity() {
 
     class ChapterListAdapter(val activity: BookReaderActivity) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        init {
+            setHasStableIds(true)
+        }
         var chapterList = emptyList<Chapter>()
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             return object : RecyclerView.ViewHolder(
@@ -64,23 +71,26 @@ class BookReaderActivity : BaseActivity() {
         override fun getItemCount(): Int = chapterList.size
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            Log.e("onBindViewHolder pos:$position")
             val chapter = chapterList[position]
             holder.itemView.chapter_title.text = chapter.title
             if (chapter.content?.isNotEmpty() == true) {
-                holder.itemView.chapter_content.text = chapter.content
+                holder.itemView.chapter_content.setHtml(chapter.content!!)
             } else {
-                holder.itemView.chapter_content.text = "拼命加载中……"
+                holder.itemView.chapter_content.setHtml("拼命加载中……")
                 activity.viewLaunch {
                     DataManager.getChapterContent(chapter)
-                    if (holder.adapterPosition == position && chapter.content?.isNotEmpty() == true) {
-                        holder.itemView.chapter_content.text = Html.fromHtml(chapter.content,Html.FROM_HTML_MODE_COMPACT)
-                        holder.itemView.layoutParams.height = ActionBar.LayoutParams.WRAP_CONTENT
-                        holder.itemView.requestLayout()
-//                        notifyItemChanged(position)
+                    if (holder.adapterPosition == position && chapter.isLoaded) {
+                        notifyItemChanged(position)
+                        Log.e("pos:$position")
                     }
                 }
 
             }
+        }
+
+        override fun getItemId(position: Int): Long {
+            return chapterList[position].id.toLong()
         }
     }
 }

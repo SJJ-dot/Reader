@@ -65,7 +65,7 @@ object JavaScriptTest {
             
             function getChapterContent(http,url){
                 var parse = Jsoup.parse(http.get(url),baseUrl);
-                var content = parse.getElementById("content").text();
+                var content = parse.getElementById("content").html();
                 return content;
             }
             
