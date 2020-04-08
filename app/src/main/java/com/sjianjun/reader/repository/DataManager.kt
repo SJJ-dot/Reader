@@ -66,10 +66,7 @@ object DataManager {
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
         return withIo {
-            Log.e("insert SearchResult")
-            val id = dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
-            Log.e("insert SearchResult2")
-            id
+            dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
         }
     }
 

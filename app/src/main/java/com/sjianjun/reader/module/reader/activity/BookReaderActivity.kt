@@ -65,14 +65,9 @@ class BookReaderActivity : BaseActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
-            if (chapter.isLoaded) {
-                holder.itemView.layoutParams.height = ActionBar.LayoutParams.WRAP_CONTENT
-            } else {
-                holder.itemView.layoutParams.height = ActionBar.LayoutParams.MATCH_PARENT
-            }
             holder.itemView.chapter_title.text = chapter.title
             if (chapter.content?.isNotEmpty() == true) {
-                holder.itemView.chapter_content.text = Html.fromHtml(chapter.content,Html.FROM_HTML_MODE_COMPACT)
+                holder.itemView.chapter_content.text = chapter.content
             } else {
                 holder.itemView.chapter_content.text = "拼命加载中……"
                 activity.viewLaunch {

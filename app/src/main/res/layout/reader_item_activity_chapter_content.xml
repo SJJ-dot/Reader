@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:text="章节标题" />
 
-    <TextView
+    <com.sjianjun.reader.view.ChapterContentHtmlTextView
         android:id="@+id/chapter_content"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
