@@ -87,7 +87,7 @@ class BookshelfFragment : BaseFragment() {
                                 DataManager.getChapterByUrl(id).first()
                             },
                             DataManager.getLastChapterByBookUrl(book.url),
-                            DataManager.getBookJavaScript(book.title, book.author)
+                            DataManager.getJavaScript(book.title, book.author)
                         ) { readChapter, lastChapter, js ->
                             book.readChapter = readChapter
                             book.lastChapter = lastChapter

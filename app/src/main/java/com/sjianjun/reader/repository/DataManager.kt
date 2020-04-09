@@ -53,11 +53,46 @@ object DataManager {
 
 
     suspend fun reloadBookJavaScript() {
-        // nothing to do
+        val versionInfo = http.get(globalConfig.javaScriptBaseUrl + "version.json")
+        val info = gson.fromJson<JsVersionInfo>(versionInfo)
+        if (info.version >= globalConfig.javaScriptVersion) {
+            withIo {
+                info.files.map {
+                    async {
+                        val js = http.get(globalConfig.javaScriptBaseUrl + it)
+                        JavaScript(it, js)
+                    }
+                }.awaitAll().also {
+                    dao.insertJavaScript(it)
+                    globalConfig.javaScriptVersion = info.version
+                }
+            }
+        }
     }
 
-    fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
+    fun getAllJavaScript(): Flow<List<JavaScript>> {
+        return dao.getAllJavaScript()
+    }
+
+    fun getJavaScript(source: String): Flow<JavaScript?> {
+        return dao.getJavaScriptBySource(source)
+    }
+
+    fun getJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
         return dao.getBookJavaScript(bookTitle, bookAuthor)
+    }
+
+    suspend fun deleteJavaScript(script: JavaScript) {
+        dao.deleteJavaScript(script)
+    }
+
+
+    suspend fun insertJavaScript(script: JavaScript) {
+        dao.insertJavaScript(script)
+    }
+
+    suspend fun updateJavaScript(script: JavaScript) {
+        dao.updateJavaScript(script)
     }
 
     /**
@@ -74,7 +109,7 @@ object DataManager {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
-            val allJavaScript = dao.getAllJavaScript().firstOrNull()
+            val allJavaScript = dao.getAllJavaScript().firstOrNull()?.filter { it.enable }
             if (allJavaScript.isNullOrEmpty()) {
                 return@withIo emptyFlow<List<List<SearchResult>>>()
             }
@@ -183,9 +218,9 @@ object DataManager {
             val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
             val content = js?.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
-                chapter.content = ChapterContent(chapter.url, chapter.bookUrl,"章节内容加载失败")
+                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")
             } else {
-                chapter.content = ChapterContent(chapter.url,chapter.bookUrl, content)
+                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, content)
                 chapter.isLoaded = true
                 dao.insertChapter(chapter, chapter.content!!)
             }
