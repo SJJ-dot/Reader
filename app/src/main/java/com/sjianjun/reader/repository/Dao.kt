@@ -4,7 +4,6 @@ import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
 import kotlinx.coroutines.flow.Flow
-import sjj.alog.Log
 
 @Dao
 interface Dao {
@@ -36,19 +35,19 @@ interface Dao {
     suspend fun insertBook(bookList: List<Book>): List<Long>
 
     @Transaction
-    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): Int {
+    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
         insertBook(bookList)
-        val book = getBookByUrl(bookList.first().url!!)!!
+        val book = bookList.first()
         val readingRecord = getReadingRecord(book.title, book.author)
         if (readingRecord == null) {
             insertReadingRecord(ReadingRecord().apply {
                 bookTitle = book.title
                 bookAuthor = book.author
-                readingBookId = book.id
+                bookUrl = book.url
             })
-            return book.id
+            return book.url
         }
-        return readingRecord.readingBookId
+        return readingRecord.bookUrl
     }
 
 
@@ -69,36 +68,33 @@ interface Dao {
     @Transaction
     suspend fun updateBookDetails(book: Book) {
         updateBook(book)
-        deleteChapterByBookId(book.id)
+        deleteChapterByBookUrl(book.url)
         insertChapter(book.chapterList ?: return)
     }
 
     @Query("select * from Book")
     fun getAllBook(): Flow<List<Book>>
 
-    @Query("select * from Book where id in (select readingBookId from ReadingRecord)")
+    @Query("select * from Book where url in (select bookUrl from ReadingRecord)")
     fun getAllReadingBook(): Flow<List<Book>>
 
-    @Query("select * from Book where id=:id")
-    fun getBookById(id: Int): Flow<Book?>
+    @Query("select * from Book where url=:url")
+    fun getBookByUrl(url: String): Flow<Book?>
 
     @Query("select * from Book where title=:title and author=:author")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
-    @Query("select * from Book where url=:url")
-    suspend fun getBookByUrl(url: String): Book?
-
-    @Query("select * from Chapter where bookId=:bookId order by id DESC limit 1")
-    fun getLastChapterByBookId(bookId: Int): Flow<Chapter?>
+    @Query("select * from Chapter where bookUrl=:bookUrl order by `index` DESC limit 1")
+    fun getLastChapterByBookUrl(bookUrl: String): Flow<Chapter?>
 
     /**
      * 查询列表不查章节内容
      */
-    @Query("select id,bookId,title,url,isLoaded from Chapter where bookId=:bookId")
-    fun getChapterListByBookId(bookId: Int): Flow<List<Chapter>>
+    @Query("select bookUrl,title,url,isLoaded,`index` from Chapter where bookUrl=:bookUrl")
+    fun getChapterListByBookUrl(bookUrl: String): Flow<List<Chapter>>
 
-    @Query("select * from Chapter where id=:id")
-    fun getChapterById(id: Int): Flow<Chapter?>
+    @Query("select * from Chapter where url=:url")
+    fun getChapterByUrl(url: String): Flow<Chapter?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
@@ -106,10 +102,10 @@ interface Dao {
     @Update
     suspend fun updateChapter(chapter: Chapter)
 
-    @Query("delete from Chapter where bookId=:bookId")
-    suspend fun deleteChapterByBookId(bookId: Int)
+    @Query("delete from Chapter where bookUrl=:bookUrl")
+    suspend fun deleteChapterByBookUrl(bookUrl: String)
 
-    @Query("delete from Chapter where bookId in (select id from book where title=:bookTitle and author=:bookAuthor)")
+    @Query("delete from Chapter where bookUrl in (select url from book where title=:bookTitle and author=:bookAuthor)")
     suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")

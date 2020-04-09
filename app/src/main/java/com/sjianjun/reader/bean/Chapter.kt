@@ -4,20 +4,18 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(indices = arrayOf(Index(value = ["bookId"])))
+@Entity(indices = [Index(value = ["bookUrl"])])
 class Chapter {
-    @PrimaryKey(autoGenerate = true)
     @JvmField
-    var id: Int = 0
+    @PrimaryKey
+    var url: String = ""
     /**
      * 对应数据库id
      */
     @JvmField
-    var bookId = 0
+    var bookUrl = ""
     @JvmField
     var title: String? = null
-    @JvmField
-    var url: String? = null
 
     @JvmField
     var isLoaded:Boolean = false
@@ -28,8 +26,13 @@ class Chapter {
     @JvmField
     var content: String? = null
 
+    /**
+     * 章节索引
+     */
+    @JvmField
+    var index = 0
     override fun toString(): String {
-        return "Chapter(id=$id, bookId=$bookId, title='$title', url='$url', content='$content')"
+        return "Chapter(bookUrl=$bookUrl, title='$title', url='$url', content='$content')"
     }
 
 

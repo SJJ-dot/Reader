@@ -64,22 +64,23 @@ object DataManager {
         }
     }
 
-    suspend fun saveSearchResult(searchResult: List<SearchResult>): Long {
+    suspend fun saveSearchResult(searchResult: List<SearchResult>): String {
         return withIo {
-            dao.insertBookAndSaveReadingRecord(searchResult.toBookList()).toLong()
+            dao.insertBookAndSaveReadingRecord(searchResult.toBookList())
         }
     }
 
-    suspend fun reloadBookFromNet(bookId: Int): Boolean {
+    suspend fun reloadBookFromNet(bookUrl: String): Boolean {
         return withIo {
-            val book = dao.getBookById(bookId).first() ?: return@withIo false
+            val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
             val javaScript = dao.getJavaScriptBySource(book.source).first() ?: return@withIo false
-            val bookDetails = javaScript.getDetails(book.url!!) ?: return@withIo false
-            bookDetails.id = bookId
+            val bookDetails = javaScript.getDetails(book.url) ?: return@withIo false
+            bookDetails.url = bookUrl
 
             val chapterList = bookDetails.chapterList ?: return@withIo false
-            chapterList.forEach {
-                it.bookId = bookId
+            chapterList.forEachIndexed { index, chapter ->
+                chapter.bookUrl = bookUrl
+                chapter.index = index
             }
             dao.updateBookDetails(bookDetails)
             return@withIo true
@@ -96,12 +97,12 @@ object DataManager {
         }
     }
 
-    fun getBookById(id: Int): Flow<Book?> {
-        return dao.getBookById(id)
+    fun getBookByUrl(url: String): Flow<Book?> {
+        return dao.getBookByUrl(url)
     }
 
-    fun getBookAndChapterListById(id: Int): Flow<Book?> {
-        return dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
+    fun getBookAndChapterList(bookUrl: String): Flow<Book?> {
+        return dao.getBookByUrl(bookUrl).combine(dao.getChapterListByBookUrl(bookUrl)) { book, chapterList ->
             book?.chapterList = chapterList
             book
         }
@@ -115,16 +116,16 @@ object DataManager {
     }
 
 
-    fun getChapterList(bookId: Int): Flow<List<Chapter>> {
-        return dao.getChapterListByBookId(bookId)
+    fun getChapterList(bookUrl: String): Flow<List<Chapter>> {
+        return dao.getChapterListByBookUrl(bookUrl)
     }
 
-    fun getLastChapterByBookId(bookId: Int): Flow<Chapter?> {
-        return dao.getLastChapterByBookId(bookId)
+    fun getLastChapterByBookUrl(bookUrl: String): Flow<Chapter?> {
+        return dao.getLastChapterByBookUrl(bookUrl)
     }
 
-    fun getChapterById(chapterId: Int): Flow<Chapter?> {
-        return dao.getChapterById(chapterId)
+    fun getChapterByUrl(url: String): Flow<Chapter?> {
+        return dao.getChapterByUrl(url)
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
@@ -134,13 +135,13 @@ object DataManager {
     suspend fun getChapterContent(chapter: Chapter): Chapter {
         withIo {
             if (chapter.isLoaded) {
-                val chapterDetails = dao.getChapterById(chapter.id).first()
+                val chapterDetails = dao.getChapterByUrl(chapter.url).first()
                 chapter.content = chapterDetails?.content
                 if (chapter.content?.isNotEmpty() == true) {
                     return@withIo
                 }
             }
-            val book = dao.getBookById(chapter.bookId).first()
+            val book = dao.getBookByUrl(chapter.bookUrl).first()
             val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
             chapter.content = js?.getChapterContent(chapter.url ?: return@withIo)
             if (chapter.content?.isNotEmpty() == true) {

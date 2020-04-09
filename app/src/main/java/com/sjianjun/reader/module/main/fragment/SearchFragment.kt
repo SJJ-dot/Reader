@@ -166,7 +166,7 @@ class SearchFragment : BaseFragment() {
                     val id = DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_ID, id)
+                        bundle(BOOK_URL, id)
                     )
                 }
             }

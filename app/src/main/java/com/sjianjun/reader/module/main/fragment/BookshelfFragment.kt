@@ -43,7 +43,7 @@ class BookshelfFragment : BaseFragment() {
         swipe_refresh.setOnRefreshListener {
             viewLaunch {
                 bookList.value?.forEach {
-                    DataManager.reloadBookFromNet(it.id)
+                    DataManager.reloadBookFromNet(it.url)
                 }
                 swipe_refresh?.isRefreshing = false
             }
@@ -83,10 +83,10 @@ class BookshelfFragment : BaseFragment() {
                     it.asFlow().flatMapMerge { book ->
                         combine(
                             DataManager.getReadingRecord(book).map { record ->
-                                val id = record?.readingBookChapterId?:return@map null
-                                DataManager.getChapterById(id).first()
+                                val id = record?.chapterUrl ?: return@map null
+                                DataManager.getChapterByUrl(id).first()
                             },
-                            DataManager.getLastChapterByBookId(book.id),
+                            DataManager.getLastChapterByBookUrl(book.url),
                             DataManager.getBookJavaScript(book.title, book.author)
                         ) { readChapter, lastChapter, js ->
                             book.readChapter = readChapter
@@ -129,7 +129,7 @@ class BookshelfFragment : BaseFragment() {
         override fun getItemCount(): Int = data.size
 
         override fun getItemId(position: Int): Long {
-            return data[position].id.toLong()
+            return data[position].url.id
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -143,13 +143,13 @@ class BookshelfFragment : BaseFragment() {
 
             val l = View.OnClickListener {
                 fragment.findNavController()
-                    .navigate(R.id.bookDetailsFragment, bundle(BOOK_ID, book.id))
+                    .navigate(R.id.bookDetailsFragment, bundle(BOOK_URL, book.url))
             }
             holder.itemView.intro.setOnClickListener(l)
             holder.itemView.bookCover.setOnClickListener(l)
 
             holder.itemView.setOnClickListener {
-                fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
+                fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
             }
         }
     }
