@@ -5,11 +5,13 @@ import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.Book
 
-val globalConfig by lazy { AppConfig() }
+val globalConfig by lazy { AppConfig("default") }
 val globalBookConfig by lazy { BookConfig() }
 
-class AppConfig {
-
+class AppConfig(val name: String) {
+    var javaScriptVersion by DelegateSharedPreferences(
+        0,
+        sp = { App.app.getSharedPreferences("AppConfig_$name", Context.MODE_PRIVATE) })
 }
 
 class BookConfig {

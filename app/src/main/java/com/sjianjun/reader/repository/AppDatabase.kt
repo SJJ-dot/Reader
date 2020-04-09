@@ -21,14 +21,18 @@ abstract class AppDatabase : RoomDatabase() {
 }
 
 private val threadId = AtomicInteger(0)
-private val transaction = Executors.newFixedThreadPool(1) { r ->
-    Thread(r, String.format("room_io_%d", threadId.getAndIncrement()))
+
+val transactionExecutor = Executors.newFixedThreadPool(1) { r ->
+    Thread(r, String.format("transaction_%d", threadId.getAndIncrement()))
 }
 
+val queryExecutor = Executors.newFixedThreadPool(5) { r ->
+    Thread(r, String.format("query_%d", threadId.getAndIncrement()))
+}
 val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
     .fallbackToDestructiveMigration()
-//    .setQueryExecutor(transaction)
-//    .setTransactionExecutor(transaction)
+//    .setQueryExecutor(queryExecutor)
+//    .setTransactionExecutor(transactionExecutor)
     .build()
 
 

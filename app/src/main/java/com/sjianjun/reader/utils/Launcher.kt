@@ -1,5 +1,6 @@
 package com.sjianjun.reader.utils
 
+import com.sjianjun.reader.repository.transactionExecutor
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -12,20 +13,20 @@ val handler = CoroutineExceptionHandler { _, exception ->
 }
 
 public fun launchGlobal(
-    context: CoroutineContext = EmptyCoroutineContext,
+    context: CoroutineContext = EmptyCoroutineContext + handler,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
 ): Job {
     return GlobalScope.launch(context, start, block)
 }
 
-val single = newSingleThreadContext("transaction")
+val transactionCoroutineDispatcher = transactionExecutor.asCoroutineDispatcher()
 
 suspend inline fun <T> withSingle(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(single + handler, block)
+    return withContext(transactionCoroutineDispatcher + handler, block)
+}
 
-
-}suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
+suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
     return withContext(Dispatchers.IO + handler, block)
 }
 

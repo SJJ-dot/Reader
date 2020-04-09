@@ -52,18 +52,15 @@ class AutofitTextView @JvmOverloads constructor(
             setTextSize(TypedValue.COMPLEX_UNIT_PX, mid)
             var widthSum = getTextWidth(text, widths)
             if (widthSum < availableWidth) {
-                requestLayout()
                 invalidate()
                 return
             }
             while (true) {
                 if (maxSize - minSize < 0.01) {
-                    requestLayout()
                     invalidate()
                 }
                 if (widthSum <= availableWidth) {
                     if (Math.abs(maxSize - minSize) < 0.5f) {
-                        requestLayout()
                         invalidate()
                         return
                     }

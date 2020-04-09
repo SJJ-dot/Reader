@@ -1,9 +1,18 @@
+@file:Suppress("BlockingMethodInNonBlockingContext")
+
 package com.sjianjun.reader.repository
 
+import android.content.res.AssetManager.ACCESS_BUFFER
+import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
-import com.sjianjun.reader.test.JavaScriptTest
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
+import sjj.novel.util.fromJson
+import sjj.novel.util.gson
+import java.io.InputStream
 
 /**
  * 界面数据从数据库订阅刷新
@@ -13,7 +22,31 @@ object DataManager {
 
     init {
         launchGlobal {
-            dao.insertJavaScript(listOf(JavaScriptTest.javaScript))
+            var version: InputStream? = null
+            val versionInfo = try {
+                version = App.app.assets.open("js/version.json", ACCESS_BUFFER)
+                version.bufferedReader().readText()
+            } finally {
+                version?.close()
+            }
+            val info = gson.fromJson<JsVersionInfo>(versionInfo)
+            if (info.version > globalConfig.javaScriptVersion) {
+                info.files.map {
+                    async {
+                        var jsInput: InputStream? = null
+                        try {
+                            jsInput = App.app.assets.open("js/$it", ACCESS_BUFFER)
+                            val js = jsInput.bufferedReader().readText()
+                            JavaScript(it, js)
+                        } finally {
+                            jsInput?.close()
+                        }
+                    }
+                }.awaitAll().also {
+                    dao.insertJavaScript(it)
+                    globalConfig.javaScriptVersion = info.version
+                }
+            }
         }
     }
 
