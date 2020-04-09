@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.os.Bundle
+import android.text.Html
+import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.drawerlayout.widget.DrawerLayout
@@ -99,7 +101,7 @@ class BookReaderActivity : BaseActivity() {
         } else {
             chapterList.indexOfFirst { it.id == chapterId }
         }
-        (max(chapterIndex-1, 0) until (chapterIndex + 1)).map {
+        (max(chapterIndex - 1, 0) until (chapterIndex + 1)).map {
             val chapter = chapterList.getOrNull(chapterIndex)
             if (chapter != null) {
                 if (chapter.isLoaded && chapter.content?.isNotEmpty() == true) {
@@ -139,13 +141,27 @@ class BookReaderActivity : BaseActivity() {
             val chapter = chapterList[position]
             holder.itemView.chapter_title.text = chapter.title
             if (chapter.content?.isNotEmpty() == true) {
-                holder.itemView.chapter_content.setHtml(chapter.content!!)
+                holder.itemView.chapter_content.text = chapter.content.html()
+                if (chapter.isLoaded) {
+                    holder.itemView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                } else {
+                    holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                }
             } else {
-                holder.itemView.chapter_content.setHtml("拼命加载中……")
+                holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                holder.itemView.chapter_content.text = chapter.content.html()
                 activity.viewLaunch {
                     activity.getChapterContent(chapterList, chapter.id)
                     if (holder.adapterPosition == position && chapter.isLoaded) {
-                        notifyDataSetChanged()
+                        holder.itemView.chapter_content.text = chapter.content.html()
+                        if (chapter.isLoaded) {
+                            holder.itemView.layoutParams.height =
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                        } else {
+                            holder.itemView.layoutParams.height =
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                        }
+                        holder.itemView.requestLayout()
                         Log.e("pos:$position")
                     }
                 }
@@ -155,6 +171,10 @@ class BookReaderActivity : BaseActivity() {
 
         override fun getItemId(position: Int): Long {
             return chapterList[position].id.toLong()
+        }
+
+        fun String?.html(): Spanned {
+            return Html.fromHtml(this ?: "", Html.FROM_HTML_MODE_COMPACT)
         }
     }
 }
