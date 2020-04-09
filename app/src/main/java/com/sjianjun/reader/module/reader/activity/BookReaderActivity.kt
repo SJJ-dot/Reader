@@ -18,8 +18,8 @@ import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.BOOK_URL
 import com.sjianjun.reader.utils.CHAPTER_URL
-import com.sjianjun.reader.utils.id
 import kotlinx.android.synthetic.main.activity_book_reader.*
+import kotlinx.android.synthetic.main.activity_book_reader.chapter_title
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.max
 
 class BookReaderActivity : BaseActivity() {
     private val bookUrl by lazy { intent.getStringExtra(BOOK_URL)!! }
@@ -44,6 +43,65 @@ class BookReaderActivity : BaseActivity() {
         //先不显示
         drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
         recycle_view.adapter = adapter
+
+        initScrollLoadChapter()
+        initData()
+    }
+
+
+    override fun onPause() {
+        super.onPause()
+        saveReadRecord()
+    }
+
+    private fun saveReadRecord() = viewLaunch {
+        val manager = recycle_view.layoutManager as LinearLayoutManager
+        val pos = manager.findLastVisibleItemPosition()
+        val readingChapter = adapter.chapterList.getOrNull(pos)
+        readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
+        DataManager.setReadingRecord(readingRecord)
+    }
+
+
+    private fun initScrollLoadChapter() {
+        recycle_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            private var preFirstPosition = -1
+            private var preLastPos = -1
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val manager = recyclerView.layoutManager as LinearLayoutManager
+                val firstPos = manager.findFirstVisibleItemPosition()
+                val lastPos = manager.findLastVisibleItemPosition()
+
+                val chapter = adapter.chapterList.getOrNull(firstPos) ?: return
+                chapter_title.text = chapter.title
+
+                if (preFirstPosition != firstPos) {
+                    preFirstPosition = firstPos
+                    viewLaunch {
+                        val isEmpty = chapter.content.isNullOrEmpty()
+                        getChapterContent(adapter.chapterList, chapter.url)
+                        if (isEmpty && manager.findFirstVisibleItemPosition() == firstPos) {
+                            adapter.notifyDataSetChanged()
+                        }
+                    }
+                }
+                if (preLastPos != lastPos) {
+                    preLastPos = lastPos
+                    val lastChapter = adapter.chapterList.getOrNull(lastPos)
+                    viewLaunch {
+                        val isEmpty = lastChapter?.content.isNullOrEmpty()
+                        getChapterContent(adapter.chapterList, lastChapter?.url)
+                        if (isEmpty && manager.findLastVisibleItemPosition() == lastPos) {
+                            adapter.notifyDataSetChanged()
+                        }
+                    }
+                }
+
+            }
+        })
+    }
+
+    private fun initData() {
         viewLaunch {
             val book = DataManager.getBookByUrl(bookUrl).first()
             if (book == null) {
@@ -51,6 +109,9 @@ class BookReaderActivity : BaseActivity() {
                 return@viewLaunch
             }
             this@BookReaderActivity.book = book
+            //书籍标题
+            book_title.text = book.title
+
             readingRecord =
                 DataManager.getReadingRecord(book).first() ?: ReadingRecord(book.title, book.author)
 
@@ -65,33 +126,30 @@ class BookReaderActivity : BaseActivity() {
             DataManager.getChapterList(bookUrl).onEach {
                 getChapterContent(it, readingRecord.chapterUrl)
             }.collectLatest {
-                Log.e("chapter change")
-                adapter.chapterList = it
-                adapter.notifyDataSetChanged()
-                val index = adapter.chapterList.indexOfFirst { chapter ->
-                        chapter.url == readingRecord.chapterUrl
+                if (adapter.chapterList.size != it.size) {
+                    adapter.chapterList = it
+                    adapter.notifyDataSetChanged()
+
+                    if (first) {
+                        first = false
+                        val index = adapter.chapterList.indexOfFirst { chapter ->
+                            chapter.url == readingRecord.chapterUrl
+                        }
+                        if (index != -1) {
+                            recycle_view.scrollToPosition(index)
+                        }
                     }
-                if (index != -1 && first) {
-                    first = false
-                    recycle_view.scrollToPosition(index)
+
                 }
             }
 
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        viewLaunch {
-            val manager = recycle_view.layoutManager as LinearLayoutManager
-            val pos = manager.findLastVisibleItemPosition()
-            val readingChapter = adapter.chapterList.getOrNull(pos)
-            readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
-            DataManager.setReadingRecord(readingRecord)
-        }
-    }
-
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
+    /**
+     * 加载 上一章 当前章 下一章
+     */
     private suspend fun getChapterContent(chapterList: List<Chapter>?, chapterUrl: String?) {
 
         if (chapterList.isNullOrEmpty()) {
@@ -104,7 +162,7 @@ class BookReaderActivity : BaseActivity() {
             chapterList.indexOfFirst { it.url == chapterUrl }
         }
 
-        (max(chapterIndex - 1, 0) until (chapterIndex + 1)).mapNotNull {
+        ((chapterIndex - 1)..(chapterIndex + 1)).mapNotNull {
             val chapter = chapterList.getOrNull(it)
             if (chapter != null) {
                 if (chapter.isLoaded && chapter.content?.isNotEmpty() == true) {
@@ -123,7 +181,7 @@ class BookReaderActivity : BaseActivity() {
                 null
             }
         }.awaitAll().forEach {
-            Log.e("load ${it.index}")
+            Log.e("load index:${it.index} ${it.title}")
             loadRecord.remove(it.url)
         }
     }
@@ -149,7 +207,6 @@ class BookReaderActivity : BaseActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
-            Log.e("onBindViewHolder pos:$position   ${chapter.content?.isNotEmpty() == true}")
             holder.itemView.chapter_title.text = chapter.title
             if (chapter.content?.isNotEmpty() == true) {
                 holder.itemView.chapter_content.text = chapter.content.html()
@@ -158,28 +215,10 @@ class BookReaderActivity : BaseActivity() {
                 } else {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                 }
-                activity.viewLaunch {
-                    activity.getChapterContent(chapterList, chapter.url)
-                }
             } else {
                 holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                holder.itemView.chapter_content.text = chapter.content.html()
-                activity.viewLaunch {
-                    activity.getChapterContent(chapterList, chapter.url)
-                    if (holder.adapterPosition == position) {
-                        holder.itemView.chapter_content.text = chapter.content.html()
-                        if (chapter.isLoaded) {
-                            holder.itemView.layoutParams.height =
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                        } else {
-                            holder.itemView.layoutParams.height =
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                        }
-                        holder.itemView.requestLayout()
-                        Log.e("pos:$position")
-                    }
-                }
-
+                holder.itemView.chapter_content.text =
+                    "拼命加载中…………………………………………………………………………………………………………………………"
             }
         }
 
