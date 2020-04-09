@@ -13,6 +13,9 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_chapter_list.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapMerge
+import sjj.alog.Log
 
 
 /**
@@ -20,17 +23,38 @@ import kotlinx.coroutines.flow.collectLatest
  */
 class ChapterListFragment : BaseFragment() {
     val bookUrl by lazy { arguments!!.getString(BOOK_URL)!! }
-
+    private val adapter = ChapterListAdapter(this)
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val adapter = ChapterListAdapter(this)
+
         chapterList.adapter = adapter
         viewLaunch {
             DataManager.getChapterList(bookUrl).collectLatest {
                 adapter.data = it
                 adapter.notifyDataSetChanged()
+                scrollToReadingChapter()
             }
+        }
+        viewLaunch {
+            DataManager.getBookByUrl(bookUrl).flatMapMerge {
+                if (it == null) {
+                    emptyFlow()
+                } else {
+                    DataManager.getReadingRecord(it)
+                }
+            }.collectLatest {
+                adapter.readingChapterUrl = it?.chapterUrl ?: ""
+                scrollToReadingChapter()
+            }
+        }
+    }
+
+    private fun scrollToReadingChapter() {
+        val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
+        Log.e(index)
+        if (index != -1) {
+            chapterList.scrollToPosition(index)
         }
     }
 
