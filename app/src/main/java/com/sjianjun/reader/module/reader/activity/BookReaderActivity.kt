@@ -99,7 +99,7 @@ class BookReaderActivity : BaseActivity() {
         } else {
             chapterList.indexOfFirst { it.id == chapterId }
         }
-        (max(chapterIndex, 0) until (chapterIndex + 1)).map {
+        (max(chapterIndex-1, 0) until (chapterIndex + 1)).map {
             val chapter = chapterList.getOrNull(chapterIndex)
             if (chapter != null) {
                 if (chapter.isLoaded && chapter.content?.isNotEmpty() == true) {
