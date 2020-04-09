@@ -16,7 +16,6 @@ import kotlinx.android.synthetic.main.main_fragment_book_details.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
-import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicReference
 
 class BookDetailsFragment : BaseFragment() {
@@ -68,7 +67,7 @@ class BookDetailsFragment : BaseFragment() {
             childFragmentManager.beginTransaction()
                 .replace(R.id.chapter_list, create<ChapterListFragment>(BOOK_ID, bookId))
                 .commitAllowingStateLoss()
-            DataManager.getBookById(bookId).collectLatest {
+            DataManager.getBookAndChapterListById(bookId).collectLatest {
                 if (it != null) {
                     bookCover?.glide(this@BookDetailsFragment, it.cover)
                     bookName?.text = it.title

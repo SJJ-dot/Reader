@@ -97,6 +97,10 @@ object DataManager {
     }
 
     fun getBookById(id: Int): Flow<Book?> {
+        return dao.getBookById(id)
+    }
+
+    fun getBookAndChapterListById(id: Int): Flow<Book?> {
         return dao.getBookById(id).combine(dao.getChapterListByBookId(id)) { book, chapterList ->
             book?.chapterList = chapterList
             book
@@ -127,8 +131,8 @@ object DataManager {
         return dao.getReadingRecordFlow(book.title, book.author)
     }
 
-    suspend fun getChapterContent(chapter: Chapter) {
-        return withIo {
+    suspend fun getChapterContent(chapter: Chapter): Chapter {
+        withIo {
             if (chapter.isLoaded) {
                 val chapterDetails = dao.getChapterById(chapter.id).first()
                 chapter.content = chapterDetails?.content
@@ -145,8 +149,8 @@ object DataManager {
             } else {
                 chapter.content = "章节内容加载失败"
             }
-
         }
+        return chapter
     }
 
     suspend fun setReadingRecord(record: ReadingRecord): Long {
