@@ -53,10 +53,11 @@ object DataManager {
 
 
     suspend fun reloadBookJavaScript() {
-        val versionInfo = http.get(globalConfig.javaScriptBaseUrl + "version.json")
-        val info = gson.fromJson<JsVersionInfo>(versionInfo)
-        if (info.version >= globalConfig.javaScriptVersion) {
-            withIo {
+        withIo {
+            val versionInfo = http.get(globalConfig.javaScriptBaseUrl + "version.json")
+            val info = gson.fromJson<JsVersionInfo>(versionInfo)
+            if (info.version >= globalConfig.javaScriptVersion) {
+
                 info.files.map {
                     async {
                         val js = http.get(globalConfig.javaScriptBaseUrl + it)
