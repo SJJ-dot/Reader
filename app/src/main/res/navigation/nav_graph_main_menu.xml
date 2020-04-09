@@ -15,10 +15,10 @@
         android:label="搜索"
         tools:layout="@layout/main_fragment_search" />
     <fragment
-        android:id="@+id/novelSourceFragment"
-        android:name="com.sjianjun.reader.module.main.fragment.BookSourceManagerFragment"
-        android:label="书源管理"
-        tools:layout="@layout/main_fragment_book_source_manager" />
+        android:id="@+id/novelScriptFragment"
+        android:name="com.sjianjun.reader.module.main.fragment.BookScriptManagerFragment"
+        android:label="脚本"
+        tools:layout="@layout/main_fragment_book_script_manager" />
     <fragment
         android:id="@+id/aboutFragment"
         android:name="com.sjianjun.reader.module.main.fragment.AboutFragment"

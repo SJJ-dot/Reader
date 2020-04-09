@@ -5,6 +5,7 @@ package com.sjianjun.reader.repository
 import android.content.res.AssetManager.ACCESS_BUFFER
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
+import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
@@ -50,6 +51,10 @@ object DataManager {
         }
     }
 
+
+    suspend fun reloadBookJavaScript() {
+        // nothing to do
+    }
 
     fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
         return dao.getBookJavaScript(bookTitle, bookAuthor)
