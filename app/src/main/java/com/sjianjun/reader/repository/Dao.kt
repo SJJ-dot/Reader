@@ -78,7 +78,7 @@ interface Dao {
     @Query("select * from Book")
     fun getAllBook(): Flow<List<Book>>
 
-    @Query("select * from Book where url in (select bookUrl from ReadingRecord)")
+    @Query("select * from Book where url in (select bookUrl from ReadingRecord) order by title")
     fun getAllReadingBook(): Flow<List<Book>>
 
     @Query("select * from Book where url=:url")
