@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+    <item
+        android:id="@+id/import_book_script"
+        android:title="导入脚本"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/sync_book_script"
+        android:title="同步脚本"
+        app:showAsAction="collapseActionView" />
+
+</menu>

@@ -1,5 +1,6 @@
 package com.sjianjun.reader
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +11,10 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.coroutineScope
+import com.google.android.material.snackbar.Snackbar
+import com.sjianjun.reader.utils.handler
 import kotlinx.coroutines.*
+import sjj.alog.Log
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -55,9 +59,36 @@ open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
         observe(viewLifecycleOwner, observer)
     }
 
-    fun viewLaunch(context: CoroutineContext = EmptyCoroutineContext,
-                   start: CoroutineStart = CoroutineStart.DEFAULT,
-                   block: suspend CoroutineScope.() -> Unit): Job {
+    fun viewLaunch(
+        context: CoroutineContext = EmptyCoroutineContext + handler,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
         return viewLifecycleOwner.lifecycle.coroutineScope.launch(context, start, block)
+    }
+
+    private var snackbar: Snackbar? = null
+
+    @SuppressLint("WrongConstant")
+    fun showSnackbar(view: View?, msg: String, duration: Int = Snackbar.LENGTH_SHORT) {
+        Log.i(msg)
+        if (snackbar == null) {
+            snackbar = Snackbar.make(view ?: return, msg, duration)
+        } else {
+            snackbar?.setText(msg)
+            snackbar?.duration = duration
+        }
+        snackbar?.show()
+    }
+
+    fun newSnackbar(view: View?, msg: String, duration: Int = Snackbar.LENGTH_SHORT) {
+        Log.i(msg)
+        snackbar = Snackbar.make(view ?: return, msg, duration)
+        snackbar?.show()
+    }
+
+    fun dismissSnackbar() {
+        snackbar?.dismiss()
+        snackbar = null
     }
 }
