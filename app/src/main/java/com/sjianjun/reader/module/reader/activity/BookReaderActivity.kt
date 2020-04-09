@@ -78,7 +78,7 @@ class BookReaderActivity : BaseActivity() {
                 if (preFirstPosition != firstPos) {
                     preFirstPosition = firstPos
                     viewLaunch {
-                        val isEmpty = chapter.content.isNullOrEmpty()
+                        val isEmpty = chapter.content == null
                         getChapterContent(adapter.chapterList, chapter.url)
                         if (isEmpty && manager.findFirstVisibleItemPosition() == firstPos) {
                             adapter.notifyDataSetChanged()
@@ -89,7 +89,7 @@ class BookReaderActivity : BaseActivity() {
                     preLastPos = lastPos
                     val lastChapter = adapter.chapterList.getOrNull(lastPos)
                     viewLaunch {
-                        val isEmpty = lastChapter?.content.isNullOrEmpty()
+                        val isEmpty = lastChapter?.content == null
                         getChapterContent(adapter.chapterList, lastChapter?.url)
                         if (isEmpty && manager.findLastVisibleItemPosition() == lastPos) {
                             adapter.notifyDataSetChanged()
@@ -165,7 +165,7 @@ class BookReaderActivity : BaseActivity() {
         ((chapterIndex - 1)..(chapterIndex + 1)).mapNotNull {
             val chapter = chapterList.getOrNull(it)
             if (chapter != null) {
-                if (chapter.isLoaded && chapter.content?.isNotEmpty() == true) {
+                if (chapter.isLoaded && chapter.content != null) {
                     null
                 } else {
                     val loading = loadRecord[chapter.url]
@@ -208,8 +208,8 @@ class BookReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
             holder.itemView.chapter_title.text = chapter.title
-            if (chapter.content?.isNotEmpty() == true) {
-                holder.itemView.chapter_content.text = chapter.content.html()
+            if (chapter.content != null) {
+                holder.itemView.chapter_content.text = chapter.content?.content.html()
                 if (chapter.isLoaded) {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 } else {

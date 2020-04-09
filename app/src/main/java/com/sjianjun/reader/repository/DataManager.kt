@@ -4,7 +4,6 @@ import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 
 /**
  * 界面数据从数据库订阅刷新
@@ -102,10 +101,11 @@ object DataManager {
     }
 
     fun getBookAndChapterList(bookUrl: String): Flow<Book?> {
-        return dao.getBookByUrl(bookUrl).combine(dao.getChapterListByBookUrl(bookUrl)) { book, chapterList ->
-            book?.chapterList = chapterList
-            book
-        }
+        return dao.getBookByUrl(bookUrl)
+            .combine(dao.getChapterListByBookUrl(bookUrl)) { book, chapterList ->
+                book?.chapterList = chapterList
+                book
+            }
     }
 
     fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
@@ -135,20 +135,21 @@ object DataManager {
     suspend fun getChapterContent(chapter: Chapter): Chapter {
         withIo {
             if (chapter.isLoaded) {
-                val chapterDetails = dao.getChapterByUrl(chapter.url).first()
-                chapter.content = chapterDetails?.content
-                if (chapter.content?.isNotEmpty() == true) {
+                val chapterContent = dao.getChapterContent(chapter.url).first()
+                chapter.content = chapterContent
+                if (chapter.content != null) {
                     return@withIo
                 }
             }
             val book = dao.getBookByUrl(chapter.bookUrl).first()
             val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
-            chapter.content = js?.getChapterContent(chapter.url)
-            if (chapter.content?.isNotEmpty() == true) {
-                chapter.isLoaded = true
-                dao.updateChapter(chapter)
+            val content = js?.getChapterContent(chapter.url)
+            if (content.isNullOrBlank()) {
+                chapter.content = ChapterContent(chapter.url, chapter.bookUrl,"章节内容加载失败")
             } else {
-                chapter.content = "章节内容加载失败"
+                chapter.content = ChapterContent(chapter.url,chapter.bookUrl, content)
+                chapter.isLoaded = true
+                dao.insertChapter(chapter, chapter.content!!)
             }
         }
         return chapter

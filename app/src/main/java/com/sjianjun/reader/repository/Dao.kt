@@ -56,6 +56,7 @@ interface Dao {
 
     @Transaction
     suspend fun deleteBook(book: Book) {
+        deleteChapterContentByBookUrl(book.title, book.author)
         deleteBook(book.title, book.author)
         deleteChapterByBook(book.title, book.author)
         deleteReadingRecord(book.title, book.author)
@@ -68,8 +69,10 @@ interface Dao {
     @Transaction
     suspend fun updateBookDetails(book: Book) {
         updateBook(book)
+        val chapterList = book.chapterList ?: return
         deleteChapterByBookUrl(book.url)
-        insertChapter(book.chapterList ?: return)
+        insertChapter(chapterList)
+        updateBookChapterIsLoaded(book.url)
     }
 
     @Query("select * from Book")
@@ -90,7 +93,7 @@ interface Dao {
     /**
      * 查询列表不查章节内容
      */
-    @Query("select bookUrl,title,url,isLoaded,`index` from Chapter where bookUrl=:bookUrl")
+    @Query("select * from Chapter where bookUrl=:bookUrl  order by `index`")
     fun getChapterListByBookUrl(bookUrl: String): Flow<List<Chapter>>
 
     @Query("select * from Chapter where url=:url")
@@ -99,14 +102,26 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
 
-    @Update
-    suspend fun updateChapter(chapter: Chapter)
-
     @Query("delete from Chapter where bookUrl=:bookUrl")
     suspend fun deleteChapterByBookUrl(bookUrl: String)
 
+    @Query("delete from Chapter where url not in (:urlList)")
+    suspend fun deleteChapterByUrl(urlList: List<String>)
+
     @Query("delete from Chapter where bookUrl in (select url from book where title=:bookTitle and author=:bookAuthor)")
     suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
+
+    @Query("update Chapter set isLoaded=1 where bookUrl=:bookUrl and url in (select url from ChapterContent)")
+    suspend fun updateBookChapterIsLoaded(bookUrl: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
+
+    @Query("select * from ChapterContent where url=:url")
+    fun getChapterContent(url: String): Flow<ChapterContent?>
+
+    @Query("delete from ChapterContent where bookUrl in (select url from Book where title=:bookTitle and author=:bookAuthor)")
+    fun deleteChapterContentByBookUrl(bookTitle: String, bookAuthor: String)
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun getReadingRecordFlow(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
