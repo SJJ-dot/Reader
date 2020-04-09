@@ -1,6 +1,7 @@
 package com.sjianjun.reader.bean
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -24,15 +25,17 @@ class Chapter {
      * 章节内容
      */
     @JvmField
-    var content: String? = null
+    @Ignore
+    var content: ChapterContent? = null
 
     /**
      * 章节索引
      */
     @JvmField
     var index = 0
+
     override fun toString(): String {
-        return "Chapter(bookUrl=$bookUrl, title='$title', url='$url', content='$content')"
+        return "Chapter(url='$url', bookUrl='$bookUrl', title=$title, isLoaded=$isLoaded, index=$index)"
     }
 
 

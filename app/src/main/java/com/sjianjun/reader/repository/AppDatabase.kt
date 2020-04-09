@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
-    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ReadingRecord::class],
+    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +26,7 @@ private val transaction = Executors.newFixedThreadPool(1) { r ->
 }
 
 val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
+    .fallbackToDestructiveMigration()
 //    .setQueryExecutor(transaction)
 //    .setTransactionExecutor(transaction)
     .build()

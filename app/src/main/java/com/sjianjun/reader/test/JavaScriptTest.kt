@@ -1,6 +1,7 @@
 package com.sjianjun.reader.test
 
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.JavaScript.Func.*
 import com.sjianjun.reader.bean.SearchResult
@@ -90,7 +91,7 @@ object JavaScriptTest {
         val chapter = book.chapterList?.firstOrNull()
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
-            chapter.content = c ?: ""
+            chapter.content = ChapterContent(chapter.url,chapter.bookUrl, c ?: "")
             Log.e("${javaScript.source} 章节加载结果:$chapter")
         }
         Unit
