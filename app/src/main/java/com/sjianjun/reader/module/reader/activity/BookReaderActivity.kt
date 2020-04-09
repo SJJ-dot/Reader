@@ -38,14 +38,7 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-        appBarLayout.addOnOffsetChangedListener(AppBarLayout.OnOffsetChangedListener { appBarLayout, offset ->
-            if (offset + appBarLayout.height == 0) {
-                ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
-            } else if (offset == 0) {
-                ImmersionBar.with(this).hideBar(BarHide.FLAG_SHOW_BAR).init()
-            }
-            Log.e(offset)
-        })
+        ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
         //先不显示
         drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
         recycle_view.adapter = adapter
