@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
  *展示章节列表
  */
 class ChapterListFragment : BaseFragment() {
-    val bookId by lazy { arguments!!.getString(BOOK_ID)!!.toInt() }
+    val bookUrl by lazy { arguments!!.getString(BOOK_URL)!! }
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
@@ -27,7 +27,7 @@ class ChapterListFragment : BaseFragment() {
         val adapter = ChapterListAdapter(this)
         chapterList.adapter = adapter
         viewLaunch {
-            DataManager.getChapterList(bookId).collectLatest {
+            DataManager.getChapterList(bookUrl).collectLatest {
                 adapter.data = it
                 adapter.notifyDataSetChanged()
             }
@@ -40,7 +40,7 @@ class ChapterListFragment : BaseFragment() {
         }
 
         var data = listOf<Chapter>()
-        var readingChapterId = -1
+        var readingChapterUrl = ""
 
         override fun getItemCount(): Int = data.size
 
@@ -54,7 +54,7 @@ class ChapterListFragment : BaseFragment() {
         ) {
             val c = data[position]
             holder.itemView.text1.text = c.title
-            if (readingChapterId == c.id) {
+            if (readingChapterUrl == c.url) {
                 holder.itemView.text1.setTextColorRes(R.color.material_red_700)
             } else {
                 holder.itemView.text1.setTextColorRes(R.color.material_textBlack_secondaryText)
@@ -65,12 +65,15 @@ class ChapterListFragment : BaseFragment() {
                 holder.itemView.mark.setBackgroundColor(R.color.material_grey_500.resColor())
             }
             holder.itemView.setOnClickListener {
-                fragment.startActivity<BookReaderActivity>(BOOK_ID to c.bookId, CHAPTER_ID to c.id)
+                fragment.startActivity<BookReaderActivity>(
+                    BOOK_URL to c.bookUrl,
+                    CHAPTER_URL to c.url
+                )
             }
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id.toLong()
+            return data[position].url.id
         }
     }
 

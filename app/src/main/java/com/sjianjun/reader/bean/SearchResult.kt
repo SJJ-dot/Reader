@@ -15,7 +15,7 @@ class SearchResult {
     @JvmField
     var bookCover: String? = null
     @JvmField
-    var bookUrl: String? = null
+    var bookUrl: String = ""
 
     /**
      * 最新章节 名

@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import java.util.concurrent.atomic.AtomicReference
 
 class BookDetailsFragment : BaseFragment() {
-    private var bookId: Int = 0
+    private var bookUrl: String = ""
         set(value) {
             field = value
             initData()
@@ -44,15 +44,15 @@ class BookDetailsFragment : BaseFragment() {
         }
 
         reading.setOnClickListener {
-            startActivity<BookReaderActivity>(BOOK_ID, bookId)
+            startActivity<BookReaderActivity>(BOOK_URL, bookUrl)
         }
 
-        bookId = arguments!!.getString(BOOK_ID)!!.toInt()
+        bookUrl = arguments!!.getString(BOOK_URL)!!
     }
 
     private fun refresh() {
         viewLaunch {
-            DataManager.reloadBookFromNet(bookId)
+            DataManager.reloadBookFromNet(bookUrl)
             detailsRefreshLayout?.isRefreshing = false
         }
     }
@@ -65,9 +65,9 @@ class BookDetailsFragment : BaseFragment() {
         bookJobRef.get()?.cancel()
         viewLaunch {
             childFragmentManager.beginTransaction()
-                .replace(R.id.chapter_list, create<ChapterListFragment>(BOOK_ID, bookId))
+                .replace(R.id.chapter_list, create<ChapterListFragment>(BOOK_URL, bookUrl))
                 .commitAllowingStateLoss()
-            DataManager.getBookAndChapterListById(bookId).collectLatest {
+            DataManager.getBookAndChapterList(bookUrl).collectLatest {
                 if (it != null) {
                     bookCover?.glide(this@BookDetailsFragment, it.cover)
                     bookName?.text = it.title
@@ -76,7 +76,10 @@ class BookDetailsFragment : BaseFragment() {
                     val last = it.chapterList?.lastOrNull()
                     latestChapter?.text = last?.title
                     latestChapter.setOnClickListener {
-                        startActivity<BookReaderActivity>(BOOK_ID to  bookId , CHAPTER_ID to last?.id)
+                        startActivity<BookReaderActivity>(
+                            BOOK_URL to bookUrl,
+                            CHAPTER_URL to last?.url
+                        )
                     }
 
                     intro?.text = it.intro
