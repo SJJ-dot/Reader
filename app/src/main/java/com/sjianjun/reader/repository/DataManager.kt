@@ -143,7 +143,7 @@ object DataManager {
             }
             val book = dao.getBookByUrl(chapter.bookUrl).first()
             val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
-            chapter.content = js?.getChapterContent(chapter.url ?: return@withIo)
+            chapter.content = js?.getChapterContent(chapter.url)
             if (chapter.content?.isNotEmpty() == true) {
                 chapter.isLoaded = true
                 dao.updateChapter(chapter)
