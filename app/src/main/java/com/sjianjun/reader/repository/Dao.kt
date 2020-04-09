@@ -13,11 +13,21 @@ interface Dao {
     @Query("SELECT * FROM JavaScript")
     fun getAllJavaScript(): Flow<List<JavaScript>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertJavaScript(javaScript: List<JavaScript>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertJavaScript(javaScript: JavaScript)
 
     @Query("select * from JavaScript where source in (select source from Book where title=:bookTitle and author=:bookAuthor)")
     fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>>
+
+    @Delete
+    suspend fun deleteJavaScript(script: JavaScript)
+
+
+    @Update
+    suspend fun updateJavaScript(script: JavaScript)
 
     /**
      * 查询全部搜索历史记录

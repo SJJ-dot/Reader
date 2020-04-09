@@ -11,8 +11,8 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".module.reader.activity.BookReaderActivity" />
-        <!-- 适配华为（huawei）刘海屏 沉浸式 -->
+        <activity android:name=".module.script.EditJavaScriptActivity"/>
+        <activity android:name=".module.reader.activity.BookReaderActivity" /> <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
             android:name="android.notch_support"
             android:value="true" /> <!-- 适配小米（xiaomi）刘海屏 沉浸式 -->

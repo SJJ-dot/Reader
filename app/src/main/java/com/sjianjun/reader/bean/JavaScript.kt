@@ -29,6 +29,9 @@ data class JavaScript constructor(
 
     constructor(source: String, js: () -> String) : this(source = source, js = js())
 
+    @JvmField
+    var enable = true
+
     @Ignore
     @JvmField
     var headerScript = """
