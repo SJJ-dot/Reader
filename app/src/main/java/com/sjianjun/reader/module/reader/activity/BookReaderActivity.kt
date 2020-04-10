@@ -203,7 +203,6 @@ class BookReaderActivity : BaseActivity() {
                 null
             }
         }.awaitAll().forEach {
-            Log.e("load index:${it.index} ${it.title}")
             loadRecord.remove(it.url)
         }
     }
