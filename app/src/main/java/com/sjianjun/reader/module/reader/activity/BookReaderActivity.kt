@@ -15,15 +15,18 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.module.main.fragment.ChapterListFragment
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.BOOK_URL
 import com.sjianjun.reader.utils.CHAPTER_URL
+import com.sjianjun.reader.utils.fragmentCreate
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.activity_book_reader.chapter_title
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
@@ -41,9 +44,13 @@ class BookReaderActivity : BaseActivity() {
         setContentView(R.layout.activity_book_reader)
         ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
         //先不显示
-        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
+            .commitAllowingStateLoss()
+
         recycle_view.adapter = adapter
 
+        initStatusBar()
         initScrollLoadChapter()
         initData()
     }
@@ -52,6 +59,17 @@ class BookReaderActivity : BaseActivity() {
     override fun onPause() {
         super.onPause()
         saveReadRecord()
+    }
+
+    private fun initStatusBar() {
+        content.setOnClickListener {
+            viewLaunch {
+                val bar = ImmersionBar.with(this@BookReaderActivity)
+                bar.hideBar(BarHide.FLAG_SHOW_BAR).init()
+                delay(3000)
+                bar.hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
+            }
+        }
     }
 
     private fun saveReadRecord() = viewLaunch {
