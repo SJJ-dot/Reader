@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.reader.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Html
 import android.text.Spanned
@@ -23,19 +24,17 @@ import com.sjianjun.reader.utils.fragmentCreate
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.activity_book_reader.chapter_title
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 class BookReaderActivity : BaseActivity() {
-    private val bookUrl by lazy { intent.getStringExtra(BOOK_URL)!! }
-    private val chapterUrl by lazy { intent.getStringExtra(CHAPTER_URL) }
+    private val bookUrl get() = intent.getStringExtra(BOOK_URL)!!
+    private val chapterUrl get() = intent.getStringExtra(CHAPTER_URL)
     private lateinit var book: Book
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ChapterListAdapter(this) }
@@ -55,6 +54,11 @@ class BookReaderActivity : BaseActivity() {
         initData()
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        initData()
+    }
 
     override fun onPause() {
         super.onPause()
@@ -119,7 +123,9 @@ class BookReaderActivity : BaseActivity() {
         })
     }
 
+    private val initDataJob = AtomicReference<Job>()
     private fun initData() {
+        initDataJob.get()?.cancel()
         viewLaunch {
             val book = DataManager.getBookByUrl(bookUrl).first()
             if (book == null) {
@@ -147,21 +153,19 @@ class BookReaderActivity : BaseActivity() {
                 if (adapter.chapterList.size != it.size) {
                     adapter.chapterList = it
                     adapter.notifyDataSetChanged()
-
-                    if (first) {
-                        first = false
-                        val index = adapter.chapterList.indexOfFirst { chapter ->
-                            chapter.url == readingRecord.chapterUrl
-                        }
-                        if (index != -1) {
-                            recycle_view.scrollToPosition(index)
-                        }
+                }
+                if (first) {
+                    first = false
+                    val index = adapter.chapterList.indexOfFirst { chapter ->
+                        chapter.url == readingRecord.chapterUrl
                     }
-
+                    if (index != -1) {
+                        recycle_view.scrollToPosition(index)
+                    }
                 }
             }
 
-        }
+        }.also(initDataJob::lazySet)
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
