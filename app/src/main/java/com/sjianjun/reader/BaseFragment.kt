@@ -60,7 +60,7 @@ open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
     }
 
     fun viewLaunch(
-        context: CoroutineContext = EmptyCoroutineContext + handler,
+        context: CoroutineContext = handler,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {

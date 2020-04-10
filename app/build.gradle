@@ -88,4 +88,5 @@ dependencies {
 
     implementation "com.victor:lib:1.0.4"
 
+   implementation 'com.tencent.bugly:crashreport:2.8.6'
 }
