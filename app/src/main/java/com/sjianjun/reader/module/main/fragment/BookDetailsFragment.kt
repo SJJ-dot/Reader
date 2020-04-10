@@ -59,14 +59,16 @@ class BookDetailsFragment : BaseFragment() {
 
     private fun initData() {
 
+        childFragmentManager.beginTransaction()
+            .replace(R.id.chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
+            .commitNowAllowingStateLoss()
+
         detailsRefreshLayout.isRefreshing = true
         refresh()
 
         bookJobRef.get()?.cancel()
         viewLaunch {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
-                .commitAllowingStateLoss()
+
             DataManager.getBookAndChapterList(bookUrl).collectLatest {
                 if (it != null) {
                     bookCover?.glide(this@BookDetailsFragment, it.cover)
