@@ -60,7 +60,7 @@ class ExampleInstrumentedTest {
 
     @Test
     fun testGet() {
-        val get = get("https://www.biquge5200.cc/95_95192/")
+        val get = get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
         Log.e(get)
     }
 
