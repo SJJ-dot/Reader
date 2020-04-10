@@ -65,7 +65,7 @@ class BookDetailsFragment : BaseFragment() {
         bookJobRef.get()?.cancel()
         viewLaunch {
             childFragmentManager.beginTransaction()
-                .replace(R.id.chapter_list, create<ChapterListFragment>(BOOK_URL, bookUrl))
+                .replace(R.id.chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
                 .commitAllowingStateLoss()
             DataManager.getBookAndChapterList(bookUrl).collectLatest {
                 if (it != null) {
@@ -83,11 +83,17 @@ class BookDetailsFragment : BaseFragment() {
                     }
 
                     intro?.text = it.intro
-                    viewLaunch {
-                        val bookList =
-                            DataManager.getBookByTitleAndAuthor(it.title, it.author).firstOrNull()
-                        originWebsite?.text = "来源：${it.source}共${bookList?.size}个源"
+
+                    val bookList = DataManager.getBookByTitleAndAuthor(it.title, it.author)
+                        .firstOrNull()
+                    originWebsite?.text = "来源：${it.source}共${bookList?.size}个源"
+                    originWebsite.setOnClickListener {_->
+                        fragmentCreate<BookSourceListFragment>(
+                            BOOK_TITLE to it.title,
+                            BOOK_AUTHOR to it.author
+                        ).show(childFragmentManager, "BookSourceListFragment")
                     }
+
                     detailsRefreshLayout?.isRefreshing = false
                 }
             }

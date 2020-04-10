@@ -20,12 +20,6 @@ public fun launchGlobal(
     return GlobalScope.launch(context, start, block)
 }
 
-val transactionCoroutineDispatcher = transactionExecutor.asCoroutineDispatcher()
-
-suspend inline fun <T> withSingle(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(transactionCoroutineDispatcher + handler, block)
-}
-
 suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
     return withContext(Dispatchers.IO + handler, block)
 }
