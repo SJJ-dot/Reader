@@ -46,7 +46,7 @@ class BookReaderActivity : BaseActivity() {
         //先不显示
         supportFragmentManager.beginTransaction()
             .replace(R.id.chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
-            .commitAllowingStateLoss()
+            .commitNowAllowingStateLoss()
 
         recycle_view.adapter = adapter
 
