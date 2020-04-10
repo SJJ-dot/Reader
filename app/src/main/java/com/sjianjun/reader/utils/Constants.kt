@@ -6,3 +6,6 @@ val JAVA_SCRIPT_SOURCE = "JAVA_SCRIPT_SOURCE"
 
 val BOOK_TITLE = "BOOK_TITLE"
 val BOOK_AUTHOR = "BOOK_AUTHOR"
+
+
+val CONTENT_TYPE_ANDROID ="application/vnd.android.package-archive"
