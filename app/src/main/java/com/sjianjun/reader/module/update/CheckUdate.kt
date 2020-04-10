@@ -14,7 +14,7 @@ import com.sjianjun.reader.utils.withMain
 
 suspend fun checkUpdate(activity: BaseActivity) = withIo {
     val githubApi =
-        client.get<GithubApi>("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
+        client.get<GithubApi>("https://api.github.com/repos/SJJ-dot/Reader/releases/latest",header = mapOf("User-Agent" to "SJJ-dot-Reader-App"))
     val download = githubApi.assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
     if (download?.browser_download_url.isNullOrEmpty()) {
         return@withIo githubApi
