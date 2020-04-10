@@ -50,9 +50,11 @@ class ChapterListFragment : BaseFragment() {
         }
     }
 
+    private var first = true
     private fun scrollToReadingChapter() {
         val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
-        if (index != -1) {
+        if (index != -1 && first) {
+            first = false
             chapterList.scrollToPosition(index)
         }
     }
