@@ -13,7 +13,7 @@ val handler = CoroutineExceptionHandler { _, exception ->
 }
 
 public fun launchGlobal(
-    context: CoroutineContext = EmptyCoroutineContext + handler,
+    context: CoroutineContext = handler,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
 ): Job {
@@ -21,25 +21,25 @@ public fun launchGlobal(
 }
 
 suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.IO + handler, block)
+    return withContext(Dispatchers.IO, block)
 }
 
 suspend inline fun <T> withDefault(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.Default + handler, block)
+    return withContext(Dispatchers.Default, block)
 }
 
 suspend inline fun <T> withMain(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.Main + handler, block)
+    return withContext(Dispatchers.Main, block)
 }
 
 fun <T> Flow<T>.flowIo(): Flow<T> {
-    return flowOn(Dispatchers.IO + handler)
+    return flowOn(Dispatchers.IO)
 }
 
 fun <T> Flow<T>.flowDefault(): Flow<T> {
-    return flowOn(Dispatchers.Default + handler)
+    return flowOn(Dispatchers.Default)
 }
 
 fun <T> Flow<T>.flowMain(): Flow<T> {
-    return flowOn(Dispatchers.Main + handler)
+    return flowOn(Dispatchers.Main)
 }

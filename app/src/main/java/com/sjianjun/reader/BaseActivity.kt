@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.coroutineScope
 import com.gyf.immersionbar.ImmersionBar
+import com.sjianjun.reader.utils.handler
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -14,7 +15,7 @@ abstract class BaseActivity : AppCompatActivity(), CoroutineScope by MainScope()
         ImmersionBar.with(this).init()
     }
 
-    fun viewLaunch(context: CoroutineContext = EmptyCoroutineContext,
+    fun viewLaunch(context: CoroutineContext = handler,
                    start: CoroutineStart = CoroutineStart.DEFAULT,
                    block: suspend CoroutineScope.() -> Unit): Job {
         return lifecycle.coroutineScope.launch(context, start, block)

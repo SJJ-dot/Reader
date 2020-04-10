@@ -46,7 +46,10 @@ class MainActivity : BaseActivity() {
             }
         }
 
-        PermissionUtil.requestPermissions(this, arrayOf(Manifest.permission.INTERNET)) { list ->
+        PermissionUtil.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        ) { list ->
             if (!list.isGranted()) {
                 launch {
                     toastSHORT("拒绝授权可能导致程序运行异常！")
@@ -56,6 +59,7 @@ class MainActivity : BaseActivity() {
 
         viewLaunch {
             checkUpdate(this@MainActivity)
+
         }
 
     }

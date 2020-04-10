@@ -41,7 +41,7 @@ val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
 val transactionDispatcher = transactionExecutor.asCoroutineDispatcher()
 // setTransactionExecutor
 suspend fun <T> transaction(block: suspend CoroutineScope.() -> T): T {
-    return withContext(transactionDispatcher + handler) {
+    return withContext(transactionDispatcher) {
         db.runInTransaction(Callable {
             runBlocking(block = block)
         })

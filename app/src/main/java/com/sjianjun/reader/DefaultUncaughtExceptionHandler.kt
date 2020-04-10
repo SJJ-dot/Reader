@@ -1,11 +1,8 @@
 package com.sjianjun.reader
 
-import sjj.alog.Log
+import android.content.Context
+import com.tencent.bugly.crashreport.CrashReport
 
-fun handleDefaultException() {
-    val handler = Thread.getDefaultUncaughtExceptionHandler()
-    Thread.setDefaultUncaughtExceptionHandler { t, e ->
-        Log.e(t, e)
-        handler?.uncaughtException(t, e)
-    }
+fun handleDefaultException(context: Context) {
+    CrashReport.initCrashReport(context, "d3d6da5bd7", true);
 }
