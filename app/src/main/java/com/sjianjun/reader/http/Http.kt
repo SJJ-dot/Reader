@@ -13,6 +13,7 @@ import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.TlsVersion
+import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
 
@@ -64,7 +65,12 @@ class Http {
         queryMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap()
     ): String= runBlocking {
-        client.get<String>(url, queryMap, header)
+        try {
+            client.get<String>(url, queryMap, header)
+        } catch (e: Exception) {
+            Log.e(e.message,e)
+            ""
+        }
     }
 
     @JvmOverloads
@@ -73,6 +79,11 @@ class Http {
         fieldMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap()
     ): String = runBlocking {
-        client.post<String>(url, fieldMap, header)
+        try {
+            client.post<String>(url, fieldMap, header)
+        } catch (e: Exception) {
+            Log.e(e.message,e)
+            ""
+        }
     }
 }
