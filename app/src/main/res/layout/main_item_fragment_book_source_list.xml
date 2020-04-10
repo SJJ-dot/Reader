@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -14,8 +15,9 @@
             android:id="@+id/bookCover"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:layout_gravity="center_vertical"
             android:layout_margin="5dp"
-            android:minWidth="65dp"
+            android:minWidth="615dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
@@ -29,7 +31,7 @@
             android:layout_marginEnd="5dp"
             android:gravity="center_vertical"
             android:textColor="@color/material_textBlack_black"
-            android:textSize="20sp"
+            android:textSize="18sp"
             app:layout_constraintBottom_toTopOf="@+id/author"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/bookCover"
@@ -54,11 +56,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:textColor="@color/material_textBlack_secondaryText"
+            android:textColor="@color/material_textBlack_black"
             android:textSize="12sp"
             app:layout_constraintBottom_toTopOf="@+id/haveRead"
             app:layout_constraintEnd_toEndOf="@id/bookName"
-            app:layout_constraintStart_toStartOf="@+id/bookName"
+            app:layout_constraintStart_toStartOf="@+id/author"
             app:layout_constraintTop_toBottomOf="@+id/author"
             tools:text="标题" />
 
@@ -66,54 +68,15 @@
             android:id="@+id/haveRead"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:textColor="@color/material_textBlack_secondaryText"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toTopOf="@id/origin"
-            app:layout_constraintEnd_toEndOf="@id/bookName"
-            app:layout_constraintStart_toStartOf="@+id/bookName"
-            app:layout_constraintTop_toBottomOf="@+id/lastChapter"
-            tools:text="标题" />
-
-        <com.sjianjun.reader.view.AutofitTextView
-            android:id="@+id/origin"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
             android:gravity="center_vertical"
             android:textColor="@color/material_textBlack_secondaryText"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/intro"
-            app:layout_constraintStart_toStartOf="@+id/bookName"
-            app:layout_constraintTop_toBottomOf="@+id/haveRead"
+            app:layout_constraintEnd_toEndOf="@id/bookName"
+            app:layout_constraintStart_toStartOf="@+id/lastChapter"
+            app:layout_constraintTop_toBottomOf="@+id/lastChapter"
             tools:text="标题" />
-
-        <TextView
-            android:id="@+id/intro"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:gravity="bottom"
-            android:paddingStart="18dp"
-            android:paddingTop="18dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="5dp"
-            android:text="简介"
-            android:textSize="16sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.sjianjun.reader.view.BadgeView
-            android:id="@+id/bv_unread"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="16dp"
-            android:includeFontPadding="false"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="99" />
 
         <com.victor.loading.rotate.RotateLoading
             android:id="@+id/loading"
@@ -125,5 +88,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:loading_color="@color/colorPrimary"
             app:loading_width="2dp" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+</androidx.cardview.widget.CardView>

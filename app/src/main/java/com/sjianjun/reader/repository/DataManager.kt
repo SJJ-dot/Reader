@@ -147,16 +147,25 @@ object DataManager {
         return withIo {
             val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
             val javaScript = dao.getJavaScriptBySource(book.source).first() ?: return@withIo false
-            val bookDetails = javaScript.getDetails(book.url) ?: return@withIo false
-            bookDetails.url = bookUrl
+            book.isLoading = true
+            dao.updateBook(book)
+            try {
+                val bookDetails = javaScript.getDetails(book.url)!!
+                bookDetails.url = bookUrl
 
-            val chapterList = bookDetails.chapterList ?: return@withIo false
-            chapterList.forEachIndexed { index, chapter ->
-                chapter.bookUrl = bookUrl
-                chapter.index = index
+                val chapterList = bookDetails.chapterList!!
+                chapterList.forEachIndexed { index, chapter ->
+                    chapter.bookUrl = bookUrl
+                    chapter.index = index
+                }
+                book.isLoading = false
+                dao.updateBookDetails(bookDetails)
+                return@withIo true
+            } catch (e: Throwable) {
+                book.isLoading = false
+                dao.updateBook(book)
+                return@withIo false
             }
-            dao.updateBookDetails(bookDetails)
-            return@withIo true
         }
     }
 
@@ -200,6 +209,14 @@ object DataManager {
 
     fun getChapterByUrl(url: String): Flow<Chapter?> {
         return dao.getChapterByUrl(url)
+    }
+
+    fun getChapterByTitle(title: String): Flow<Chapter?> {
+        return dao.getChapterByTitle(title)
+    }
+
+    fun getChapterByIndex(index: Int): Flow<Chapter?> {
+        return dao.getChapterByIndex(index)
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {

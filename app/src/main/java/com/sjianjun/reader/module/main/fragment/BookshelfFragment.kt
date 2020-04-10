@@ -17,6 +17,7 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.Job
@@ -134,23 +135,34 @@ class BookshelfFragment : BaseFragment() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
-            holder.itemView.bookCover.glide(fragment, book.cover)
-            holder.itemView.bookName.text = book.title
-            holder.itemView.author.text = "作者：${book.author}"
-            holder.itemView.lastChapter.text = "最新：${book.lastChapter?.title}"
-            holder.itemView.haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
-            holder.itemView.origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
+            holder.itemView.apply {
+                bookCover.glide(fragment, book.cover)
+                bookName.text = book.title
+                author.text = "作者：${book.author}"
+                lastChapter.text = "最新：${book.lastChapter?.title}"
+                haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
+                loading.isLoading = book.isLoading
 
-            val l = View.OnClickListener {
-                fragment.findNavController()
-                    .navigate(R.id.bookDetailsFragment, bundle(BOOK_URL, book.url))
-            }
-            holder.itemView.intro.setOnClickListener(l)
-            holder.itemView.bookCover.setOnClickListener(l)
+                origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
+                origin.setOnClickListener {
+                    fragmentCreate<BookSourceListFragment>(
+                        BOOK_TITLE to book.title,
+                        BOOK_AUTHOR to book.author
+                    ).show(fragment.childFragmentManager, "BookSourceListFragment")
+                }
 
-            holder.itemView.setOnClickListener {
-                fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
+                val l = View.OnClickListener {
+                    fragment.findNavController()
+                        .navigate(R.id.bookDetailsFragment, bundle(BOOK_URL, book.url))
+                }
+                intro.setOnClickListener(l)
+                bookCover.setOnClickListener(l)
+
+                setOnClickListener {
+                    fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
+                }
             }
+
         }
     }
 }

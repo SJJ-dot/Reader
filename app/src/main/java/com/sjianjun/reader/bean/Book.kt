@@ -24,6 +24,8 @@ class Book {
     var intro: String? = null
     @JvmField
     var cover: String? = null
+    @JvmField
+    var isLoading = false
 
     @Ignore
     @JvmField
@@ -34,15 +36,15 @@ class Book {
     }
 
     @Ignore
-    var lastChapter:Chapter?=null
+    var lastChapter: Chapter? = null
 
     @Ignore
-    var readChapter:Chapter?=null
+    var readChapter: Chapter? = null
 
     /**
      * 包含本书的书源
      */
     @Ignore
-    var javaScriptList:List<JavaScript>?=null
+    var javaScriptList: List<JavaScript>? = null
 
 }
