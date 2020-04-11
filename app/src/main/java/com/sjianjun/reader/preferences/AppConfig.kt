@@ -21,6 +21,11 @@ class AppConfig(val name: String) {
     var javaScriptVersion by sp(0)
 
     var javaScriptBaseUrl by sp(App.app.getString(R.string.script_base_url))
+
+    /**
+     * github 发布的版本更新检查
+     */
+    var releasesInfo by sp("")
 }
 
 class BookConfig {

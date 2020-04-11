@@ -30,7 +30,7 @@ object DataManager {
             } finally {
                 version?.close()
             }
-            val info = gson.fromJson<JsVersionInfo>(versionInfo)
+            val info = gson.fromJson<JsVersionInfo>(versionInfo) ?: return@launchGlobal
             if (info.version > globalConfig.javaScriptVersion) {
                 info.files.map {
                     async {
@@ -55,7 +55,7 @@ object DataManager {
     suspend fun reloadBookJavaScript() {
         withIo {
             val versionInfo = http.get(globalConfig.javaScriptBaseUrl + "version.json")
-            val info = gson.fromJson<JsVersionInfo>(versionInfo)
+            val info = gson.fromJson<JsVersionInfo>(versionInfo) ?: return@withIo
             if (info.version >= globalConfig.javaScriptVersion) {
 
                 info.files.map {

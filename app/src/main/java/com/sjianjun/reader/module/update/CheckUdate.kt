@@ -7,19 +7,25 @@ import androidx.core.content.ContextCompat.startActivity
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.GithubApi
-import com.sjianjun.reader.http.client
+import com.sjianjun.reader.http.http
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
 import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
-import sjj.alog.Log
-import java.lang.RuntimeException
+import sjj.novel.util.fromJson
+import sjj.novel.util.gson
 
 suspend fun checkUpdate(activity: BaseActivity) = withIo {
-    val githubApi =
-        client.get<GithubApi>(
+    val info =
+        http.get(
             "https://api.github.com/repos/SJJ-dot/Reader/releases/latest",
             header = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36")
         )
+    if (info.isNotEmpty()) {
+        globalConfig.releasesInfo = info
+    }
+    val githubApi = gson.fromJson<GithubApi>(globalConfig.releasesInfo)?:return@withIo null
+
     val download = githubApi.assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
     if (download?.browser_download_url.isNullOrEmpty()) {
         return@withIo githubApi
