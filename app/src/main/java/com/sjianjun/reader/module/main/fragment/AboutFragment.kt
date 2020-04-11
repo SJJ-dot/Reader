@@ -17,7 +17,6 @@ class AboutFragment : BaseFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_about
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         setVersionInfo(gson.fromJson(globalConfig.releasesInfo))
         viewLaunch {
             val githubApi = checkUpdate(activity!!)
@@ -29,7 +28,7 @@ class AboutFragment : BaseFragment() {
         val download = githubApi?.assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
         if (download != null) {
             versionCode.text =
-                "${versionCode.text}\n最新版：${githubApi.tag_name} | 下载次数：${download?.download_count}"
+                "当前版本：${BuildConfig.VERSION_NAME}\n最新版：${githubApi.tag_name} | 下载次数：${download?.download_count}"
         }
     }
 
