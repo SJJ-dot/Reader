@@ -2,6 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+
+def shortHash = 'git log -1 --pretty=%h'.execute([], project.rootDir).text.trim().toUpperCase()
+def commitCont = 'git rev-list HEAD --count'.execute([], project.rootDir).text.trim().toInteger()
+def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], project.rootDir).text.trim()
+
 android {
     compileSdkVersion COMPILE_SDK_VERSION
     buildToolsVersion "29.0.3"
@@ -10,12 +15,16 @@ android {
         applicationId "com.sjianjun.reader"
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
-        versionCode 2
-        versionName "0.3"
+        versionCode commitCont
+        versionName "0.3.$commitCont"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "reader-${currentBranch}-${variant.buildType.name}(${variant.versionCode})-${variant.versionName}.apk"
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
