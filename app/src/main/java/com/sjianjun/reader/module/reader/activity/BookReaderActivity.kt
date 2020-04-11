@@ -44,7 +44,10 @@ class BookReaderActivity : BaseActivity() {
         ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
         //先不显示
         supportFragmentManager.beginTransaction()
-            .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl))
+            .replace(
+                R.id.drawer_chapter_list,
+                fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl)
+            )
             .commitNowAllowingStateLoss()
 
         recycle_view.adapter = adapter
@@ -160,6 +163,8 @@ class BookReaderActivity : BaseActivity() {
                         chapter.url == readingRecord.chapterUrl
                     }
                     if (index != -1) {
+                        val manager = recycle_view.layoutManager as LinearLayoutManager
+                        manager.scrollToPositionWithOffset(index, 0)
                         recycle_view.scrollToPosition(index)
                     }
                 }
