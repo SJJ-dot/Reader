@@ -179,6 +179,20 @@ object DataManager {
         }
     }
 
+
+    suspend fun deleteBookByUrl(book: Book): Boolean {
+        return withIo {
+            val readingRecord = dao.getReadingRecord(book.title, book.author)
+            if (readingRecord?.bookUrl == book.url) {
+                val otherBook = dao.getBookByTitleAndAuthor(book.title, book.author).first()
+                    .find { it.url != book.url } ?: return@withIo false
+                changeReadingRecordBookSource(otherBook)
+            }
+            deleteBook(book)
+            return@withIo true
+        }
+    }
+
     fun getBookByUrl(url: String): Flow<Book?> {
         return dao.getBookByUrl(url)
     }

@@ -2,6 +2,8 @@ package com.sjianjun.reader.module.main.fragment
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -30,6 +32,34 @@ class BookSourceListFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recycle_view.adapter = adapter
+
+        val mItemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.Callback() {
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
+                return makeMovementFlags(0, ItemTouchHelper.LEFT)
+            }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                viewLaunch {
+                    val book = adapter.data.getOrNull(viewHolder.adapterPosition)
+                    val succes = DataManager.deleteBookByUrl(book ?: return@viewLaunch)
+                    if (!succes) {
+                        toastSHORT("删除失败")
+                    }
+                }
+            }
+
+        })
+        mItemTouchHelper.attachToRecyclerView(recycle_view)
+
         viewLaunch {
             DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor)
                 .map {
