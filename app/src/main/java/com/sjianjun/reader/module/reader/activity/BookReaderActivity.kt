@@ -27,9 +27,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.max
+import kotlin.math.min
 
 class BookReaderActivity : BaseActivity() {
     private val bookUrl get() = intent.getStringExtra(BOOK_URL)!!
@@ -93,24 +94,11 @@ class BookReaderActivity : BaseActivity() {
 
                 if (preFirstPosition != firstPos) {
                     preFirstPosition = firstPos
-                    viewLaunch {
-                        val isEmpty = chapter.content == null
-                        getChapterContent(adapter.chapterList, chapter.url)
-                        if (isEmpty && manager.findFirstVisibleItemPosition() == firstPos) {
-                            adapter.notifyDataSetChanged()
-                        }
-                    }
+                    loadRefresh(manager, firstPos)
                 }
                 if (preLastPos != lastPos) {
                     preLastPos = lastPos
-                    val lastChapter = adapter.chapterList.getOrNull(lastPos)
-                    viewLaunch {
-                        val isEmpty = lastChapter?.content == null
-                        getChapterContent(adapter.chapterList, lastChapter?.url)
-                        if (isEmpty && manager.findLastVisibleItemPosition() == lastPos) {
-                            adapter.notifyDataSetChanged()
-                        }
-                    }
+                    loadRefresh(manager, lastPos)
                 }
 
                 saveReadRecord()
@@ -186,6 +174,20 @@ class BookReaderActivity : BaseActivity() {
                 }
 
         }.also(initDataJob::lazySet)
+    }
+
+    private fun loadRefresh(manager: LinearLayoutManager, position: Int) {
+        val chapter = adapter.chapterList.getOrNull(position)
+        viewLaunch {
+            getChapterContent(adapter.chapterList, chapter?.url)
+            if (manager.findFirstVisibleItemPosition()
+                <= min(position + 1, adapter.chapterList.size)
+                && manager.findLastVisibleItemPosition()
+                >= max(position - 1, 0)
+            ) {
+                adapter.notifyDataSetChanged()
+            }
+        }
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()

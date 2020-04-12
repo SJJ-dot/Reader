@@ -12,9 +12,7 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_chapter_list.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 
 
@@ -30,33 +28,25 @@ class ChapterListFragment : BaseFragment() {
 
         chapterList.adapter = adapter
         viewLaunch {
-            DataManager.getChapterList(bookUrl).collectLatest {
-                adapter.data = it
-                adapter.notifyDataSetChanged()
-                scrollToReadingChapter()
-            }
-        }
-        viewLaunch {
-            DataManager.getBookByUrl(bookUrl).flatMapMerge {
-                if (it == null) {
-                    emptyFlow()
-                } else {
-                    DataManager.getReadingRecord(it)
+            val book = DataManager.getBookByUrl(bookUrl).first() ?: return@viewLaunch
+
+            DataManager.getChapterList(bookUrl)
+                .combine(DataManager.getReadingRecord(book)) { chapterList, readingRecord ->
+                    chapterList to readingRecord
+                }.collectLatest {
+                    adapter.readingChapterUrl = it.second?.chapterUrl ?: ""
+                    adapter.data = it.first
+                    adapter.notifyDataSetChanged()
+
+                    val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
+                    chapterList.scrollToPosition(index)
                 }
-            }.collectLatest {
-                adapter.readingChapterUrl = it?.chapterUrl ?: ""
-                scrollToReadingChapter()
-            }
         }
     }
 
-    private var first = true
     private fun scrollToReadingChapter() {
         val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
-        if (index != -1 && first) {
-            first = false
-            chapterList.scrollToPosition(index)
-        }
+        chapterList.scrollToPosition(index)
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter() {
