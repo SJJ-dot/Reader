@@ -6,7 +6,6 @@ import android.text.Html
 import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.BarHide
@@ -65,7 +64,7 @@ class BookReaderActivity : BaseActivity() {
 
     override fun onPause() {
         super.onPause()
-        saveReadRecord()
+        saveReadRecord(0)
     }
 
     private fun initStatusBar() {
@@ -77,14 +76,6 @@ class BookReaderActivity : BaseActivity() {
                 bar.hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
             }
         }
-    }
-
-    private fun saveReadRecord() = viewLaunch {
-        val manager = recycle_view.layoutManager as LinearLayoutManager
-        val pos = manager.findLastVisibleItemPosition()
-        val readingChapter = adapter.chapterList.getOrNull(pos)
-        readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
-        DataManager.setReadingRecord(readingRecord)
     }
 
 
@@ -122,8 +113,26 @@ class BookReaderActivity : BaseActivity() {
                     }
                 }
 
+                saveReadRecord()
             }
         })
+    }
+
+    private val readingRecordJob = AtomicReference<Job>()
+    private fun saveReadRecord(delay: Long = 2000) {
+        readingRecordJob.get()?.cancel()
+        viewLaunch {
+            //延迟2s 保存
+            delay(delay)
+            val manager = recycle_view.layoutManager as LinearLayoutManager
+            val view = manager.getChildAt(0) ?: return@viewLaunch
+            val top = view.top
+            val pos = manager.getPosition(view)
+            val readingChapter = adapter.chapterList.getOrNull(pos)
+            readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
+            readingRecord.offest = top
+            DataManager.setReadingRecord(readingRecord)
+        }.apply(readingRecordJob::lazySet)
     }
 
     private val initDataJob = AtomicReference<Job>()
@@ -139,33 +148,42 @@ class BookReaderActivity : BaseActivity() {
             //书籍标题
             book_title.text = book.title
 
-            readingRecord =
-                DataManager.getReadingRecord(book).first() ?: ReadingRecord(book.title, book.author)
+            readingRecord = DataManager.getReadingRecord(book).first()
+                ?: ReadingRecord(book.title, book.author)
 
             if (readingRecord.bookUrl == bookUrl) {
-                readingRecord.chapterUrl = chapterUrl ?: readingRecord.chapterUrl
+                if (!chapterUrl.isNullOrBlank()) {
+                    readingRecord.chapterUrl = chapterUrl
+                    readingRecord.offest = 0
+                }
             } else {
                 readingRecord.bookUrl = bookUrl
                 readingRecord.chapterUrl = chapterUrl ?: ""
+                readingRecord.offest = 0
             }
 
             var first = true
-            DataManager.getChapterList(bookUrl).collectLatest {
-                if (adapter.chapterList.size != it.size) {
-                    adapter.chapterList = it
-                    adapter.notifyDataSetChanged()
-                }
-                if (first) {
-                    first = false
-                    val index = adapter.chapterList.indexOfFirst { chapter ->
-                        chapter.url == readingRecord.chapterUrl
+            DataManager.getChapterList(bookUrl)
+                .onEach {
+                    getChapterContent(it, readingRecord.chapterUrl)
+                }.collectLatest {
+                    if (adapter.chapterList.size != it.size) {
+                        adapter.chapterList = it
+                        adapter.notifyDataSetChanged()
                     }
-                    if (index != -1) {
-                        val manager = recycle_view.layoutManager as LinearLayoutManager
-                        manager.scrollToPositionWithOffset(index, 0)
+                    if (first) {
+                        first = false
+                        val index = it.indexOfFirst { chapter ->
+                            chapter.url == readingRecord.chapterUrl
+                        }
+
+                        if (index != -1) {
+                            val manager = recycle_view.layoutManager as LinearLayoutManager
+                            manager.scrollToPositionWithOffset(index, readingRecord.offest)
+                        }
                     }
+
                 }
-            }
 
         }.also(initDataJob::lazySet)
     }
