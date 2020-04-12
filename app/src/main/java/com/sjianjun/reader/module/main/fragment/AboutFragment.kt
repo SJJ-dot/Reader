@@ -29,6 +29,8 @@ class AboutFragment : BaseFragment() {
         if (download != null) {
             versionCode.text =
                 "当前版本：${BuildConfig.VERSION_NAME}\n最新版：${githubApi.tag_name} | 下载次数：${download?.download_count}"
+        }else{
+            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }
     }
 

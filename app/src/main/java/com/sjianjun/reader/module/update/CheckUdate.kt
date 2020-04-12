@@ -30,7 +30,7 @@ suspend fun checkUpdate(activity: BaseActivity) = withIo {
     if (download?.browser_download_url.isNullOrEmpty()) {
         return@withIo githubApi
     }
-    val lastVersion = listOf(githubApi.tag_name, BuildConfig.VERSION_NAME).first()
+    val lastVersion = listOf(githubApi.tag_name, BuildConfig.VERSION_NAME).sortedDescending()[0]
     if (lastVersion != BuildConfig.VERSION_NAME) {
         val dialog = AlertDialog.Builder(activity)
             .setTitle(if (githubApi.name.isEmpty()) "版本更新" else githubApi.name)
