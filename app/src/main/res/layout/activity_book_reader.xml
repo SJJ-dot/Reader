@@ -21,19 +21,12 @@
             android:paddingRight="8dp"
             android:paddingBottom="5dp">
 
-            <TextView
-                android:id="@+id/book_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/material_textBlack_secondaryText"
-                android:textSize="12dp"
-                tools:text="黎明之剑" />
-
-            <TextView
+            <com.sjianjun.reader.view.AutofitTextView
                 android:id="@+id/chapter_title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
+                android:gravity="end"
                 android:textColor="@color/material_textBlack_secondaryText"
                 android:textSize="12dp"
                 tools:text="第一章" />
