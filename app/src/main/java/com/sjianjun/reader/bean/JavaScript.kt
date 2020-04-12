@@ -43,6 +43,8 @@ data class JavaScript constructor(
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
+        importClass(Packages.java.net.URLEncoder)
+        importClass(Packages.java.net.URLDecoder)
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {

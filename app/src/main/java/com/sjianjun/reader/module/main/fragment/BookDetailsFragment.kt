@@ -84,12 +84,12 @@ class BookDetailsFragment : BaseFragment() {
                         )
                     }
 
-                    intro?.text = it.intro
+                    intro?.text = it.intro.html()
 
                     val bookList = DataManager.getBookByTitleAndAuthor(it.title, it.author)
                         .firstOrNull()
                     originWebsite?.text = "来源：${it.source}共${bookList?.size}个源"
-                    originWebsite.setOnClickListener {_->
+                    originWebsite.setOnClickListener { _ ->
                         fragmentCreate<BookSourceListFragment>(
                             BOOK_TITLE to it.title,
                             BOOK_AUTHOR to it.author
