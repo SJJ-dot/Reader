@@ -145,6 +145,17 @@ class BookshelfFragment : BaseFragment() {
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
 
+                val lastChapterIndex = book.lastChapter?.index ?: 0
+                val readChapterIndex = book.readChapter?.index ?: 0
+                val remainingCount = lastChapterIndex - readChapterIndex
+
+                if (book.isLoading &&remainingCount<=0 ) {
+                    bv_unread.hide()
+                } else {
+                    bv_unread.show()
+                    bv_unread.badgeCount =remainingCount
+                }
+
                 origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
                     fragmentCreate<BookSourceListFragment>(
