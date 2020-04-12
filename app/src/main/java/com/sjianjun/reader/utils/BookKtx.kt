@@ -1,7 +1,10 @@
 package com.sjianjun.reader.utils
 
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.SearchResult
+import sjj.alog.Log
+import java.util.regex.Pattern
 
 fun List<Book>?.toGroup(map: MutableMap<String, MutableList<Book>> = mutableMapOf()): MutableMap<String, MutableList<Book>> {
     this?.forEach {

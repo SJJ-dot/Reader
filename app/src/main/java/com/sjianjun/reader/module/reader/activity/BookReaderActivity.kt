@@ -150,9 +150,7 @@ class BookReaderActivity : BaseActivity() {
             }
 
             var first = true
-            DataManager.getChapterList(bookUrl).onEach {
-                getChapterContent(it, readingRecord.chapterUrl)
-            }.collectLatest {
+            DataManager.getChapterList(bookUrl).collectLatest {
                 if (adapter.chapterList.size != it.size) {
                     adapter.chapterList = it
                     adapter.notifyDataSetChanged()
@@ -165,7 +163,6 @@ class BookReaderActivity : BaseActivity() {
                     if (index != -1) {
                         val manager = recycle_view.layoutManager as LinearLayoutManager
                         manager.scrollToPositionWithOffset(index, 0)
-                        recycle_view.scrollToPosition(index)
                     }
                 }
             }
