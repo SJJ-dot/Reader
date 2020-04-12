@@ -21,6 +21,8 @@ import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.atomic.AtomicReference
 
@@ -43,9 +45,9 @@ class BookshelfFragment : BaseFragment() {
 
         swipe_refresh.setOnRefreshListener {
             viewLaunch {
-                bookList.value?.forEach {
-                    DataManager.reloadBookFromNet(it.url)
-                }
+                bookList.value?.map {
+                    async { DataManager.reloadBookFromNet(it.url) }
+                }?.awaitAll()
                 swipe_refresh?.isRefreshing = false
             }
         }
