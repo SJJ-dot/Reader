@@ -248,6 +248,9 @@ object DataManager {
 
             }
             readingRecord.chapterUrl = readChapter?.url ?: ""
+            if (readingRecord.chapterUrl.isBlank()) {
+                readingRecord.offest = 0
+            }
             setReadingRecord(readingRecord)
         }
     }

@@ -3,6 +3,8 @@ package com.sjianjun.reader.repository
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.utils.handler
@@ -16,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
@@ -35,6 +37,12 @@ val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
     .fallbackToDestructiveMigration()
     .setQueryExecutor(queryExecutor)
     .setTransactionExecutor(queryExecutor)
+    .addMigrations(object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+//                    ALTER TABLE 表名 ADD COLUMN 列名 数据类型
+            database.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `offest` INTEGER NOT NULL default 0")
+        }
+    })
     .build()
 
 

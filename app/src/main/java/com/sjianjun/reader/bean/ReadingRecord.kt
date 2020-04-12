@@ -13,6 +13,8 @@ class ReadingRecord(
     var bookUrl = ""
 
     var chapterUrl = ""
+
+    var offest = 0
     override fun toString(): String {
         return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', bookUrl='$bookUrl', chapterUrl='$chapterUrl')"
     }
