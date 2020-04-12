@@ -64,14 +64,26 @@ interface Dao {
     @Query("delete from Book where title=:title and author=:author ")
     suspend fun deleteBook(title: String, author: String)
 
+    @Query("delete from Book where url=:url")
+    suspend fun deleteBookByUrl(url: String)
+
     @Transaction
     suspend fun deleteBook(book: Book) {
-        deleteChapterContentByBookUrl(book.title, book.author)
+        deleteChapterContentByBookTitleAndAuthor(book.title, book.author)
         deleteBook(book.title, book.author)
         deleteChapterByBook(book.title, book.author)
         deleteReadingRecord(book.title, book.author)
     }
 
+    /**
+     * 删除指定书源的书籍
+     */
+    @Transaction
+    suspend fun deleteBookByUrl(book: Book) {
+        deleteChapterContentByBookUrl(book.url)
+        deleteBookByUrl(book.url)
+        deleteChapterByBookUrl(book.url)
+    }
 
     @Update
     suspend fun updateBook(book: Book)
@@ -140,7 +152,10 @@ interface Dao {
     fun getChapterContent(url: String): Flow<ChapterContent?>
 
     @Query("delete from ChapterContent where bookUrl in (select url from Book where title=:bookTitle and author=:bookAuthor)")
-    fun deleteChapterContentByBookUrl(bookTitle: String, bookAuthor: String)
+    fun deleteChapterContentByBookTitleAndAuthor(bookTitle: String, bookAuthor: String)
+
+    @Query("delete from ChapterContent where bookUrl=:bookUrl")
+    fun deleteChapterContentByBookUrl(bookUrl: String)
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun getReadingRecordFlow(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
