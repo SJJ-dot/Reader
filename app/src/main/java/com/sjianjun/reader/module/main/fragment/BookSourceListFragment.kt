@@ -88,18 +88,7 @@ class BookSourceListFragment : BaseFragment() {
                 loading.isLoading = book.isLoading
                 setOnClickListener {
                     fragment.viewLaunch {
-                        val readingRecord = DataManager.getReadingRecord(book).first()!!
-                        readingRecord.bookUrl = book.url
-                        val chapter = DataManager.getChapterByUrl(readingRecord.chapterUrl).first()
-                        var readChapter: Chapter? = null
-                        if (chapter != null) {
-                            readChapter = DataManager.getChapterByTitle(chapter.title!!).first()
-                            if (readChapter == null) {
-                                readChapter = DataManager.getChapterByIndex(chapter.index).first()
-                            }
-                        }
-                        readingRecord.chapterUrl = readChapter?.url ?: ""
-                        DataManager.setReadingRecord(readingRecord)
+                        DataManager.changeReadingRecordBookSource(book)
                         fragment.dismissAllowingStateLoss()
                     }
 

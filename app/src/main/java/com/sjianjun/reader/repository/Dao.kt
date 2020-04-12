@@ -110,9 +110,12 @@ interface Dao {
     fun getChapterByUrl(url: String): Flow<Chapter?>
 
     @Query("select * from Chapter where title=:title")
-    fun getChapterByTitle(title: String): Flow<Chapter?>
+    fun getChapterByTitle(title: String): Flow<List<Chapter>>
 
-    @Query("select * from Chapter where `index`=:index")
+    @Query("select * from Chapter where title like :name")
+    fun getChapterByName(name: String): Flow<List<Chapter>>
+
+    @Query("select * from Chapter where `index` =:index")
     fun getChapterByIndex(index: Int): Flow<Chapter?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

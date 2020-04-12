@@ -44,9 +44,8 @@ fun Chapter.name(): String {
         .forEach {
             val matcher = it.matcher(title)
             if (matcher.find()) {
-                return matcher.group(1) ?: title
+                return matcher.group(1)?.trim() ?: title
             }
         }
-    Log.e("matcher failed chapter Name:$title")
     return title
 }
