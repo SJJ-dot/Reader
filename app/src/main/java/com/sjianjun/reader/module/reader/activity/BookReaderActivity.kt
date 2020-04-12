@@ -20,6 +20,7 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.BOOK_URL
 import com.sjianjun.reader.utils.CHAPTER_URL
 import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.html
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.activity_book_reader.chapter_title
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
@@ -265,10 +266,6 @@ class BookReaderActivity : BaseActivity() {
 
         override fun getItemId(position: Int): Long {
             return chapterList[position].index.toLong()
-        }
-
-        private fun String?.html(): Spanned {
-            return Html.fromHtml(this ?: "", Html.FROM_HTML_MODE_COMPACT)
         }
     }
 }

@@ -32,7 +32,7 @@ function getDetails(http,url){
     book.url = url;
     book.title = info.child(0).text();
     book.author = info.child(1).text().split("：")[1];
-    book.intro = parse.getElementById("intro").text();
+    book.intro = parse.getElementById("intro").html();
     book.cover = parse.getElementById("fmimg").child(0).absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
