@@ -133,8 +133,6 @@ class BookReaderActivity : BaseActivity() {
                 return@viewLaunch
             }
             this@BookReaderActivity.book = book
-            //书籍标题
-            book_title.text = book.title
 
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title, book.author)
