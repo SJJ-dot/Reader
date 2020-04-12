@@ -211,16 +211,45 @@ object DataManager {
         return dao.getChapterByUrl(url)
     }
 
-    fun getChapterByTitle(title: String): Flow<Chapter?> {
+    fun getChapterByTitle(title: String): Flow<List<Chapter>> {
         return dao.getChapterByTitle(title)
-    }
-
-    fun getChapterByIndex(index: Int): Flow<Chapter?> {
-        return dao.getChapterByIndex(index)
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
         return dao.getReadingRecordFlow(book.title, book.author)
+    }
+
+    /**
+     * 切换正在阅读的书的书源
+     */
+    suspend fun changeReadingRecordBookSource(book: Book) {
+        withIo {
+            val readingRecord = getReadingRecord(book).first()!!
+            readingRecord.bookUrl = book.url
+            val chapter = getChapterByUrl(readingRecord.chapterUrl).first()
+            var readChapter: Chapter? = null
+            if (chapter != null) {
+                //根据章节名查询。取索引最接近那个
+                readChapter = getChapterByTitle(chapter.title!!)
+                    .firstOrNull()?.minBy { chapter.index - it.index }
+                if (readChapter == null) {
+                    //如果章节名没查到。根据章节名模糊查询
+                    readChapter = dao.getChapterByName("%${chapter.name()}")
+                        .firstOrNull()?.minBy { chapter.index - it.index }
+                }
+                if (readChapter == null) {
+                    readChapter = dao.getChapterByName("%${chapter.name()}%")
+                        .firstOrNull()?.minBy { chapter.index - it.index }
+                }
+                if (readChapter == null) {
+                    readChapter = dao.getChapterByIndex(chapter.index).first()
+                        ?: dao.getLastChapterByBookUrl(book.url).first()
+                }
+
+            }
+            readingRecord.chapterUrl = readChapter?.url ?: ""
+            setReadingRecord(readingRecord)
+        }
     }
 
     suspend fun getChapterContent(chapter: Chapter): Chapter {
