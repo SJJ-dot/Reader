@@ -210,6 +210,7 @@ class BookReaderActivity : BaseActivity() {
                 && manager.findLastVisibleItemPosition()
                 >= max(position - 1, 0)
             ) {
+                delay(1)
                 adapter.notifyDataSetChanged()
             }
         }
