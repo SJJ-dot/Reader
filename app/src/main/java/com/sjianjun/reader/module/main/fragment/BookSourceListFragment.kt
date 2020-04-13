@@ -2,14 +2,12 @@ package com.sjianjun.reader.module.main.fragment
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
@@ -38,7 +36,10 @@ class BookSourceListFragment : BaseFragment() {
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder
             ): Int {
-                return makeMovementFlags(0, ItemTouchHelper.LEFT)
+                if (adapter.data.size > 1) {
+                    return makeMovementFlags(0, ItemTouchHelper.LEFT)
+                }
+                return makeMovementFlags(0, 0)
             }
 
             override fun onMove(
@@ -50,13 +51,13 @@ class BookSourceListFragment : BaseFragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 viewLaunch {
                     val book = adapter.data.getOrNull(viewHolder.adapterPosition)
-                    val succes = DataManager.deleteBookByUrl(book ?: return@viewLaunch)
-                    if (!succes) {
+                    val success = DataManager.deleteBookByUrl(book ?: return@viewLaunch)
+                    if (!success) {
                         toastSHORT("删除失败")
+                        dismissAllowingStateLoss()
                     }
                 }
             }
-
         })
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
