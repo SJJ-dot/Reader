@@ -49,6 +49,7 @@ data class JavaScript constructor(
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         return js {
+            putProperty("source",javaToJS(source))
             putProperty("http", javaToJS(http))
             evaluateString(headerScript)
             evaluateString(js)
