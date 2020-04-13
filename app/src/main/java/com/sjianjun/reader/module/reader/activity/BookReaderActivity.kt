@@ -29,6 +29,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
@@ -53,7 +54,9 @@ class BookReaderActivity : BaseActivity() {
             .commitNowAllowingStateLoss()
 
         recycle_view.adapter = adapter
-
+        recycle_view.setOnClickListener {
+            Log.e("setOnClickListener")
+        }
         initScrollLoadChapter()
         initData()
     }
