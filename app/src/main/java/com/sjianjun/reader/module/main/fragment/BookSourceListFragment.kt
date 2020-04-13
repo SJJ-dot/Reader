@@ -69,8 +69,8 @@ class BookSourceListFragment : BaseFragment() {
                             book.lastChapter = DataManager.getLastChapterByBookUrl(book.url).first()
                             emit(book)
                         }
-                    }.toList()
-                }.collectLatest {
+                    }.toList().sortedBy { book -> book.source }
+                }.flowIo().collectLatest {
                     adapter.data = it
                     adapter.notifyDataSetChanged()
                 }
