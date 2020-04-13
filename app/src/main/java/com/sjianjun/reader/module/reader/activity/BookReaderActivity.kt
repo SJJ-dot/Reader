@@ -2,9 +2,8 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.Html
-import android.text.Spanned
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.GravityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,18 +17,14 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.module.main.fragment.ChapterListFragment
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.BOOK_URL
-import com.sjianjun.reader.utils.CHAPTER_URL
-import com.sjianjun.reader.utils.fragmentCreate
-import com.sjianjun.reader.utils.html
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.activity_book_reader.*
-import kotlinx.android.synthetic.main.activity_book_reader.chapter_title
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
-import sjj.alog.Log
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
@@ -54,9 +49,8 @@ class BookReaderActivity : BaseActivity() {
             .commitNowAllowingStateLoss()
 
         recycle_view.adapter = adapter
-        recycle_view.setOnClickListener {
-            Log.e("setOnClickListener")
-        }
+        initTime()
+        initCenterClick()
         initScrollLoadChapter()
         initData()
     }
@@ -77,6 +71,33 @@ class BookReaderActivity : BaseActivity() {
             drawer_layout.closeDrawer(GravityCompat.END)
         } else {
             super.onBackPressed()
+        }
+    }
+
+    private fun initTime() {
+        viewLaunch {
+            val format = simpleDateFormat("HH:mm")
+            time.text = format.format(Date())
+
+            val delay = simpleDateFormat("ss")
+            delay((61 - delay.format(Date()).toInt()) * 1000L)
+
+            while (true) {
+                time.text = format.format(Date())
+                delay(60000)
+            }
+        }
+    }
+
+    private fun initCenterClick() {
+        recycle_view.centerClickListener = View.OnClickListener {
+            if (recycle_view.touchable) {
+                ImmersionBar.with(this).hideBar(BarHide.FLAG_SHOW_BAR).init()
+                recycle_view.touchable = false
+            } else {
+                recycle_view.touchable = true
+                ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
+            }
         }
     }
 
