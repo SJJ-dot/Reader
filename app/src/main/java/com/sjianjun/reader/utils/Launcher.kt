@@ -1,12 +1,10 @@
 package com.sjianjun.reader.utils
 
-import com.sjianjun.reader.repository.transactionExecutor
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import sjj.alog.Log
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 val handler = CoroutineExceptionHandler { _, exception ->
     Log.e("Caught $exception", exception)

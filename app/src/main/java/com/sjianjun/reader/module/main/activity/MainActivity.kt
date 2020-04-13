@@ -59,6 +59,8 @@ class MainActivity : BaseActivity() {
 
         viewLaunch {
             checkUpdate(this@MainActivity)
+
+//            test()
         }
 
     }
