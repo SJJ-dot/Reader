@@ -188,7 +188,7 @@ object DataManager {
                     .find { it.url != book.url } ?: return@withIo false
                 changeReadingRecordBookSource(otherBook)
             }
-            deleteBook(book)
+            dao.deleteBookByUrl(book)
             return@withIo true
         }
     }
