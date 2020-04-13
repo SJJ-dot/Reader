@@ -143,7 +143,7 @@ class BookshelfFragment : BaseFragment() {
                 val readChapterIndex = book.readChapter?.index ?: 0
                 val remainingCount = lastChapterIndex - readChapterIndex
 
-                if (book.isLoading && remainingCount <= 0) {
+                if (book.isLoading || remainingCount <= 0) {
                     bv_unread.hide()
                 } else {
                     bv_unread.show()
