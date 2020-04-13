@@ -16,6 +16,18 @@ import okhttp3.TlsVersion
 import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
+private fun header() = mutableMapOf(
+    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
+    "Cache-Control" to "no-cache",
+    "Connection" to "keep-alive",
+    "Pragma" to "no-cache",
+    "Sec-Fetch-Dest" to "document",
+    "Sec-Fetch-Mode" to "navigate",
+    "Sec-Fetch-Site" to "none",
+    "Sec-Fetch-User" to "?1",
+    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+)
 
 val client = HttpClient.Builder()
     .apply {
@@ -38,7 +50,7 @@ val client = HttpClient.Builder()
             )
             .build()
         clientBuilder = OkHttpClient.Builder()
-            .connectionSpecs(listOf(spec,ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
+            .connectionSpecs(listOf(spec, ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
             .connectTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -49,9 +61,18 @@ val client = HttpClient.Builder()
                 )
             )
             .addInterceptor {
-                val request = it.request().newBuilder()
-                request.addHeader("User-Agent" , "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36")
-                it.proceed(request.build())
+
+                val header = header()
+                it.request().headers().names().forEach { name ->
+                    header.remove(name)
+                }
+                val host = it.request().url().host()
+                val newBuilder = it.request().newBuilder()
+                newBuilder.addHeader("Host",host)
+                header.forEach { (t, u) ->
+                    newBuilder.addHeader(t,u)
+                }
+                it.proceed(newBuilder.build())
             }
             .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
     }
@@ -69,11 +90,11 @@ class Http {
         url: String,
         queryMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap()
-    ): String= runBlocking {
+    ): String = runBlocking {
         try {
             client.get<String>(url, queryMap, header)
         } catch (e: Exception) {
-            Log.e(e.message,e)
+            Log.e(e.message, e)
             ""
         }
     }
@@ -87,7 +108,7 @@ class Http {
         try {
             client.post<String>(url, fieldMap, header)
         } catch (e: Exception) {
-            Log.e(e.message,e)
+            Log.e(e.message, e)
             ""
         }
     }
