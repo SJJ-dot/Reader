@@ -141,6 +141,8 @@ class BookReaderActivity : BaseActivity() {
             val readingChapter = adapter.chapterList.getOrNull(pos)
             readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
             readingRecord.offest = top
+            val isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+            readingRecord.isEnd = isEnd
             DataManager.setReadingRecord(readingRecord)
         }.apply(readingRecordJob::lazySet)
     }

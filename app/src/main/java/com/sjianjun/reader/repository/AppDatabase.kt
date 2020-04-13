@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 2
+    version = 3
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
@@ -34,13 +34,18 @@ val queryExecutor = Executors.newFixedThreadPool(10) { r ->
     Thread(r, String.format("query_%d", threadId.getAndIncrement()))
 }
 val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
-    .fallbackToDestructiveMigration()
     .setQueryExecutor(queryExecutor)
     .setTransactionExecutor(queryExecutor)
     .addMigrations(object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
 //                    ALTER TABLE 表名 ADD COLUMN 列名 数据类型
             database.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `offest` INTEGER NOT NULL default 0")
+        }
+    })
+    .addMigrations(object : Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+//                    ALTER TABLE 表名 ADD COLUMN 列名 数据类型
+            database.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `isEnd` INTEGER NOT NULL default 0")
         }
     })
     .build()

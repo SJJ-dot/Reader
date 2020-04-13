@@ -15,6 +15,8 @@ class ReadingRecord(
     var chapterUrl = ""
 
     var offest = 0
+
+    var isEnd = false
     override fun toString(): String {
         return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', bookUrl='$bookUrl', chapterUrl='$chapterUrl')"
     }

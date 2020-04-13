@@ -41,6 +41,8 @@ class Book {
     @Ignore
     var readChapter: Chapter? = null
 
+    @Ignore
+    var record: ReadingRecord? = null
     /**
      * 包含本书的书源
      */
