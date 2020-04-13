@@ -39,7 +39,10 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-        ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
+        ImmersionBar.with(this)
+            .statusBarDarkFont(true)
+            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
+            .init()
         //先不显示
         supportFragmentManager.beginTransaction()
             .replace(
