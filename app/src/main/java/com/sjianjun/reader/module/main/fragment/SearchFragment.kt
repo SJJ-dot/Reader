@@ -163,10 +163,10 @@ class SearchFragment : BaseFragment() {
 
             holder.itemView.setOnClickListener { _ ->
                 fragment.viewLaunch {
-                    val id = DataManager.saveSearchResult(data[position])
+                    DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_URL, id)
+                        bundle(BOOK_TITLE to searchResult.bookTitle,BOOK_AUTHOR to searchResult.bookAuthor)
                     )
                 }
             }
