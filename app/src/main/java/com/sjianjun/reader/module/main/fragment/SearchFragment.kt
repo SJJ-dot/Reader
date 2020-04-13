@@ -124,7 +124,7 @@ class SearchFragment : BaseFragment() {
         })
     }
 
-
+    //宜搜快速提示
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
         var job: Job? = null
         for (msg in channel) {
