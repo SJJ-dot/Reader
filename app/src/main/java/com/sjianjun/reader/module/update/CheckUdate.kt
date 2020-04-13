@@ -17,10 +17,7 @@ import sjj.novel.util.gson
 
 suspend fun checkUpdate(activity: BaseActivity) = withIo {
     val info =
-        http.get(
-            "https://api.github.com/repos/SJJ-dot/Reader/releases/latest",
-            header = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36")
-        )
+        http.get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
     if (info.isNotEmpty()) {
         globalConfig.releasesInfo = info
     }

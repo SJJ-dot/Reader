@@ -117,7 +117,7 @@ object JavaScriptTest {
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
             chapter.content = ChapterContent(chapter.url, chapter.bookUrl, c ?: "")
-            Log.e("${book.source} 章节加载结果:$chapter")
+            Log.e(" 测试：${if (c.isNullOrBlank()) "失败" else "通过"}")
         }
         Unit
     }
