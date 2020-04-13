@@ -20,11 +20,9 @@ import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
-import java.util.concurrent.atomic.AtomicReference
 
 class BookshelfFragment : BaseFragment() {
 
@@ -78,29 +76,25 @@ class BookshelfFragment : BaseFragment() {
 
         viewLaunch {
             //需要最新章节 阅读章节 书源数量
-            val book = AtomicReference<Job>()
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
-                book.get()?.cancel()
-                viewLaunch {
-                    it.asFlow().flatMapMerge { book ->
-                        combine(
-                            DataManager.getReadingRecord(book).map { record ->
-                                val id = record?.chapterUrl ?: return@map null
-                                DataManager.getChapterByUrl(id).first()
-                            },
-                            DataManager.getLastChapterByBookUrl(book.url),
-                            DataManager.getJavaScript(book.title, book.author)
-                        ) { readChapter, lastChapter, js ->
-                            book.readChapter = readChapter
-                            book.lastChapter = lastChapter
-                            book.javaScriptList = js
-                            book
-                        }
-                    }.flowIo().collectLatest { _ ->
-                        bookList.postValue(it)
+                it.asFlow().flatMapMerge { book ->
+                    combine(
+                        DataManager.getReadingRecord(book).map { record ->
+                            val id = record?.chapterUrl ?: return@map null
+                            DataManager.getChapterByUrl(id).first()
+                        },
+                        DataManager.getLastChapterByBookUrl(book.url),
+                        DataManager.getJavaScript(book.title, book.author)
+                    ) { readChapter, lastChapter, js ->
+                        book.readChapter = readChapter
+                        book.lastChapter = lastChapter
+                        book.javaScriptList = js
+                        book
                     }
-                }.apply(book::lazySet)
+                }.flowIo().collectLatest { _ ->
+                    bookList.postValue(it)
+                }
             }
         }
     }

@@ -76,12 +76,11 @@ class BookDetailsFragment : BaseFragment() {
 
                 initListener(it)
 
-                initLatestChapter(it)
                 if (first) {
                     first = false
                     refresh(it?.url)
                 }
-
+                initLatestChapter(it)
             }
         }
     }
@@ -107,22 +106,18 @@ class BookDetailsFragment : BaseFragment() {
         }
     }
 
-    private val latestChapterJob = AtomicReference<Job>()
-    private fun initLatestChapter(book: Book?) {
-        latestChapterJob.get()?.cancel()
-        launch {
-            DataManager.getLastChapterByBookUrl(book?.url ?: "")
-                .collectLatest { lastChapter ->
-                    latestChapter?.text = lastChapter?.title
-                    latestChapter.setOnClickListener { _ ->
-                        book ?: return@setOnClickListener
-                        startActivity<BookReaderActivity>(
-                            BOOK_URL to book.url,
-                            CHAPTER_URL to lastChapter?.url
-                        )
-                    }
+    private suspend fun initLatestChapter(book: Book?) {
+        DataManager.getLastChapterByBookUrl(book?.url ?: "")
+            .collectLatest { lastChapter ->
+                latestChapter?.text = lastChapter?.title
+                latestChapter.setOnClickListener { _ ->
+                    book ?: return@setOnClickListener
+                    startActivity<BookReaderActivity>(
+                        BOOK_URL to book.url,
+                        CHAPTER_URL to lastChapter?.url
+                    )
                 }
-        }.apply(latestChapterJob::lazySet)
+            }
 
     }
 
