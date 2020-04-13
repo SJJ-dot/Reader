@@ -82,12 +82,13 @@ class BookshelfFragment : BaseFragment() {
                     combine(
                         DataManager.getReadingRecord(book).map { record ->
                             val id = record?.chapterUrl ?: return@map null
-                            DataManager.getChapterByUrl(id).first()
+                            DataManager.getChapterByUrl(id).first() to record
                         },
                         DataManager.getLastChapterByBookUrl(book.url),
                         DataManager.getJavaScript(book.title, book.author)
                     ) { readChapter, lastChapter, js ->
-                        book.readChapter = readChapter
+                        book.record = readChapter?.second
+                        book.readChapter = readChapter?.first
                         book.lastChapter = lastChapter
                         book.javaScriptList = js
                         book
@@ -141,8 +142,11 @@ class BookshelfFragment : BaseFragment() {
 
                 val lastChapterIndex = book.lastChapter?.index ?: 0
                 val readChapterIndex = book.readChapter?.index ?: 0
-                val remainingCount = lastChapterIndex - readChapterIndex
-
+                val remainingCount = if (book.record?.isEnd == true) {
+                    lastChapterIndex - readChapterIndex
+                } else {
+                    lastChapterIndex - readChapterIndex + 1
+                }
                 if (book.isLoading || remainingCount <= 0) {
                     bv_unread.hide()
                 } else {

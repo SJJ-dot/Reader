@@ -35,7 +35,7 @@ class CenterClickView @JvmOverloads constructor(
                 centerClickable = true
             }
             MotionEvent.ACTION_MOVE -> {
-                if (centerClickable &&
+                if (touchable && centerClickable &&
                     hypot((event.x - touchX).toDouble(), (event.y - touchY).toDouble()) > slop
                 ) {
                     centerClickable = false
