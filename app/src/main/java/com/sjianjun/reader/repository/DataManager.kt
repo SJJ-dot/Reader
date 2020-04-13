@@ -212,6 +212,13 @@ object DataManager {
         return dao.getBookByTitleAndAuthor(title, author)
     }
 
+    fun getReadingBook(title: String?, author: String?): Flow<Book?> {
+        if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
+            return emptyFlow()
+        }
+        return dao.getReadingBook(title, author)
+    }
+
 
     fun getChapterList(bookUrl: String): Flow<List<Chapter>> {
         return dao.getChapterListByBookUrl(bookUrl)

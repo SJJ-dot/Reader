@@ -109,6 +109,9 @@ interface Dao {
     @Query("select * from Book where title=:title and author=:author")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
+    @Query("select * from Book where url in (select bookUrl from ReadingRecord where bookTitle=:title and bookAuthor=:author)")
+    fun getReadingBook(title: String, author: String): Flow<Book?>
+
     @Query("select * from Chapter where bookUrl=:bookUrl order by `index` DESC limit 1")
     fun getLastChapterByBookUrl(bookUrl: String): Flow<Chapter?>
 

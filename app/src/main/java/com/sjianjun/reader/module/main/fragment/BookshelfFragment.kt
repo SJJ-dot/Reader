@@ -149,11 +149,11 @@ class BookshelfFragment : BaseFragment() {
                 val readChapterIndex = book.readChapter?.index ?: 0
                 val remainingCount = lastChapterIndex - readChapterIndex
 
-                if (book.isLoading &&remainingCount<=0 ) {
+                if (book.isLoading && remainingCount <= 0) {
                     bv_unread.hide()
                 } else {
                     bv_unread.show()
-                    bv_unread.badgeCount =remainingCount
+                    bv_unread.badgeCount = remainingCount
                 }
 
                 origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
@@ -166,7 +166,10 @@ class BookshelfFragment : BaseFragment() {
 
                 val l = View.OnClickListener {
                     fragment.findNavController()
-                        .navigate(R.id.bookDetailsFragment, bundle(BOOK_URL, book.url))
+                        .navigate(
+                            R.id.bookDetailsFragment,
+                            bundle(BOOK_TITLE to book.title, BOOK_AUTHOR to book.author)
+                        )
                 }
                 intro.setOnClickListener(l)
                 bookCover.setOnClickListener(l)

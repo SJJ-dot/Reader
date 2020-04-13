@@ -6,6 +6,7 @@ import android.text.Html
 import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.GravityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.BarHide
@@ -53,7 +54,6 @@ class BookReaderActivity : BaseActivity() {
 
         recycle_view.adapter = adapter
 
-        initStatusBar()
         initScrollLoadChapter()
         initData()
     }
@@ -69,14 +69,11 @@ class BookReaderActivity : BaseActivity() {
         saveReadRecord(0)
     }
 
-    private fun initStatusBar() {
-        content.setOnClickListener {
-            viewLaunch {
-                val bar = ImmersionBar.with(this@BookReaderActivity)
-                bar.hideBar(BarHide.FLAG_SHOW_BAR).init()
-                delay(3000)
-                bar.hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
-            }
+    override fun onBackPressed() {
+        if (drawer_layout.isDrawerOpen(GravityCompat.END)) {
+            drawer_layout.closeDrawer(GravityCompat.END)
+        } else {
+            super.onBackPressed()
         }
     }
 
