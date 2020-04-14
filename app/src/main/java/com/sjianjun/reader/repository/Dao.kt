@@ -41,7 +41,7 @@ interface Dao {
     @Delete
     suspend fun deleteSearchHistory(historyList: List<SearchHistory>)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBook(bookList: List<Book>): List<Long>
 
     @Transaction
