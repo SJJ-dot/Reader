@@ -18,16 +18,34 @@ public fun launchGlobal(
     return GlobalScope.launch(context, start, block)
 }
 
-suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.IO, block)
+suspend inline fun <T> withIo(noinline block: suspend CoroutineScope.() -> T): T? {
+    return withContext(Dispatchers.IO) {
+        return@withContext try {
+            block()
+        } catch (throwable: Throwable) {
+            null
+        }
+    }
 }
 
-suspend inline fun <T> withDefault(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.Default, block)
+suspend inline fun <T> withDefault(noinline block: suspend CoroutineScope.() -> T): T? {
+    return withContext(Dispatchers.Default) {
+        return@withContext try {
+            block()
+        } catch (throwable: Throwable) {
+            null
+        }
+    }
 }
 
-suspend inline fun <T> withMain(noinline block: suspend CoroutineScope.() -> T): T {
-    return withContext(Dispatchers.Main, block)
+suspend inline fun <T> withMain(noinline block: suspend CoroutineScope.() -> T): T? {
+    return withContext(Dispatchers.Main) {
+        return@withContext try {
+            block()
+        } catch (throwable: Throwable) {
+            null
+        }
+    }
 }
 
 fun <T> Flow<T>.flowIo(): Flow<T> {

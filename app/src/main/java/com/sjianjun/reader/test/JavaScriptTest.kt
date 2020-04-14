@@ -96,7 +96,7 @@ object JavaScriptTest {
         """.trimIndent()
     }
 
-    suspend fun testJavaScript(): Unit = withIo {
+    suspend fun testJavaScript() = withIo {
         //        val query = "黎明之剑"
         val query = "哈利波特"
         Log.e("${javaScript.source} 搜索 $query")

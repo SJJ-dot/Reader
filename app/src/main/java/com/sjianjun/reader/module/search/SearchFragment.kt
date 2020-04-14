@@ -151,7 +151,7 @@ class SearchFragment : BaseFragment() {
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
         for (msg in channel) {
             refresh_progress_bar?.isAutoLoading = true
-            DataManager.search(msg).collect {
+            DataManager.search(msg)?.collect {
                 searchResult.postValue(it)
             }
             refresh_progress_bar?.isAutoLoading = false
