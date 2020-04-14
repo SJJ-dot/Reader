@@ -46,8 +46,8 @@ object DataManager {
     }
 
 
-    suspend fun reloadBookJavaScript() {
-        checkJavaScriptUpdate({
+    suspend fun reloadBookJavaScript(): Boolean? {
+        return checkJavaScriptUpdate({
             http.get(globalConfig.javaScriptBaseUrl + "version.json")
         }, {
             http.get(globalConfig.javaScriptBaseUrl + it)
@@ -57,10 +57,10 @@ object DataManager {
     private suspend inline fun checkJavaScriptUpdate(
         crossinline versionInfo: () -> String,
         crossinline loadScript: (fileName: String) -> String
-    ) {
-        withIo {
+    ): Boolean? {
+       return withIo {
             val versionJson = versionInfo()
-            val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo
+            val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo false
             if (info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.filter {
                     globalConfig.javaScriptVersionMap.getValue(it.fileName).value!! < it.version
@@ -79,6 +79,7 @@ object DataManager {
                     }
                 }
             }
+            return@withIo true
         }
     }
 
