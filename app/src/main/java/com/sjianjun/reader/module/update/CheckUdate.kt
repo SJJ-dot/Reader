@@ -14,6 +14,7 @@ import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
+import kotlin.math.max
 
 suspend fun checkUpdate(activity: BaseActivity) = withIo {
     val info =
@@ -27,7 +28,8 @@ suspend fun checkUpdate(activity: BaseActivity) = withIo {
     if (download?.browser_download_url.isNullOrEmpty()) {
         return@withIo githubApi
     }
-    val lastVersion = listOf(githubApi.tag_name, BuildConfig.VERSION_NAME).max()!!
+
+    val lastVersion = lastVersion( BuildConfig.VERSION_NAME,githubApi.tag_name)
     if (lastVersion != BuildConfig.VERSION_NAME) {
         val dialog = AlertDialog.Builder(activity)
             .setTitle(if (githubApi.name.isEmpty()) "版本更新" else githubApi.name)
@@ -45,4 +47,23 @@ suspend fun checkUpdate(activity: BaseActivity) = withIo {
         }
     }
     return@withIo githubApi
+}
+
+private fun lastVersion(version1: String, version2: String): String {
+    if (version1 == version2) {
+        return version1
+    }
+    val split1 = version1.split(".")
+    val split2 = version2.split(".")
+    (0..max(split1.size, split2.size)).forEach {
+        val n1 = split1.getOrNull(it)?.toIntOrNull() ?: return version2
+        val n2 = split2.getOrNull(it)?.toIntOrNull() ?: return version1
+        if (n1 > n2) {
+            return version1
+        }
+        if (n1 < n2) {
+            return version2
+        }
+    }
+    return version1
 }
