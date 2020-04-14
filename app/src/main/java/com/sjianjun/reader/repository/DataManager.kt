@@ -245,7 +245,8 @@ object DataManager {
      */
     suspend fun changeReadingRecordBookSource(book: Book) {
         withIo {
-            val readingRecord = getReadingRecord(book).first()!!
+            val readingRecord = getReadingRecord(book).first()
+                ?: ReadingRecord(book.title, book.author)
             if (readingRecord.bookUrl == book.url) {
                 return@withIo
             }
