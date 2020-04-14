@@ -42,7 +42,6 @@ function getDetails(http,url){
 //                var chapterListHtml = Jsoup.parse(http.get(chapterListUrl),chapterListUrl);
 
     var children = parse.select("#at a");
-    Log.e(children);
     var chapterList = new ArrayList();
     for(i=0; i<children.size(); i++){
         var chapterEl = children.get(i);
