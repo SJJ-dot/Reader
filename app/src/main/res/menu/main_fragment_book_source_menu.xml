@@ -6,7 +6,7 @@
     <item
         android:id="@+id/sync_book_script"
         android:title="同步"
-        android:icon="@drawable/ic_perm_group_sync_settings"
-        app:showAsAction="collapseActionView" />
+        android:icon="@mipmap/ic_sync"
+        app:showAsAction="ifRoom" />
 
 </menu>
