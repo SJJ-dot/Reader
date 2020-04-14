@@ -65,12 +65,15 @@ object DataManager {
                     globalConfig.javaScriptVersionMap.getValue(it.fileName).value!! < it.version
                 }?.map {
                     async {
-                        JavaScript(it.fileName, loadScript(it.fileName))
+                        JavaScript(it.fileName, loadScript(it.fileName),it.version)
                     }
                 }?.awaitAll().also {
                     if (it != null) {
                         dao.insertJavaScript(it)
                         globalConfig.javaScriptVersion = info.version
+                        it.forEach { script ->
+                            globalConfig.javaScriptVersionMap.getValue(script.source).postValue(script.version)
+                        }
                     }
                 }
             }

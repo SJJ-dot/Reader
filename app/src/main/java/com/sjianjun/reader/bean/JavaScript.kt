@@ -24,7 +24,10 @@ data class JavaScript constructor(
      * - 多余的参数从arguments取
      */
     @JvmField
-    var js: String = ""
+    var js: String = "",
+
+    @Ignore
+    var version: Int = 0
 ) {
 
     constructor(source: String, js: () -> String) : this(source = source, js = js())
@@ -49,7 +52,7 @@ data class JavaScript constructor(
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         return js {
-            putProperty("source",javaToJS(source))
+            putProperty("source", javaToJS(source))
             putProperty("http", javaToJS(http))
             evaluateString(headerScript)
             evaluateString(js)
