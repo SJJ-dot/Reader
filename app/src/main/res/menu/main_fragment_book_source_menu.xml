@@ -4,12 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
     <item
-        android:id="@+id/import_book_script"
-        android:title="导入脚本"
-        app:showAsAction="collapseActionView" />
-    <item
         android:id="@+id/sync_book_script"
-        android:title="同步脚本"
+        android:title="同步"
+        android:icon="@drawable/ic_perm_group_sync_settings"
         app:showAsAction="collapseActionView" />
 
 </menu>
