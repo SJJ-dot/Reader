@@ -68,8 +68,8 @@ object JavaScriptTest {
                 book.url = url;
                 book.title = bookInfo.select("#maininfo #info h1").text();
                 Log.e("3");
-                book.author = bookInfo.select("#maininfo #info p").text().replace("作    者：","");
-                Log.e("4");
+                book.author = bookInfo.select("#maininfo #info p").get(0).text().replace("作 者：","");
+                Log.e("4 "+book.author);
                 book.intro = bookInfo.select("#intro").html();
                 Log.e("5");
                 book.cover = bookInfo.select("#fmimg img").get(0).absUrl("src");
