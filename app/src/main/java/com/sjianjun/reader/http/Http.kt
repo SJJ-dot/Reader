@@ -74,7 +74,7 @@ val client = HttpClient.Builder()
                 }
                 it.proceed(newBuilder.build())
             }
-            .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+            .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.HEADERS))
     }
     .addConverterFactory(GsonCharsetCompatibleConverter.create())
     .addCallAdapterFactory(CoroutineCallAdapterFactory())

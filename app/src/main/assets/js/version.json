@@ -1,6 +1,22 @@
 {
   "version": 3,
   "files": [
-    "biquge5200","古古小说网（55小说网）","爱上中文6"
+    "biquge5200",
+    "古古小说网（55小说网）",
+    "爱上中文6"
+  ],
+  "versions": [
+    {
+      "fileName": "biquge5200",
+      "version": "1"
+    },
+    {
+      "fileName": "古古小说网（55小说网）",
+      "version": "1"
+    },
+    {
+      "fileName": "爱上中文6",
+      "version": "1"
+    }
   ]
 }
