@@ -7,4 +7,5 @@
     <item name="ic_menu_send" type="drawable">@android:drawable/ic_menu_send</item>
     <item name="ic_menu_search" type="drawable">@android:drawable/ic_menu_search</item>
     <item name="ic_menu_preferences" type="drawable">@android:drawable/ic_menu_preferences</item>
+    <item name="ic_perm_group_sync_settings" type="drawable">@android:drawable/ic_perm_group_sync_settings</item>
 </resources>

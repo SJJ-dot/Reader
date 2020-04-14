@@ -13,7 +13,7 @@ interface Dao {
     @Query("SELECT * FROM JavaScript")
     fun getAllJavaScript(): Flow<List<JavaScript>>
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJavaScript(javaScript: List<JavaScript>)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)

@@ -46,10 +46,6 @@ class BookScriptManagerFragment : BaseFragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.import_book_script -> {
-//                startActivity<>()
-                true
-            }
             R.id.sync_book_script -> {
                 //同步书源。退出后就会停止同步。用actor会更好一点。
                 viewLaunch {
