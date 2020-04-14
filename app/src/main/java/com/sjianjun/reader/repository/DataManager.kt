@@ -23,46 +23,49 @@ object DataManager {
 
     init {
         launchGlobal {
-            var version: InputStream? = null
-            val versionInfo = try {
-                version = App.app.assets.open("js/version.json", ACCESS_BUFFER)
-                version.bufferedReader().readText()
-            } finally {
-                version?.close()
-            }
-            val info = gson.fromJson<JsVersionInfo>(versionInfo) ?: return@launchGlobal
-            if (info.version > globalConfig.javaScriptVersion) {
-                info.files.map {
-                    async {
-                        var jsInput: InputStream? = null
-                        try {
-                            jsInput = App.app.assets.open("js/$it", ACCESS_BUFFER)
-                            val js = jsInput.bufferedReader().readText()
-                            JavaScript(it, js)
-                        } finally {
-                            jsInput?.close()
-                        }
-                    }
-                }.awaitAll().also {
-                    dao.insertJavaScript(it)
-                    globalConfig.javaScriptVersion = info.version
+            checkJavaScriptUpdate({
+                var version: InputStream? = null
+                val versionInfo = try {
+                    version = App.app.assets.open("js/version.json", ACCESS_BUFFER)
+                    version.bufferedReader().readText()
+                } finally {
+                    version?.close()
                 }
-            }
+                versionInfo
+            }, {
+                var jsInput: InputStream? = null
+                try {
+                    jsInput = App.app.assets.open("js/$it", ACCESS_BUFFER)
+                    jsInput.bufferedReader().readText()
+                } finally {
+                    jsInput?.close()
+                }
+            })
         }
     }
 
 
     suspend fun reloadBookJavaScript() {
+        checkJavaScriptUpdate({
+            http.get(globalConfig.javaScriptBaseUrl + "version.json")
+        }, {
+            http.get(globalConfig.javaScriptBaseUrl + it)
+        })
+    }
+
+    private suspend inline fun checkJavaScriptUpdate(
+        crossinline versionInfo: () -> String,
+        crossinline loadScript: (fileName: String) -> String
+    ) {
         withIo {
-            val versionInfo = http.get(globalConfig.javaScriptBaseUrl + "version.json")
-            val info = gson.fromJson<JsVersionInfo>(versionInfo) ?: return@withIo
+            val versionJson = versionInfo()
+            val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo
             if (info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.filter {
                     globalConfig.javaScriptVersionMap.getValue(it.fileName).value!! < it.version
                 }?.map {
                     async {
-                        val js = http.get(globalConfig.javaScriptBaseUrl + it.fileName)
-                        JavaScript(it.fileName, js)
+                        JavaScript(it.fileName, loadScript(it.fileName))
                     }
                 }?.awaitAll().also {
                     if (it != null) {
