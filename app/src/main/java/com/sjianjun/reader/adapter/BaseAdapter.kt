@@ -5,10 +5,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
-abstract class BaseAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+abstract class BaseAdapter(val itemRes: Int = 0) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     @Deprecated("use itemLayoutRes", ReplaceWith("itemLayoutRes"))
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return createViewHolder(LayoutInflater.from(parent.context).inflate(itemLayoutRes(viewType), parent, false))
+        return createViewHolder(
+            LayoutInflater.from(parent.context).inflate(
+                itemLayoutRes(viewType),
+                parent,
+                false
+            )
+        )
     }
 
     protected fun createViewHolder(view: View): RecyclerView.ViewHolder {
@@ -18,7 +24,7 @@ abstract class BaseAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
 
     protected open fun itemLayoutRes(viewType: Int): Int {
-        return 0
+        return itemRes
     }
 
 }

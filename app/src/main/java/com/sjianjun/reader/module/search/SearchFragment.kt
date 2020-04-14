@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.search
 
 import android.os.Bundle
 import android.view.Menu
@@ -19,8 +19,9 @@ import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.main_fragment_search.*
+import kotlinx.android.synthetic.main.search_fragment_search.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
+import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -30,12 +31,14 @@ import kotlinx.coroutines.flow.collectLatest
 
 class SearchFragment : BaseFragment() {
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
+    private val searchHint = SearchHintAdapter()
 
-    override fun getLayoutRes() = R.layout.main_fragment_search
+    override fun getLayoutRes() = R.layout.search_fragment_search
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
+        recycle_view_hint.adapter = searchHint
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -45,6 +48,9 @@ class SearchFragment : BaseFragment() {
         searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
         init(searchView)
         searchView.isIconified = false
+        searchHint.itemClick = {
+            searchView.setQuery(it, true)
+        }
     }
 
     private fun init(searchView: SearchView) {
@@ -94,7 +100,14 @@ class SearchFragment : BaseFragment() {
                 return true
             }
 
-            override fun onQueryTextChange(p0: String?): Boolean {
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText.isNullOrEmpty()) {
+                    searchHint.data = emptyList()
+                    searchHint.notifyDataSetChanged()
+                }
+                viewLaunch {
+                    queryHintActor.send(newText ?: "")
+                }
                 return false
             }
         })
@@ -113,7 +126,10 @@ class SearchFragment : BaseFragment() {
 
     private fun initSearchResultList(searchView: SearchView) {
         searchRecyclerView.layoutManager = LinearLayoutManager(context)
-        val resultBookAdapter = SearchResultBookAdapter(this)
+        val resultBookAdapter =
+            SearchResultBookAdapter(
+                this
+            )
         resultBookAdapter.setHasStableIds(true)
         searchRecyclerView.adapter = resultBookAdapter
         searchResult.observe(viewLifecycleOwner, Observer {
@@ -125,23 +141,40 @@ class SearchFragment : BaseFragment() {
     }
 
     //宜搜快速提示
+    private val queryHintActor = actor<String>(capacity = Channel.CONFLATED) {
+        for (msg in channel) {
+            val hintList = DataManager.searchHint(msg) ?: emptyList()
+            searchHint.data = hintList
+            searchHint.notifyDataSetChanged()
+        }
+    }
     private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
-        var job: Job? = null
         for (msg in channel) {
             refresh_progress_bar?.isAutoLoading = true
-            job?.cancel()
-            job = viewLaunch {
-                DataManager.search(msg).collect {
-                    searchResult.postValue(it)
-                }
-                refresh_progress_bar?.isAutoLoading = false
+            DataManager.search(msg).collect {
+                searchResult.postValue(it)
             }
+            refresh_progress_bar?.isAutoLoading = false
         }
     }
 
     private val deleteSearchHistoryActor = actor<List<SearchHistory>>() {
         for (msg in channel) {
             DataManager.deleteSearchHistory(msg)
+        }
+    }
+
+    private class SearchHintAdapter : BaseAdapter(R.layout.search_item_fragment_search_hint) {
+        var data = listOf<String>()
+        var itemClick: ((String) -> Unit)? = null
+        override fun getItemCount() = data.size
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val hint = data[position]
+            holder.itemView.hint.text = hint
+            holder.itemView.setOnClickListener {
+                itemClick?.invoke(hint)
+            }
         }
     }
 
@@ -166,7 +199,10 @@ class SearchFragment : BaseFragment() {
                     DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_TITLE to searchResult.bookTitle,BOOK_AUTHOR to searchResult.bookAuthor)
+                        bundle(
+                            BOOK_TITLE to searchResult.bookTitle,
+                            BOOK_AUTHOR to searchResult.bookAuthor
+                        )
                     )
                 }
             }
