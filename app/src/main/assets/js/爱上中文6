@@ -34,7 +34,7 @@ function getDetails(http,url){
     var bookInfo = parse.select(".info");
     book.url = url;
     book.title = bookInfo.select(".btitle").get(0).child(0).text();
-    book.author = bookInfo.select(".btitle").get(0).child(1).text();
+    book.author = bookInfo.select(".btitle").get(0).child(1).text().replace("作者：","");
     book.intro = bookInfo.select(".js").get(0).html();
     book.cover = bookInfo.select(".pic > img").get(0).absUrl("src");
     //加载章节列表
