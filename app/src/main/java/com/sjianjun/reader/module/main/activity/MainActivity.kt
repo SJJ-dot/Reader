@@ -14,6 +14,7 @@ import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
+import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ class MainActivity : BaseActivity() {
 
         viewLaunch {
             checkUpdate(this@MainActivity)
-//            JavaScriptTest.testJavaScript()
+            JavaScriptTest.testJavaScript()
 //            test()
         }
 
