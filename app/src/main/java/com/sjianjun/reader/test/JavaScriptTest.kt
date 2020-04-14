@@ -17,9 +17,9 @@ object JavaScriptTest {
     fun showName() {
         val parse = Jsoup.parse("")
         parse.getElementsByTag("")
-        parse.getElementById("")
+        parse.getElementById("").tagName()
         parse.getElementsByClass("").get(0).html()
-        parse.select("atc > img").select("").text()
+        parse.select("atc > img").select("").text().split("：")
         parse.getElementsByTag("book")
         parse.child(0).ownText()
         parse.attr("content").replace("format=html5; url=", "")
@@ -62,25 +62,35 @@ object JavaScriptTest {
                 var book = new Book();
                 book.source = source;
                 //书籍信息
-                var bookInfo = parse.select(".info");
+                Log.e("1");
+                var bookInfo = parse.select(".box_con").get(0);
+                Log.e("2");
                 book.url = url;
-                book.title = bookInfo.select(".btitle").get(0).child(0).text();
-                book.author = bookInfo.select(".btitle").get(0).child(1).text();
-                book.intro = bookInfo.select(".js").get(0).html();
-                book.cover = bookInfo.select(".pic > img").get(0).absUrl("src");
+                book.title = bookInfo.select("#maininfo #info h1").text();
+                Log.e("3");
+                book.author = bookInfo.select("#maininfo #info p").text().replace("作    者：","");
+                Log.e("4");
+                book.intro = bookInfo.select("#intro").html();
+                Log.e("5");
+                book.cover = bookInfo.select("#fmimg img").get(0).absUrl("src");
+                //Log.e("6");
                 //加载章节列表
 //                var chapterListUrl = bookInfo.getElementsByClass("btn cl").get(0).child(0).child(0).absUrl("href");
+//              Log.e("7");
 //                var chapterListHtml = Jsoup.parse(http.get(chapterListUrl),chapterListUrl);
-                
-                var children = parse.select("#at a");
+                Log.e("8");
+                var children = parse.select("#list dl").get(0).children();
                 Log.e(children);
                 var chapterList = new ArrayList();
-                for(i=0; i<children.size(); i++){
+                for(i=children.size()-1; i>=0; i--){
                     var chapterEl = children.get(i);
+                    if(chapterEl.tagName() == "dt"){
+                        break;
+                    }
                     var chapter = new Chapter();
-                    chapter.title = chapterEl.text();
-                    chapter.url = chapterEl.absUrl("href");
-                    chapterList.add(chapter);
+                    chapter.title = chapterEl.child(0).text();
+                    chapter.url = chapterEl.child(0).absUrl("href");
+                    chapterList.add(0,chapter);
                 }
                 book.chapterList = chapterList;
                 return book;
@@ -88,7 +98,7 @@ object JavaScriptTest {
             
             function getChapterContent(http,url){
                 var parse = Jsoup.parse(http.get(url),url);
-                var content = parse.getElementById("contents").html();
+                var content = parse.getElementById("content").html();
                 return content;
             }
             
