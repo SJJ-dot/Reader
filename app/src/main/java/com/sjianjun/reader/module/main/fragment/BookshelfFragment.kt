@@ -22,6 +22,7 @@ import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
 class BookshelfFragment : BaseFragment() {
@@ -43,9 +44,19 @@ class BookshelfFragment : BaseFragment() {
 
         swipe_refresh.setOnRefreshListener {
             viewLaunch {
-                bookList.value?.map {
-                    async { DataManager.reloadBookFromNet(it.url) }
-                }?.awaitAll()
+                val sourceMap = mutableMapOf<String, MutableList<Book>>()
+                bookList.value?.forEach {
+                    val list = sourceMap.getOrPut(it.source, { mutableListOf() })
+                    list.add(it)
+                }
+                sourceMap.values.map {
+                    async {
+                        it.forEach {
+                            DataManager.reloadBookFromNet(it.url)
+                            delay(1000)
+                        }
+                    }
+                }.awaitAll()
                 swipe_refresh?.isRefreshing = false
             }
         }
