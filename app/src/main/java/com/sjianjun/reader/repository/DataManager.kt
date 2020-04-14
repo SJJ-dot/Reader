@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.*
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import java.io.InputStream
+import java.net.URLEncoder
 
 /**
  * 界面数据从数据库订阅刷新
@@ -65,14 +66,15 @@ object DataManager {
                     globalConfig.javaScriptVersionMap.getValue(it.fileName).value!! < it.version
                 }?.map {
                     async {
-                        JavaScript(it.fileName, loadScript(it.fileName),it.version)
+                        JavaScript(it.fileName, loadScript(it.fileName), it.version)
                     }
                 }?.awaitAll().also {
                     if (it != null) {
                         dao.insertJavaScript(it)
                         globalConfig.javaScriptVersion = info.version
                         it.forEach { script ->
-                            globalConfig.javaScriptVersionMap.getValue(script.source).postValue(script.version)
+                            globalConfig.javaScriptVersionMap.getValue(script.source)
+                                .postValue(script.version)
                         }
                     }
                 }
@@ -113,6 +115,17 @@ object DataManager {
      */
     fun getAllSearchHistory(): Flow<List<SearchHistory>> {
         return dao.getAllSearchHistory()
+    }
+
+    suspend fun searchHint(query: String): List<String>? {
+        return withIo {
+            val result = http.post(
+                "http://book.easou.com/ta/tsAjax.m",
+                mapOf("k" to URLEncoder.encode(query, "utf-8"))
+            )
+            return@withIo gson.fromJson<List<String>>(result)
+        }
+
     }
 
     /**
