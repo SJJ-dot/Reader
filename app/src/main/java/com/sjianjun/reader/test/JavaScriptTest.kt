@@ -19,7 +19,7 @@ object JavaScriptTest {
         parse.getElementsByTag("")
         parse.getElementById("")
         parse.getElementsByClass("").get(0).html()
-        parse.select("atc > img").select("")
+        parse.select("atc > img").select("").text()
         parse.getElementsByTag("book")
         parse.child(0).ownText()
         parse.attr("content").replace("format=html5; url=", "")
@@ -28,28 +28,27 @@ object JavaScriptTest {
         "".replace("m.", "")
     }
 
-    val javaScript = JavaScript("爱上中文6") {
+    val javaScript = JavaScript("大文学(大书包网)") {
         """
             function search(http,query){
-                var baseUrl = "https://www.aszw6.com/";
+                var baseUrl = "https://www.dawenxue.net/";
                 var map = new HashMap();
-                map.put("searchkey",URLEncoder.encode(query,"gbk"))
-                map.put("searchtype","articlename")
+                map.put("keyword",URLEncoder.encode(query,"utf-8"))
                 var html = http.post(baseUrl+"/modules/article/search.php",map);
                 var parse = Jsoup.parse(html,baseUrl);
                 
            
-                var bookList = parse.getElementById("centerm").select("tbody").select("tr");
+                var bookList = parse.select(".novelslist2").select("li");
                 var results = new ArrayList();
                 for (var i=1;i<bookList.size();i++){ 
                     var bookElement = bookList.get(i);
                     var result = new SearchResult();
                     result.source = source;
-                    result.bookTitle = bookElement.select("a").get(0).text();
-                    result.bookUrl = bookElement.select("a").get(0).absUrl("href");
-                    result.bookAuthor = bookElement.select("a").get(2).text();
+                    result.bookTitle = bookElement.select(".s2 a").text();
+                    result.bookUrl = bookElement.select(".s2 a").get(0).absUrl("href");
+                    result.bookAuthor = bookElement.select(".s4").text();
                     //result.bookCover = bookElement.getElementsByClass("c").get(0).getElementsByTag("img").get(0).absUrl("src");
-                    result.latestChapter = bookElement.select("a").get(1).text();
+                    result.latestChapter = bookElement.select(".s3 a").text();
                     results.add(result);
                 }
                 return results;
