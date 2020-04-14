@@ -8,6 +8,14 @@ def commitCont = 'git rev-list HEAD --count'.execute([], project.rootDir).text.t
 def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], project.rootDir).text.trim()
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('../debug.jks')
+            storePassword '123456'
+            keyAlias = 'debug'
+            keyPassword '123456'
+        }
+    }
     compileSdkVersion COMPILE_SDK_VERSION
     buildToolsVersion "29.0.3"
 
@@ -32,6 +40,7 @@ android {
         }
         debug {
             applicationIdSuffix ".debug"
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
