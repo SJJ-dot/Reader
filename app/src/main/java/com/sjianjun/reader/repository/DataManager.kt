@@ -131,7 +131,7 @@ object DataManager {
     /**
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
-    suspend fun search(query: String): Flow<List<List<SearchResult>>> {
+    suspend fun search(query: String): Flow<List<List<SearchResult>>>? {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
@@ -162,13 +162,13 @@ object DataManager {
         }
     }
 
-    suspend fun saveSearchResult(searchResult: List<SearchResult>): String {
+    suspend fun saveSearchResult(searchResult: List<SearchResult>): String? {
         return withIo {
             dao.insertBookAndSaveReadingRecord(searchResult.toBookList())
         }
     }
 
-    suspend fun reloadBookFromNet(bookUrl: String): Boolean {
+    suspend fun reloadBookFromNet(bookUrl: String): Boolean? {
         return withIo {
             val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
             val javaScript = dao.getJavaScriptBySource(book.source).first() ?: return@withIo false
@@ -205,7 +205,7 @@ object DataManager {
     }
 
 
-    suspend fun deleteBookByUrl(book: Book): Boolean {
+    suspend fun deleteBookByUrl(book: Book): Boolean? {
         return withIo {
             val readingRecord = dao.getReadingRecord(book.title, book.author)
             if (readingRecord?.bookUrl == book.url) {

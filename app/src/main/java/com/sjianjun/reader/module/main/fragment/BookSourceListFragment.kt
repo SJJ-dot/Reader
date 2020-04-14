@@ -52,7 +52,7 @@ class BookSourceListFragment : BaseFragment() {
                 viewLaunch {
                     val book = adapter.data.getOrNull(viewHolder.adapterPosition)
                     val success = DataManager.deleteBookByUrl(book ?: return@viewLaunch)
-                    if (!success) {
+                    if (success == false) {
                         toastSHORT("删除失败")
                         dismissAllowingStateLoss()
                     }
