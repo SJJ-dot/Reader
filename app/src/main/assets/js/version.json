@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "files": [
     "biquge5200",
     "古古小说网（55小说网）",
@@ -22,6 +22,11 @@
     {
       "fileName": "大文学(大书包网)",
       "version": "2"
+    },
+    {
+      "fileName": "顶点小说",
+      "version": "1"
     }
-  ]
+  ],
+  "inherit": true
 }

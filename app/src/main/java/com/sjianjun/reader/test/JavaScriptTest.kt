@@ -28,30 +28,53 @@ object JavaScriptTest {
         "".replace("m.", "")
     }
 
-    val javaScript = JavaScript("大文学(大书包网)") {
+    val javaScript = JavaScript("顶点小说") {
         """
             function search(http,query){
-                var baseUrl = "https://www.dawenxue.net/";
+                var baseUrl = "https://www.230book.com/";
                 var map = new HashMap();
-                map.put("keyword",URLEncoder.encode(query,"utf-8"))
+                map.put("searchkey",URLEncoder.encode(query,"gbk"))
                 var html = http.post(baseUrl+"/modules/article/search.php",map);
+                Log.e(html);
                 var parse = Jsoup.parse(html,baseUrl);
-                
-           
-                var bookList = parse.select(".novelslist2").select("li");
-                var results = new ArrayList();
-                for (var i=1;i<bookList.size();i++){ 
-                    var bookElement = bookList.get(i);
+                try{
+                    Log.e(0);
+                    var bookInfo = parse.select(".box_con").get(0);
+                    var results = new ArrayList();
                     var result = new SearchResult();
                     result.source = source;
-                    result.bookTitle = bookElement.select(".s2 a").text();
-                    result.bookUrl = bookElement.select(".s2 a").get(0).absUrl("href");
-                    result.bookAuthor = bookElement.select(".s4").text();
-                    //result.bookCover = bookElement.getElementsByClass("c").get(0).getElementsByTag("img").get(0).absUrl("src");
-                    result.latestChapter = bookElement.select(".s3 a").text();
+                    Log.e(1);
+                    result.bookTitle = bookInfo.select("#info").get(0).child(0).text();
+                    Log.e(2);
+                    result.bookUrl = parse.getElementsByAttributeValue("property","og:novel:read_url").attr("content");
+                    Log.e(3);
+                    result.bookAuthor = bookInfo.select("#info").get(0).child(1).text().replace("作 者：","");
+                    Log.e(4+result.bookAuthor);
+                    result.bookCover = bookInfo.select("#fmimg").select("img").get(0).absUrl("src");
+                    Log.e(5);
+                    result.latestChapter = bookInfo.select("#info").get(0).child(4).select("a").text();
+                    Log.e(6);
                     results.add(result);
+                    return results;
+                }catch(error){
+                    Log.e(source+"搜索结果详情解析失败，尝试解析列表："+error)
+                    var bookList = parse.select("tbody").select("tr");
+                    Log.e("bookList"+bookList.size())
+                    var results = new ArrayList();
+                    for (var i=1;i<bookList.size();i++){ 
+                        var bookElement = bookList.get(i);
+                        var result = new SearchResult();
+                        result.source = source;
+                        result.bookTitle = bookElement.select(".odd a").text();
+                        result.bookUrl = bookElement.select(".odd a").get(0).absUrl("href");
+                        result.bookAuthor = bookElement.child(2).text();
+                        //result.bookCover = bookElement.getElementsByClass("c").get(0).getElementsByTag("img").get(0).absUrl("src");
+                        result.latestChapter = bookElement.select(".even a").text();
+                        results.add(result);
+                    }
+                    return results;
+                    
                 }
-                return results;
             }
 
             /**
@@ -66,9 +89,9 @@ object JavaScriptTest {
                 var bookInfo = parse.select(".box_con").get(0);
                 Log.e("2");
                 book.url = url;
-                book.title = bookInfo.select("#maininfo #info h1").text();
+                book.title = bookInfo.select("#info").get(0).child(0).text();
                 Log.e("3");
-                book.author = bookInfo.select("#maininfo #info p").get(0).text().replace("作 者：","");
+                book.author = bookInfo.select("#info").get(0).child(1).text().replace("作 者：","");
                 Log.e("4 "+book.author);
                 book.intro = bookInfo.select("#intro").html();
                 Log.e("5");
@@ -79,18 +102,15 @@ object JavaScriptTest {
 //              Log.e("7");
 //                var chapterListHtml = Jsoup.parse(http.get(chapterListUrl),chapterListUrl);
                 Log.e("8");
-                var children = parse.select("#list dl").get(0).children();
+                var children = parse.select("._chapter").select("a");
                 Log.e(children);
                 var chapterList = new ArrayList();
-                for(i=children.size()-1; i>=0; i--){
+                for(i=0; i<children.size();i++){
                     var chapterEl = children.get(i);
-                    if(chapterEl.tagName() == "dt"){
-                        break;
-                    }
                     var chapter = new Chapter();
-                    chapter.title = chapterEl.child(0).text();
-                    chapter.url = chapterEl.child(0).absUrl("href");
-                    chapterList.add(0,chapter);
+                    chapter.title = chapterEl.text();
+                    chapter.url = chapterEl.absUrl("href");
+                    chapterList.add(chapter);
                 }
                 book.chapterList = chapterList;
                 return book;
@@ -106,7 +126,7 @@ object JavaScriptTest {
     }
 
     suspend fun testJavaScript() = withIo {
-        //        val query = "黎明之剑"
+//                val query = "诡秘之主"
         val query = "哈利波特"
         Log.e("${javaScript.source} 搜索 $query")
         val result = javaScript.execute<List<SearchResult>>(search, query)
