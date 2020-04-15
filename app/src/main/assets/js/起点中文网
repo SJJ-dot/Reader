@@ -1,0 +1,53 @@
+function search(http,query){
+    var baseUrl = "https://www.qidian.com/";
+    var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
+    var parse = Jsoup.parse(html,baseUrl);
+    var bookListEl = parse.select(".res-book-item");
+    var results = new ArrayList();
+    for (var i=1;i<bookListEl.size();i++){
+        var bookEl = bookListEl.get(i);
+        var result = new SearchResult();
+        result.source = source;
+        result.bookTitle = bookEl.select(".book-mid-info h4").text();
+        result.bookUrl = bookEl.select(".book-mid-info h4 a").get(0).absUrl("href");
+        result.bookAuthor = bookEl.select(".author a").get(0).text();
+        result.bookCover = bookEl.select("img").get(0).absUrl("src");
+        result.latestChapter = bookEl.select(".update a").get(0).text();
+        results.add(result);
+    }
+    return results;
+}
+
+/**
+ * 书籍详情[JavaScript.source]
+ */
+function getDetails(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var book = new Book();
+    book.source = source;
+    //书籍信息
+    var bookInfoEl = parse.select(".book-info").get(0);
+    book.url = url;
+    book.title = bookInfoEl.select("h1 em").text();
+    book.author = bookInfoEl.select("h1 span a").text();
+    book.intro = parse.select("#book-intro").text();
+    book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
+    //加载章节列表
+    var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
+    var chapterList = new ArrayList();
+    for(i=0; i<chapterListEl.size();i++){
+        var chapterEl = chapterListEl.get(i);
+        var chapter = new Chapter();
+        chapter.title = chapterEl.text();
+        chapter.url = chapterEl.absUrl("href");
+        chapterList.add(chapter);
+    }
+    book.chapterList = chapterList;
+    return book;
+}
+
+function getChapterContent(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var content = parse.select(".main-text-wrap  div.read-content").html();
+    return content;
+}
