@@ -9,7 +9,6 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.GithubApi
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
 import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
 import sjj.novel.util.fromJson
@@ -24,7 +23,7 @@ suspend fun checkUpdate(activity: BaseActivity) = withIo {
     }
     val githubApi = gson.fromJson<GithubApi>(globalConfig.releasesInfo) ?: return@withIo null
 
-    val download = githubApi.assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
+    val download = githubApi.apkAssets
     if (download?.browser_download_url.isNullOrEmpty()) {
         return@withIo githubApi
     }

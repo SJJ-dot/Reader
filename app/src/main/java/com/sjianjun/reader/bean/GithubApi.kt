@@ -1,15 +1,23 @@
 package com.sjianjun.reader.bean
 
+import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
+
 class GithubApi {
-    public var tag_name: String = ""
-    public var name: String = ""
-    public var body: String = ""
-    public var assets: List<Assets>? = null
+    var tag_name: String = ""
+    var name: String = ""
+    var body: String = ""
+    var assets: List<Assets>? = null
+
+    val apkAssets: Assets?
+        get() = assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
+
+    val apkDownloadUrl: String?
+        get() = apkAssets?.browser_download_url
 
     class Assets {
 
-        public var browser_download_url = ""
-        public var content_type = ""
-        public var download_count = ""
+        var browser_download_url = ""
+        var content_type = ""
+        var download_count = ""
     }
 }
