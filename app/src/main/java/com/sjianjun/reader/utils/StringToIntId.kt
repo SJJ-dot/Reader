@@ -1,13 +1,10 @@
 package com.sjianjun.reader.utils
 
-import java.util.zip.CRC32
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-private val CRC32 = ThreadLocal.withInitial { CRC32() }
-
-val String.id:Long
-    get() {
-        val crC32 = CRC32.get()!!
-        crC32.reset()
-        crC32.update(this.toByteArray())
-        return this.hashCode().toLong() shl 32 or crC32.value
-    }
+private val strIdMap = ConcurrentHashMap<String, Long>()
+private val idCount = AtomicLong()
+private val idCreator = { idCount.getAndIncrement() }
+val String.id: Long
+    get() = strIdMap.getOrPut(this, idCreator)
