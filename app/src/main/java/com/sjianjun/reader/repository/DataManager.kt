@@ -11,6 +11,7 @@ import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import java.io.InputStream
@@ -58,7 +59,7 @@ object DataManager {
         crossinline versionInfo: () -> String,
         crossinline loadScript: (fileName: String) -> String
     ): Boolean? {
-       return withIo {
+        return withIo {
             val versionJson = versionInfo()
             val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo false
             if (info.version >= globalConfig.javaScriptVersion) {
@@ -258,10 +259,6 @@ object DataManager {
         return dao.getChapterByUrl(url)
     }
 
-    fun getChapterByTitle(title: String): Flow<List<Chapter>> {
-        return dao.getChapterByTitle(title)
-    }
-
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
         return dao.getReadingRecordFlow(book.title, book.author)
     }
@@ -281,19 +278,19 @@ object DataManager {
             var readChapter: Chapter? = null
             if (chapter != null) {
                 //根据章节名查询。取索引最接近那个
-                readChapter = getChapterByTitle(chapter.title!!)
+                readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
                     .firstOrNull()?.minBy { chapter.index - it.index }
                 if (readChapter == null) {
                     //如果章节名没查到。根据章节名模糊查询
-                    readChapter = dao.getChapterByName("%${chapter.name()}")
+                    readChapter = dao.getChapterByName(book.url, "%${chapter.name()}")
                         .firstOrNull()?.minBy { chapter.index - it.index }
                 }
                 if (readChapter == null) {
-                    readChapter = dao.getChapterByName("%${chapter.name()}%")
+                    readChapter = dao.getChapterByName(book.url, "%${chapter.name()}%")
                         .firstOrNull()?.minBy { chapter.index - it.index }
                 }
                 if (readChapter == null) {
-                    readChapter = dao.getChapterByIndex(chapter.index).first()
+                    readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
                         ?: dao.getLastChapterByBookUrl(book.url).first()
                 }
 
