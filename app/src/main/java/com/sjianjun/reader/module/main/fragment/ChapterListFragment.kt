@@ -68,6 +68,7 @@ class ChapterListFragment : BaseFragment() {
             position: Int
         ) {
             val c = data[position]
+            Log.e(c.title + "  " + c.name())
             holder.itemView.text1.text = c.title
             if (readingChapterUrl == c.url) {
                 holder.itemView.text1.setTextColorRes(R.color.material_red_700)
