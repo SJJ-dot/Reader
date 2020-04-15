@@ -173,15 +173,13 @@ class BookshelfFragment : BaseFragment() {
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
                 }
 
-                val l = View.OnClickListener {
+                bookCover.setOnClickListener{
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,
                             bundle(BOOK_TITLE to book.title, BOOK_AUTHOR to book.author)
                         )
                 }
-                intro.setOnClickListener(l)
-                bookCover.setOnClickListener(l)
 
                 setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)

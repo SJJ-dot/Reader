@@ -84,25 +84,10 @@
             android:textColor="@color/material_textBlack_secondaryText"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/intro"
+            app:layout_constraintEnd_toEndOf="@id/bookName"
             app:layout_constraintStart_toStartOf="@+id/bookName"
             app:layout_constraintTop_toBottomOf="@+id/haveRead"
             tools:text="标题" />
-
-        <TextView
-            android:id="@+id/intro"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:gravity="bottom"
-            android:paddingStart="18dp"
-            android:paddingTop="18dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="5dp"
-            android:text="简介"
-            android:textSize="16sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <com.sjianjun.reader.view.BadgeView
             android:id="@+id/bv_unread"
