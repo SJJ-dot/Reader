@@ -61,7 +61,7 @@ class MainActivity : BaseActivity() {
         viewLaunch {
             checkUpdate(this@MainActivity)
 //            JavaScriptTest.testJavaScript()
-//            test()
+//            ParseTest.test()
         }
 
     }

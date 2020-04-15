@@ -28,53 +28,26 @@ object JavaScriptTest {
         "".replace("m.", "")
     }
 
-    val javaScript = JavaScript("顶点小说") {
+    val javaScript = JavaScript("起点中文网") {
         """
             function search(http,query){
-                var baseUrl = "https://www.230book.com/";
-                var map = new HashMap();
-                map.put("searchkey",URLEncoder.encode(query,"gbk"))
-                var html = http.post(baseUrl+"/modules/article/search.php",map);
-                Log.e(html);
+                var baseUrl = "https://www.qidian.com/";
+                var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
                 var parse = Jsoup.parse(html,baseUrl);
-                try{
-                    Log.e(0);
-                    var bookInfo = parse.select(".box_con").get(0);
-                    var results = new ArrayList();
+                var bookListEl = parse.select(".res-book-item");
+                var results = new ArrayList();
+                for (var i=1;i<bookListEl.size();i++){ 
+                    var bookEl = bookListEl.get(i);
                     var result = new SearchResult();
                     result.source = source;
-                    Log.e(1);
-                    result.bookTitle = bookInfo.select("#info").get(0).child(0).text();
-                    Log.e(2);
-                    result.bookUrl = parse.getElementsByAttributeValue("property","og:novel:read_url").attr("content");
-                    Log.e(3);
-                    result.bookAuthor = bookInfo.select("#info").get(0).child(1).text().replace("作 者：","");
-                    Log.e(4+result.bookAuthor);
-                    result.bookCover = bookInfo.select("#fmimg").select("img").get(0).absUrl("src");
-                    Log.e(5);
-                    result.latestChapter = bookInfo.select("#info").get(0).child(4).select("a").text();
-                    Log.e(6);
+                    result.bookTitle = bookEl.select(".book-mid-info h4").text();
+                    result.bookUrl = bookEl.select(".book-mid-info h4 a").get(0).absUrl("href");
+                    result.bookAuthor = bookEl.select(".author a").get(0).text();
+                    result.bookCover = bookEl.select("img").get(0).absUrl("src");
+                    result.latestChapter = bookEl.select(".update a").get(0).text();
                     results.add(result);
-                    return results;
-                }catch(error){
-                    Log.e(source+"搜索结果详情解析失败，尝试解析列表："+error)
-                    var bookList = parse.select("tbody").select("tr");
-                    Log.e("bookList"+bookList.size())
-                    var results = new ArrayList();
-                    for (var i=1;i<bookList.size();i++){ 
-                        var bookElement = bookList.get(i);
-                        var result = new SearchResult();
-                        result.source = source;
-                        result.bookTitle = bookElement.select(".odd a").text();
-                        result.bookUrl = bookElement.select(".odd a").get(0).absUrl("href");
-                        result.bookAuthor = bookElement.child(2).text();
-                        //result.bookCover = bookElement.getElementsByClass("c").get(0).getElementsByTag("img").get(0).absUrl("src");
-                        result.latestChapter = bookElement.select(".even a").text();
-                        results.add(result);
-                    }
-                    return results;
-                    
                 }
+                return results;
             }
 
             /**
@@ -85,28 +58,17 @@ object JavaScriptTest {
                 var book = new Book();
                 book.source = source;
                 //书籍信息
-                Log.e("1");
-                var bookInfo = parse.select(".box_con").get(0);
-                Log.e("2");
+                var bookInfoEl = parse.select(".book-info").get(0);
                 book.url = url;
-                book.title = bookInfo.select("#info").get(0).child(0).text();
-                Log.e("3");
-                book.author = bookInfo.select("#info").get(0).child(1).text().replace("作 者：","");
-                Log.e("4 "+book.author);
-                book.intro = bookInfo.select("#intro").html();
-                Log.e("5");
-                book.cover = bookInfo.select("#fmimg img").get(0).absUrl("src");
-                //Log.e("6");
+                book.title = bookInfoEl.select("h1 em").text();
+                book.author = bookInfoEl.select("h1 span a").text();
+                book.intro = parse.select("#book-intro").text();
+                book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
                 //加载章节列表
-//                var chapterListUrl = bookInfo.getElementsByClass("btn cl").get(0).child(0).child(0).absUrl("href");
-//              Log.e("7");
-//                var chapterListHtml = Jsoup.parse(http.get(chapterListUrl),chapterListUrl);
-                Log.e("8");
-                var children = parse.select("._chapter").select("a");
-                Log.e(children);
+                var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
                 var chapterList = new ArrayList();
-                for(i=0; i<children.size();i++){
-                    var chapterEl = children.get(i);
+                for(i=0; i<chapterListEl.size();i++){
+                    var chapterEl = chapterListEl.get(i);
                     var chapter = new Chapter();
                     chapter.title = chapterEl.text();
                     chapter.url = chapterEl.absUrl("href");
@@ -118,7 +80,7 @@ object JavaScriptTest {
             
             function getChapterContent(http,url){
                 var parse = Jsoup.parse(http.get(url),url);
-                var content = parse.getElementById("content").html();
+                var content = parse.select(".main-text-wrap  div.read-content").html();
                 return content;
             }
             
