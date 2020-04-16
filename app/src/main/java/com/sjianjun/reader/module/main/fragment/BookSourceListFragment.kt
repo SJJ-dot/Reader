@@ -123,6 +123,11 @@ class BookSourceListFragment : BaseFragment() {
                 bookName.text = book.title
                 author.text = "作者：${book.author}"
                 lastChapter.text = "最新：${book.lastChapter?.title}"
+                if (book.lastChapter?.isLastChapter == false) {
+                    red_dot.show()
+                } else {
+                    red_dot.hide()
+                }
                 haveRead.text = "来源：${book.source}"
                 loading.isLoading = book.isLoading
                 setOnClickListener {
