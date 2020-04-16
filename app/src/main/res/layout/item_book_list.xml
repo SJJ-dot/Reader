@@ -64,8 +64,8 @@
 
         <View
             android:id="@+id/red_dot"
-            android:layout_width="2dp"
-            android:layout_height="2dp"
+            android:layout_width="5dp"
+            android:layout_height="5dp"
             android:background="@drawable/read_dot"
             app:layout_constraintStart_toStartOf="@id/lastChapter"
             app:layout_constraintTop_toTopOf="@+id/lastChapter" />

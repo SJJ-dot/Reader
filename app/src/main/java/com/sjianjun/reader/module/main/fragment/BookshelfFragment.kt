@@ -154,8 +154,10 @@ class BookshelfFragment : BaseFragment() {
                 loading.isLoading = book.isLoading
                 if (book.lastChapter?.isLastChapter == false) {
                     red_dot.show()
+                    bv_unread.setHighlight(false)
                 } else {
                     red_dot.hide()
+                    bv_unread.setHighlight(true)
                 }
                 val lastChapterIndex = book.lastChapter?.index ?: 0
                 val readChapterIndex = book.readChapter?.index ?: 0
