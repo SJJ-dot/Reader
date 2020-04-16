@@ -4,6 +4,7 @@ import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
 import kotlinx.coroutines.flow.Flow
+import sjj.alog.Log
 
 @Dao
 interface Dao {
@@ -60,6 +61,7 @@ interface Dao {
             })
             return book.url
         }
+        Log.i("保存搜索结果记录：$readingRecord $bookList")
         return readingRecord.bookUrl
     }
 

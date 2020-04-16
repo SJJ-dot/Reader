@@ -25,7 +25,6 @@ function search(http,query){
 
         return results;
     }catch(error){
-        Log.e("小说列表解析失败，尝试解析单个小说"+error.message);
         var bookInfo = parse.getElementById("book");
         var results = new ArrayList();
         var result = new SearchResult();

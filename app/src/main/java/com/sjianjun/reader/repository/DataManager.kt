@@ -219,10 +219,13 @@ object DataManager {
                 }
                 book.isLoading = false
                 dao.updateBookDetails(bookDetails)
+                Log.i(bookDetails)
                 return@withIo true
             } catch (e: Throwable) {
+                Log.i("${javaScript.source}加载书籍详情：",e)
                 book.isLoading = false
                 dao.updateBook(book)
+                Log.i(book)
                 return@withIo false
             }
         }
@@ -272,6 +275,7 @@ object DataManager {
     }
 
     fun getReadingBook(title: String?, author: String?): Flow<Book?> {
+        Log.e("获取正在阅读的书籍：title:$title author:$author")
         if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
             return emptyFlow()
         }

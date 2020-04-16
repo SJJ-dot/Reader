@@ -69,19 +69,34 @@ data class JavaScript constructor(
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
-            execute<List<SearchResult>>(Func.search, query)
+            try {
+                execute<List<SearchResult>>(Func.search, query)
+            } catch (t: Throwable) {
+                Log.e("$source 搜索出错：$t", t)
+                null
+            }
         }
     }
 
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
-            execute<Book>(Func.getDetails, bookUrl)
+            try {
+                execute<Book>(Func.getDetails, bookUrl)
+            } catch (t: Throwable) {
+                Log.e("$source 加载详情出错：$t", t)
+                null
+            }
         }
     }
 
     suspend fun getChapterContent(chapterUrl: String): String? {
         return withIo {
-            execute<String>(Func.getChapterContent, chapterUrl)
+            try {
+                execute<String>(Func.getChapterContent, chapterUrl)
+            } catch (t: Throwable) {
+                Log.e("$source 加载章节内容出错：$t", t)
+                null
+            }
         }
     }
 
