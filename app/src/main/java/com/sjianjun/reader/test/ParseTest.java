@@ -2,7 +2,6 @@ package com.sjianjun.reader.test;
 
 import com.sjianjun.reader.bean.Book;
 import com.sjianjun.reader.bean.Chapter;
-import com.sjianjun.reader.bean.JavaScript;
 import com.sjianjun.reader.bean.SearchResult;
 import com.sjianjun.reader.http.Http;
 import com.sjianjun.reader.http.HttpKt;
@@ -12,7 +11,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,13 +51,23 @@ public final class ParseTest {
         List<Chapter> chapterList = new ArrayList<>();
 
         Elements chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
-        for (int i = 0; i < chapterListEl.size(); i++) {
-            Element chapterEl = chapterListEl.get(i);
+        if (chapterListEl.isEmpty()) {
+            String bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
+            Element lastChapterEl = parse.select(".update .detail .cf a").get(0);
             Chapter chapter = new Chapter();
             chapter.bookUrl = book.url;
-            chapter.title = chapterEl.text();
-            chapter.url = chapterEl.absUrl("href");
+            chapter.title = lastChapterEl.text();
+            chapter.url = lastChapterEl.absUrl("href");
             chapterList.add(chapter);
+        } else {
+            for (int i = 0; i < chapterListEl.size(); i++) {
+                Element chapterEl = chapterListEl.get(i);
+                Chapter chapter = new Chapter();
+                chapter.bookUrl = book.url;
+                chapter.title = chapterEl.text();
+                chapter.url = chapterEl.absUrl("href");
+                chapterList.add(chapter);
+            }
         }
         book.chapterList = chapterList;
         return book;
@@ -73,7 +81,7 @@ public final class ParseTest {
 
 
     public static void test() throws Exception {
-        List<SearchResult> searchResults = search(HttpKt.getHttp(), "黎明之剑");
+        List<SearchResult> searchResults = search(HttpKt.getHttp(), "哈利波特之学霸无敌");
         Log.e(searchResults);
         if (searchResults.isEmpty()) {
             return;
