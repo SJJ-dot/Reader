@@ -120,7 +120,7 @@ public class BadgeView extends AppCompatTextView {
     }
 
     public void setHighlight(boolean highlight) {
-        setBackground(getResources().getColor(highlight ? R.color.material_red_700 : R.color.material_grey_500));
+        setBackground(getResources().getColor(highlight ? R.color.material_red_700 : R.color.material_grey_700));
     }
 
     public Integer getBadgeCount() {
