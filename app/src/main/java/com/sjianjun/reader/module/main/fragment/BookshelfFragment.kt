@@ -152,7 +152,11 @@ class BookshelfFragment : BaseFragment() {
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
-
+                if (book.lastChapter?.isLastChapter == false) {
+                    red_dot.show()
+                } else {
+                    red_dot.hide()
+                }
                 val lastChapterIndex = book.lastChapter?.index ?: 0
                 val readChapterIndex = book.readChapter?.index ?: 0
                 val remainingCount = if (book.record?.isEnd == true) {

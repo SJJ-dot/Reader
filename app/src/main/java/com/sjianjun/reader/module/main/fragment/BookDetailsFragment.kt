@@ -110,6 +110,11 @@ class BookDetailsFragment : BaseFragment() {
         DataManager.getLastChapterByBookUrl(book?.url ?: "")
             .collectLatest { lastChapter ->
                 latestChapter?.text = lastChapter?.title
+                if (lastChapter?.isLastChapter == false) {
+                    red_dot.show()
+                } else {
+                    red_dot.hide()
+                }
                 latestChapter.setOnClickListener { _ ->
                     book ?: return@setOnClickListener
                     startActivity<BookReaderActivity>(

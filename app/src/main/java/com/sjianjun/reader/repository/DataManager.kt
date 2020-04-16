@@ -223,7 +223,7 @@ object DataManager {
                 Log.i(bookDetails)
                 return@withIo true
             } catch (e: Throwable) {
-                Log.i("${javaScript.source}加载书籍详情：",e)
+                Log.i("${javaScript.source}加载书籍详情：", e)
                 book.isLoading = false
                 dao.updateBook(book)
                 Log.i(book)
@@ -301,7 +301,8 @@ object DataManager {
                     ).first()
                     if (qiDianBook != null) {
                         val qiDianLastChapter = dao.getLastChapterByBookUrl(qiDianBook.url).first()
-                        it.isLastChapter = it.name() == qiDianLastChapter?.name()
+                        it.isLastChapter =
+                            qiDianLastChapter == null || it.name() == qiDianLastChapter.name()
                     }
                 } else {
                     it.isLastChapter = true
