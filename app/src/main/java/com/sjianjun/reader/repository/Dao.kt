@@ -50,6 +50,7 @@ interface Dao {
 
     @Transaction
     suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
+        cleanDirtyData()
         insertBook(bookList)
         val book = bookList.first()
         val readingRecord = getReadingRecord(book.title, book.author)
@@ -78,6 +79,8 @@ interface Dao {
         deleteBook(book.title, book.author)
         deleteChapterByBook(book.title, book.author)
         deleteReadingRecord(book.title, book.author)
+
+        cleanDirtyData()
     }
 
     /**
@@ -182,4 +185,26 @@ interface Dao {
 
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     suspend fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
+
+
+    @Transaction
+    suspend fun cleanDirtyData() {
+        cleanReadingBook()
+        cleanBook()
+        cleanChapter()
+        cleanChapterContent()
+    }
+    //有空再改连表查询吧
+    @Query("delete from Book where not exists (select * from Book where url in (select bookUrl from ReadingRecord))")
+    suspend fun cleanBook()
+
+    @Query("delete from ReadingRecord where bookUrl not in (select url from Book)")
+    suspend fun cleanReadingBook()
+
+    @Query("delete from Chapter where bookUrl not in (select url from Book)")
+    suspend fun cleanChapter()
+
+    @Query("delete from ChapterContent where url not in (select url from Chapter)")
+    suspend fun cleanChapterContent()
+
 }

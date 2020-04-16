@@ -72,7 +72,7 @@ data class JavaScript constructor(
             try {
                 execute<List<SearchResult>>(Func.search, query)
             } catch (t: Throwable) {
-                Log.e("$source 搜索出错：$t", t)
+                Log.i("$source 搜索出错：$t", t)
                 null
             }
         }
@@ -83,7 +83,7 @@ data class JavaScript constructor(
             try {
                 execute<Book>(Func.getDetails, bookUrl)
             } catch (t: Throwable) {
-                Log.e("$source 加载详情出错：$t", t)
+                Log.i("$source 加载详情出错：$t", t)
                 null
             }
         }
@@ -94,7 +94,7 @@ data class JavaScript constructor(
             try {
                 execute<String>(Func.getChapterContent, chapterUrl)
             } catch (t: Throwable) {
-                Log.e("$source 加载章节内容出错：$t", t)
+                Log.i("$source 加载章节内容出错：$t", t)
                 null
             }
         }
