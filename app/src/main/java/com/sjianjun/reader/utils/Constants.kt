@@ -1,11 +1,16 @@
 package com.sjianjun.reader.utils
 
-val BOOK_URL = "BOOK_URL"
-val CHAPTER_URL = "CHAPTER_URL"
-val JAVA_SCRIPT_SOURCE = "JAVA_SCRIPT_SOURCE"
+const val BOOK_URL = "BOOK_URL"
+const val CHAPTER_URL = "CHAPTER_URL"
+const val JAVA_SCRIPT_SOURCE = "JAVA_SCRIPT_SOURCE"
 
-val BOOK_TITLE = "BOOK_TITLE"
-val BOOK_AUTHOR = "BOOK_AUTHOR"
+const val BOOK_TITLE = "BOOK_TITLE"
+const val BOOK_AUTHOR = "BOOK_AUTHOR"
 
 
-val CONTENT_TYPE_ANDROID ="application/vnd.android.package-archive"
+const val CONTENT_TYPE_ANDROID = "application/vnd.android.package-archive"
+
+/**
+ * 起点中文网 不能修改source
+ */
+const val JS_SOURCE_QI_DIAN = "起点中文网"

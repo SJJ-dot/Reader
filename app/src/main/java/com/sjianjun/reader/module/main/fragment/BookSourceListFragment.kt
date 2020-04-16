@@ -16,6 +16,7 @@ import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 
 class BookSourceListFragment : BaseFragment() {
@@ -89,7 +90,11 @@ class BookSourceListFragment : BaseFragment() {
                 refresh_progress_bar.isAutoLoading = true
 
                 adapter.data.map {
-                    async { DataManager.reloadBookFromNet(it.url) }
+                    async {
+                        val qiDian = async { DataManager.updateOrInsertQiDianBook(it.url) }
+                        DataManager.reloadBookFromNet(it.url)
+                        qiDian.await()
+                    }
                 }.awaitAll()
 
                 refresh_progress_bar.isAutoLoading = false

@@ -44,6 +44,9 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBook(bookList: List<Book>): List<Long>
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertBook(book: Book): Long
+
     @Transaction
     suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
         insertBook(bookList)
@@ -108,6 +111,9 @@ interface Dao {
 
     @Query("select * from Book where title=:title and author=:author  order by source")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
+
+    @Query("select * from Book where title=:title and author=:author and source=:source")
+    fun getBookByTitleAuthorAndSource(title: String, author: String, source: String): Flow<Book?>
 
     @Query("select * from Book where url in (select bookUrl from ReadingRecord where bookTitle=:title and bookAuthor=:author)")
     fun getReadingBook(title: String, author: String): Flow<Book?>

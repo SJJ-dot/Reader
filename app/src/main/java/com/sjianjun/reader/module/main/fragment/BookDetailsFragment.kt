@@ -15,6 +15,7 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -54,7 +55,9 @@ class BookDetailsFragment : BaseFragment() {
         bookUrl ?: return
         viewLaunch {
             detailsRefreshLayout?.isRefreshing = true
+            val qiDian = async { DataManager.updateOrInsertQiDianBook(bookUrl) }
             DataManager.reloadBookFromNet(bookUrl)
+            qiDian.await()
             detailsRefreshLayout?.isRefreshing = false
         }
     }

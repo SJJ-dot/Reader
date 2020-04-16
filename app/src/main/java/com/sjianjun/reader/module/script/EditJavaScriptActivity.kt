@@ -1,17 +1,14 @@
 package com.sjianjun.reader.module.script
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
 import kotlinx.coroutines.flow.first
-import java.lang.Exception
 
 class EditJavaScriptActivity : BaseActivity() {
 
@@ -44,6 +41,10 @@ class EditJavaScriptActivity : BaseActivity() {
             val js = DataManager.getJavaScript(source).first()
             script_source.setText(js?.source)
             script.setText(js?.js)
+            //禁止修改脚本标志名称
+            if (!js?.source.isNullOrEmpty()) {
+                script_source.isEnabled = false
+            }
         }
     }
 }
