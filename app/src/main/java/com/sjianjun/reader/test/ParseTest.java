@@ -48,7 +48,7 @@ public final class ParseTest {
         Element bookInfoEl = parse.select(".book-info").get(0);
         book.title = bookInfoEl.select("h1 em").text();
         book.author = bookInfoEl.select("h1 span a").text();
-        book.intro = parse.select("#book-intro").text();
+        book.intro = parse.select(".book-intro").text();
         book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
         List<Chapter> chapterList = new ArrayList<>();
 
