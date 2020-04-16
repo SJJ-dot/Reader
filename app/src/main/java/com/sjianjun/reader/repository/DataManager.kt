@@ -3,6 +3,7 @@
 package com.sjianjun.reader.repository
 
 import android.content.res.AssetManager.ACCESS_BUFFER
+import androidx.room.Query
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
@@ -383,5 +384,4 @@ object DataManager {
     suspend fun setReadingRecord(record: ReadingRecord): Long {
         return dao.insertReadingRecord(record)
     }
-
 }
