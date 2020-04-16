@@ -138,13 +138,20 @@ class BookReaderActivity : BaseActivity() {
             //延迟2s 保存
             delay(delay)
             val manager = recycle_view.layoutManager as LinearLayoutManager
-            val view = manager.getChildAt(0) ?: return@viewLaunch
+            var view = manager.getChildAt(0) ?: return@viewLaunch
+            var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+
+            if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
+                view = manager.getChildAt(manager.childCount - 1) ?: view
+                isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+            }
+
             val top = view.top
             val pos = manager.getPosition(view)
             val readingChapter = adapter.chapterList.getOrNull(pos)
             readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
             readingRecord.offest = top
-            val isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+
             readingRecord.isEnd = isEnd
             DataManager.setReadingRecord(readingRecord)
         }.apply(readingRecordJob::lazySet)
