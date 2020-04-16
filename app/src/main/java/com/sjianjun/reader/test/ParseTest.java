@@ -53,12 +53,17 @@ public final class ParseTest {
         Elements chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
         if (chapterListEl.isEmpty()) {
             String bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
-            Element lastChapterEl = parse.select(".update .detail .cf a").get(0);
-            Chapter chapter = new Chapter();
-            chapter.bookUrl = book.url;
-            chapter.title = lastChapterEl.text();
-            chapter.url = lastChapterEl.absUrl("href");
-            chapterList.add(chapter);
+            String chapterListHtml = http.get("https://m.qidian.com/book/" + bookId + "/catalog");
+            Elements phoneChapterListEl = Jsoup.parse(chapterListHtml).select(".chapter-li-a");
+            for (int i = 0; i < phoneChapterListEl.size(); i++) {
+                Element chapterEl = phoneChapterListEl.get(i);
+                Chapter chapter = new Chapter();
+                chapter.bookUrl = book.url;
+                chapter.title = chapterEl.select("span").text();
+                chapter.url = chapterEl.absUrl("href");
+                chapterList.add(chapter);
+            }
+
         } else {
             for (int i = 0; i < chapterListEl.size(); i++) {
                 Element chapterEl = chapterListEl.get(i);
