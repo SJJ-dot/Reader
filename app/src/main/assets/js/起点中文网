@@ -34,13 +34,28 @@ function getDetails(http,url){
     book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
     //加载章节列表
     var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
-    var chapterList = new ArrayList();
-    for(i=0; i<chapterListEl.size();i++){
-        var chapterEl = chapterListEl.get(i);
-        var chapter = new Chapter();
-        chapter.title = chapterEl.text();
-        chapter.url = chapterEl.absUrl("href");
-        chapterList.add(chapter);
+    if (chapterListEl.isEmpty()) {
+        try{
+            //起点中文网加载不了……
+            var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
+            var lastChapterEl = parse.select(".update .detail .cf a").get(0);
+            var chapter = new Chapter();
+            chapter.bookUrl = book.url;
+            chapter.title = lastChapterEl.text();
+            chapter.url = lastChapterEl.absUrl("href");
+            chapterList.add(chapter);
+        }catch(error){
+            Log.e(source+"最新章节列表解析失败")
+        }
+    } else {
+        var chapterList = new ArrayList();
+        for(i=0; i<chapterListEl.size();i++){
+            var chapterEl = chapterListEl.get(i);
+            var chapter = new Chapter();
+            chapter.title = chapterEl.text();
+            chapter.url = chapterEl.absUrl("href");
+            chapterList.add(chapter);
+        }
     }
     book.chapterList = chapterList;
     return book;
