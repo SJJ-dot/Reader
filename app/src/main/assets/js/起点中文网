@@ -35,17 +35,16 @@ function getDetails(http,url){
     //加载章节列表
     var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
     if (chapterListEl.isEmpty()) {
-        try{
-            //起点中文网加载不了……
-            var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
-            var lastChapterEl = parse.select(".update .detail .cf a").get(0);
+        var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
+        var chapterListHtml = http.get("https://m.qidian.com/book/" + bookId + "/catalog");
+        var phoneChapterListEl = Jsoup.parse(chapterListHtml).select(".chapter-li-a");
+        for (int i = 0; i < phoneChapterListEl.size(); i++) {
+            var chapterEl = phoneChapterListEl.get(i);
             var chapter = new Chapter();
             chapter.bookUrl = book.url;
-            chapter.title = lastChapterEl.text();
-            chapter.url = lastChapterEl.absUrl("href");
+            chapter.title = chapterEl.select("span").text();
+            chapter.url = chapterEl.absUrl("href");
             chapterList.add(chapter);
-        }catch(error){
-            Log.e(source+"最新章节列表解析失败")
         }
     } else {
         var chapterList = new ArrayList();
