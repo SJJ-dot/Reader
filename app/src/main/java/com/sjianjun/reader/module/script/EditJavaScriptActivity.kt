@@ -18,23 +18,24 @@ class EditJavaScriptActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_java_script)
-        base_url.setText(globalConfig.javaScriptBaseUrl)
-        save_base_url.setOnClickListener {
-            globalConfig.javaScriptBaseUrl = base_url.text.toString()
-        }
         save_script.setOnClickListener {
             viewLaunch {
+                val javaScript = JavaScript(
+                    source = script_source.text.toString(),
+                    js = script.text.toString()
+                )
                 try {
-                    DataManager.insertJavaScript(
-                        JavaScript(
-                            source = script_source.text.toString(),
-                            js = script.text.toString()
-                        )
-                    )
-                    toastSHORT("保存成功")
+                    try {
+                        DataManager.insertJavaScript(javaScript)
+                        toastSHORT("创建脚本成功")
+                    } catch (e: Exception) {
+                        DataManager.updateJavaScript(javaScript)
+                        toastSHORT("脚本已更新")
+                    }
+
                     finish()
                 } catch (e: Throwable) {
-                    toastSHORT("保存失败")
+                    toastSHORT("脚本保存失败")
                 }
             }
         }

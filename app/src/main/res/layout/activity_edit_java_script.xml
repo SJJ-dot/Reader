@@ -7,34 +7,15 @@
     tools:context="com.sjianjun.reader.module.script.EditJavaScriptActivity">
 
     <EditText
-        android:id="@+id/base_url"
-        android:layout_width="0dp"
-        android:layout_height="100dp"
-        android:gravity="top"
-        android:hint="@string/script_base_url"
-        app:layout_constraintEnd_toStartOf="@+id/save_base_url"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/save_base_url"
-        android:layout_width="56dp"
-        android:layout_height="0dp"
-        android:text="设置脚本地址"
-        app:layout_constraintBottom_toBottomOf="@+id/base_url"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/base_url" />
-
-    <EditText
         android:id="@+id/script_source"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:gravity="top|start"
         android:hint="脚本标识，不能与其他脚本重复"
         android:textColor="@color/material_textBlack_black"
-        app:layout_constraintTop_toBottomOf="@id/base_url" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <HorizontalScrollView
+    <com.sjianjun.reader.view.HorizontalScrollView2
         android:id="@+id/script_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -47,7 +28,7 @@
             android:layout_height="match_parent"
             android:gravity="top|start"
             android:textColor="@color/material_textBlack_black" />
-    </HorizontalScrollView>
+    </com.sjianjun.reader.view.HorizontalScrollView2>
 
     <Button
         android:id="@+id/save_script"
