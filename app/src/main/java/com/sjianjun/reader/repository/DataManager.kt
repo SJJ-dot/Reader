@@ -170,6 +170,38 @@ object DataManager {
         }
     }
 
+    /**
+     * 如果不是更新起点的书籍。去起点检查一遍更新。作为最新更新的标准
+     */
+    suspend fun updateOrInsertQiDianBook(bookUrl: String) {
+        withIo {
+            try {
+                val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo
+                if (book.source == JS_SOURCE_QI_DIAN) {
+                    return@withIo
+                }
+                var qiDianBook =
+                    dao.getBookByTitleAuthorAndSource(book.title, book.author, JS_SOURCE_QI_DIAN)
+                        .first()
+                if (qiDianBook == null) {
+                    val javaScript =
+                        dao.getJavaScriptBySource(JS_SOURCE_QI_DIAN).first() ?: return@withIo
+                    qiDianBook = javaScript.search(book.title)?.find {
+                        it.bookTitle == book.title && it.bookAuthor == book.author
+                    }?.toBook()
+                    if (qiDianBook != null) {
+                        dao.insertBook(qiDianBook)
+                    }
+                }
+                if (qiDianBook != null) {
+                    reloadBookFromNet(qiDianBook.url)
+                }
+            } catch (t: Throwable) {
+                Log.e("起点书籍更新失败")
+            }
+        }
+    }
+
     suspend fun reloadBookFromNet(bookUrl: String): Boolean? {
         return withIo {
             val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
@@ -252,7 +284,25 @@ object DataManager {
     }
 
     fun getLastChapterByBookUrl(bookUrl: String): Flow<Chapter?> {
-        return dao.getLastChapterByBookUrl(bookUrl)
+
+        return dao.getLastChapterByBookUrl(bookUrl).onEach {
+            if (it != null) {
+                val book = dao.getBookByUrl(it.bookUrl).first()
+                if (book != null && book.source != JS_SOURCE_QI_DIAN) {
+                    val qiDianBook = dao.getBookByTitleAuthorAndSource(
+                        book.title,
+                        book.author,
+                        JS_SOURCE_QI_DIAN
+                    ).first()
+                    if (qiDianBook != null) {
+                        val qiDianLastChapter = dao.getLastChapterByBookUrl(qiDianBook.url).first()
+                        it.isLastChapter = it.name() == qiDianLastChapter?.name()
+                    }
+                } else {
+                    it.isLastChapter = true
+                }
+            }
+        }.flowIo()
     }
 
     fun getChapterByUrl(url: String): Flow<Chapter?> {

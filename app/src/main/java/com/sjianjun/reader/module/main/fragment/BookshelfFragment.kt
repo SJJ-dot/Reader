@@ -52,8 +52,10 @@ class BookshelfFragment : BaseFragment() {
                 sourceMap.values.map {
                     async {
                         it.forEach {
+                            val qiDian = async { DataManager.updateOrInsertQiDianBook(it.url) }
                             DataManager.reloadBookFromNet(it.url)
                             delay(1000)
+                            qiDian.await()
                         }
                     }
                 }.awaitAll()

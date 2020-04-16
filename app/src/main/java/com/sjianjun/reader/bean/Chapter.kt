@@ -34,6 +34,10 @@ class Chapter {
     @JvmField
     var index = 0
 
+    @JvmField
+    @Ignore
+    var isLastChapter = true
+
     override fun toString(): String {
         return "Chapter(url='$url', bookUrl='$bookUrl', title=$title, isLoaded=$isLoaded, index=$index)"
     }
