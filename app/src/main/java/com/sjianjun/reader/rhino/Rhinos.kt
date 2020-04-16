@@ -10,9 +10,6 @@ inline fun <reified T> js(runner: ContextWrap.() -> T): T? {
         context.optimizationLevel = -1
         val wrap = ContextWrap(context)
         wrap.runner()
-    } catch (e: Throwable) {
-        Log.e("js error :$e", e)
-        null
     } finally {
         Context.exit()
     }

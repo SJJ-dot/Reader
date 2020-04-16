@@ -14,12 +14,9 @@ import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicReference
 
 class BookDetailsFragment : BaseFragment() {
     private val bookTitle: String

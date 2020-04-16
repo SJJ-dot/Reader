@@ -32,7 +32,7 @@ class Book {
     var chapterList: List<Chapter>? = null
 
     override fun toString(): String {
-        return "Book(source=$source, title=$title, author=$author, intro=$intro, cover=$cover, url=$url, chapterList=$chapterList)"
+        return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
     }
 
     @Ignore

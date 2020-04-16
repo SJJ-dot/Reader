@@ -94,7 +94,7 @@ class Http {
         try {
             client.get<String>(url, queryMap, header)
         } catch (e: Exception) {
-            Log.e(e.message, e)
+            Log.i("网络请求失败:$url", e)
             ""
         }
     }
@@ -108,7 +108,7 @@ class Http {
         try {
             client.post<String>(url, fieldMap, header)
         } catch (e: Exception) {
-            Log.e(e.message, e)
+            Log.i("网络请求失败:$url", e)
             ""
         }
     }
