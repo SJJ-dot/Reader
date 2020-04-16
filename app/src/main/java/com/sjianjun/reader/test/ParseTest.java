@@ -53,8 +53,9 @@ public final class ParseTest {
         Elements chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
         if (chapterListEl.isEmpty()) {
             String bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
+            String chapterListUrl = "https://m.qidian.com/book/" + bookId + "/catalog";
             String chapterListHtml = http.get("https://m.qidian.com/book/" + bookId + "/catalog");
-            Elements phoneChapterListEl = Jsoup.parse(chapterListHtml).select(".chapter-li-a");
+            Elements phoneChapterListEl = Jsoup.parse(chapterListHtml,chapterListUrl).select(".chapter-li-a");
             for (int i = 0; i < phoneChapterListEl.size(); i++) {
                 Element chapterEl = phoneChapterListEl.get(i);
                 Chapter chapter = new Chapter();
@@ -79,14 +80,18 @@ public final class ParseTest {
     }
 
     public static String getBookChapterContent(Http http, String url) {
+
         String html = http.get(url);
-        String chapterContent = Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
-        return chapterContent;
+        if (url.startsWith("https://m.qidian.com/")) {
+            return Jsoup.parse(html).select("#chapterContent").html();
+        } else {
+            return Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
+        }
     }
 
 
     public static void test() throws Exception {
-        List<SearchResult> searchResults = search(HttpKt.getHttp(), "哈利波特之学霸无敌");
+        List<SearchResult> searchResults = search(HttpKt.getHttp(), "诡秘之主");
         Log.e(searchResults);
         if (searchResults.isEmpty()) {
             return;
@@ -96,6 +101,7 @@ public final class ParseTest {
         if (book == null || book.chapterList.isEmpty()) {
             return;
         }
+        Log.e(book.chapterList.get(book.chapterList.size() - 1));
         String content = getBookChapterContent(HttpKt.getHttp(), book.chapterList.get(book.chapterList.size() - 1).url);
         Log.e(content);
     }
