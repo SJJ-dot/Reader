@@ -6,7 +6,7 @@ import org.mozilla.javascript.ScriptableObject
 
 class ContextWrap(val context: Context) {
     val scriptable = ImporterTopLevel(context)
-    fun evaluateString(source: String): Any? {
+    fun eval(source: String): Any? {
         return context.evaluateString(
             scriptable, source, null, 0, null
         )

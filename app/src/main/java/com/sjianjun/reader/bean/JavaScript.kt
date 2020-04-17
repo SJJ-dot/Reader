@@ -8,6 +8,7 @@ import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
+import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
 @Entity
@@ -43,6 +44,7 @@ data class JavaScript constructor(
         ${importClassCode<SearchResult>()}
         ${importClassCode<Chapter>()}
         ${importClassCode<Book>()}
+        ${importClassCode<StringUtil>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
@@ -56,14 +58,14 @@ data class JavaScript constructor(
             putProperty("http", javaToJS(http))
             putProperty("context", this)
 
-            evaluateString(headerScript)
-            evaluateString(js)
+            eval(headerScript)
+            eval(js)
             val paramList = params.filter { it?.isNotEmpty() == true }
             val result = if (paramList.isEmpty()) {
-                evaluateString("${func.name}(http)")
+                eval("${func.name}(http)")
             } else {
                 val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-                evaluateString("${func.name}(http,${param})")
+                eval("${func.name}(http,${param})")
             }
             jsToJava<T>(result)
         }

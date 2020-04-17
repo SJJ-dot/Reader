@@ -32,7 +32,7 @@ class ExampleInstrumentedTest {
     @Test
     fun testJs() {
         js {
-            val res = evaluateString(
+            val res = eval(
                 """
                 "aaaa。bbbbb".split("。")[1]
             """.trimIndent()
@@ -46,7 +46,7 @@ class ExampleInstrumentedTest {
 
         js {
             val name = Jsoup::class.java.name
-            val res = evaluateString(
+            val res = eval(
                 """
                 importClass(Packages.${name})
                 
@@ -75,7 +75,7 @@ class ExampleInstrumentedTest {
         js {
             val a = ATest()
             putProperty("aaa", javaToJS(a))
-            val evaluateString = evaluateString(
+            val evaluateString = eval(
                 """
                     aaa.test()
                 """.trimIndent()
@@ -94,7 +94,7 @@ class ExampleInstrumentedTest {
     fun testJsCallJavaHttp() {
         js {
             putProperty("http", javaToJS(http))
-            val evaluateString = evaluateString(
+            val evaluateString = eval(
                 """
                     http.get("https://www.biquge5200.cc/95_95192/")
                 """.trimIndent()
@@ -112,7 +112,7 @@ class ExampleInstrumentedTest {
     fun testJsCallJavaFun() {
         js {
             putProperty("javaObj", javaToJS(this@ExampleInstrumentedTest))
-            val result = evaluateString(
+            val result = eval(
                 """
                     javaObj.hello("js")
                 """.trimIndent()
@@ -135,7 +135,7 @@ class ExampleInstrumentedTest {
     fun testJavaCallJsFun() {
         js {
             putProperty("javaObj", javaToJS(this@ExampleInstrumentedTest))
-            evaluateString(
+            eval(
                 """
                    function jsFun(value){
                     return "jsReturn > "+value
@@ -147,7 +147,7 @@ class ExampleInstrumentedTest {
             )
             // one
 
-            val result = evaluateString("jsFun('evaluateString')+jsFun2('test')")
+            val result = eval("jsFun('evaluateString')+jsFun2('test')")
 
             Log.e(jsToJava<String>(result))
 
@@ -171,7 +171,7 @@ class ExampleInstrumentedTest {
 
         js {
             putProperty("doc", javaToJS(doc))
-            val evaluateString = evaluateString(
+            val evaluateString = eval(
                 """
                     doc.getElementById("info")
                 """.trimIndent()
