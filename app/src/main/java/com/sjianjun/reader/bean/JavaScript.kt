@@ -54,6 +54,8 @@ data class JavaScript constructor(
         return js {
             putProperty("source", javaToJS(source))
             putProperty("http", javaToJS(http))
+            putProperty("context", this)
+
             evaluateString(headerScript)
             evaluateString(js)
             val paramList = params.filter { it?.isNotEmpty() == true }

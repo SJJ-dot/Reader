@@ -5,6 +5,8 @@ import com.sjianjun.reader.bean.Chapter;
 import com.sjianjun.reader.bean.SearchResult;
 import com.sjianjun.reader.http.Http;
 import com.sjianjun.reader.http.HttpKt;
+import com.sjianjun.reader.rhino.ContextWrap;
+import com.sjianjun.reader.rhino.RhinosKt;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,6 +16,7 @@ import org.jsoup.select.Elements;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import sjj.alog.Log;
 
@@ -89,6 +92,9 @@ public final class ParseTest {
         }
     }
 
+    public static <R> R js(Function<ContextWrap, R> function) {
+        return RhinosKt.runJs(function::apply);
+    }
 
     public static void test() throws Exception {
         List<SearchResult> searchResults = search(HttpKt.getHttp(), "诡秘之主");

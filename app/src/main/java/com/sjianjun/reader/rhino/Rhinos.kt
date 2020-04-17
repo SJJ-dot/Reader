@@ -15,6 +15,11 @@ inline fun <reified T> js(runner: ContextWrap.() -> T): T? {
     }
 }
 
+fun <T> runJs(runner: ContextWrap.() -> T): T? {
+    return js<Any?>(runner) as T?
+}
+
+
 inline fun <reified T> importClassCode(): String {
     return "importClass(Packages.${T::class.java.name})"
 }
