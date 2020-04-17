@@ -1,0 +1,48 @@
+function search(http,query){
+    var baseUrl = "https://www.23txt.com/";
+    var html = http.get(baseUrl + "search.php?keyword=" + URLEncoder.encode(query, "utf-8"));
+    var parse = Jsoup.parse(html, baseUrl);
+    var bookListEl = parse.select("body > div.result-list > *");
+    var results = new ArrayList();
+    for (var i=0;i<bookListEl.size();i++){
+        var bookEl = bookListEl.get(i);
+        var result = new SearchResult();
+        result.source = source;
+        result.bookTitle = bookEl.select("a.result-game-item-title-link").text();
+        result.bookUrl = bookEl.select("a.result-game-item-title-link").get(0).absUrl("href");
+        result.bookAuthor = bookEl.select("> div.result-game-item-detail > div > p:nth-child(1) > span:nth-child(2)").get(0).text();
+        result.bookCover = bookEl.select("> div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
+        result.latestChapter = bookEl.select("img.result-game-item-pic-link-img").get(0).absUrl("src");
+        results.add(result);
+    }
+    return results;
+}
+
+function getDetails(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var book = new Book();
+    book.source = source;
+    book.url = url;
+    book.title = parse.select("#info > h1").text();
+    book.author = parse.select("#info > p:nth-child(2)").text().split("者：")[1];
+    book.intro = parse.select("#intro").text();
+    book.cover = parse.select("#fmimg > img").get(0).absUrl("src");
+    //加载章节列表
+    var chapterList = new ArrayList();
+    var chapterListEl = parse.select("#list > dl a");
+    for(i=0; i<chapterListEl.size();i++){
+        var chapterEl = chapterListEl.get(i);
+        var chapter = new Chapter();
+        chapter.title = chapterEl.text();
+        chapter.url = chapterEl.absUrl("href");
+        chapterList.add(chapter);
+    }
+
+    book.chapterList = chapterList;
+    return book;
+}
+
+function getChapterContent(http,url){
+    var html = http.get(url);
+    return Jsoup.parse(html).select("#content").html();
+}
