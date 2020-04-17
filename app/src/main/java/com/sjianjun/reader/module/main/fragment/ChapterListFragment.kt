@@ -70,7 +70,7 @@ class ChapterListFragment : BaseFragment() {
             val c = data[position]
             holder.itemView.text1.text = c.title
             if (readingChapterUrl == c.url) {
-                holder.itemView.text1.setTextColorRes(R.color.material_red_700)
+                holder.itemView.text1.setTextColorRes(R.color.material_green_500)
             } else {
                 holder.itemView.text1.setTextColorRes(R.color.material_textBlack_secondaryText)
             }

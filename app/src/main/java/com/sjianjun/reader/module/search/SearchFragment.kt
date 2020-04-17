@@ -5,7 +5,6 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
@@ -19,15 +18,16 @@ import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.search_fragment_search.*
+import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
+import kotlinx.android.synthetic.main.search_fragment_search.*
 import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import sjj.alog.Log
 
 class SearchFragment : BaseFragment() {
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
@@ -68,13 +68,13 @@ class SearchFragment : BaseFragment() {
                         R.layout.main_item_fragment_search_history,
                         tfl_search_history,
                         false
-                    ) as TextView
+                    )
                     tfl_search_history.addView(tagView, 0)
-                    tagView.text = history.query
-                    tagView.setOnClickListener { _ ->
+                    tagView.search_history_text.text = history.query
+                    tagView.search_history_text.setOnClickListener { _ ->
                         searchView.setQuery(history.query, true)
                     }
-                    tagView.setOnLongClickListener { _ ->
+                    tagView.search_history_text.setOnLongClickListener { _ ->
                         deleteSearchHistoryActor.offer(listOf(history))
                         true
                     }
