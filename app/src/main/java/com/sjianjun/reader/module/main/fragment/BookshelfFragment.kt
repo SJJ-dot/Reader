@@ -145,6 +145,7 @@ class BookshelfFragment : BaseFragment() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
+            holder.setRecyclable(!book.isLoading)
             holder.itemView.apply {
                 bookCover.glide(fragment, book.cover)
                 bookName.text = book.title
