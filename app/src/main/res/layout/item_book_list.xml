@@ -62,14 +62,6 @@
             app:layout_constraintTop_toBottomOf="@+id/author"
             tools:text="标题" />
 
-        <View
-            android:id="@+id/red_dot"
-            android:layout_width="5dp"
-            android:layout_height="5dp"
-            android:background="@drawable/read_dot"
-            app:layout_constraintStart_toStartOf="@id/lastChapter"
-            app:layout_constraintTop_toTopOf="@+id/lastChapter" />
-
         <com.sjianjun.reader.view.AutofitTextView
             android:id="@+id/haveRead"
             android:layout_width="0dp"
