@@ -30,23 +30,23 @@ object JavaScriptTest {
 //        StringUtil.resolve()
     }
 
-    val javaScript = JavaScript("起点中文网") {
+    val javaScript = JavaScript("天籁小说") {
         """
 function search(http,query){
-    var baseUrl = "https://www.qidian.com/";
-    var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
-    var parse = Jsoup.parse(html,baseUrl);
-    var bookListEl = parse.select(".res-book-item");
+    var baseUrl = "https://www.23txt.com/";
+    var html = http.get(baseUrl + "search.php?keyword=" + URLEncoder.encode(query, "utf-8"));
+    var parse = Jsoup.parse(html, baseUrl);
+    var bookListEl = parse.select("body > div.result-list > *");
     var results = new ArrayList();
     for (var i=0;i<bookListEl.size();i++){
         var bookEl = bookListEl.get(i);
         var result = new SearchResult();
         result.source = source;
-        result.bookTitle = bookEl.select(".book-mid-info h4").text();
-        result.bookUrl = bookEl.select(".book-mid-info h4 a").get(0).absUrl("href");
-        result.bookAuthor = bookEl.select(".author a").get(0).text();
-        result.bookCover = bookEl.select("img").get(0).absUrl("src");
-        result.latestChapter = bookEl.select(".update a").get(0).text();
+        result.bookTitle = bookEl.select("a.result-game-item-title-link").text();
+        result.bookUrl = bookEl.select("a.result-game-item-title-link").get(0).absUrl("href");
+        result.bookAuthor = bookEl.select("> div.result-game-item-detail > div > p:nth-child(1) > span:nth-child(2)").get(0).text();
+        result.bookCover = bookEl.select("> div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
+        result.latestChapter = bookEl.select("img.result-game-item-pic-link-img").get(0).absUrl("src");
         results.add(result);
     }
     return results;
@@ -59,92 +59,29 @@ function getDetails(http,url){
     var parse = Jsoup.parse(http.get(url),url);
     var book = new Book();
     book.source = source;
-    //书籍信息
-    var bookInfoEl = parse.select(".book-info").get(0);
     book.url = url;
-    book.title = bookInfoEl.select("h1 em").text();
-    book.author = bookInfoEl.select("h1 span a").text();
-    book.intro = parse.select(".book-intro").text();
-    book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
+    book.title = parse.select("#info > h1").text();
+    book.author = parse.select("#info > p:nth-child(2)").text().split("者：")[1];
+    book.intro = parse.select("#intro").text();
+    book.cover = parse.select("#fmimg > img").get(0).absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
-    var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
-    if (chapterListEl.isEmpty()) {
-        var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
-        var chapterListUrl = "https://m.qidian.com/book/" + bookId + "/catalog";
-        var chapterListHtml = http.get(chapterListUrl);
-        var chapterListParse =  Jsoup.parse(chapterListHtml,chapterListUrl);
-        var elements = chapterListParse.select("script");
-        for (i = 0; i < elements.size(); i++) {
-            var data = elements.get(i).data();
-            if (data.contains("g_data.volumes")) {
-                try{
-                    context.eval(data);
-                    for (i = 0; i < g_data.volumes.length; i++) {
-                        var chapterListJson = g_data.volumes[i]["cs"]
-                        for (j = 0; j < chapterListJson.length; j++) {
-//                        https://m.qidian.com/book/1018313916/516635756
-                            var chapterJson = chapterListJson[j];
-                            var chapter = new Chapter();
-                            chapter.bookUrl = book.url;
-                            chapter.title = chapterJson["cN"];
-                            chapter.url = "https://m.qidian.com/book/"+bookId+"/"+chapterJson["id"];
-                            chapterList.add(chapter);
-                        }
-                    }
-                    break;
-                }catch(error){
-                    Log.e(source+"解析章节列表出错，"+error)
-                    break;
-                }
-            }
-        }
-        Log.e("========================================================================================================")
-        if(chapterList.isEmpty()){
-            var phoneChapterListEl = chapterListParse.select(".chapter-li-a");
-            for (i = 0; i < phoneChapterListEl.size(); i++) {
-                var chapterEl = phoneChapterListEl.get(i);
-                var chapter = new Chapter();
-                chapter.bookUrl = book.url;
-                chapter.title = chapterEl.select("span").text();
-                chapter.url = chapterEl.absUrl("href");
-                chapterList.add(chapter);
-            }
-
-            try{
-                //起点中文网章节列表暂时有点问题
-                var lastChapterEl = parse.select(".update .detail .cf a").get(0);
-                var chapter = new Chapter();
-                chapter.bookUrl = book.url;
-                chapter.title = lastChapterEl.text();
-                chapter.url = lastChapterEl.absUrl("href");
-                chapterList.add(chapter);
-            }catch(error){
-                Log.e(source+"最新章节列表解析失败")
-            }
-        }
-
-
-    } else {
-        for(i=0; i<chapterListEl.size();i++){
-            var chapterEl = chapterListEl.get(i);
-            var chapter = new Chapter();
-            chapter.title = chapterEl.text();
-            chapter.url = chapterEl.absUrl("href");
-            chapterList.add(chapter);
-        }
+    var chapterListEl = parse.select("#list > dl a");
+    for(i=0; i<chapterListEl.size();i++){
+        var chapterEl = chapterListEl.get(i);
+        var chapter = new Chapter();
+        chapter.title = chapterEl.text();
+        chapter.url = chapterEl.absUrl("href");
+        chapterList.add(chapter);
     }
+    
     book.chapterList = chapterList;
     return book;
 }
 
 function getChapterContent(http,url){
     var html = http.get(url);
-    if (url.startsWith("https://m.qidian.com/")) {
-        return Jsoup.parse(html).select("#chapterContent").html();
-    } else {
-        return Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
-    }
+    return Jsoup.parse(html).select("#content").html();
 }
 
             
