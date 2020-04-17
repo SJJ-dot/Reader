@@ -152,7 +152,7 @@ object DataManager {
             }.map {
                 //数据分组返回
                 it.toBookGroup(group)
-                group.values.toList()
+                group.values.sortedByDescending { list -> list.size }
             }.flowIo()
         }
     }
