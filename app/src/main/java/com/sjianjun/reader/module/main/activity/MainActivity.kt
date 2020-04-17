@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.main.activity
 import android.Manifest
 import android.os.Bundle
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatDelegate.*
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
@@ -14,10 +15,10 @@ import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
-import com.sjianjun.reader.test.JavaScriptTest
-import com.sjianjun.reader.test.ParseTest
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.main_menu_nav_header.*
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity() {
@@ -37,7 +38,7 @@ class MainActivity : BaseActivity() {
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
         NavigationUI.setupWithNavController(nav_ui, navController)
-        navController.addOnDestinationChangedListener { controller, destination, arguments ->
+        navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.bookDetailsFragment -> {
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
@@ -47,6 +48,8 @@ class MainActivity : BaseActivity() {
                 }
             }
         }
+
+        initDrawerMenuWidget()
 
         PermissionUtil.requestPermissions(
             this,
@@ -67,6 +70,21 @@ class MainActivity : BaseActivity() {
 
     }
 
+    private fun initDrawerMenuWidget() {
+        day_night.setOnClickListener {
+            when (globalConfig.appDayNightMode) {
+                MODE_NIGHT_NO->{
+                    globalConfig.appDayNightMode = MODE_NIGHT_YES
+                    setDefaultNightMode(MODE_NIGHT_YES)
+                }
+                else->{
+                    globalConfig.appDayNightMode = MODE_NIGHT_NO
+                    setDefaultNightMode(MODE_NIGHT_NO)
+                }
+            }
+
+        }
+    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
