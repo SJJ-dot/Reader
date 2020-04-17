@@ -140,7 +140,7 @@ class BookshelfFragment : BaseFragment() {
         override fun getItemCount(): Int = data.size
 
         override fun getItemId(position: Int): Long {
-            return data[position].url.id
+            return data[position].id
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {

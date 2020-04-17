@@ -88,7 +88,7 @@ class ChapterListFragment : BaseFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].url.id
+            return data[position].id
         }
     }
 
