@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.sjianjun.reader.utils.id
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
 @Entity(indices = [Index(value = ["author", "title", "source"], unique = true)])
@@ -49,7 +48,5 @@ class Book {
      */
     @Ignore
     var javaScriptList: List<JavaScript>? = null
-
-    val id: Long by lazy { "$title $author".id }
 
 }

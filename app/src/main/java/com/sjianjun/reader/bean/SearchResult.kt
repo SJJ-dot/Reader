@@ -1,7 +1,5 @@
 package com.sjianjun.reader.bean
 
-import com.sjianjun.reader.utils.id
-
 /**
  * 搜索结果
  */
@@ -23,11 +21,8 @@ class SearchResult {
     @JvmField
     var latestChapter: String? = null
 
-    val id: Long by lazy { "$bookTitle $bookAuthor".id }
-
     override fun toString(): String {
-        return "SearchResult(id=$id, bookTitle='$bookTitle', bookUrl='$bookUrl', bookAuthor='$bookAuthor', bookCover='$bookCover', latestChapter=$latestChapter)"
+        return "SearchResult(bookTitle='$bookTitle', bookUrl='$bookUrl', bookAuthor='$bookAuthor', bookCover='$bookCover', latestChapter=$latestChapter)"
     }
-
 
 }

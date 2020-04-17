@@ -6,7 +6,6 @@ import androidx.room.PrimaryKey
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
-import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
 import sjj.alog.Log
@@ -35,8 +34,6 @@ data class JavaScript constructor(
 
     @JvmField
     var enable = true
-
-    val id: Long by lazy { source.id }
 
     @Ignore
     @JvmField
