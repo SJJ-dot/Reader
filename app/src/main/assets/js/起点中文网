@@ -106,7 +106,7 @@ function getDetails(http,url){
 function getChapterContent(http,url){
     var html = http.get(url);
     if (url.startsWith("https://m.qidian.com/")) {
-        return Jsoup.parse(html).select("#chapterContent").html();
+        return Jsoup.parse(html).select("section.read-section.jsChapterWrapper > p").html();
     } else {
         return Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
     }
