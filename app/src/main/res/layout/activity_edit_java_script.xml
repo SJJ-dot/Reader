@@ -12,7 +12,7 @@
         android:layout_height="56dp"
         android:gravity="top|start"
         android:hint="脚本标识，不能与其他脚本重复"
-        android:textColor="@color/material_textBlack_black"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.sjianjun.reader.view.HorizontalScrollView2
@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="top|start"
-            android:textColor="@color/material_textBlack_black" />
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1" />
     </com.sjianjun.reader.view.HorizontalScrollView2>
 
     <Button

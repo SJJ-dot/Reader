@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.script
 
 import android.os.Bundle
+import com.gyf.immersionbar.BarHide
+import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
@@ -15,6 +17,9 @@ class EditJavaScriptActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_java_script)
+        ImmersionBar.with(this)
+            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
+            .init()
         save_script.setOnClickListener {
             viewLaunch {
                 val javaScript = JavaScript(
