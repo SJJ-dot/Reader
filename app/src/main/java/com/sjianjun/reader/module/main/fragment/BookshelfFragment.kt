@@ -88,7 +88,7 @@ class BookshelfFragment : BaseFragment() {
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
         viewLaunch {
-            //需要最新章节 阅读章节 书源数量
+            val bookSet = mutableMapOf<String, Book>()
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 it.asFlow().flatMapMerge { book ->
@@ -106,8 +106,11 @@ class BookshelfFragment : BaseFragment() {
                         book.javaScriptList = js
                         book
                     }
-                }.flowIo().collectLatest { _ ->
-                    bookList.postValue(it)
+                }.map {book->
+                    bookSet["title:${book.title} author:${book.author}"] = book
+                    bookSet.values.toList()
+                }.flowIo().collectLatest { list ->
+                    bookList.postValue(list)
                 }
             }
         }
@@ -181,7 +184,7 @@ class BookshelfFragment : BaseFragment() {
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
                 }
 
-                bookCover.setOnClickListener{
+                bookCover.setOnClickListener {
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,
