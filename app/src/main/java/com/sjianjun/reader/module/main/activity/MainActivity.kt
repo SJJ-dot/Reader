@@ -18,7 +18,7 @@ import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.main_menu_nav_header.*
+import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity() {
@@ -71,19 +71,22 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initDrawerMenuWidget() {
-        day_night.setOnClickListener {
-            when (globalConfig.appDayNightMode) {
-                MODE_NIGHT_NO->{
-                    globalConfig.appDayNightMode = MODE_NIGHT_YES
-                    setDefaultNightMode(MODE_NIGHT_YES)
+        nav_ui.getHeaderView(0)?.apply {
+            day_night.setOnClickListener {
+                when (globalConfig.appDayNightMode) {
+                    MODE_NIGHT_NO -> {
+                        globalConfig.appDayNightMode = MODE_NIGHT_YES
+                        setDefaultNightMode(MODE_NIGHT_YES)
+                    }
+                    else -> {
+                        globalConfig.appDayNightMode = MODE_NIGHT_NO
+                        setDefaultNightMode(MODE_NIGHT_NO)
+                    }
                 }
-                else->{
-                    globalConfig.appDayNightMode = MODE_NIGHT_NO
-                    setDefaultNightMode(MODE_NIGHT_NO)
-                }
-            }
 
+            }
         }
+
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

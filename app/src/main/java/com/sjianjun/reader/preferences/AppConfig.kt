@@ -2,6 +2,7 @@ package com.sjianjun.reader.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import com.sjianjun.reader.App
 import com.sjianjun.reader.R
 
@@ -22,7 +23,7 @@ class AppConfig(val name: String) {
     }
 
     var javaScriptVersion by sp(0)
-    val javaScriptVersionMap by liveDataMap(0,"fileName")
+    val javaScriptVersionMap by liveDataMap(0, "fileName")
 
     var javaScriptBaseUrl by sp(App.app.getString(R.string.script_base_url))
 
@@ -30,6 +31,8 @@ class AppConfig(val name: String) {
      * github 发布的版本信息
      */
     var releasesInfo by sp("")
+
+    var appDayNightMode by sp(MODE_NIGHT_NO)
 }
 
 class BookConfig {
