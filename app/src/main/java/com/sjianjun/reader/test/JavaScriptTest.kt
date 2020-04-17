@@ -30,59 +30,91 @@ object JavaScriptTest {
 
     val javaScript = JavaScript("起点中文网") {
         """
-            function search(http,query){
-                var baseUrl = "https://www.qidian.com/";
-                var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
-                var parse = Jsoup.parse(html,baseUrl);
-                var bookListEl = parse.select(".res-book-item");
-                var results = new ArrayList();
-                for (var i=1;i<bookListEl.size();i++){ 
-                    var bookEl = bookListEl.get(i);
-                    var result = new SearchResult();
-                    result.source = source;
-                    result.bookTitle = bookEl.select(".book-mid-info h4").text();
-                    result.bookUrl = bookEl.select(".book-mid-info h4 a").get(0).absUrl("href");
-                    result.bookAuthor = bookEl.select(".author a").get(0).text();
-                    result.bookCover = bookEl.select("img").get(0).absUrl("src");
-                    result.latestChapter = bookEl.select(".update a").get(0).text();
-                    results.add(result);
-                }
-                return results;
-            }
+function search(http,query){
+    var baseUrl = "https://www.qidian.com/";
+    var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
+    var parse = Jsoup.parse(html,baseUrl);
+    var bookListEl = parse.select(".res-book-item");
+    var results = new ArrayList();
+    for (var i=0;i<bookListEl.size();i++){
+        var bookEl = bookListEl.get(i);
+        var result = new SearchResult();
+        result.source = source;
+        result.bookTitle = bookEl.select(".book-mid-info h4").text();
+        result.bookUrl = bookEl.select(".book-mid-info h4 a").get(0).absUrl("href");
+        result.bookAuthor = bookEl.select(".author a").get(0).text();
+        result.bookCover = bookEl.select("img").get(0).absUrl("src");
+        result.latestChapter = bookEl.select(".update a").get(0).text();
+        results.add(result);
+    }
+    return results;
+}
 
-            /**
-             * 书籍详情[JavaScript.source]
-             */
-            function getDetails(http,url){
-                var parse = Jsoup.parse(http.get(url),url);
-                var book = new Book();
-                book.source = source;
-                //书籍信息
-                var bookInfoEl = parse.select(".book-info").get(0);
-                book.url = url;
-                book.title = bookInfoEl.select("h1 em").text();
-                book.author = bookInfoEl.select("h1 span a").text();
-                book.intro = parse.select("#book-intro").text();
-                book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
-                //加载章节列表
-                var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
-                var chapterList = new ArrayList();
-                for(i=0; i<chapterListEl.size();i++){
-                    var chapterEl = chapterListEl.get(i);
-                    var chapter = new Chapter();
-                    chapter.title = chapterEl.text();
-                    chapter.url = chapterEl.absUrl("href");
-                    chapterList.add(chapter);
-                }
-                book.chapterList = chapterList;
-                return book;
-            }
-            
-            function getChapterContent(http,url){
-                var parse = Jsoup.parse(http.get(url),url);
-                var content = parse.select(".main-text-wrap  div.read-content").html();
-                return content;
-            }
+/**
+ * 书籍详情[JavaScript.source]
+ */
+function getDetails(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var book = new Book();
+    book.source = source;
+    //书籍信息
+    var bookInfoEl = parse.select(".book-info").get(0);
+    book.url = url;
+    book.title = bookInfoEl.select("h1 em").text();
+    book.author = bookInfoEl.select("h1 span a").text();
+    book.intro = parse.select("#book-intro").text();
+    book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
+    //加载章节列表
+    var chapterList = new ArrayList();
+    var chapterListEl = parse.select(".volume-wrap > .volume > .cf li a");
+    if (chapterListEl.isEmpty()) {
+        var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
+        var chapterListUrl = "https://m.qidian.com/book/" + bookId + "/catalog";
+        var chapterListHtml = http.get(chapterListUrl);
+        var phoneChapterListEl = Jsoup.parse(chapterListHtml,chapterListUrl).select(".chapter-li-a");
+        for (i = 0; i < phoneChapterListEl.size(); i++) {
+            var chapterEl = phoneChapterListEl.get(i);
+            var chapter = new Chapter();
+            chapter.bookUrl = book.url;
+            chapter.title = chapterEl.select("span").text();
+            chapter.url = chapterEl.absUrl("href");
+            chapterList.add(chapter);
+        }
+
+        try{
+            //起点中文网章节列表暂时有点问题
+            var lastChapterEl = parse.select(".update .detail .cf a").get(0);
+            var chapter = new Chapter();
+            chapter.bookUrl = book.url;
+            chapter.title = lastChapterEl.text();
+            chapter.url = lastChapterEl.absUrl("href");
+            chapterList.add(chapter);
+        }catch(error){
+            Log.e(source+"最新章节列表解析失败")
+        }
+
+    } else {
+        for(i=0; i<chapterListEl.size();i++){
+            var chapterEl = chapterListEl.get(i);
+            var chapter = new Chapter();
+            chapter.title = chapterEl.text();
+            chapter.url = chapterEl.absUrl("href");
+            chapterList.add(chapter);
+        }
+    }
+    book.chapterList = chapterList;
+    return book;
+}
+
+function getChapterContent(http,url){
+    var html = http.get(url);
+    if (url.startsWith("https://m.qidian.com/")) {
+        return Jsoup.parse(html).select("#chapterContent").html();
+    } else {
+        return Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
+    }
+}
+
             
         """.trimIndent()
     }
