@@ -1,5 +1,5 @@
 {
-  "version": 14,
+  "version": 15,
   "files": [
     "biquge5200",
     "古古小说网（55小说网）",
@@ -33,7 +33,7 @@
     },
     {
       "fileName": "天籁小说",
-      "version": "1"
+      "version": "2"
     }
   ],
   "inherit": true
