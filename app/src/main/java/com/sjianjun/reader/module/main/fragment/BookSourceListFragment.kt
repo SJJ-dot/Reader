@@ -90,7 +90,7 @@ class BookSourceListFragment : BaseFragment() {
                 val qiDian = async {
                     val qiDian = adapter.data.find { it.source == JS_SOURCE_QI_DIAN }
                     val first = adapter.data.firstOrNull()
-                    if (qiDian == null && first!=null) {
+                    if (qiDian == null && first != null) {
                         DataManager.updateOrInsertQiDianBook(first.url)
                     }
                 }
@@ -118,6 +118,7 @@ class BookSourceListFragment : BaseFragment() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
+            holder.setRecyclable(!book.isLoading)
             holder.itemView.apply {
                 bookCover.glide(fragment, book.cover)
                 bookName.text = book.title
