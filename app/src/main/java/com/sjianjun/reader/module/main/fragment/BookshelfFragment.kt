@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.*
 
 class BookshelfFragment : BaseFragment() {
 
-    private val bookList = MutableLiveData<List<Book>>()
+    private val bookList = mutableMapOf<String, Book>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -36,16 +36,10 @@ class BookshelfFragment : BaseFragment() {
         adapter = Adapter(this)
         recycle_view.adapter = adapter
 
-        bookList.observeViewLifecycle {
-            adapter.data.clear()
-            adapter.data.addAll(it)
-            adapter.notifyDataSetChanged()
-        }
-
         swipe_refresh.setOnRefreshListener {
             viewLaunch {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
-                bookList.value?.forEach {
+                bookList.values.forEach {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
                     list.add(it)
                 }
@@ -79,8 +73,12 @@ class BookshelfFragment : BaseFragment() {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 viewLaunch {
-                    val book = adapter.data.getOrNull(viewHolder.adapterPosition)
-                    DataManager.deleteBook(book ?: return@viewLaunch)
+                    val pos = viewHolder.adapterPosition
+                    val book = adapter.data.getOrNull(pos)?: return@viewLaunch
+                    bookList.remove(book.key)
+                    adapter.data.remove(book)
+                    adapter.notifyItemRemoved(pos)
+                    DataManager.deleteBook(book)
                 }
             }
 
@@ -88,7 +86,6 @@ class BookshelfFragment : BaseFragment() {
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
         viewLaunch {
-            val bookSet = mutableMapOf<String, Book>()
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 it.asFlow().flatMapMerge { book ->
@@ -107,10 +104,12 @@ class BookshelfFragment : BaseFragment() {
                         book
                     }
                 }.map {book->
-                    bookSet["title:${book.title} author:${book.author}"] = book
-                    bookSet.values.toList()
+                    bookList[book.key] = book
+                    bookList.values.sortedBy { book -> book.title }
                 }.flowIo().collectLatest { list ->
-                    bookList.postValue(list)
+                    adapter.data.clear()
+                    adapter.data.addAll(list)
+                    adapter.notifyDataSetChanged()
                 }
             }
         }

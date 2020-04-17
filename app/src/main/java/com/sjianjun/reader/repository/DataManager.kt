@@ -151,7 +151,10 @@ object DataManager {
                 }
             }.map {
                 //数据分组返回
-                it.toBookGroup(group)
+                it.forEach { result ->
+                    val list = group.getOrPut(result.key) { mutableListOf() }
+                    list.add(result)
+                }
                 group.values.sortedByDescending { list -> list.size }
             }.flowIo()
         }
