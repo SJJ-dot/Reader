@@ -152,13 +152,7 @@ class BookshelfFragment : BaseFragment() {
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
-                if (book.lastChapter?.isLastChapter == false) {
-                    red_dot.show()
-                    bv_unread.setHighlight(false)
-                } else {
-                    red_dot.hide()
-                    bv_unread.setHighlight(true)
-                }
+
                 val lastChapterIndex = book.lastChapter?.index ?: 0
                 val readChapterIndex = book.readChapter?.index ?: 0
                 val remainingCount = if (book.record?.isEnd == true) {
@@ -166,12 +160,17 @@ class BookshelfFragment : BaseFragment() {
                 } else {
                     lastChapterIndex - readChapterIndex + 1
                 }
-                if (book.isLoading || remainingCount <= 0) {
+                if (book.lastChapter?.isLastChapter == false) {
+                    bv_unread.setHighlight(false)
+                } else {
+                    bv_unread.setHighlight(true)
+                }
+                if ((book.isLoading || remainingCount <= 0) && book.lastChapter?.isLastChapter != false) {
                     bv_unread.hide()
                 } else {
                     bv_unread.show()
-                    bv_unread.badgeCount = remainingCount
                 }
+                bv_unread.badgeCount = remainingCount
 
                 origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
