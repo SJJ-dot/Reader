@@ -7,6 +7,7 @@ import com.sjianjun.reader.bean.JavaScript.Func.*
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
+import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
 /**
@@ -16,7 +17,7 @@ import sjj.alog.Log
 object JavaScriptTest {
     fun showName() {
         val parse = Jsoup.parse("")
-        parse.getElementsByTag("")
+        parse.getElementsByTag("").get(0).baseUri()
         parse.getElementById("").tagName()
         parse.getElementsByClass("").get(0).html()
         parse.select("atc > img").select("").text().split("：")
@@ -26,6 +27,7 @@ object JavaScriptTest {
         parse.getElementsByAttributeValue("", "")
         val children = parse.children()
         "".replace("m.", "")
+//        StringUtil.resolve()
     }
 
     val javaScript = JavaScript("起点中文网") {
@@ -62,7 +64,7 @@ function getDetails(http,url){
     book.url = url;
     book.title = bookInfoEl.select("h1 em").text();
     book.author = bookInfoEl.select("h1 span a").text();
-    book.intro = parse.select("#book-intro").text();
+    book.intro = parse.select(".book-intro").text();
     book.cover = parse.select("#bookImg > img").get(0).absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
@@ -71,27 +73,57 @@ function getDetails(http,url){
         var bookId = bookInfoEl.select("#addBookBtn").attr("data-bookid");
         var chapterListUrl = "https://m.qidian.com/book/" + bookId + "/catalog";
         var chapterListHtml = http.get(chapterListUrl);
-        var phoneChapterListEl = Jsoup.parse(chapterListHtml,chapterListUrl).select(".chapter-li-a");
-        for (i = 0; i < phoneChapterListEl.size(); i++) {
-            var chapterEl = phoneChapterListEl.get(i);
-            var chapter = new Chapter();
-            chapter.bookUrl = book.url;
-            chapter.title = chapterEl.select("span").text();
-            chapter.url = chapterEl.absUrl("href");
-            chapterList.add(chapter);
+        var chapterListParse =  Jsoup.parse(chapterListHtml,chapterListUrl);
+        var elements = chapterListParse.select("script");
+        for (i = 0; i < elements.size(); i++) {
+            var data = elements.get(i).data();
+            if (data.contains("g_data.volumes")) {
+                try{
+                    context.eval(data);
+                    for (i = 0; i < g_data.volumes.length; i++) {
+                        var chapterListJson = g_data.volumes[i]["cs"]
+                        for (j = 0; j < chapterListJson.length; j++) {
+//                        https://m.qidian.com/book/1018313916/516635756
+                            var chapterJson = chapterListJson[j];
+                            var chapter = new Chapter();
+                            chapter.bookUrl = book.url;
+                            chapter.title = chapterJson["cN"];
+                            chapter.url = "https://m.qidian.com/book/"+bookId+"/"+chapterJson["id"];
+                            chapterList.add(chapter);
+                        }
+                    }
+                    break;
+                }catch(error){
+                    Log.e(source+"解析章节列表出错，"+error)
+                    break;
+                }
+            }
+        }
+        Log.e("========================================================================================================")
+        if(chapterList.isEmpty()){
+            var phoneChapterListEl = chapterListParse.select(".chapter-li-a");
+            for (i = 0; i < phoneChapterListEl.size(); i++) {
+                var chapterEl = phoneChapterListEl.get(i);
+                var chapter = new Chapter();
+                chapter.bookUrl = book.url;
+                chapter.title = chapterEl.select("span").text();
+                chapter.url = chapterEl.absUrl("href");
+                chapterList.add(chapter);
+            }
+
+            try{
+                //起点中文网章节列表暂时有点问题
+                var lastChapterEl = parse.select(".update .detail .cf a").get(0);
+                var chapter = new Chapter();
+                chapter.bookUrl = book.url;
+                chapter.title = lastChapterEl.text();
+                chapter.url = lastChapterEl.absUrl("href");
+                chapterList.add(chapter);
+            }catch(error){
+                Log.e(source+"最新章节列表解析失败")
+            }
         }
 
-        try{
-            //起点中文网章节列表暂时有点问题
-            var lastChapterEl = parse.select(".update .detail .cf a").get(0);
-            var chapter = new Chapter();
-            chapter.bookUrl = book.url;
-            chapter.title = lastChapterEl.text();
-            chapter.url = lastChapterEl.absUrl("href");
-            chapterList.add(chapter);
-        }catch(error){
-            Log.e(source+"最新章节列表解析失败")
-        }
 
     } else {
         for(i=0; i<chapterListEl.size();i++){
@@ -120,8 +152,8 @@ function getChapterContent(http,url){
     }
 
     suspend fun testJavaScript() = withIo {
-//                val query = "诡秘之主"
-        val query = "哈利波特"
+        val query = "哈利波特之学霸无敌"
+//        val query = "哈利波特"
         Log.e("${javaScript.source} 搜索 $query")
         val result = javaScript.execute<List<SearchResult>>(search, query)
         if (result.isNullOrEmpty()) {
@@ -135,12 +167,12 @@ function getChapterContent(http,url){
             Log.e("${first.source}  书籍加载失败")
             return@withIo
         }
-        Log.e("${book.source} 加载章节内容:${book.chapterList?.firstOrNull()?.title}")
+        Log.e("${book.source} 加载章节内容:${book.chapterList?.firstOrNull()?.title} $book")
         val chapter = book.chapterList?.firstOrNull()
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
             chapter.content = ChapterContent(chapter.url, chapter.bookUrl, c ?: "")
-            Log.e(" 测试：${if (c.isNullOrBlank()) "失败" else "通过"}")
+            Log.e("测试：${if (c.isNullOrBlank()) "失败" else "通过"} ${chapter.content} ")
         }
         Unit
     }
