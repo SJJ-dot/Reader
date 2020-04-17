@@ -64,20 +64,19 @@ object DataManager {
             val versionJson = versionInfo()
             val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo false
             if (info.version >= globalConfig.javaScriptVersion) {
-                info.versions?.filter {
-                    globalConfig.javaScriptVersionMap.getValue(it.fileName).value!! < it.version
-                }?.map {
+                info.versions?.map {
                     async {
-                        JavaScript(it.fileName, loadScript(it.fileName), it.version)
+                        val javaScript = dao.getJavaScriptBySource(it.fileName).first()
+                        if (javaScript != null && javaScript.version >= it.version) {
+                            javaScript
+                        } else {
+                            JavaScript(it.fileName, loadScript(it.fileName), it.version)
+                        }
                     }
                 }?.awaitAll().also {
                     if (it != null) {
                         dao.insertJavaScript(it)
                         globalConfig.javaScriptVersion = info.version
-                        it.forEach { script ->
-                            globalConfig.javaScriptVersionMap.getValue(script.source)
-                                .postValue(script.version)
-                        }
                     }
                 }
             }
@@ -100,7 +99,6 @@ object DataManager {
     suspend fun deleteJavaScript(script: JavaScript) {
         withIo {
             dao.deleteJavaScript(script)
-            globalConfig.javaScriptVersionMap.getValue(script.source).postValue(-1)
         }
     }
 

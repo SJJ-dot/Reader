@@ -27,7 +27,6 @@ data class JavaScript constructor(
     @JvmField
     var js: String = "",
 
-    @Ignore
     var version: Int = 0
 ) {
 
