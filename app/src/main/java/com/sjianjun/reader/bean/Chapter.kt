@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.sjianjun.reader.utils.id
 
 @Entity(indices = [Index(value = ["bookUrl"])])
 class Chapter {
@@ -43,5 +42,4 @@ class Chapter {
         return "Chapter(url='$url', bookUrl='$bookUrl', title=$title, isLoaded=$isLoaded, index=$index)"
     }
 
-    val id: Long by lazy { url.id }
 }
