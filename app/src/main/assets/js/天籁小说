@@ -11,8 +11,8 @@ function search(http,query){
         result.bookTitle = bookEl.select("a.result-game-item-title-link").text();
         result.bookUrl = bookEl.select("a.result-game-item-title-link").get(0).absUrl("href");
         result.bookAuthor = bookEl.select("> div.result-game-item-detail > div > p:nth-child(1) > span:nth-child(2)").get(0).text();
-        result.bookCover = bookEl.select("> div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
-        result.latestChapter = bookEl.select("img.result-game-item-pic-link-img").get(0).absUrl("src");
+        result.bookCover = bookEl.select("img.result-game-item-pic-link-img").get(0).absUrl("src");
+        result.latestChapter = bookEl.select("> div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
         results.add(result);
     }
     return results;
