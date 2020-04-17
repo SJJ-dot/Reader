@@ -22,7 +22,7 @@
             android:paddingRight="8dp"
             android:paddingBottom="5dp"
             android:text="10:10"
-            android:textColor="@color/material_textBlack_secondaryText"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
             android:textSize="12dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -37,7 +37,7 @@
             android:paddingTop="5dp"
             android:paddingRight="8dp"
             android:paddingBottom="5dp"
-            android:textColor="@color/material_textBlack_secondaryText"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
             android:textSize="12dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/time"

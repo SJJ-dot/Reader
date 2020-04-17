@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:layout_margin="8dp"
-        android:textColor="@color/material_textBlack_secondaryText"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         tools:text="标题" />
 
     <View

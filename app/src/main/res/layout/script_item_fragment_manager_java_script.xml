@@ -18,7 +18,7 @@
             android:layout_weight="1"
             android:singleLine="true"
             android:text=""
-            android:textColor="@color/material_textBlack_black" />
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -35,7 +35,7 @@
                 android:contentDescription="编辑"
                 android:padding="8dp"
                 android:src="@mipmap/ic_edit"
-                app:tint="@color/material_textBlack_black" />
+                app:tint="@color/material_textBlack_secondaryText" />
 
             <ImageView
                 android:id="@+id/iv_del_source"
@@ -47,7 +47,7 @@
                 android:contentDescription="删除"
                 android:padding="8dp"
                 android:src="@mipmap/ic_clear_all"
-                app:tint="@color/material_textBlack_black" />
+                app:tint="@color/material_textBlack_secondaryText" />
         </LinearLayout>
 
     </LinearLayout>

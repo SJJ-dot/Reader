@@ -19,6 +19,7 @@ import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
+import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
 import kotlinx.android.synthetic.main.search_fragment_search.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
 import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
@@ -68,9 +69,9 @@ class SearchFragment : BaseFragment() {
                         R.layout.main_item_fragment_search_history,
                         tfl_search_history,
                         false
-                    ) as TextView
+                    )
                     tfl_search_history.addView(tagView, 0)
-                    tagView.text = history.query
+                    tagView.text.text = history.query
                     tagView.setOnClickListener { _ ->
                         searchView.setQuery(history.query, true)
                     }
