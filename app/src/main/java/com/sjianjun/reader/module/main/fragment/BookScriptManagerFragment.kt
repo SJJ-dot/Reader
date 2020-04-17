@@ -14,9 +14,7 @@ import com.sjianjun.reader.module.script.EditJavaScriptActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
-import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.startActivity
-import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.flow.collectLatest
@@ -108,7 +106,7 @@ class BookScriptManagerFragment : BaseFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].source.id
+            return data[position].id
         }
     }
 }

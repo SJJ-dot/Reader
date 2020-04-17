@@ -23,7 +23,7 @@ class SearchResult {
     @JvmField
     var latestChapter: String? = null
 
-    val id: Long by lazy { bookUrl?.id ?: 0 }
+    val id: Long by lazy { "$bookTitle $bookAuthor".id }
 
     override fun toString(): String {
         return "SearchResult(id=$id, bookTitle='$bookTitle', bookUrl='$bookUrl', bookAuthor='$bookAuthor', bookCover='$bookCover', latestChapter=$latestChapter)"
