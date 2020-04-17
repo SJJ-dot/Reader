@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/search_history_card_view"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_margin="3dp"
-    android:gravity="center"
-    android:background="@drawable/shape_card_view"
-    android:clickable="true"
-    android:focusable="true"
-    android:padding="8dp"
-    android:singleLine="true"
-    android:text="@string/app_name"
-    android:textColor="@color/material_textBlack_black"
-    android:textSize="15sp"
-    tools:ignore="RtlHardcoded" />
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/search_history_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="3dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:padding="8dp"
+        android:singleLine="true"
+        android:text="@string/app_name"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        android:textSize="15sp"
+        tools:ignore="RtlHardcoded" />
+
+</com.google.android.material.card.MaterialCardView>

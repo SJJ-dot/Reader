@@ -8,6 +8,7 @@
         android:id="@+id/chapterList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="?android:attr/colorBackground"
         android:outlineProvider="bounds"
         android:translationZ="5dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
