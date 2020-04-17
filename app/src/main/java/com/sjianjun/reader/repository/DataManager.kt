@@ -359,7 +359,7 @@ object DataManager {
         }
     }
 
-    suspend fun getChapterContent(chapter: Chapter): Chapter {
+    suspend fun getChapterContent(chapter: Chapter, async: Boolean = false): Chapter {
         withIo {
             if (chapter.isLoaded) {
                 val chapterContent = dao.getChapterContent(chapter.url).first()
@@ -368,15 +368,20 @@ object DataManager {
                     return@withIo
                 }
             }
-            val book = dao.getBookByUrl(chapter.bookUrl).first()
-            val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
-            val content = js?.getChapterContent(chapter.url)
-            if (content.isNullOrBlank()) {
-                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")
-            } else {
-                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, content)
-                chapter.isLoaded = true
-                dao.insertChapter(chapter, chapter.content!!)
+            val deferred = async {
+                val book = dao.getBookByUrl(chapter.bookUrl).first()
+                val js = dao.getJavaScriptBySource(book?.source ?: return@async).first()
+                val content = js?.getChapterContent(chapter.url)
+                if (content.isNullOrBlank()) {
+                    chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")
+                } else {
+                    chapter.content = ChapterContent(chapter.url, chapter.bookUrl, content)
+                    chapter.isLoaded = true
+                    dao.insertChapter(chapter, chapter.content!!)
+                }
+            }
+            if (!async) {
+                deferred.join()
             }
         }
         return chapter

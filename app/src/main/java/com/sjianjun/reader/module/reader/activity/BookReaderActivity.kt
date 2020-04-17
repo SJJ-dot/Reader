@@ -185,7 +185,7 @@ class BookReaderActivity : BaseActivity() {
             var first = true
             DataManager.getChapterList(bookUrl)
                 .onEach {
-                    getChapterContent(it, readingRecord.chapterUrl)
+                    getChapterContent(it, readingRecord.chapterUrl, true)
                 }.collectLatest {
                     if (adapter.chapterList.size != it.size) {
                         adapter.chapterList = it
@@ -227,7 +227,11 @@ class BookReaderActivity : BaseActivity() {
     /**
      * 加载 上一章 当前章 下一章
      */
-    private suspend fun getChapterContent(chapterList: List<Chapter>?, chapterUrl: String?) {
+    private suspend fun getChapterContent(
+        chapterList: List<Chapter>?,
+        chapterUrl: String?,
+        async: Boolean = false
+    ) {
 
         if (chapterList.isNullOrEmpty()) {
             return
@@ -247,7 +251,7 @@ class BookReaderActivity : BaseActivity() {
                 } else {
                     val loading = loadRecord[chapter.url]
                     if (loading == null) {
-                        val load = async { DataManager.getChapterContent(chapter) }
+                        val load = async { DataManager.getChapterContent(chapter, async) }
                         loadRecord[chapter.url] = load
                         load
                     } else {
