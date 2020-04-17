@@ -130,6 +130,7 @@
                         android:layout_width="5dp"
                         android:layout_height="5dp"
                         android:background="@drawable/read_dot"
+                        android:visibility="invisible"
                         app:layout_constraintStart_toStartOf="@id/latestChapter"
                         app:layout_constraintTop_toTopOf="@+id/latestChapter" />
 
@@ -146,7 +147,7 @@
                         app:layout_constraintTop_toBottomOf="@+id/introTitle"
                         tools:text="intro" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/reading"
                         android:layout_width="0dp"
                         android:layout_height="56dp"

@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="176dp"
     android:background="@drawable/side_nav_bar"
-    android:padding="16dp"
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <ImageView
@@ -12,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:paddingTop="8dp"
+        android:layout_margin="16dp"
         app:srcCompat="@mipmap/ic_xue_xi" />
 
     <ImageView
