@@ -15,11 +15,13 @@ import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import kotlin.math.max
 
-suspend fun checkUpdate(activity: BaseActivity) = withIo {
-    val info =
-        http.get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
-    if (info.isNotEmpty()) {
-        globalConfig.releasesInfo = info
+suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo {
+    if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
+        val info =
+            http.get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
+        if (info.isNotEmpty()) {
+            globalConfig.releasesInfo = info
+        }
     }
     val githubApi = gson.fromJson<GithubApi>(globalConfig.releasesInfo) ?: return@withIo null
 
@@ -28,7 +30,7 @@ suspend fun checkUpdate(activity: BaseActivity) = withIo {
         return@withIo githubApi
     }
 
-    val lastVersion = lastVersion( BuildConfig.VERSION_NAME,githubApi.tag_name)
+    val lastVersion = lastVersion(BuildConfig.VERSION_NAME, githubApi.tag_name)
     if (lastVersion != BuildConfig.VERSION_NAME) {
         val dialog = AlertDialog.Builder(activity)
             .setTitle(if (githubApi.name.isEmpty()) "版本更新" else githubApi.name)

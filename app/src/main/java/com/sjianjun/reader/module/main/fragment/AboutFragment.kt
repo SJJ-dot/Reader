@@ -24,11 +24,13 @@ class AboutFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-        setVersionInfo(gson.fromJson(globalConfig.releasesInfo))
-        viewLaunch {
-            val githubApi = checkUpdate(activity!!)
-            setVersionInfo(githubApi)
+        versionCode.setOnClickListener {
+            viewLaunch {
+                val githubApi = checkUpdate(activity!!,true)
+                setVersionInfo(githubApi)
+            }
         }
+        setVersionInfo(gson.fromJson(globalConfig.releasesInfo))
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
