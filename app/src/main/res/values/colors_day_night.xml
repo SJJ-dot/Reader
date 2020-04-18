@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  图标着色  -->
+    <color name="day_night_icon_tint_color">@color/material_black</color>
+    <color name="day_night_text_color_black">@color/material_textBlack_black</color>
+    <color name="day_night_text_color_black_secondary">@color/material_textBlack_secondaryText</color>
+    <color name="day_night_text_color_light">@color/material_textBlack_black</color>
+</resources>
