@@ -25,7 +25,6 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onEach
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -63,7 +62,15 @@ class BookReaderActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        initData()
+        if (readingRecord.bookUrl == bookUrl) {
+            val targetChapter = adapter.chapterList.indexOfFirst { it.url == chapterUrl }
+            if (targetChapter != -1) {
+                val manager = recycle_view.layoutManager as LinearLayoutManager
+                manager.scrollToPositionWithOffset(targetChapter, 0)
+            }
+        } else {
+            initData()
+        }
     }
 
     override fun onPause() {
@@ -119,15 +126,14 @@ class BookReaderActivity : BaseActivity() {
                 val chapter = adapter.chapterList.getOrNull(firstPos) ?: return
                 chapter_title.text = chapter.title
 
-                if (preFirstPosition != firstPos) {
+                if (preFirstPosition != firstPos || preLastPos != lastPos) {
                     preFirstPosition = firstPos
-                    loadRefresh(manager, firstPos)
-                }
-                if (preLastPos != lastPos) {
                     preLastPos = lastPos
-                    loadRefresh(manager, lastPos)
+                    preLoadRefresh(
+                        manager,
+                        (max(firstPos - 1, 0))..(min(lastPos + 1, adapter.chapterList.size))
+                    )
                 }
-
                 saveReadRecord()
             }
         })
@@ -185,40 +191,53 @@ class BookReaderActivity : BaseActivity() {
             }
 
             var first = true
-            DataManager.getChapterList(bookUrl)
-                .onEach {
+            DataManager.getChapterList(bookUrl).collectLatest {
+
+
+                if (first) {
+                    first = false
                     getChapterContent(it, readingRecord.chapterUrl, true)
-                }.collectLatest {
+                    if (adapter.chapterList.size != it.size) {
+                        loadRecord.clear()
+                        adapter.chapterList = it
+                        adapter.notifyDataSetChanged()
+                    }
+
+                    val index = it.indexOfFirst { chapter ->
+                        chapter.url == readingRecord.chapterUrl
+                    }
+                    if (index != -1) {
+                        val manager = recycle_view.layoutManager as LinearLayoutManager
+                        manager.scrollToPositionWithOffset(index, readingRecord.offest)
+                    }
+                } else {
                     if (adapter.chapterList.size != it.size) {
                         adapter.chapterList = it
                         adapter.notifyDataSetChanged()
                     }
-                    if (first) {
-                        first = false
-                        val index = it.indexOfFirst { chapter ->
-                            chapter.url == readingRecord.chapterUrl
-                        }
-
-                        if (index != -1) {
-                            val manager = recycle_view.layoutManager as LinearLayoutManager
-                            manager.scrollToPositionWithOffset(index, readingRecord.offest)
-                        }
-                    }
-
                 }
+            }
 
         }.also(initDataJob::lazySet)
     }
 
-    private fun loadRefresh(manager: LinearLayoutManager, position: Int) {
-        val chapter = adapter.chapterList.getOrNull(position)
+    private fun preLoadRefresh(
+        manager: LinearLayoutManager,
+        posRange: IntRange,
+        async: Boolean = false
+    ) {
         viewLaunch {
-            getChapterContent(adapter.chapterList, chapter?.url)
-            if (manager.findFirstVisibleItemPosition()
-                <= min(position + 1, adapter.chapterList.size)
-                && manager.findLastVisibleItemPosition()
-                >= max(position - 1, 0)
-            ) {
+            withIo {
+                val chapterList = adapter.chapterList
+                val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
+                loadList.map {
+                    async { getChapterContent(chapterList, it.url, async) }
+                }
+            }?.joinAll()
+
+            val firstPos = manager.findFirstVisibleItemPosition()
+            val lastPos = manager.findLastVisibleItemPosition()
+            if (firstPos <= posRange.last && lastPos >= posRange.first) {
                 delay(1)
                 adapter.notifyDataSetChanged()
             }
@@ -234,37 +253,20 @@ class BookReaderActivity : BaseActivity() {
         chapterUrl: String?,
         async: Boolean = false
     ) {
-
-        if (chapterList.isNullOrEmpty()) {
-            return
-        }
-
-        val chapterIndex = if (chapterUrl.isNullOrBlank()) {
-            0
-        } else {
-            chapterList.indexOfFirst { it.url == chapterUrl }
-        }
-
-        ((chapterIndex - 1)..(chapterIndex + 1)).mapNotNull {
-            val chapter = chapterList.getOrNull(it)
-            if (chapter != null) {
-                if (chapter.isLoaded && chapter.content != null) {
-                    null
-                } else {
-                    val loading = loadRecord[chapter.url]
-                    if (loading == null) {
-                        val load = async { DataManager.getChapterContent(chapter, async) }
-                        loadRecord[chapter.url] = load
-                        load
-                    } else {
-                        loading
-                    }
-                }
-            } else {
-                null
+        withIo {
+            val chapter = chapterList?.find { it.url == chapterUrl } ?: return@withIo
+            if (chapter.isLoaded && chapter.content != null) {
+                return@withIo
             }
-        }.awaitAll().forEach {
-            loadRecord.remove(it.url)
+            var loading = loadRecord[chapter.url]
+            if (loading == null) {
+                loading = async {
+                    DataManager.getChapterContent(chapter, async)
+                }
+                loadRecord[chapter.url] = loading
+            }
+            loading.join()
+            loadRecord.remove(chapter.url)
         }
     }
 

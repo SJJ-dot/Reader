@@ -34,9 +34,9 @@ class ChapterListFragment : BaseFragment() {
                 .combine(DataManager.getReadingRecord(book)) { chapterList, readingRecord ->
                     chapterList to readingRecord
                 }.collectLatest {
+                    val change =  adapter.readingChapterUrl != it.second?.chapterUrl ?: ""
                     adapter.readingChapterUrl = it.second?.chapterUrl ?: ""
                     adapter.data = it.first
-                    val change =  adapter.readingChapterUrl != it.second?.chapterUrl ?: ""
                     adapter.notifyDataSetChanged()
                     if (change) {
                         val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
