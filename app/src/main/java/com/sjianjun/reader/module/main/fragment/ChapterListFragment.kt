@@ -74,7 +74,7 @@ class ChapterListFragment : BaseFragment() {
             if (readingChapterUrl == c.url) {
                 holder.itemView.text1.setTextColorRes(R.color.material_green_500)
             } else {
-                holder.itemView.text1.setTextColorRes(R.color.material_textBlack_secondaryText)
+                holder.itemView.text1.setTextColorRes(R.color.day_night_text_color_light)
             }
             if (c.isLoaded) {
                 holder.itemView.mark.setBackgroundColor(R.color.material_green_A700.resColor())

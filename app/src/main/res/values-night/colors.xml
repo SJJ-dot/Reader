@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="colorPrimaryDark">@color/material_black</color>
-    <color name="material_textBlack_secondaryText">@color/material_white</color>
-</resources>
