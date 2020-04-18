@@ -23,6 +23,7 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
         if (info.isNotEmpty()) {
             globalConfig.releasesInfo = info
             globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+        } else {
             toastSHORT("版本信息加载失败")
         }
     }
