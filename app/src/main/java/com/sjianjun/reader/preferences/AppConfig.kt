@@ -32,6 +32,11 @@ class AppConfig(val name: String) {
      */
     var releasesInfo by sp("")
 
+    /**
+     * 上次检查更新的时间
+     */
+    var lastCheckUpdateTime by sp(0L)
+
     var appDayNightMode by sp(MODE_NIGHT_NO)
 }
 

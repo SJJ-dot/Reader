@@ -36,10 +36,12 @@ class ChapterListFragment : BaseFragment() {
                 }.collectLatest {
                     adapter.readingChapterUrl = it.second?.chapterUrl ?: ""
                     adapter.data = it.first
+                    val change =  adapter.readingChapterUrl != it.second?.chapterUrl ?: ""
                     adapter.notifyDataSetChanged()
-
-                    val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
-                    chapterList.scrollToPosition(index)
+                    if (change) {
+                        val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
+                        chapterList.scrollToPosition(index)
+                    }
                 }
         }
     }
