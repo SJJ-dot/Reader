@@ -88,6 +88,7 @@ class BookshelfFragment : BaseFragment() {
         viewLaunch {
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
+                val bookNum = it.size
                 it.asFlow().flatMapMerge { book ->
                     combine(
                         DataManager.getReadingRecord(book).map { record ->
@@ -107,9 +108,11 @@ class BookshelfFragment : BaseFragment() {
                     bookList[book.key] = book
                     bookList.values.sortedBy { book -> book.title }
                 }.flowIo().collectLatest { list ->
-                    adapter.data.clear()
-                    adapter.data.addAll(list)
-                    adapter.notifyDataSetChanged()
+                    if (list.size == bookNum) {
+                        adapter.data.clear()
+                        adapter.data.addAll(list)
+                        adapter.notifyDataSetChanged()
+                    }
                 }
             }
         }
