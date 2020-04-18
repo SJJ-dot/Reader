@@ -21,6 +21,7 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             http.get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
         if (info.isNotEmpty()) {
             globalConfig.releasesInfo = info
+            globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
         }
     }
     val githubApi = gson.fromJson<GithubApi>(globalConfig.releasesInfo) ?: return@withIo null
