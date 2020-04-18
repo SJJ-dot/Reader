@@ -9,6 +9,7 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.GithubApi
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.toastSHORT
 import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
 import sjj.novel.util.fromJson
@@ -22,6 +23,7 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
         if (info.isNotEmpty()) {
             globalConfig.releasesInfo = info
             globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+            toastSHORT("版本信息加载失败")
         }
     }
     val githubApi = gson.fromJson<GithubApi>(globalConfig.releasesInfo) ?: return@withIo null
