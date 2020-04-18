@@ -15,6 +15,7 @@ import sjj.alog.Log
  * 不支持：乐安宣书网(搜索结果没有作者)、
  */
 object JavaScriptTest {
+    var test = false
     fun showName() {
         val parse = Jsoup.parse("")
         parse.getElementsByTag("").get(0).baseUri()
@@ -89,6 +90,9 @@ function getChapterContent(http,url){
     }
 
     suspend fun testJavaScript() = withIo {
+        if (!test) {
+            return@withIo
+        }
         val query = "哈利波特之学霸无敌"
 //        val query = "哈利波特"
         Log.e("${javaScript.source} 搜索 $query")

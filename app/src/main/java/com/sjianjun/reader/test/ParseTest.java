@@ -21,6 +21,7 @@ import java.util.function.Function;
 import sjj.alog.Log;
 
 public final class ParseTest {
+    private static boolean test = false;
     private static String source = "天籁小说";
 
     public static List<SearchResult> search(Http http, String query) throws Exception {
@@ -77,6 +78,9 @@ public final class ParseTest {
     }
 
     public static void test() throws Exception {
+        if (!test) {
+            return;
+        }
         List<SearchResult> searchResults = search(HttpKt.getHttp(), "哈利波特");
         Log.e(searchResults);
         if (searchResults.isEmpty()) {
