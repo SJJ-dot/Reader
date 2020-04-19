@@ -9,7 +9,7 @@ import android.view.View
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.GithubApi
+import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import kotlinx.android.synthetic.main.main_fragment_about.*
@@ -19,7 +19,7 @@ import sjj.novel.util.gson
 class AboutFragment : BaseFragment() {
     private val downloadUrl =
         "https://github.com/SJJ-dot/Reader/releases/download/0.4.112/reader-master-release.112.-0.4.112.apk"
-    private var githubApi: GithubApi? = null
+    private var releasesInfo: ReleasesInfo? = null
     override fun getLayoutRes() = R.layout.main_fragment_about
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -43,7 +43,7 @@ class AboutFragment : BaseFragment() {
                 val sendIntent = Intent(Intent.ACTION_SEND)
                 sendIntent.putExtra(
                     Intent.EXTRA_TEXT,
-                    "小说app下载链接：${githubApi?.apkDownloadUrl ?: downloadUrl}"
+                    "小说app下载链接：${releasesInfo?.apkDownloadUrl ?: downloadUrl}"
                 )
                 sendIntent.type = "text/plain"
                 val shareIntent = Intent.createChooser(sendIntent, "把app分享给别人")
@@ -55,11 +55,11 @@ class AboutFragment : BaseFragment() {
     }
 
 
-    private fun setVersionInfo(githubApi: GithubApi?) {
-        val download = githubApi?.apkAssets
+    private fun setVersionInfo(releasesInfo: ReleasesInfo?) {
+        val download = releasesInfo?.apkAssets
         if (download != null) {
             versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME}\n最新版：${githubApi.tag_name} | 下载次数：${download?.download_count}"
+                "当前版本：${BuildConfig.VERSION_NAME}\n最新版：${releasesInfo.tag_name} | 下载次数：${download?.download_count}"
         } else {
             versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }
