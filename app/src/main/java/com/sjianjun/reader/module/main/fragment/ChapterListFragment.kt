@@ -84,14 +84,14 @@ class ChapterListFragment : BaseFragment() {
             val c = data[position]
             holder.itemView.text1.text = c.title
             if (readingChapterUrl == c.url) {
-                holder.itemView.text1.setTextColorRes(R.color.material_green_500)
+                holder.itemView.text1.setTextColorRes(R.color.material_reader_green_500)
             } else {
                 holder.itemView.text1.setTextColorRes(R.color.day_night_text_color_light)
             }
             if (c.isLoaded) {
-                holder.itemView.mark.setBackgroundColor(R.color.material_green_A700.resColor())
+                holder.itemView.mark.setBackgroundColor(R.color.material_reader_green_A700.resColor())
             } else {
-                holder.itemView.mark.setBackgroundColor(R.color.material_grey_500.resColor())
+                holder.itemView.mark.setBackgroundColor(R.color.material_reader_grey_500.resColor())
             }
             holder.itemView.setOnClickListener {
                 fragment.startActivity<BookReaderActivity>(
