@@ -21,7 +21,6 @@ import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.toastSHORT
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
-import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity() {
 
@@ -64,7 +63,7 @@ class MainActivity : BaseActivity() {
             }
         }
 
-        viewLaunch {
+        launch {
             checkUpdate(this@MainActivity)
             JavaScriptTest.testJavaScript()
             ParseTest.test()

@@ -31,7 +31,7 @@ class BookScriptManagerFragment : BaseFragment() {
         }
         val adapter = Adapter(this)
         recycle_view.adapter = adapter
-        viewLaunch {
+        launch {
             DataManager.getAllJavaScript().collectLatest {
                 adapter.data = it
                 adapter.notifyDataSetChanged()
@@ -47,7 +47,7 @@ class BookScriptManagerFragment : BaseFragment() {
         return when (item.itemId) {
             R.id.sync_book_script -> {
                 //同步书源。退出后就会停止同步。用actor会更好一点。
-                viewLaunch {
+                launch {
                     newSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
                     if (DataManager.reloadBookJavaScript() == true) {
                         newSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
@@ -84,7 +84,7 @@ class BookScriptManagerFragment : BaseFragment() {
             val script = data[p1]
             holder.itemView.cb_book_source.text = script.source
             holder.itemView.iv_del_source.setOnClickListener {
-                fragment.viewLaunch {
+                fragment.launch {
                     DataManager.deleteJavaScript(script)
                     fragment.newSnackbar(it, "删除成功")
                 }
@@ -97,7 +97,7 @@ class BookScriptManagerFragment : BaseFragment() {
             holder.itemView.cb_book_source.isChecked = script.enable
 
             holder.itemView.cb_book_source.setOnCheckedChangeListener { view, isChecked ->
-                fragment.viewLaunch {
+                fragment.launch {
                     script.enable = isChecked
                     DataManager.updateJavaScript(script)
                     fragment.newSnackbar(view, if (isChecked) "已启用" else "已停用")

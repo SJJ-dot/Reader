@@ -50,7 +50,7 @@ class BookDetailsFragment : BaseFragment() {
 
     private fun refresh(bookUrl: String?) {
         bookUrl ?: return
-        viewLaunch {
+        launch {
             detailsRefreshLayout?.isRefreshing = true
             val qiDian = async { DataManager.updateOrInsertQiDianBook(bookUrl) }
             DataManager.reloadBookFromNet(bookUrl)
@@ -72,7 +72,7 @@ class BookDetailsFragment : BaseFragment() {
             )
             .commitNowAllowingStateLoss()
 
-        viewLaunch {
+        launch {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
 

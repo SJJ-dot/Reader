@@ -49,9 +49,9 @@ class BookSourceListFragment : BaseFragment() {
             ): Boolean = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                viewLaunch {
+                launch {
                     val book = adapter.data.getOrNull(viewHolder.adapterPosition)
-                    val success = DataManager.deleteBookByUrl(book ?: return@viewLaunch)
+                    val success = DataManager.deleteBookByUrl(book ?: return@launch)
                     if (success == false) {
                         toastSHORT("删除失败")
                         dismissAllowingStateLoss()
@@ -61,7 +61,7 @@ class BookSourceListFragment : BaseFragment() {
         })
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
-        viewLaunch {
+        launch {
             DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor)
                 .map {
                     //并发读取章节列表
@@ -83,7 +83,7 @@ class BookSourceListFragment : BaseFragment() {
     private fun initRefresh() {
 
         swipe_refresh.setOnRefreshListener {
-            viewLaunch {
+            launch {
                 swipe_refresh.isRefreshing = false
                 swipe_refresh.isEnabled = false
                 refresh_progress_bar.isAutoLoading = true
@@ -132,7 +132,7 @@ class BookSourceListFragment : BaseFragment() {
                 haveRead.text = "来源：${book.source}"
                 loading.isLoading = book.isLoading
                 setOnClickListener {
-                    fragment.viewLaunch {
+                    fragment.launch {
                         DataManager.changeReadingRecordBookSource(book)
                         fragment.dismissAllowingStateLoss()
                     }

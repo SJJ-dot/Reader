@@ -66,7 +66,7 @@ class SearchFragment : BaseFragment() {
     }
 
     private fun initSearchHistory(searchView: SearchView) {
-        viewLaunch {
+        launch {
             DataManager.getAllSearchHistory().collectLatest {
                 tfl_search_history.removeAllViews()
                 it?.forEach { history ->
@@ -111,7 +111,7 @@ class SearchFragment : BaseFragment() {
                     searchHint.data = emptyList()
                     searchHint.notifyDataSetChanged()
                 }
-                viewLaunch {
+                launch {
                     queryHintActor.send(newText ?: "")
                 }
                 return false
@@ -201,7 +201,7 @@ class SearchFragment : BaseFragment() {
             holder.itemView.haveRead.text = "来源：${searchResult.source} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
-                fragment.viewLaunch {
+                fragment.launch {
                     DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,

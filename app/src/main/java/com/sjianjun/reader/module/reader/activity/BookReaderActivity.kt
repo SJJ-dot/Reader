@@ -80,7 +80,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initTime() {
-        viewLaunch {
+        launch {
             val format = simpleDateFormat("HH:mm")
             time.text = format.format(Date())
 
@@ -135,11 +135,11 @@ class BookReaderActivity : BaseActivity() {
     private val readingRecordJob = AtomicReference<Job>()
     private fun saveReadRecord(delay: Long = 2000) {
         readingRecordJob.get()?.cancel()
-        viewLaunch {
+        launch {
             //延迟2s 保存
             delay(delay)
             val manager = recycle_view.layoutManager as LinearLayoutManager
-            var view = manager.getChildAt(0) ?: return@viewLaunch
+            var view = manager.getChildAt(0) ?: return@launch
             var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
 
             if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
@@ -161,11 +161,11 @@ class BookReaderActivity : BaseActivity() {
     private val initDataJob = AtomicReference<Job>()
     private fun initData() {
         initDataJob.get()?.cancel()
-        viewLaunch {
+        launch {
             val book = DataManager.getBookByUrl(bookUrl).first()
             if (book == null) {
                 finish()
-                return@viewLaunch
+                return@launch
             }
             this@BookReaderActivity.book = book
 
@@ -229,14 +229,14 @@ class BookReaderActivity : BaseActivity() {
         posRange: IntRange,
         async: Boolean = false
     ) {
-        viewLaunch {
+        launch {
             withIo {
                 val chapterList = adapter.chapterList
                 val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
                 loadList.map {
                     async { getChapterContent(chapterList, it.url, async) }
                 }
-            }?.joinAll()
+            }.joinAll()
 
             val firstPos = manager.findFirstVisibleItemPosition()
             val lastPos = manager.findLastVisibleItemPosition()

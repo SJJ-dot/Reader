@@ -8,20 +8,27 @@ import com.sjianjun.reader.utils.handler
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
-abstract class BaseActivity : AppCompatActivity(), CoroutineScope by MainScope() {
+abstract class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ImmersionBar.with(this).init()
     }
 
-    fun viewLaunch(context: CoroutineContext = handler,
-                   start: CoroutineStart = CoroutineStart.DEFAULT,
-                   block: suspend CoroutineScope.() -> Unit): Job {
+    fun launch(
+        context: CoroutineContext = handler,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
         return lifecycle.coroutineScope.launch(context, start, block)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        cancel()
+
+    fun launchIo(
+        context: CoroutineContext = Dispatchers.IO + handler,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
+        return launch(context, start, block)
     }
+
 }

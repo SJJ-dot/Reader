@@ -25,7 +25,7 @@ class AboutFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
         versionCode.setOnClickListener {
-            viewLaunch {
+            launch {
                 val githubApi = checkUpdate(activity!!,true)
                 setVersionInfo(githubApi)
             }
