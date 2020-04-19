@@ -17,16 +17,15 @@ import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 
 class AboutFragment : BaseFragment() {
-    private val downloadUrl =
-        "https://github.com/SJJ-dot/Reader/releases/download/0.4.112/reader-master-release.112.-0.4.112.apk"
-    private var releasesInfo: ReleasesInfo? = null
+    private val downloadUrl = "https://github.com/SJJ-dot/Reader/releases/latest"
+
     override fun getLayoutRes() = R.layout.main_fragment_about
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
         versionCode.setOnClickListener {
             launch {
-                val githubApi = checkUpdate(activity!!,true)
+                val githubApi = checkUpdate(activity!!, true)
                 setVersionInfo(githubApi)
             }
         }
@@ -40,10 +39,11 @@ class AboutFragment : BaseFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.share -> {
+                val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
                 val sendIntent = Intent(Intent.ACTION_SEND)
                 sendIntent.putExtra(
                     Intent.EXTRA_TEXT,
-                    "小说app下载链接：${releasesInfo?.apkDownloadUrl ?: downloadUrl}"
+                    "小说app下载链接：${releaseInfo?.apkDownloadUrl ?: downloadUrl}"
                 )
                 sendIntent.type = "text/plain"
                 val shareIntent = Intent.createChooser(sendIntent, "把app分享给别人")
