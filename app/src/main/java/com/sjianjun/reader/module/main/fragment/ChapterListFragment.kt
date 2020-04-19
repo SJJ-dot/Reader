@@ -7,6 +7,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
@@ -20,35 +21,46 @@ import sjj.alog.Log
  *展示章节列表
  */
 class ChapterListFragment : BaseFragment() {
-    val bookUrl by lazy { arguments!!.getString(BOOK_URL)!! }
+    val bookTitle: String
+        get() = arguments!!.getString(BOOK_TITLE)!!
+
+    val bookAuthor: String
+        get() = arguments!!.getString(BOOK_AUTHOR)!!
+
     private val adapter = ChapterListAdapter(this)
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        chapterList.adapter = adapter
-        viewLaunch {
-            val book = DataManager.getBookByUrl(bookUrl).first() ?: return@viewLaunch
+        recycle_view_chapter_list.adapter = adapter
 
-            DataManager.getChapterList(bookUrl)
-                .combine(DataManager.getReadingRecord(book)) { chapterList, readingRecord ->
-                    chapterList to readingRecord
-                }.collectLatest {
-                    val change =  adapter.readingChapterUrl != it.second?.chapterUrl ?: ""
-                    adapter.readingChapterUrl = it.second?.chapterUrl ?: ""
-                    adapter.data = it.first
-                    adapter.notifyDataSetChanged()
-                    if (change) {
-                        val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
-                        chapterList.scrollToPosition(index)
-                    }
-                }
-        }
+        initData()
     }
 
-    private fun scrollToReadingChapter() {
-        val index = adapter.data.indexOfFirst { it.url == adapter.readingChapterUrl }
-        chapterList.scrollToPosition(index)
+    private fun initData() {
+        viewLaunch {
+            DataManager.getReadingBook(bookTitle, bookAuthor).flatMapLatest {
+                if (it == null) {
+                    emptyFlow<Pair<List<Chapter>, ReadingRecord>>()
+                } else {
+                    DataManager.getChapterList(it.url)
+                        .combine(DataManager.getReadingRecord(it)) { chapterList, readingRecord ->
+                            chapterList to readingRecord
+                        }
+                }
+            }.collectLatest { (chapterList, readingRecord) ->
+                val change = adapter.readingChapterUrl != readingRecord?.chapterUrl ?: ""
+                adapter.readingChapterUrl = readingRecord?.chapterUrl ?: ""
+                adapter.data = chapterList
+                adapter.notifyDataSetChanged()
+                if (change) {
+                    val index = adapter.data.indexOfFirst {
+                        it.url == adapter.readingChapterUrl
+                    }
+                    recycle_view_chapter_list.scrollToPosition(index)
+                }
+            }
+        }
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter() {

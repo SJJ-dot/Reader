@@ -44,13 +44,6 @@ class BookReaderActivity : BaseActivity() {
             .statusBarDarkFont(globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO)
             .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
             .init()
-        //先不显示
-        supportFragmentManager.beginTransaction()
-            .replace(
-                R.id.drawer_chapter_list,
-                fragmentCreate<ChapterListFragment>(BOOK_URL, bookUrl)
-            )
-            .commitNowAllowingStateLoss()
 
         recycle_view.adapter = adapter
         initTime()
@@ -175,6 +168,16 @@ class BookReaderActivity : BaseActivity() {
                 return@viewLaunch
             }
             this@BookReaderActivity.book = book
+
+            supportFragmentManager.beginTransaction()
+                .replace(
+                    R.id.drawer_chapter_list,
+                    fragmentCreate<ChapterListFragment>(
+                        BOOK_TITLE to book.title,
+                        BOOK_AUTHOR to book.author
+                    )
+                )
+                .commitNowAllowingStateLoss()
 
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title, book.author)
