@@ -18,7 +18,7 @@
         android:backgroundTint="@color/colorPrimary"
         android:id="@+id/save_base_url"
         android:layout_width="56dp"
-        android:textColor="@color/material_white"
+        android:textColor="@color/material_reader_white"
         android:layout_height="0dp"
         android:text="设置脚本地址"
         app:layout_constraintBottom_toBottomOf="@+id/base_url"

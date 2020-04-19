@@ -167,7 +167,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:text="开始阅读"
-                    android:textColor="@color/material_white"
+                    android:textColor="@color/material_reader_white"
                     android:textSize="22sp" />
 
             </FrameLayout>

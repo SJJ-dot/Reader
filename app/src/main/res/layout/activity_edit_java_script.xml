@@ -41,7 +41,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         android:text="保存脚本"
-        android:textColor="@color/material_white"
+        android:textColor="@color/material_reader_white"
         android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
