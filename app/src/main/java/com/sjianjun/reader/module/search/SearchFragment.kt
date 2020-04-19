@@ -8,6 +8,7 @@ import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,16 +23,18 @@ import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
 import kotlinx.android.synthetic.main.search_fragment_search.*
 import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import sjj.alog.Log
 
 class SearchFragment : BaseFragment() {
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
     private val searchHint = SearchHintAdapter()
+    private lateinit var deleteSearchHistoryActor: SendChannel<List<SearchHistory>>
+    private lateinit var queryActor: SendChannel<String>
+    private lateinit var queryHintActor: SendChannel<String>
 
     override fun getLayoutRes() = R.layout.search_fragment_search
 
@@ -39,6 +42,9 @@ class SearchFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
         recycle_view_hint.adapter = searchHint
+        deleteSearchHistoryActor = deleteSearchHistoryActor()
+        queryActor = queryActor()
+        queryHintActor = queryHintActor()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -141,14 +147,15 @@ class SearchFragment : BaseFragment() {
     }
 
     //宜搜快速提示
-    private val queryHintActor = actor<String>(capacity = Channel.CONFLATED) {
+    private fun queryHintActor() = lifecycleScope.actor<String>(capacity = Channel.CONFLATED) {
         for (msg in channel) {
             val hintList = DataManager.searchHint(msg) ?: emptyList()
             searchHint.data = hintList
             searchHint.notifyDataSetChanged()
         }
     }
-    private val queryActor = actor<String>(capacity = Channel.CONFLATED) {
+
+    private fun queryActor() = lifecycleScope.actor<String>(capacity = Channel.CONFLATED) {
         for (msg in channel) {
             refresh_progress_bar?.isAutoLoading = true
             DataManager.search(msg)?.collect {
@@ -158,7 +165,7 @@ class SearchFragment : BaseFragment() {
         }
     }
 
-    private val deleteSearchHistoryActor = actor<List<SearchHistory>>() {
+    private fun deleteSearchHistoryActor() = lifecycleScope.actor<List<SearchHistory>>() {
         for (msg in channel) {
             DataManager.deleteSearchHistory(msg)
         }
@@ -178,8 +185,7 @@ class SearchFragment : BaseFragment() {
         }
     }
 
-    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter(),
-        CoroutineScope by fragment {
+    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter() {
         var data = listOf<List<SearchResult>>()
         override fun getItemCount(): Int = data.size
         override fun itemLayoutRes(viewType: Int): Int {

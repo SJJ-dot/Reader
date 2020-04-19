@@ -11,6 +11,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.coroutineScope
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.reader.utils.handler
 import kotlinx.coroutines.*
@@ -18,7 +19,7 @@ import sjj.alog.Log
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
+open class BaseFragment : DialogFragment() {
 
     var onBackPressed: (() -> Unit)? = null
         set(value) {
@@ -46,11 +47,6 @@ open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
     @LayoutRes
     open fun getLayoutRes(): Int = 0
 
-    override fun onDestroy() {
-        super.onDestroy()
-        cancel()
-    }
-
     fun <T> LiveData<T>.observeViewLifecycle(observer: (data: T) -> Unit) {
         observeViewLifecycle(Observer { observer(it) })
     }
@@ -64,7 +60,7 @@ open class BaseFragment : DialogFragment(), CoroutineScope by MainScope() {
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
-        return viewLifecycleOwner.lifecycle.coroutineScope.launch(context, start, block)
+        return viewLifecycleOwner.lifecycleScope.launch(context, start, block)
     }
 
     private var snackbar: Snackbar? = null
