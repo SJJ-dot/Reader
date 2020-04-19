@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Widget.Reader.MaterialComponents.Button" parent="@style/Widget.MaterialComponents.Button">
-        <item name="backgroundTint">?attr/colorSurface</item>
+    <style name="Widget.Reader.NavigationView.Dark">
+        <item name="android:background">?android:attr/colorBackground</item>
+        <item name="itemTextColor">@color/main_navigation_item_text_color</item>
     </style>
+
+    <style name="Widget.Reader.Button.Dark">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
 </resources>
