@@ -21,7 +21,7 @@ class EditJavaScriptActivity : BaseActivity() {
             .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
             .init()
         save_script.setOnClickListener {
-            viewLaunch {
+            launch {
                 val javaScript = JavaScript(
                     source = script_source.text.toString(),
                     js = script.text.toString()
@@ -41,8 +41,8 @@ class EditJavaScriptActivity : BaseActivity() {
                 }
             }
         }
-        viewLaunch {
-            val source = intent.getStringExtra(JAVA_SCRIPT_SOURCE) ?: return@viewLaunch
+        launch {
+            val source = intent.getStringExtra(JAVA_SCRIPT_SOURCE) ?: return@launch
             val js = DataManager.getJavaScript(source).first()
             script_source.setText(js?.source)
             script.setText(js?.js)

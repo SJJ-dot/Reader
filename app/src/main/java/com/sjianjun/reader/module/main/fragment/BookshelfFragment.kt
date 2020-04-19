@@ -5,7 +5,6 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.lifecycle.MutableLiveData
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -37,7 +36,7 @@ class BookshelfFragment : BaseFragment() {
         recycle_view.adapter = adapter
 
         swipe_refresh.setOnRefreshListener {
-            viewLaunch {
+            launch {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
                 bookList.values.forEach {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
@@ -72,9 +71,9 @@ class BookshelfFragment : BaseFragment() {
             ): Boolean = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                viewLaunch {
+                launch {
                     val pos = viewHolder.adapterPosition
-                    val book = adapter.data.getOrNull(pos)?: return@viewLaunch
+                    val book = adapter.data.getOrNull(pos)?: return@launch
                     bookList.remove(book.key)
                     adapter.data.remove(book)
                     adapter.notifyItemRemoved(pos)
@@ -85,7 +84,7 @@ class BookshelfFragment : BaseFragment() {
         })
         mItemTouchHelper.attachToRecyclerView(recycle_view)
 
-        viewLaunch {
+        launch {
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 val bookNum = it.size

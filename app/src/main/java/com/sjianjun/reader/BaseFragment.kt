@@ -10,14 +10,12 @@ import androidx.annotation.LayoutRes
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.reader.utils.handler
 import kotlinx.coroutines.*
 import sjj.alog.Log
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 open class BaseFragment : DialogFragment() {
 
@@ -55,12 +53,20 @@ open class BaseFragment : DialogFragment() {
         observe(viewLifecycleOwner, observer)
     }
 
-    fun viewLaunch(
+    fun launch(
         context: CoroutineContext = handler,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
         return viewLifecycleOwner.lifecycleScope.launch(context, start, block)
+    }
+
+    fun launchIo(
+        context: CoroutineContext = Dispatchers.IO + handler,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
+        return launch(context, start, block)
     }
 
     private var snackbar: Snackbar? = null

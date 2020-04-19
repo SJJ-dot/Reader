@@ -14,7 +14,6 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_chapter_list.*
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 
 
 /**
@@ -38,7 +37,7 @@ class ChapterListFragment : BaseFragment() {
     }
 
     private fun initData() {
-        viewLaunch {
+        launch {
             DataManager.getReadingBook(bookTitle, bookAuthor).flatMapLatest {
                 if (it == null) {
                     emptyFlow<Pair<List<Chapter>, ReadingRecord>>()
