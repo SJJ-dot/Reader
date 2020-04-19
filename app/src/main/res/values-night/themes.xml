@@ -4,9 +4,10 @@
     <style name="AppTheme.DayNight" parent="AppTheme.Dark" />
 
     <style name="AppTheme.Dark" parent="AppTheme">
+        <item name="colorPrimary">?attr/colorSurface</item>
         <item name="colorPrimaryDark">@color/dark_background_color</item>
         <item name="android:colorBackground">@color/dark_background_color</item>
-        <item name="backgroundTint">?attr/colorSurface</item>
+
     </style>
 
 </resources>
