@@ -14,13 +14,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:backgroundTint="@color/colorPrimary"
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/save_base_url"
-        android:layout_width="56dp"
-        android:textColor="@color/material_reader_white"
+        android:layout_width="66dp"
         android:layout_height="0dp"
         android:text="设置脚本地址"
+        android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="@+id/base_url"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/base_url" />

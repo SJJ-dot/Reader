@@ -15,8 +15,11 @@
         <item name="colorAccent">@color/colorAccent</item>
 
         <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
-        <item name="navigationViewStyle">@style/Widget.Design.NavigationView</item>
-        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
+        <item name="navigationViewStyle">@style/Widget.Reader.NavigationView</item>
+        <item name="materialButtonStyle">@style/Widget.Reader.Button</item>
+
+        <!--    textAppearance    -->
+        <item name="textAppearanceSubtitle2">@style/textAppearanceSubtitle2</item>
     </style>
 
 </resources>

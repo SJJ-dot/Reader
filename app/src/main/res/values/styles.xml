@@ -4,4 +4,14 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light" />
 
+    <style name="textAppearanceSubtitle2" parent="TextAppearance.MaterialComponents.Subtitle2" />
+
+    <style name="Widget.Reader.Button" parent="@style/Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/material_reader_white</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+    <style name="Widget.Reader.NavigationView" parent="@style/Widget.MaterialComponents.NavigationView">
+
+    </style>
+
 </resources>
