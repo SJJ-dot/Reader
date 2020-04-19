@@ -6,13 +6,17 @@
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
 
         <!--    设置窗口背景    -->
-        <item name="android:colorBackground">@color/material_reader_grey_50</item>
+        <item name="android:colorBackground">@color/material_reader_blueGrey_50</item>
+        <!--System/Platform attributes-->
+        <item name="android:windowBackground">?android:colorBackground</item>
 
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
 
         <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
+        <item name="navigationViewStyle">@style/Widget.Design.NavigationView</item>
+        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
     </style>
 
 </resources>
