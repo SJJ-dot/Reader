@@ -2,7 +2,7 @@ package com.sjianjun.reader.bean
 
 import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
 
-class GithubApi {
+class ReleasesInfo {
     var tag_name: String = ""
     var name: String = ""
     var body: String = ""
