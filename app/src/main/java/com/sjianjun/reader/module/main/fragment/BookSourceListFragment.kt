@@ -49,12 +49,18 @@ class BookSourceListFragment : BaseFragment() {
             ): Boolean = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val adapterPosition = viewHolder.adapterPosition
                 launch {
-                    val book = adapter.data.getOrNull(viewHolder.adapterPosition)
+                    val book = adapter.data.getOrNull(adapterPosition)
                     val success = DataManager.deleteBookByUrl(book ?: return@launch)
                     if (success == false) {
                         toastSHORT("删除失败")
-                        dismissAllowingStateLoss()
+                    } else {
+                        val index = adapter.data.indexOf(book)
+                        if (index != -1) {
+                            adapter.data.removeAt(index)
+                            adapter.notifyItemRemoved(index)
+                        }
                     }
                 }
             }
@@ -72,7 +78,8 @@ class BookSourceListFragment : BaseFragment() {
                         }
                     }.toList().sortedBy { book -> book.source }
                 }.flowIo().collectLatest {
-                    adapter.data = it
+                    adapter.data.clear()
+                    adapter.data.addAll(it)
                     adapter.notifyDataSetChanged()
                 }
         }
@@ -111,7 +118,7 @@ class BookSourceListFragment : BaseFragment() {
             setHasStableIds(true)
         }
 
-        var data: List<Book> = emptyList()
+        val data: MutableList<Book> = mutableListOf()
         override fun getItemCount() = data.size
 
         override fun itemLayoutRes(viewType: Int) = R.layout.main_item_fragment_book_source_list
