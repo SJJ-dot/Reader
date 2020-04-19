@@ -120,11 +120,16 @@ object DataManager {
 
     suspend fun searchHint(query: String): List<String>? {
         return withIo {
-            val result = http.post(
-                "http://book.easou.com/ta/tsAjax.m",
-                mapOf("k" to URLEncoder.encode(query, "utf-8"))
-            )
-            return@withIo gson.fromJson<List<String>>(result)
+            try {
+                val result = http.post(
+                    "http://book.easou.com/ta/tsAjax.m",
+                    mapOf("k" to URLEncoder.encode(query, "utf-8"))
+                )
+                return@withIo gson.fromJson<List<String>>(result)
+            } catch (e: Exception) {
+                Log.e("搜索提示加载失败")
+                null
+            }
         }
 
     }

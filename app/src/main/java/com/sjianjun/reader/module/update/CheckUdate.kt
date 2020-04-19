@@ -27,6 +27,9 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             if (info.isNotEmpty()) {
                 globalConfig.releasesInfo = info
                 globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+                if (force) {
+                    toastSHORT("版本信息加载成功")
+                }
                 gson.fromJson<ReleasesInfo>(info)
             } else {
                 if (force) {
@@ -59,10 +62,6 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             }
         withMain {
             dialog.show()
-        }
-    } else {
-        if (force) {
-            toastSHORT("当前已是最新版本")
         }
     }
     return@withIo githubApi
