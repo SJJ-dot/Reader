@@ -36,7 +36,7 @@ class BookshelfFragment : BaseFragment() {
         recycle_view.adapter = adapter
 
         swipe_refresh.setOnRefreshListener {
-            launch {
+            launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
                 bookList.values.forEach {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
@@ -44,7 +44,7 @@ class BookshelfFragment : BaseFragment() {
                 }
                 sourceMap.values.map {
                     async {
-                        it.forEach {
+                        it.apply { it.sortBy { it.title } }.forEach {
                             val qiDian = async { DataManager.updateOrInsertQiDianBook(it.url) }
                             DataManager.reloadBookFromNet(it.url)
                             delay(1000)
@@ -52,7 +52,9 @@ class BookshelfFragment : BaseFragment() {
                         }
                     }
                 }.awaitAll()
-                swipe_refresh?.isRefreshing = false
+                withMain {
+                    swipe_refresh?.isRefreshing = false
+                }
             }
         }
 
@@ -73,7 +75,7 @@ class BookshelfFragment : BaseFragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 launch {
                     val pos = viewHolder.adapterPosition
-                    val book = adapter.data.getOrNull(pos)?: return@launch
+                    val book = adapter.data.getOrNull(pos) ?: return@launch
                     bookList.remove(book.key)
                     adapter.data.remove(book)
                     adapter.notifyItemRemoved(pos)
@@ -103,7 +105,7 @@ class BookshelfFragment : BaseFragment() {
                         book.javaScriptList = js
                         book
                     }
-                }.map {book->
+                }.map { book ->
                     bookList[book.key] = book
                     bookList.values.sortedBy { book -> book.title }
                 }.flowIo().collectLatest { list ->
