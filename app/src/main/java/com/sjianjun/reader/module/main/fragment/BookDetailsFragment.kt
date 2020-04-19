@@ -62,15 +62,19 @@ class BookDetailsFragment : BaseFragment() {
     private fun initData() {
 
 
+        childFragmentManager.beginTransaction()
+            .replace(
+                R.id.chapter_list,
+                fragmentCreate<ChapterListFragment>(
+                    BOOK_TITLE to bookTitle,
+                    BOOK_AUTHOR to bookAuthor
+                )
+            )
+            .commitNowAllowingStateLoss()
+
         viewLaunch {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
-                childFragmentManager.beginTransaction()
-                    .replace(
-                        R.id.chapter_list,
-                        fragmentCreate<ChapterListFragment>(BOOK_URL, it?.url ?: "")
-                    )
-                    .commitNowAllowingStateLoss()
 
                 fillView(it)
 

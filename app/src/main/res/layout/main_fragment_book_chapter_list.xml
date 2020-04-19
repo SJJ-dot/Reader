@@ -5,7 +5,7 @@
     android:layout_gravity="end">
 
     <sjj.novel.view.scroller.FastScrollRecyclerView
-        android:id="@+id/chapterList"
+        android:id="@+id/recycle_view_chapter_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?android:attr/colorBackground"

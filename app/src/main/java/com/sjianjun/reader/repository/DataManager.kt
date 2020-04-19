@@ -261,14 +261,6 @@ object DataManager {
         return dao.getBookByUrl(url)
     }
 
-    fun getBookAndChapterList(bookUrl: String): Flow<Book?> {
-        return dao.getBookByUrl(bookUrl)
-            .combine(dao.getChapterListByBookUrl(bookUrl)) { book, chapterList ->
-                book?.chapterList = chapterList
-                book
-            }
-    }
-
     fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
         if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
             return emptyFlow()

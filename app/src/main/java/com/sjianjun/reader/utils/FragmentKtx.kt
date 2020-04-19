@@ -8,8 +8,6 @@ inline fun <reified T : Fragment> fragmentCreate(k: String, v: Any): T {
 
 inline fun <reified T : Fragment> fragmentCreate(vararg param: Pair<String, Any>): T {
     val fragment = T::class.java.newInstance()
-    if (param.isNotEmpty()) {
-        fragment.arguments = bundle(*param)
-    }
+    fragment.arguments = bundle(*param)
     return fragment
 }
