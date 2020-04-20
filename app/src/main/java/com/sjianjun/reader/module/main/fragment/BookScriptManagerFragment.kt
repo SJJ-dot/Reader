@@ -14,6 +14,7 @@ import com.sjianjun.reader.module.script.EditJavaScriptActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
+import com.sjianjun.reader.utils.URL_SCRIPT_BASE
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.startActivity
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
@@ -27,7 +28,8 @@ class BookScriptManagerFragment : BaseFragment() {
         setHasOptionsMenu(true)
         base_url.setText(globalConfig.javaScriptBaseUrl)
         save_base_url.setOnClickListener {
-            globalConfig.javaScriptBaseUrl = base_url.text.toString()
+            val url = base_url.text.toString()
+            globalConfig.javaScriptBaseUrl = if (url.isBlank()) URL_SCRIPT_BASE else url
         }
         val adapter = Adapter(this)
         recycle_view.adapter = adapter
@@ -82,7 +84,7 @@ class BookScriptManagerFragment : BaseFragment() {
             p1: Int
         ) {
             val script = data[p1]
-            holder.itemView.cb_book_source.text = script.source
+            holder.itemView.cb_book_source.text = "${script.source} V-${script.version}"
             holder.itemView.iv_del_source.setOnClickListener {
                 fragment.launch {
                     DataManager.deleteJavaScript(script)

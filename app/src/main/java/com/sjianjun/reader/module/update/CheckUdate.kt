@@ -9,6 +9,7 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.URL_RELEASE_INFO
 import com.sjianjun.reader.utils.toastSHORT
 import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
@@ -17,13 +18,16 @@ import sjj.novel.util.gson
 import kotlin.math.max
 
 suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo {
-    val githubApi =
+    val releasesInfo =
         if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
             if (force) {
                 toastSHORT("正在加载版本信息……")
             }
             val info =
-                http.get("https://api.github.com/repos/SJJ-dot/Reader/releases/latest")
+                http.get(
+                    URL_RELEASE_INFO,
+                    header = mapOf("Content-Type" to "application/json;charset=UTF-8")
+                )
             if (info.isNotEmpty()) {
                 globalConfig.releasesInfo = info
                 globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
@@ -42,16 +46,18 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
         } ?: return@withIo null
 
 
-    val download = githubApi.apkAssets
+    val download = releasesInfo.apkAssets
     if (download?.browser_download_url.isNullOrEmpty()) {
-        return@withIo githubApi
+        return@withIo releasesInfo
     }
-
-    val lastVersion = lastVersion(BuildConfig.VERSION_NAME, githubApi.tag_name)
+    if (releasesInfo.prerelease && !(BuildConfig.DEBUG || force)) {
+        return@withIo releasesInfo
+    }
+    val lastVersion = lastVersion(BuildConfig.VERSION_NAME, releasesInfo.tag_name)
     if (lastVersion != BuildConfig.VERSION_NAME) {
         val dialog = AlertDialog.Builder(activity)
-            .setTitle(if (githubApi.name.isEmpty()) "版本更新" else githubApi.name)
-            .setMessage("发现新版本是否现在升级？\n${githubApi.body}")
+            .setTitle(if (releasesInfo.name.isEmpty()) "版本更新" else releasesInfo.name)
+            .setMessage("发现新版本是否现在升级？\n${releasesInfo.body}")
             .setPositiveButton("下载") { dialog, _ ->
                 dialog.dismiss()
                 //浏览器
@@ -64,7 +70,7 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             dialog.show()
         }
     }
-    return@withIo githubApi
+    return@withIo releasesInfo
 }
 
 private fun lastVersion(version1: String, version2: String): String {

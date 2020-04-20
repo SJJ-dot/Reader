@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import com.sjianjun.reader.App
-import com.sjianjun.reader.R
+import com.sjianjun.reader.utils.URL_SCRIPT_BASE
 
 val globalConfig by lazy { AppConfig("default") }
 val globalBookConfig by lazy { BookConfig() }
@@ -25,7 +25,7 @@ class AppConfig(val name: String) {
     var javaScriptVersion by sp(0)
     val javaScriptVersionMap by liveDataMap(0, "fileName")
 
-    var javaScriptBaseUrl by sp(App.app.getString(R.string.script_base_url))
+    var javaScriptBaseUrl by sp(URL_SCRIPT_BASE)
 
     /**
      * github 发布的版本信息
