@@ -1,5 +1,3 @@
 # 小说阅读器
 kotlin 协程、rhino、Javascript
-### 问题
-- 来源，作者，书名相同的时候无法保存。
-- 部分小说网站搜索的时候没有作者名。
+# github 访问不稳定迁移到码云 新仓库地址：[https://gitee.com/SJJ-dot/Reader](https://gitee.com/SJJ-dot/Reader)
