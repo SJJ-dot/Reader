@@ -1,5 +1,7 @@
 package com.sjianjun.reader.bean
 
+import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
+
 class ReleasesInfo {
     var tag_name: String = ""
     var name: String = ""
@@ -10,7 +12,7 @@ class ReleasesInfo {
     var assets: List<Assets>? = null
 
     val apkAssets: Assets?
-        get() = assets?.find { it.name.endsWith(".apk") }
+        get() = assets?.find { it.content_type == CONTENT_TYPE_ANDROID }
 
     val apkDownloadUrl: String?
         get() = apkAssets?.browser_download_url
