@@ -357,7 +357,7 @@ object DataManager {
         }
     }
 
-    suspend fun getChapterContent(chapter: Chapter, async: Boolean = false): Chapter {
+    suspend fun getChapterContent(chapter: Chapter, async: Boolean): Chapter {
         withIo {
             if (chapter.isLoaded) {
                 val chapterContent = dao.getChapterContent(chapter.url).first()

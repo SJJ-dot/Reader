@@ -116,16 +116,23 @@ class BookReaderActivity : BaseActivity() {
                 val firstPos = manager.findFirstVisibleItemPosition()
                 val lastPos = manager.findLastVisibleItemPosition()
 
-                val chapter = adapter.chapterList.getOrNull(firstPos) ?: return
+                val chapterList = adapter.chapterList
+                val chapter = chapterList.getOrNull(firstPos) ?: return
                 chapter_title.text = chapter.title
 
                 if (preFirstPosition != firstPos || preLastPos != lastPos) {
                     preFirstPosition = firstPos
                     preLastPos = lastPos
-                    preLoadRefresh(
-                        manager,
-                        (max(firstPos - 1, 0))..(min(lastPos + 1, adapter.chapterList.size))
-                    )
+                    launch {
+                        val intRange = (max(firstPos - 1, 0))..(min(lastPos + 1, chapterList.size))
+                        preLoadRefresh(chapterList, intRange, false)
+                        val curFirstPos = manager.findFirstVisibleItemPosition()
+                        val curLastPos = manager.findLastVisibleItemPosition()
+                        if (curFirstPos <= lastPos && curLastPos >= firstPos) {
+                            delay(1)
+                            adapter.notifyDataSetChanged()
+                        }
+                    }
                 }
                 saveReadRecord()
             }
@@ -204,11 +211,8 @@ class BookReaderActivity : BaseActivity() {
                         chapter.url == readingRecord.chapterUrl
                     }
 
-                    preLoadRefresh(
-                        recycle_view.layoutManager as LinearLayoutManager,
-                        max(index - 1, 0)..min(index + 1, it.size),
-                        true
-                    )
+                    val intRange = max(index - 1, 0)..min(index + 1, it.size - 1)
+                    preLoadRefresh(it, intRange, true)
 
                     if (adapter.chapterList.size != it.size) {
                         loadRecord.clear()
@@ -232,27 +236,15 @@ class BookReaderActivity : BaseActivity() {
         }.also(initDataJob::lazySet)
     }
 
-    private fun preLoadRefresh(
-        manager: LinearLayoutManager,
+    private suspend fun preLoadRefresh(
+        chapterList: List<Chapter>,
         posRange: IntRange,
-        async: Boolean = false
-    ) {
-        launch {
-            withIo {
-                val chapterList = adapter.chapterList
-                val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
-                loadList.map {
-                    async { getChapterContent(chapterList, it.url, async) }
-                }
-            }.joinAll()
-
-            val firstPos = manager.findFirstVisibleItemPosition()
-            val lastPos = manager.findLastVisibleItemPosition()
-            if (firstPos <= posRange.last && lastPos >= posRange.first) {
-                delay(1)
-                adapter.notifyDataSetChanged()
-            }
-        }
+        async: Boolean
+    ) = withIo {
+        val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
+        loadList.map {
+            async { getChapterContent(chapterList, it.url, async) }
+        }.joinAll()
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
@@ -262,7 +254,7 @@ class BookReaderActivity : BaseActivity() {
     private suspend fun getChapterContent(
         chapterList: List<Chapter>?,
         chapterUrl: String?,
-        async: Boolean = false
+        async: Boolean
     ) {
         withIo {
             val chapter = chapterList?.find { it.url == chapterUrl } ?: return@withIo
@@ -303,12 +295,23 @@ class BookReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
             holder.itemView.chapter_title.text = chapter.title
+            holder.itemView.setOnClickListener(null)
             if (chapter.content != null) {
                 holder.itemView.chapter_content.text = chapter.content?.content.html()
                 if (chapter.isLoaded) {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 } else {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                    holder.itemView.setOnClickListener {
+                        activity.launch {
+                            val intRange = max(position - 1, 0)..min(position + 1, chapterList.size - 1)
+                            activity.preLoadRefresh(chapterList, intRange, false)
+                            if (holder.adapterPosition == position) {
+                                delay(1)
+                                notifyDataSetChanged()
+                            }
+                        }
+                    }
                 }
             } else {
                 holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
