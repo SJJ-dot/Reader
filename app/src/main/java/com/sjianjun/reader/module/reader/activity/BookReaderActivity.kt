@@ -25,7 +25,6 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import sjj.alog.Log
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -126,7 +125,7 @@ class BookReaderActivity : BaseActivity() {
                     preLastPos = lastPos
                     launch {
                         val intRange = (max(firstPos - 1, 0))..(min(lastPos + 1, chapterList.size))
-                        preLoadRefresh(chapterList, intRange, false)
+                        preLoadRefresh(chapterList, intRange)
                         val curFirstPos = manager.findFirstVisibleItemPosition()
                         val curLastPos = manager.findLastVisibleItemPosition()
                         if (curFirstPos <= lastPos && curLastPos >= firstPos) {
@@ -204,17 +203,15 @@ class BookReaderActivity : BaseActivity() {
             var first = true
             DataManager.getChapterList(bookUrl).collectLatest {
 
-                Log.e("load chapter 0")
                 if (first) {
                     first = false
 
                     val index = it.indexOfFirst { chapter ->
                         chapter.url == readingRecord.chapterUrl
                     }
-                    Log.e("load chapter 1")
+                    //只加载本地的数据
                     val intRange = max(index - 1, 0)..min(index + 1, it.size - 1)
                     preLoadRefresh(it, intRange, true)
-                    Log.e("load chapter 2")
                     if (adapter.chapterList.size != it.size) {
                         loadRecord.clear()
                         adapter.chapterList = it
@@ -240,13 +237,12 @@ class BookReaderActivity : BaseActivity() {
     private suspend fun preLoadRefresh(
         chapterList: List<Chapter>,
         posRange: IntRange,
-        async: Boolean
+        onlyLocal: Boolean = false
     ) = withIo {
         val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
         loadList.map {
-            async { getChapterContent(it, async) }
+            async { getChapterContent(it, onlyLocal) }
         }.awaitAll()
-        Log.e("preLoadRefresh end posRange:$posRange")
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
@@ -255,7 +251,7 @@ class BookReaderActivity : BaseActivity() {
      */
     private suspend fun getChapterContent(
         chapter: Chapter?,
-        async: Boolean
+        onlyLocal: Boolean
     ) {
         withIo {
             chapter ?: return@withIo
@@ -265,7 +261,7 @@ class BookReaderActivity : BaseActivity() {
             var loading = loadRecord[chapter.url]
             if (loading == null) {
                 loading = async {
-                    val chapterContent = DataManager.getChapterContent(chapter, async)
+                    val chapterContent = DataManager.getChapterContent(chapter, onlyLocal)
                     chapterContent
                 }
                 loadRecord[chapter.url] = loading
@@ -273,7 +269,6 @@ class BookReaderActivity : BaseActivity() {
 
             loading.await()
             loadRecord.remove(chapter.url)
-            Log.e("getChapterContent end chapter.index:${chapter.index}")
         }
     }
 
@@ -307,10 +302,12 @@ class BookReaderActivity : BaseActivity() {
                 } else {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                     holder.itemView.setOnClickListener {
-                        holder.itemView.chapter_content.text = "拼命加载中…………………………………………………………………………………………………………………………"
+                        holder.itemView.chapter_content.text =
+                            "拼命加载中…………………………………………………………………………………………………………………………"
                         activity.launch {
-                            val intRange = max(position - 1, 0)..min(position + 1, chapterList.size - 1)
-                            activity.preLoadRefresh(chapterList, intRange, false)
+                            val intRange =
+                                max(position - 1, 0)..min(position + 1, chapterList.size - 1)
+                            activity.preLoadRefresh(chapterList, intRange)
                             if (holder.adapterPosition == position) {
                                 delay(1)
                                 notifyDataSetChanged()
