@@ -5,4 +5,5 @@
     <color name="day_night_text_color_black">@color/material_reader_textBlack_black</color>
     <color name="day_night_text_color_black_secondary">@color/material_reader_textBlack_secondaryText</color>
     <color name="day_night_text_color_light">@color/material_reader_textBlack_black</color>
+    <color name="day_night_dark_tint">#00000000</color>
 </resources>
