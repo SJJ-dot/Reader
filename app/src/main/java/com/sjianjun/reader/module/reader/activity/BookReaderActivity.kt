@@ -199,16 +199,24 @@ class BookReaderActivity : BaseActivity() {
 
                 if (first) {
                     first = false
-                    getChapterContent(it, readingRecord.chapterUrl, true)
+
+                    val index = it.indexOfFirst { chapter ->
+                        chapter.url == readingRecord.chapterUrl
+                    }
+
+                    preLoadRefresh(
+                        recycle_view.layoutManager as LinearLayoutManager,
+                        max(index - 1, 0)..min(index + 1, it.size),
+                        true
+                    )
+
                     if (adapter.chapterList.size != it.size) {
                         loadRecord.clear()
                         adapter.chapterList = it
                         adapter.notifyDataSetChanged()
                     }
 
-                    val index = it.indexOfFirst { chapter ->
-                        chapter.url == readingRecord.chapterUrl
-                    }
+
                     if (index != -1) {
                         val manager = recycle_view.layoutManager as LinearLayoutManager
                         manager.scrollToPositionWithOffset(index, readingRecord.offest)
