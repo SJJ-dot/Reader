@@ -29,7 +29,12 @@ class BookScriptManagerFragment : BaseFragment() {
         base_url.setText(globalConfig.javaScriptBaseUrl)
         save_base_url.setOnClickListener {
             val url = base_url.text.toString()
-            globalConfig.javaScriptBaseUrl = if (url.isBlank()) URL_SCRIPT_BASE else url
+            if (url.isBlank()) {
+                base_url.setText(URL_SCRIPT_BASE)
+                globalConfig.javaScriptBaseUrl = URL_SCRIPT_BASE
+            } else {
+                globalConfig.javaScriptBaseUrl = url
+            }
         }
         val adapter = Adapter(this)
         recycle_view.adapter = adapter
