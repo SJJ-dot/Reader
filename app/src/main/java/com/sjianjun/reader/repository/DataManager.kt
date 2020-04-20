@@ -11,6 +11,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 import sjj.novel.util.fromJson
@@ -274,7 +275,6 @@ object DataManager {
     }
 
     fun getReadingBook(title: String?, author: String?): Flow<Book?> {
-        Log.e("获取正在阅读的书籍：title:$title author:$author")
         if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
             return emptyFlow()
         }
@@ -379,7 +379,7 @@ object DataManager {
                 }
             }
             if (!async) {
-                deferred.join()
+                deferred.await()
             }
         }
         return chapter

@@ -25,6 +25,7 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import sjj.alog.Log
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -203,17 +204,17 @@ class BookReaderActivity : BaseActivity() {
             var first = true
             DataManager.getChapterList(bookUrl).collectLatest {
 
-
+                Log.e("load chapter 0")
                 if (first) {
                     first = false
 
                     val index = it.indexOfFirst { chapter ->
                         chapter.url == readingRecord.chapterUrl
                     }
-
+                    Log.e("load chapter 1")
                     val intRange = max(index - 1, 0)..min(index + 1, it.size - 1)
                     preLoadRefresh(it, intRange, true)
-
+                    Log.e("load chapter 2")
                     if (adapter.chapterList.size != it.size) {
                         loadRecord.clear()
                         adapter.chapterList = it
@@ -243,8 +244,9 @@ class BookReaderActivity : BaseActivity() {
     ) = withIo {
         val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
         loadList.map {
-            async { getChapterContent(chapterList, it.url, async) }
-        }.joinAll()
+            async { getChapterContent(it, async) }
+        }.awaitAll()
+        Log.e("preLoadRefresh end posRange:$posRange")
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
@@ -252,24 +254,26 @@ class BookReaderActivity : BaseActivity() {
      * 加载 上一章 当前章 下一章
      */
     private suspend fun getChapterContent(
-        chapterList: List<Chapter>?,
-        chapterUrl: String?,
+        chapter: Chapter?,
         async: Boolean
     ) {
         withIo {
-            val chapter = chapterList?.find { it.url == chapterUrl } ?: return@withIo
+            chapter ?: return@withIo
             if (chapter.isLoaded && chapter.content != null) {
                 return@withIo
             }
             var loading = loadRecord[chapter.url]
             if (loading == null) {
                 loading = async {
-                    DataManager.getChapterContent(chapter, async)
+                    val chapterContent = DataManager.getChapterContent(chapter, async)
+                    chapterContent
                 }
                 loadRecord[chapter.url] = loading
             }
-            loading.join()
+
+            loading.await()
             loadRecord.remove(chapter.url)
+            Log.e("getChapterContent end chapter.index:${chapter.index}")
         }
     }
 
@@ -303,6 +307,7 @@ class BookReaderActivity : BaseActivity() {
                 } else {
                     holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                     holder.itemView.setOnClickListener {
+                        holder.itemView.chapter_content.text = "拼命加载中…………………………………………………………………………………………………………………………"
                         activity.launch {
                             val intRange = max(position - 1, 0)..min(position + 1, chapterList.size - 1)
                             activity.preLoadRefresh(chapterList, intRange, false)
