@@ -48,5 +48,9 @@ class Book {
      */
     @Ignore
     var javaScriptList: List<JavaScript>? = null
-
+    /**
+     * 未读章节数量
+     */
+    @Ignore
+    var unreadChapterCount = 0
 }

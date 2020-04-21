@@ -25,7 +25,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
 class BookshelfFragment : BaseFragment() {
-
     private val bookList = mutableMapOf<String, Book>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
@@ -44,7 +43,7 @@ class BookshelfFragment : BaseFragment() {
                 }
                 sourceMap.values.map {
                     async {
-                        it.apply { it.sortBy { it.title } }.forEach {
+                        it.apply { it.sortWith(bookComparator) }.forEach {
                             val qiDian = async { DataManager.updateOrInsertQiDianBook(it.url) }
                             DataManager.reloadBookFromNet(it.url)
                             delay(1000)
@@ -103,11 +102,20 @@ class BookshelfFragment : BaseFragment() {
                         book.readChapter = readChapter?.first
                         book.lastChapter = lastChapter
                         book.javaScriptList = js
+
+                        val lastChapterIndex = book.lastChapter?.index ?: 0
+                        val readChapterIndex = book.readChapter?.index ?: 0
+                        book.unreadChapterCount = if (book.record?.isEnd == true) {
+                            lastChapterIndex - readChapterIndex
+                        } else {
+                            lastChapterIndex - readChapterIndex + 1
+                        }
+
                         book
                     }
                 }.map { book ->
                     bookList[book.key] = book
-                    bookList.values.sortedBy { book -> book.title }
+                    bookList.values.sortedWith(bookComparator)
                 }.flowIo().collectLatest { list ->
                     if (list.size == bookNum) {
                         adapter.data.clear()
@@ -160,24 +168,18 @@ class BookshelfFragment : BaseFragment() {
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
 
-                val lastChapterIndex = book.lastChapter?.index ?: 0
-                val readChapterIndex = book.readChapter?.index ?: 0
-                val remainingCount = if (book.record?.isEnd == true) {
-                    lastChapterIndex - readChapterIndex
-                } else {
-                    lastChapterIndex - readChapterIndex + 1
-                }
+
                 if (book.lastChapter?.isLastChapter == false) {
                     bv_unread.setHighlight(false)
                 } else {
                     bv_unread.setHighlight(true)
                 }
-                if ((book.isLoading || remainingCount <= 0) && book.lastChapter?.isLastChapter != false) {
+                if ((book.isLoading || book.unreadChapterCount <= 0) && book.lastChapter?.isLastChapter != false) {
                     bv_unread.hide()
                 } else {
                     bv_unread.show()
                 }
-                bv_unread.badgeCount = remainingCount
+                bv_unread.badgeCount = book.unreadChapterCount
 
                 origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
