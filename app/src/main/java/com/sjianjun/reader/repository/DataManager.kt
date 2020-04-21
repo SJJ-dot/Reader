@@ -189,19 +189,15 @@ object DataManager {
     suspend fun updateOrInsertStarting(bookUrl: String) {
         withIo {
             try {
-
                 val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo
-
                 val bookSource = dao.getJavaScriptBySource(book.source)
                 if (bookSource?.isStartingStation == true) {
                     return@withIo
                 }
-
                 val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo
                 if (book.source == record.startingStationBookSource) {
                     return@withIo
                 }
-
                 if (record.startingStationBookSource.isBlank()) {
                     //到官方的网站查询并把书籍插入到本地数据库
                     val startingBook = dao.getAllStartingJavaScript().map {
@@ -218,8 +214,12 @@ object DataManager {
                             }
                             startingBook
                         }
-                    }.awaitAll().filterNotNull().firstOrNull() ?: return@withIo
-                    dao.insertBook(startingBook)
+                    }.find { it.await() != null }?.await() ?: return@withIo
+                    try {
+                        dao.insertBook(startingBook)
+                    } catch (error:Throwable) {
+                        //nothing to do
+                    }
                     record.startingStationBookSource = startingBook.source
                     dao.insertReadingRecord(record)
                 }
