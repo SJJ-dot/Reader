@@ -30,7 +30,8 @@
     {
       "fileName": "起点中文网",
       "version": "9",
-      "starting": true
+      "starting": true,
+      "priority": 100
     },
     {
       "fileName": "天籁小说",

@@ -8,10 +8,15 @@ import sjj.alog.Log
 
 @Dao
 interface Dao {
-    @Query("SELECT * FROM JavaScript WHERE source = :source")
-    fun getJavaScriptBySource(source: String): Flow<JavaScript?>
 
-    @Query("SELECT * FROM JavaScript")
+
+    @Query("SELECT * FROM JavaScript WHERE isStartingStation = 1 order by priority DESC")
+    fun getAllStartingJavaScript(): List<JavaScript>
+
+    @Query("SELECT * FROM JavaScript WHERE source = :source")
+    fun getJavaScriptBySource(source: String): JavaScript?
+
+    @Query("SELECT * FROM JavaScript order by priority DESC")
     fun getAllJavaScript(): Flow<List<JavaScript>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -194,6 +199,7 @@ interface Dao {
         cleanChapter()
         cleanChapterContent()
     }
+
     //有空再改连表查询吧
     @Query("delete from Book where not exists (select * from Book where url in (select bookUrl from ReadingRecord))")
     suspend fun cleanBook()

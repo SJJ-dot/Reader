@@ -27,9 +27,10 @@ data class JavaScript constructor(
     @JvmField
     var js: String = "",
 
-    var version: Int,
+    var version: Int = 0,
 
-    var starting: Boolean
+    var isStartingStation: Boolean = false,
+    var priority: Int = 0
 ) {
 
     @JvmField

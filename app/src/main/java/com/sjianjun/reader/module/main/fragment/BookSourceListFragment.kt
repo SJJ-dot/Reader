@@ -98,7 +98,7 @@ class BookSourceListFragment : BaseFragment() {
                     val qiDian = adapter.data.find { it.source == JS_SOURCE_QI_DIAN }
                     val first = adapter.data.firstOrNull()
                     if (qiDian == null && first != null) {
-                        DataManager.updateOrInsertQiDianBook(first.url)
+                        DataManager.updateOrInsertStarting(first.url)
                     }
                 }
                 adapter.data.map {
