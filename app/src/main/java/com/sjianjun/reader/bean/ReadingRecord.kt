@@ -17,6 +17,12 @@ class ReadingRecord(
     var offest = 0
 
     var isEnd = false
+
+    /**
+     * 首发站书籍地址
+     */
+    var startingBookSource = ""
+
     override fun toString(): String {
         return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', bookUrl='$bookUrl', chapterUrl='$chapterUrl')"
     }
