@@ -31,7 +31,8 @@ object JavaScriptTest {
 //        StringUtil.resolve()
     }
 
-    val javaScript = JavaScript("天籁小说") {
+    val javaScript = JavaScript(
+        "天籁小说",
         """
 function search(http,query){
     var baseUrl = "https://www.23txt.com/";
@@ -86,8 +87,8 @@ function getChapterContent(http,url){
 }
 
             
-        """.trimIndent()
-    }
+        """.trimIndent(), 0, false
+    )
 
     suspend fun testJavaScript() = withIo {
         if (!test) {

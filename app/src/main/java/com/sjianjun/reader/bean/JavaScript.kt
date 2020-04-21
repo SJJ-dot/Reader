@@ -27,10 +27,10 @@ data class JavaScript constructor(
     @JvmField
     var js: String = "",
 
-    var version: Int = 0
-) {
+    var version: Int,
 
-    constructor(source: String, js: () -> String) : this(source = source, js = js())
+    var starting: Boolean
+) {
 
     @JvmField
     var enable = true

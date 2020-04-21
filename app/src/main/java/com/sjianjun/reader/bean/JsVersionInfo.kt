@@ -8,5 +8,9 @@ class JsVersionInfo {
     class Version {
         var fileName: String = ""
         var version = 0
+        /**
+         * 是不是首发站
+         */
+        var starting = false
     }
 }
