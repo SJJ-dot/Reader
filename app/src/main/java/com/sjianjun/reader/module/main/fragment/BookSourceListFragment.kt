@@ -94,19 +94,11 @@ class BookSourceListFragment : BaseFragment() {
                 swipe_refresh.isRefreshing = false
                 swipe_refresh.isEnabled = false
                 refresh_progress_bar.isAutoLoading = true
-                val qiDian = async {
-                    val qiDian = adapter.data.find { it.source == JS_SOURCE_QI_DIAN }
-                    val first = adapter.data.firstOrNull()
-                    if (qiDian == null && first != null) {
-                        DataManager.updateOrInsertStarting(first.url)
-                    }
-                }
                 adapter.data.map {
                     async {
                         DataManager.reloadBookFromNet(it.url)
                     }
                 }.awaitAll()
-                qiDian.await()
                 refresh_progress_bar.isAutoLoading = false
                 swipe_refresh.isEnabled = true
             }
