@@ -228,6 +228,7 @@ object DataManager {
                     book.author,
                     record.startingStationBookSource
                 ).first() ?: return@withIo
+                Log.i("首发站点书籍：$startBook")
                 reloadBookFromNet(startBook.url)
             } catch (t: Throwable) {
                 Log.e("起点书籍更新失败")

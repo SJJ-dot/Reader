@@ -50,6 +50,39 @@ data class JavaScript constructor(
         importClass(Packages.java.util.HashMap)
         importClass(Packages.java.net.URLEncoder)
         importClass(Packages.java.net.URLDecoder)
+        
+        function request(params){
+            // url type header data enc
+            var header = new HashMap();
+            var hd = params.header || {}
+            for(k in hd){
+                header.put(k,hd[k])
+            }
+            
+            var query = new HashMap();
+            var data = params.data || {}
+            var enc = params.enc || "utf-8"
+            for(k in data){
+                query.put(k,URLEncoder.encode(data[k],enc))
+            }
+            
+            if(params.type=="post"){
+                return http.post(params.url,query,header)
+            }else{
+                return http.get(params.url,query,header)
+            }
+        }
+        
+        function get(params){
+            params.type = "get"
+            return request(params)
+        }
+        
+        function post(params){
+            params.type = "post"
+            return request(params)
+        }
+        
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {

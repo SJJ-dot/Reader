@@ -36,7 +36,11 @@ object JavaScriptTest {
         """
 function search(http,query){
     var baseUrl = "https://www.23txt.com/";
-    var html = http.get(baseUrl + "search.php?keyword=" + URLEncoder.encode(query, "utf-8"));
+//    var html = get(baseUrl + "search.php?keyword=" + URLEncoder.encode(query, "utf-8"));
+    var html = get({
+        url:"https://www.23txt.com/search.php",
+        data:{keyword:query}
+    });
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select("body > div.result-list > *");
     var results = new ArrayList();
