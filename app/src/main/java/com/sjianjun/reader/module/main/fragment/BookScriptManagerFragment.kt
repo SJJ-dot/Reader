@@ -89,7 +89,7 @@ class BookScriptManagerFragment : BaseFragment() {
             p1: Int
         ) {
             val script = data[p1]
-            holder.itemView.cb_book_source.text = "${script.source} V-${script.version}"
+            holder.itemView.cb_book_source.text = "${script.source} V-${script.version} ${script.priority}"
             holder.itemView.iv_del_source.setOnClickListener {
                 fragment.launch {
                     DataManager.deleteJavaScript(script)

@@ -217,7 +217,7 @@ object DataManager {
                     }.find { it.await() != null }?.await() ?: return@withIo
                     try {
                         dao.insertBook(startingBook)
-                    } catch (error:Throwable) {
+                    } catch (error: Throwable) {
                         //nothing to do
                     }
                     record.startingStationBookSource = startingBook.source
@@ -316,11 +316,17 @@ object DataManager {
         return dao.getLastChapterByBookUrl(bookUrl).onEach {
             if (it != null) {
                 val book = dao.getBookByUrl(it.bookUrl).first()
-                if (book != null && book.source != JS_SOURCE_QI_DIAN) {
+
+                if (book != null) {
+                    val record = dao.getReadingRecord(book.title, book.author)
+                    val source = if (record?.startingStationBookSource.isNullOrBlank())
+                            JS_SOURCE_QI_DIAN
+                        else
+                            record!!.startingStationBookSource
                     val qiDianBook = dao.getBookByTitleAuthorAndSource(
                         book.title,
                         book.author,
-                        JS_SOURCE_QI_DIAN
+                        source
                     ).first()
                     if (qiDianBook != null) {
                         val qiDianLastChapter = dao.getLastChapterByBookUrl(qiDianBook.url).first()
