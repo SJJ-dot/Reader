@@ -18,7 +18,7 @@ import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
-import com.sjianjun.reader.utils.toastSHORT
+import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 
@@ -58,7 +58,7 @@ class MainActivity : BaseActivity() {
         ) { list ->
             if (!list.isGranted()) {
                 launch {
-                    toastSHORT("拒绝授权可能导致程序运行异常！")
+                    toast("拒绝授权可能导致程序运行异常！")
                 }
             }
         }

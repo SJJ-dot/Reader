@@ -8,7 +8,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
-import com.sjianjun.reader.utils.toastSHORT
+import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
 import kotlinx.coroutines.flow.first
 
@@ -29,15 +29,15 @@ class EditJavaScriptActivity : BaseActivity() {
                 try {
                     try {
                         DataManager.insertJavaScript(javaScript)
-                        toastSHORT("创建脚本成功")
+                        toast("创建脚本成功")
                     } catch (e: Exception) {
                         DataManager.updateJavaScript(javaScript)
-                        toastSHORT("脚本已更新")
+                        toast("脚本已更新")
                     }
 
                     finish()
                 } catch (e: Throwable) {
-                    toastSHORT("脚本保存失败")
+                    toast("脚本保存失败")
                 }
             }
         }
