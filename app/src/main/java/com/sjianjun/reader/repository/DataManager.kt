@@ -69,7 +69,7 @@ object DataManager {
                         if (javaScript != null && javaScript.version >= it.version) {
                             javaScript
                         } else {
-                            JavaScript(it.fileName, loadScript(it.fileName), it.version)
+                            JavaScript(it.fileName, loadScript(it.fileName), it.version,it.starting)
                         }
                     }
                 }?.awaitAll().also {

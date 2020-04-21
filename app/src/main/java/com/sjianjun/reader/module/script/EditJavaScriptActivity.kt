@@ -24,7 +24,9 @@ class EditJavaScriptActivity : BaseActivity() {
             launch {
                 val javaScript = JavaScript(
                     source = script_source.text.toString(),
-                    js = script.text.toString()
+                    js = script.text.toString(),
+                    version = script_version.text.toString().toIntOrNull() ?: 1,
+                    starting = script_starting.isChecked
                 )
                 try {
                     try {
@@ -50,6 +52,8 @@ class EditJavaScriptActivity : BaseActivity() {
             if (!js?.source.isNullOrEmpty()) {
                 script_source.isEnabled = false
             }
+            script_starting.isChecked = js?.starting ?: false
+            script_version.setText((js?.version ?: 1).toString())
         }
     }
 }

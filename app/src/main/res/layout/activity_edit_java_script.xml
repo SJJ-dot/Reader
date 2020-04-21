@@ -8,12 +8,35 @@
 
     <EditText
         android:id="@+id/script_source"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="56dp"
         android:gravity="top|start"
         android:hint="脚本标识，不能与其他脚本重复"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        app:layout_constraintEnd_toStartOf="@+id/script_version"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/script_version"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:hint="版本"
+        android:inputType="number"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/script_starting"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <CheckBox
+        android:id="@+id/script_starting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="首发"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        app:layout_constraintBottom_toBottomOf="@+id/script_version"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/script_version" />
 
     <com.sjianjun.reader.view.HorizontalScrollView2
         android:id="@+id/script_container"

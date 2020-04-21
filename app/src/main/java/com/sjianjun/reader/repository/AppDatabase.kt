@@ -56,6 +56,7 @@ val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
     .addMigrations(object : Migration(4, 5) {
         override fun migrate(database: SupportSQLiteDatabase) {
             database.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `startingBookSource` TEXT NOT NULL default ''")
+            database.execSQL("ALTER TABLE 'JavaScript' ADD COLUMN `starting` INTEGER NOT NULL default 0")
         }
     })
     .build()
