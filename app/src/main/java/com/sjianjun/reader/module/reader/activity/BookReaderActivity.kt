@@ -294,7 +294,7 @@ class BookReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
             holder.itemView.chapter_title.text = chapter.title
-            holder.itemView.setOnClickListener(null)
+            holder.itemView.isClickable = false
             if (chapter.content != null) {
                 holder.itemView.chapter_content.text = chapter.content?.content.html()
                 if (chapter.isLoaded) {
