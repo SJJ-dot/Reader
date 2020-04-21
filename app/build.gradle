@@ -24,7 +24,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "0.4.$commitCont"
+        versionName "0.5.${commitCont - 203}"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
