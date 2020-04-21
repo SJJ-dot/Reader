@@ -11,6 +11,7 @@ import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.joinAll
 import sjj.alog.Log
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
@@ -65,11 +66,17 @@ object DataManager {
             if (info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
-                        val javaScript = dao.getJavaScriptBySource(it.fileName).first()
+                        val javaScript = dao.getJavaScriptBySource(it.fileName)
                         if (javaScript != null && javaScript.version >= it.version) {
                             javaScript
                         } else {
-                            JavaScript(it.fileName, loadScript(it.fileName), it.version,it.starting)
+                            JavaScript(
+                                it.fileName,
+                                loadScript(it.fileName),
+                                it.version,
+                                it.starting,
+                                it.priority
+                            )
                         }
                     }
                 }?.awaitAll().also {
@@ -87,7 +94,7 @@ object DataManager {
         return dao.getAllJavaScript()
     }
 
-    fun getJavaScript(source: String): Flow<JavaScript?> {
+    fun getJavaScript(source: String): JavaScript? {
         return dao.getJavaScriptBySource(source)
     }
 
@@ -179,29 +186,49 @@ object DataManager {
     /**
      * 如果不是更新起点的书籍。去起点检查一遍更新。作为最新更新的标准
      */
-    suspend fun updateOrInsertQiDianBook(bookUrl: String) {
+    suspend fun updateOrInsertStarting(bookUrl: String) {
         withIo {
             try {
+
                 val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo
-                if (book.source == JS_SOURCE_QI_DIAN) {
+
+                val bookSource = dao.getJavaScriptBySource(book.source)
+                if (bookSource?.isStartingStation == true) {
                     return@withIo
                 }
-                var qiDianBook =
-                    dao.getBookByTitleAuthorAndSource(book.title, book.author, JS_SOURCE_QI_DIAN)
-                        .first()
-                if (qiDianBook == null) {
-                    val javaScript =
-                        dao.getJavaScriptBySource(JS_SOURCE_QI_DIAN).first() ?: return@withIo
-                    qiDianBook = javaScript.search(book.title)?.find {
-                        it.bookTitle == book.title && it.bookAuthor == book.author
-                    }?.toBook()
-                    if (qiDianBook != null) {
-                        dao.insertBook(qiDianBook)
-                    }
+
+                val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo
+                if (book.source == record.startingStationBookSource) {
+                    return@withIo
                 }
-                if (qiDianBook != null) {
-                    reloadBookFromNet(qiDianBook.url)
+
+                if (record.startingStationBookSource.isBlank()) {
+                    //到官方的网站查询并把书籍插入到本地数据库
+                    val startingBook = dao.getAllStartingJavaScript().map {
+                        async {
+                            var startingBook = dao.getBookByTitleAuthorAndSource(
+                                book.title,
+                                book.author,
+                                it.source
+                            ).first()
+                            if (startingBook == null) {
+                                startingBook = it.search(book.title)?.find { result ->
+                                    result.bookTitle == book.title && result.bookAuthor == book.author
+                                }?.toBook()
+                            }
+                            startingBook
+                        }
+                    }.awaitAll().filterNotNull().firstOrNull() ?: return@withIo
+                    dao.insertBook(startingBook)
+                    record.startingStationBookSource = startingBook.source
+                    dao.insertReadingRecord(record)
                 }
+                val startBook = dao.getBookByTitleAuthorAndSource(
+                    book.title,
+                    book.author,
+                    record.startingStationBookSource
+                ).first() ?: return@withIo
+                reloadBookFromNet(startBook.url)
             } catch (t: Throwable) {
                 Log.e("起点书籍更新失败")
             }
@@ -211,7 +238,7 @@ object DataManager {
     suspend fun reloadBookFromNet(bookUrl: String): Boolean? {
         return withIo {
             val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
-            val javaScript = dao.getJavaScriptBySource(book.source).first() ?: return@withIo false
+            val javaScript = dao.getJavaScriptBySource(book.source) ?: return@withIo false
             book.isLoading = true
             dao.updateBook(book)
             try {
@@ -368,7 +395,7 @@ object DataManager {
                 return@withIo
             }
             val book = dao.getBookByUrl(chapter.bookUrl).first()
-            val js = dao.getJavaScriptBySource(book?.source ?: return@withIo).first()
+            val js = dao.getJavaScriptBySource(book?.source ?: return@withIo)
             val content = js?.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
                 chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")

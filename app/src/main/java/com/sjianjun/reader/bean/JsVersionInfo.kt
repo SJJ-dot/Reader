@@ -12,5 +12,6 @@ class JsVersionInfo {
          * 是不是首发站
          */
         var starting = false
+        var priority = 0
     }
 }

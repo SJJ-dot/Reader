@@ -26,7 +26,8 @@ class EditJavaScriptActivity : BaseActivity() {
                     source = script_source.text.toString(),
                     js = script.text.toString(),
                     version = script_version.text.toString().toIntOrNull() ?: 1,
-                    starting = script_starting.isChecked
+                    isStartingStation = script_starting.isChecked,
+                    priority = script_priority.text.toString().toIntOrNull() ?: 0
                 )
                 try {
                     try {
@@ -45,15 +46,16 @@ class EditJavaScriptActivity : BaseActivity() {
         }
         launch {
             val source = intent.getStringExtra(JAVA_SCRIPT_SOURCE) ?: return@launch
-            val js = DataManager.getJavaScript(source).first()
+            val js = DataManager.getJavaScript(source)
             script_source.setText(js?.source)
             script.setText(js?.js)
             //禁止修改脚本标志名称
             if (!js?.source.isNullOrEmpty()) {
                 script_source.isEnabled = false
             }
-            script_starting.isChecked = js?.starting ?: false
+            script_starting.isChecked = js?.isStartingStation ?: false
             script_version.setText((js?.version ?: 1).toString())
+            script_priority.setText((js?.priority ?: 0).toString())
         }
     }
 }

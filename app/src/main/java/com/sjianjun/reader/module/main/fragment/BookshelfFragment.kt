@@ -44,7 +44,7 @@ class BookshelfFragment : BaseFragment() {
                 sourceMap.values.map {
                     async {
                         it.apply { it.sortWith(bookComparator) }.forEach {
-                            val qiDian = async { DataManager.updateOrInsertQiDianBook(it.url) }
+                            val qiDian = async { DataManager.updateOrInsertStarting(it.url) }
                             DataManager.reloadBookFromNet(it.url)
                             delay(1000)
                             qiDian.await()

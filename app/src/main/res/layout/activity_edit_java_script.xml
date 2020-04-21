@@ -10,11 +10,21 @@
         android:id="@+id/script_source"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:gravity="top|start"
         android:hint="脚本标识，不能与其他脚本重复"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-        app:layout_constraintEnd_toStartOf="@+id/script_version"
+        app:layout_constraintEnd_toStartOf="@+id/script_priority"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/script_priority"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:hint="优先级"
+        android:inputType="number"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/script_version"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
