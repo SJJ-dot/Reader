@@ -54,7 +54,7 @@ class BookSourceListFragment : BaseFragment() {
                     val book = adapter.data.getOrNull(adapterPosition)
                     val success = DataManager.deleteBookByUrl(book ?: return@launch)
                     if (success == false) {
-                        toastSHORT("删除失败")
+                        toast("删除失败")
                     } else {
                         val index = adapter.data.indexOf(book)
                         if (index != -1) {

@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.update
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.core.content.ContextCompat.startActivity
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
@@ -10,7 +11,7 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.URL_RELEASE_INFO
-import com.sjianjun.reader.utils.toastSHORT
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.utils.withIo
 import com.sjianjun.reader.utils.withMain
 import sjj.novel.util.fromJson
@@ -21,7 +22,7 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
     val releasesInfo =
         if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
             if (force) {
-                toastSHORT("正在加载版本信息……")
+                toast("正在加载版本信息……")
             }
             val info =
                 http.get(
@@ -32,12 +33,12 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
                 globalConfig.releasesInfo = info
                 globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
                 if (force) {
-                    toastSHORT("版本信息加载成功")
+                    toast("版本信息加载成功")
                 }
                 gson.fromJson<ReleasesInfo>(info)
             } else {
                 if (force) {
-                    toastSHORT("版本信息加载失败")
+                    toast("版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
                 }
                 gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
             }
