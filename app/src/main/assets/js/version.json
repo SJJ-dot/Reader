@@ -36,6 +36,12 @@
     {
       "fileName": "天籁小说",
       "version": "2"
+    },
+    {
+      "fileName": "纵横中文网",
+      "version": "1",
+      "starting": true,
+      "priority": 99
     }
   ],
   "inherit": true
