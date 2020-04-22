@@ -5,4 +5,9 @@
     <color name="day_night_text_color_black_secondary">@color/dark_text_secondary_color</color>
     <color name="day_night_text_color_light">@color/material_reader_grey_500</color>
     <color name="day_night_dark_tint">#55000000</color>
+
+    <color name="day_night_reader_content_background">#1a1a1a</color>
+    <color name="day_night_reader_chapter_title_text_color">#80ffffff</color>
+    <color name="day_night_reader_chapter_content_text_color">#80ffffff</color>
+    <color name="day_night_reader_chapter_caption_text_color">#80ffffff</color>
 </resources>
