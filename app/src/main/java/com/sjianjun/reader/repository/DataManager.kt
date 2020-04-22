@@ -236,10 +236,10 @@ object DataManager {
         }
     }
 
-    suspend fun reloadBookFromNet(bookUrl: String): Boolean? {
+    suspend fun reloadBookFromNet(bookUrl: String): Throwable? {
         return withIo {
-            val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo false
-            val javaScript = dao.getJavaScriptBySource(book.source) ?: return@withIo false
+            val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo MessageException("书籍查找失败")
+            val javaScript = dao.getJavaScriptBySource(book.source) ?: return@withIo MessageException("未找到对应书籍书源")
             book.isLoading = true
             dao.updateBook(book)
             try {
@@ -254,13 +254,12 @@ object DataManager {
                 book.isLoading = false
                 dao.updateBookDetails(bookDetails)
                 Log.i(bookDetails)
-                return@withIo true
+                return@withIo null
             } catch (e: Throwable) {
-                Log.i("${javaScript.source}加载书籍详情：", e)
+                Log.i("${javaScript.source}加载书籍详情：$book", e)
                 book.isLoading = false
                 dao.updateBook(book)
-                Log.i(book)
-                return@withIo false
+                return@withIo e
             }
         }
     }

@@ -5,6 +5,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -23,10 +24,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import java.util.concurrent.ConcurrentHashMap
 
 class BookshelfFragment : BaseFragment() {
     private val bookList = mutableMapOf<String, Book>()
-    private val bookSyncErrorList = mutableMapOf<String, Throwable>()
+    private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -46,14 +48,21 @@ class BookshelfFragment : BaseFragment() {
                     async {
                         it.apply { it.sortWith(bookComparator) }.forEach {
                             val qiDian = async { DataManager.updateOrInsertStarting(it.url) }
-                            DataManager.reloadBookFromNet(it.url)
+                            val error = DataManager.reloadBookFromNet(it.url)
+                            if (error != null) {
+                                bookSyncErrorMap[it.key] = error
+                            } else {
+                                bookSyncErrorMap.remove(it.key)
+                            }
                             delay(1000)
                             qiDian.await()
+                            it.key to error
                         }
                     }
                 }.awaitAll()
                 withMain {
                     swipe_refresh?.isRefreshing = false
+                    adapter.notifyDataSetChanged()
                 }
             }
         }
@@ -168,7 +177,18 @@ class BookshelfFragment : BaseFragment() {
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
-
+                val throwable = fragment.bookSyncErrorMap[book.key]
+                if (throwable == null) {
+                    sync_error.hide()
+                    sync_error.isClickable = false
+                } else {
+                    sync_error.show()
+                    sync_error.setOnClickListener {
+                        fragment.launch {
+                            toast(android.util.Log.getStackTraceString(throwable),Toast.LENGTH_LONG)
+                        }
+                    }
+                }
 
                 if (book.lastChapter?.isLastChapter == false) {
                     bv_unread.setHighlight(false)
