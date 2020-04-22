@@ -10,6 +10,12 @@ class BookComparator : Comparator<Book> {
         if (compareTo != 0) {
             return -compareTo
         }
+        if (o1.error != null && o2.error == null) {
+            return -1
+        }
+        if (o1.error == null && o2.error != null) {
+            return 1
+        }
         val compareTitle = o1.title.compareTo(o2.title)
         if (compareTitle != 0) {
             return -compareTitle
