@@ -117,7 +117,7 @@
                             app:layout_constraintStart_toStartOf="@+id/bookName"
                             app:layout_constraintTop_toBottomOf="@+id/authorTitle" />
 
-                        <com.sjianjun.reader.view.AutofitTextView
+                        <TextView
                             android:id="@+id/latestChapter"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
