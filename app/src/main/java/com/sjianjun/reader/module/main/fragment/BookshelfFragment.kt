@@ -121,6 +121,8 @@ class BookshelfFragment : BaseFragment() {
                             lastChapterIndex - readChapterIndex + 1
                         }
 
+                        book.error = bookSyncErrorMap[book.key]
+
                         book
                     }
                 }.map { book ->
@@ -177,15 +179,15 @@ class BookshelfFragment : BaseFragment() {
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
-                val throwable = fragment.bookSyncErrorMap[book.key]
-                if (throwable == null) {
+                val error = book.error
+                if (error == null) {
                     sync_error.hide()
                     sync_error.isClickable = false
                 } else {
                     sync_error.show()
                     sync_error.setOnClickListener {
                         fragment.launch {
-                            toast(android.util.Log.getStackTraceString(throwable),Toast.LENGTH_LONG)
+                            toast(android.util.Log.getStackTraceString(error),Toast.LENGTH_LONG)
                         }
                     }
                 }

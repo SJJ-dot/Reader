@@ -53,4 +53,7 @@ class Book {
      */
     @Ignore
     var unreadChapterCount = 0
+
+    @Ignore
+    var error: Throwable? = null
 }
