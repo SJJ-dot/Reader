@@ -10,7 +10,6 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
-import kotlinx.coroutines.flow.first
 
 class EditJavaScriptActivity : BaseActivity() {
 

@@ -94,8 +94,8 @@ object DataManager {
         return dao.getAllJavaScript()
     }
 
-    fun getJavaScript(source: String): JavaScript? {
-        return dao.getJavaScriptBySource(source)
+    suspend fun getJavaScript(source: String): JavaScript? {
+        return withIo { dao.getJavaScriptBySource(source) }
     }
 
     fun getJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
@@ -239,7 +239,8 @@ object DataManager {
     suspend fun reloadBookFromNet(bookUrl: String): Throwable? {
         return withIo {
             val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo MessageException("书籍查找失败")
-            val javaScript = dao.getJavaScriptBySource(book.source) ?: return@withIo MessageException("未找到对应书籍书源")
+            val javaScript = dao.getJavaScriptBySource(book.source)
+                ?: return@withIo MessageException("未找到对应书籍书源")
             book.isLoading = true
             dao.updateBook(book)
             try {
@@ -320,9 +321,9 @@ object DataManager {
                 if (book != null) {
                     val record = dao.getReadingRecord(book.title, book.author)
                     val source = if (record?.startingStationBookSource.isNullOrBlank())
-                            JS_SOURCE_QI_DIAN
-                        else
-                            record!!.startingStationBookSource
+                        JS_SOURCE_QI_DIAN
+                    else
+                        record!!.startingStationBookSource
                     val qiDianBook = dao.getBookByTitleAuthorAndSource(
                         book.title,
                         book.author,
