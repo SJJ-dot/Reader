@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.*
 
 class BookshelfFragment : BaseFragment() {
     private val bookList = mutableMapOf<String, Book>()
+    private val bookSyncErrorList = mutableMapOf<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
