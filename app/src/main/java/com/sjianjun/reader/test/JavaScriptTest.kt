@@ -15,7 +15,7 @@ import sjj.alog.Log
  * 不支持：乐安宣书网(搜索结果没有作者)、
  */
 object JavaScriptTest {
-    var test = true
+    var test = false
 
     val javaScript = JavaScript(
         "纵横中文网",
