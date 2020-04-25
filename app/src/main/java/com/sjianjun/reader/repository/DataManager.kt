@@ -430,9 +430,9 @@ object DataManager {
     }
 
 
-    suspend fun getPageList(script: String = ""): List<Page>? {
+    suspend fun getPageList(script: String = "", source: String = ""): List<Page>? {
         return if (script.isEmpty()) {
-            val js = dao.getJavaScriptBySource(globalConfig.bookCityDefaultSource)
+            val js = dao.getJavaScriptBySource(source)
             js?.getPageList(script)
         } else {
             defaultJavaScript.getPageList(script)

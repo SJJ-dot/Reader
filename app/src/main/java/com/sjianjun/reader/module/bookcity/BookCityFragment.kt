@@ -15,10 +15,7 @@ import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.repository.DataManager.pageDataStore
-import com.sjianjun.reader.utils.JS_SOURCE
-import com.sjianjun.reader.utils.PAGE_ID
-import com.sjianjun.reader.utils.hide
-import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.bookcity_fragment.*
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
@@ -81,12 +78,15 @@ class BookCityFragment : BaseFragment() {
             load_state.text = "加载中…………"
             val page = pageDataStore[pageId]
             val pageList = if (page != null) {
-                DataManager.getPageList(page.pageScript)
+                DataManager.getPageList(script = page.pageScript)
             } else {
-                DataManager.getPageList(source)
+                DataManager.getPageList(source = source)
             }
             adapter.fragmentList = pageList?.map {
-                FragmentBean(BookCityPageFragment(), it.title)
+                FragmentBean(BookCityPageFragment().apply {
+                    pageDataStore[it.pageId] = it
+                    arguments = bundle(it.pageId, it)
+                }, it.title)
             } ?: emptyList()
             view_pager.adapter = adapter
             adapter.notifyDataSetChanged()
