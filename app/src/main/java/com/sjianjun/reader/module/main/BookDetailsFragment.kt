@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.main
 
 import android.os.Bundle
 import android.view.Menu

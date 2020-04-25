@@ -16,7 +16,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
-import com.sjianjun.reader.module.main.fragment.ChapterListFragment
+import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*

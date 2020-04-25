@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.main
 
 import android.os.Bundle
 import android.view.View
@@ -24,7 +24,11 @@ class BookSourceListFragment : BaseFragment() {
     private val bookAuthor by lazy { arguments!!.getString(BOOK_AUTHOR)!! }
 
 
-    private val adapter by lazy { BookListAdapter(this) }
+    private val adapter by lazy {
+        BookListAdapter(
+            this
+        )
+    }
     override fun getLayoutRes() = R.layout.main_fragment_book_source_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.script
 
 import android.os.Bundle
 import android.view.Menu
@@ -10,7 +10,6 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.module.script.EditJavaScriptActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
@@ -36,7 +35,10 @@ class BookScriptManagerFragment : BaseFragment() {
                 globalConfig.javaScriptBaseUrl = url
             }
         }
-        val adapter = Adapter(this)
+        val adapter =
+            Adapter(
+                this
+            )
         recycle_view.adapter = adapter
         launch {
             DataManager.getAllJavaScript().collectLatest {
