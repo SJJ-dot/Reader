@@ -1,9 +1,16 @@
 package com.sjianjun.reader.bean
 
+import com.sjianjun.reader.utils.id
+
 /**
  * 表示一个网页的数据
  */
 class Page {
+    /**
+     * 当前页面的来源
+     */
+    @JvmField
+    var source = ""
     /**
      * 每个网页都必须有一个标题
      */
@@ -19,23 +26,43 @@ class Page {
     /**
      * 页面中会有书籍的分组列表
      */
+    @JvmField
     var bookGroupList: List<BookGroup>? = null
 
+
+    /**
+     * 加载当前页面的方法 不能为空
+     */
+    @JvmField
+    var pageScript: String = ""
+
+    /**
+     * 页面引用计数。便于销毁
+     */
+    @JvmField
+    var pageCount = 0
+
+    val pageId: String
+    get() = pageScript.id.toString()
 
     class BookGroup {
         /**
          * 每个书籍分组都会有一个标题
          */
+        @JvmField
         var title = ""
 
         /**
          * 每个分组 都会有一个书籍列表
          */
+        @JvmField
         var bookList: List<Book>? = null
 
         /**
          * 获取下一页的数据 的Js 脚本方法
          */
-        var next: String? = null
+        @JvmField
+        var nextScript: String? = null
+
     }
 }

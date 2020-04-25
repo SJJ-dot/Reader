@@ -8,6 +8,13 @@ const val BOOK_TITLE = "BOOK_TITLE"
 const val BOOK_AUTHOR = "BOOK_AUTHOR"
 
 
+const val PAGE_ID = "page_page_script_id"
+
+
+const val SEARCH_KEY = "SEARCH_KEY"
+
+
+
 /**
  * github release info 返回的apk类型信息
  */

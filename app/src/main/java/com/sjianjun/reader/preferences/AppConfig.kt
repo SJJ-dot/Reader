@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import com.sjianjun.reader.App
+import com.sjianjun.reader.utils.JS_SOURCE_QI_DIAN
 import com.sjianjun.reader.utils.URL_SCRIPT_BASE
 
 val globalConfig by lazy { AppConfig("default") }
@@ -38,6 +39,8 @@ class AppConfig(val name: String) {
     var lastCheckUpdateTime by sp(0L)
 
     var appDayNightMode by sp(MODE_NIGHT_NO)
+    
+    var bookCityDefaultSource by sp(JS_SOURCE_QI_DIAN)
 }
 
 class BookConfig {

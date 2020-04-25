@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
+
     <style name="Widget.Reader.NavigationView.Dark">
         <item name="android:background">?android:attr/colorBackground</item>
         <item name="itemTextColor">@color/main_navigation_item_text_color</item>

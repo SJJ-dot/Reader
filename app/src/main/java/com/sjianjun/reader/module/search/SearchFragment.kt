@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 
 class SearchFragment : BaseFragment() {
+    private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
     private val searchHint = SearchHintAdapter()
     private lateinit var deleteSearchHistoryActor: SendChannel<List<SearchHistory>>
@@ -56,6 +57,10 @@ class SearchFragment : BaseFragment() {
         searchView.isIconified = false
         searchHint.itemClick = {
             searchView.setQuery(it, true)
+        }
+
+        if (searchKey?.isNotEmpty() == true) {
+            searchView.setQuery(searchKey, true)
         }
     }
 

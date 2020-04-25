@@ -7,6 +7,7 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,11 +18,15 @@ import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import java.io.InputStream
 import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 界面数据从数据库订阅刷新
  */
 object DataManager {
+    //用于存储临时数据。在对应页面销毁的时候 销毁
+    val pageDataStore = ConcurrentHashMap<String, Page>()
+
     private val dao = db.dao()
 
     init {
@@ -75,7 +80,8 @@ object DataManager {
                                 loadScript(it.fileName),
                                 it.version,
                                 it.starting,
-                                it.priority
+                                it.priority,
+                                it.supportBookCity
                             )
                         }
                     }
@@ -417,5 +423,14 @@ object DataManager {
 
     suspend fun setReadingRecord(record: ReadingRecord): Long {
         return dao.insertReadingRecord(record)
+    }
+
+
+    fun getBookCityPageList(script: String = "") {
+        if (script.isEmpty()) {
+            val js = dao.getJavaScriptBySource(globalConfig.bookCityDefaultSource)
+        } else {
+
+        }
     }
 }

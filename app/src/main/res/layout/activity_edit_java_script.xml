@@ -45,6 +45,16 @@
         android:text="首发"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         app:layout_constraintBottom_toBottomOf="@+id/script_version"
+        app:layout_constraintEnd_toStartOf="@+id/support_book_city"
+        app:layout_constraintTop_toTopOf="@+id/script_version" />
+
+    <CheckBox
+        android:id="@+id/support_book_city"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="书城"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        app:layout_constraintBottom_toBottomOf="@+id/script_version"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/script_version" />
 
