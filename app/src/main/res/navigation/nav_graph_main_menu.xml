@@ -6,7 +6,7 @@
     app:startDestination="@id/bookShelfFragment">
     <fragment
         android:id="@+id/bookShelfFragment"
-        android:name="com.sjianjun.reader.module.main.fragment.BookshelfFragment"
+        android:name="com.sjianjun.reader.module.shelf.BookshelfFragment"
         android:label="书架"
         tools:layout="@layout/main_fragment_book_shelf" />
     <fragment
@@ -16,18 +16,18 @@
         tools:layout="@layout/search_fragment_search" />
     <fragment
         android:id="@+id/novelScriptFragment"
-        android:name="com.sjianjun.reader.module.main.fragment.BookScriptManagerFragment"
+        android:name="com.sjianjun.reader.module.script.BookScriptManagerFragment"
         android:label="脚本"
         tools:layout="@layout/main_fragment_book_script_manager" />
     <fragment
         android:id="@+id/aboutFragment"
-        android:name="com.sjianjun.reader.module.main.fragment.AboutFragment"
+        android:name="com.sjianjun.reader.module.about.AboutFragment"
         android:label="关于"
         tools:layout="@layout/main_fragment_about" />
 
     <fragment
         android:id="@+id/bookDetailsFragment"
-        android:name="com.sjianjun.reader.module.main.fragment.BookDetailsFragment"
+        android:name="com.sjianjun.reader.module.main.BookDetailsFragment"
         android:label="书籍详情"
         tools:layout="@layout/main_fragment_book_details">
         <argument

@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.activity
+package com.sjianjun.reader.module.main
 
 import android.Manifest
 import android.os.Bundle

@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.shelf
 
 import android.os.Bundle
 import android.view.Menu
@@ -15,6 +15,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
@@ -34,7 +35,8 @@ class BookshelfFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-        adapter = Adapter(this)
+        adapter =
+            Adapter(this)
         recycle_view.adapter = adapter
 
         swipe_refresh.setOnRefreshListener {

@@ -1,4 +1,4 @@
-package com.sjianjun.reader.module.main.fragment
+package com.sjianjun.reader.module.about
 
 import android.content.Intent
 import android.os.Bundle
