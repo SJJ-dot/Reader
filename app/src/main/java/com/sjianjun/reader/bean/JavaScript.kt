@@ -4,12 +4,36 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.sjianjun.reader.http.http
+import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
+
+
+val defaultJavaScript by lazy {
+    JavaScript(
+        "默认JS对象", """
+    function search(http,query){
+        return null;
+    }
+
+    function getDetails(http,url){
+        return null;
+    }
+
+    function getChapterContent(http,url){
+        return null;
+    }   
+     //获取书城数据
+    function getBookCityPageList(http,script){
+        return null;
+    }
+""".trimIndent()
+    )
+}
 
 @Entity
 data class JavaScript constructor(
@@ -30,7 +54,8 @@ data class JavaScript constructor(
     var version: Int = 0,
 
     var isStartingStation: Boolean = false,
-    var priority: Int = 0
+    var priority: Int = 0,
+    var supportBookCity: Boolean = false
 ) {
 
     @JvmField
@@ -45,6 +70,8 @@ data class JavaScript constructor(
         ${importClassCode<Chapter>()}
         ${importClassCode<Book>()}
         ${importClassCode<StringUtil>()}
+        ${importClassCode<Page>()}
+        ${importClassCode<Page.BookGroup>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
@@ -86,13 +113,7 @@ data class JavaScript constructor(
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
-        return js {
-            putProperty("source", javaToJS(source))
-            putProperty("http", javaToJS(http))
-            putProperty("context", this)
-
-            eval(headerScript)
-            eval(js)
+        return execute {
             val paramList = params.filter { it?.isNotEmpty() == true }
             val result = if (paramList.isEmpty()) {
                 eval("${func.name}(http)")
@@ -101,6 +122,19 @@ data class JavaScript constructor(
                 eval("${func.name}(http,${param})")
             }
             jsToJava<T>(result)
+        }
+    }
+
+
+    inline fun <reified T> execute(runner: ContextWrap.() -> T?): T? {
+        return js {
+            putProperty("source", javaToJS(source))
+            putProperty("http", javaToJS(http))
+            putProperty("context", this)
+
+            eval(headerScript)
+            eval(js)
+            runner()
         }
     }
 
@@ -137,8 +171,42 @@ data class JavaScript constructor(
         }
     }
 
+    suspend fun getPageList(script: String): List<Page>? {
+        return withIo {
+            try {
+                if (script.isEmpty()) {
+                    execute<List<Page>>(Func.getPageList)
+                } else {
+                    execute {
+                        jsToJava<List<Page>>(eval(script))
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.i("$source 加载PageList出错：$script", t)
+                null
+            }
+        }
+    }
+
+    suspend fun getBookList(script: String): List<Book>? {
+        return withIo {
+            try {
+                if (script.isEmpty()) {
+                    execute<List<Book>>(Func.getBookList)
+                } else {
+                    execute {
+                        jsToJava<List<Book>>(eval(script))
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.i("$source 加载BookList出错：$script", t)
+                null
+            }
+        }
+    }
+
     enum class Func {
-        search, getDetails, getChapterContent
+        search, getDetails, getChapterContent, getPageList, getBookList
     }
 
 }

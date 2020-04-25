@@ -13,5 +13,6 @@ class JsVersionInfo {
          */
         var starting = false
         var priority = 0
+        var supportBookCity = false
     }
 }

@@ -26,7 +26,8 @@ class EditJavaScriptActivity : BaseActivity() {
                     js = script.text.toString(),
                     version = script_version.text.toString().toIntOrNull() ?: 1,
                     isStartingStation = script_starting.isChecked,
-                    priority = script_priority.text.toString().toIntOrNull() ?: 0
+                    priority = script_priority.text.toString().toIntOrNull() ?: 0,
+                    supportBookCity = support_book_city.isChecked
                 )
                 try {
                     try {
@@ -55,6 +56,7 @@ class EditJavaScriptActivity : BaseActivity() {
             script_starting.isChecked = js?.isStartingStation ?: false
             script_version.setText((js?.version ?: 1).toString())
             script_priority.setText((js?.priority ?: 0).toString())
+            support_book_city.isChecked = js?.supportBookCity ?: false
         }
     }
 }
