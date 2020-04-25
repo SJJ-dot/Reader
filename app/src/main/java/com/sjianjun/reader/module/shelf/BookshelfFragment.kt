@@ -1,11 +1,7 @@
 package com.sjianjun.reader.module.shelf
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.widget.Toast
+import android.view.*
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -14,8 +10,9 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.module.main.BookSourceListFragment
+import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
@@ -188,8 +185,15 @@ class BookshelfFragment : BaseFragment() {
                 } else {
                     sync_error.show()
                     sync_error.setOnClickListener {
-                        fragment.launch {
-                            toast(android.util.Log.getStackTraceString(error),Toast.LENGTH_LONG)
+                        fragment.launchIo {
+
+                            val popup = ErrorMsgPopup(fragment.context)
+                                .init(android.util.Log.getStackTraceString(error))
+                                .setPopupGravity(Gravity.TOP or Gravity.START)
+
+                            withMain {
+                                popup.showPopupWindow(it)
+                            }
                         }
                     }
                 }

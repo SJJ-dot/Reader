@@ -7,6 +7,9 @@
     <color name="transparent">#00ffffff</color>
 
 
+    <color name="text_primary_color">@color/material_reader_textBlack_black</color>
+    <color name="text_secondary_color">@color/material_reader_textBlack_secondaryText</color>
+
     <color name="dark_background_color">#0D0D0D</color>
     <color name="dark_text_primary_color">#5A5A5A</color>
     <color name="dark_text_secondary_color">#32373B</color>

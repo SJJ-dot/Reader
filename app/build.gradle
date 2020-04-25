@@ -109,5 +109,6 @@ dependencies {
     implementation 'com.tencent.bugly:crashreport:3.1.9'
 
     implementation 'com.google.android.material:material:1.2.0-alpha06'
+    implementation 'com.github.razerdp:BasePopup:2.2.2.2'
 
 }
