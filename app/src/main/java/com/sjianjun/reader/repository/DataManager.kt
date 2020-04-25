@@ -231,7 +231,7 @@ object DataManager {
                 Log.i("首发站点书籍：$startBook")
                 reloadBookFromNet(startBook.url)
             } catch (t: Throwable) {
-                Log.e("起点书籍更新失败")
+                Log.e("首发站点书籍更新失败")
             }
         }
     }

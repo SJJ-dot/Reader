@@ -10,4 +10,7 @@
     <color name="day_night_reader_chapter_title_text_color">#80ffffff</color>
     <color name="day_night_reader_chapter_content_text_color">#80ffffff</color>
     <color name="day_night_reader_chapter_caption_text_color">#80ffffff</color>
+
+    <color name="day_night_pop_error_background">?attr/colorSurface</color>
+    <color name="day_night_pop_error_text">@color/dark_text_primary_color</color>
 </resources>
