@@ -3,14 +3,20 @@
     <!--  图标着色  -->
     <color name="day_night_icon_tint_color">@color/material_reader_black</color>
     <color name="day_night_text_color_black">@color/material_reader_textBlack_black</color>
-    <color name="day_night_text_color_black_secondary">@color/material_reader_textBlack_secondaryText</color>
+    <color name="day_night_text_color_black_secondary">
+        @color/material_reader_textBlack_secondaryText
+    </color>
     <color name="day_night_text_color_light">@color/material_reader_textBlack_black</color>
     <color name="day_night_dark_tint">#00000000</color>
-
+    <!--阅读器-->
     <color name="day_night_reader_content_background">@color/material_reader_white</color>
     <color name="day_night_reader_chapter_title_text_color">#d9000000</color>
-    <color name="day_night_reader_chapter_content_text_color">@color/day_night_reader_chapter_title_text_color</color>
+    <color name="day_night_reader_chapter_content_text_color">
+        @color/day_night_reader_chapter_title_text_color
+    </color>
     <color name="day_night_reader_chapter_caption_text_color">#66000000</color>
+    <!--  书城  -->
+    <color name="day_night_bookcity_indicator_selected_text">?attr/colorPrimary</color>
 
     <color name="day_night_pop_error_background">@color/material_reader_white</color>
     <color name="day_night_pop_error_text">@color/text_primary_color</color>

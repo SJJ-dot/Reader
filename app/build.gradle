@@ -94,21 +94,26 @@ dependencies {
      */
     implementation 'com.gyf.immersionbar:immersionbar:3.0.0'
 
+    implementation 'com.github.razerdp:BasePopup:2.2.2.2'
     //cookie
     implementation "com.github.franmontiel:PersistentCookieJar:v1.0.1"
     implementation "com.github.bumptech.glide:glide:4.11.0"
     kapt 'com.github.bumptech.glide:compiler:4.11.0'
     implementation "com.google.android:flexbox:1.0.0"
+    implementation 'com.google.android.material:material:1.2.0-alpha06'
 
+    implementation 'com.tencent.bugly:crashreport:3.1.9'
+    implementation "com.victor:lib:1.0.4"
 
     implementation project(":refreshbar")
     implementation project(":fastscroller")
 
-    implementation "com.victor:lib:1.0.4"
+    implementation project(":pagerindicator")
 
-    implementation 'com.tencent.bugly:crashreport:3.1.9'
 
-    implementation 'com.google.android.material:material:1.2.0-alpha06'
-    implementation 'com.github.razerdp:BasePopup:2.2.2.2'
+
+
+
+
 
 }
