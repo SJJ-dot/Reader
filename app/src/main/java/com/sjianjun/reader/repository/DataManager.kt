@@ -100,6 +100,10 @@ object DataManager {
         return dao.getAllJavaScript()
     }
 
+    fun getAllSupportBookcityJavaScript(): Flow<List<JavaScript>> {
+        return dao.getAllSupportBookcityJavaScript()
+    }
+
     suspend fun getJavaScript(source: String): JavaScript? {
         return withIo { dao.getJavaScriptBySource(source) }
     }
@@ -426,11 +430,21 @@ object DataManager {
     }
 
 
-    fun getBookCityPageList(script: String = "") {
-        if (script.isEmpty()) {
+    suspend fun getPageList(script: String = ""): List<Page>? {
+        return if (script.isEmpty()) {
             val js = dao.getJavaScriptBySource(globalConfig.bookCityDefaultSource)
+            js?.getPageList(script)
         } else {
+            defaultJavaScript.getPageList(script)
+        }
+    }
 
+    suspend fun getBookList(script: String = "", source: String): List<Book>? {
+        return if (script.isEmpty()) {
+            val js = dao.getJavaScriptBySource(source)
+            js?.getBookList(script)
+        } else {
+            defaultJavaScript.getBookList(script)
         }
     }
 }
