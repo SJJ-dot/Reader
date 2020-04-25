@@ -11,56 +11,93 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.repository.DataManager.pageDataStore
+import com.sjianjun.reader.utils.JS_SOURCE
+import com.sjianjun.reader.utils.PAGE_ID
+import com.sjianjun.reader.utils.hide
+import com.sjianjun.reader.utils.show
 import kotlinx.android.synthetic.main.bookcity_fragment.*
+import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 
 class BookCityFragment : BaseFragment() {
-    var source: String = ""
+    lateinit var source: String
+    lateinit var pageId: String
     private lateinit var adapter: Adapter
+    private var javaScriptList: List<JavaScript> = emptyList()
     override fun getLayoutRes() = R.layout.bookcity_fragment
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
+        pageId = arguments?.getString(PAGE_ID) ?: ""
+
         adapter = Adapter(childFragmentManager)
         view_pager.adapter = adapter
         pager_indicator.viewPager = view_pager
 
-        initPageFragment()
+        initMenu()
 
-        setHasOptionsMenu(true)
+        initData()
+    }
+
+    private fun initMenu() {
+        launch {
+            javaScriptList = DataManager.getAllSupportBookcityJavaScript().first()
+            setHasOptionsMenu(true)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.bookcity_fragment_menu, menu)
-        (0..3).forEach {
-            menu.add(0, it + 100, it, "测试菜单：$it")
+        javaScriptList.forEachIndexed { index, javaScript ->
+            menu.add(0, index, index, javaScript.source)
         }
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
         menu.iterator().forEach {
-            if ("测试菜单：2" == it.title) {
-                it.isVisible = false
-            }
+            it.isVisible = source != it.title
         }
-        menu.findItem(R.id.bookcity_station).title = "修改名字测试"
+        menu.findItem(R.id.bookcity_station).title = source
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        Log.e(item.title)
-        return super.onOptionsItemSelected(item)
+        val js = javaScriptList.getOrNull(item.itemId) ?: return super.onOptionsItemSelected(item)
+        source = js.source
+        pageId = ""
+        initData()
+        return true
     }
 
-    private fun initPageFragment() {
-        adapter.fragmentList = listOf(
-            FragmentBean(BookCityPageFragment(), "测试1"),
-            FragmentBean(BookCityPageFragment(), "测试2"),
-            FragmentBean(BookCityPageFragment(), "测试3"),
-            FragmentBean(BookCityPageFragment(), "测试4"),
-            FragmentBean(BookCityPageFragment(), "测试5"),
-            FragmentBean(BookCityPageFragment(), "测试6")
-        )
-        adapter.notifyDataSetChanged()
+
+    private fun initData() {
+        launch {
+            load_state.show()
+            load_state.text = "加载中…………"
+            val page = pageDataStore[pageId]
+            val pageList = if (page != null) {
+                DataManager.getPageList(page.pageScript)
+            } else {
+                DataManager.getPageList(source)
+            }
+            adapter.fragmentList = pageList?.map {
+                FragmentBean(BookCityPageFragment(), it.title)
+            } ?: emptyList()
+            view_pager.adapter = adapter
+            adapter.notifyDataSetChanged()
+
+            if (adapter.fragmentList.isEmpty()) {
+                load_state.text = "什么都没有"
+            } else {
+                load_state.hide()
+            }
+        }
+
     }
 
     class FragmentBean(val fragment: BookCityPageFragment, val title: String)

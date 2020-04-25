@@ -19,6 +19,9 @@ interface Dao {
     @Query("SELECT * FROM JavaScript order by priority DESC")
     fun getAllJavaScript(): Flow<List<JavaScript>>
 
+    @Query("SELECT * FROM JavaScript where supportBookCity = 1 order by priority DESC")
+    fun getAllSupportBookcityJavaScript(): Flow<List<JavaScript>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJavaScript(javaScript: List<JavaScript>)
 
