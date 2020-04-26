@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.bookcity
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
@@ -18,7 +19,6 @@ import com.sjianjun.reader.repository.DataManager.pageDataStore
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.bookcity_fragment.*
 import kotlinx.coroutines.flow.first
-import sjj.alog.Log
 
 class BookCityFragment : BaseFragment() {
     lateinit var source: String
@@ -73,28 +73,42 @@ class BookCityFragment : BaseFragment() {
 
 
     private fun initData() {
-        launch {
-            load_state.show()
-            load_state.text = "加载中…………"
-            val page = pageDataStore[pageId]
-            val pageList = if (page != null) {
-                DataManager.getPageList(script = page.pageScript)
-            } else {
-                DataManager.getPageList(source = source)
+        launchIo {
+            withMain {
+                load_state.show()
+                load_state.text = "加载中…………"
             }
-            adapter.fragmentList = pageList?.map {
-                FragmentBean(BookCityPageFragment().apply {
-                    pageDataStore[it.pageId] = it
-                    arguments = bundle(it.pageId, it)
-                }, it.title)
-            } ?: emptyList()
-            view_pager.adapter = adapter
-            adapter.notifyDataSetChanged()
+            val page = pageDataStore[pageId]
+            val loadPage = DataManager.loadPage(page?.source ?: source, page?.pageScript ?: "")
+            if (loadPage != null) {
+                val pageList = loadPage.pageList
+                loadPage.pageList = emptyList()
 
-            if (adapter.fragmentList.isEmpty()) {
-                load_state.text = "什么都没有"
-            } else {
-                load_state.hide()
+                val fragmentList = mutableListOf<FragmentBean>()
+
+                pageDataStore[loadPage.pageId] = loadPage
+                fragmentList.add(
+                    FragmentBean(fragmentCreate(PAGE_ID, loadPage.pageId), loadPage.title)
+                )
+
+                fragmentList.addAll(pageList.map {
+                    pageDataStore[it.pageId] = it
+                    FragmentBean(fragmentCreate(PAGE_ID, it.pageId), it.title)
+                })
+
+                withMain {
+                    adapter.fragmentList = fragmentList
+                    view_pager.adapter = adapter
+                    adapter.notifyDataSetChanged()
+                }
+            }
+
+            withMain {
+                if (adapter.fragmentList.isEmpty()) {
+                    load_state.text = "什么都没有"
+                } else {
+                    load_state.hide()
+                }
             }
         }
 
@@ -103,6 +117,7 @@ class BookCityFragment : BaseFragment() {
     class FragmentBean(val fragment: BookCityPageFragment, val title: String)
 
 
+    @SuppressLint("WrongConstant")
     class Adapter(fm: FragmentManager) :
         FragmentStatePagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
         var fragmentList: List<FragmentBean> = emptyList()

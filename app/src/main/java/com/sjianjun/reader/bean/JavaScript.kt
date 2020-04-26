@@ -13,28 +13,6 @@ import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
 
-val defaultJavaScript by lazy {
-    JavaScript(
-        "默认JS对象", """
-    function search(http,query){
-        return null;
-    }
-
-    function getDetails(http,url){
-        return null;
-    }
-
-    function getChapterContent(http,url){
-        return null;
-    }   
-     //获取书城数据
-    function getBookCityPageList(http,script){
-        return null;
-    }
-""".trimIndent()
-    )
-}
-
 @Entity
 data class JavaScript constructor(
     /**
@@ -166,42 +144,32 @@ data class JavaScript constructor(
         }
     }
 
-    suspend fun getPageList(script: String): List<Page>? {
+    suspend fun loadPage(script: String): Page? {
         return withIo {
-            try {
-                if (script.isEmpty()) {
-                    execute<List<Page>>(Func.getPageList)
-                } else {
-                    execute {
-                        jsToJava<List<Page>>(eval(script))
-                    }
+            if (script.isEmpty()) {
+                execute<Page>(Func.loadPage)
+            } else {
+                execute {
+                    jsToJava<Page>(eval(script))
                 }
-            } catch (t: Throwable) {
-                Log.i("$source 加载PageList出错：$script", t)
-                null
             }
         }
     }
 
-    suspend fun getBookList(script: String): List<Book>? {
+    suspend fun loadBookList(script: String): List<Book>? {
         return withIo {
-            try {
-                if (script.isEmpty()) {
-                    execute<List<Book>>(Func.getBookList)
-                } else {
-                    execute {
-                        jsToJava<List<Book>>(eval(script))
-                    }
+            if (script.isEmpty()) {
+                execute<List<Book>>(Func.loadBookList)
+            } else {
+                execute {
+                    jsToJava<List<Book>>(eval(script))
                 }
-            } catch (t: Throwable) {
-                Log.i("$source 加载BookList出错：$script", t)
-                null
             }
         }
     }
 
     enum class Func {
-        search, getDetails, getChapterContent, getPageList, getBookList
+        search, getDetails, getChapterContent, loadPage, loadBookList
     }
 
 }
