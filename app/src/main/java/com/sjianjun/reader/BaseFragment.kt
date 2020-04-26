@@ -1,6 +1,7 @@
 package com.sjianjun.reader
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -29,6 +30,10 @@ open class BaseFragment : DialogFragment() {
 
     val activity: BaseActivity?
         get() = super.getActivity() as? BaseActivity
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return Dialog(requireContext(), R.style.dialog_style)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
