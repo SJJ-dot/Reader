@@ -435,8 +435,8 @@ object DataManager {
     }
 
 
-    suspend fun getPageList(script: String = "", source: String = ""): List<Page>? {
-        return if (script.isEmpty()) {
+    suspend fun getPageList(script: String = "", source: String = ""): List<Page>? = withIo {
+        if (script.isEmpty()) {
             val js = dao.getJavaScriptBySource(source)
             js?.getPageList(script)
         } else {
@@ -444,8 +444,9 @@ object DataManager {
         }
     }
 
-    suspend fun getBookList(script: String = "", source: String): List<Book>? {
-        return if (script.isEmpty()) {
+
+    suspend fun getBookList(script: String = "", source: String): List<Book>? = withIo {
+        if (script.isEmpty()) {
             val js = dao.getJavaScriptBySource(source)
             js?.getBookList(script)
         } else {
