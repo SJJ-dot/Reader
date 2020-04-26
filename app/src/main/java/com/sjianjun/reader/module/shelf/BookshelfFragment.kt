@@ -19,16 +19,14 @@ import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 class BookshelfFragment : BaseFragment() {
     private val bookList = mutableMapOf<String, Book>()
@@ -152,13 +150,11 @@ class BookshelfFragment : BaseFragment() {
     private fun startingStationRefreshActor() =
         lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
-                Log.e("start ==============================")
                 delay(1000)
                 msg.forEach {
                     DataManager.updateOrInsertStarting(it.url)
                     delay(1000)
                 }
-                Log.e("end ==============================")
             }
         }
 
