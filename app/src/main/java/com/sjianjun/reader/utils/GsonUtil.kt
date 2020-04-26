@@ -17,7 +17,7 @@ val gson = GsonBuilder()
             }
         }).create()
 
-inline fun <reified T> Gson.fromJson(json: String): T? {
+inline fun <reified T> Gson.fromJson(json: String?): T? {
     return fromJson(json, object : TypeToken<T>() {}.type)
 }
 

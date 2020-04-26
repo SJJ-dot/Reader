@@ -53,8 +53,8 @@ object DataManager {
     }
 
 
-    suspend fun reloadBookJavaScript(): Boolean? {
-        return checkJavaScriptUpdate({
+    suspend fun reloadBookJavaScript() {
+        checkJavaScriptUpdate({
             http.get(globalConfig.javaScriptBaseUrl + "version.json")
         }, {
             http.get(globalConfig.javaScriptBaseUrl + it)
@@ -64,10 +64,10 @@ object DataManager {
     private suspend inline fun checkJavaScriptUpdate(
         crossinline versionInfo: () -> String,
         crossinline loadScript: (fileName: String) -> String
-    ): Boolean? {
-        return withIo {
+    ) {
+        withIo {
             val versionJson = versionInfo()
-            val info = gson.fromJson<JsVersionInfo>(versionJson) ?: return@withIo false
+            val info = gson.fromJson<JsVersionInfo>(versionJson)!!
             if (info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
@@ -75,24 +75,29 @@ object DataManager {
                         if (javaScript != null && javaScript.version >= it.version) {
                             javaScript
                         } else {
-                            JavaScript(
-                                it.fileName,
-                                loadScript(it.fileName),
-                                it.version,
-                                it.starting,
-                                it.priority,
-                                it.supportBookCity
-                            )
+                            val js = tryBlock { loadScript(it.fileName) }
+                            if (js == null) {
+                                null
+                            } else {
+                                JavaScript(
+                                    it.fileName,
+                                    js,
+                                    it.version,
+                                    it.starting,
+                                    it.priority,
+                                    it.supportBookCity
+                                )
+                            }
                         }
                     }
                 }?.awaitAll().also {
                     if (it != null) {
-                        dao.insertJavaScript(it)
+                        dao.insertJavaScript(it.filterNotNull())
                         globalConfig.javaScriptVersion = info.version
                     }
                 }
             }
-            return@withIo true
+
         }
     }
 
