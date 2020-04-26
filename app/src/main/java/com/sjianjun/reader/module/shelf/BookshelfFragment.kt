@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.shelf
 
 import android.os.Bundle
 import android.view.*
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -18,10 +19,15 @@ import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
 class BookshelfFragment : BaseFragment() {
@@ -29,24 +35,30 @@ class BookshelfFragment : BaseFragment() {
     private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
+    private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        startingStationRefreshActor = startingStationRefreshActor()
+
         setHasOptionsMenu(true)
-        adapter =
-            Adapter(this)
+        adapter = Adapter(this)
         recycle_view.adapter = adapter
 
         swipe_refresh.setOnRefreshListener {
             launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
+
                 bookList.values.forEach {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
                     list.add(it)
                 }
+
+                startingStationRefreshActor.offer(bookList.values.toList())
+
                 sourceMap.values.map {
                     async {
                         it.apply { it.sortWith(bookComparator) }.forEach {
-                            val qiDian = async { DataManager.updateOrInsertStarting(it.url) }
                             val error = DataManager.reloadBookFromNet(it.url)
                             if (error != null) {
                                 bookSyncErrorMap[it.key] = error
@@ -54,7 +66,6 @@ class BookshelfFragment : BaseFragment() {
                                 bookSyncErrorMap.remove(it.key)
                             }
                             delay(1000)
-                            qiDian.await()
                             it.key to error
                         }
                     }
@@ -138,6 +149,19 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
+    private fun startingStationRefreshActor() =
+        lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
+            for (msg in channel) {
+                Log.e("start ==============================")
+                delay(1000)
+                msg.forEach {
+                    DataManager.updateOrInsertStarting(it.url)
+                    delay(1000)
+                }
+                Log.e("end ==============================")
+            }
+        }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_fragment_book_shelf_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
@@ -188,11 +212,13 @@ class BookshelfFragment : BaseFragment() {
                         fragment.launchIo {
 
                             val popup = ErrorMsgPopup(fragment.context)
-                                .init("""
+                                .init(
+                                    """
                                     $error
                                     StackTrace:
                                     ${android.util.Log.getStackTraceString(error)}
-                                """.trimIndent())
+                                """.trimIndent()
+                                )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
 
                             withMain {
