@@ -7,12 +7,10 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.joinAll
 import sjj.alog.Log
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
@@ -435,22 +433,14 @@ object DataManager {
     }
 
 
-    suspend fun getPageList(script: String = "", source: String = ""): List<Page>? = withIo {
-        if (script.isEmpty()) {
-            val js = dao.getJavaScriptBySource(source)
-            js?.getPageList(script)
-        } else {
-            defaultJavaScript.getPageList(script)
-        }
+    suspend fun loadPage(source: String, script: String = ""): Page? = withIo {
+        val js = dao.getJavaScriptBySource(source)
+        js?.loadPage(script)
     }
 
 
-    suspend fun getBookList(script: String = "", source: String): List<Book>? = withIo {
-        if (script.isEmpty()) {
-            val js = dao.getJavaScriptBySource(source)
-            js?.getBookList(script)
-        } else {
-            defaultJavaScript.getBookList(script)
-        }
+    suspend fun loadBookList(source: String, script: String = ""): List<Book>? = withIo {
+        val js = dao.getJavaScriptBySource(source)
+        js?.loadBookList(script)
     }
 }

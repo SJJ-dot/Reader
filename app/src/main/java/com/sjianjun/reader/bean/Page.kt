@@ -21,13 +21,13 @@ class Page {
      * 网页中还会有其他网页
      */
     @JvmField
-    var pageList: List<Page>? = null
+    var pageList: List<Page> = emptyList()
 
     /**
      * 页面中会有书籍的分组列表
      */
     @JvmField
-    var bookGroupList: List<BookGroup>? = null
+    var bookGroupList: List<BookGroup> = emptyList()
 
 
     /**
@@ -42,8 +42,7 @@ class Page {
     @JvmField
     var pageCount = 0
 
-    val pageId: String
-    get() = pageScript.id.toString()
+    val pageId: String by lazy { "$source $pageScript".id.toString() }
 
     class BookGroup {
         /**
@@ -64,5 +63,13 @@ class Page {
         @JvmField
         var nextScript: String? = null
 
+        override fun toString(): String {
+            return "BookGroup(title='$title', bookList=$bookList, nextScript=$nextScript)"
+        }
+
+    }
+
+    override fun toString(): String {
+        return "Page(source='$source', title='$title', pageList=$pageList, bookGroupList=$bookGroupList, pageScript='$pageScript', pageCount=$pageCount)"
     }
 }

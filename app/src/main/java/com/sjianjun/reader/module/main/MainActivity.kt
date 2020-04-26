@@ -16,6 +16,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.test.BookCityTest
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.toast
@@ -67,6 +68,7 @@ class MainActivity : BaseActivity() {
             checkUpdate(this@MainActivity)
             JavaScriptTest.testJavaScript()
             ParseTest.test()
+            BookCityTest.test()
         }
 
     }
