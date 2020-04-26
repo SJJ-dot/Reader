@@ -188,7 +188,11 @@ class BookshelfFragment : BaseFragment() {
                         fragment.launchIo {
 
                             val popup = ErrorMsgPopup(fragment.context)
-                                .init(android.util.Log.getStackTraceString(error))
+                                .init("""
+                                    $error
+                                    StackTrace:
+                                    ${android.util.Log.getStackTraceString(error)}
+                                """.trimIndent())
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
 
                             withMain {

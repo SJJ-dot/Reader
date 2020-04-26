@@ -54,6 +54,7 @@ val client = HttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .cookieJar(
                 PersistentCookieJar(
                     SetCookieCache(),
@@ -91,12 +92,7 @@ class Http {
         queryMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap()
     ): String = runBlocking {
-        try {
-            client.get<String>(url, queryMap, header)
-        } catch (e: Exception) {
-            Log.i("网络请求失败:$url", e)
-            ""
-        }
+        client.get<String>(url, queryMap, header)
     }
 
     @JvmOverloads

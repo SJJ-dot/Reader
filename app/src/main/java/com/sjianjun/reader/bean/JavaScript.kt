@@ -151,12 +151,7 @@ data class JavaScript constructor(
 
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
-            try {
-                execute<Book>(Func.getDetails, bookUrl)
-            } catch (t: Throwable) {
-                Log.i("$source 加载出错 url：$bookUrl", t)
-                null
-            }
+            execute<Book>(Func.getDetails, bookUrl)
         }
     }
 

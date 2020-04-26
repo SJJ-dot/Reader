@@ -10,10 +10,7 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.URL_RELEASE_INFO
-import com.sjianjun.reader.utils.toast
-import com.sjianjun.reader.utils.withIo
-import com.sjianjun.reader.utils.withMain
+import com.sjianjun.reader.utils.*
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import kotlin.math.max
@@ -24,11 +21,12 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             if (force) {
                 toast("正在加载版本信息……")
             }
-            val info =
+            val info = tryBlock {
                 http.get(
                     URL_RELEASE_INFO,
                     header = mapOf("Content-Type" to "application/json;charset=UTF-8")
                 )
+            } ?: ""
             if (info.isNotEmpty()) {
                 globalConfig.releasesInfo = info
                 globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
