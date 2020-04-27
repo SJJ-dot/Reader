@@ -16,7 +16,7 @@ import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import com.sjianjun.reader.view.isLoading
+import com.sjianjun.reader.view.setLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
 import kotlinx.coroutines.Dispatchers
@@ -208,7 +208,7 @@ class BookshelfFragment : BaseFragment() {
                 author.text = "作者：${book.author}"
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
-                loading.isLoading = book.isLoading
+                loading.setLoading(book.isLoading)
                 val error = book.error
                 if (error == null) {
                     sync_error.hide()

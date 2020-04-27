@@ -18,4 +18,14 @@
         <item name="android:windowBackground">?android:attr/colorBackground</item>
     </style>
 
+    <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">
+        <item name="android:indeterminateTint">@color/colorPrimary</item>
+        <item name="android:progressTint">@color/colorPrimary</item>
+    </style>
+
+    <style name="ProgressBar.Horizontal" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:indeterminateTint">@color/colorPrimary</item>
+        <item name="android:progressTint">@color/colorPrimary</item>
+    </style>
+
 </resources>
