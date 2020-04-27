@@ -23,11 +23,14 @@ import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
 import kotlinx.android.synthetic.main.search_fragment_search.*
 import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class SearchFragment : BaseFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
@@ -124,12 +127,12 @@ class SearchFragment : BaseFragment() {
         })
         searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
             if (hasFocus) {
-                ll_search_history?.visibility = View.VISIBLE
-                searchRecyclerView?.visibility = View.INVISIBLE
+                searchRecyclerView?.hide()
+                ll_search_history?.show()
                 v.showKeyboard()
             } else {
-                searchRecyclerView?.visibility = View.VISIBLE
-                ll_search_history?.visibility = View.INVISIBLE
+                searchRecyclerView?.show()
+                ll_search_history?.hide()
                 v.hideKeyboard()
             }
         }
@@ -137,10 +140,7 @@ class SearchFragment : BaseFragment() {
 
     private fun initSearchResultList(searchView: SearchView) {
         searchRecyclerView.layoutManager = LinearLayoutManager(context)
-        val resultBookAdapter =
-            SearchResultBookAdapter(
-                this
-            )
+        val resultBookAdapter = SearchResultBookAdapter(this)
         resultBookAdapter.setHasStableIds(true)
         searchRecyclerView.adapter = resultBookAdapter
         searchResult.observe(viewLifecycleOwner, Observer {
@@ -152,23 +152,37 @@ class SearchFragment : BaseFragment() {
     }
 
     //宜搜快速提示
-    private fun queryHintActor() = lifecycleScope.actor<String>(capacity = Channel.CONFLATED) {
-        for (msg in channel) {
-            val hintList = DataManager.searchHint(msg) ?: emptyList()
-            searchHint.data = hintList
-            searchHint.notifyDataSetChanged()
-        }
-    }
-
-    private fun queryActor() = lifecycleScope.actor<String>(capacity = Channel.CONFLATED) {
-        for (msg in channel) {
-            refresh_progress_bar?.isAutoLoading = true
-            DataManager.search(msg)?.collect {
-                searchResult.postValue(it)
+    private fun queryHintActor() =
+        lifecycleScope.actor<String>(Dispatchers.IO, capacity = Channel.CONFLATED) {
+            var job: Job? = null
+            for (msg in channel) {
+                job?.cancel()
+                job = launch {
+                    val hintList = DataManager.searchHint(msg) ?: emptyList()
+                    withMain {
+                        searchHint.data = hintList
+                        searchHint.notifyDataSetChanged()
+                    }
+                }
             }
-            refresh_progress_bar?.isAutoLoading = false
         }
-    }
+
+    private fun queryActor() =
+        lifecycleScope.actor<String>(Dispatchers.IO, capacity = Channel.CONFLATED) {
+            var job: Job? = null
+            for (msg in channel) {
+                withMain { search_refresh?.isAutoLoading = true }
+                job?.cancel()
+                job = launch {
+                    DataManager.search(msg)?.collectLatest {
+                        delay(500)
+                        searchResult.postValue(it)
+                    }
+
+                    withMain { search_refresh?.isAutoLoading = false }
+                }
+            }
+        }
 
     private fun deleteSearchHistoryActor() = lifecycleScope.actor<List<SearchHistory>>() {
         for (msg in channel) {

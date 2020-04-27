@@ -42,9 +42,9 @@ class BookshelfFragment : BaseFragment() {
 
         setHasOptionsMenu(true)
         adapter = Adapter(this)
-        recycle_view.adapter = adapter
+        book_shelf_recycle_view.adapter = adapter
 
-        swipe_refresh.setOnRefreshListener {
+        book_shelf_swipe_refresh.setOnRefreshListener {
             launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
 
@@ -70,7 +70,7 @@ class BookshelfFragment : BaseFragment() {
                     }
                 }.awaitAll()
                 withMain {
-                    swipe_refresh?.isRefreshing = false
+                    book_shelf_swipe_refresh?.isRefreshing = false
                     adapter.notifyDataSetChanged()
                 }
             }
@@ -102,7 +102,7 @@ class BookshelfFragment : BaseFragment() {
             }
 
         })
-        mItemTouchHelper.attachToRecyclerView(recycle_view)
+        mItemTouchHelper.attachToRecyclerView(book_shelf_recycle_view)
 
         launch {
             DataManager.getAllReadingBook().collectLatest {
@@ -154,10 +154,17 @@ class BookshelfFragment : BaseFragment() {
     private fun startingStationRefreshActor() =
         lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
+                withMain {
+                    book_shelf_refresh.isAutoLoading = true
+                }
                 delay(1000)
                 msg.forEach {
                     DataManager.updateOrInsertStarting(it.url)
                     delay(1000)
+                }
+
+                withMain {
+                    book_shelf_refresh.isAutoLoading = false
                 }
             }
         }

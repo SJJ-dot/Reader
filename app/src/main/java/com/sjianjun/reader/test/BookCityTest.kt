@@ -7,7 +7,7 @@ import org.jsoup.Jsoup
 import sjj.alog.Log
 
 object BookCityTest {
-    var test = true
+    var test = false
     private val source: String = JS_SOURCE_QI_DIAN
     fun test() {
         if (!test) {
