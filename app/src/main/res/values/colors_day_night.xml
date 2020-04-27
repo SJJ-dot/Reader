@@ -20,4 +20,7 @@
 
     <color name="day_night_pop_error_background">@color/material_reader_white</color>
     <color name="day_night_pop_error_text">@color/text_primary_color</color>
+
+    <color name="day_night_appbar_icon_tint">@color/material_reader_white</color>
+    <color name="day_night_badge_color">@color/material_reader_red_A200</color>
 </resources>

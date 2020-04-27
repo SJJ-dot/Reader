@@ -15,5 +15,7 @@
 
     <color name="day_night_pop_error_background">?attr/colorSurface</color>
     <color name="day_night_pop_error_text">@color/dark_text_primary_color</color>
-
+    <!--  标题栏图标着色  -->
+    <color name="day_night_appbar_icon_tint">@color/dark_text_primary_color</color>
+    <color name="day_night_badge_color">@color/dark_text_primary_color</color>
 </resources>

@@ -21,10 +21,10 @@ fun visibility(visibility: Int, vararg viewList: View) {
     val view = viewList.firstOrNull() ?: return
     val parent = view.parent
     if (parent is ConstraintLayout) {
-        var tag = view.getTag(R.id.visibility) as? ConstraintSet
+        var tag = parent.getTag(R.id.visibility) as? ConstraintSet
         if (tag == null) {
             tag = ConstraintSet()
-            view.setTag(R.id.visibility, tag)
+            parent.setTag(R.id.visibility, tag)
         }
         tag.clone(parent)
         viewList.forEach {
