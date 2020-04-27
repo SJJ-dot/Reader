@@ -6,8 +6,8 @@
     <item
         android:id="@+id/share"
         android:icon="@mipmap/ic_menu_share"
-        android:iconTint="@color/day_night_appbar_icon_tint"
         android:title="分享"
+        app:iconTint="@color/day_night_appbar_icon_tint"
         app:showAsAction="ifRoom" />
 
 </menu>
