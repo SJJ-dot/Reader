@@ -43,6 +43,10 @@
         android:label="书城页面"
         tools:layout="@layout/bookcity_fragment" />
 
-
+    <fragment
+        android:id="@+id/browserBookCityFragment"
+        android:name="com.sjianjun.reader.module.bookcity.BrowserBookCityFragment"
+        android:label="浏览器书城"
+        tools:layout="@layout/bookcity_fragment" />
 
 </navigation>
