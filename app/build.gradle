@@ -3,10 +3,17 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
-def shortHash = 'git log -1 --pretty=%h'.execute([], project.rootDir).text.trim().toUpperCase()
-def commitCont = 'git rev-list HEAD --count'.execute([], project.rootDir).text.trim().toInteger()
-def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], project.rootDir).text.trim()
-
+def shortHash = 'git log -1 --pretty=%h'.execute().text.trim().toUpperCase()
+def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger()
+def currentBranch = 'git symbolic-ref --short -q HEAD'.execute().text.trim()
+//创建版本号===
+//获取之前的版本列表
+def tagList = "git describe --tags ${"git rev-list --tags".execute().text.trim()}".execute([], project.rootDir).text.trim().split("\n").toList()
+//找到 a.b.c 纯数字版本tag
+def lastVersion = tagList.find { tag -> tag.replace(".", "").isNumber() }.split("\\.")
+//最后一位 数字 +1
+lastVersion[lastVersion.length - 1] = lastVersion[lastVersion.length - 1].toInteger() + 1
+def currentVersion = lastVersion.join(".")
 android {
     signingConfigs {
         debug {
@@ -24,7 +31,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "0.5.${commitCont - 203}"
+        versionName "$currentVersion"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -109,11 +116,6 @@ dependencies {
     implementation project(":fastscroller")
 
     implementation project(":pagerindicator")
-
-
-
-
-
 
 
 }
