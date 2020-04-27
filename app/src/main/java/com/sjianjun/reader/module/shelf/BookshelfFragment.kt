@@ -19,17 +19,18 @@ import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 class BookshelfFragment : BaseFragment() {
-    private val bookList = mutableMapOf<String, Book>()
+    private val bookList = ConcurrentHashMap<String, Book>()
     private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
@@ -106,6 +107,7 @@ class BookshelfFragment : BaseFragment() {
         launch {
             DataManager.getAllReadingBook().collectLatest {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
+                bookList.clear()
                 val bookNum = it.size
                 it.asFlow().flatMapMerge { book ->
                     combine(
@@ -133,15 +135,17 @@ class BookshelfFragment : BaseFragment() {
 
                         book
                     }
-                }.map { book ->
+                }.mapNotNull { book ->
                     bookList[book.key] = book
-                    bookList.values.sortedWith(bookComparator)
-                }.flowIo().collectLatest { list ->
-                    if (list.size == bookNum) {
-                        adapter.data.clear()
-                        adapter.data.addAll(list)
-                        adapter.notifyDataSetChanged()
+                    if (bookList.size == bookNum) {
+                        bookList.values.sortedWith(bookComparator)
+                    } else {
+                        null
                     }
+                }.flowIo().collectLatest { list ->
+                    adapter.data.clear()
+                    adapter.data.addAll(list)
+                    adapter.notifyDataSetChanged()
                 }
             }
         }
