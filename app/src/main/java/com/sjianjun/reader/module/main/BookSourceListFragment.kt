@@ -10,7 +10,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import com.sjianjun.reader.view.isLoading
+import com.sjianjun.reader.view.setLoading
 import kotlinx.android.synthetic.main.main_fragment_book_source_list.*
 import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
 import kotlinx.coroutines.async
@@ -133,7 +133,7 @@ class BookSourceListFragment : BaseFragment() {
                     red_dot.hide()
                 }
                 haveRead.text = "来源：${book.source}"
-                loading.isLoading = book.isLoading
+                loading.setLoading(book.isLoading)
                 setOnClickListener {
                     fragment.launch {
                         DataManager.changeReadingRecordBookSource(book)

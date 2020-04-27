@@ -110,7 +110,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.2.0-alpha06'
 
     implementation 'com.tencent.bugly:crashreport:3.1.9'
-    implementation "com.victor:lib:1.0.4"
+//    implementation "com.victor:lib:1.0.4"
 
     implementation project(":refreshbar")
     implementation project(":fastscroller")
