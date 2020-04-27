@@ -15,7 +15,7 @@
     </style>
 
     <style name="dialog_style" parent="Theme.AppCompat.DayNight.Dialog">
-        <item name="android:windowBackground">?android:attr/colorBackground</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">

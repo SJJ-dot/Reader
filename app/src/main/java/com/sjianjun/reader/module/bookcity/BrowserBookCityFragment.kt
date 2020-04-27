@@ -5,14 +5,19 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.core.view.iterator
+import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JS_SOURCE
+import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import kotlinx.coroutines.flow.first
+
 
 class BrowserBookCityFragment : BaseFragment() {
     private var javaScriptList: List<JavaScript> = emptyList()
@@ -25,6 +30,23 @@ class BrowserBookCityFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
         initMenu()
+
+        onBackPressed = {
+            if (web_view.canGoBack()) {
+                web_view.goBack()
+            } else {
+                findNavController().popBackStack()
+            }
+        }
+
+        web_view.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
+                view.loadUrl(url)
+                return true
+            }
+        }
+        initData()
+
     }
 
     private fun initMenu() {
@@ -57,7 +79,7 @@ class BrowserBookCityFragment : BaseFragment() {
     }
 
     private fun initData() {
-
+        web_view.loadUrl("https://m.qidian.com/")
     }
 
 }
