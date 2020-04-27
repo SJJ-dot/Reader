@@ -5,8 +5,9 @@
     tools:showIn="navigation_view">
     <item
         android:id="@+id/share"
-        android:title="分享"
         android:icon="@mipmap/ic_menu_share"
+        android:iconTint="@color/day_night_appbar_icon_tint"
+        android:title="分享"
         app:showAsAction="ifRoom" />
 
 </menu>

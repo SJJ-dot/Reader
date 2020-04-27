@@ -7,6 +7,7 @@
         android:id="@+id/sync_book_script"
         android:title="同步"
         android:icon="@mipmap/ic_sync"
+        android:iconTint="@color/day_night_appbar_icon_tint"
         app:showAsAction="ifRoom" />
 
 </menu>
