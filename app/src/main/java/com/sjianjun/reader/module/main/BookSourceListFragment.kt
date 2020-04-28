@@ -29,6 +29,7 @@ class BookSourceListFragment : BaseFragment() {
             this
         )
     }
+
     override fun getLayoutRes() = R.layout.main_fragment_book_source_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -97,13 +98,15 @@ class BookSourceListFragment : BaseFragment() {
             launch {
                 swipe_refresh.isRefreshing = false
                 swipe_refresh.isEnabled = false
-                refresh_progress_bar.isAutoLoading = true
+                source_refresh.animFadeIn()
+                source_refresh.progress = 0
                 adapter.data.map {
                     async {
                         DataManager.reloadBookFromNet(it.url)
+                        source_refresh.progress = source_refresh.progress + 1
                     }
                 }.awaitAll()
-                refresh_progress_bar.isAutoLoading = false
+                source_refresh.animFadeOut()
                 swipe_refresh.isEnabled = true
             }
         }
