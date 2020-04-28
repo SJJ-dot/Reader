@@ -30,6 +30,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SearchFragment : BaseFragment() {
@@ -49,6 +50,14 @@ class SearchFragment : BaseFragment() {
         deleteSearchHistoryActor = deleteSearchHistoryActor()
         queryActor = queryActor()
         queryHintActor = queryHintActor()
+        initData()
+    }
+
+    private fun initData() {
+        launchIo {
+            val javaScriptList = DataManager.getAllJavaScript().first().filter { it.enable }
+            search_refresh.max = javaScriptList.size
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -171,15 +180,18 @@ class SearchFragment : BaseFragment() {
         lifecycleScope.actor<String>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             var job: Job? = null
             for (msg in channel) {
-                withMain { search_refresh?.isAutoLoading = true }
                 job?.cancel()
                 job = launch {
+                    withMain {
+                        search_refresh.animFadeIn()
+                        search_refresh.progress = 0
+                    }
                     DataManager.search(msg)?.collectLatest {
-                        delay(500)
+                        search_refresh.progress = search_refresh.progress + 1
+                        delay(300)
                         searchResult.postValue(it)
                     }
-
-                    withMain { search_refresh?.isAutoLoading = false }
+                    withMain { search_refresh.animFadeOut() }
                 }
             }
         }
