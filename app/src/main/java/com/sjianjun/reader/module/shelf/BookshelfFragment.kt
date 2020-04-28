@@ -28,6 +28,7 @@ import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
@@ -54,7 +55,7 @@ class BookshelfFragment : BaseFragment() {
                 }
 
                 startingStationRefreshActor.offer(bookList.values.toList())
-
+                book_shelf_refresh.progress = 0
                 sourceMap.values.map {
                     async {
                         it.apply { it.sortWith(bookComparator) }.forEach {
@@ -64,6 +65,7 @@ class BookshelfFragment : BaseFragment() {
                             } else {
                                 bookSyncErrorMap.remove(it.key)
                             }
+                            book_shelf_refresh.progress = book_shelf_refresh.progress + 1
                             delay(1000)
                             it.key to error
                         }
@@ -109,6 +111,7 @@ class BookshelfFragment : BaseFragment() {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 bookList.clear()
                 val bookNum = it.size
+                book_shelf_refresh.max = bookNum
                 it.asFlow().flatMapMerge { book ->
                     combine(
                         DataManager.getReadingRecord(book).map { record ->
@@ -154,20 +157,31 @@ class BookshelfFragment : BaseFragment() {
     private fun startingStationRefreshActor() =
         lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
-                withMain {
-                    book_shelf_refresh.isAutoLoading = true
-                }
+                showProgressBar()
+                book_shelf_refresh.secondaryProgress = 0
                 delay(1000)
                 msg.forEach {
                     DataManager.updateOrInsertStarting(it.url)
+                    book_shelf_refresh.secondaryProgress = book_shelf_refresh.secondaryProgress + 1
                     delay(1000)
                 }
 
-                withMain {
-                    book_shelf_refresh.isAutoLoading = false
-                }
+                hideProgressBar()
             }
         }
+
+    private val showState = AtomicInteger()
+    private fun showProgressBar() {
+        if (showState.getAndIncrement() == 0) {
+            book_shelf_refresh.animFadeIn()
+        }
+    }
+
+    private fun hideProgressBar() {
+        if (showState.decrementAndGet() == 0) {
+            book_shelf_refresh.animFadeOut()
+        }
+    }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_fragment_book_shelf_menu, menu)
