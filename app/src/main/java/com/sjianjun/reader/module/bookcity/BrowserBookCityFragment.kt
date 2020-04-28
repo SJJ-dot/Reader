@@ -9,7 +9,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.core.view.iterator
 import androidx.navigation.fragment.findNavController
-import com.sjianjun.reader.BaseFragment
+import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.globalConfig
@@ -19,7 +19,7 @@ import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import kotlinx.coroutines.flow.first
 
 
-class BrowserBookCityFragment : BaseFragment() {
+class BrowserBookCityFragment : BaseBrowserFragment() {
     private var javaScriptList: List<JavaScript> = emptyList()
     private lateinit var source: String
     override fun getLayoutRes(): Int {
@@ -38,7 +38,7 @@ class BrowserBookCityFragment : BaseFragment() {
                 findNavController().popBackStack()
             }
         }
-
+        setWebView(web_view)
         web_view.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
                 view.loadUrl(url)
