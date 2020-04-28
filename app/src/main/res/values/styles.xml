@@ -21,11 +21,12 @@
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">
         <item name="android:indeterminateTint">@color/colorPrimary</item>
         <item name="android:progressTint">@color/colorPrimary</item>
+        <item name="android:secondaryProgressTint">@color/material_reader_black</item>
     </style>
 
     <style name="ProgressBar.Horizontal" parent="Widget.AppCompat.ProgressBar.Horizontal">
-        <item name="android:indeterminateTint">@color/colorPrimary</item>
-        <item name="android:progressTint">@color/colorPrimary</item>
+        <item name="android:progressDrawable">@drawable/progress_horizontal_material</item>
+        <item name="android:layout_height">8dp</item>
     </style>
 
 </resources>
