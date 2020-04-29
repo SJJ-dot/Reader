@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.shelf
 
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
 import androidx.lifecycle.lifecycleScope
@@ -27,13 +28,13 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
+    private val startingBookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
@@ -153,6 +154,7 @@ class BookshelfFragment : BaseFragment() {
                         }
 
                         book.error = bookSyncErrorMap[book.key]
+                        book.startingError = startingBookSyncErrorMap[book.key]
 
                         book
                     }
@@ -198,13 +200,23 @@ class BookshelfFragment : BaseFragment() {
                     if (delay < 0) {
                         entry.value.map {
                             async {
-                                DataManager.reloadBookFromNet(it, javaScript)
+                                val error = DataManager.reloadBookFromNet(it, javaScript)
+                                if (error != null) {
+                                    startingBookSyncErrorMap[it.key] = error
+                                } else {
+                                    startingBookSyncErrorMap.remove(it.key)
+                                }
                                 book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
                             }
                         }.awaitAll()
                     } else {
                         entry.value.forEach {
-                            DataManager.reloadBookFromNet(it, javaScript)
+                            val error = DataManager.reloadBookFromNet(it, javaScript)
+                            if (error != null) {
+                                startingBookSyncErrorMap[it.key] = error
+                            } else {
+                                startingBookSyncErrorMap.remove(it.key)
+                            }
                             book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
                             delay(delay)
                         }
@@ -266,21 +278,24 @@ class BookshelfFragment : BaseFragment() {
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
                 val error = book.error
-                if (error == null) {
+                val startingError = book.startingError
+                if (error == null && startingError == null) {
                     sync_error.hide()
                     sync_error.isClickable = false
                 } else {
+                    sync_error.imageTintList = if (error != null) {
+                        ColorStateList.valueOf(R.color.material_reader_red_100.getColor())
+                    } else {
+                        ColorStateList.valueOf(R.color.material_reader_grey_700.getColor())
+                    }
                     sync_error.show()
                     sync_error.setOnClickListener {
                         fragment.launchIo {
-
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init(
-                                    """
-                                    $error
-                                    StackTrace:
-                                    ${android.util.Log.getStackTraceString(error)}
-                                """.trimIndent()
+                                    "${error ?: startingError}\n" +
+                                            "StackTrace:\n" +
+                                            android.util.Log.getStackTraceString(error ?: startingError)
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
 
