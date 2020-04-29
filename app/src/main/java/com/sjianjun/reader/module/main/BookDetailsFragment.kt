@@ -52,7 +52,12 @@ class BookDetailsFragment : BaseFragment() {
         book ?: return
         launch {
             detailsRefreshLayout?.isRefreshing = true
-            val qiDian = async { DataManager.updateOrInsertStarting(book.url) }
+            val qiDian = async {
+                val startingBook = DataManager.getStartingBook(book)
+                if (startingBook?.source != book.source) {
+                    DataManager.reloadBookFromNet(startingBook)
+                }
+            }
             DataManager.reloadBookFromNet(book)
             qiDian.await()
             detailsRefreshLayout?.isRefreshing = false

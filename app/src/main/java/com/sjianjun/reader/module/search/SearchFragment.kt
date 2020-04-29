@@ -195,7 +195,10 @@ class SearchFragment : BaseFragment() {
                         delay(300)
                         searchResult.postValue(it)
                     }
-                    withMain { search_refresh.animFadeOut() }
+                    withMain {
+                        search_refresh.progress = search_refresh.max
+                        search_refresh.animFadeOut()
+                    }
                 }
             }
         }

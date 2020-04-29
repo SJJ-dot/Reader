@@ -197,56 +197,47 @@ object DataManager {
         }
     }
 
-    /**
-     * 如果不是更新起点的书籍。去起点检查一遍更新。作为最新更新的标准
-     */
-    suspend fun updateOrInsertStarting(bookUrl: String) {
-        withIo {
-            try {
-                val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo
-                val bookSource = dao.getJavaScriptBySource(book.source)
-                if (bookSource?.isStartingStation == true) {
-                    return@withIo
-                }
-                val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo
-                if (book.source == record.startingStationBookSource) {
-                    return@withIo
-                }
-                if (record.startingStationBookSource.isBlank()) {
-                    //到官方的网站查询并把书籍插入到本地数据库
-                    val startingBook = dao.getAllStartingJavaScript().map {
-                        async {
-                            var startingBook = dao.getBookByTitleAuthorAndSource(
-                                book.title,
-                                book.author,
-                                it.source
-                            ).first()
-                            if (startingBook == null) {
-                                startingBook = it.search(book.title)?.find { result ->
-                                    result.bookTitle == book.title && result.bookAuthor == book.author
-                                }?.toBook()
-                            }
-                            startingBook
-                        }
-                    }.find { it.await() != null }?.await() ?: return@withIo
-                    try {
-                        dao.insertBook(startingBook)
-                    } catch (error: Throwable) {
-                        //nothing to do
-                    }
-                    record.startingStationBookSource = startingBook.source
-                    dao.insertReadingRecord(record)
-                }
-                val startBook = dao.getBookByTitleAuthorAndSource(
-                    book.title,
-                    book.author,
-                    record.startingStationBookSource
-                ).first() ?: return@withIo
-                Log.i("首发站点书籍：$startBook")
-                reloadBookFromNet(startBook)
-            } catch (t: Throwable) {
-                Log.e("首发站点书籍更新失败")
+    suspend fun getStartingBook(book: Book, javaScript: JavaScript? = null): Book? {
+        return withIo {
+            if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
+                return@withIo book
             }
+            val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo null
+            if (book.source == record.startingStationBookSource) {
+                return@withIo book
+            }
+
+            if (record.startingStationBookSource.isBlank()) {
+                //到官方的网站查询并把书籍插入到本地数据库
+                val startingBook = dao.getAllStartingJavaScript().map {
+                    async {
+                        var startingBook = dao.getBookByTitleAuthorAndSource(
+                            book.title,
+                            book.author,
+                            it.source
+                        ).first()
+                        if (startingBook == null) {
+                            startingBook = it.search(book.title)?.find { result ->
+                                result.bookTitle == book.title && result.bookAuthor == book.author
+                            }?.toBook()
+                        }
+                        startingBook
+                    }
+                }.find { it.await() != null }?.await() ?: return@withIo null
+                try {
+                    dao.insertBook(startingBook)
+                } catch (error: Throwable) {
+                    //nothing to do
+                }
+                record.startingStationBookSource = startingBook.source
+                dao.insertReadingRecord(record)
+            }
+            return@withIo dao.getBookByTitleAuthorAndSource(
+                book.title,
+                book.author,
+                record.startingStationBookSource
+            ).first()
+
         }
     }
 
