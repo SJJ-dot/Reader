@@ -1,5 +1,5 @@
 //请求延迟的时间ms，如果时长小于0将会并发
-var REQUEST_DELAY = -1;
+var REQUEST_DELAY = 100;
 var baseUrl = "https://www.biquge5200.cc";
 function search(http,query){
     var html = http.get(baseUrl+"/modules/article/search.php?searchkey="+encodeURIComponent(query));

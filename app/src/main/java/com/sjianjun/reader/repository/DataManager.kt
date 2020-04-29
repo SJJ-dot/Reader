@@ -70,24 +70,26 @@ object DataManager {
             if (BuildConfig.DEBUG || info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
-                        val javaScript = dao.getJavaScriptBySource(it.fileName)
-                        if (javaScript != null && (BuildConfig.DEBUG || javaScript.version >= it.version)) {
-                            javaScript
-                        } else {
-                            val js = tryBlock { loadScript(it.fileName) }
-                            if (js == null) {
-                                null
-                            } else {
-                                JavaScript(
-                                    it.fileName,
-                                    js,
-                                    it.version,
-                                    it.starting,
-                                    it.priority,
-                                    it.supportBookCity
-                                )
+                        if (!BuildConfig.DEBUG) {
+                            val javaScript = dao.getJavaScriptBySource(it.fileName)
+                            if (javaScript != null && javaScript.version >= it.version) {
+                                return@async javaScript
                             }
                         }
+                        val js = tryBlock { loadScript(it.fileName) }
+                        if (js == null) {
+                            null
+                        } else {
+                            JavaScript(
+                                it.fileName,
+                                js,
+                                it.version,
+                                it.starting,
+                                it.priority,
+                                it.supportBookCity
+                            )
+                        }
+
                     }
                 }?.awaitAll().also {
                     if (it != null) {
@@ -172,6 +174,7 @@ object DataManager {
                     val search = it.search(query)
                     if (search != null) {
                         emit(search)
+                        Log.i("search $search")
                     }
                 }
             }.map {

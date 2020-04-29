@@ -176,7 +176,7 @@ class BookshelfFragment : BaseFragment() {
         lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
                 showProgressBar()
-                book_shelf_refresh.secondaryProgress = 0
+                book_shelf_refresh?.secondaryProgress = 0
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
                 msg.mapNotNull {
                     val bookScript = it.javaScriptList?.find { script ->
@@ -199,13 +199,13 @@ class BookshelfFragment : BaseFragment() {
                         entry.value.map {
                             async {
                                 DataManager.reloadBookFromNet(it, javaScript)
-                                book_shelf_refresh.secondaryProgress = count.incrementAndGet()
+                                book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
                             }
                         }.awaitAll()
                     } else {
                         entry.value.forEach {
                             DataManager.reloadBookFromNet(it, javaScript)
-                            book_shelf_refresh.secondaryProgress = count.incrementAndGet()
+                            book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
                             delay(delay)
                         }
                     }
@@ -216,17 +216,13 @@ class BookshelfFragment : BaseFragment() {
             }
         }
 
-    private val showState = AtomicInteger()
-    private fun showProgressBar() {
-        if (showState.getAndIncrement() == 0) {
-            book_shelf_refresh.animFadeIn()
-        }
+    private suspend fun showProgressBar() = withMain {
+        book_shelf_refresh?.animFadeIn()
+
     }
 
-    private fun hideProgressBar() {
-        if (showState.decrementAndGet() == 0) {
-            book_shelf_refresh.animFadeOut()
-        }
+    private suspend fun hideProgressBar() = withMain {
+        book_shelf_refresh?.animFadeOut()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

@@ -9,7 +9,8 @@
         android:id="@+id/book_shelf_swipe_refresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@+id/book_shelf_refresh">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/book_shelf_refresh">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/book_shelf_recycle_view"
@@ -22,6 +23,7 @@
         android:id="@+id/book_shelf_refresh"
         style="@style/ProgressBar.Horizontal"
         android:layout_width="match_parent"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         tools:progress="50"
         tools:secondaryProgress="50" />
