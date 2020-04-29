@@ -27,6 +27,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -176,11 +177,39 @@ class BookshelfFragment : BaseFragment() {
             for (msg in channel) {
                 showProgressBar()
                 book_shelf_refresh.secondaryProgress = 0
-                delay(1000)
-                msg.forEach {
-                    DataManager.updateOrInsertStarting(it.url)
-                    book_shelf_refresh.secondaryProgress = book_shelf_refresh.secondaryProgress + 1
-                    delay(1000)
+                val sourceMap = mutableMapOf<String, MutableList<Book>>()
+                msg.mapNotNull {
+                    val bookScript = it.javaScriptList?.find { script ->
+                        script.source == it.source
+                    }
+                    val book = DataManager.getStartingBook(it, bookScript)
+                    val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
+                    delay(delay)
+                    book
+                }.forEach {
+                    val list = sourceMap.getOrPut(it.source, { mutableListOf() })
+                    list.add(it)
+                }
+
+                val count = AtomicInteger()
+                sourceMap.forEach { entry ->
+                    val javaScript = DataManager.getJavaScript(entry.key)
+                    val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
+                    if (delay < 0) {
+                        entry.value.map {
+                            async {
+                                DataManager.reloadBookFromNet(it, javaScript)
+                                book_shelf_refresh.secondaryProgress = count.incrementAndGet()
+                            }
+                        }.awaitAll()
+                    } else {
+                        entry.value.forEach {
+                            DataManager.reloadBookFromNet(it, javaScript)
+                            book_shelf_refresh.secondaryProgress = count.incrementAndGet()
+                            delay(delay)
+                        }
+                    }
+
                 }
 
                 hideProgressBar()
