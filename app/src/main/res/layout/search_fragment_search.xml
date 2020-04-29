@@ -9,6 +9,7 @@
         android:id="@+id/search_refresh"
         style="@style/ProgressBar.Horizontal"
         android:layout_width="match_parent"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         tools:progress="50"
         tools:secondaryProgress="20" />
@@ -17,9 +18,8 @@
         android:id="@+id/searchRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/search_refresh" />
+        app:layout_constraintTop_toTopOf="@+id/search_refresh" />
 
     <LinearLayout
         android:id="@+id/ll_search_history"

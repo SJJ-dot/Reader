@@ -4,14 +4,22 @@ import android.view.View
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import androidx.annotation.AnimRes
+import androidx.annotation.UiThread
 import com.sjianjun.reader.App
 
+@UiThread
 fun View.animFadeIn() {
-    animWith(android.R.anim.fade_in)
+    show()
+    alpha = 0f
+    animate().alpha(1f).setDuration(500).start()
 }
 
+@UiThread
 fun View.animFadeOut() {
-    animWith(android.R.anim.fade_out)
+    alpha = 1f
+    animate().alpha(0f).setDuration(500).withEndAction {
+        gone()
+    }.start()
 }
 
 fun View.animWith(@AnimRes res: Int, fillAfter: Boolean = true) {

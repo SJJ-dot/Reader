@@ -32,7 +32,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 class SearchFragment : BaseFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
@@ -51,7 +50,6 @@ class SearchFragment : BaseFragment() {
         deleteSearchHistoryActor = deleteSearchHistoryActor()
         queryActor = queryActor()
         queryHintActor = queryHintActor()
-        hideProgress()
         initData()
     }
 
@@ -75,6 +73,10 @@ class SearchFragment : BaseFragment() {
 
         if (searchKey?.isNotEmpty() == true) {
             searchView.setQuery(searchKey, true)
+        }
+
+        if (searchResult.value?.isNotEmpty() == true) {
+            searchView.clearFocus()
         }
     }
 
@@ -192,31 +194,27 @@ class SearchFragment : BaseFragment() {
                 job = launch {
                     withMain {
                         showProgress()
-                        search_refresh.progress = 0
+                        search_refresh?.progress = 0
                     }
                     DataManager.search(msg)?.collectLatest {
-                        search_refresh.progress = search_refresh.progress + 1
+                        search_refresh?.progress = search_refresh?.progress ?: 0 + 1
                         delay(300)
                         searchResult.postValue(it)
                     }
                     withMain {
-                        search_refresh.progress = search_refresh.max
+                        search_refresh?.progress = search_refresh?.max ?: 0
                         hideProgress()
                     }
                 }
             }
         }
 
-    private val showState = AtomicBoolean(true)
     private fun showProgress() {
-        if (showState.compareAndSet(false, true)) {
-            search_refresh?.animFadeIn()
-        }
+        search_refresh?.animFadeIn()
     }
+
     private fun hideProgress() {
-        if (showState.compareAndSet(true, false)) {
-            search_refresh?.animFadeOut()
-        }
+        search_refresh?.animFadeOut()
     }
 
     private fun deleteSearchHistoryActor() = lifecycleScope.actor<List<SearchHistory>>() {
