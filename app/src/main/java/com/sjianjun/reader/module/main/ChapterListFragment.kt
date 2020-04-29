@@ -91,9 +91,9 @@ class ChapterListFragment : BaseFragment() {
                 holder.itemView.text1.setTextColorRes(R.color.day_night_text_color_light)
             }
             if (c.isLoaded) {
-                holder.itemView.mark.setBackgroundColor(R.color.material_reader_green_A700.resColor())
+                holder.itemView.mark.setBackgroundColor(R.color.material_reader_green_A700.getColor())
             } else {
-                holder.itemView.mark.setBackgroundColor(R.color.material_reader_grey_500.resColor())
+                holder.itemView.mark.setBackgroundColor(R.color.material_reader_grey_500.getColor())
             }
             holder.itemView.setOnClickListener {
                 fragment.startActivity<BookReaderActivity>(

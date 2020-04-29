@@ -56,4 +56,7 @@ class Book {
 
     @Ignore
     var error: Throwable? = null
+
+    @Ignore
+    var startingError: Throwable? = null
 }
