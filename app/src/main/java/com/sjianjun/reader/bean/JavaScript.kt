@@ -46,7 +46,7 @@ data class JavaScript constructor(
     @Ignore
     val fieldsMap = ConcurrentHashMap<String, Any?>()
 
-    inline fun <reified T> getScriptField(fieldName: String): T? {
+    inline fun <reified T : Any> getScriptField(fieldName: String): T? {
         if (fieldsMap.contains(fieldName)) {
             val value = fieldsMap[fieldName]
             return if (value === FIELD_NULL_VALUE) {
@@ -60,6 +60,7 @@ data class JavaScript constructor(
             fieldsMap[fieldName] = value
             value as T?
         } catch (throwable: Throwable) {
+            fieldsMap[fieldName] = FIELD_NULL_VALUE
             null
         }
     }

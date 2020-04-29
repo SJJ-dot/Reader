@@ -4,6 +4,7 @@ package com.sjianjun.reader.repository
 
 import android.content.res.AssetManager.ACCESS_BUFFER
 import com.sjianjun.reader.App
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
@@ -66,11 +67,11 @@ object DataManager {
         withIo {
             val versionJson = versionInfo()
             val info = gson.fromJson<JsVersionInfo>(versionJson)!!
-            if (info.version >= globalConfig.javaScriptVersion) {
+            if (BuildConfig.DEBUG || info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
                         val javaScript = dao.getJavaScriptBySource(it.fileName)
-                        if (javaScript != null && javaScript.version >= it.version) {
+                        if (javaScript != null && (BuildConfig.DEBUG || javaScript.version >= it.version)) {
                             javaScript
                         } else {
                             val js = tryBlock { loadScript(it.fileName) }
