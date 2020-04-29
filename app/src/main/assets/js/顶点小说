@@ -1,5 +1,5 @@
+var baseUrl = "https://www.230book.com/";
 function search(http,query){
-    var baseUrl = "https://www.230book.com/";
     var map = new HashMap();
     map.put("searchkey",URLEncoder.encode(query,"gbk"))
     var html = http.post(baseUrl+"/modules/article/search.php",map);
