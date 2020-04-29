@@ -11,6 +11,7 @@ import com.sjianjun.reader.utils.withIo
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
+import java.util.concurrent.ConcurrentHashMap
 
 
 @Entity
@@ -38,6 +39,30 @@ data class JavaScript constructor(
 
     @JvmField
     var enable = true
+
+    @Ignore
+    val FIELD_NULL_VALUE = Any()
+
+    @Ignore
+    val fieldsMap = ConcurrentHashMap<String, Any?>()
+
+    inline fun <reified T> getScriptField(fieldName: String): T? {
+        if (fieldsMap.contains(fieldName)) {
+            val value = fieldsMap[fieldName]
+            return if (value === FIELD_NULL_VALUE) {
+                null
+            } else {
+                value as T
+            }
+        }
+        return try {
+            val value = execute<T>("$fieldName;") ?: FIELD_NULL_VALUE
+            fieldsMap[fieldName] = value
+            value as T?
+        } catch (throwable: Throwable) {
+            null
+        }
+    }
 
     @Ignore
     @JvmField

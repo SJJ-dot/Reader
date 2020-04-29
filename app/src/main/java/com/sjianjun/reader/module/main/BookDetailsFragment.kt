@@ -48,12 +48,12 @@ class BookDetailsFragment : BaseFragment() {
         initData()
     }
 
-    private fun refresh(bookUrl: String?) {
-        bookUrl ?: return
+    private fun refresh(book: Book?) {
+        book ?: return
         launch {
             detailsRefreshLayout?.isRefreshing = true
-            val qiDian = async { DataManager.updateOrInsertStarting(bookUrl) }
-            DataManager.reloadBookFromNet(bookUrl)
+            val qiDian = async { DataManager.updateOrInsertStarting(book.url) }
+            DataManager.reloadBookFromNet(book)
             qiDian.await()
             detailsRefreshLayout?.isRefreshing = false
         }
@@ -82,7 +82,7 @@ class BookDetailsFragment : BaseFragment() {
 
                 if (first) {
                     first = false
-                    refresh(it?.url)
+                    refresh(it)
                 }
                 initLatestChapter(it)
             }
@@ -102,7 +102,7 @@ class BookDetailsFragment : BaseFragment() {
 
     private fun initListener(book: Book?) {
         detailsRefreshLayout.setOnRefreshListener {
-            refresh(book?.url)
+            refresh(book)
         }
         reading.setOnClickListener {
             book ?: return@setOnClickListener

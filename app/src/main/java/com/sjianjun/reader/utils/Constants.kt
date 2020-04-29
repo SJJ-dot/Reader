@@ -25,9 +25,12 @@ const val CONTENT_TYPE_ANDROID = "application/vnd.android.package-archive"
  */
 const val JS_SOURCE_QI_DIAN = "起点中文网"
 const val JS_SOURCE = "JS_SOURCE"
+const val JS_FIELD_REQUEST_DELAY = "REQUEST_DELAY"
 
 
 const val URL_SCRIPT_BASE = "https://raw.githubusercontent.com/SJJ-dot/Reader/master/app/src/main/assets/js/"
 const val URL_RELEASE_INFO = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
 const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/latest"
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
+
+

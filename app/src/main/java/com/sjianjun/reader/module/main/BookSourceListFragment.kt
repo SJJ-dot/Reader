@@ -102,7 +102,7 @@ class BookSourceListFragment : BaseFragment() {
                 source_refresh.progress = 0
                 adapter.data.map {
                     async {
-                        DataManager.reloadBookFromNet(it.url)
+                        DataManager.reloadBookFromNet(it)
                         source_refresh.progress = source_refresh.progress + 1
                     }
                 }.awaitAll()

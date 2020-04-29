@@ -59,7 +59,7 @@ class BookshelfFragment : BaseFragment() {
                 sourceMap.values.map {
                     async {
                         it.apply { it.sortWith(bookComparator) }.forEach {
-                            val error = DataManager.reloadBookFromNet(it.url)
+                            val error = DataManager.reloadBookFromNet(it)
                             if (error != null) {
                                 bookSyncErrorMap[it.key] = error
                             } else {
