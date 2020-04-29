@@ -1,4 +1,5 @@
-var source = "古古小说网（55小说网）";
+//请求延迟的时间ms，如果时长小于0将会并发
+var REQUEST_DELAY = -1;
 var baseUrl = "http://www.55shuba.com";
 function search(http,query){
     var map = new HashMap();

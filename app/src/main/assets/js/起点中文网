@@ -1,3 +1,5 @@
+//请求延迟的时间ms，如果时长小于0将会并发
+var REQUEST_DELAY = -1;
 var baseUrl = "https://www.qidian.com/";
 function search(http,query){
     var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));

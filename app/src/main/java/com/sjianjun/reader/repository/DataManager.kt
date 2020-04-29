@@ -242,27 +242,27 @@ object DataManager {
                     record.startingStationBookSource
                 ).first() ?: return@withIo
                 Log.i("首发站点书籍：$startBook")
-                reloadBookFromNet(startBook.url)
+                reloadBookFromNet(startBook)
             } catch (t: Throwable) {
                 Log.e("首发站点书籍更新失败")
             }
         }
     }
 
-    suspend fun reloadBookFromNet(bookUrl: String): Throwable? {
+    suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null): Throwable? {
         return withIo {
-            val book = dao.getBookByUrl(bookUrl).first() ?: return@withIo MessageException("书籍查找失败")
-            val javaScript = dao.getJavaScriptBySource(book.source)
-                ?: return@withIo MessageException("未找到对应书籍书源")
+            book ?: return@withIo MessageException("书籍查找失败")
+            val script = javaScript ?: dao.getJavaScriptBySource(book.source)
+            ?: return@withIo MessageException("未找到对应书籍书源")
             book.isLoading = true
             dao.updateBook(book)
             try {
-                val bookDetails = javaScript.getDetails(book.url)!!
-                bookDetails.url = bookUrl
+                val bookDetails = script.getDetails(book.url)!!
+                bookDetails.url = book.url
 
                 val chapterList = bookDetails.chapterList!!
                 chapterList.forEachIndexed { index, chapter ->
-                    chapter.bookUrl = bookUrl
+                    chapter.bookUrl = book.url
                     chapter.index = index
                 }
                 book.isLoading = false
@@ -270,7 +270,7 @@ object DataManager {
                 Log.i(bookDetails)
                 return@withIo null
             } catch (e: Throwable) {
-                Log.i("${javaScript.source}加载书籍详情：$book", e)
+                Log.i("${script.source}加载书籍详情：$book", e)
                 book.isLoading = false
                 dao.updateBook(book)
                 return@withIo e
