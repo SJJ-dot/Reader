@@ -56,18 +56,35 @@ class BookshelfFragment : BaseFragment() {
 
                 startingStationRefreshActor.offer(bookList.values.toList())
                 book_shelf_refresh.progress = 0
-                sourceMap.values.map {
+                sourceMap.map {
                     async {
-                        it.apply { it.sortWith(bookComparator) }.forEach {
-                            val error = DataManager.reloadBookFromNet(it)
-                            if (error != null) {
-                                bookSyncErrorMap[it.key] = error
-                            } else {
-                                bookSyncErrorMap.remove(it.key)
+                        val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
+                            js.source == it.key
+                        }
+                        val delay = script?.getScriptField(JS_FIELD_REQUEST_DELAY) ?: 1000L
+                        if (delay < 0) {
+                            it.value.map {
+                                async {
+                                    val error = DataManager.reloadBookFromNet(it)
+                                    if (error != null) {
+                                        bookSyncErrorMap[it.key] = error
+                                    } else {
+                                        bookSyncErrorMap.remove(it.key)
+                                    }
+                                    book_shelf_refresh.progress = book_shelf_refresh.progress + 1
+                                }
+                            }.awaitAll()
+                        } else {
+                            it.value.apply { it.value.sortWith(bookComparator) }.forEach {
+                                val error = DataManager.reloadBookFromNet(it)
+                                if (error != null) {
+                                    bookSyncErrorMap[it.key] = error
+                                } else {
+                                    bookSyncErrorMap.remove(it.key)
+                                }
+                                book_shelf_refresh.progress = book_shelf_refresh.progress + 1
+                                delay(delay)
                             }
-                            book_shelf_refresh.progress = book_shelf_refresh.progress + 1
-                            delay(1000)
-                            it.key to error
                         }
                     }
                 }.awaitAll()
