@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 class SearchFragment : BaseFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
@@ -50,6 +51,7 @@ class SearchFragment : BaseFragment() {
         deleteSearchHistoryActor = deleteSearchHistoryActor()
         queryActor = queryActor()
         queryHintActor = queryHintActor()
+        hideProgress()
         initData()
     }
 
@@ -136,7 +138,7 @@ class SearchFragment : BaseFragment() {
         })
         searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
             if (hasFocus) {
-                search_refresh.animFadeOut()
+                hideProgress()
                 searchRecyclerView?.hide()
                 ll_search_history?.show()
                 v.showKeyboard()
@@ -144,8 +146,10 @@ class SearchFragment : BaseFragment() {
                 searchRecyclerView?.show()
                 ll_search_history?.hide()
                 v.hideKeyboard()
-                if (search_refresh.progress > 0 && search_refresh.progress < search_refresh.max) {
-                    search_refresh.animFadeIn()
+                search_refresh?.run {
+                    if (progress in 1 until max) {
+                        showProgress()
+                    }
                 }
             }
         }
@@ -187,7 +191,7 @@ class SearchFragment : BaseFragment() {
                 job?.cancel()
                 job = launch {
                     withMain {
-                        search_refresh.animFadeIn()
+                        showProgress()
                         search_refresh.progress = 0
                     }
                     DataManager.search(msg)?.collectLatest {
@@ -197,11 +201,23 @@ class SearchFragment : BaseFragment() {
                     }
                     withMain {
                         search_refresh.progress = search_refresh.max
-                        search_refresh.animFadeOut()
+                        hideProgress()
                     }
                 }
             }
         }
+
+    private val showState = AtomicBoolean(true)
+    private fun showProgress() {
+        if (showState.compareAndSet(false, true)) {
+            search_refresh?.animFadeIn()
+        }
+    }
+    private fun hideProgress() {
+        if (showState.compareAndSet(true, false)) {
+            search_refresh?.animFadeOut()
+        }
+    }
 
     private fun deleteSearchHistoryActor() = lifecycleScope.actor<List<SearchHistory>>() {
         for (msg in channel) {
