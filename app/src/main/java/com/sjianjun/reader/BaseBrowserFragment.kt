@@ -1,5 +1,6 @@
 package com.sjianjun.reader
 
+import android.os.Build
 import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -35,6 +36,7 @@ open class BaseBrowserFragment : BaseFragment() {
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true); //支持通过JS打开新窗口
         webSettings.setLoadsImagesAutomatically(true); //支持自动加载图片
         webSettings.setDefaultTextEncodingName("utf-8");//设置编码格式
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
     }
 
     override fun onStart() {

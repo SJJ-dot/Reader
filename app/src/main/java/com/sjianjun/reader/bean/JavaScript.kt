@@ -91,18 +91,28 @@ data class JavaScript constructor(
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
+        return execute(func.name, *params)
+    }
+
+    inline fun <reified T> execute(functionName: String, vararg params: String?): T? {
         return execute {
             val paramList = params.filter { it?.isNotEmpty() == true }
             val result = if (paramList.isEmpty()) {
-                eval("${func.name}(http)")
+                eval("${functionName}(http)")
             } else {
                 val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-                eval("${func.name}(http,${param})")
+                eval("${functionName}(http,${param})")
             }
             jsToJava<T>(result)
         }
     }
 
+
+    inline fun <reified T> execute(script: String): T? {
+        return execute {
+            jsToJava<T>(eval(script))
+        }
+    }
 
     inline fun <reified T> execute(runner: ContextWrap.() -> T?): T? {
         return js {

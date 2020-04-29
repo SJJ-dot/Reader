@@ -1,11 +1,5 @@
 {
-  "version": 18,
-  "files": [
-    "biquge5200",
-    "古古小说网（55小说网）",
-    "爱上中文6",
-    "大文学(大书包网)"
-  ],
+  "version": 19,
   "versions": [
     {
       "fileName": "biquge5200",
@@ -17,29 +11,29 @@
     },
     {
       "fileName": "爱上中文6",
-      "version": "1"
-    },
-    {
-      "fileName": "大文学(大书包网)",
       "version": "2"
     },
     {
+      "fileName": "大文学(大书包网)",
+      "version": "3"
+    },
+    {
       "fileName": "顶点小说",
-      "version": "1"
+      "version": "2"
     },
     {
       "fileName": "起点中文网",
-      "version": "9",
+      "version": "10",
       "starting": true,
       "priority": 100
     },
     {
       "fileName": "天籁小说",
-      "version": "2"
+      "version": "3"
     },
     {
       "fileName": "纵横中文网",
-      "version": "1",
+      "version": "2",
       "starting": true,
       "priority": 99
     }

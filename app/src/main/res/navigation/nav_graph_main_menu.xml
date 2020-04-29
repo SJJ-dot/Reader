@@ -40,13 +40,13 @@
     <fragment
         android:id="@+id/bookCityPageFragment"
         android:name="com.sjianjun.reader.module.bookcity.BookCityPageFragment"
-        android:label="书城页面"
+        android:label="书城"
         tools:layout="@layout/bookcity_fragment" />
 
     <fragment
         android:id="@+id/browserBookCityFragment"
         android:name="com.sjianjun.reader.module.bookcity.BrowserBookCityFragment"
-        android:label="浏览器书城"
+        android:label="书城"
         tools:layout="@layout/bookcity_fragment" />
 
 </navigation>
