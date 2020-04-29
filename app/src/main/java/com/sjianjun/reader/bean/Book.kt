@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
-@Entity(indices = [Index(value = ["author", "title", "source"], unique = true)])
+@Entity(indices = [Index(value = ["author", "title", "source"])])
 class Book {
     @JvmField
     @PrimaryKey
