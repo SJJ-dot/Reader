@@ -136,6 +136,7 @@ class SearchFragment : BaseFragment() {
         })
         searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
             if (hasFocus) {
+                search_refresh.animFadeOut()
                 searchRecyclerView?.hide()
                 ll_search_history?.show()
                 v.showKeyboard()
@@ -143,6 +144,9 @@ class SearchFragment : BaseFragment() {
                 searchRecyclerView?.show()
                 ll_search_history?.hide()
                 v.hideKeyboard()
+                if (search_refresh.progress > 0 && search_refresh.progress < search_refresh.max) {
+                    search_refresh.animFadeIn()
+                }
             }
         }
     }
