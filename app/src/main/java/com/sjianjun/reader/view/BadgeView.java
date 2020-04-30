@@ -114,9 +114,6 @@ public class BadgeView extends AppCompatTextView {
 
     public void setBadgeCount(int count) {
         setText(String.valueOf(count));
-        if (count == 0) {
-            setVisibility(GONE);
-        }
     }
 
     public void setHighlight(boolean highlight) {
