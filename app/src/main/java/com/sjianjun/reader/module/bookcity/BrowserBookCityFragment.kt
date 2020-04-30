@@ -2,14 +2,16 @@ package com.sjianjun.reader.module.bookcity
 
 import android.graphics.Bitmap
 import android.net.http.SslError
-import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.iterator
 import androidx.navigation.fragment.findNavController
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
@@ -18,32 +20,38 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JS_SOURCE
 import com.sjianjun.reader.utils.withMain
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
+import kotlin.math.min
 
 
 class BrowserBookCityFragment : BaseBrowserFragment() {
     private var javaScriptList: List<Pair<JavaScript, String>> = emptyList()
     private lateinit var source: String
+    private var webView: WebView? = null
+
     override fun getLayoutRes(): Int {
         return R.layout.bookcity_fragment_browser
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
-        initMenu()
-
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
+        if (webView == null) {
+            webView = WebView(context)
+            webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            browser_book_city_root.addView(webView, 0)
+        }
         onBackPressed = {
-            if (web_view.canGoBack()) {
-                web_view.goBack()
+            if (webView?.canGoBack() == true) {
+                webView?.goBack()
             } else {
                 findNavController().popBackStack()
             }
         }
 
-        initWebView(web_view)
+        source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
+        initMenu()
+
+        initWebView(webView)
         initData()
     }
 
@@ -86,19 +94,19 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     }
 
     private fun setTitle(title: CharSequence?) {
-        activity?.supportActionBar?.title = title ?: return
+        activity?.supportActionBar?.title = title?.substring(0, min(title.length,5)) ?: return
 //        activity?.supportActionBar?.hide()
     }
 
     private fun initData() {
         val sourceJs = javaScriptList.find { it.first.source == source }
         setTitle(sourceJs?.first?.source)
-        web_view.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
+        webView?.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
     }
 
-    private fun initWebView(webView: WebView) {
-        setWebView(web_view)
-        web_view.webViewClient = object : WebViewClient() {
+    private fun initWebView(webView: WebView?) {
+        initWebviewSetting(webView)
+        webView?.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
                 Log.i(url + " webView:${view}")
                 view.loadUrl(url)
@@ -137,7 +145,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 handler?.cancel()
             }
         }
-        webView.webChromeClient = object : WebChromeClient() {
+        webView?.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 Log.i("progress:${newProgress} webView:${view}")
             }

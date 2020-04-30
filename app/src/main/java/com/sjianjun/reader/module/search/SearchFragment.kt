@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -33,7 +34,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class SearchFragment : BaseFragment() {
+class SearchFragment : BaseAsyncFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
     private val searchHint = SearchHintAdapter()
@@ -43,8 +44,8 @@ class SearchFragment : BaseFragment() {
 
     override fun getLayoutRes() = R.layout.search_fragment_search
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
         setHasOptionsMenu(true)
         recycle_view_hint.adapter = searchHint
         deleteSearchHistoryActor = deleteSearchHistoryActor()

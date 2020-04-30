@@ -17,6 +17,7 @@
         <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
         <item name="navigationViewStyle">@style/Widget.Reader.NavigationView</item>
         <item name="materialButtonStyle">@style/Widget.Reader.Button</item>
+        <item name="asyncLoadViewLoadingStyle">@style/ProgressBar</item>
 
         <!--    textAppearance    -->
         <item name="textAppearanceSubtitle2">@style/textAppearanceSubtitle2</item>

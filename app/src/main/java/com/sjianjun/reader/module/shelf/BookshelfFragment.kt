@@ -8,9 +8,11 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.async.createAsyncLoadView
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
@@ -31,22 +33,106 @@ import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-class BookshelfFragment : BaseFragment() {
+class BookshelfFragment : BaseAsyncFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private val startingBookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
 
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
         startingStationRefreshActor = startingStationRefreshActor()
 
         setHasOptionsMenu(true)
-        adapter = Adapter(this)
+        adapter = Adapter(this@BookshelfFragment)
         book_shelf_recycle_view.adapter = adapter
+        initRefresh()
+        initItemTouch()
+        initData()
+    }
 
+    private fun initData() {
+        launch {
+            DataManager.getAllReadingBook().collectLatest {
+                //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
+                bookList.clear()
+                val bookNum = it.size
+                book_shelf_refresh.max = bookNum
+                it.asFlow().flatMapMerge { book ->
+                    combine(
+                        DataManager.getReadingRecord(book).map { record ->
+                            val id = record?.chapterUrl ?: return@map null
+                            DataManager.getChapterByUrl(id).first() to record
+                        },
+                        DataManager.getLastChapterByBookUrl(book.url),
+                        DataManager.getJavaScript(book.title, book.author)
+                    ) { readChapter, lastChapter, js ->
+                        book.record = readChapter?.second
+                        book.readChapter = readChapter?.first
+                        book.lastChapter = lastChapter
+                        book.javaScriptList = js
+
+                        val lastChapterIndex = book.lastChapter?.index ?: 0
+                        val readChapterIndex = book.readChapter?.index ?: 0
+                        book.unreadChapterCount = if (book.record?.isEnd == true) {
+                            lastChapterIndex - readChapterIndex
+                        } else {
+                            lastChapterIndex - readChapterIndex + 1
+                        }
+
+                        book.error = bookSyncErrorMap[book.key]
+                        book.startingError = startingBookSyncErrorMap[book.key]
+
+                        book
+                    }
+                }.mapNotNull { book ->
+                    bookList[book.key] = book
+                    if (bookList.size == bookNum) {
+                        bookList.values.sortedWith(bookComparator)
+                    } else {
+                        null
+                    }
+                }.flowIo().collectLatest { list ->
+                    adapter.data.clear()
+                    adapter.data.addAll(list)
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
+    private fun initItemTouch() {
+        val mItemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.Callback() {
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
+                return makeMovementFlags(0, ItemTouchHelper.LEFT)
+            }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                launch {
+                    val pos = viewHolder.adapterPosition
+                    val book = adapter.data.getOrNull(pos) ?: return@launch
+                    bookList.remove(book.key)
+                    adapter.data.remove(book)
+                    adapter.notifyItemRemoved(pos)
+                    DataManager.deleteBook(book)
+                }
+            }
+
+        })
+        mItemTouchHelper.attachToRecyclerView(book_shelf_recycle_view)
+    }
+
+    private fun initRefresh() {
         book_shelf_swipe_refresh.setOnRefreshListener {
             launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
@@ -92,82 +178,6 @@ class BookshelfFragment : BaseFragment() {
                 }.awaitAll()
                 withMain {
                     book_shelf_swipe_refresh?.isRefreshing = false
-                    adapter.notifyDataSetChanged()
-                }
-            }
-        }
-
-        val mItemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.Callback() {
-            override fun getMovementFlags(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder
-            ): Int {
-                return makeMovementFlags(0, ItemTouchHelper.LEFT)
-            }
-
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean = false
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                launch {
-                    val pos = viewHolder.adapterPosition
-                    val book = adapter.data.getOrNull(pos) ?: return@launch
-                    bookList.remove(book.key)
-                    adapter.data.remove(book)
-                    adapter.notifyItemRemoved(pos)
-                    DataManager.deleteBook(book)
-                }
-            }
-
-        })
-        mItemTouchHelper.attachToRecyclerView(book_shelf_recycle_view)
-
-        launch {
-            DataManager.getAllReadingBook().collectLatest {
-                //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
-                bookList.clear()
-                val bookNum = it.size
-                book_shelf_refresh.max = bookNum
-                it.asFlow().flatMapMerge { book ->
-                    combine(
-                        DataManager.getReadingRecord(book).map { record ->
-                            val id = record?.chapterUrl ?: return@map null
-                            DataManager.getChapterByUrl(id).first() to record
-                        },
-                        DataManager.getLastChapterByBookUrl(book.url),
-                        DataManager.getJavaScript(book.title, book.author)
-                    ) { readChapter, lastChapter, js ->
-                        book.record = readChapter?.second
-                        book.readChapter = readChapter?.first
-                        book.lastChapter = lastChapter
-                        book.javaScriptList = js
-
-                        val lastChapterIndex = book.lastChapter?.index ?: 0
-                        val readChapterIndex = book.readChapter?.index ?: 0
-                        book.unreadChapterCount = if (book.record?.isEnd == true) {
-                            lastChapterIndex - readChapterIndex
-                        } else {
-                            lastChapterIndex - readChapterIndex + 1
-                        }
-
-                        book.error = bookSyncErrorMap[book.key]
-                        book.startingError = startingBookSyncErrorMap[book.key]
-
-                        book
-                    }
-                }.mapNotNull { book ->
-                    bookList[book.key] = book
-                    if (bookList.size == bookNum) {
-                        bookList.values.sortedWith(bookComparator)
-                    } else {
-                        null
-                    }
-                }.flowIo().collectLatest { list ->
-                    adapter.data.clear()
-                    adapter.data.addAll(list)
                     adapter.notifyDataSetChanged()
                 }
             }
@@ -295,7 +305,9 @@ class BookshelfFragment : BaseFragment() {
                                 .init(
                                     "${error ?: startingError}\n" +
                                             "StackTrace:\n" +
-                                            android.util.Log.getStackTraceString(error ?: startingError)
+                                            android.util.Log.getStackTraceString(
+                                                error ?: startingError
+                                            )
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
 

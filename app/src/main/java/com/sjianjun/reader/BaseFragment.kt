@@ -18,9 +18,9 @@ import kotlinx.coroutines.*
 import sjj.alog.Log
 import kotlin.coroutines.CoroutineContext
 
-open class BaseFragment : DialogFragment() {
+abstract class BaseFragment : DialogFragment() {
 
-    var onBackPressed: (() -> Unit)? = null
+    open var onBackPressed: (() -> Unit)? = null
         set(value) {
             field = value
             activity?.onBackPressedDispatcher?.addCallback(owner = viewLifecycleOwner) {

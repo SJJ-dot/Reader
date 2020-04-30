@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.view.GravityCompat
 import androidx.navigation.fragment.findNavController
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
@@ -18,7 +19,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 
-class BookDetailsFragment : BaseFragment() {
+class BookDetailsFragment : BaseAsyncFragment() {
     private val bookTitle: String
         get() = arguments!!.getString(BOOK_TITLE)!!
 
@@ -26,9 +27,8 @@ class BookDetailsFragment : BaseFragment() {
         get() = arguments!!.getString(BOOK_AUTHOR)!!
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        setHasOptionsMenu(true)
+
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
 
         onBackPressed = {
             if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
@@ -44,7 +44,7 @@ class BookDetailsFragment : BaseFragment() {
                 BOOK_AUTHOR to bookAuthor
             ).show(childFragmentManager, "BookSourceListFragment")
         }
-
+        setHasOptionsMenu(true)
         initData()
     }
 
@@ -65,8 +65,6 @@ class BookDetailsFragment : BaseFragment() {
     }
 
     private fun initData() {
-
-
         childFragmentManager.beginTransaction()
             .replace(
                 R.id.chapter_list,

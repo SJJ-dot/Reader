@@ -6,6 +6,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import com.google.android.material.snackbar.Snackbar
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -20,10 +21,10 @@ import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.flow.collectLatest
 
-class BookScriptManagerFragment : BaseFragment() {
+class BookScriptManagerFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
         setHasOptionsMenu(true)
         base_url.setText(globalConfig.javaScriptBaseUrl)
         save_base_url.setOnClickListener {
@@ -35,10 +36,7 @@ class BookScriptManagerFragment : BaseFragment() {
                 globalConfig.javaScriptBaseUrl = url
             }
         }
-        val adapter =
-            Adapter(
-                this
-            )
+        val adapter = Adapter(this@BookScriptManagerFragment)
         recycle_view.adapter = adapter
         launch {
             DataManager.getAllJavaScript().collectLatest {
