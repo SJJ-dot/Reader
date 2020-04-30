@@ -46,6 +46,10 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         }
     }
 
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
+    }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_fragment_book_source_menu, menu)
     }

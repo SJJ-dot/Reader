@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import com.sjianjun.reader.utils.animFadeIn
+import sjj.alog.Log
 
 private const val ANIM_TIME = 500L
 
@@ -35,6 +36,7 @@ fun <T> T.inflateWithAsync(
         parent
     ) { view: View, _: Int, _: ViewGroup? ->
         lifecycle.addObserver(LifecycleHelper(this, {
+            Log.i("onLoadedView $this")
             if (attachToRoot && view.parent == null && parent != null) {
                 parent.addView(view)
                 onLoadedView(parent)

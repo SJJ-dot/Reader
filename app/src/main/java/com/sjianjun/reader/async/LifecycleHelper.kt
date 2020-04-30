@@ -26,7 +26,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onCreate() {
         if (createEnable.compareAndSet(true, false)) {
             onLoadedView(activity)
-            Log.i("onCreate")
+            Log.i("onCreate $activity")
             this.onCreate.invoke(activity)
             startEnable.lazySet(true)
             resumeEnable.lazySet(false)
@@ -41,7 +41,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onStart() {
         if (startEnable.compareAndSet(true, false)) {
             onCreate()
-            Log.i("onStart")
+            Log.i("onStart $activity")
             this.onStart.invoke(activity)
             createEnable.lazySet(false)
             resumeEnable.lazySet(true)
@@ -56,7 +56,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onResume() {
         if (resumeEnable.compareAndSet(true, false)) {
             onStart()
-            Log.i("onResume")
+            Log.i("onResume $activity")
             this.onResume.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(false)
@@ -71,7 +71,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onPause() {
         if (pauseEnable.compareAndSet(true, false)) {
             onResume()
-            Log.i("onPause")
+            Log.i("onPause $activity")
             this.onPause.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(false)
@@ -86,7 +86,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onStop() {
         if (stopEnable.compareAndSet(true, false)) {
             onPause()
-            Log.i("onStop")
+            Log.i("onStop $activity")
             this.onStop.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(true)
@@ -101,7 +101,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onDestroy() {
         if (destroyEnable.compareAndSet(true, false)) {
             onStop()
-            Log.i("onDestroy")
+            Log.i("onDestroy $activity")
             this.onDestroy.invoke(activity)
             createEnable.lazySet(true)
             startEnable.lazySet(false)

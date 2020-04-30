@@ -55,6 +55,10 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         initData()
     }
 
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
+    }
+
     private fun initMenu() {
         launchIo {
             val javaScriptList = DataManager.getAllJavaScript().first()

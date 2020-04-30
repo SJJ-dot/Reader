@@ -52,6 +52,10 @@ class BookshelfFragment : BaseAsyncFragment() {
         initData()
     }
 
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
+    }
+
     private fun initData() {
         launch {
             DataManager.getAllReadingBook().collectLatest {
