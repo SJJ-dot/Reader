@@ -206,8 +206,17 @@ class BookReaderActivity : BaseActivity() {
                 if (first) {
                     first = false
 
-                    val index = it.indexOfFirst { chapter ->
+                    var index = it.indexOfFirst { chapter ->
                         chapter.url == readingRecord.chapterUrl
+                    }
+                    if (index > -1) {
+                        if (readingRecord.isEnd && index < it.size - 1) {
+                            readingRecord.offest = 0
+                            index++
+                        }
+                        if (!it[index].isLoaded) {
+                            readingRecord.offest = 0
+                        }
                     }
                     //只加载本地的数据
                     val intRange = max(index - 1, 0)..min(index + 1, it.size - 1)
