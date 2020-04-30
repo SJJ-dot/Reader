@@ -1,5 +1,5 @@
 {
-  "version": 19,
+  "version": 20,
   "versions": [
     {
       "fileName": "biquge5200",
@@ -36,6 +36,14 @@
       "version": "2",
       "starting": true,
       "priority": 99
+    },
+    {
+      "fileName": "溜达小说",
+      "version": "1"
+    },
+    {
+      "fileName": "盗梦人小说",
+      "version": "1"
     }
   ],
   "inherit": true
