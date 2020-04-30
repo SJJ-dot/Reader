@@ -13,58 +13,70 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import sjj.alog.Log;
 
 public final class ParseTest {
     private static boolean test = false;
-    private static String source = "纵横中文网";
+    private static String source = "盗梦人小说";
+    private static String baseUrl = "http://www.cxbz958.com/";
 
     public static List<SearchResult> search(Http http, String query) throws Exception {
-        String baseUrl = "http://search.zongheng.com/";
-        String html = http.get(baseUrl + "s?keyword=" + URLEncoder.encode(query, "utf-8"));
+
+//        Map<String, String> queryMap = new HashMap<>();
+//        queryMap.put("searchkey", URLEncoder.encode(query, "utf-8"));
+//        String html = http.post(baseUrl + "search.aspx?bookname", queryMap);
+        String html = http.get(baseUrl + "s.php?ie=utf-8&q=" + URLEncoder.encode(query, "utf-8"));
+
         Document parse = Jsoup.parse(html, baseUrl);
-        Elements bookListEl = parse.select("div.search-tab > div.search-result-list.clearfix");
+        Elements bookListEl = parse.select(".bookbox");
         List<SearchResult> results = new ArrayList<>();
         for (int i = 0; i < bookListEl.size(); i++) {
             Element bookEl = bookListEl.get(i);
             SearchResult result = new SearchResult();
             result.source = source;
-            result.bookTitle = bookEl.select(".tit a").text();
-            result.bookUrl = bookEl.select(".tit a").get(0).absUrl("href");
-            result.bookAuthor = bookEl.select(".bookinfo a:nth-child(1)").text();
-            result.bookCover = bookEl.select(".imgbox img").get(0).absUrl("src");
-//            result.latestChapter = bookEl.select("> div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
+            result.bookTitle = bookEl.select("div.bookinfo > h4 > a").text();
+            result.bookUrl = bookEl.select("div.bookinfo > h4 > a").get(0).absUrl("href");
+            result.bookAuthor = bookEl.select("div.bookinfo > div.author").text().replace("作者：", "");
+            result.bookCover = bookEl.select("div.bookimg > a > img").get(0).absUrl("src");
+            result.latestChapter = bookEl.select("div.bookinfo > div.update > a").get(0).text();
             results.add(result);
         }
         return results;
     }
 
-    public static Book getBookDetails(Http http, String url) {
+    public static Book getBookDetails(Http http, String url) throws UnsupportedEncodingException {
         Document parse = Jsoup.parse(http.get(url), url);
         Book book = new Book();
         book.source = source;
         book.url = url;
-        book.title = parse.select("div.book-info > div.book-name").get(0).ownText();
-        book.author = parse.select("div.book-author > div.au-name > a").text();
-        book.intro = parse.select(".book-dec > p").text();
-        book.cover = parse.select("div.book-img.fl > img").get(0).absUrl("src");
+        book.title = parse.select("body > div.book > div.info > h2").get(0).text();
+        book.author = parse.select("body > div.book > div.info > div.small > span:nth-child(1)").text().replace("作者：", "");
+        book.intro = parse.select("body > div.book > div.info > div.intro").html();
+        book.cover = parse.select("body > div.book > div.info > div.cover > img").get(0).absUrl("src");
         List<Chapter> chapterList = new ArrayList<>();
 
-        String chapterListUrl = parse.select(".all-catalog").get(0).absUrl("href");
-        Document chapterListHtml = Jsoup.parse(http.get(chapterListUrl), chapterListUrl);
-        Elements chapterListEl = chapterListHtml.select("ul.chapter-list.clearfix a");
-        for (int i = 0; i < chapterListEl.size(); i++) {
-            Element chapterEl = chapterListEl.get(i);
+
+//        String chapterListUrl = parse.select("#newlist > div > strong > a").get(0).absUrl("href");
+//        Document chapterListHtml = Jsoup.parse(http.post(baseUrl+"ashx/zj.ashx",queryMap), url);
+        Elements chapterListEl = parse.select("body > div.listmain > dl > *");
+        for (int i = chapterListEl.size() - 1; i >= 0; i--) {
+            if (chapterListEl.get(i).tagName().equals("dt")) {
+                break;
+            }
+            Element chapterEl = chapterListEl.get(i).child(0);
             Chapter chapter = new Chapter();
             chapter.bookUrl = book.url;
             chapter.title = chapterEl.text();
             chapter.url = chapterEl.absUrl("href");
-            chapterList.add(chapter);
+            chapterList.add(0,chapter);
         }
         book.chapterList = chapterList;
         return book;
@@ -72,7 +84,7 @@ public final class ParseTest {
 
     public static String getBookChapterContent(Http http, String url) {
         String html = http.get(url);
-        return Jsoup.parse(html).select(".content").html();
+        return Jsoup.parse(html).select("#content").outerHtml();
     }
 
     public static <R> R js(Function<ContextWrap, R> function) {
@@ -83,7 +95,7 @@ public final class ParseTest {
         if (!test) {
             return;
         }
-        List<SearchResult> searchResults = search(HttpKt.getHttp(), "哈利波特");
+        List<SearchResult> searchResults = search(HttpKt.getHttp(), "诡秘之主");
         Log.e(searchResults);
         if (searchResults.isEmpty()) {
             return;
