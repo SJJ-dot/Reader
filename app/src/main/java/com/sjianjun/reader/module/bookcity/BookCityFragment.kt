@@ -10,6 +10,7 @@ import androidx.core.view.iterator
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
@@ -20,14 +21,14 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.bookcity_fragment.*
 import kotlinx.coroutines.flow.first
 
-class BookCityFragment : BaseFragment() {
+class BookCityFragment : BaseAsyncFragment() {
     lateinit var source: String
     lateinit var pageId: String
     private lateinit var adapter: Adapter
     private var javaScriptList: List<JavaScript> = emptyList()
     override fun getLayoutRes() = R.layout.bookcity_fragment
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
 
         source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
         pageId = arguments?.getString(PAGE_ID) ?: ""

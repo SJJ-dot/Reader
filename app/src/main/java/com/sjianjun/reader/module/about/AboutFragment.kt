@@ -6,6 +6,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
@@ -18,12 +19,12 @@ import kotlinx.android.synthetic.main.main_fragment_about.*
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 
-class AboutFragment : BaseFragment() {
+class AboutFragment : BaseAsyncFragment() {
     private val downloadUrl = URL_RELEASE_DEF
 
     override fun getLayoutRes() = R.layout.main_fragment_about
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override val onCreate: BaseAsyncFragment.() -> Unit = {
         setHasOptionsMenu(true)
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {

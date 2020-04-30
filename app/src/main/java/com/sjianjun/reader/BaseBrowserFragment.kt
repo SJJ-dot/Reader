@@ -5,10 +5,10 @@ import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
 
-open class BaseBrowserFragment : BaseFragment() {
+abstract class BaseBrowserFragment : BaseAsyncFragment() {
     private var webView: WebView? = null
-    protected fun setWebView(webView: WebView) {
-        this.webView = webView
+    protected fun initWebviewSetting(webView: WebView?) {
+        this.webView = webView ?: return
 
 //声明WebSettings子类
         val webSettings = webView.getSettings();

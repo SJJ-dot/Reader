@@ -1,25 +1,34 @@
 package com.sjianjun.reader.utils
 
 import android.view.View
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
+import android.view.animation.*
 import androidx.annotation.AnimRes
 import androidx.annotation.UiThread
 import com.sjianjun.reader.App
 
+private val interpolator = AccelerateInterpolator()
+
 @UiThread
-fun View.animFadeIn() {
+fun View.animFadeIn(time: Long = 500) {
     show()
     alpha = 0f
-    animate().alpha(1f).setDuration(500).start()
+    animate()
+        .alpha(1f)
+        .setDuration(time)
+        .setInterpolator(interpolator)
+        .start()
 }
 
 @UiThread
-fun View.animFadeOut() {
+fun View.animFadeOut(time: Long = 500) {
     alpha = 1f
-    animate().alpha(0f).setDuration(500).withEndAction {
-        gone()
-    }.start()
+    animate()
+        .alpha(0f)
+        .setDuration(time)
+        .setInterpolator(interpolator)
+        .withEndAction {
+            gone()
+        }.start()
 }
 
 fun View.animWith(@AnimRes res: Int, fillAfter: Boolean = true) {
