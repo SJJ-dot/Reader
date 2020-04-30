@@ -42,6 +42,10 @@ class BookCityFragment : BaseAsyncFragment() {
         initData()
     }
 
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
+    }
+
     private fun initMenu() {
         launch {
             javaScriptList = DataManager.getAllSupportBookcityJavaScript().first()

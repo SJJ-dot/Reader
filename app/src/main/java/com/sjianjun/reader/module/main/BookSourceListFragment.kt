@@ -98,15 +98,11 @@ class BookSourceListFragment : BaseFragment() {
             launch {
                 swipe_refresh.isRefreshing = false
                 swipe_refresh.isEnabled = false
-                source_refresh.animFadeIn()
-                source_refresh.progress = 0
                 adapter.data.map {
                     async {
                         DataManager.reloadBookFromNet(it)
-                        source_refresh.progress = source_refresh.progress + 1
                     }
                 }.awaitAll()
-                source_refresh.animFadeOut()
                 swipe_refresh.isEnabled = true
             }
         }

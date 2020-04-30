@@ -48,6 +48,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
         initData()
     }
 
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
+    }
+
     private fun refresh(book: Book?) {
         book ?: return
         launch {

@@ -33,6 +33,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import sjj.alog.Log
+import java.util.concurrent.atomic.AtomicInteger
 
 class SearchFragment : BaseAsyncFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
@@ -52,6 +54,10 @@ class SearchFragment : BaseAsyncFragment() {
         queryActor = queryActor()
         queryHintActor = queryHintActor()
         initData()
+    }
+
+    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+        setHasOptionsMenu(false)
     }
 
     private fun initData() {
@@ -88,6 +94,8 @@ class SearchFragment : BaseAsyncFragment() {
     }
 
     private fun initSearchHistory(searchView: SearchView) {
+        Log.i("view is null ${tfl_search_history == null}")
+        tfl_search_history ?: return
         launch {
             DataManager.getAllSearchHistory().collectLatest {
                 tfl_search_history.removeAllViews()
@@ -159,16 +167,19 @@ class SearchFragment : BaseAsyncFragment() {
     }
 
     private fun initSearchResultList(searchView: SearchView) {
-        searchRecyclerView.layoutManager = LinearLayoutManager(context)
-        val resultBookAdapter = SearchResultBookAdapter(this)
-        resultBookAdapter.setHasStableIds(true)
-        searchRecyclerView.adapter = resultBookAdapter
-        searchResult.observe(viewLifecycleOwner, Observer {
-            if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
-                resultBookAdapter.data = it
-                resultBookAdapter.notifyDataSetChanged()
-            }
-        })
+        searchRecyclerView?.apply {
+            searchRecyclerView?.layoutManager = LinearLayoutManager(context)
+            val resultBookAdapter = SearchResultBookAdapter(this@SearchFragment)
+            resultBookAdapter.setHasStableIds(true)
+            searchRecyclerView.adapter = resultBookAdapter
+            searchResult.observe(viewLifecycleOwner, Observer {
+                if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
+                    resultBookAdapter.data = it
+                    resultBookAdapter.notifyDataSetChanged()
+                }
+            })
+        }
+
     }
 
     //宜搜快速提示
@@ -197,8 +208,9 @@ class SearchFragment : BaseAsyncFragment() {
                         showProgress()
                         search_refresh?.progress = 0
                     }
+                    val count = AtomicInteger()
                     DataManager.search(msg)?.collectLatest {
-                        search_refresh?.progress = search_refresh?.progress ?: 0 + 1
+                        search_refresh?.progress = count.incrementAndGet()
                         delay(300)
                         searchResult.postValue(it)
                     }
