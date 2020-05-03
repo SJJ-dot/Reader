@@ -6,6 +6,7 @@
 
     <style name="textAppearanceSubtitle2" parent="TextAppearance.MaterialComponents.Subtitle2" />
 
+
     <style name="Widget.Reader.Button" parent="@style/Widget.MaterialComponents.Button">
         <item name="android:textColor">@color/material_reader_white</item>
         <item name="android:textSize">22sp</item>
@@ -14,8 +15,10 @@
 
     </style>
 
+    <style name="dialog_button" parent="TextAppearance.MaterialComponents.Headline5" />
     <style name="dialog_style" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="materialButtonStyle">@style/dialog_button</item>
     </style>
 
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">

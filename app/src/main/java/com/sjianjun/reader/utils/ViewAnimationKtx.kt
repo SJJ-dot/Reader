@@ -17,6 +17,7 @@ fun View.animFadeIn(time: Long = 500) {
         .setDuration(time)
         .setInterpolator(interpolator)
         .start()
+    android.R.anim.fade_in
 }
 
 @UiThread
