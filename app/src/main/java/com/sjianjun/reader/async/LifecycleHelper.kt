@@ -3,8 +3,14 @@ package com.sjianjun.reader.async
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import sjj.alog.Config
 import sjj.alog.Log
+import sjj.alog.Logger
 import java.util.concurrent.atomic.AtomicBoolean
+
+private val logger  by lazy { Logger(Config().apply {
+    consolePrintEnable = false
+}) }
 
 class LifecycleHelper<T>(private val activity: T,
                          private val onLoadedView: T.() -> Unit = {},
@@ -26,7 +32,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onCreate() {
         if (createEnable.compareAndSet(true, false)) {
             onLoadedView(activity)
-            Log.i("onCreate $activity")
+            logger.i("onCreate $activity")
             this.onCreate.invoke(activity)
             startEnable.lazySet(true)
             resumeEnable.lazySet(false)
@@ -41,7 +47,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onStart() {
         if (startEnable.compareAndSet(true, false)) {
             onCreate()
-            Log.i("onStart $activity")
+            logger.i("onStart $activity")
             this.onStart.invoke(activity)
             createEnable.lazySet(false)
             resumeEnable.lazySet(true)
@@ -56,7 +62,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onResume() {
         if (resumeEnable.compareAndSet(true, false)) {
             onStart()
-            Log.i("onResume $activity")
+            logger.i("onResume $activity")
             this.onResume.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(false)
@@ -71,7 +77,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onPause() {
         if (pauseEnable.compareAndSet(true, false)) {
             onResume()
-            Log.i("onPause $activity")
+            logger.i("onPause $activity")
             this.onPause.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(false)
@@ -86,7 +92,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onStop() {
         if (stopEnable.compareAndSet(true, false)) {
             onPause()
-            Log.i("onStop $activity")
+            logger.i("onStop $activity")
             this.onStop.invoke(activity)
             createEnable.lazySet(false)
             startEnable.lazySet(true)
@@ -101,7 +107,7 @@ class LifecycleHelper<T>(private val activity: T,
     fun onDestroy() {
         if (destroyEnable.compareAndSet(true, false)) {
             onStop()
-            Log.i("onDestroy $activity")
+            logger.i("onDestroy $activity")
             this.onDestroy.invoke(activity)
             createEnable.lazySet(true)
             startEnable.lazySet(false)

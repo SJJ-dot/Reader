@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.shelf
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
@@ -48,7 +49,6 @@ class BookshelfFragment : BaseAsyncFragment() {
         adapter = Adapter(this@BookshelfFragment)
         book_shelf_recycle_view.adapter = adapter
         initRefresh()
-        initItemTouch()
         initData()
     }
 
@@ -106,35 +106,6 @@ class BookshelfFragment : BaseAsyncFragment() {
         }
     }
 
-    private fun initItemTouch() {
-        val mItemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.Callback() {
-            override fun getMovementFlags(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder
-            ): Int {
-                return makeMovementFlags(0, ItemTouchHelper.LEFT)
-            }
-
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean = false
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                launch {
-                    val pos = viewHolder.adapterPosition
-                    val book = adapter.data.getOrNull(pos) ?: return@launch
-                    bookList.remove(book.key)
-                    adapter.data.remove(book)
-                    adapter.notifyItemRemoved(pos)
-                    DataManager.deleteBook(book)
-                }
-            }
-
-        })
-        mItemTouchHelper.attachToRecyclerView(book_shelf_recycle_view)
-    }
 
     private fun initRefresh() {
         book_shelf_swipe_refresh.setOnRefreshListener {
@@ -352,6 +323,20 @@ class BookshelfFragment : BaseAsyncFragment() {
 
                 setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
+                }
+
+                setOnLongClickListener {
+                    AlertDialog.Builder(context!!)
+                        .setTitle("确认删除")
+                        .setMessage("确定要删除《${book.title}》吗?")
+                        .setPositiveButton("删除") { _, _ ->
+                            fragment.bookList.remove(book.key)
+                            data.removeAt(position)
+                            notifyItemRemoved(position)
+                            fragment.launchIo { DataManager.deleteBook(book) }
+                        }
+                        .show()
+                    true
                 }
             }
 

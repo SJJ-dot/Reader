@@ -21,6 +21,8 @@
 
         <!--    textAppearance    -->
         <item name="textAppearanceSubtitle2">@style/textAppearanceSubtitle2</item>
+
+        <item name="alertDialogTheme">@style/dialog_style</item>
     </style>
 
 </resources>

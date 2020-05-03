@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.main
 
 import android.os.Bundle
 import android.view.View
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseFragment
@@ -35,42 +36,6 @@ class BookSourceListFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recycle_view.adapter = adapter
-
-        val mItemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.Callback() {
-            override fun getMovementFlags(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder
-            ): Int {
-                if (adapter.data.size > 1) {
-                    return makeMovementFlags(0, ItemTouchHelper.LEFT)
-                }
-                return makeMovementFlags(0, 0)
-            }
-
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean = false
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val adapterPosition = viewHolder.adapterPosition
-                launch {
-                    val book = adapter.data.getOrNull(adapterPosition)
-                    val success = DataManager.deleteBookByUrl(book ?: return@launch)
-                    if (success == false) {
-                        toast("删除失败")
-                    } else {
-                        val index = adapter.data.indexOf(book)
-                        if (index != -1) {
-                            adapter.data.removeAt(index)
-                            adapter.notifyItemRemoved(index)
-                        }
-                    }
-                }
-            }
-        })
-        mItemTouchHelper.attachToRecyclerView(recycle_view)
 
         launch {
             DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor)
@@ -139,6 +104,24 @@ class BookSourceListFragment : BaseFragment() {
                         fragment.dismissAllowingStateLoss()
                     }
 
+                }
+                setOnLongClickListener {
+                    AlertDialog.Builder(context!!)
+                        .setTitle("确认删除")
+                        .setMessage("确定要删除《${book.title}》吗?")
+                        .setPositiveButton("删除") { _, _ ->
+                            fragment.launch {
+                                val success = DataManager.deleteBookByUrl(book)
+                                if (success == false) {
+                                    toast("删除失败")
+                                } else {
+                                    data.removeAt(position)
+                                    notifyItemRemoved(position)
+                                }
+                            }
+                        }
+                        .show()
+                    true
                 }
             }
         }

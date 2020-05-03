@@ -1,9 +1,9 @@
 package com.sjianjun.reader.module.update
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat.startActivity
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
