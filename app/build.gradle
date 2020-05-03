@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-android-extensions'
 
 def shortHash = 'git log -1 --pretty=%h'.execute().text.trim().toUpperCase()
 def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger()
@@ -48,6 +48,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
+            manifestPlaceholders = [app_name: "DEBUG"]
         }
     }
     compileOptions {

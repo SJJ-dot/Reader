@@ -9,16 +9,19 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_LOGS"
+    <uses-permission
+        android:name="android.permission.READ_LOGS"
         tools:ignore="ProtectedPermissions" />
 
     <application
         android:name=".App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_xue_xi"
-        android:label="@string/app_name"
+        android:label="${app_name}"
         android:theme="@style/AppTheme.DayNight"
-        android:usesCleartextTraffic="true">
+        android:fullBackupOnly="true"
+        android:usesCleartextTraffic="true"
+        tools:replace="android:label">
         <activity android:name=".module.script.EditJavaScriptActivity" />
         <activity
             android:name=".module.reader.activity.BookReaderActivity"
