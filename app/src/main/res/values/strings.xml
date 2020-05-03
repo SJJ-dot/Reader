@@ -1,6 +1,4 @@
 <resources>
-    <string name="app_name">学习</string>
-
     <string name="about_app">声明：\n本项目为研究学习用途，禁止他人擅自应用于商业行为。\n应用内容均来自网络，如果您认为应用内容侵犯了您网站的权利请通过邮箱联系通知。\n欢迎前往github提交建议。\n<a href="mailto:978622005@qq.com">邮箱：978622005@qq.com</a>\n<a href="%1$s">项目地址：%1$s</a></string>
 
 </resources>
