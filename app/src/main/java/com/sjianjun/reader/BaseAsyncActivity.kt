@@ -6,7 +6,8 @@ import com.sjianjun.reader.async.asyncInflateRequest
 import com.sjianjun.reader.async.inflateWithLoading
 
 abstract class BaseAsyncActivity : BaseActivity() {
-    final override fun onCreate(savedInstanceState: Bundle?) {
+    @Deprecated("should use layoutRes and onLoadedView field", ReplaceWith("override val onLoadedView = ..."))
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val view = asyncInflateRequest(layoutRes).apply {
             onLoadedView = this@BaseAsyncActivity.onLoadedView
@@ -31,27 +32,27 @@ abstract class BaseAsyncActivity : BaseActivity() {
     open val onStop: () -> Unit = {}
     open val onDestroy: () -> Unit = {}
 
-    @Deprecated("should use or onStart field", ReplaceWith("override val onStart = ..."))
+    @Deprecated("should use onStart field", ReplaceWith("override val onStart = ..."))
     override fun onStart() {
         super.onStart()
     }
 
-    @Deprecated("should use or onResume field", ReplaceWith("override val onResume = ..."))
+    @Deprecated("should use onResume field", ReplaceWith("override val onResume = ..."))
     override fun onResume() {
         super.onResume()
     }
 
-    @Deprecated("should use or onPause field", ReplaceWith("override val onPause = ..."))
+    @Deprecated("should use onPause field", ReplaceWith("override val onPause = ..."))
     override fun onPause() {
         super.onPause()
     }
 
-    @Deprecated("should use or onStop field", ReplaceWith("override val onStop = ..."))
+    @Deprecated("should use onStop field", ReplaceWith("override val onStop = ..."))
     override fun onStop() {
         super.onStop()
     }
 
-    @Deprecated("should use or onDestroy field", ReplaceWith("override val onDestroy = ..."))
+    @Deprecated("should use onDestroy field", ReplaceWith("override val onDestroy = ..."))
     override fun onDestroy() {
         super.onDestroy()
     }

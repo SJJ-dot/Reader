@@ -3,8 +3,11 @@
 
     <style name="AppTheme.DayNight" parent="AppTheme" />
 
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Splash" parent="AppTheme.DayNight">
+        <item name="android:windowBackground">@color/transparent</item>
+    </style>
 
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!--    设置窗口背景    -->
         <item name="android:colorBackground">@color/material_reader_blueGrey_50</item>
         <!--System/Platform attributes-->
@@ -24,5 +27,6 @@
 
         <item name="alertDialogTheme">@style/dialog_style</item>
     </style>
+
 
 </resources>

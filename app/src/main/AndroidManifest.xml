@@ -16,10 +16,10 @@
     <application
         android:name=".App"
         android:allowBackup="true"
+        android:fullBackupOnly="true"
         android:icon="@mipmap/ic_xue_xi"
         android:label="${app_name}"
         android:theme="@style/AppTheme.DayNight"
-        android:fullBackupOnly="true"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity android:name=".module.script.EditJavaScriptActivity" />
