@@ -2,19 +2,20 @@ package com.sjianjun.reader.module.main
 
 import android.Manifest
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatDelegate.*
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
-import androidx.navigation.Navigation
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.async.inflateWithAsync
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.BookCityTest
@@ -23,37 +24,49 @@ import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
-import sjj.alog.Log
 
 class MainActivity : BaseActivity() {
 
-    private lateinit var navController: NavController
-    private lateinit var appBarConfiguration: AppBarConfiguration
+    private var navController: NavController? = null
+    private var appBarConfiguration: AppBarConfiguration? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        inflateWithAsync(R.layout.activity_main, onCreate = {
+            var navHostFragment: NavHostFragment? =
+                supportFragmentManager.findFragmentById(R.id.nav_host_fragment_main) as? NavHostFragment
+            if (navHostFragment == null) {
+                LayoutInflater.from(this)
+                    .inflate(R.layout.main_nav_host_fragment, nav_host_fragment_container)
+                navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host_fragment_main) as NavHostFragment
+            }
 
-        setSupportActionBar(toolbar)
+            setSupportActionBar(toolbar)
 
-        navController = Navigation.findNavController(this, R.id.nav_host_fragment_main)
-        appBarConfiguration = AppBarConfiguration.Builder(navController.graph)
-            .setOpenableLayout(drawer_layout)
-            .build()
+            navController = navHostFragment.navController
+            appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
+                .setOpenableLayout(drawer_layout)
+                .build()
 
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
-        NavigationUI.setupWithNavController(nav_ui, navController)
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.bookDetailsFragment -> {
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                }
-                else -> {
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+            NavigationUI.setupActionBarWithNavController(
+                this,
+                navController!!,
+                appBarConfiguration!!
+            )
+            NavigationUI.setupWithNavController(nav_ui, navController!!)
+            navController!!.addOnDestinationChangedListener { _, destination, _ ->
+                when (destination.id) {
+                    R.id.bookDetailsFragment -> {
+                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    }
+                    else -> {
+                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                    }
                 }
             }
-        }
 
-        initDrawerMenuWidget()
+            initDrawerMenuWidget()
+        })
 
         PermissionUtil.requestPermissions(
             this,
@@ -104,6 +117,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
+        val navController = navController ?: return super.onSupportNavigateUp()
+        val appBarConfiguration = appBarConfiguration ?: return super.onSupportNavigateUp()
         return NavigationUI.navigateUp(
             navController,
             appBarConfiguration
