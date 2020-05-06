@@ -1,21 +1,19 @@
 package com.sjianjun.reader.module.main
 
 import android.Manifest
-import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatDelegate.*
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
-import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
-import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.async.inflateWithAsync
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.BookCityTest
@@ -25,49 +23,44 @@ import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 
-class MainActivity : BaseActivity() {
+class MainActivity : BaseAsyncActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        inflateWithAsync(R.layout.activity_main, onCreate = {
-            var navHostFragment: NavHostFragment? =
-                supportFragmentManager.findFragmentById(R.id.nav_host_fragment_main) as? NavHostFragment
-            if (navHostFragment == null) {
-                LayoutInflater.from(this)
-                    .inflate(R.layout.main_nav_host_fragment, nav_host_fragment_container)
-                navHostFragment = supportFragmentManager
-                    .findFragmentById(R.id.nav_host_fragment_main) as NavHostFragment
-            }
+    override val layoutRes: Int = R.layout.activity_main
+    override val onLoadedView: BaseAsyncActivity.(View) -> Unit = {
 
-            setSupportActionBar(toolbar)
+        host_fragment_view_stub.inflate()
+        drawer_content.requestApplyInsets()
 
-            navController = navHostFragment.navController
-            appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
-                .setOpenableLayout(drawer_layout)
-                .build()
+        setSupportActionBar(toolbar)
 
-            NavigationUI.setupActionBarWithNavController(
-                this,
-                navController!!,
-                appBarConfiguration!!
-            )
-            NavigationUI.setupWithNavController(nav_ui, navController!!)
-            navController!!.addOnDestinationChangedListener { _, destination, _ ->
-                when (destination.id) {
-                    R.id.bookDetailsFragment -> {
-                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                    }
-                    else -> {
-                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                    }
+        navController = findNavController(R.id.nav_host_fragment_main)
+        appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
+            .setOpenableLayout(drawer_layout)
+            .build()
+
+        NavigationUI.setupActionBarWithNavController(
+            this,
+            navController!!,
+            appBarConfiguration!!
+        )
+        NavigationUI.setupWithNavController(nav_ui, navController!!)
+        navController!!.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.bookDetailsFragment -> {
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                }
+                else -> {
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
                 }
             }
+        }
 
-            initDrawerMenuWidget()
-        })
+        initDrawerMenuWidget()
+    }
 
+    override val onCreate: BaseAsyncActivity.() -> Unit = {
         PermissionUtil.requestPermissions(
             this,
             arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -85,7 +78,6 @@ class MainActivity : BaseActivity() {
             ParseTest.test()
             BookCityTest.test()
         }
-
     }
 
     private fun initDrawerMenuWidget() {

@@ -8,6 +8,7 @@
     android:fitsSystemWindows="true">
 
     <LinearLayout
+        android:id="@+id/drawer_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -26,10 +27,11 @@
                 app:popupTheme="@style/AppTheme.PopupOverlay" />
         </com.google.android.material.appbar.AppBarLayout>
 
-        <FrameLayout
-            android:id="@+id/nav_host_fragment_container"
+        <ViewStub
+            android:id="@+id/host_fragment_view_stub"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout="@layout/main_nav_host_fragment" />
 
     </LinearLayout>
 
