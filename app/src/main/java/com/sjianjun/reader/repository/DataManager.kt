@@ -171,7 +171,7 @@ object DataManager {
             allJavaScript.asFlow().flatMapMerge {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
                 flow<List<SearchResult>> {
-                    val search = it.search(query)
+                    val search = tryBlock { it.search(query) }
                     if (search != null) {
                         emit(search)
                         Log.i("search $search")
@@ -203,6 +203,15 @@ object DataManager {
     suspend fun getStartingBook(book: Book, javaScript: JavaScript? = null): Book? {
         return withIo {
             if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
+                //可能存在之前本地没有首发站书源，设置为null之后的情况
+                if (book.record?.startingStationBookSource?.isEmpty() == true ||
+                    book.record?.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY
+                ) {
+                   dao.getReadingRecord(book.title, book.author)?.let {
+                       it.startingStationBookSource = javaScript.source
+                       dao.insertReadingRecord(it)
+                   }
+                }
                 return@withIo book
             }
             val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo null
@@ -212,6 +221,7 @@ object DataManager {
 
             if (record.startingStationBookSource.isBlank()) {
                 //到官方的网站查询并把书籍插入到本地数据库
+                var error = false
                 val startingBook = dao.getAllStartingJavaScript().map {
                     async {
                         var startingBook = dao.getBookByTitleAuthorAndSource(
@@ -226,7 +236,21 @@ object DataManager {
                         }
                         startingBook
                     }
-                }.find { it.await() != null }?.await() ?: return@withIo null
+                }.find {
+                    try {
+                        it.await() != null
+                    } catch (e: Exception) {
+                        error = true
+                        false
+                    }
+                }?.await()
+                if (startingBook == null) {
+                    if (!error) {//只有在搜索没有发生错误的时候才保存
+                        record.startingStationBookSource = STARTING_STATION_BOOK_SOURCE_EMPTY
+                        dao.insertReadingRecord(record)
+                    }
+                    return@withIo null
+                }
                 try {
                     dao.insertBook(startingBook)
                 } catch (error: Throwable) {
@@ -235,6 +259,10 @@ object DataManager {
                 record.startingStationBookSource = startingBook.source
                 dao.insertReadingRecord(record)
             }
+            if (record.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY) {
+                return@withIo null
+            }
+
             return@withIo dao.getBookByTitleAuthorAndSource(
                 book.title,
                 book.author,
