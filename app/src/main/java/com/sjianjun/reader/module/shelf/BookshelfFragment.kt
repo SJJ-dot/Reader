@@ -1,19 +1,18 @@
 package com.sjianjun.reader.module.shelf
 
 import android.content.res.ColorStateList
-import android.os.Bundle
-import android.view.*
+import android.view.Gravity
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
-import com.sjianjun.reader.async.createAsyncLoadView
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
@@ -31,6 +30,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -165,19 +165,27 @@ class BookshelfFragment : BaseAsyncFragment() {
                 showProgressBar()
                 book_shelf_refresh?.secondaryProgress = 0
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
-                msg.mapNotNull {
-                    val bookScript = it.javaScriptList?.find { script ->
-                        script.source == it.source
+                val start = System.currentTimeMillis()
+                msg.map {
+                    async {
+                        val bookScript = it.javaScriptList?.find { script ->
+                            script.source == it.source
+                        }
+                        val book = DataManager.getStartingBook(it, bookScript)
+                        if (book == it) {
+                            Log.e(it)
+                            null
+                        } else {
+                            val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
+                            delay(delay)
+                            book
+                        }
                     }
-                    val book = DataManager.getStartingBook(it, bookScript)
-                    val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
-                    delay(delay)
-                    book
-                }.forEach {
+                }.awaitAll().filterNotNull().forEach {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
                     list.add(it)
                 }
-
+                Log.e("加载起点书籍 ${System.currentTimeMillis() - start}")
                 val count = AtomicInteger()
                 sourceMap.forEach { entry ->
                     val javaScript = DataManager.getJavaScript(entry.key)

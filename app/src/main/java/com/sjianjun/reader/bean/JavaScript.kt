@@ -65,6 +65,8 @@ data class JavaScript constructor(
         }
     }
 
+
+
     @Ignore
     @JvmField
     var headerScript = """
@@ -154,12 +156,7 @@ data class JavaScript constructor(
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
-            try {
-                execute<List<SearchResult>>(Func.search, query)
-            } catch (t: Throwable) {
-                Log.i("$source 搜索出错：$query", t)
-                null
-            }
+            execute<List<SearchResult>>(Func.search, query)
         }
     }
 
@@ -202,6 +199,36 @@ data class JavaScript constructor(
                 }
             }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JavaScript
+
+        if (source != other.source) return false
+        if (js != other.js) return false
+        if (version != other.version) return false
+        if (isStartingStation != other.isStartingStation) return false
+        if (priority != other.priority) return false
+        if (supportBookCity != other.supportBookCity) return false
+        if (enable != other.enable) return false
+        if (fieldsMap != other.fieldsMap) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = source.hashCode()
+        result = 31 * result + js.hashCode()
+        result = 31 * result + version
+        result = 31 * result + isStartingStation.hashCode()
+        result = 31 * result + priority
+        result = 31 * result + supportBookCity.hashCode()
+        result = 31 * result + enable.hashCode()
+        result = 31 * result + fieldsMap.hashCode()
+        return result
     }
 
     enum class Func {

@@ -33,4 +33,10 @@ const val URL_RELEASE_INFO = "https://api.github.com/repos/SJJ-dot/Reader/releas
 const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/latest"
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
 
+/**
+ * 未找到首发站点
+ */
+const val STARTING_STATION_BOOK_SOURCE_EMPTY = "STARTING_STATION_BOOK_SOURCE_NOT_FOUND"
+
+
 

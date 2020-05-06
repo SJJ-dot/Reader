@@ -31,10 +31,6 @@ class Book {
     @JvmField
     var chapterList: List<Chapter>? = null
 
-    override fun toString(): String {
-        return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
-    }
-
     @Ignore
     var lastChapter: Chapter? = null
 
@@ -59,4 +55,54 @@ class Book {
 
     @Ignore
     var startingError: Throwable? = null
+
+    override fun toString(): String {
+        return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Book
+
+        if (url != other.url) return false
+        if (source != other.source) return false
+        if (title != other.title) return false
+        if (author != other.author) return false
+        if (intro != other.intro) return false
+        if (cover != other.cover) return false
+        if (isLoading != other.isLoading) return false
+        if (chapterList != other.chapterList) return false
+        if (lastChapter != other.lastChapter) return false
+        if (readChapter != other.readChapter) return false
+        if (record != other.record) return false
+        if (javaScriptList != other.javaScriptList) return false
+        if (unreadChapterCount != other.unreadChapterCount) return false
+        if (error != other.error) return false
+        if (startingError != other.startingError) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = url.hashCode()
+        result = 31 * result + source.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + author.hashCode()
+        result = 31 * result + (intro?.hashCode() ?: 0)
+        result = 31 * result + (cover?.hashCode() ?: 0)
+        result = 31 * result + isLoading.hashCode()
+        result = 31 * result + (chapterList?.hashCode() ?: 0)
+        result = 31 * result + (lastChapter?.hashCode() ?: 0)
+        result = 31 * result + (readChapter?.hashCode() ?: 0)
+        result = 31 * result + (record?.hashCode() ?: 0)
+        result = 31 * result + (javaScriptList?.hashCode() ?: 0)
+        result = 31 * result + unreadChapterCount
+        result = 31 * result + (error?.hashCode() ?: 0)
+        result = 31 * result + (startingError?.hashCode() ?: 0)
+        return result
+    }
+
+
 }
