@@ -21,14 +21,14 @@ import kotlinx.coroutines.flow.firstOrNull
 
 class BookDetailsFragment : BaseAsyncFragment() {
     private val bookTitle: String
-        get() = arguments!!.getString(BOOK_TITLE)!!
+        get() = requireArguments().getString(BOOK_TITLE)!!
 
     private val bookAuthor: String
-        get() = arguments!!.getString(BOOK_AUTHOR)!!
+        get() = requireArguments().getString(BOOK_AUTHOR)!!
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
-    override val onCreate: BaseAsyncFragment.() -> Unit = {
+    override val onCreate: () -> Unit = {
 
         onBackPressed = {
             if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
@@ -48,7 +48,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         initData()
     }
 
-    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+    override val onDestroy: () -> Unit = {
         setHasOptionsMenu(false)
     }
 

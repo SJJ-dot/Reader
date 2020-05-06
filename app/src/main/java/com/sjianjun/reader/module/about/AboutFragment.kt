@@ -6,10 +6,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.BaseFragment
-import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.R
+import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
@@ -24,12 +21,12 @@ class AboutFragment : BaseAsyncFragment() {
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
-    override val onCreate: BaseAsyncFragment.() -> Unit = {
+    override val onCreate: () -> Unit = {
         setHasOptionsMenu(true)
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {
             launch {
-                val releasesInfo = checkUpdate(activity!!, true)
+                val releasesInfo = checkUpdate(requireActivity() as BaseActivity, true)
                 setVersionInfo(releasesInfo)
             }
         }

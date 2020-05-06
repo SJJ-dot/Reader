@@ -34,7 +34,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         return R.layout.bookcity_fragment_browser
     }
 
-    override val onCreate: BaseAsyncFragment.() -> Unit = {
+    override val onCreate: () -> Unit = {
         if (webView == null) {
             webView = WebView(context)
             webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -55,7 +55,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         initData()
     }
 
-    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+    override val onDestroy: () -> Unit = {
         setHasOptionsMenu(false)
     }
 

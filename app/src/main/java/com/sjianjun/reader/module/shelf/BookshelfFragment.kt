@@ -42,7 +42,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
 
-    override val onCreate: BaseAsyncFragment.() -> Unit = {
+    override val onCreate: () -> Unit = {
         startingStationRefreshActor = startingStationRefreshActor()
 
         setHasOptionsMenu(true)
@@ -52,7 +52,7 @@ class BookshelfFragment : BaseAsyncFragment() {
         initData()
     }
 
-    override val onDestroy: BaseAsyncFragment.() -> Unit = {
+    override val onDestroy: () -> Unit = {
         setHasOptionsMenu(false)
     }
 
