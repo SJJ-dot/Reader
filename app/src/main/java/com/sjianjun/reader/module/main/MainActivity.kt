@@ -27,6 +27,7 @@ class MainActivity : BaseAsyncActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
+    override val dispatchState: Boolean get() = true
     override val layoutRes: Int = R.layout.activity_main
     override val onLoadedView: (View) -> Unit = {
 

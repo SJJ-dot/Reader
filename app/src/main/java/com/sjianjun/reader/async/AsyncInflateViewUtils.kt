@@ -8,20 +8,19 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import com.sjianjun.reader.utils.animFadeIn
-import sjj.alog.Log
 
 
 fun AsyncInflateRequest.inflateWithLoading(
     context: Context,
+    dispatchState: Boolean = false,
     onLoadedView: (View) -> Unit = this.onLoadedView
 ): View {
-    return inflateWithLoading(LayoutInflater.from(context), onLoadedView)
+    return inflateWithLoading(LayoutInflater.from(context),dispatchState, onLoadedView)
 }
 
 fun AsyncInflateRequest.inflateWithLoading(
     inflater: LayoutInflater,
+    dispatchState: Boolean = false,
     onLoadedView: (View) -> Unit = this.onLoadedView
 ): View {
     val loadingView = AsyncLoadView(inflater.context)
@@ -30,14 +29,15 @@ fun AsyncInflateRequest.inflateWithLoading(
     if (attachToRoot) {
         parent!!.addView(loadingView, MATCH_PARENT, MATCH_PARENT)
     }
+    this.parent = loadingView
+    this.attachToRoot = false
 
     inflate(inflater) {
         loadingView.hide()
+        loadingView.setContentView(it, dispatchState)
         if (attachToRoot) {
-            parent!!.removeView(loadingView)
-            onLoadedView(parent)
+            onLoadedView(parent!!)
         } else {
-            loadingView.addView(it, MATCH_PARENT, MATCH_PARENT)
             onLoadedView(loadingView)
         }
     }
