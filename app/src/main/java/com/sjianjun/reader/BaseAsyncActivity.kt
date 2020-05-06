@@ -16,9 +16,11 @@ abstract class BaseAsyncActivity : BaseActivity() {
             onPause = this@BaseAsyncActivity.onPause
             onStop = this@BaseAsyncActivity.onStop
             onDestroy = this@BaseAsyncActivity.onDestroy
-        }.inflateWithLoading(this)
+        }.inflateWithLoading(this, dispatchState)
         setContentView(view)
     }
+
+    open val dispatchState = false
 
     abstract val layoutRes: Int
     open val onLoadedView: (View) -> Unit = {}
