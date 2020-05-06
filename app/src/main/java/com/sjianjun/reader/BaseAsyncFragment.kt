@@ -4,7 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.sjianjun.reader.async.createAsyncLoadView
+import com.sjianjun.reader.async.asyncInflateRequest
+import com.sjianjun.reader.async.inflateWithLoading
 
 abstract class BaseAsyncFragment : BaseFragment() {
     final override fun onCreateView(
@@ -14,29 +15,31 @@ abstract class BaseAsyncFragment : BaseFragment() {
     ): View? {
         val res = getLayoutRes()
         assert(res != 0) { "not set layout res" }
-        return createAsyncLoadView(
-            res, container, false, inflater,
-            onLoadedView = onLoadedView,
-            onCreate = onCreate,
-            onStart = onStart,
-            onResume = onResume,
-            onPause = onPause,
-            onStop = onStop,
-            onDestroy = onDestroy
-        )
+        return asyncInflateRequest(res).apply {
+            onLoadedView = this@BaseAsyncFragment.onLoadedView
+            onCreate = this@BaseAsyncFragment.onCreate
+            onStart = this@BaseAsyncFragment.onStart
+            onResume = this@BaseAsyncFragment.onResume
+            onPause = this@BaseAsyncFragment.onPause
+            onStop = this@BaseAsyncFragment.onStop
+            onDestroy = this@BaseAsyncFragment.onDestroy
+        }.inflateWithLoading(inflater)
     }
 
     abstract override fun getLayoutRes(): Int
 
-    open val onLoadedView: BaseAsyncFragment.(View) -> Unit = {}
-    open val onCreate: BaseAsyncFragment.() -> Unit = {}
-    open val onStart: BaseAsyncFragment.() -> Unit = {}
-    open val onResume: BaseAsyncFragment.() -> Unit = {}
-    open val onPause: BaseAsyncFragment.() -> Unit = {}
-    open val onStop: BaseAsyncFragment.() -> Unit = {}
-    open val onDestroy: BaseAsyncFragment.() -> Unit = {}
+    open val onLoadedView: (View) -> Unit = {}
+    open val onCreate: () -> Unit = {}
+    open val onStart: () -> Unit = {}
+    open val onResume: () -> Unit = {}
+    open val onPause: () -> Unit = {}
+    open val onStop: () -> Unit = {}
+    open val onDestroy: () -> Unit = {}
 
-    @Deprecated("should use onLoadedView field or onCreate field", ReplaceWith("override val onLoadedView = ..."))
+    @Deprecated(
+        "should use onLoadedView field or onCreate field",
+        ReplaceWith("override val onLoadedView = ...")
+    )
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
     }

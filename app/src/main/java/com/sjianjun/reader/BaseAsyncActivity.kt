@@ -2,40 +2,32 @@ package com.sjianjun.reader
 
 import android.os.Bundle
 import android.view.View
-import androidx.annotation.LayoutRes
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.coroutineScope
-import com.gyf.immersionbar.ImmersionBar
-import com.sjianjun.reader.async.inflateWithAsync
-import com.sjianjun.reader.utils.handler
-import kotlinx.coroutines.*
-import kotlin.coroutines.CoroutineContext
+import com.sjianjun.reader.async.asyncInflateRequest
+import com.sjianjun.reader.async.inflateWithLoading
 
 abstract class BaseAsyncActivity : BaseActivity() {
     final override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        inflateWithAsync(
-            layoutRes,
-            null,
-            true,
-            onLoadedView,
-            onCreate,
-            onStart,
-            onResume,
-            onPause,
-            onStop,
-            onDestroy
-        )
+        val view = asyncInflateRequest(layoutRes).apply {
+            onLoadedView = this@BaseAsyncActivity.onLoadedView
+            onCreate = this@BaseAsyncActivity.onCreate
+            onStart = this@BaseAsyncActivity.onStart
+            onResume = this@BaseAsyncActivity.onResume
+            onPause = this@BaseAsyncActivity.onPause
+            onStop = this@BaseAsyncActivity.onStop
+            onDestroy = this@BaseAsyncActivity.onDestroy
+        }.inflateWithLoading(this)
+        setContentView(view)
     }
 
     abstract val layoutRes: Int
-    open val onLoadedView: BaseAsyncActivity.(View) -> Unit = {}
-    open val onCreate: BaseAsyncActivity.() -> Unit = {}
-    open val onStart: BaseAsyncActivity.() -> Unit = {}
-    open val onResume: BaseAsyncActivity.() -> Unit = {}
-    open val onPause: BaseAsyncActivity.() -> Unit = {}
-    open val onStop: BaseAsyncActivity.() -> Unit = {}
-    open val onDestroy: BaseAsyncActivity.() -> Unit = {}
+    open val onLoadedView: (View) -> Unit = {}
+    open val onCreate: () -> Unit = {}
+    open val onStart: () -> Unit = {}
+    open val onResume: () -> Unit = {}
+    open val onPause: () -> Unit = {}
+    open val onStop: () -> Unit = {}
+    open val onDestroy: () -> Unit = {}
 
     @Deprecated("should use or onStart field", ReplaceWith("override val onStart = ..."))
     override fun onStart() {

@@ -28,7 +28,7 @@ class MainActivity : BaseAsyncActivity() {
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
     override val layoutRes: Int = R.layout.activity_main
-    override val onLoadedView: BaseAsyncActivity.(View) -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
 
         host_fragment_view_stub.inflate()
         drawer_content.requestApplyInsets()
@@ -60,7 +60,7 @@ class MainActivity : BaseAsyncActivity() {
         initDrawerMenuWidget()
     }
 
-    override val onCreate: BaseAsyncActivity.() -> Unit = {
+    override val onCreate: () -> Unit = {
         PermissionUtil.requestPermissions(
             this,
             arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)

@@ -75,8 +75,8 @@ public final class AsyncLayoutInflater {
     Handler mHandler;
     InflateThread mInflateThread;
 
-    public AsyncLayoutInflater(@NonNull Context context, @Nullable LayoutInflater inflater) {
-        mInflater = inflater == null ? LayoutInflater.from(context) : inflater;
+    public AsyncLayoutInflater(@NonNull LayoutInflater inflater) {
+        mInflater = inflater;
         mHandler = new Handler(mHandlerCallback);
         mInflateThread = InflateThread.getInstance();
     }
