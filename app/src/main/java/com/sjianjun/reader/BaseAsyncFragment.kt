@@ -4,8 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.sjianjun.reader.async.asyncInflateRequest
-import com.sjianjun.reader.async.inflateWithLoading
+import com.sjianjun.reader.async.*
 
 abstract class BaseAsyncFragment : BaseFragment() {
     final override fun onCreateView(
@@ -23,18 +22,23 @@ abstract class BaseAsyncFragment : BaseFragment() {
             onPause = this@BaseAsyncFragment.onPause
             onStop = this@BaseAsyncFragment.onStop
             onDestroy = this@BaseAsyncFragment.onDestroy
-        }.inflateWithLoading(inflater)
+            applyAsyncInflateRequest()
+        }.inflateWithLoading(inflater, dispatchState)
     }
+
+    open val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {}
+
+    open val dispatchState = false
 
     abstract override fun getLayoutRes(): Int
 
-    open val onLoadedView: (View) -> Unit = {}
-    open val onCreate: () -> Unit = {}
-    open val onStart: () -> Unit = {}
-    open val onResume: () -> Unit = {}
-    open val onPause: () -> Unit = {}
-    open val onStop: () -> Unit = {}
-    open val onDestroy: () -> Unit = {}
+    open val onLoadedView: (View) -> Unit = emptyLoad
+    open val onCreate: () -> Unit = empty
+    open val onStart: () -> Unit = empty
+    open val onResume: () -> Unit = empty
+    open val onPause: () -> Unit = empty
+    open val onStop: () -> Unit = empty
+    open val onDestroy: () -> Unit = empty
 
     @Deprecated(
         "should use onLoadedView field or onCreate field",

@@ -14,6 +14,7 @@ import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.async.AsyncInflateRequest
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.BookCityTest
@@ -29,6 +30,9 @@ class MainActivity : BaseAsyncActivity() {
     private var appBarConfiguration: AppBarConfiguration? = null
     override val dispatchState: Boolean get() = true
     override val layoutRes: Int = R.layout.activity_main
+    override val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {
+        animTime = 0
+    }
     override val onLoadedView: (View) -> Unit = {
 
         host_fragment_view_stub.inflate()

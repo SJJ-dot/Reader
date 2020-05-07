@@ -156,7 +156,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
 
             override fun onReceivedTitle(view: WebView?, title: String?) {
                 Log.i("title:${title} webView:${view}")
-                setTitle(title)
+//                setTitle(title)
             }
 
             override fun onJsAlert(

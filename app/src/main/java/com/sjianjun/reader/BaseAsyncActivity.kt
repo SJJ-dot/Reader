@@ -2,11 +2,13 @@ package com.sjianjun.reader
 
 import android.os.Bundle
 import android.view.View
-import com.sjianjun.reader.async.asyncInflateRequest
-import com.sjianjun.reader.async.inflateWithLoading
+import com.sjianjun.reader.async.*
 
 abstract class BaseAsyncActivity : BaseActivity() {
-    @Deprecated("should use layoutRes and onLoadedView field", ReplaceWith("override val onLoadedView = ..."))
+    @Deprecated(
+        "should use layoutRes and onLoadedView field",
+        ReplaceWith("override val onLoadedView = ...")
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val view = asyncInflateRequest(layoutRes).apply {
@@ -17,20 +19,23 @@ abstract class BaseAsyncActivity : BaseActivity() {
             onPause = this@BaseAsyncActivity.onPause
             onStop = this@BaseAsyncActivity.onStop
             onDestroy = this@BaseAsyncActivity.onDestroy
+            applyAsyncInflateRequest()
         }.inflateWithLoading(this, dispatchState)
         setContentView(view)
     }
 
+    open val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {}
+
     open val dispatchState = false
 
     abstract val layoutRes: Int
-    open val onLoadedView: (View) -> Unit = {}
-    open val onCreate: () -> Unit = {}
-    open val onStart: () -> Unit = {}
-    open val onResume: () -> Unit = {}
-    open val onPause: () -> Unit = {}
-    open val onStop: () -> Unit = {}
-    open val onDestroy: () -> Unit = {}
+    open val onLoadedView: (View) -> Unit = emptyLoad
+    open val onCreate: () -> Unit = empty
+    open val onStart: () -> Unit = empty
+    open val onResume: () -> Unit = empty
+    open val onPause: () -> Unit = empty
+    open val onStop: () -> Unit = empty
+    open val onDestroy: () -> Unit = empty
 
     @Deprecated("should use onStart field", ReplaceWith("override val onStart = ..."))
     override fun onStart() {
