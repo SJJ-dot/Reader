@@ -8,8 +8,8 @@ import androidx.annotation.LayoutRes
 import androidx.lifecycle.Lifecycle
 import com.sjianjun.reader.utils.animFadeIn
 
-private val empty = {}
-private val emptyLoad = { _: View -> Unit }
+val empty = {}
+val emptyLoad = { _: View -> Unit }
 
 class AsyncInflateRequest(
     @LayoutRes var layoutRes: Int,

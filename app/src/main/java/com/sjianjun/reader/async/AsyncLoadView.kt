@@ -16,6 +16,7 @@ class AsyncLoadView @JvmOverloads constructor(
 
     private var stateList: SparseArray<Parcelable>? = null
     private var isRestoreState = false
+    private var isEnableDispatchState = false
 
     init {
         val params = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -34,16 +35,22 @@ class AsyncLoadView @JvmOverloads constructor(
 
     fun setContentView(it: View,dispatchState: Boolean) {
         addView(it, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        val stateList = stateList ?: return
-        if (isRestoreState && dispatchState) {
-            isRestoreState = false
-            super.dispatchRestoreInstanceState(stateList)
-        }
+        this.isEnableDispatchState = dispatchState
+        dispatchChildRestoreInstanceState()
     }
 
     override fun dispatchRestoreInstanceState(container: SparseArray<Parcelable>?) {
-        super.dispatchRestoreInstanceState(container)
+        super.dispatchThawSelfOnly(container)
         stateList = container
         isRestoreState = true
+        dispatchChildRestoreInstanceState()
+    }
+
+    private fun dispatchChildRestoreInstanceState() {
+        val stateList = stateList ?: return
+        if (isRestoreState && isEnableDispatchState) {
+            isRestoreState = false
+            super.dispatchRestoreInstanceState(stateList)
+        }
     }
 }

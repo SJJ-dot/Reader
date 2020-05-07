@@ -11,6 +11,9 @@ private val interpolator = AccelerateInterpolator()
 @UiThread
 fun View.animFadeIn(time: Long = 500) {
     show()
+    if (time <= 0) {
+        return
+    }
     alpha = 0f
     animate()
         .alpha(1f)
@@ -23,6 +26,10 @@ fun View.animFadeIn(time: Long = 500) {
 @UiThread
 fun View.animFadeOut(time: Long = 500) {
     alpha = 1f
+    if (time <= 0) {
+        gone()
+        return
+    }
     animate()
         .alpha(0f)
         .setDuration(time)
