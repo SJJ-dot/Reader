@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.main
 
 import android.Manifest
+import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatDelegate.*
@@ -30,6 +31,12 @@ class MainActivity : BaseAsyncActivity() {
     private var appBarConfiguration: AppBarConfiguration? = null
     override val dispatchState: Boolean get() = true
     override val layoutRes: Int = R.layout.activity_main
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.AppTheme_DayNight)
+        super.onCreate(savedInstanceState)
+    }
+
     override val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {
         animTime = 0
     }
