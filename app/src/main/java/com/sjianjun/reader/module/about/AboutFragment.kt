@@ -46,6 +46,7 @@ class AboutFragment : BaseAsyncFragment() {
                     Intent.EXTRA_TEXT,
                     "小说app下载链接：${releaseInfo?.apkDownloadUrl ?: downloadUrl}"
                 )
+//                sendIntent.setClassName("com.tencent.mm","com.tencent.mm.ui.tools.ShareImgUI")
                 sendIntent.type = "text/plain"
                 val shareIntent = Intent.createChooser(sendIntent, "把app分享给别人")
                 startActivity(shareIntent)
