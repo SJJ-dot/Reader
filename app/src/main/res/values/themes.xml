@@ -9,7 +9,7 @@
 
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!--    设置窗口背景    -->
-        <item name="android:colorBackground">@color/material_reader_blueGrey_50</item>
+        <item name="android:colorBackground">@color/day_night_background</item>
         <!--System/Platform attributes-->
         <item name="android:windowBackground">?android:colorBackground</item>
 

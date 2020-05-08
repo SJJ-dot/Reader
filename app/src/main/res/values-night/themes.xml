@@ -5,8 +5,8 @@
 
     <style name="AppTheme.Dark" parent="AppTheme">
         <item name="colorPrimary">?attr/colorSurface</item>
-        <item name="colorPrimaryDark">@color/dark_background_color</item>
-        <item name="android:colorBackground">@color/dark_background_color</item>
+        <item name="colorPrimaryDark">@color/day_night_background</item>
+        <item name="android:colorBackground">@color/day_night_background</item>
         <item name="android:textColorPrimary">@color/dark_text_primary_color</item>
         <item name="android:textColorSecondary">@color/dark_text_secondary_color</item>
 
