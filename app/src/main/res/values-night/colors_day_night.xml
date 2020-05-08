@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="day_night_background">@color/dark_background_color</color>
     <color name="day_night_icon_tint_color">@color/material_reader_white</color>
     <color name="day_night_text_color_black">@color/dark_text_primary_color</color>
     <color name="day_night_text_color_black_secondary">@color/dark_text_secondary_color</color>

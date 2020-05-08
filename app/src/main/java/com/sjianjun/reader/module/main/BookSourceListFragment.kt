@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.main
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -17,12 +16,14 @@ import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
+import kotlin.math.max
+import kotlin.math.min
 
 
 class BookSourceListFragment : BaseFragment() {
 
-    private val bookTitle by lazy { arguments!!.getString(BOOK_TITLE)!! }
-    private val bookAuthor by lazy { arguments!!.getString(BOOK_AUTHOR)!! }
+    private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE)!! }
+    private val bookAuthor by lazy { requireArguments().getString(BOOK_AUTHOR)!! }
 
 
     private val adapter by lazy {
@@ -48,6 +49,11 @@ class BookSourceListFragment : BaseFragment() {
                         }
                     }.toList().sortedWith(bookComparator)
                 }.flowIo().collectLatest {
+                    val size = it.size
+                    if (adapter.data.size != size) {
+                        swipe_refresh.layoutParams.height = max(min(size, 5), 1) * 90.dpToPx()
+                        swipe_refresh.requestLayout()
+                    }
                     adapter.data.clear()
                     adapter.data.addAll(it)
                     adapter.notifyDataSetChanged()
