@@ -104,8 +104,12 @@ public final class AsyncLayoutInflater {
                     request.view = mInflater.inflate(
                             request.resid, request.parent, false);
                 }
-                request.callback.onInflateFinished(
-                        request.view, request.resid, request.parent);
+                try {
+                    request.callback.onInflateFinished(
+                            request.view, request.resid, request.parent);
+                } catch (Throwable e) {
+                    sjj.alog.Log.e("onInflateFinished error",e);
+                }
                 mInflateThread.releaseRequest(request);
                 return false;
             });

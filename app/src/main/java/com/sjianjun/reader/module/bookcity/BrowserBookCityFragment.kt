@@ -2,10 +2,7 @@ package com.sjianjun.reader.module.bookcity
 
 import android.graphics.Bitmap
 import android.net.http.SslError
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.ViewGroup
+import android.view.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -34,7 +31,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         return R.layout.bookcity_fragment_browser
     }
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
         if (webView == null) {
             webView = WebView(context)
             webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)

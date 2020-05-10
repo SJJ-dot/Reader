@@ -21,7 +21,7 @@ class AboutFragment : BaseAsyncFragment() {
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {

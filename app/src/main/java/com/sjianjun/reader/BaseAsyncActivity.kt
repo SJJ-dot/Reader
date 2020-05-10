@@ -13,12 +13,10 @@ abstract class BaseAsyncActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         val view = asyncInflateRequest(layoutRes).apply {
             onLoadedView = this@BaseAsyncActivity.onLoadedView
-            onCreate = this@BaseAsyncActivity.onCreate
             onStart = this@BaseAsyncActivity.onStart
             onResume = this@BaseAsyncActivity.onResume
             onPause = this@BaseAsyncActivity.onPause
             onStop = this@BaseAsyncActivity.onStop
-            onDestroy = this@BaseAsyncActivity.onDestroy
             applyAsyncInflateRequest()
         }.inflateWithLoading(this, dispatchState)
         setContentView(view)
@@ -30,12 +28,10 @@ abstract class BaseAsyncActivity : BaseActivity() {
 
     abstract val layoutRes: Int
     open val onLoadedView: (View) -> Unit = emptyLoad
-    open val onCreate: () -> Unit = empty
     open val onStart: () -> Unit = empty
     open val onResume: () -> Unit = empty
     open val onPause: () -> Unit = empty
     open val onStop: () -> Unit = empty
-    open val onDestroy: () -> Unit = empty
 
     @Deprecated("should use onStart field", ReplaceWith("override val onStart = ..."))
     override fun onStart() {
