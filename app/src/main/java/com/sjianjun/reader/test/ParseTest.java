@@ -25,28 +25,28 @@ import sjj.alog.Log;
 
 public final class ParseTest {
     private static boolean test = false;
-    private static String source = "盗梦人小说";
-    private static String baseUrl = "http://www.cxbz958.com/";
+    private static String source = "文学迷";
+    private static String baseUrl = "https://www.wenxuemi6.com/";
 
     public static List<SearchResult> search(Http http, String query) throws Exception {
 
 //        Map<String, String> queryMap = new HashMap<>();
 //        queryMap.put("searchkey", URLEncoder.encode(query, "utf-8"));
 //        String html = http.post(baseUrl + "search.aspx?bookname", queryMap);
-        String html = http.get(baseUrl + "s.php?ie=utf-8&q=" + URLEncoder.encode(query, "utf-8"));
+        String html = http.get(baseUrl + "search.php?q=" + URLEncoder.encode(query, "utf-8"));
 
         Document parse = Jsoup.parse(html, baseUrl);
-        Elements bookListEl = parse.select(".bookbox");
+        Elements bookListEl = parse.select(".result-list > *");
         List<SearchResult> results = new ArrayList<>();
         for (int i = 0; i < bookListEl.size(); i++) {
             Element bookEl = bookListEl.get(i);
             SearchResult result = new SearchResult();
             result.source = source;
-            result.bookTitle = bookEl.select("div.bookinfo > h4 > a").text();
-            result.bookUrl = bookEl.select("div.bookinfo > h4 > a").get(0).absUrl("href");
-            result.bookAuthor = bookEl.select("div.bookinfo > div.author").text().replace("作者：", "");
-            result.bookCover = bookEl.select("div.bookimg > a > img").get(0).absUrl("src");
-            result.latestChapter = bookEl.select("div.bookinfo > div.update > a").get(0).text();
+            result.bookTitle = bookEl.select("div > div.result-game-item-detail > h3 > a").text();
+            result.bookUrl = bookEl.select("div > div.result-game-item-detail > h3 > a").get(0).absUrl("href");
+            result.bookAuthor = bookEl.select("div > div.result-game-item-detail > div > p:nth-child(1) > span:nth-child(2)").text();
+            result.bookCover = bookEl.select("div > div.result-game-item-pic > a > img").get(0).absUrl("src");
+            result.latestChapter = bookEl.select("div > div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
             results.add(result);
         }
         return results;
@@ -57,21 +57,18 @@ public final class ParseTest {
         Book book = new Book();
         book.source = source;
         book.url = url;
-        book.title = parse.select("body > div.book > div.info > h2").get(0).text();
-        book.author = parse.select("body > div.book > div.info > div.small > span:nth-child(1)").text().replace("作者：", "");
-        book.intro = parse.select("body > div.book > div.info > div.intro").html();
-        book.cover = parse.select("body > div.book > div.info > div.cover > img").get(0).absUrl("src");
+        book.title = parse.select("#info > h1").get(0).text();
+        book.author = parse.select("#info > p:nth-child(2)").text().split("者：")[1];
+        book.intro = parse.select("#intro").html();
+        book.cover = parse.select("#fmimg > img").get(0).absUrl("src");
         List<Chapter> chapterList = new ArrayList<>();
 
 
 //        String chapterListUrl = parse.select("#newlist > div > strong > a").get(0).absUrl("href");
 //        Document chapterListHtml = Jsoup.parse(http.post(baseUrl+"ashx/zj.ashx",queryMap), url);
-        Elements chapterListEl = parse.select("body > div.listmain > dl > *");
+        Elements chapterListEl = parse.select("#list a");
         for (int i = chapterListEl.size() - 1; i >= 0; i--) {
-            if (chapterListEl.get(i).tagName().equals("dt")) {
-                break;
-            }
-            Element chapterEl = chapterListEl.get(i).child(0);
+            Element chapterEl = chapterListEl.get(i);
             Chapter chapter = new Chapter();
             chapter.bookUrl = book.url;
             chapter.title = chapterEl.text();
