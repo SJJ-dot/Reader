@@ -207,10 +207,10 @@ object DataManager {
                 if (book.record?.startingStationBookSource?.isEmpty() == true ||
                     book.record?.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY
                 ) {
-                   dao.getReadingRecord(book.title, book.author)?.let {
-                       it.startingStationBookSource = javaScript.source
-                       dao.insertReadingRecord(it)
-                   }
+                    dao.getReadingRecord(book.title, book.author)?.let {
+                        it.startingStationBookSource = javaScript.source
+                        dao.insertReadingRecord(it)
+                    }
                 }
                 return@withIo book
             }
@@ -425,9 +425,13 @@ object DataManager {
         }
     }
 
-    suspend fun getChapterContent(chapter: Chapter, onlyLocal: Boolean): Chapter {
+    suspend fun getChapterContent(
+        chapter: Chapter,
+        onlyLocal: Boolean,
+        force: Boolean = false
+    ): Chapter {
         withIo {
-            if (chapter.isLoaded) {
+            if (chapter.isLoaded && !force) {
                 val chapterContent = dao.getChapterContent(chapter.url).first()
                 chapter.content = chapterContent
                 if (chapter.content != null) {
