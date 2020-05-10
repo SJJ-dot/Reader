@@ -28,7 +28,7 @@ class BookCityFragment : BaseAsyncFragment() {
     private var javaScriptList: List<JavaScript> = emptyList()
     override fun getLayoutRes() = R.layout.bookcity_fragment
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
 
         source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
         pageId = arguments?.getString(PAGE_ID) ?: ""

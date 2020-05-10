@@ -16,6 +16,7 @@ import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.async.AsyncInflateRequest
+import com.sjianjun.reader.async.runOnIdle
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.BookCityTest
@@ -24,6 +25,8 @@ import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
+import sjj.alog.Config
+import sjj.alog.Logger
 
 class MainActivity : BaseAsyncActivity() {
 
@@ -39,9 +42,9 @@ class MainActivity : BaseAsyncActivity() {
 
     override val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {
         animTime = 0
+//        logger = Logger(Config.getDefaultConfig())
     }
     override val onLoadedView: (View) -> Unit = {
-
         host_fragment_view_stub.inflate()
         drawer_content.requestApplyInsets()
 
@@ -70,25 +73,25 @@ class MainActivity : BaseAsyncActivity() {
         }
 
         initDrawerMenuWidget()
-    }
 
-    override val onCreate: () -> Unit = {
-        PermissionUtil.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        ) { list ->
-            if (!list.isGranted()) {
-                launch {
-                    toast("拒绝授权可能导致程序运行异常！")
+        runOnIdle {
+            PermissionUtil.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            ) { list ->
+                if (!list.isGranted()) {
+                    launch {
+                        toast("拒绝授权可能导致程序运行异常！")
+                    }
                 }
             }
-        }
 
-        launch {
-            checkUpdate(this@MainActivity)
-            JavaScriptTest.testJavaScript()
-            ParseTest.test()
-            BookCityTest.test()
+            launch {
+                checkUpdate(this@MainActivity)
+                JavaScriptTest.testJavaScript()
+                ParseTest.test()
+                BookCityTest.test()
+            }
         }
     }
 

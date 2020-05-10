@@ -47,7 +47,7 @@ class SearchFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.search_fragment_search
 
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         recycle_view_hint.adapter = searchHint
         deleteSearchHistoryActor = deleteSearchHistoryActor()

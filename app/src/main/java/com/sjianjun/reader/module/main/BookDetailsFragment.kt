@@ -28,7 +28,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
 
         onBackPressed = {
             if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {

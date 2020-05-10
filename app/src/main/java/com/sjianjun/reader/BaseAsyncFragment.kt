@@ -7,7 +7,12 @@ import android.view.ViewGroup
 import com.sjianjun.reader.async.*
 
 abstract class BaseAsyncFragment : BaseFragment() {
-    final override fun onCreateView(
+
+    @Deprecated(
+        "should use onLoadedView field or onCreate field",
+        ReplaceWith("override val onLoadedView = ...")
+    )
+    override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -16,12 +21,10 @@ abstract class BaseAsyncFragment : BaseFragment() {
         assert(res != 0) { "not set layout res" }
         return asyncInflateRequest(res).apply {
             onLoadedView = this@BaseAsyncFragment.onLoadedView
-            onCreate = this@BaseAsyncFragment.onCreate
             onStart = this@BaseAsyncFragment.onStart
             onResume = this@BaseAsyncFragment.onResume
             onPause = this@BaseAsyncFragment.onPause
             onStop = this@BaseAsyncFragment.onStop
-            onDestroy = this@BaseAsyncFragment.onDestroy
             applyAsyncInflateRequest()
         }.inflateWithLoading(inflater, dispatchState)
     }
@@ -33,7 +36,6 @@ abstract class BaseAsyncFragment : BaseFragment() {
     abstract override fun getLayoutRes(): Int
 
     open val onLoadedView: (View) -> Unit = emptyLoad
-    open val onCreate: () -> Unit = empty
     open val onStart: () -> Unit = empty
     open val onResume: () -> Unit = empty
     open val onPause: () -> Unit = empty

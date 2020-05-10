@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.Lifecycle
 import com.sjianjun.reader.utils.animFadeIn
+import sjj.alog.Logger
 
 val empty = {}
 val emptyLoad = { _: View -> Unit }
@@ -16,17 +17,18 @@ class AsyncInflateRequest(
     var parent: ViewGroup? = null,
     var attachToRoot: Boolean = parent != null
 ) {
+
+    var logger: Logger? = null
+
     var animTime = 500L
 
     var lifecycle: Lifecycle? = null
 
     var onLoadedView: (View) -> Unit = emptyLoad
-    var onCreate: () -> Unit = empty
     var onStart: () -> Unit = empty
     var onResume: () -> Unit = empty
     var onPause: () -> Unit = empty
     var onStop: () -> Unit = empty
-    var onDestroy: () -> Unit = empty
 
     fun inflate(context: Context, onLoadedView: (View) -> Unit = this.onLoadedView) {
         inflate(LayoutInflater.from(context), onLoadedView)
@@ -58,13 +60,12 @@ class AsyncInflateRequest(
             } else {
                 lifecycle.addObserver(
                     LifecycleHelper(
+                        logger,
                         onViewLoaded,
-                        onCreate,
                         onStart,
                         onResume,
                         onPause,
-                        onStop,
-                        onDestroy
+                        onStop
                     )
                 )
             }

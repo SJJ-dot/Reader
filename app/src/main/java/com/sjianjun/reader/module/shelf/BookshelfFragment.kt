@@ -1,10 +1,7 @@
 package com.sjianjun.reader.module.shelf
 
 import android.content.res.ColorStateList
-import android.view.Gravity
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
+import android.view.*
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
@@ -42,7 +39,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
     private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
         startingStationRefreshActor = startingStationRefreshActor()
 
         setHasOptionsMenu(true)

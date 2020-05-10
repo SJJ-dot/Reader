@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 class BookScriptManagerFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
 
-    override val onCreate: () -> Unit = {
+    override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         base_url.setText(globalConfig.javaScriptBaseUrl)
         save_base_url.setOnClickListener {
