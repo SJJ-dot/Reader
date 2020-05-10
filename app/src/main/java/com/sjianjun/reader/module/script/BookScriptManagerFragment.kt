@@ -13,10 +13,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
-import com.sjianjun.reader.utils.URL_SCRIPT_BASE
-import com.sjianjun.reader.utils.id
-import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.flow.collectLatest
@@ -59,12 +56,12 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             R.id.sync_book_script -> {
                 //同步书源。退出后就会停止同步。用actor会更好一点。
                 launch {
-                    newSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
+                    showSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
                     try {
                         DataManager.reloadBookJavaScript()
-                        newSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
+                        showSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
                     } catch (throwable: Throwable) {
-                        newSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
+                        showSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
                     }
                 }
 
@@ -99,7 +96,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             holder.itemView.iv_del_source.setOnClickListener {
                 fragment.launch {
                     DataManager.deleteJavaScript(script)
-                    fragment.newSnackbar(it, "删除成功")
+                    showSnackbar(it, "删除成功")
                 }
             }
             holder.itemView.iv_edit_source.setOnClickListener {
@@ -113,7 +110,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 fragment.launch {
                     script.enable = isChecked
                     DataManager.updateJavaScript(script)
-                    fragment.newSnackbar(view, if (isChecked) "已启用" else "已停用")
+                    showSnackbar(view, if (isChecked) "已启用" else "已停用")
                 }
             }
 

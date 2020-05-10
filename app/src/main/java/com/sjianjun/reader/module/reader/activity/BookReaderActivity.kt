@@ -302,33 +302,48 @@ class BookReaderActivity : BaseActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
-            holder.itemView.chapter_title.text = chapter.title
-            holder.itemView.isClickable = false
-            if (chapter.content != null) {
-                holder.itemView.chapter_content.text = chapter.content?.content.html()
-                if (chapter.isLoaded) {
-                    holder.itemView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                } else {
-                    holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    holder.itemView.setOnClickListener {
-                        holder.itemView.chapter_content.text =
-                            "拼命加载中…………………………………………………………………………………………………………………………"
-                        activity.launch {
-                            val intRange =
-                                max(position - 1, 0)..min(position + 1, chapterList.size - 1)
-                            activity.preLoadRefresh(chapterList, intRange)
-                            if (holder.adapterPosition == position) {
-                                delay(1)
-                                notifyDataSetChanged()
+            holder.itemView.apply {
+                isClickable = false
+                chapter_title.text = chapter.title
+                chapter_title.isClickable = false
+                if (chapter.content != null) {
+                    chapter_content.text = chapter.content?.content.html()
+                    if (chapter.isLoaded) {
+                        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        chapter_title.setOnClickListener {
+                            activity.launch {
+                                showSnackbar(it,"正在加载……")
+                                DataManager.getChapterContent(chapter,false, force = true)
+                                showSnackbar(it,"加载完成")
+                                if (holder.adapterPosition == position) {
+                                    delay(1)
+                                    notifyItemChanged(position)
+                                }
+                            }
+                        }
+                    } else {
+                        layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                        setOnClickListener {
+                            chapter_content.text =
+                                "拼命加载中…………………………………………………………………………………………………………………………"
+                            activity.launch {
+                                val intRange =
+                                    max(position - 1, 0)..min(position + 1, chapterList.size - 1)
+                                activity.preLoadRefresh(chapterList, intRange)
+                                if (holder.adapterPosition == position) {
+                                    delay(1)
+                                    notifyDataSetChanged()
+                                }
                             }
                         }
                     }
+                } else {
+                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                    chapter_content.text =
+                        "拼命加载中…………………………………………………………………………………………………………………………"
                 }
-            } else {
-                holder.itemView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                holder.itemView.chapter_content.text =
-                    "拼命加载中…………………………………………………………………………………………………………………………"
             }
+            
         }
 
         override fun getItemId(position: Int): Long {
