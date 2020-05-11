@@ -115,6 +115,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 }
 
                 startingStationRefreshActor.offer(bookList.values.toList())
+                showProgressBar(SHOW_FLAG_REFRESH)
                 book_shelf_refresh.progress = 0
                 sourceMap.map {
                     async {
@@ -149,6 +150,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                     }
                 }.awaitAll()
                 withMain {
+                    hideProgressBar(SHOW_FLAG_REFRESH)
                     book_shelf_swipe_refresh?.isRefreshing = false
                     adapter.notifyDataSetChanged()
                 }
@@ -159,10 +161,9 @@ class BookshelfFragment : BaseAsyncFragment() {
     private fun startingStationRefreshActor() =
         lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
-                showProgressBar()
+                showProgressBar(SHOW_FLAG_STARTING_STATION)
                 book_shelf_refresh?.secondaryProgress = 0
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
-                val start = System.currentTimeMillis()
                 msg.map {
                     async {
                         val bookScript = it.javaScriptList?.find { script ->
@@ -170,11 +171,10 @@ class BookshelfFragment : BaseAsyncFragment() {
                         }
                         val book = DataManager.getStartingBook(it, bookScript)
                         if (book == it) {
-                            Log.e(it)
                             null
                         } else {
-                            val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
-                            delay(delay)
+                            val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY)
+                            delay(delay ?: 1000)
                             book
                         }
                     }
@@ -182,8 +182,12 @@ class BookshelfFragment : BaseAsyncFragment() {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
                     list.add(it)
                 }
-                Log.e("加载起点书籍 ${System.currentTimeMillis() - start}")
+
                 val count = AtomicInteger()
+                val bookCount = sourceMap.map { it.value.size }.reduce { acc, i -> acc + i }
+                count.lazySet((book_shelf_refresh?.max ?: 0) - bookCount)
+                book_shelf_refresh?.secondaryProgress = count.get()
+
                 sourceMap.forEach { entry ->
                     val javaScript = DataManager.getJavaScript(entry.key)
                     val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
@@ -214,17 +218,25 @@ class BookshelfFragment : BaseAsyncFragment() {
 
                 }
 
-                hideProgressBar()
+                hideProgressBar(SHOW_FLAG_STARTING_STATION)
             }
         }
 
-    private suspend fun showProgressBar() = withMain {
-        book_shelf_refresh?.animFadeIn()
-
+    private var showState = 0
+    private val SHOW_FLAG_REFRESH = 1
+    private val SHOW_FLAG_STARTING_STATION = 2
+    private suspend fun showProgressBar(flag: Int) = withMain {
+        if (showState == 0) {
+            book_shelf_refresh.animFadeIn()
+        }
+        showState = flag or SHOW_FLAG_REFRESH
     }
 
-    private suspend fun hideProgressBar() = withMain {
-        book_shelf_refresh?.animFadeOut()
+    private suspend fun hideProgressBar(flag: Int) = withMain {
+        showState = showState and flag.inv()
+        if (showState == 0) {
+            book_shelf_refresh.animFadeOut()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
