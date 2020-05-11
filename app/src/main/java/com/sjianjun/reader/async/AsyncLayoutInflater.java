@@ -16,14 +16,11 @@ package com.sjianjun.reader.async;
  * limitations under the License.
  */
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Looper;
 import android.os.Message;
-import android.os.MessageQueue;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +34,8 @@ import androidx.core.util.Pools;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ArrayBlockingQueue;
+
+import sjj.alog.Logger;
 
 /**
  * <p>Helper class for inflating layouts asynchronously. To use, construct
@@ -69,14 +68,16 @@ import java.util.concurrent.ArrayBlockingQueue;
  * layouts that contain fragments.
  */
 public final class AsyncLayoutInflater {
-    private static final String TAG = "AsyncLayoutInflater";
 
     LayoutInflater mInflater;
     Handler mHandler;
     InflateThread mInflateThread;
+    @Nullable
+    Logger logger;
 
-    public AsyncLayoutInflater(@NonNull LayoutInflater inflater) {
+    public AsyncLayoutInflater(@NonNull LayoutInflater inflater, @Nullable Logger logger) {
         mInflater = inflater;
+        this.logger = logger;
         mHandler = new Handler(mHandlerCallback);
         mInflateThread = InflateThread.getInstance();
     }
@@ -84,11 +85,9 @@ public final class AsyncLayoutInflater {
     @UiThread
     public void inflate(@LayoutRes int resid, @Nullable ViewGroup parent,
                         @NonNull OnInflateFinishedListener callback) {
-        if (callback == null) {
-            throw new NullPointerException("callback argument may not be null!");
-        }
         InflateRequest request = mInflateThread.obtainRequest();
         request.inflater = this;
+        request.logger = logger;
         request.resid = resid;
         request.parent = parent;
         request.callback = callback;
@@ -108,7 +107,9 @@ public final class AsyncLayoutInflater {
                     request.callback.onInflateFinished(
                             request.view, request.resid, request.parent);
                 } catch (Throwable e) {
-                    sjj.alog.Log.e("onInflateFinished error",e);
+                    if (logger != null) {
+                        logger.e("onInflateFinished error:" + e.getMessage(), e);
+                    }
                 }
                 mInflateThread.releaseRequest(request);
                 return false;
@@ -128,6 +129,8 @@ public final class AsyncLayoutInflater {
         int resid;
         View view;
         OnInflateFinishedListener callback;
+        @Nullable
+        Logger logger;
 
         InflateRequest() {
         }
@@ -157,7 +160,6 @@ public final class AsyncLayoutInflater {
                 request = mQueue.take();
             } catch (InterruptedException ex) {
                 // Odd, just continue
-                Log.w(TAG, ex);
                 return;
             }
 
@@ -166,11 +168,11 @@ public final class AsyncLayoutInflater {
                         request.resid, request.parent, false);
             } catch (RuntimeException ex) {
                 // Probably a Looper failure, retry on the UI thread
-                Log.w(TAG, "Failed to inflate resource in the background! Retrying on the UI"
-                        + " thread", ex);
+                if (request.logger != null) {
+                    request.logger.e("Failed to inflate resource in the background! Retrying on the UI thread:" + ex.getMessage(), ex);
+                }
             }
-            Message.obtain(request.inflater.mHandler, 0, request)
-                    .sendToTarget();
+            Message.obtain(request.inflater.mHandler, 0, request).sendToTarget();
         }
 
         @Override
