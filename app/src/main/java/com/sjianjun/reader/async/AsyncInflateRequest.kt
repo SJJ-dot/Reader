@@ -39,7 +39,7 @@ class AsyncInflateRequest(
         val parent = parent
         val attachToRoot = attachToRoot && parent != null
 
-        AsyncLayoutInflater(inflater).inflate(
+        AsyncLayoutInflater(inflater, logger).inflate(
             layoutRes,
             parent
         ) { view: View, _: Int, _: ViewGroup? ->
