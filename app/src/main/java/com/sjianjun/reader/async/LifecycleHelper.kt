@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class LifecycleHelper(
     private val logger: Logger?,
-    private val onLoadedView: () -> Unit,
+    private val onInit: () -> Unit,
     private val onStart: () -> Unit,
     private val onResume: () -> Unit,
     private val onPause: () -> Unit,
@@ -17,37 +17,42 @@ class LifecycleHelper(
     private val initState = AtomicBoolean(true)
     private val initializer = {
         if (initState.compareAndSet(true, false)) {
-            onLoadedView()
+            onInit()
         }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun onStart() {
+    fun start() {
         logger?.e("pid:${android.os.Process.myPid()} ${this}")
         initializer()
-        this.onStart.invoke()
+        onStart.invoke()
     }
 
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    fun onResume() {
+    fun resume() {
         logger?.e("pid:${android.os.Process.myPid()} ${this}")
         initializer()
-        this.onResume.invoke()
+        onResume.invoke()
     }
 
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    fun onPause() {
+    fun pause() {
         logger?.e("pid:${android.os.Process.myPid()} ${this}")
-        this.onPause.invoke()
+        onPause.invoke()
     }
 
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun onStop() {
+    fun stop() {
         logger?.e("pid:${android.os.Process.myPid()} ${this}")
-        this.onStop.invoke()
+        onStop.invoke()
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun destroy() {
+        initState.lazySet(true)
     }
 
 }
