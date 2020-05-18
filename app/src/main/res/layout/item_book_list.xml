@@ -7,6 +7,7 @@
     android:layout_margin="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraint_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -21,6 +22,21 @@
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/starting_station"
+            android:layout_width="12dp"
+            android:layout_height="0dp"
+            android:layout_margin="3dp"
+            app:layout_constraintDimensionRatio="1:1"
+            android:includeFontPadding="false"
+            android:background="@drawable/shape_sou_fa"
+            android:text="起"
+            android:gravity="center"
+            android:textColor="@color/material_reader_white"
+            android:textSize="10dp"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:layout_constraintTop_toTopOf="@+id/bookCover" />
 
         <TextView
             android:id="@+id/bookName"
