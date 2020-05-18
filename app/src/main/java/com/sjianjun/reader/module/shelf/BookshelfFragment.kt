@@ -27,7 +27,6 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -273,6 +272,7 @@ class BookshelfFragment : BaseAsyncFragment() {
             val book = data[position]
             holder.setRecyclable(!book.isLoading)
             holder.itemView.apply {
+                val visibleSet = constraint_layout.visibleSet()
                 bookCover.glide(fragment, book.cover)
                 bookName.text = book.title
                 author.text = "作者：${book.author}"
@@ -282,7 +282,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 val error = book.error
                 val startingError = book.startingError
                 if (error == null && startingError == null) {
-                    sync_error.hide()
+                    visibleSet.invisible(sync_error)
                     sync_error.isClickable = false
                 } else {
                     sync_error.imageTintList = if (error != null) {
@@ -290,7 +290,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                     } else {
                         ColorStateList.valueOf(R.color.material_reader_grey_700.getColor())
                     }
-                    sync_error.show()
+                    visibleSet.visible(sync_error)
                     sync_error.setOnClickListener {
                         fragment.launchIo {
                             val popup = ErrorMsgPopup(fragment.context)
@@ -316,9 +316,9 @@ class BookshelfFragment : BaseAsyncFragment() {
                     bv_unread.setHighlight(true)
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0) && book.lastChapter?.isLastChapter != false) {
-                    bv_unread.hide()
+                    visibleSet.invisible(bv_unread)
                 } else {
-                    bv_unread.show()
+                    visibleSet.visible(bv_unread)
                 }
                 bv_unread.badgeCount = book.unreadChapterCount
 
@@ -341,6 +341,18 @@ class BookshelfFragment : BaseAsyncFragment() {
                 setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
                 }
+
+                val source = book.record?.startingStationBookSource
+                if (source?.isNotBlank() == true &&
+                    source != STARTING_STATION_BOOK_SOURCE_EMPTY
+                ) {
+                    starting_station.text = source.subSequence(0,1)
+                    visibleSet.visible(starting_station)
+                } else {
+                    visibleSet.invisible(starting_station)
+                }
+
+                visibleSet.apply()
 
                 setOnLongClickListener {
                     AlertDialog.Builder(context!!)

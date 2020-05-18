@@ -1,8 +1,7 @@
 package com.sjianjun.reader.bean
 
 import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import com.sjianjun.reader.utils.STARTING_STATION_BOOK_SOURCE_EMPTY
 
 @Entity(primaryKeys = ["bookTitle", "bookAuthor"])
 class ReadingRecord(
@@ -20,6 +19,7 @@ class ReadingRecord(
 
     /**
      * 首发站书籍地址
+     * [STARTING_STATION_BOOK_SOURCE_EMPTY]
      */
     var startingStationBookSource = ""
 

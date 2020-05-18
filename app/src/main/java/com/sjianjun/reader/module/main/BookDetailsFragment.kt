@@ -1,10 +1,7 @@
 package com.sjianjun.reader.module.main
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import androidx.core.view.GravityCompat
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseAsyncFragment
@@ -12,6 +9,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
@@ -25,6 +23,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     private val bookAuthor: String
         get() = requireArguments().getString(BOOK_AUTHOR)!!
+
+    private var startingBookSyncError: Throwable? = null
+    private var bookSyncError: Throwable? = null
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
@@ -59,10 +60,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
             val qiDian = async {
                 val startingBook = DataManager.getStartingBook(book)
                 if (startingBook?.source != book.source) {
-                    DataManager.reloadBookFromNet(startingBook)
+                    startingBookSyncError = DataManager.reloadBookFromNet(startingBook)
                 }
             }
-            DataManager.reloadBookFromNet(book)
+            bookSyncError = DataManager.reloadBookFromNet(book)
             qiDian.await()
             detailsRefreshLayout?.isRefreshing = false
         }
@@ -105,6 +106,22 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         val bookList = DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor).firstOrNull()
         originWebsite?.text = "来源：${book?.source}共${bookList?.size}个源"
+        val error = bookSyncError ?: startingBookSyncError
+        if (error == null) {
+            sync_error.hide()
+        } else {
+            sync_error.show()
+            sync_error.setOnClickListener {
+                ErrorMsgPopup(context)
+                    .init(
+                        "${error}\n" +
+                                "StackTrace:\n" +
+                                android.util.Log.getStackTraceString(error)
+                    )
+                    .setPopupGravity(Gravity.BOTTOM or Gravity.START)
+                    .showPopupWindow(it)
+            }
+        }
     }
 
     private fun initListener(book: Book?) {
