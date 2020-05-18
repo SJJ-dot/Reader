@@ -15,7 +15,7 @@ val String.id: Long
 
 
 val Book.id: Long
-    get() = "$title $author".id
+    get() = "$title $author $source".id
 
 val Chapter.id: Long
     get() = url.id
@@ -25,4 +25,4 @@ val JavaScript.id: Long
     get() = source.id
 
 val SearchResult.id: Long
-    get() = "$bookTitle $bookAuthor".id
+    get() = "$bookTitle $bookAuthor $source".id
