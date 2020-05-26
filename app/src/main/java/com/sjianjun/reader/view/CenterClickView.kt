@@ -60,4 +60,9 @@ class CenterClickView @JvmOverloads constructor(
         }
     }
 
+    override fun requestChildFocus(child: View?, focused: View?) {
+//        super.requestChildFocus(child, null)
+    }
+
+
 }
