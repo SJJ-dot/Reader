@@ -47,7 +47,6 @@ class BookReaderActivity : BaseActivity() {
 
         recycle_view.adapter = adapter
         initTime()
-        initCenterClick()
         initScrollLoadChapter()
         initData()
     }
@@ -93,19 +92,6 @@ class BookReaderActivity : BaseActivity() {
             }
         }
     }
-
-    private fun initCenterClick() {
-        recycle_view.centerClickListener = View.OnClickListener {
-            if (recycle_view.touchable) {
-                ImmersionBar.with(this).hideBar(BarHide.FLAG_SHOW_BAR).init()
-                recycle_view.touchable = false
-            } else {
-                recycle_view.touchable = true
-                ImmersionBar.with(this).hideBar(BarHide.FLAG_HIDE_STATUS_BAR).init()
-            }
-        }
-    }
-
 
     private fun initScrollLoadChapter() {
         recycle_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
