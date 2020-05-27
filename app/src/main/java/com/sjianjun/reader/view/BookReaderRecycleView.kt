@@ -1,11 +1,11 @@
 package com.sjianjun.reader.view
 
 import android.content.Context
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.min
 
 class BookReaderRecycleView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -14,14 +14,24 @@ class BookReaderRecycleView @JvmOverloads constructor(
         layoutManager = LayoutManager(context)
     }
 
-    override fun requestChildFocus(child: View?, focused: View?) {
-    }
 
-    override fun fling(velocityX: Int, velocityY: Int): Boolean {
-        return super.fling(velocityX, min(velocityY,3000))
-    }
     class LayoutManager(context: Context?) : LinearLayoutManager(context) {
 
+        override fun requestChildRectangleOnScreen(
+            parent: RecyclerView,
+            child: View,
+            rect: Rect,
+            immediate: Boolean,
+            focusedChildVisible: Boolean
+        ): Boolean {
+            return super.requestChildRectangleOnScreen(
+                parent,
+                child,
+                rect,
+                immediate,
+                true
+            )
+        }
     }
 
 }
