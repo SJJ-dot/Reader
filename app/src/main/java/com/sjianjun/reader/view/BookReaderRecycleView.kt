@@ -15,6 +15,11 @@ class BookReaderRecycleView @JvmOverloads constructor(
     }
 
 
+//    override fun smoothScrollBy(dx: Int, dy: Int) {
+//        Log.e("smoothScrollBy dx $dx dy $dy")
+//        super.smoothScrollBy(dx, dy)
+//    }
+
     class LayoutManager(context: Context?) : LinearLayoutManager(context) {
 
         override fun requestChildRectangleOnScreen(
@@ -24,14 +29,9 @@ class BookReaderRecycleView @JvmOverloads constructor(
             immediate: Boolean,
             focusedChildVisible: Boolean
         ): Boolean {
-            return super.requestChildRectangleOnScreen(
-                parent,
-                child,
-                rect,
-                immediate,
-                true
-            )
+            return true
         }
+
     }
 
 }
