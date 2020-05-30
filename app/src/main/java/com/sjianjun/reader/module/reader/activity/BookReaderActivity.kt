@@ -41,12 +41,12 @@ class BookReaderActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
         ImmersionBar.with(this)
+            .statusBarColor(R.color.day_night_reader_content_background)
             .statusBarDarkFont(globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO)
-            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
+//            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
             .init()
 
         recycle_view.adapter = adapter
-        initTime()
         initScrollLoadChapter()
         initData()
     }
@@ -75,21 +75,6 @@ class BookReaderActivity : BaseActivity() {
             drawer_layout.closeDrawer(GravityCompat.END)
         } else {
             super.onBackPressed()
-        }
-    }
-
-    private fun initTime() {
-        launch {
-            val format = simpleDateFormat("HH:mm")
-            time.text = format.format(Date())
-
-            val delay = simpleDateFormat("ss")
-            delay((61 - delay.format(Date()).toInt()) * 1000L)
-
-            while (true) {
-                time.text = format.format(Date())
-                delay(60000)
-            }
         }
     }
 
