@@ -5,44 +5,29 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".module.reader.activity.BookReaderActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/day_night_reader_content_background"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@color/day_night_reader_content_background"
-            android:paddingLeft="8dp"
-            android:paddingTop="5dp"
-            android:paddingRight="8dp"
-            android:paddingBottom="5dp"
-            android:text="10:10"
-            android:textColor="@color/day_night_reader_chapter_caption_text_color"
-            android:textSize="12dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <com.sjianjun.reader.view.AutofitTextView
             android:id="@+id/chapter_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:background="@color/day_night_reader_content_background"
-            android:gravity="end"
             android:paddingLeft="8dp"
-            android:paddingTop="5dp"
             android:paddingRight="8dp"
-            android:paddingBottom="5dp"
+            android:paddingBottom="2dp"
             android:textColor="@color/day_night_reader_chapter_caption_text_color"
             android:textSize="12dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/time"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="第一章" />
 
@@ -50,8 +35,8 @@
             android:id="@+id/recycle_view"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/chapter_title" />
+            app:layout_constraintTop_toBottomOf="@+id/chapter_title"
+            app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
