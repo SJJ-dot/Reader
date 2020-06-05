@@ -133,7 +133,7 @@ class MainActivity : BaseAsyncActivity() {
     }
 
     override fun onBackPressed() {
-        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
+        if (drawer_layout?.isDrawerOpen(GravityCompat.START) == true) {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
             super.onBackPressed()

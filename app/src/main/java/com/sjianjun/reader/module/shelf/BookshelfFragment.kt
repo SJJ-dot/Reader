@@ -234,7 +234,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     private suspend fun hideProgressBar(flag: Int) = withMain {
         showState = showState and flag.inv()
         if (showState == 0) {
-            book_shelf_refresh.animFadeOut()
+            book_shelf_refresh?.animFadeOut()
         }
     }
 

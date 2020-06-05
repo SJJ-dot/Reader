@@ -54,7 +54,7 @@ class BookReaderActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (readingRecord.bookUrl == bookUrl) {
+        if (this::readingRecord.isInitialized && readingRecord.bookUrl == bookUrl) {
             val targetChapter = adapter.chapterList.indexOfFirst { it.url == chapterUrl }
             if (targetChapter != -1) {
                 val manager = recycle_view.layoutManager as LinearLayoutManager
