@@ -1,8 +1,12 @@
 {
-  "version": 21,
+  "version": 22,
   "versions": [
     {
       "fileName": "biquge5200",
+      "version": "1"
+    },
+    {
+      "fileName": "biquge.se",
       "version": "1"
     },
     {

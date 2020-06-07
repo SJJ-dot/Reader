@@ -25,28 +25,28 @@ import sjj.alog.Log;
 
 public final class ParseTest {
     private static boolean test = false;
-    private static String source = "文学迷";
-    private static String baseUrl = "https://www.wenxuemi6.com/";
+    private static String source = "biquge.se";
+    private static String baseUrl = "http://www.biquge.se/";
 
     public static List<SearchResult> search(Http http, String query) throws Exception {
 
-//        Map<String, String> queryMap = new HashMap<>();
-//        queryMap.put("searchkey", URLEncoder.encode(query, "utf-8"));
-//        String html = http.post(baseUrl + "search.aspx?bookname", queryMap);
-        String html = http.get(baseUrl + "search.php?q=" + URLEncoder.encode(query, "utf-8"));
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("key", URLEncoder.encode(query, "utf-8"));
+        String html = http.post(baseUrl + "case.php?m=search", queryMap);
+//        String html = http.get(baseUrl + "case.php?m=search" + URLEncoder.encode(query, "utf-8"));
 
         Document parse = Jsoup.parse(html, baseUrl);
-        Elements bookListEl = parse.select(".result-list > *");
+        Elements bookListEl = parse.select("#newscontent > div.l > ul > li");
         List<SearchResult> results = new ArrayList<>();
         for (int i = 0; i < bookListEl.size(); i++) {
             Element bookEl = bookListEl.get(i);
             SearchResult result = new SearchResult();
             result.source = source;
-            result.bookTitle = bookEl.select("div > div.result-game-item-detail > h3 > a").text();
-            result.bookUrl = bookEl.select("div > div.result-game-item-detail > h3 > a").get(0).absUrl("href");
-            result.bookAuthor = bookEl.select("div > div.result-game-item-detail > div > p:nth-child(1) > span:nth-child(2)").text();
-            result.bookCover = bookEl.select("div > div.result-game-item-pic > a > img").get(0).absUrl("src");
-            result.latestChapter = bookEl.select("div > div.result-game-item-detail > div > p:nth-child(4) > a").get(0).text();
+            result.bookTitle = bookEl.select(":nth-child(1) > span.s2 > a").text();
+            result.bookUrl = bookEl.selectFirst(":nth-child(1) > span.s2 > a").absUrl("href");
+            result.bookAuthor = bookEl.select(":nth-child(1) > span.s4").text();
+//            result.bookCover = bookEl.select("div > div.result-game-item-pic > a > img").get(0).absUrl("src");
+            result.latestChapter = bookEl.selectFirst(":nth-child(1) > span.s3 > a").text();
             results.add(result);
         }
         return results;
@@ -57,22 +57,26 @@ public final class ParseTest {
         Book book = new Book();
         book.source = source;
         book.url = url;
-        book.title = parse.select("#info > h1").get(0).text();
-        book.author = parse.select("#info > p:nth-child(2)").text().split("者：")[1];
-        book.intro = parse.select("#intro").html();
-        book.cover = parse.select("#fmimg > img").get(0).absUrl("src");
+        book.title = parse.selectFirst("#info > h1").text();
+        book.author = parse.selectFirst("#info > p:nth-child(2)").text().split("者：")[1];
+        book.intro = parse.selectFirst("#intro").html();
+        book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
         List<Chapter> chapterList = new ArrayList<>();
 
 
 //        String chapterListUrl = parse.select("#newlist > div > strong > a").get(0).absUrl("href");
 //        Document chapterListHtml = Jsoup.parse(http.post(baseUrl+"ashx/zj.ashx",queryMap), url);
-        Elements chapterListEl = parse.select("#list a");
+        Elements chapterListEl = parse.select("#list > dl > *");
         for (int i = chapterListEl.size() - 1; i >= 0; i--) {
             Element chapterEl = chapterListEl.get(i);
+            if ("dt".equals(chapterEl.tagName())) {
+                break;
+            }
+            Element chapterA = chapterEl.selectFirst("a");
             Chapter chapter = new Chapter();
             chapter.bookUrl = book.url;
-            chapter.title = chapterEl.text();
-            chapter.url = chapterEl.absUrl("href");
+            chapter.title = chapterA.text();
+            chapter.url = chapterA.absUrl("href");
             chapterList.add(0,chapter);
         }
         book.chapterList = chapterList;
