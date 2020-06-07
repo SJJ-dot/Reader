@@ -1,5 +1,5 @@
 {
-  "version": 22,
+  "version": 23,
   "versions": [
     {
       "fileName": "biquge5200",
@@ -52,6 +52,12 @@
     {
       "fileName": "顶点小说",
       "version": "2"
+    },
+    {
+      "fileName": "黑岩网",
+      "version": "1",
+      "starting": true,
+      "priority": 98
     }
   ],
   "inherit": true
