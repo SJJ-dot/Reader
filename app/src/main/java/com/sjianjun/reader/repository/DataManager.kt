@@ -70,8 +70,8 @@ object DataManager {
             if (BuildConfig.DEBUG || info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
-                        if (!BuildConfig.DEBUG) {
-                            val javaScript = dao.getJavaScriptBySource(it.fileName)
+                        val javaScript = dao.getJavaScriptBySource(it.fileName)
+                        if (!BuildConfig.DEBUG || javaScript?.enable == false) {
                             if (javaScript != null && javaScript.version >= it.version) {
                                 return@async javaScript
                             }
