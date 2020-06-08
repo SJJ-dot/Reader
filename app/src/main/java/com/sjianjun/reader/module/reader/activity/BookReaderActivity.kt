@@ -277,7 +277,10 @@ class BookReaderActivity : BaseActivity() {
                 chapter_title.text = chapter.title
                 chapter_title.isClickable = false
                 if (chapter.content != null) {
-                    val content = SpannableStringBuilder("${chapter.content?.content?.trim()}".html())
+                    val content = SpannableStringBuilder("${chapter.content?.content}".html())
+                    Regex("\\A\\s*").find(content)?.apply {
+                        content.replace(range.first,range.last+1,"")
+                    }
                     content.insert(0,"\u3000\u3000")
                     var result = Regex("\n+\\s*").find(content)
                     while (result != null) {
