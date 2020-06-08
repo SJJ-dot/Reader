@@ -2,14 +2,13 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gyf.immersionbar.BarHide
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -25,7 +24,6 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
@@ -226,6 +224,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
+
     /**
      * 加载 上一章 当前章 下一章
      */
@@ -278,14 +277,21 @@ class BookReaderActivity : BaseActivity() {
                 chapter_title.text = chapter.title
                 chapter_title.isClickable = false
                 if (chapter.content != null) {
-                    chapter_content.text = chapter.content?.content.html()
+                    val content = SpannableStringBuilder("${chapter.content?.content?.trim()}".html())
+                    content.insert(0,"\u3000\u3000")
+                    var result = Regex("\n+\\s*").find(content)
+                    while (result != null) {
+                        content.replace(result.range.first,result.range.last+1,"\n\u3000\u3000")
+                        result = result.next()
+                    }
+                    chapter_content.text = content
                     if (chapter.isLoaded) {
                         layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
                         chapter_title.setOnClickListener {
                             activity.launch {
-                                showSnackbar(it,"正在加载……")
-                                DataManager.getChapterContent(chapter,false, force = true)
-                                showSnackbar(it,"加载完成")
+                                showSnackbar(it, "正在加载……")
+                                DataManager.getChapterContent(chapter, false, force = true)
+                                showSnackbar(it, "加载完成")
                                 if (holder.adapterPosition == position) {
                                     delay(1)
                                     notifyItemChanged(position)
@@ -314,7 +320,7 @@ class BookReaderActivity : BaseActivity() {
                         "拼命加载中…………………………………………………………………………………………………………………………"
                 }
             }
-            
+
         }
 
         override fun getItemId(position: Int): Long {
