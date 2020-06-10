@@ -158,7 +158,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     }
 
     private fun startingStationRefreshActor() =
-        lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
+        viewLifecycleOwner.lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
             for (msg in channel) {
                 showProgressBar(SHOW_FLAG_STARTING_STATION)
                 book_shelf_refresh?.secondaryProgress = 0

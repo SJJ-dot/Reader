@@ -183,44 +183,48 @@ class SearchFragment : BaseAsyncFragment() {
     }
 
     //宜搜快速提示
-    private fun queryHintActor() =
-        lifecycleScope.actor<String>(Dispatchers.IO, capacity = Channel.CONFLATED) {
-            var job: Job? = null
-            for (msg in channel) {
-                job?.cancel()
-                job = launch {
-                    val hintList = DataManager.searchHint(msg) ?: emptyList()
-                    withMain {
-                        searchHint.data = hintList
-                        searchHint.notifyDataSetChanged()
-                    }
+    private fun queryHintActor() = viewLifecycleOwner.lifecycleScope.actor<String>(
+        Dispatchers.IO,
+        capacity = Channel.CONFLATED
+    ) {
+        var job: Job? = null
+        for (msg in channel) {
+            job?.cancel()
+            job = launch {
+                val hintList = DataManager.searchHint(msg) ?: emptyList()
+                withMain {
+                    searchHint.data = hintList
+                    searchHint.notifyDataSetChanged()
                 }
             }
         }
+    }
 
-    private fun queryActor() =
-        lifecycleScope.actor<String>(Dispatchers.IO, capacity = Channel.CONFLATED) {
-            var job: Job? = null
-            for (msg in channel) {
-                job?.cancel()
-                job = launch {
-                    withMain {
-                        showProgress()
-                        search_refresh?.progress = 0
-                    }
-                    val count = AtomicInteger()
-                    DataManager.search(msg)?.collectLatest {
-                        search_refresh?.progress = count.incrementAndGet()
-                        delay(300)
-                        searchResult.postValue(it)
-                    }
-                    withMain {
-                        search_refresh?.progress = search_refresh?.max ?: 0
-                        hideProgress()
-                    }
+    private fun queryActor() = viewLifecycleOwner.lifecycleScope.actor<String>(
+        Dispatchers.IO,
+        capacity = Channel.CONFLATED
+    ) {
+        var job: Job? = null
+        for (msg in channel) {
+            job?.cancel()
+            job = launch {
+                withMain {
+                    showProgress()
+                    search_refresh?.progress = 0
+                }
+                val count = AtomicInteger()
+                DataManager.search(msg)?.collectLatest {
+                    search_refresh?.progress = count.incrementAndGet()
+                    delay(300)
+                    searchResult.postValue(it)
+                }
+                withMain {
+                    search_refresh?.progress = search_refresh?.max ?: 0
+                    hideProgress()
                 }
             }
         }
+    }
 
     private fun showProgress() {
         search_refresh?.animFadeIn()
@@ -230,11 +234,12 @@ class SearchFragment : BaseAsyncFragment() {
         search_refresh?.animFadeOut()
     }
 
-    private fun deleteSearchHistoryActor() = lifecycleScope.actor<List<SearchHistory>>() {
-        for (msg in channel) {
-            DataManager.deleteSearchHistory(msg)
+    private fun deleteSearchHistoryActor() =
+        viewLifecycleOwner.lifecycleScope.actor<List<SearchHistory>> {
+            for (msg in channel) {
+                DataManager.deleteSearchHistory(msg)
+            }
         }
-    }
 
     private class SearchHintAdapter : BaseAdapter(R.layout.search_item_fragment_search_hint) {
         var data = listOf<String>()
