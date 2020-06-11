@@ -123,7 +123,11 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 if (url?.startsWith("http") == true) {
                     view.loadUrl(url)
                 } else {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    } catch (e: Exception) {
+                        return false
+                    }
                 }
                 return true
             }
