@@ -76,8 +76,6 @@ data class JavaScript constructor(
         ${importClassCode<Chapter>()}
         ${importClassCode<Book>()}
         ${importClassCode<StringUtil>()}
-        ${importClassCode<Page>()}
-        ${importClassCode<Page.BookGroup>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
@@ -177,17 +175,6 @@ data class JavaScript constructor(
         }
     }
 
-    suspend fun loadPage(script: String): Page? {
-        return withIo {
-            if (script.isEmpty()) {
-                execute<Page>(Func.loadPage)
-            } else {
-                execute {
-                    jsToJava<Page>(eval(script))
-                }
-            }
-        }
-    }
 
     suspend fun loadBookList(script: String): List<Book>? {
         return withIo {

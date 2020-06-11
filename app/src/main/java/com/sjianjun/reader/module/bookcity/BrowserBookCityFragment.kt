@@ -1,12 +1,15 @@
 package com.sjianjun.reader.module.bookcity
 
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.http.SslError
 import android.view.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.iterator
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseBrowserFragment
@@ -26,6 +29,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     private var javaScriptList: List<Pair<JavaScript, String>> = emptyList()
     private lateinit var source: String
     private var webView: WebView? = null
+    private var clearHistory = false
 
     override fun getLayoutRes(): Int {
         return R.layout.bookcity_fragment_browser
@@ -102,15 +106,25 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     private fun initData() {
         val sourceJs = javaScriptList.find { it.first.source == source }
         setTitle(sourceJs?.first?.source)
+        clearHistory = true
         webView?.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
     }
 
     private fun initWebView(webView: WebView?) {
         initWebviewSetting(webView)
+        globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
+            val url = it?.toString()?:return@Observer
+            clearHistory = true
+            webView?.loadUrl(url)
+        })
         webView?.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
-                Log.i(url + " webView:${view}")
-                view.loadUrl(url)
+                Log.i("$url webView:${view}")
+                if (url?.startsWith("http") == true) {
+                    view.loadUrl(url)
+                } else {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                }
                 return true
             }
 
@@ -120,6 +134,10 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 Log.i(url + " webView:${view}")
+                if (clearHistory) {
+                    clearHistory = false
+                    webView?.clearHistory()
+                }
             }
 
             override fun onLoadResource(view: WebView?, url: String?) {

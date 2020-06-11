@@ -2,7 +2,9 @@ package com.sjianjun.reader.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.JS_SOURCE_QI_DIAN
 import com.sjianjun.reader.utils.URL_SCRIPT_BASE
@@ -41,6 +43,8 @@ class AppConfig(val name: String) {
     var appDayNightMode by sp(MODE_NIGHT_NO)
     
     var bookCityDefaultSource by sp(JS_SOURCE_QI_DIAN)
+
+    val qqAuthLoginUri = MutableLiveData<Uri>()
 }
 
 class BookConfig {

@@ -19,14 +19,11 @@ import com.sjianjun.reader.async.AsyncInflateRequest
 import com.sjianjun.reader.async.runOnIdle
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.test.BookCityTest
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
-import sjj.alog.Config
-import sjj.alog.Logger
 
 class MainActivity : BaseAsyncActivity() {
 
@@ -90,7 +87,6 @@ class MainActivity : BaseAsyncActivity() {
                 checkUpdate(this@MainActivity)
                 JavaScriptTest.testJavaScript()
                 ParseTest.test()
-                BookCityTest.test()
             }
         }
     }
