@@ -11,15 +11,17 @@ abstract class BaseAsyncActivity : BaseActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val view = asyncInflateRequest(layoutRes).apply {
-            onLoadedView = this@BaseAsyncActivity.onLoadedView
-            onStart = this@BaseAsyncActivity.onStart
-            onResume = this@BaseAsyncActivity.onResume
-            onPause = this@BaseAsyncActivity.onPause
-            onStop = this@BaseAsyncActivity.onStop
-            applyAsyncInflateRequest()
-        }.inflateWithLoading(this, dispatchState)
-        setContentView(view)
+        if (!isFinishing) {
+            val view = asyncInflateRequest(layoutRes).apply {
+                onLoadedView = this@BaseAsyncActivity.onLoadedView
+                onStart = this@BaseAsyncActivity.onStart
+                onResume = this@BaseAsyncActivity.onResume
+                onPause = this@BaseAsyncActivity.onPause
+                onStop = this@BaseAsyncActivity.onStop
+                applyAsyncInflateRequest()
+            }.inflateWithLoading(this, dispatchState)
+            setContentView(view)
+        }
     }
 
     open val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {}

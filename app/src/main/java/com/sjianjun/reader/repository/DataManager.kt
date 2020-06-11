@@ -23,9 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
  * 界面数据从数据库订阅刷新
  */
 object DataManager {
-    //用于存储临时数据。在对应页面销毁的时候 销毁
-    val pageDataStore = ConcurrentHashMap<String, Page>()
-
     private val dao = db.dao()
 
     init {
@@ -460,14 +457,4 @@ object DataManager {
     }
 
 
-    suspend fun loadPage(source: String, script: String = ""): Page? = withIo {
-        val js = dao.getJavaScriptBySource(source)
-        js?.loadPage(script)
-    }
-
-
-    suspend fun loadBookList(source: String, script: String = ""): List<Book>? = withIo {
-        val js = dao.getJavaScriptBySource(source)
-        js?.loadBookList(script)
-    }
 }

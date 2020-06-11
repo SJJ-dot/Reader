@@ -46,6 +46,22 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+        </activity>
+        <activity
+            android:name=".module.bookcity.QQAuthLoginReceiveActivity"
+            android:launchMode="singleInstance"
+            android:theme="@style/translucent">
+            <intent-filter>
+                <data
+                    android:host="ssl.ptlogin2.qq.com"
+                    android:path="/jump"
+                    android:scheme="https" />
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
     </application>
 
