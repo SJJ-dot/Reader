@@ -1,10 +1,11 @@
 package com.sjianjun.reader.module.update
 
-import android.content.Intent
+import android.app.DownloadManager
 import android.net.Uri
+import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat.startActivity
+import androidx.core.content.ContextCompat
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
@@ -59,11 +60,12 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
             .setMessage("发现新版本是否现在升级？\n${releasesInfo.body}")
             .setPositiveButton("下载") { dialog, _ ->
                 dialog.dismiss()
-                //浏览器
-                val intent = Intent()
-                intent.action = "android.intent.action.VIEW"
-                intent.data = Uri.parse(download?.browser_download_url)
-                startActivity(activity, intent, null)
+                val service = ContextCompat.getSystemService(activity, DownloadManager::class.java);
+                service?.enqueue(
+                    DownloadManager.Request(Uri.parse(download?.browser_download_url))
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"${activity.packageName}/学习${releasesInfo.tag_name}.apk")
+                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                )
             }
         withMain {
             dialog.show()
