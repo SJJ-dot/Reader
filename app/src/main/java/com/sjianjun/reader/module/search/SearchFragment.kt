@@ -18,6 +18,8 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.coroutine.launch
+import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*

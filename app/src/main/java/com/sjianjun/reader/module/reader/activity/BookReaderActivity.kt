@@ -2,6 +2,9 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.QUEUE_ADD
+import android.speech.tts.UtteranceProgressListener
 import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -15,6 +18,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
@@ -24,10 +28,12 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 class BookReaderActivity : BaseActivity() {
     private val bookUrl get() = intent.getStringExtra(BOOK_URL)!!
@@ -35,6 +41,7 @@ class BookReaderActivity : BaseActivity() {
     private lateinit var book: Book
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ChapterListAdapter(this) }
+    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
@@ -47,6 +54,32 @@ class BookReaderActivity : BaseActivity() {
         recycle_view.adapter = adapter
         initScrollLoadChapter()
         initData()
+        chapter_title.setOnClickListener {
+            val manager = recycle_view.layoutManager as LinearLayoutManager
+            val firstPos = manager.findFirstVisibleItemPosition()
+            val chapter = adapter.chapterList.getOrNull(firstPos) ?: return@setOnClickListener
+
+            ttsUtil.progressChangeCallback = { chapterIndex, progress, content ->
+                launch(singleCoroutineKey = "progressChangeCallback") {
+                    val view = manager.findViewByPosition(chapterIndex)
+                    if (view != null) {
+                        var dy =
+                            -(view.height * progress.toFloat() / 100 - recycle_view.height / 2).roundToInt()
+                        dy = max(min(dy, 0), - view.height)
+                        Log.e("chapterIndex $chapterIndex progress:$progress dy:${dy} view.height:${view.height} ${Thread.currentThread()}")
+                        manager.scrollToPositionWithOffset(chapterIndex, dy)
+                        saveReadRecord()
+                        if (progress == 100 && ttsUtil.isSpeakEnd) {
+                            val chapter = adapter.chapterList.getOrNull(chapterIndex + 1)
+                            ttsUtil.speak(chapterIndex + 1, chapter?.content?.format() ?: "")
+                        }
+                    }
+                }
+            }
+            launch(singleCoroutineKey = "speak") {
+                ttsUtil.speak(firstPos, chapter.content?.format() ?: "")
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -108,10 +141,8 @@ class BookReaderActivity : BaseActivity() {
         })
     }
 
-    private val readingRecordJob = AtomicReference<Job>()
     private fun saveReadRecord(delay: Long = 2000) {
-        readingRecordJob.get()?.cancel()
-        launch {
+        launch(singleCoroutineKey = "saveReadRecord") {
             //延迟2s 保存
             delay(delay)
             val manager = recycle_view.layoutManager as LinearLayoutManager
@@ -131,7 +162,7 @@ class BookReaderActivity : BaseActivity() {
 
             readingRecord.isEnd = isEnd
             DataManager.setReadingRecord(readingRecord)
-        }.apply(readingRecordJob::lazySet)
+        }
     }
 
     private val initDataJob = AtomicReference<Job>()
@@ -277,17 +308,7 @@ class BookReaderActivity : BaseActivity() {
                 chapter_title.text = chapter.title
                 chapter_title.isClickable = false
                 if (chapter.content != null) {
-                    val content = SpannableStringBuilder("${chapter.content?.content}".html())
-                    Regex("\\A\\s*").find(content)?.apply {
-                        content.replace(range.first,range.last+1,"")
-                    }
-                    content.insert(0,"\u3000\u3000")
-                    var result = Regex("\n+\\s*").find(content)
-                    while (result != null) {
-                        content.replace(result.range.first,result.range.last+1,"\n\u3000\u3000")
-                        result = result.next()
-                    }
-                    chapter_content.text = content
+                    chapter_content.text = chapter.content?.format()
                     if (chapter.isLoaded) {
                         layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
                         chapter_title.setOnClickListener {

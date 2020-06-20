@@ -15,6 +15,7 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JS_SOURCE
