@@ -17,6 +17,7 @@ import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.async.AsyncInflateRequest
 import com.sjianjun.reader.async.runOnIdle
+import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest

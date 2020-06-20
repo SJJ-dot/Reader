@@ -11,6 +11,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*

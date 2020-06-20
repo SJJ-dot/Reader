@@ -13,22 +13,4 @@ abstract class BaseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ImmersionBar.with(this).init()
     }
-
-    fun launch(
-        context: CoroutineContext = handler,
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> Unit
-    ): Job {
-        return lifecycle.coroutineScope.launch(context, start, block)
-    }
-
-
-    fun launchIo(
-        context: CoroutineContext = Dispatchers.IO + handler,
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> Unit
-    ): Job {
-        return launch(context, start, block)
-    }
-
 }

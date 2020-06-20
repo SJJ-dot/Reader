@@ -8,6 +8,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
