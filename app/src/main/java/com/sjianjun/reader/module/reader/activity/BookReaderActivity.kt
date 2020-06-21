@@ -2,10 +2,6 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.QUEUE_ADD
-import android.speech.tts.UtteranceProgressListener
-import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
@@ -55,9 +51,13 @@ class BookReaderActivity : BaseActivity() {
         initScrollLoadChapter()
         initData()
         chapter_title.setOnClickListener {
+            if (ttsUtil.isSpeaking) {
+                ttsUtil.stop()
+                return@setOnClickListener
+            }
             val manager = recycle_view.layoutManager as LinearLayoutManager
-            val firstPos = manager.findFirstVisibleItemPosition()
-            val chapter = adapter.chapterList.getOrNull(firstPos) ?: return@setOnClickListener
+            val position = manager.findLastVisibleItemPosition()
+            val chapter = adapter.chapterList.getOrNull(position) ?: return@setOnClickListener
 
             ttsUtil.progressChangeCallback = { chapterIndex, progress, content ->
                 launch(singleCoroutineKey = "progressChangeCallback") {
@@ -65,21 +65,38 @@ class BookReaderActivity : BaseActivity() {
                     if (view != null) {
                         var dy =
                             -(view.height * progress.toFloat() / 100 - recycle_view.height / 2).roundToInt()
-                        dy = max(min(dy, 0), - view.height)
+                        dy = max(min(dy, 0), -view.height)
                         Log.e("chapterIndex $chapterIndex progress:$progress dy:${dy} view.height:${view.height} ${Thread.currentThread()}")
                         manager.scrollToPositionWithOffset(chapterIndex, dy)
                         saveReadRecord()
                         if (progress == 100 && ttsUtil.isSpeakEnd) {
-                            val chapter = adapter.chapterList.getOrNull(chapterIndex + 1)
-                            ttsUtil.speak(chapterIndex + 1, chapter?.content?.format() ?: "")
+                            speak(adapter.chapterList.getOrNull(chapterIndex + 1), 0)
                         }
                     }
                 }
             }
             launch(singleCoroutineKey = "speak") {
-                ttsUtil.speak(firstPos, chapter.content?.format() ?: "")
+                val view = manager.findViewByPosition(position)
+                val y = view?.run {
+                    val virtical = max(-(y + chapter_content.y), 0f)
+                    val layout = chapter_content.layout
+                    if (layout != null) {
+                        val line = layout.getLineForVertical(virtical.roundToInt())
+                        layout.getLineStart(line)
+                    } else {
+                        0
+                    }
+
+                } ?: 0
+
+                speak(chapter, y)
             }
         }
+    }
+
+    private suspend fun speak(chapter: Chapter?, start: Int) {
+        chapter ?: return
+        ttsUtil.speak(chapter.index, chapter.content?.format() ?: "",start)
     }
 
     override fun onNewIntent(intent: Intent?) {

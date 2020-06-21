@@ -20,13 +20,18 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
 
     val isSpeaking: Boolean
         get() = textToSpeech?.isSpeaking == true
-    val isSpeakEnd :Boolean
+    val isSpeakEnd: Boolean
         get() = contentParagraph.isEmpty()
 
     var progressChangeCallback: ((chapterIndex: Int, progress: Int, content: CharSequence?) -> Unit)? =
         null
 
     private var textToSpeech: TextToSpeech? = null
+
+    fun stop() {
+        contentParagraph.clear()
+        textToSpeech?.stop()
+    }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onDestroy() {
@@ -73,27 +78,33 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
 
 
     private val contentParagraph = ConcurrentLinkedDeque<ContentParagraphBean>()
-    suspend fun speak(chapterIndex: Int, content: CharSequence) {
+    suspend fun speak(chapterIndex: Int, content: CharSequence, start: Int) {
         if (content.isBlank()) {
             return
         }
         initTts()
         contentParagraph.clear()
         contentParagraph.addAll(splitContentParagraph(chapterIndex, content))
-        speak()
+        speak(start)
     }
 
-    private fun speak() {
+    private fun speak(start: Int) {
         if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
             return
         }
-        val first = contentParagraph.firstOrNull() ?: return
-        textToSpeech?.speak(
-            first.paragraph,
-            QUEUE_ADD,
-            null,
-            first.utteranceId
-        )
+        val index = contentParagraph.indexOfFirst { it.start >= start }
+        repeat(index) {
+            contentParagraph.poll()
+        }
+        textToSpeech?.stop()
+        contentParagraph.forEach {
+            textToSpeech?.speak(
+                it.paragraph,
+                QUEUE_ADD,
+                null,
+                it.utteranceId
+            )
+        }
     }
 
     private fun splitContentParagraph(
@@ -144,18 +155,16 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
         object : UtteranceProgressListener() {
             private var current: ContentParagraphBean? = null
             override fun onDone(utteranceId: String?) {
-                contentParagraph.remove(current)
                 current?.also {
-                    progressChangeCallback?.invoke(
-                        it.chapterIndex,
-                        it.progressEnd,
-                        current?.paragraph
-                    )
+                    contentParagraph.remove(it)
+                    progressChangeCallback?.invoke(it.chapterIndex, it.progressEnd, it.paragraph)
                 }
-                speak()
             }
 
             override fun onError(utteranceId: String?) {
+                current.also {
+                    contentParagraph.remove(it)
+                }
                 launch {
                     toast("speak error")
                 }
@@ -164,7 +173,7 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
             override fun onStart(utteranceId: String?) {
                 current = contentParagraph.find { it.utteranceId == utteranceId }
                 current?.also {
-                    progressChangeCallback?.invoke(it.chapterIndex, it.progress, current?.paragraph)
+                    progressChangeCallback?.invoke(it.chapterIndex, it.progress, it.paragraph)
                 }
             }
         }
