@@ -69,8 +69,14 @@ class BookReaderActivity : BaseActivity() {
                         Log.e("chapterIndex $chapterIndex progress:$progress dy:${dy} view.height:${view.height} ${Thread.currentThread()}")
                         manager.scrollToPositionWithOffset(chapterIndex, dy)
                         saveReadRecord()
-                        if (progress == 100 && ttsUtil.isSpeakEnd) {
-                            speak(adapter.chapterList.getOrNull(chapterIndex + 1), 0)
+                        if (ttsUtil.isSpeakEnd) {
+                            adapter.chapterList.getOrNull(chapterIndex + 1)?.also {
+                                getChapterContent(it, false)
+                                speak(it, 0)
+                                val min = max(position - 1, 0)
+                                val max = min(position + 1, adapter.chapterList.size - 1)
+                                preLoadRefresh(adapter.chapterList, min..max)
+                            }
                         }
                     }
                 }
@@ -96,7 +102,7 @@ class BookReaderActivity : BaseActivity() {
 
     private suspend fun speak(chapter: Chapter?, start: Int) {
         chapter ?: return
-        ttsUtil.speak(chapter.index, chapter.content?.format() ?: "",start)
+        ttsUtil.speak(chapter.index, chapter.content?.format() ?: "", start)
     }
 
     override fun onNewIntent(intent: Intent?) {
