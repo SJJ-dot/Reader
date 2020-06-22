@@ -291,17 +291,13 @@ class BookReaderActivity : BaseActivity() {
             if (chapter.isLoaded && chapter.content != null) {
                 return@withIo
             }
-            var loading = loadRecord[chapter.url]
-            if (loading == null) {
-                loading = async {
-                    val chapterContent = DataManager.getChapterContent(chapter, onlyLocal)
-                    chapterContent
+            val chapterAsync = loadRecord.getOrPut(chapter.url) {
+                async {
+                    DataManager.getChapterContent(chapter, onlyLocal)
                 }
-                loadRecord[chapter.url] = loading
             }
-
-            loading.await()
-            loadRecord.remove(chapter.url)
+            chapterAsync.await()
+            loadRecord.remove(chapter.url,chapterAsync)
         }
     }
 
