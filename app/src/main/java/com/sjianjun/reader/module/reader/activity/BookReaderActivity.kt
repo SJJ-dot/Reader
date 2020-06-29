@@ -166,7 +166,7 @@ class BookReaderActivity : BaseActivity() {
                         }
                     }
                 }
-                saveReadRecord()
+//                saveReadRecord()
             }
         })
     }
