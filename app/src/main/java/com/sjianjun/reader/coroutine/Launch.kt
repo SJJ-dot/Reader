@@ -8,12 +8,11 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.coroutineScope
 import kotlinx.coroutines.*
-import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
 private val singleCoroutineMap =
-    ConcurrentHashMap<CoroutineScope, Callable<ConcurrentHashMap<String, Callable<Job>>>>()
+    ConcurrentHashMap<CoroutineScope, Lazy<ConcurrentHashMap<String, Job>>>()
 
 fun Fragment.launchIo(
     context: CoroutineContext = Dispatchers.IO,
@@ -62,31 +61,27 @@ fun Lifecycle.launch(
         coroutineScope.launch(context + coroutineErrorHandler, start, block)
     } else {
 
-        val callable = singleCoroutineMap.getOrPut(coroutineScope, {
-            val callable = object : Callable<ConcurrentHashMap<String, Callable<Job>>> {
-                override fun call(): ConcurrentHashMap<String, Callable<Job>> {
-                    coroutineScope.coroutineContext[Job]?.invokeOnCompletion {
-                        singleCoroutineMap.remove(coroutineScope, this)
-                    }
-                    return ConcurrentHashMap()
+        val mapLazy = singleCoroutineMap.getOrPut(coroutineScope, {
+            var lazy: Lazy<ConcurrentHashMap<String, Job>>? = null
+            lazy = lazy {
+                coroutineScope.coroutineContext[Job]?.invokeOnCompletion {
+                    singleCoroutineMap.remove(coroutineScope, lazy)
                 }
+                ConcurrentHashMap<String, Job>()
             }
-            callable
+            lazy
         })
-        val map = callable.call()
-        val jobCallable = map.getOrPut(singleCoroutineKey) {
-            val jobCallable = object : Callable<Job> {
-                override fun call(): Job {
-                    val job = coroutineScope.launch(context + coroutineErrorHandler, start, block)
-                    job.invokeOnCompletion {
-                        map.remove(singleCoroutineKey, this)
-                    }
-                    return job
-                }
-            }
-            jobCallable
+
+        val map = mapLazy.value
+        val job = coroutineScope.launch(context + coroutineErrorHandler, start, block)
+
+        map.put(singleCoroutineKey, job)?.cancel()
+
+        job.invokeOnCompletion {
+            map.remove(singleCoroutineKey, job)
         }
-        jobCallable.call()
+
+        return job
     }
 }
 
