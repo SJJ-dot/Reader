@@ -1,11 +1,9 @@
 package com.sjianjun.reader.module.main
 
-import android.os.Bundle
 import android.view.*
 import androidx.core.view.GravityCompat
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.coroutine.launch
@@ -18,6 +16,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 
+@Suppress("EXPERIMENTAL_API_USAGE")
 class BookDetailsFragment : BaseAsyncFragment() {
     private val bookTitle: String
         get() = requireArguments().getString(BOOK_TITLE)!!
@@ -56,7 +55,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     private fun refresh(book: Book?) {
         book ?: return
-        launch {
+        launch(singleCoroutineKey = "refreshBookDetails") {
             detailsRefreshLayout?.isRefreshing = true
             val qiDian = async {
                 val startingBook = DataManager.getStartingBook(book)
@@ -70,6 +69,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         }
     }
 
+
     private fun initData() {
         childFragmentManager.beginTransaction()
             .replace(
@@ -81,7 +81,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             )
             .commitNowAllowingStateLoss()
 
-        launch {
+        launch(singleCoroutineKey = "initData") {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
 

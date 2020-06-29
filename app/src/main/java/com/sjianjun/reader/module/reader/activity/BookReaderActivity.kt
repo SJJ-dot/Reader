@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -15,6 +16,7 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.coroutine.launch
+import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
@@ -75,7 +77,9 @@ class BookReaderActivity : BaseActivity() {
                                 speak(it, 0)
                                 val min = max(position - 1, 0)
                                 val max = min(position + 1, adapter.chapterList.size - 1)
-                                preLoadRefresh(adapter.chapterList, min..max)
+                                if (preLoadRefresh(adapter.chapterList, min..max)) {
+                                    adapter.notifyDataSetChanged()
+                                }
                             }
                         }
                     }
@@ -136,7 +140,10 @@ class BookReaderActivity : BaseActivity() {
         recycle_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             private var preFirstPosition = -1
             private var preLastPos = -1
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                if (newState != SCROLL_STATE_IDLE) {
+                    return
+                }
                 val manager = recyclerView.layoutManager as LinearLayoutManager
                 val firstPos = manager.findFirstVisibleItemPosition()
                 val lastPos = manager.findLastVisibleItemPosition()
@@ -148,12 +155,12 @@ class BookReaderActivity : BaseActivity() {
                 if (preFirstPosition != firstPos || preLastPos != lastPos) {
                     preFirstPosition = firstPos
                     preLastPos = lastPos
-                    launch {
+                    launch(singleCoroutineKey = "onScrolledCheckChapterContentCache") {
                         val intRange = (max(firstPos - 1, 0))..(min(lastPos + 1, chapterList.size))
-                        preLoadRefresh(chapterList, intRange)
+                        val update = preLoadRefresh(chapterList, intRange)
                         val curFirstPos = manager.findFirstVisibleItemPosition()
                         val curLastPos = manager.findLastVisibleItemPosition()
-                        if (curFirstPos <= lastPos && curLastPos >= firstPos) {
+                        if (update && curFirstPos <= lastPos && curLastPos >= firstPos) {
                             delay(1)
                             adapter.notifyDataSetChanged()
                         }
@@ -165,26 +172,28 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun saveReadRecord(delay: Long = 2000) {
-        launch(singleCoroutineKey = "saveReadRecord") {
+        launchIo(singleCoroutineKey = "saveReadRecord") {
             //延迟2s 保存
             delay(delay)
-            val manager = recycle_view.layoutManager as LinearLayoutManager
-            var view = manager.getChildAt(0) ?: return@launch
-            var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+            withMain {
+                val manager = recycle_view.layoutManager as LinearLayoutManager
+                var view = manager.getChildAt(0) ?: return@withMain
+                var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
 
-            if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
-                view = manager.getChildAt(manager.childCount - 1) ?: view
-                isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+                if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
+                    view = manager.getChildAt(manager.childCount - 1) ?: view
+                    isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+                }
+
+                val top = view.top
+                val pos = manager.getPosition(view)
+                val readingChapter = adapter.chapterList.getOrNull(pos)
+                readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
+                readingRecord.offest = top
+
+                readingRecord.isEnd = isEnd
+                DataManager.setReadingRecord(readingRecord)
             }
-
-            val top = view.top
-            val pos = manager.getPosition(view)
-            val readingChapter = adapter.chapterList.getOrNull(pos)
-            readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
-            readingRecord.offest = top
-
-            readingRecord.isEnd = isEnd
-            DataManager.setReadingRecord(readingRecord)
         }
     }
 
@@ -270,11 +279,11 @@ class BookReaderActivity : BaseActivity() {
         chapterList: List<Chapter>,
         posRange: IntRange,
         onlyLocal: Boolean = false
-    ) = withIo {
+    ): Boolean = withIo {
         val loadList = posRange.mapNotNull { chapterList.getOrNull(it) }
         loadList.map {
             async { getChapterContent(it, onlyLocal) }
-        }.awaitAll()
+        }.awaitAll().firstOrNull { it } ?: false
     }
 
     private val loadRecord = ConcurrentHashMap<String, Deferred<Chapter>>()
@@ -285,20 +294,19 @@ class BookReaderActivity : BaseActivity() {
     private suspend fun getChapterContent(
         chapter: Chapter?,
         onlyLocal: Boolean
-    ) {
-        withIo {
-            chapter ?: return@withIo
-            if (chapter.isLoaded && chapter.content != null) {
-                return@withIo
-            }
-            val chapterAsync = loadRecord.getOrPut(chapter.url) {
-                async {
-                    DataManager.getChapterContent(chapter, onlyLocal)
-                }
-            }
-            chapterAsync.await()
-            loadRecord.remove(chapter.url,chapterAsync)
+    ): Boolean = withIo {
+        chapter ?: return@withIo false
+        if (chapter.isLoaded && chapter.content != null) {
+            return@withIo false
         }
+        val chapterAsync = loadRecord.getOrPut(chapter.url) {
+            async {
+                DataManager.getChapterContent(chapter, onlyLocal)
+            }
+        }
+        chapterAsync.await()
+        loadRecord.remove(chapter.url, chapterAsync)
+        return@withIo true
     }
 
     class ChapterListAdapter(val activity: BookReaderActivity) :
@@ -349,8 +357,8 @@ class BookReaderActivity : BaseActivity() {
                             activity.launch {
                                 val intRange =
                                     max(position - 1, 0)..min(position + 1, chapterList.size - 1)
-                                activity.preLoadRefresh(chapterList, intRange)
-                                if (holder.adapterPosition == position) {
+                                val update = activity.preLoadRefresh(chapterList, intRange)
+                                if (update && holder.adapterPosition == position) {
                                     delay(1)
                                     notifyDataSetChanged()
                                 }
