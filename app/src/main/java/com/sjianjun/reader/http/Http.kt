@@ -76,9 +76,7 @@ val client = HttpClient.Builder()
                 }
                 it.proceed(newBuilder.build())
             }
-        if (BuildConfig.DEBUG) {
-            clientBuilder?.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-        }
+        clientBuilder?.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
 
     }
     .addConverterFactory(GsonCharsetCompatibleConverter.create())

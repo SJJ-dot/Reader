@@ -169,7 +169,7 @@ data class JavaScript constructor(
             try {
                 execute<String>(Func.getChapterContent, chapterUrl)
             } catch (t: Throwable) {
-                Log.i("$source 加载章节内容出错：$chapterUrl", t)
+                Log.e("$source 加载章节内容出错：$chapterUrl", t)
                 null
             }
         }

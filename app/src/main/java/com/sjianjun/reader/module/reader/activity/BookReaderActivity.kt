@@ -140,21 +140,19 @@ class BookReaderActivity : BaseActivity() {
         recycle_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             private var preFirstPosition = -1
             private var preLastPos = -1
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                if (newState != SCROLL_STATE_IDLE) {
-                    return
-                }
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 val manager = recyclerView.layoutManager as LinearLayoutManager
                 val firstPos = manager.findFirstVisibleItemPosition()
                 val lastPos = manager.findLastVisibleItemPosition()
 
-                val chapterList = adapter.chapterList
-                val chapter = chapterList.getOrNull(firstPos) ?: return
-                chapter_title.text = chapter.title
-
                 if (preFirstPosition != firstPos || preLastPos != lastPos) {
                     preFirstPosition = firstPos
                     preLastPos = lastPos
+
+                    val chapterList = adapter.chapterList
+                    val chapter = chapterList.getOrNull(firstPos) ?: return
+                    chapter_title.text = chapter.title
+
                     launch(singleCoroutineKey = "onScrolledCheckChapterContentCache") {
                         val intRange = (max(firstPos - 1, 0))..(min(lastPos + 1, chapterList.size))
                         val update = preLoadRefresh(chapterList, intRange)
@@ -166,7 +164,6 @@ class BookReaderActivity : BaseActivity() {
                         }
                     }
                 }
-//                saveReadRecord()
             }
         })
     }
@@ -200,7 +197,7 @@ class BookReaderActivity : BaseActivity() {
     private val initDataJob = AtomicReference<Job>()
     private fun initData() {
         initDataJob.get()?.cancel()
-        launch {
+        launch(singleCoroutineKey = "initBookReaderData") {
             val book = DataManager.getBookByUrl(bookUrl).first()
             if (book == null) {
                 finish()
@@ -300,7 +297,7 @@ class BookReaderActivity : BaseActivity() {
             return@withIo false
         }
         val chapterAsync = loadRecord.getOrPut(chapter.url) {
-            async {
+            async(start = CoroutineStart.LAZY) {
                 DataManager.getChapterContent(chapter, onlyLocal)
             }
         }

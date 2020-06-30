@@ -287,7 +287,6 @@ object DataManager {
                 }
                 book.isLoading = false
                 dao.updateBookDetails(bookDetails)
-                Log.i(bookDetails)
                 return@withIo null
             } catch (e: Throwable) {
                 Log.i("${script.source}加载书籍详情：$book", e)
