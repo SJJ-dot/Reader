@@ -18,6 +18,7 @@
         android:allowBackup="true"
         android:fullBackupOnly="true"
         android:icon="@mipmap/ic_xue_xi"
+        android:hardwareAccelerated="true"
         android:label="${app_name}"
         android:theme="@style/AppTheme.DayNight"
         android:usesCleartextTraffic="true"

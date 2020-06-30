@@ -81,7 +81,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             )
             .commitNowAllowingStateLoss()
 
-        launch(singleCoroutineKey = "initData") {
+        launch(singleCoroutineKey = "initBookDetailsData") {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
 
