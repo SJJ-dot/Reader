@@ -44,7 +44,8 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         }
     }
 
-    override val onDestroy: () -> Unit = {
+    override fun onDestroyView() {
+        super.onDestroyView()
         setHasOptionsMenu(false)
     }
 

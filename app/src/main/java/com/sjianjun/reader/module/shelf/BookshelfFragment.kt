@@ -50,7 +50,8 @@ class BookshelfFragment : BaseAsyncFragment() {
         initData()
     }
 
-    override val onDestroy: () -> Unit = {
+    override fun onDestroyView() {
+        super.onDestroyView()
         setHasOptionsMenu(false)
     }
 

@@ -18,7 +18,9 @@ abstract class BaseAsyncFragment : BaseFragment() {
         savedInstanceState: Bundle?
     ): View? {
         val res = getLayoutRes()
-        assert(res != 0) { "not set layout res" }
+        if (BuildConfig.DEBUG && res == 0) {
+            error("not set layout res")
+        }
         return asyncInflateRequest(res).apply {
             onLoadedView = this@BaseAsyncFragment.onLoadedView
             onStart = this@BaseAsyncFragment.onStart
@@ -40,7 +42,6 @@ abstract class BaseAsyncFragment : BaseFragment() {
     open val onResume: () -> Unit = empty
     open val onPause: () -> Unit = empty
     open val onStop: () -> Unit = empty
-    open val onDestroy: () -> Unit = empty
 
     @Deprecated(
         "should use onLoadedView field or onCreate field",
@@ -70,9 +71,5 @@ abstract class BaseAsyncFragment : BaseFragment() {
         super.onStop()
     }
 
-    @Deprecated("should use onDestroy field", ReplaceWith("override val onDestroy = ..."))
-    override fun onDestroyView() {
-        super.onDestroyView()
-    }
 
 }
