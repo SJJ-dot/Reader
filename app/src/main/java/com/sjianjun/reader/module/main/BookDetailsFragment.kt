@@ -24,9 +24,6 @@ class BookDetailsFragment : BaseAsyncFragment() {
     private val bookAuthor: String
         get() = requireArguments().getString(BOOK_AUTHOR)!!
 
-    private var startingBookSyncError: Throwable? = null
-    private var bookSyncError: Throwable? = null
-
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
     override val onLoadedView: (View) -> Unit = {
@@ -61,10 +58,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
             val qiDian = async {
                 val startingBook = DataManager.getStartingBook(book)
                 if (startingBook?.source != book.source) {
-                    startingBookSyncError = DataManager.reloadBookFromNet(startingBook)
+                    DataManager.reloadBookFromNet(startingBook)
                 }
             }
-            bookSyncError = DataManager.reloadBookFromNet(book)
+            DataManager.reloadBookFromNet(book)
             qiDian.await()
             detailsRefreshLayout?.isRefreshing = false
         }
@@ -85,6 +82,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
         launch(singleCoroutineKey = "initBookDetailsData") {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
+                if (it != null) {
+                    val startingBook = DataManager.getStartingBook(it, onlyLocal = true)
+                    it.startingError = startingBook?.error
+                }
 
                 fillView(it)
 
@@ -108,7 +109,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         val bookList = DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor).firstOrNull()
         originWebsite?.text = "来源：${book?.source}共${bookList?.size}个源"
-        val error = bookSyncError ?: startingBookSyncError
+        val error = book?.error ?: book?.startingError
         if (error == null) {
             sync_error.hide()
         } else {
@@ -118,7 +119,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
                     .init(
                         "${error}\n" +
                                 "StackTrace:\n" +
-                                android.util.Log.getStackTraceString(error)
+                                error
                     )
                     .setPopupGravity(Gravity.BOTTOM or Gravity.START)
                     .showPopupWindow(it)
