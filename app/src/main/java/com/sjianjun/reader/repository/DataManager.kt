@@ -141,7 +141,7 @@ object DataManager {
         return withIo {
             try {
                 val result = http.post(
-                    "http://book.easou.com/ta/tsAjax.m",
+                    "https://book.easou.com/ta/tsAjax.m",
                     mapOf("k" to URLEncoder.encode(query, "utf-8"))
                 )
                 return@withIo gson.fromJson<List<String>>(result)
