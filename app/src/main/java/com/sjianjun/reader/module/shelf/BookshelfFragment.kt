@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.shelf
 import android.content.res.ColorStateList
 import android.view.*
 import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -21,12 +20,8 @@ import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
@@ -34,14 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class BookshelfFragment : BaseAsyncFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
-    private val bookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
-    private val startingBookSyncErrorMap = ConcurrentHashMap<String, Throwable>()
     private lateinit var adapter: Adapter
     override fun getLayoutRes() = R.layout.main_fragment_book_shelf
-    private lateinit var startingStationRefreshActor: SendChannel<List<Book>>
 
     override val onLoadedView: (View) -> Unit = {
-        startingStationRefreshActor = startingStationRefreshActor()
 
         setHasOptionsMenu(true)
         adapter = Adapter(this@BookshelfFragment)
@@ -84,8 +75,11 @@ class BookshelfFragment : BaseAsyncFragment() {
                             lastChapterIndex - readChapterIndex + 1
                         }
 
-                        book.error = bookSyncErrorMap[book.key]
-                        book.startingError = startingBookSyncErrorMap[book.key]
+                        val bookScript = js.find { script ->
+                            script.source == book.source
+                        }
+                        val startingBook = DataManager.getStartingBook(book, bookScript,onlyLocal = true)
+                        book.startingError = startingBook?.error
 
                         book
                     }
@@ -115,8 +109,8 @@ class BookshelfFragment : BaseAsyncFragment() {
                     val list = sourceMap.getOrPut(it.source, { mutableListOf() })
                     list.add(it)
                 }
+                startingStationRefreshActor(bookList.values.toList())
 
-                startingStationRefreshActor.offer(bookList.values.toList())
                 showProgressBar(SHOW_FLAG_REFRESH)
                 book_shelf_refresh.progress = 0
                 sourceMap.map {
@@ -128,23 +122,13 @@ class BookshelfFragment : BaseAsyncFragment() {
                         if (delay < 0) {
                             it.value.map {
                                 async {
-                                    val error = DataManager.reloadBookFromNet(it)
-                                    if (error != null) {
-                                        bookSyncErrorMap[it.key] = error
-                                    } else {
-                                        bookSyncErrorMap.remove(it.key)
-                                    }
+                                    DataManager.reloadBookFromNet(it)
                                     book_shelf_refresh.progress = book_shelf_refresh.progress + 1
                                 }
                             }.awaitAll()
                         } else {
                             it.value.apply { it.value.sortWith(bookComparator) }.forEach {
-                                val error = DataManager.reloadBookFromNet(it)
-                                if (error != null) {
-                                    bookSyncErrorMap[it.key] = error
-                                } else {
-                                    bookSyncErrorMap.remove(it.key)
-                                }
+                                DataManager.reloadBookFromNet(it)
                                 book_shelf_refresh.progress = book_shelf_refresh.progress + 1
                                 delay(delay)
                             }
@@ -160,68 +144,60 @@ class BookshelfFragment : BaseAsyncFragment() {
         }
     }
 
-    private fun startingStationRefreshActor() =
-        viewLifecycleOwner.lifecycleScope.actor<List<Book>>(Dispatchers.IO, capacity = Channel.CONFLATED) {
-            for (msg in channel) {
-                showProgressBar(SHOW_FLAG_STARTING_STATION)
-                book_shelf_refresh?.secondaryProgress = 0
-                val sourceMap = mutableMapOf<String, MutableList<Book>>()
-                msg.map {
-                    async {
-                        val bookScript = it.javaScriptList?.find { script ->
-                            script.source == it.source
-                        }
-                        val book = DataManager.getStartingBook(it, bookScript)
-                        if (book == it) {
-                            null
-                        } else {
-                            val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY)
-                            delay(delay ?: 1000)
-                            book
-                        }
+    private fun startingStationRefreshActor(msg: List<Book>) =
+        launch(singleCoroutineKey = "startingStationRefreshActor") {
+            showProgressBar(SHOW_FLAG_STARTING_STATION)
+            book_shelf_refresh?.secondaryProgress = 0
+            val sourceMap = mutableMapOf<String, MutableList<Book>>()
+            msg.map {
+                async {
+                    val bookScript = it.javaScriptList?.find { script ->
+                        script.source == it.source
                     }
-                }.awaitAll().filterNotNull().forEach {
-                    val list = sourceMap.getOrPut(it.source, { mutableListOf() })
-                    list.add(it)
-                }
-
-                val count = AtomicInteger()
-                val bookCount = sourceMap.map { it.value.size }.reduce { acc, i -> acc + i }
-                count.lazySet((book_shelf_refresh?.max ?: 0) - bookCount)
-                book_shelf_refresh?.secondaryProgress = count.get()
-
-                sourceMap.forEach { entry ->
-                    val javaScript = DataManager.getJavaScript(entry.key)
-                    val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
-                    if (delay < 0) {
-                        entry.value.map {
-                            async {
-                                val error = DataManager.reloadBookFromNet(it, javaScript)
-                                if (error != null) {
-                                    startingBookSyncErrorMap[it.key] = error
-                                } else {
-                                    startingBookSyncErrorMap.remove(it.key)
-                                }
-                                book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
-                            }
-                        }.awaitAll()
+                    val book = DataManager.getStartingBook(it, bookScript)
+                    if (book == it) {
+                        null
                     } else {
-                        entry.value.forEach {
-                            val error = DataManager.reloadBookFromNet(it, javaScript)
-                            if (error != null) {
-                                startingBookSyncErrorMap[it.key] = error
-                            } else {
-                                startingBookSyncErrorMap.remove(it.key)
-                            }
-                            book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
-                            delay(delay)
-                        }
+                        val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY)
+                        delay(delay ?: 1000)
+                        book
                     }
+                }
+            }.awaitAll().filterNotNull().forEach {
+                val list = sourceMap.getOrPut(it.source, { mutableListOf() })
+                list.add(it)
+            }
 
+            val count = AtomicInteger()
+
+            val bookCount =if (sourceMap.isEmpty())
+                0
+            else
+                sourceMap.map { it.value.size }.reduce { acc, i -> acc + i }
+            count.lazySet((book_shelf_refresh?.max ?: 0) - bookCount)
+            book_shelf_refresh?.secondaryProgress = count.get()
+
+            sourceMap.forEach { entry ->
+                val javaScript = DataManager.getJavaScript(entry.key)
+                val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
+                if (delay < 0) {
+                    entry.value.map {
+                        async {
+                            val error = DataManager.reloadBookFromNet(it, javaScript)
+                            book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
+                        }
+                    }.awaitAll()
+                } else {
+                    entry.value.forEach {
+                        DataManager.reloadBookFromNet(it, javaScript)
+                        book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
+                        delay(delay)
+                    }
                 }
 
-                hideProgressBar(SHOW_FLAG_STARTING_STATION)
             }
+
+            hideProgressBar(SHOW_FLAG_STARTING_STATION)
         }
 
     private var showState = 0
@@ -300,9 +276,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                                 .init(
                                     "${error ?: startingError}\n" +
                                             "StackTrace:\n" +
-                                            android.util.Log.getStackTraceString(
-                                                error ?: startingError
-                                            )
+                                            (error ?: startingError)
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
 
@@ -349,7 +323,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 if (source?.isNotBlank() == true &&
                     source != STARTING_STATION_BOOK_SOURCE_EMPTY
                 ) {
-                    starting_station.text = source.subSequence(0,1)
+                    starting_station.text = source.subSequence(0, 1)
                     visibleSet.visible(starting_station)
                 } else {
                     visibleSet.invisible(starting_station)

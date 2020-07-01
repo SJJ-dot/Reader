@@ -50,11 +50,13 @@ class Book {
     @Ignore
     var unreadChapterCount = 0
 
-    @Ignore
-    var error: Throwable? = null
+    /**
+     * 书籍加载错误提示
+     */
+    var error: String? = null
 
     @Ignore
-    var startingError: Throwable? = null
+    var startingError: String? = null
 
     override fun toString(): String {
         return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"

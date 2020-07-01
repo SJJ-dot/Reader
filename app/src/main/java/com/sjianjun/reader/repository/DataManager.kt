@@ -17,7 +17,6 @@ import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import java.io.InputStream
 import java.net.URLEncoder
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 界面数据从数据库订阅刷新
@@ -197,7 +196,11 @@ object DataManager {
         }
     }
 
-    suspend fun getStartingBook(book: Book, javaScript: JavaScript? = null): Book? {
+    suspend fun getStartingBook(
+        book: Book,
+        javaScript: JavaScript? = null,
+        onlyLocal: Boolean = false
+    ): Book? {
         return withIo {
             if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
                 //可能存在之前本地没有首发站书源，设置为null之后的情况
@@ -216,7 +219,7 @@ object DataManager {
                 return@withIo book
             }
 
-            if (record.startingStationBookSource.isBlank()) {
+            if (!onlyLocal && record.startingStationBookSource.isBlank()) {
                 //到官方的网站查询并把书籍插入到本地数据库
                 var error = false
                 val startingBook = dao.getAllStartingJavaScript().map {
@@ -269,31 +272,29 @@ object DataManager {
         }
     }
 
-    suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null): Throwable? {
-        return withIo {
-            book ?: return@withIo MessageException("书籍查找失败")
-            val script = javaScript ?: dao.getJavaScriptBySource(book.source)
-            ?: return@withIo MessageException("未找到对应书籍书源")
-            book.isLoading = true
-            dao.updateBook(book)
-            try {
-                val bookDetails = script.getDetails(book.url)!!
-                bookDetails.url = book.url
+    suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null) = withIo {
+        book ?: return@withIo MessageException("书籍查找失败")
+        val script = javaScript ?: dao.getJavaScriptBySource(book.source)
+        ?: return@withIo MessageException("未找到对应书籍书源")
+        book.isLoading = true
+        dao.updateBook(book)
+        try {
+            val bookDetails = script.getDetails(book.url)!!
+            bookDetails.url = book.url
 
-                val chapterList = bookDetails.chapterList!!
-                chapterList.forEachIndexed { index, chapter ->
-                    chapter.bookUrl = book.url
-                    chapter.index = index
-                }
-                book.isLoading = false
-                dao.updateBookDetails(bookDetails)
-                return@withIo null
-            } catch (e: Throwable) {
-                Log.i("${script.source}加载书籍详情：$book", e)
-                book.isLoading = false
-                dao.updateBook(book)
-                return@withIo e
+            val chapterList = bookDetails.chapterList!!
+            chapterList.forEachIndexed { index, chapter ->
+                chapter.bookUrl = book.url
+                chapter.index = index
             }
+            book.isLoading = false
+            book.error = null
+            dao.updateBookDetails(bookDetails)
+        } catch (e: Throwable) {
+            Log.i("${script.source}加载书籍详情：$book", e)
+            book.isLoading = false
+            book.error = android.util.Log.getStackTraceString(e)
+            dao.updateBook(book)
         }
     }
 

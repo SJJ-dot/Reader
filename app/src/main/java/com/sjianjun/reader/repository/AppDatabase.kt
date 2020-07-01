@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 7
+    version = 8
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
@@ -69,6 +69,11 @@ val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
         override fun migrate(database: SupportSQLiteDatabase) {
             database.execSQL("DROP INDEX index_Book_author_title_source")
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_Book_author_title_source` ON `Book` (`author`, `title`, `source`)")
+        }
+    })
+    .addMigrations(object : Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE 'Book' ADD COLUMN `error` TEXT")
         }
     })
     .build()
