@@ -42,9 +42,6 @@ class SearchFragment : BaseAsyncFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
     private val searchHint = SearchHintAdapter()
-    private lateinit var deleteSearchHistoryActor: SendChannel<List<SearchHistory>>
-    private lateinit var queryActor: SendChannel<String>
-    private lateinit var queryHintActor: SendChannel<String>
 
     override fun getLayoutRes() = R.layout.search_fragment_search
 
@@ -52,9 +49,6 @@ class SearchFragment : BaseAsyncFragment() {
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         recycle_view_hint.adapter = searchHint
-        deleteSearchHistoryActor = deleteSearchHistoryActor()
-        queryActor = queryActor()
-        queryHintActor = queryHintActor()
         initData()
     }
 
@@ -95,10 +89,10 @@ class SearchFragment : BaseAsyncFragment() {
         initSearchHistory(searchView)
     }
 
-    private fun initSearchHistory(searchView: SearchView) {
-        Log.i("view is null ${tfl_search_history == null}")
-        tfl_search_history ?: return
-        launch {
+    private fun initSearchHistory(searchView: SearchView) =
+        launch(singleCoroutineKey = "initSearchHistory") {
+            Log.i("view is null ${tfl_search_history == null}")
+            tfl_search_history ?: return@launch
             DataManager.getAllSearchHistory().collectLatest {
                 tfl_search_history.removeAllViews()
                 it?.forEach { history ->
@@ -113,16 +107,19 @@ class SearchFragment : BaseAsyncFragment() {
                         searchView.setQuery(history.query, true)
                     }
                     tagView.search_history_text.setOnLongClickListener { _ ->
-                        deleteSearchHistoryActor.offer(listOf(history))
+                        launchIo(singleCoroutineKey = "delete_history") {
+                            DataManager.deleteSearchHistory(listOf(history))
+                        }
                         true
                     }
                 }
                 tv_search_history_clean.setOnClickListener { _ ->
-                    deleteSearchHistoryActor.offer(it ?: return@setOnClickListener)
+                    launchIo(singleCoroutineKey = "delete_history") {
+                        DataManager.deleteSearchHistory(it)
+                    }
                 }
             }
         }
-    }
 
     private fun initSearchView(searchView: SearchView) {
         searchView.setOnCloseListener {
@@ -132,7 +129,9 @@ class SearchFragment : BaseAsyncFragment() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query.isNullOrEmpty()) return true
-                queryActor.offer(query)
+                launch(singleCoroutineKey = "search_result") {
+                    search(query)
+                }
                 searchResult.postValue(emptyList())
                 searchView.clearFocus()
                 return true
@@ -143,8 +142,10 @@ class SearchFragment : BaseAsyncFragment() {
                     searchHint.data = emptyList()
                     searchHint.notifyDataSetChanged()
                 }
-                launch {
-                    queryHintActor.send(newText ?: "")
+                launch(singleCoroutineKey = "quick_search_hint") {
+                    val hintList = DataManager.searchHint(newText ?: "") ?: emptyList()
+                    searchHint.data = hintList
+                    searchHint.notifyDataSetChanged()
                 }
                 return false
             }
@@ -184,48 +185,17 @@ class SearchFragment : BaseAsyncFragment() {
 
     }
 
-    //宜搜快速提示
-    private fun queryHintActor() = viewLifecycleOwner.lifecycleScope.actor<String>(
-        Dispatchers.IO,
-        capacity = Channel.CONFLATED
-    ) {
-        var job: Job? = null
-        for (msg in channel) {
-            job?.cancel()
-            job = launch {
-                val hintList = DataManager.searchHint(msg) ?: emptyList()
-                withMain {
-                    searchHint.data = hintList
-                    searchHint.notifyDataSetChanged()
-                }
-            }
+    private suspend fun search(searchKeyWord: String) = withMain {
+        showProgress()
+        search_refresh?.progress = 0
+        val count = AtomicInteger()
+        DataManager.search(searchKeyWord)?.collectLatest {
+            search_refresh?.progress = count.incrementAndGet()
+            delay(300)
+            searchResult.postValue(it)
         }
-    }
-
-    private fun queryActor() = viewLifecycleOwner.lifecycleScope.actor<String>(
-        Dispatchers.IO,
-        capacity = Channel.CONFLATED
-    ) {
-        var job: Job? = null
-        for (msg in channel) {
-            job?.cancel()
-            job = launch {
-                withMain {
-                    showProgress()
-                    search_refresh?.progress = 0
-                }
-                val count = AtomicInteger()
-                DataManager.search(msg)?.collectLatest {
-                    search_refresh?.progress = count.incrementAndGet()
-                    delay(300)
-                    searchResult.postValue(it)
-                }
-                withMain {
-                    search_refresh?.progress = search_refresh?.max ?: 0
-                    hideProgress()
-                }
-            }
-        }
+        search_refresh?.progress = search_refresh?.max ?: 0
+        hideProgress()
     }
 
     private fun showProgress() {
@@ -235,13 +205,6 @@ class SearchFragment : BaseAsyncFragment() {
     private fun hideProgress() {
         search_refresh?.animFadeOut()
     }
-
-    private fun deleteSearchHistoryActor() =
-        viewLifecycleOwner.lifecycleScope.actor<List<SearchHistory>> {
-            for (msg in channel) {
-                DataManager.deleteSearchHistory(msg)
-            }
-        }
 
     private class SearchHintAdapter : BaseAdapter(R.layout.search_item_fragment_search_hint) {
         var data = listOf<String>()
