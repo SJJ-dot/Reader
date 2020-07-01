@@ -272,7 +272,7 @@ class BookshelfFragment : BaseAsyncFragment() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
-            holder.setRecyclable(!book.isLoading)
+//            holder.setRecyclable(!book.isLoading)
             holder.itemView.apply {
                 val visibleSet = constraint_layout.visibleSet()
                 bookCover.glide(fragment, book.cover)
