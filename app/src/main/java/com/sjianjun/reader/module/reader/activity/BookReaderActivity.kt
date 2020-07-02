@@ -68,7 +68,7 @@ class BookReaderActivity : BaseActivity() {
                         var dy =
                             -(view.height * progress.toFloat() / 100 - recycle_view.height / 2).roundToInt()
                         dy = max(min(dy, 0), -view.height)
-                        Log.e("chapterIndex $chapterIndex progress:$progress dy:${dy} view.height:${view.height} ${Thread.currentThread()}")
+
                         manager.scrollToPositionWithOffset(chapterIndex, dy)
                         saveReadRecord()
                         if (ttsUtil.isSpeakEnd) {
