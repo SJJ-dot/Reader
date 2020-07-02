@@ -1,7 +1,9 @@
 package com.sjianjun.reader.utils
 
 import android.content.Context
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.Engine.*
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
 import androidx.lifecycle.Lifecycle
@@ -98,10 +100,14 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
         }
         textToSpeech?.stop()
         contentParagraph.forEach {
+
             textToSpeech?.speak(
                 it.paragraph,
                 QUEUE_ADD,
-                null,
+                bundle(
+                    KEY_PARAM_STREAM to AudioManager.STREAM_MUSIC,
+                    KEY_PARAM_VOLUME to 1
+                ),
                 it.utteranceId
             )
         }
