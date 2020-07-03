@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.bookcity
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -79,7 +80,6 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.bookcity_fragment_menu, menu)
         javaScriptList.forEachIndexed { index, javaScript ->
             menu.add(0, index, index, javaScript.first.source)
         }
@@ -90,7 +90,6 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         menu.iterator().forEach {
             it.isVisible = source != it.title
         }
-        menu.findItem(R.id.bookcity_station).title = source
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -101,7 +100,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     }
 
     private fun setTitle(title: CharSequence?) {
-        activity?.supportActionBar?.title = title?.substring(0, min(title.length,5)) ?: return
+        activity?.supportActionBar?.title = title ?: return
 //        activity?.supportActionBar?.hide()
     }
 
@@ -110,20 +109,25 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         setTitle(sourceJs?.first?.source)
         clearHistory = true
         webView?.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
+        if (sourceJs != null) {
+            globalConfig.bookCityDefaultSource = sourceJs.first.source
+        }
     }
 
     private fun initWebView(webView: WebView?) {
         initWebviewSetting(webView)
         globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
-            val url = it?.toString()?:return@Observer
+            val url = it?.toString() ?: return@Observer
             clearHistory = true
             webView?.loadUrl(url)
         })
         webView?.webViewClient = object : WebViewClient() {
+            var started = false
             override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
                 Log.i("$url webView:${view}")
                 if (url?.startsWith("http") == true) {
                     view.loadUrl(url)
+                    started = false
                 } else {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -135,11 +139,24 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                Log.i(url + " webView:${view}")
+                started = true
+                Log.i(url + "started:$started webView:${view}")
             }
 
-            override fun onPageFinished(view: WebView?, url: String?) {
-                Log.i(url + " webView:${view}")
+            override fun onPageFinished(webView: WebView?, url: String?) {
+                Log.i(url + "started:$started webView:${webView}")
+                if (started) {
+                    started = false
+                    webView?.evaluateJavascript(
+                        """
+                            
+                       alert("11111");
+                                "222";
+                    """.trimIndent()
+                    ) {
+                        Log.e("js result:$it")
+                    }
+                }
                 if (clearHistory) {
                     clearHistory = false
                     webView?.clearHistory()
@@ -187,7 +204,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 result: JsResult?
             ): Boolean {
                 Log.i("message:${message} $url webView:${view}")
-                return super.onJsAlert(view, url, message, result)
+                return false
             }
 
             override fun onJsConfirm(
