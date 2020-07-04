@@ -4,9 +4,17 @@ class JsVersionInfo {
     var version = 0
     var versions: List<Version>? = null
 
+    /**
+     * 广告SDK url集合
+     */
+    var adBlockFilterUrlVersion = 0
+
     class Version {
         var fileName: String = ""
         var version = 0
+        //广告屏蔽脚本版本
+        var adBlockVersion = 0
+
         /**
          * 是不是首发站
          */

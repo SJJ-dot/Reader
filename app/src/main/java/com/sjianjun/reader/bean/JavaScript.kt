@@ -34,7 +34,9 @@ data class JavaScript constructor(
 
     var isStartingStation: Boolean = false,
     var priority: Int = 0,
-    var supportBookCity: Boolean = false
+    var supportBookCity: Boolean = false,
+    var adBlockVersion: Int = 0,
+    var adBlockJs: String = ""
 ) {
 
     @JvmField
@@ -64,7 +66,6 @@ data class JavaScript constructor(
             null
         }
     }
-
 
 
     @Ignore
