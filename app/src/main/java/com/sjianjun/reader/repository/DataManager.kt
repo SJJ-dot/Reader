@@ -36,12 +36,8 @@ object DataManager {
                 }
                 versionInfo
             }, {
-                var jsInput: InputStream? = null
-                try {
-                    jsInput = App.app.assets.open("js/$it", ACCESS_BUFFER)
-                    jsInput.bufferedReader().readText()
-                } finally {
-                    jsInput?.close()
+                App.app.assets.open(it, ACCESS_BUFFER).use { stream ->
+                    stream.bufferedReader().readText()
                 }
             })
         }
@@ -50,9 +46,9 @@ object DataManager {
 
     suspend fun reloadBookJavaScript() {
         checkJavaScriptUpdate({
-            http.get(globalConfig.javaScriptBaseUrl + "version.json")
+            http.get(URL_ASSETS_BASE + "js/version.json")
         }, {
-            http.get(globalConfig.javaScriptBaseUrl + it)
+            http.get(URL_ASSETS_BASE + it)
         })
     }
 
@@ -63,29 +59,58 @@ object DataManager {
         withIo {
             val versionJson = versionInfo()
             val info = gson.fromJson<JsVersionInfo>(versionJson)!!
+
+            val asyncUrlSet = async {
+                //广告拦截
+                if (info.adBlockFilterUrlVersion >= globalConfig.adBlockUrlSetVersion) {
+                    val urlSet = gson.fromJson<Set<String>>(loadScript("adBlock/filterUrl.json"))!!
+                    globalConfig.adBlockUrlSet = urlSet
+                }
+            }
+
+            //加载网站解析脚本
             if (BuildConfig.DEBUG || info.version >= globalConfig.javaScriptVersion) {
                 info.versions?.map {
                     async {
                         val javaScript = dao.getJavaScriptBySource(it.fileName)
-                        if (!BuildConfig.DEBUG || javaScript?.enable == false) {
-                            if (javaScript != null && javaScript.version >= it.version) {
+                        if (javaScript?.enable == false) {
+                            //脚本 停用
+                            return@async javaScript
+                        }
+                        //不是DEBUG模式才检查 js 版本否则一律更新
+                        if (!BuildConfig.DEBUG && javaScript != null) {
+                            if (javaScript.version >= it.version && javaScript.adBlockVersion >= it.adBlockVersion) {
                                 return@async javaScript
                             }
                         }
-                        val js = tryBlock { loadScript(it.fileName) }
-                        if (js == null) {
-                            null
-                        } else {
+                        val js = async {
+                            if (javaScript == null || javaScript.version < it.version) {
+                                loadScript("js/${it.fileName}")
+                            } else {
+                                javaScript.js
+                            }
+
+                        }
+                        val adBlockJs = async {
+                            if (javaScript == null || javaScript.adBlockVersion < it.adBlockVersion) {
+                                loadScript("adBlock/${it.fileName}")
+                            } else {
+                                javaScript.adBlockJs
+                            }
+                        }
+
+                        tryBlock {
                             JavaScript(
                                 it.fileName,
-                                js,
+                                js.await(),
                                 it.version,
                                 it.starting,
                                 it.priority,
-                                it.supportBookCity
+                                it.supportBookCity,
+                                adBlockVersion = it.adBlockVersion,
+                                adBlockJs = adBlockJs.await()
                             )
                         }
-
                     }
                 }?.awaitAll().also {
                     if (it != null) {
@@ -94,6 +119,8 @@ object DataManager {
                     }
                 }
             }
+
+            asyncUrlSet.await()
 
         }
     }

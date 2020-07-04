@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.JS_SOURCE_QI_DIAN
-import com.sjianjun.reader.utils.URL_SCRIPT_BASE
 
 val globalConfig by lazy { AppConfig("default") }
 val globalBookConfig by lazy { BookConfig() }
@@ -26,9 +25,6 @@ class AppConfig(val name: String) {
     }
 
     var javaScriptVersion by sp(0)
-    val javaScriptVersionMap by liveDataMap(0, "fileName")
-
-    var javaScriptBaseUrl by sp(URL_SCRIPT_BASE)
 
     /**
      * github 发布的版本信息
@@ -41,10 +37,16 @@ class AppConfig(val name: String) {
     var lastCheckUpdateTime by sp(0L)
 
     var appDayNightMode by sp(MODE_NIGHT_NO)
-    
+
     var bookCityDefaultSource by sp(JS_SOURCE_QI_DIAN)
 
     val qqAuthLoginUri = MutableLiveData<Uri>()
+
+    var adBlockUrlSetVersion by sp(0)
+    /**
+     * 需要拦截的广告SDK url
+     */
+    var adBlockUrlSet by sp(emptySet<String>())
 }
 
 class BookConfig {

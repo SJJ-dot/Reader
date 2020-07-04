@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 8
+    version = 9
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
@@ -74,6 +74,12 @@ val db = Room.databaseBuilder(App.app, AppDatabase::class.java, "app_database")
     .addMigrations(object : Migration(7, 8) {
         override fun migrate(database: SupportSQLiteDatabase) {
             database.execSQL("ALTER TABLE 'Book' ADD COLUMN `error` TEXT")
+        }
+    })
+    .addMigrations(object : Migration(8, 9) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE 'JavaScript' ADD COLUMN `adBlockJs` TEXT NOT NULL default ''")
+            database.execSQL("ALTER TABLE 'JavaScript' ADD COLUMN `adBlockVersion` INTEGER NOT NULL default 0")
         }
     })
     .build()

@@ -24,16 +24,6 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
-        base_url.setText(globalConfig.javaScriptBaseUrl)
-        save_base_url.setOnClickListener {
-            val url = base_url.text.toString()
-            if (url.isBlank()) {
-                base_url.setText(URL_SCRIPT_BASE)
-                globalConfig.javaScriptBaseUrl = URL_SCRIPT_BASE
-            } else {
-                globalConfig.javaScriptBaseUrl = url
-            }
-        }
         val adapter = Adapter(this@BookScriptManagerFragment)
         recycle_view.adapter = adapter
         launch {

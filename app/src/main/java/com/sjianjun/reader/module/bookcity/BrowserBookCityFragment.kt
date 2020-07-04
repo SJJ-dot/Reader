@@ -1,18 +1,17 @@
 package com.sjianjun.reader.module.bookcity
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
-import android.net.http.SslError
-import android.view.*
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.iterator
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
-import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
@@ -24,12 +23,13 @@ import com.sjianjun.reader.utils.withMain
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
-import kotlin.math.min
 
 
 class BrowserBookCityFragment : BaseBrowserFragment() {
     private var javaScriptList: List<Pair<JavaScript, String>> = emptyList()
     private lateinit var source: String
+    private var javaScript: JavaScript? = null
+    private val adBlockUrl by lazy { globalConfig.adBlockUrlSet }
     private var webView: WebView? = null
     private var clearHistory = false
 
@@ -55,7 +55,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         initMenu()
 
         initWebView(webView)
-        initData()
+//        initData()
     }
 
     override fun onDestroyView() {
@@ -75,7 +75,10 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                         null
                     }
                 }
-            withMain { setHasOptionsMenu(true) }
+            withMain {
+                initData()
+                setHasOptionsMenu(true)
+            }
         }
     }
 
@@ -106,6 +109,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
 
     private fun initData() {
         val sourceJs = javaScriptList.find { it.first.source == source }
+        javaScript = sourceJs?.first
         setTitle(sourceJs?.first?.source)
         clearHistory = true
         webView?.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
@@ -121,16 +125,28 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             clearHistory = true
             webView?.loadUrl(url)
         })
+        webView?.setOnLongClickListener(object : View.OnLongClickListener {
+            override fun onLongClick(v: View): Boolean {
+                val result = (v as WebView).hitTestResult
+                    ?: return false
+                Log.e("${result.type} ${result.extra} $result")
+                return false
+            }
+        })
+
         webView?.webViewClient = object : WebViewClient() {
             var started = false
-            override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
-                Log.i("$url webView:${view}")
-                if (url?.startsWith("http") == true) {
-                    view.loadUrl(url)
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest
+            ): Boolean {
+                Log.i("$request webView:${view}")
+                if (request?.url?.toString()?.startsWith("http") == true) {
+                    view?.loadUrl(request.url?.toString())
                     started = false
                 } else {
                     try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        startActivity(Intent(Intent.ACTION_VIEW, request.url))
                     } catch (e: Exception) {
                         return false
                     }
@@ -147,15 +163,14 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 Log.i(url + "started:$started webView:${webView}")
                 if (started) {
                     started = false
-                    webView?.evaluateJavascript(
-                        """
-                            
-                       alert("11111");
-                                "222";
-                    """.trimIndent()
-                    ) {
-                        Log.e("js result:$it")
+                    val adBlockJs = javaScript?.adBlockJs
+                    if (!adBlockJs.isNullOrBlank()) {
+                        webView?.evaluateJavascript(adBlockJs) {
+                            Log.e("adBlockJs result:$it")
+                        }
                     }
+
+
                 }
                 if (clearHistory) {
                     clearHistory = false
@@ -167,24 +182,19 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 Log.i(url + " webView:${view}")
             }
 
-            override fun onReceivedError(
+            override fun shouldInterceptRequest(
                 view: WebView?,
-                request: WebResourceRequest?,
-                error: WebResourceError?
-            ) {
-                super.onReceivedError(view, request, error)
-                Log.i("error:$error request:$request  webView:${view}")
-            }
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                Log.i("${request?.method} isForMainFrame:${request?.isForMainFrame} ${request?.url} webView:${view}")
+                val block = adBlockUrl.firstOrNull {
+                    request.url.toString().startsWith(it)
+                }
+                if (block != null) {
+                    return WebResourceResponse(null, null, null)
+                }
 
-            override fun onReceivedSslError(
-                view: WebView?,
-                handler: SslErrorHandler?,
-                error: SslError?
-            ) {
-//                super.onReceivedSslError(view, handler, error)
-                //即使证书错误也继续加载。
-//                handler?.proceed()
-                handler?.cancel()
+                return super.shouldInterceptRequest(view, request)
             }
         }
         webView?.webChromeClient = object : WebChromeClient() {
