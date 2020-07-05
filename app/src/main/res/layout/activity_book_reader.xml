@@ -28,8 +28,8 @@
             android:id="@+id/chapter_title"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:gravity="center_vertical"
             android:layout_gravity="end"
+            android:gravity="center_vertical"
             android:paddingLeft="8dp"
             android:paddingRight="8dp"
             android:paddingBottom="2dp"
@@ -54,6 +54,15 @@
             android:layout_height="0.5dp"
             android:background="#E5E5E5"
             app:layout_constraintTop_toBottomOf="@+id/chapter_title" />
+
+        <androidx.core.widget.ContentLoadingProgressBar
+            android:id="@+id/reader_progress"
+            style="@style/ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            app:layout_constraintBottom_toBottomOf="@+id/chapter_title"
+            tools:progress="50"
+            tools:secondaryProgress="50" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
