@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Entity(indices = [Index(value = ["bookUrl"])])
 class Chapter {
@@ -19,7 +20,10 @@ class Chapter {
     var title: String? = null
 
     @JvmField
-    var isLoaded:Boolean = false
+    var isLoaded: Boolean = false
+
+    @Ignore
+    var isLoading = AtomicBoolean(false)
 
     /**
      * 章节内容

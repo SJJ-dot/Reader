@@ -104,10 +104,7 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
             textToSpeech?.speak(
                 it.paragraph,
                 QUEUE_ADD,
-                bundle(
-                    KEY_PARAM_STREAM to AudioManager.STREAM_MUSIC,
-                    KEY_PARAM_VOLUME to 1
-                ),
+                null,
                 it.utteranceId
             )
         }
