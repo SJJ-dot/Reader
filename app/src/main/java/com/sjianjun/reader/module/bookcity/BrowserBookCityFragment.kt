@@ -29,7 +29,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     private var javaScriptList: List<Pair<JavaScript, String>> = emptyList()
     private lateinit var source: String
     private var javaScript: JavaScript? = null
-    private val adBlockUrl by lazy { globalConfig.adBlockUrlSet }
+    private val adBlockUrl by lazy { globalConfig.adBlockUrlSet.map { Regex("\\A$it.*") } }
     private var webView: WebView? = null
     private var clearHistory = false
 
@@ -88,12 +88,12 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         }
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-        menu.iterator().forEach {
-            it.isVisible = source != it.title
-        }
-    }
+//    override fun onPrepareOptionsMenu(menu: Menu) {
+//        super.onPrepareOptionsMenu(menu)
+//        menu.iterator().forEach {
+//            it.isVisible = source != it.title
+//        }
+//    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val js = javaScriptList.getOrNull(item.itemId) ?: return super.onOptionsItemSelected(item)
@@ -125,25 +125,16 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             clearHistory = true
             webView?.loadUrl(url)
         })
-        webView?.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(v: View): Boolean {
-                val result = (v as WebView).hitTestResult
-                    ?: return false
-                Log.e("${result.type} ${result.extra} $result")
-                return false
-            }
-        })
-
         webView?.webViewClient = object : WebViewClient() {
             var started = false
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest
             ): Boolean {
-                Log.i("$request webView:${view}")
-                if (request?.url?.toString()?.startsWith("http") == true) {
+                val url = request.url.toString()
+                Log.i("$url webView:${view}")
+                if (url.startsWith("http")) {
                     view?.loadUrl(request.url?.toString())
-                    started = false
                 } else {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, request.url))
@@ -160,16 +151,11 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url + "started:$started webView:${webView}")
+                Log.i(url + " started:$started webView:${webView}")
                 if (started) {
                     started = false
-                    val adBlockJs = javaScript?.adBlockJs
-                    if (!adBlockJs.isNullOrBlank()) {
-                        webView?.evaluateJavascript(adBlockJs) {
-                            Log.e("adBlockJs result:$it")
-                        }
-                    }
 
+                    //不是重定向
 
                 }
                 if (clearHistory) {
@@ -186,20 +172,33 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                Log.i("${request?.method} isForMainFrame:${request?.isForMainFrame} ${request?.url} webView:${view}")
+
                 val block = adBlockUrl.firstOrNull {
-                    request.url.toString().startsWith(it)
+                    it.matches(request.url.toString())
                 }
                 if (block != null) {
+                    Log.e("${request.method} ${request.url} webView:${view}")
                     return WebResourceResponse(null, null, null)
                 }
-
+                if (request.url.toString().endsWith(".gif") || request.url.toString()
+                        .endsWith(".js")
+                ) {
+                    Log.w("${request.method} ${request.url} webView:${view}")
+                } else {
+                    Log.i("${request.method} ${request.url} webView:${view}")
+                }
                 return super.shouldInterceptRequest(view, request)
             }
         }
         webView?.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 Log.i("progress:${newProgress} webView:${view}")
+                val adBlockJs = javaScript?.adBlockJs
+                if (!adBlockJs.isNullOrBlank()) {
+                    webView?.evaluateJavascript(adBlockJs) {
+                        Log.i("adBlockJs result:$it Progress:$newProgress")
+                    }
+                }
             }
 
             override fun onReceivedTitle(view: WebView?, title: String?) {

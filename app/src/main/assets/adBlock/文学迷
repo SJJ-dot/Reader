@@ -10,6 +10,6 @@ function displayNone(cssSelector){
     }
 }
 
-//displayNone("#btop-info > div:nth-child(7)");
-//displayNone("#btop-info > div:nth-child(9)");
+displayNone("div.MDQxNQ");
+
 failed;

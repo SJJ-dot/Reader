@@ -33,6 +33,10 @@ allprojects {
         jcenter()
 //        maven { url "https://raw.githubusercontent.com/SJJ-dot/repo/master/" }
         maven { url "https://gitee.com/SJJ-dot/repo/raw/master" }
+
+        //jitpack 依赖格式
+        //    implementation 'com.github.User:Repo:Tag'
+//    com.github.jitpack:gradle-simple:master-SNAPSHOT
         maven { url 'https://jitpack.io' }
     }
 }

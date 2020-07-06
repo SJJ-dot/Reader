@@ -62,7 +62,7 @@ object DataManager {
 
             val asyncUrlSet = async {
                 //广告拦截
-                if (info.adBlockFilterUrlVersion >= globalConfig.adBlockUrlSetVersion) {
+                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlSetVersion) {
                     val urlSet = gson.fromJson<Set<String>>(loadScript("adBlock/filterUrl.json"))!!
                     globalConfig.adBlockUrlSet = urlSet
                 }
@@ -74,7 +74,7 @@ object DataManager {
                     async {
                         val javaScript = dao.getJavaScriptBySource(it.fileName)
                         if (javaScript?.enable == false) {
-                            //脚本 停用
+                            //脚本停用
                             return@async javaScript
                         }
                         //不是DEBUG模式才检查 js 版本否则一律更新
@@ -84,18 +84,18 @@ object DataManager {
                             }
                         }
                         val js = async {
-                            if (javaScript == null || javaScript.version < it.version) {
+                            if (it.version > 0 && (BuildConfig.DEBUG || javaScript == null || javaScript.version < it.version)) {
                                 loadScript("js/${it.fileName}")
                             } else {
-                                javaScript.js
+                                javaScript?.js ?: ""
                             }
 
                         }
                         val adBlockJs = async {
-                            if (javaScript == null || javaScript.adBlockVersion < it.adBlockVersion) {
+                            if (it.adBlockVersion > 0 && (BuildConfig.DEBUG || javaScript == null || javaScript.adBlockVersion < it.adBlockVersion)) {
                                 loadScript("adBlock/${it.fileName}")
                             } else {
-                                javaScript.adBlockJs
+                                javaScript?.adBlockJs ?: ""
                             }
                         }
 

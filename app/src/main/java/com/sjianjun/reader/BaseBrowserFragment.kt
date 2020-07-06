@@ -9,7 +9,7 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
     private var webView: WebView? = null
     protected fun initWebviewSetting(webView: WebView?) {
         this.webView = webView ?: return
-
+        WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
         val webSettings = webView.getSettings();
 
