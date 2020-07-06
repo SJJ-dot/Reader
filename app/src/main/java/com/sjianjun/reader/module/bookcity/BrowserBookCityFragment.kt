@@ -18,6 +18,8 @@ import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.utils.animFadeIn
+import com.sjianjun.reader.utils.animFadeOut
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
 
@@ -36,6 +38,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     override val onLoadedView: (View) -> Unit = {
         if (webView == null) {
             webView = WebView(context)
+            webView?.id = R.id.web_view;
             webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             browser_book_city_root.addView(webView, 0)
         }
@@ -105,6 +108,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 started = true
                 Log.i(url + "started:$started webView:${view}")
+                progress_bar.animFadeIn()
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
@@ -150,6 +154,10 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         webView?.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 Log.i("progress:${newProgress} webView:${view}")
+                progress_bar.progress = newProgress
+                if (newProgress == 100) {
+                    progress_bar.animFadeOut()
+                }
                 val adBlockJs = javaScript?.adBlockJs
                 if (!adBlockJs.isNullOrBlank()) {
                     webView?.evaluateJavascript(adBlockJs) {
