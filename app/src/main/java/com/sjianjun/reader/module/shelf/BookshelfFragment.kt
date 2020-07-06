@@ -232,16 +232,12 @@ class BookshelfFragment : BaseAsyncFragment() {
         }
     }
 
-    private class Adapter(val fragment: BookshelfFragment) : BaseAdapter() {
+    private class Adapter(val fragment: BookshelfFragment) : BaseAdapter<Book>() {
         init {
             setHasStableIds(true)
         }
 
-        val data = mutableListOf<Book>()
-
         override fun itemLayoutRes(viewType: Int) = R.layout.item_book_list
-
-        override fun getItemCount(): Int = data.size
 
         override fun getItemId(position: Int): Long {
             return data[position].id

@@ -2,31 +2,27 @@ package com.sjianjun.reader.module.bookcity
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.iterator
+import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.coroutine.launchIo
+import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.JS_SOURCE
-import com.sjianjun.reader.utils.withMain
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
-import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 
 
 class BrowserBookCityFragment : BaseBrowserFragment() {
-    private var javaScriptList: List<Pair<JavaScript, String>> = emptyList()
     private lateinit var source: String
     private var javaScript: JavaScript? = null
     private val adBlockUrl by lazy { globalConfig.adBlockUrlSet.map { Regex("\\A$it.*") } }
@@ -51,70 +47,31 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             }
         }
 
-        source = arguments?.getString(JS_SOURCE) ?: globalConfig.bookCityDefaultSource
-        initMenu()
+        childFragmentManager
+            .beginTransaction()
+            .add(R.id.bookcity_station_list_menu, BookCityStationListFragment())
+            .commitAllowingStateLoss()
 
         initWebView(webView)
-//        initData()
+        globalConfig.bookCityDefaultSource.observe(this, Observer {
+            drawer_layout.closeDrawer(GravityCompat.END)
+            source = it
+            initData()
+        })
+
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        setHasOptionsMenu(false)
-    }
-
-    private fun initMenu() {
-        launchIo {
-            val javaScriptList = DataManager.getAllJavaScript().first()
-            this@BrowserBookCityFragment.javaScriptList =
-                javaScriptList.filter { it.enable }.mapNotNull {
-                    try {
-                        val url = it.execute<String>("baseUrl;")!!
-                        it to url
-                    } catch (throwable: Throwable) {
-                        null
-                    }
-                }
-            withMain {
-                initData()
-                setHasOptionsMenu(true)
-            }
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        javaScriptList.forEachIndexed { index, javaScript ->
-            menu.add(0, index, index, javaScript.first.source)
-        }
-    }
-
-//    override fun onPrepareOptionsMenu(menu: Menu) {
-//        super.onPrepareOptionsMenu(menu)
-//        menu.iterator().forEach {
-//            it.isVisible = source != it.title
-//        }
-//    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val js = javaScriptList.getOrNull(item.itemId) ?: return super.onOptionsItemSelected(item)
-        source = js.first.source
-        initData()
-        return true
-    }
-
-    private fun setTitle(title: CharSequence?) {
-        activity?.supportActionBar?.title = title ?: return
-//        activity?.supportActionBar?.hide()
-    }
 
     private fun initData() {
-        val sourceJs = javaScriptList.find { it.first.source == source }
-        javaScript = sourceJs?.first
-        setTitle(sourceJs?.first?.source)
-        clearHistory = true
-        webView?.loadUrl(sourceJs?.second ?: "https://m.qidian.com/")
-        if (sourceJs != null) {
-            globalConfig.bookCityDefaultSource = sourceJs.first.source
+        launchIo {
+            val sourceJs = DataManager.getJavaScript(source)
+            javaScript = sourceJs
+            clearHistory = true
+            val baseUrl  = sourceJs?.execute<String>("baseUrl;") ?: ""
+            withMain {
+                webView?.loadUrl(baseUrl)
+                activity?.supportActionBar?.title = sourceJs?.source
+            }
         }
     }
 
