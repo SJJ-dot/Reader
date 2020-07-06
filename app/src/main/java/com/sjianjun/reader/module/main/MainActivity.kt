@@ -63,8 +63,13 @@ class MainActivity : BaseAsyncActivity() {
             when (destination.id) {
                 R.id.bookDetailsFragment -> {
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    supportActionBar?.show()
+                }
+                R.id.browserBookCityFragment->{
+                    supportActionBar?.hide()
                 }
                 else -> {
+                    supportActionBar?.show()
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
                 }
             }

@@ -22,10 +22,10 @@ import kotlinx.coroutines.flow.*
  */
 class ChapterListFragment : BaseFragment() {
     val bookTitle: String
-        get() = arguments!!.getString(BOOK_TITLE)!!
+        get() = requireArguments().getString(BOOK_TITLE)!!
 
     val bookAuthor: String
-        get() = arguments!!.getString(BOOK_AUTHOR)!!
+        get() = requireArguments().getString(BOOK_AUTHOR)!!
 
     private val adapter =
         ChapterListAdapter(
@@ -54,7 +54,8 @@ class ChapterListFragment : BaseFragment() {
             }.collectLatest { (chapterList, readingRecord) ->
                 val change = adapter.readingChapterUrl != readingRecord?.chapterUrl ?: ""
                 adapter.readingChapterUrl = readingRecord?.chapterUrl ?: ""
-                adapter.data = chapterList
+                adapter.data.clear()
+                adapter.data.addAll(chapterList)
                 adapter.notifyDataSetChanged()
                 if (change) {
                     val index = adapter.data.indexOfFirst {
@@ -66,15 +67,13 @@ class ChapterListFragment : BaseFragment() {
         }
     }
 
-    private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter() {
+    private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter<Chapter>() {
         init {
             setHasStableIds(true)
         }
 
-        var data = listOf<Chapter>()
         var readingChapterUrl = ""
 
-        override fun getItemCount(): Int = data.size
 
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.item_text_text

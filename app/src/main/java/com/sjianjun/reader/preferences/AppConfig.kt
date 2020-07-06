@@ -24,29 +24,30 @@ class AppConfig(val name: String) {
         return LiveDataMapImpl(defValue, { getSharedPreferences() }, *keys)
     }
 
-    var javaScriptVersion by sp(0)
+    var javaScriptVersion by DelegateSharedPreferences(0) { getSharedPreferences() }
 
     /**
      * github 发布的版本信息
      */
-    var releasesInfo by sp("")
+    var releasesInfo by DelegateSharedPreferences("") { getSharedPreferences() }
 
     /**
      * 上次检查更新的时间
      */
-    var lastCheckUpdateTime by sp(0L)
+    var lastCheckUpdateTime by DelegateSharedPreferences(0L) { getSharedPreferences() }
 
-    var appDayNightMode by sp(MODE_NIGHT_NO)
+    var appDayNightMode by DelegateSharedPreferences(MODE_NIGHT_NO) { getSharedPreferences() }
 
-    var bookCityDefaultSource by sp(JS_SOURCE_QI_DIAN)
+    val bookCityDefaultSource by DelegateLiveData(JS_SOURCE_QI_DIAN) { getSharedPreferences() }
 
     val qqAuthLoginUri = MutableLiveData<Uri>()
 
-    var adBlockUrlSetVersion by sp(0)
+    var adBlockUrlSetVersion by DelegateSharedPreferences(0) { getSharedPreferences() }
+
     /**
      * 需要拦截的广告SDK url
      */
-    var adBlockUrlSet by sp(emptySet<String>())
+    var adBlockUrlSet by DelegateSharedPreferences(emptySet<String>()) { getSharedPreferences() }
 }
 
 class BookConfig {

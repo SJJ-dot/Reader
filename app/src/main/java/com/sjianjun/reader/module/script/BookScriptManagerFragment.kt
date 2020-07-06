@@ -28,7 +28,8 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         recycle_view.adapter = adapter
         launch {
             DataManager.getAllJavaScript().collectLatest {
-                adapter.data = it
+                adapter.data.clear()
+                adapter.data.addAll(it)
                 adapter.notifyDataSetChanged()
             }
         }
@@ -64,19 +65,15 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     }
 
 
-    class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter() {
+    class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter<JavaScript>() {
 
         init {
             setHasStableIds(true)
         }
 
-        var data: List<JavaScript> = listOf()
-
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.script_item_fragment_manager_java_script
         }
-
-        override fun getItemCount(): Int = data.size
 
         override fun onBindViewHolder(
             holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,

@@ -140,12 +140,13 @@ class SearchFragment : BaseAsyncFragment() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (newText.isNullOrEmpty()) {
-                    searchHint.data = emptyList()
+                    searchHint.data.clear()
                     searchHint.notifyDataSetChanged()
                 }
                 launch(singleCoroutineKey = "quick_search_hint") {
                     val hintList = DataManager.searchHint(newText ?: "") ?: emptyList()
-                    searchHint.data = hintList
+                    searchHint.data.clear()
+                    searchHint.data.addAll(hintList)
                     searchHint.notifyDataSetChanged()
                 }
                 return false
@@ -178,7 +179,8 @@ class SearchFragment : BaseAsyncFragment() {
             searchRecyclerView.adapter = resultBookAdapter
             searchResult.observe(viewLifecycleOwner, Observer {
                 if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
-                    resultBookAdapter.data = it
+                    resultBookAdapter.data.clear()
+                    resultBookAdapter.data.addAll(it)
                     resultBookAdapter.notifyDataSetChanged()
                 }
             })
@@ -207,10 +209,8 @@ class SearchFragment : BaseAsyncFragment() {
         search_refresh?.animFadeOut()
     }
 
-    private class SearchHintAdapter : BaseAdapter(R.layout.search_item_fragment_search_hint) {
-        var data = listOf<String>()
+    private class SearchHintAdapter : BaseAdapter<String>(R.layout.search_item_fragment_search_hint) {
         var itemClick: ((String) -> Unit)? = null
-        override fun getItemCount() = data.size
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val hint = data[position]
@@ -221,9 +221,8 @@ class SearchFragment : BaseAsyncFragment() {
         }
     }
 
-    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter() {
-        var data = listOf<List<SearchResult>>()
-        override fun getItemCount(): Int = data.size
+    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter<List<SearchResult>>() {
+
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.main_item_fragment_search_result
         }

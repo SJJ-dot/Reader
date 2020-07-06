@@ -80,13 +80,10 @@ class BookSourceListFragment : BaseFragment() {
         }
     }
 
-    class BookListAdapter(val fragment: BookSourceListFragment) : BaseAdapter() {
+    class BookListAdapter(val fragment: BookSourceListFragment) : BaseAdapter<Book>() {
         init {
             setHasStableIds(true)
         }
-
-        val data: MutableList<Book> = mutableListOf()
-        override fun getItemCount() = data.size
 
         override fun itemLayoutRes(viewType: Int) = R.layout.main_item_fragment_book_source_list
 
