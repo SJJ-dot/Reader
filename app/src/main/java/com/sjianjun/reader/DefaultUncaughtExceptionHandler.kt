@@ -22,6 +22,7 @@ fun handleDefaultException(context: Context) {
         }
 
         override fun onMayBeBlackScreen(e: Throwable) {
+            Log.e("捕获到异常 ",e)
             default?.uncaughtException(Thread.currentThread(),e)
         }
     })

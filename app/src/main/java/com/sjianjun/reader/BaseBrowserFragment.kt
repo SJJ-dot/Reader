@@ -12,7 +12,7 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
         val webSettings = webView.getSettings();
-
+        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 9; MIX 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.0 Mobile Safari/537.36 EdgA/44.11.2.4122"
 //如果访问的页面中要与Javascript交互，则webview必须设置支持Javascript
         webSettings.javaScriptEnabled = true
 // 若加载的 html 里有JS 在执行动画等操作，会造成资源浪费（CPU、电量）
@@ -31,7 +31,7 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         webSettings.setDisplayZoomControls(false); //隐藏原生的缩放控件
 
 //其他细节操作
-        webSettings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK); //关闭webview中缓存
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT); //关闭webview中缓存
         webSettings.setAllowFileAccess(true); //设置可以访问文件
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true); //支持通过JS打开新窗口
         webSettings.setLoadsImagesAutomatically(true); //支持自动加载图片
