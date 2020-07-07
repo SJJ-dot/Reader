@@ -6,27 +6,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.addCallback
+import androidx.activity.OnBackPressedCallback
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
-import com.sjianjun.reader.utils.handler
-import kotlinx.coroutines.*
 import sjj.alog.Log
-import kotlin.coroutines.CoroutineContext
 
 abstract class BaseFragment : DialogFragment() {
-
-    open var onBackPressed: (() -> Unit)? = null
-        set(value) {
-            field = value
-            activity?.onBackPressedDispatcher?.addCallback(owner = viewLifecycleOwner) {
-                onBackPressed?.invoke()
-            }
-        }
 
     val activity: BaseActivity?
         get() = super.getActivity() as? BaseActivity
@@ -81,5 +70,18 @@ abstract class BaseFragment : DialogFragment() {
     fun dismissSnackbar() {
         snackbar?.dismiss()
         snackbar = null
+    }
+
+
+    fun setOnBackPressed(owner: LifecycleOwner = viewLifecycleOwner, onBackPressed: () -> Boolean) {
+        activity?.onBackPressedDispatcher?.addCallback(owner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!onBackPressed()) {
+                    isEnabled = false
+                    activity?.onBackPressedDispatcher?.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
     }
 }
