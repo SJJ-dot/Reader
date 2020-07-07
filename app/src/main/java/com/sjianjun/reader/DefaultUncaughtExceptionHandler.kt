@@ -5,7 +5,6 @@ import com.tencent.bugly.crashreport.CrashReport
 import com.wanjian.cockroach.Cockroach
 import com.wanjian.cockroach.ExceptionHandler
 import sjj.alog.Log
-import java.lang.Exception
 
 fun handleDefaultException(context: Context) {
     //
@@ -14,12 +13,12 @@ fun handleDefaultException(context: Context) {
     val default = Thread.getDefaultUncaughtExceptionHandler()
     Cockroach.install(context, object : ExceptionHandler() {
         override fun onUncaughtExceptionHappened(thread: Thread?, throwable: Throwable?) {
-            Log.e("捕获到异常 ",Exception(throwable))
-            CrashReport.postCatchedException(throwable,thread)
+            Log.e("捕获到异常 ", Exception(throwable))
+            CrashReport.postCatchedException(throwable, thread)
         }
 
         override fun onBandageExceptionHappened(throwable: Throwable?) {
-            Log.e("捕获到异常 ",Exception(throwable))
+            Log.e("捕获到异常 ", Exception(throwable))
             CrashReport.postCatchedException(throwable)
         }
 
@@ -28,9 +27,9 @@ fun handleDefaultException(context: Context) {
         }
 
         override fun onMayBeBlackScreen(throwable: Throwable) {
-            Log.e("捕获到异常 ",Exception(throwable))
+            Log.e("捕获到异常 ", Exception(throwable))
 //            CrashReport.postCatchedException(e)
-            default?.uncaughtException(Thread.currentThread(),throwable)
+            default?.uncaughtException(Thread.currentThread(), throwable)
         }
     })
 

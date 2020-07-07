@@ -121,5 +121,5 @@ dependencies {
     implementation project(":pagerindicator")
 
     //拦截非必要crash
-    implementation "com.github.SJJ-dot:Cockroach:2.0"
+    implementation "com.github.SJJ-dot:Cockroach:2.0.1"
 }
