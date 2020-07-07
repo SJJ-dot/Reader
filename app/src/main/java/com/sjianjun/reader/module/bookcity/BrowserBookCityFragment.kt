@@ -42,11 +42,20 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             browser_book_city_root.addView(webView, 0)
         }
-        onBackPressed = {
-            if (webView?.canGoBack() == true) {
-                webView?.goBack()
-            } else {
-                findNavController().popBackStack()
+
+        setOnBackPressed {
+            when {
+                drawer_layout.isDrawerOpen(GravityCompat.END) -> {
+                    drawer_layout.closeDrawer(GravityCompat.END)
+                    true
+                }
+                webView?.canGoBack() == true -> {
+                    webView?.goBack()
+                    true
+                }
+                else -> {
+                    false
+                }
             }
         }
 

@@ -28,11 +28,12 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     override val onLoadedView: (View) -> Unit = {
 
-        onBackPressed = {
+        setOnBackPressed {
             if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
                 drawer_layout?.closeDrawer(GravityCompat.END)
+                true
             } else {
-                findNavController().popBackStack()
+                false
             }
         }
 
