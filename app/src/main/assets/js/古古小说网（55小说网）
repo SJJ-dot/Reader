@@ -1,7 +1,8 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = -1;
-var baseUrl = "http://www.55shuba.com";
+var hostUrl = "http://www.55shuba.com";
 function search(http,query){
+    var baseUrl = "http://www.55shuba.com";
     var map = new HashMap();
     map.put("searchkey",URLEncoder.encode(query,"gbk"))
     map.put("searchtype","articlename")

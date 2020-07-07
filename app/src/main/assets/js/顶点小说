@@ -1,7 +1,8 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = 100;
-var baseUrl = "https://www.230book.com/";
+var hostUrl = "https://230book.com/";
 function search(http,query){
+    var baseUrl = "https://www.230book.com/";
     var map = new HashMap();
     map.put("searchkey",URLEncoder.encode(query,"gbk"))
     var html = http.post(baseUrl+"/modules/article/search.php",map);

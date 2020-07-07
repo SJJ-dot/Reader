@@ -1,7 +1,8 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = -1;
-var baseUrl = "https://www.aszw6.com/";
+var hostUrl = "https://aszw6.com/";
 function search(http,query){
+    var baseUrl = "https://www.aszw6.com/";
     var map = new HashMap();
     map.put("searchkey",URLEncoder.encode(query,"gbk"))
     map.put("searchtype","articlename")

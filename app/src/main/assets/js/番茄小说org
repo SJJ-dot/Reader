@@ -1,5 +1,6 @@
-var baseUrl = "http://www.fqxs.org/";
+var hostUrl = "http://m.fqxs.org/";
 function search(http,query){
+    var baseUrl = "http://www.fqxs.org/";
     var queryMap = new HashMap();
     queryMap.put("keyword", URLEncoder.encode(query, "utf-8"));
     var html = http.post(baseUrl + "modules/article/search.php", queryMap);

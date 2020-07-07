@@ -1,5 +1,6 @@
-var baseUrl = "http://www.biquge.se/";
+var hostUrl = "http://biquge.se/";
 function search(http,query){
+    var baseUrl = "http://www.biquge.se/";
     var queryMap = new HashMap();
     queryMap.put("key", URLEncoder.encode(query, "utf-8"));
     var html = http.post(baseUrl + "case.php?m=search", queryMap);
