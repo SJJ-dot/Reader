@@ -1,7 +1,8 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = 100;
-var baseUrl = "https://www.biquge5200.cc";
+var hostUrl = "https://biquge5200.cc";
 function search(http,query){
+    var baseUrl = "https://www.biquge5200.cc";
     var html = http.get(baseUrl+"/modules/article/search.php?searchkey="+encodeURIComponent(query));
     var parse = Jsoup.parse(html,baseUrl);
     var trs = parse.getElementById("hotcontent").getElementsByTag("tbody").get(0).getElementsByTag("tr");
@@ -25,7 +26,7 @@ function search(http,query){
  * 书籍来源[JavaScript.source]
  */
 function getDetails(http,url){
-    var parse = Jsoup.parse(http.get(url),baseUrl);
+    var parse = Jsoup.parse(http.get(url),url);
     var book = new Book();
     book.source = source;
     //书籍信息
@@ -53,7 +54,7 @@ function getDetails(http,url){
 }
 
 function getChapterContent(http,url){
-    var parse = Jsoup.parse(http.get(url),baseUrl);
+    var parse = Jsoup.parse(http.get(url),url);
     var content = parse.getElementById("content").html();
     return content;
 }

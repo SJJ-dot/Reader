@@ -1,5 +1,6 @@
-var baseUrl = "http://www.fqxsw.cc/";
+var hostUrl = "http://fqxsw.cc/";
 function search(http,query){
+    var baseUrl = "http://www.fqxsw.cc/";
     var html = http.get(baseUrl+"modules/article/search.php?searchkey=" + URLEncoder.encode(query, "gbk"));
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select("body > div.container.body-content > div.panel.panel-default > table > tbody > tr");

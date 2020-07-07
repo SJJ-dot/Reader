@@ -1,7 +1,8 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = -1;
-var baseUrl = "https://www.qidian.com/";
+var hostUrl = "https://m.qidian.com/";
 function search(http,query){
+    var baseUrl = "https://www.qidian.com/";
     var html = http.get(baseUrl + "search?kw=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html,baseUrl);
     var bookListEl = parse.select(".res-book-item");

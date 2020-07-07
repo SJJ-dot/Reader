@@ -1,6 +1,6 @@
-var baseUrl = "http://www.cxbz958.com/";
+var hostUrl = "http://m.cxbz958.com/";
 function search(http,query){
-
+    var baseUrl = "http://www.cxbz958.com/";
     var html = http.get(baseUrl + "s.php?ie=utf-8&q=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select(".bookbox");

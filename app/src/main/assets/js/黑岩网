@@ -1,5 +1,6 @@
-var baseUrl = "https://www.heiyan.com/";
+var hostUrl = "https://www.heiyan.com/";
 function search(http,query){
+    var baseUrl = "https://www.heiyan.com/";
     var html = http.get("https://search.heiyan.com/web/search?highlight=false&page=1&queryString=" + URLEncoder.encode(query, "utf-8"));
     var json = eval("("+html+")");
     var bookListEl = json["data"]["content"];

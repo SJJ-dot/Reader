@@ -70,9 +70,9 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             val sourceJs = DataManager.getJavaScript(source)
             javaScript = sourceJs
             clearHistory = true
-            val baseUrl  = sourceJs?.execute<String>("baseUrl;") ?: ""
+            val hostUrl  = sourceJs?.execute<String>("hostUrl;") ?: ""
             withMain {
-                webView?.loadUrl(baseUrl)
+                webView?.loadUrl(hostUrl)
                 activity?.supportActionBar?.title = sourceJs?.source
             }
         }
@@ -94,7 +94,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 val url = request.url.toString()
                 Log.i("$url webView:${view}")
                 if (url.startsWith("http")) {
-                    view?.loadUrl(request.url?.toString())
+                    view?.loadUrl(url)
                 } else {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, request.url))
