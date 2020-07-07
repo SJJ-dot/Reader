@@ -1,9 +1,16 @@
 package com.sjianjun.reader
 
-import android.os.Build
+import android.app.DownloadManager
+import android.net.Uri
+import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
+import java.text.DecimalFormat
+import java.text.SimpleDateFormat
+import java.util.*
 
 abstract class BaseBrowserFragment : BaseAsyncFragment() {
     private var webView: WebView? = null
@@ -12,7 +19,8 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
         val webSettings = webView.getSettings();
-        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 9; MIX 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.0 Mobile Safari/537.36 EdgA/44.11.2.4122"
+        webSettings.userAgentString =
+            "Mozilla/5.0 (Linux; Android 9; MIX 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.0 Mobile Safari/537.36 EdgA/44.11.2.4122"
 //如果访问的页面中要与Javascript交互，则webview必须设置支持Javascript
         webSettings.javaScriptEnabled = true
 // 若加载的 html 里有JS 在执行动画等操作，会造成资源浪费（CPU、电量）
@@ -37,6 +45,27 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         webSettings.setLoadsImagesAutomatically(true); //支持自动加载图片
         webSettings.setDefaultTextEncodingName("utf-8");//设置编码格式
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+        webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
+            val uri = Uri.parse(url)
+            activity?.also {
+                AlertDialog.Builder(it)
+                    .setTitle("是否允许下载文件 ${contentDisposition ?: ""}？")
+                    .setMessage("文件大小：${DecimalFormat("0.##").format(contentLength.toFloat()/(1024 * 1024))}M")
+                    .setPositiveButton("下载") { dialog, which ->
+                        val fileName = uri.lastPathSegment?:SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",Locale.getDefault())
+                        val service = ContextCompat.getSystemService(it, DownloadManager::class.java);
+                        service?.enqueue(
+                            DownloadManager.Request(uri)
+                                .setMimeType(mimetype)
+                                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"${it.packageName}/${fileName}")
+                                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        )
+                    }
+                    .setNegativeButton("取消",null)
+                    .show()
+            }
+        }
     }
 
     override fun onStart() {
