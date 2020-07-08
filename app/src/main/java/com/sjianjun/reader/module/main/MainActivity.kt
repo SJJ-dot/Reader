@@ -65,7 +65,7 @@ class MainActivity : BaseAsyncActivity() {
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                     supportActionBar?.show()
                 }
-                R.id.browserBookCityFragment->{
+                R.id.browserBookCityFragment -> {
                     supportActionBar?.hide()
                 }
                 else -> {
@@ -101,13 +101,13 @@ class MainActivity : BaseAsyncActivity() {
         nav_ui.getHeaderView(0)?.apply {
             day_night.setOnClickListener {
                 when (globalConfig.appDayNightMode) {
-                    MODE_NIGHT_NO -> {
+                    MODE_NIGHT_FOLLOW_SYSTEM -> {
                         globalConfig.appDayNightMode = MODE_NIGHT_YES
                         setDefaultNightMode(MODE_NIGHT_YES)
                     }
                     else -> {
-                        globalConfig.appDayNightMode = MODE_NIGHT_NO
-                        setDefaultNightMode(MODE_NIGHT_NO)
+                        globalConfig.appDayNightMode = MODE_NIGHT_FOLLOW_SYSTEM
+                        setDefaultNightMode(MODE_NIGHT_FOLLOW_SYSTEM)
                     }
                 }
 

@@ -15,6 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <com.sjianjun.reader.view.DayNightMask
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/browser_book_city_toolbar"
