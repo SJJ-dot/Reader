@@ -11,11 +11,13 @@
         <item name="android:textColor">@color/material_reader_white</item>
         <item name="android:textSize">22sp</item>
     </style>
+
     <style name="Widget.Reader.NavigationView" parent="@style/Widget.MaterialComponents.NavigationView">
 
     </style>
 
     <style name="dialog_button" parent="TextAppearance.MaterialComponents.Headline5" />
+
     <style name="dialog_style" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="android:windowBackground">?android:colorBackground</item>
         <item name="materialButtonStyle">@style/dialog_button</item>
@@ -32,4 +34,17 @@
         <item name="android:layout_height">8dp</item>
     </style>
 
+    <style name="line">
+        <item name="android:background">#a0424242</item>
+        <item name="android:layout_height">0.5dp</item>
+        <item name="android:layout_width">0.5dp</item>
+    </style>
+
+    <style name="line.h">
+        <item name="android:layout_width">match_parent</item>
+    </style>
+
+    <style name="line.v">
+        <item name="android:layout_height">match_parent</item>
+    </style>
 </resources>
