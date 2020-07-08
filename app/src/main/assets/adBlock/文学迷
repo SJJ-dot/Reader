@@ -10,6 +10,18 @@ function displayNone(cssSelector){
     }
 }
 
+function remove(cssSelector){
+    try{
+        var adE = document.querySelectorAll(cssSelector)
+        for(i = 0;i<adE.length;i++){
+          adE[i].remove();
+        }
+    }catch(error){
+        failed++;
+    }
+}
+
 displayNone("div.MDQxNQ");
+//remove("div.MDQxNQ");
 
 failed;

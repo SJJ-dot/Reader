@@ -1,6 +1,6 @@
 {
-  "version": 25,
-  "adBlockFilterUrlVersion": 2,
+  "version": 26,
+  "adBlockFilterUrlVersion": 3,
   "versions": [
     {
       "fileName": "biquge5200",
@@ -22,12 +22,12 @@
     {
       "fileName": "天籁小说",
       "version": "4",
-      "adBlockVersion": "1"
+      "adBlockVersion": "2"
     },
     {
       "fileName": "文学迷",
       "version": "2",
-      "adBlockVersion": "1"
+      "adBlockVersion": "2"
     },
     {
       "fileName": "溜达小说",
