@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
 import com.sjianjun.reader.BaseBrowserFragment
@@ -118,6 +117,13 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 started = true
                 Log.i(url + "started:$started webView:${view}")
                 progress_bar.animFadeIn()
+
+                val adBlockJs = javaScript?.adBlockJs
+                if (!adBlockJs.isNullOrBlank()) {
+                    webView?.evaluateJavascript(adBlockJs) {
+                        Log.i("adBlockJs result:$it")
+                    }
+                }
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
@@ -126,7 +132,12 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                     started = false
 
                     //不是重定向
-
+                    val adBlockJs = javaScript?.adBlockJs
+                    if (!adBlockJs.isNullOrBlank()) {
+                        webView?.evaluateJavascript(adBlockJs) {
+                            Log.i("adBlockJs result:$it")
+                        }
+                    }
                 }
                 if (clearHistory) {
                     clearHistory = false
@@ -142,18 +153,20 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-
+                val path = request.url.path
+                val url = request.url.toString()
                 val block = adBlockUrl.firstOrNull {
-                    it.matches(request.url.toString())
+                    it.matches(url)
                 }
                 if (block != null) {
-                    Log.e("${request.method} ${request.url} webView:${view}")
+//                    Log.e("${request.method} $url webView:${view}")
                     return WebResourceResponse(null, null, null)
                 }
-                if (request.url.toString().endsWith(".gif") || request.url.toString()
-                        .endsWith(".js")
+                if (path?.endsWith(".gif") == true ||
+                    path?.endsWith(".js") == true ||
+                    url.contains("sdk", true)
                 ) {
-                    Log.w("${request.method} ${request.url} webView:${view}")
+                    Log.e("${request.method} ${request.url} webView:${view}")
                 } else {
                     Log.i("${request.method} ${request.url} webView:${view}")
                 }
@@ -170,7 +183,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 val adBlockJs = javaScript?.adBlockJs
                 if (!adBlockJs.isNullOrBlank()) {
                     webView?.evaluateJavascript(adBlockJs) {
-                        Log.i("adBlockJs result:$it Progress:$newProgress")
+                        Log.i("adBlockJs result:$it")
                     }
                 }
             }
