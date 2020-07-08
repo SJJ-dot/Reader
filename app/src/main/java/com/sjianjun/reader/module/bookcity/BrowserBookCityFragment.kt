@@ -2,18 +2,15 @@ package com.sjianjun.reader.module.bookcity
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
-import androidx.navigation.fragment.findNavController
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
@@ -38,9 +35,12 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     override val onLoadedView: (View) -> Unit = {
         if (webView == null) {
             webView = WebView(context)
-            webView?.id = R.id.web_view;
-            webView?.layoutParams = ConstraintLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            webView?.id = R.id.web_view
             browser_book_city_root.addView(webView, 0)
+            webView?.layoutParams?.apply {
+                width = MATCH_PARENT
+                height = MATCH_PARENT
+            }
         }
 
         setOnBackPressed {
@@ -79,7 +79,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             val sourceJs = DataManager.getJavaScript(source)
             javaScript = sourceJs
             clearHistory = true
-            val hostUrl  = sourceJs?.execute<String>("hostUrl;") ?: ""
+            val hostUrl = sourceJs?.execute<String>("hostUrl;") ?: ""
             withMain {
                 webView?.loadUrl(hostUrl)
                 activity?.supportActionBar?.title = sourceJs?.source

@@ -122,4 +122,6 @@ dependencies {
 
     //拦截非必要crash
     implementation "com.github.SJJ-dot:Cockroach:2.0.1"
+    //嵌套滚动 可容纳多个view滚动
+    implementation 'com.github.donkingliang:ConsecutiveScroller:4.0.0'
 }
