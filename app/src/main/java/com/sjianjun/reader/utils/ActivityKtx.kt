@@ -1,7 +1,10 @@
 package com.sjianjun.reader.utils
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 
 inline fun <reified T> Fragment.startActivity(k: String, v: Any?) {
@@ -19,3 +22,18 @@ inline fun <reified T> Context.startActivity(vararg params: Pair<String, Any?>) 
     }
     startActivity(intent)
 }
+
+
+val Context?.act: AppCompatActivity?
+    get() {
+        if (this == null) {
+            return null
+        }
+        if (this is AppCompatActivity) {
+            return this
+        }
+        return (this as? ContextWrapper)?.baseContext?.act
+    }
+
+val View.act: AppCompatActivity?
+    get() = context?.act
