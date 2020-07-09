@@ -5,8 +5,10 @@ import android.graphics.Bitmap
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
+import com.google.android.material.behavior.HideBottomViewOnScrollBehavior
 import com.sjianjun.reader.BaseBrowserFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
@@ -16,12 +18,13 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.animFadeOut
+import com.sjianjun.reader.utils.canScrollVertically
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
 
 
 class BrowserBookCityFragment : BaseBrowserFragment() {
-    private lateinit var source: String
+    private var source: String? = null
     private var javaScript: JavaScript? = null
     private val adBlockUrl by lazy { globalConfig.adBlockUrlSet.map { Regex("\\A$it.*") } }
     private var webView: WebView? = null
@@ -32,14 +35,12 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
     }
 
     override val onLoadedView: (View) -> Unit = {
-        if (webView == null) {
-            webView = WebView(context)
-            webView?.id = R.id.web_view
-            browser_book_city_root.addView(webView, 0)
-            webView?.layoutParams?.apply {
-                width = MATCH_PARENT
-                height = MATCH_PARENT
-            }
+        webView = WebView(context)
+        webView?.id = R.id.web_view
+        browser_book_city_root.addView(webView, 0)
+        webView?.layoutParams?.apply {
+            width = MATCH_PARENT
+            height = MATCH_PARENT
         }
 
         setOnBackPressed {
@@ -62,7 +63,8 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             .beginTransaction()
             .add(R.id.bookcity_station_list_menu, BookCityStationListFragment())
             .commitAllowingStateLoss()
-
+        //底部导航按钮设置
+        initNavigation()
         initWebView(webView)
         globalConfig.bookCityDefaultSource.observe(this, Observer {
             drawer_layout.closeDrawer(GravityCompat.END)
@@ -72,8 +74,25 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
 
     }
 
+    /**
+     * 底部导航按钮设置
+     */
+    private fun initNavigation() {
+        home.setOnClickListener {
+            if (!source.isNullOrBlank()) {
+                initData()
+            }
+        }
+    }
+
+    private fun showBottomNavigation() {
+        val layoutParams = browser_book_city_toolbar.layoutParams as? CoordinatorLayout.LayoutParams
+        val behavior = layoutParams?.behavior as? HideBottomViewOnScrollBehavior
+        behavior?.slideUp(browser_book_city_toolbar)
+    }
 
     private fun initData() {
+        val source = source ?: return
         launchIo {
             val sourceJs = DataManager.getJavaScript(source)
             javaScript = sourceJs
@@ -120,9 +139,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
 
                 val adBlockJs = javaScript?.adBlockJs
                 if (!adBlockJs.isNullOrBlank()) {
-                    webView?.evaluateJavascript(adBlockJs) {
-                        Log.i("adBlockJs result:$it")
-                    }
+                    webView?.evaluateJavascript(adBlockJs, null)
                 }
             }
 
@@ -134,11 +151,24 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                     //不是重定向
                     val adBlockJs = javaScript?.adBlockJs
                     if (!adBlockJs.isNullOrBlank()) {
-                        webView?.evaluateJavascript(adBlockJs) {
-                            Log.i("adBlockJs result:$it")
+                        webView?.evaluateJavascript(adBlockJs, null)
+                        webView?.post {
+                            webView?.evaluateJavascript(adBlockJs) {
+                                Log.i("adBlockJs result:$it")
+                            }
                         }
                     }
                 }
+
+                if (browser_book_city_root?.canScrollVertically != true) {
+                    //当前页面不能上下滑动 自动显示导航栏
+                    showBottomNavigation()
+                }
+            }
+
+            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                super.doUpdateVisitedHistory(view, url, isReload)
+
                 if (clearHistory) {
                     clearHistory = false
                     webView?.clearHistory()
@@ -182,9 +212,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 }
                 val adBlockJs = javaScript?.adBlockJs
                 if (!adBlockJs.isNullOrBlank()) {
-                    webView?.evaluateJavascript(adBlockJs) {
-                        Log.i("adBlockJs result:$it")
-                    }
+                    webView?.evaluateJavascript(adBlockJs, null)
                 }
             }
 

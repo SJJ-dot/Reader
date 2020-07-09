@@ -1,6 +1,6 @@
 {
   "version": 26,
-  "adBlockFilterUrlVersion": 3,
+  "adBlockFilterUrlVersion": 4,
   "versions": [
     {
       "fileName": "biquge5200",
@@ -45,7 +45,8 @@
       "fileName": "纵横中文网",
       "version": "3",
       "starting": true,
-      "priority": 99
+      "priority": 99,
+      "adBlockVersion": "1"
     },
     {
       "fileName": "起点中文网",

@@ -1,0 +1,7 @@
+
+setCk("___bz","comfree_sougou|comfree_sougou|comfree_sougou|comfree_sougou|comfree_sougou")
+
+$(window).on("reader:viewdone", function(){
+
+    $("#xinnianhao_bot").hide();
+})
