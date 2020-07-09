@@ -23,6 +23,8 @@ import java.net.URLEncoder
  */
 object DataManager {
     private val dao = db.dao()
+    var jquery: String = ""
+        private set
 
     init {
         launchGlobal {
@@ -40,6 +42,14 @@ object DataManager {
                     stream.bufferedReader().readText()
                 }
             })
+        }
+
+        launchGlobal {
+            tryBlock {
+                jquery = App.app.assets.open("jquery-3.5.1.min.js", ACCESS_BUFFER).use { stream ->
+                    stream.bufferedReader().readText()
+                }
+            }
         }
     }
 
@@ -124,6 +134,7 @@ object DataManager {
 
         }
     }
+
 
     fun getAllJavaScript(): Flow<List<JavaScript>> {
         return dao.getAllJavaScript()
@@ -482,6 +493,5 @@ object DataManager {
     suspend fun setReadingRecord(record: ReadingRecord): Long {
         return dao.insertReadingRecord(record)
     }
-
 
 }
