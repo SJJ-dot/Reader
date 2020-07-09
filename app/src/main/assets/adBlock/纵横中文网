@@ -2,6 +2,9 @@
 setCk("___bz","comfree_sougou|comfree_sougou|comfree_sougou|comfree_sougou|comfree_sougou")
 
 $(window).on("reader:viewdone", function(){
-
+    function adpbacker(){
+        $("#xinnianhao_bot").hide();
+    }
     $("#xinnianhao_bot").hide();
+    setInterval(adpbacker,600)
 })

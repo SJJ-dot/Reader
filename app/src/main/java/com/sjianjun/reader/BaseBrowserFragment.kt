@@ -9,6 +9,8 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import com.sjianjun.reader.repository.DataManager
+import sjj.alog.Log
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -38,18 +40,25 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
             activity?.also {
                 AlertDialog.Builder(it)
                     .setTitle("是否允许下载文件 ${contentDisposition ?: ""}？")
-                    .setMessage("文件大小：${DecimalFormat("0.##").format(contentLength.toFloat()/(1024 * 1024))}M")
+                    .setMessage("文件大小：${DecimalFormat("0.##").format(contentLength.toFloat() / (1024 * 1024))}M")
                     .setPositiveButton("下载") { dialog, which ->
-                        val fileName = uri.lastPathSegment?:SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",Locale.getDefault())
-                        val service = ContextCompat.getSystemService(it, DownloadManager::class.java);
+                        val fileName = uri.lastPathSegment ?: SimpleDateFormat(
+                            "yyyy-MM-dd_HH-mm-ss",
+                            Locale.getDefault()
+                        )
+                        val service =
+                            ContextCompat.getSystemService(it, DownloadManager::class.java);
                         service?.enqueue(
                             DownloadManager.Request(uri)
                                 .setMimeType(mimetype)
-                                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"${it.packageName}/${fileName}")
+                                .setDestinationInExternalPublicDir(
+                                    Environment.DIRECTORY_DOWNLOADS,
+                                    "${it.packageName}/${fileName}"
+                                )
                                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                         )
                     }
-                    .setNegativeButton("取消",null)
+                    .setNegativeButton("取消", null)
                     .show()
             }
         }
@@ -80,6 +89,20 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         val parent = webView?.parent as? ViewGroup
         parent?.removeView(webView)
         webView?.destroy()
+    }
+
+    fun injectJquery(webView: WebView?) {
+        webView ?: return
+//        webView.evaluateJavascript(
+//            """
+//            //${DataManager.jquery}
+//            console.log("注入的jquery 对象 "+${'$'})
+//            //var inJQuery = $.noConflict(true)
+//            //console.log("注入的jquery 对象 "+inJQuery)
+//        """.trimIndent()
+//        ) {
+//            Log.i("注入jquery 变量名：inJQuery")
+//        }
     }
 
 }

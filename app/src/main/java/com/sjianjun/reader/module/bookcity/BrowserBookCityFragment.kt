@@ -135,6 +135,9 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 started = true
                 Log.i(url + "started:$started webView:${view}")
+
+                injectJquery(view)
+
                 progress_bar.animFadeIn()
 
                 val adBlockJs = javaScript?.adBlockJs
