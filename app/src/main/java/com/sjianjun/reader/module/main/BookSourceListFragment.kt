@@ -16,6 +16,7 @@ import kotlinx.android.synthetic.main.main_fragment_book_source_list.*
 import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlin.math.max
 import kotlin.math.min
@@ -49,7 +50,7 @@ class BookSourceListFragment : BaseFragment() {
                             emit(book)
                         }
                     }.toList().sortedWith(bookComparator)
-                }.flowIo().collectLatest {
+                }.flowIo().debounce(100).collect {
                     val size = it.size
                     if (adapter.data.size != size) {
                         swipe_refresh.layoutParams.height = max(min(size, 5), 1) * 90.dpToPx()

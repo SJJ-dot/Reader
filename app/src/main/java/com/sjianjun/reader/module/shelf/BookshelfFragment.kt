@@ -90,7 +90,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                     } else {
                         null
                     }
-                }.flowIo().collectLatest { list ->
+                }.flowIo().debounce(100).collect { list ->
                     adapter.data.clear()
                     adapter.data.addAll(list)
                     adapter.notifyDataSetChanged()
