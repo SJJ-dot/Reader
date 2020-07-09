@@ -32,6 +32,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -192,9 +193,8 @@ class SearchFragment : BaseAsyncFragment() {
         showProgress()
         search_refresh?.progress = 0
         val count = AtomicInteger()
-        DataManager.search(searchKeyWord)?.collectLatest {
+        DataManager.search(searchKeyWord)?.debounce(300)?.collect {
             search_refresh?.progress = count.incrementAndGet()
-            delay(300)
             searchResult.postValue(it)
         }
         search_refresh?.progress = search_refresh?.max ?: 0
