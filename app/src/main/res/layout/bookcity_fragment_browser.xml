@@ -27,7 +27,65 @@
             android:layout_gravity="bottom"
             android:background="@color/day_night_background"
             app:layout_behavior="@string/hide_bottom_view_on_scroll_behavior"
-            app:layout_scrollFlags="scroll|enterAlways">
+            app:layout_scrollFlags="scroll|enterAlways"
+            tools:layout_height="56dp">
+
+            <ImageView
+                android:id="@+id/backward"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
+                android:rotation="180"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_arrow_forward"
+                android:tint="@color/day_night_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/forward"
+                app:layout_constraintStart_toStartOf="parent" />
+
+
+            <ImageView
+                android:id="@+id/forward"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_arrow_forward"
+                android:tint="@color/day_night_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/refresh"
+                app:layout_constraintStart_toEndOf="@+id/backward" />
+
+            <ImageView
+                android:id="@+id/refresh"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:src="@drawable/browser_navigation_refresh"
+                android:tint="@color/day_night_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/mobile"
+                app:layout_constraintStart_toEndOf="@+id/forward" />
+
+            <ImageView
+                android:id="@+id/mobile"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:src="@drawable/browser_navigation_view"
+                android:tint="@color/day_night_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/home"
+                app:layout_constraintStart_toEndOf="@+id/refresh" />
+
+            <ImageView
+                android:id="@+id/home"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_browser_home"
+                android:tint="@color/day_night_text_color_black"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/mobile" />
 
             <View
                 style="@style/line.h"
