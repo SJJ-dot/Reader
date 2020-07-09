@@ -83,6 +83,15 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 initData()
             }
         }
+        refresh.setOnClickListener {
+            webView?.reload()
+        }
+        forward.setOnClickListener {
+            webView?.goForward()
+        }
+        backward.setOnClickListener {
+            webView?.goBack()
+        }
     }
 
     private fun showBottomNavigation() {
