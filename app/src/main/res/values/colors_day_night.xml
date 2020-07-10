@@ -4,7 +4,7 @@
     <!--  图标着色  -->
     <color name="dn_icon_tint_color">@color/mdr_black</color>
     <color name="dn_text_color_black">@color/mdr_textBlack_black</color>
-    <color name="dn_text_color_black_disable">#80000000</color>
+    <color name="dn_text_color_black_disable">#60000000</color>
     <color name="dn_text_color_black_secondary">@color/mdr_textBlack_secondaryText</color>
     <color name="dn_text_color_light">@color/mdr_textBlack_black</color>
     <color name="dn_dark_tint">#00000000</color>

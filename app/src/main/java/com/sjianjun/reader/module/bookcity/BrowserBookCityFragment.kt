@@ -84,23 +84,23 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             }
         }
         refresh.setOnClickListener {
-            webView?.reload()
+            if (it.isSelected) {
+                webView?.stopLoading()
+            } else {
+                webView?.reload()
+            }
         }
+        forward.isEnabled = false
         forward.setOnClickListener {
             webView?.goForward()
         }
+        backward.isEnabled = false
         backward.setOnClickListener {
             webView?.goBack()
         }
         mobile.setOnClickListener {
-            //
+            mobile.isSelected = !mobile.isSelected
         }
-    }
-
-    private fun showBottomNavigation() {
-        val layoutParams = browser_book_city_toolbar.layoutParams as? CoordinatorLayout.LayoutParams
-        val behavior = layoutParams?.behavior as? HideBottomViewOnScrollBehavior
-        behavior?.slideUp(browser_book_city_toolbar)
     }
 
     private fun initData() {
@@ -156,6 +156,8 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                 if (!adBlockJs.isNullOrBlank()) {
                     webView?.evaluateJavascript(adBlockJs, null)
                 }
+
+                refresh.isSelected = true
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
@@ -175,10 +177,9 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
                     }
                 }
 
-                if (browser_book_city_root?.canScrollVertically != true) {
-                    //当前页面不能上下滑动 自动显示导航栏
-                    showBottomNavigation()
-                }
+                forward.isEnabled = webView?.canGoForward() == true
+                backward.isEnabled = webView?.canGoBack() == true
+                refresh.isSelected = false
             }
 
             override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {

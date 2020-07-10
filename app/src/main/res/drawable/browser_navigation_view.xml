@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_browser_phone" android:state_selected="true" />
-    <item android:drawable="@drawable/ic_browser_computer" />
+    <item android:state_selected="true">
+        <bitmap android:src="@drawable/ic_browser_phone" android:tint="@color/dn_text_color_black" />
+    </item>
+    <item>
+        <bitmap android:src="@drawable/ic_browser_computer" android:tint="@color/dn_text_color_black" />
+    </item>
 </selector>
