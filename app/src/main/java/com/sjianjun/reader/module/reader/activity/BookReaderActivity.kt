@@ -45,7 +45,7 @@ class BookReaderActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
         ImmersionBar.with(this)
-            .statusBarColor(R.color.day_night_reader_content_background)
+            .statusBarColor(R.color.dn_reader_content_background)
             .statusBarDarkFont(globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES)
 //            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
             .init()

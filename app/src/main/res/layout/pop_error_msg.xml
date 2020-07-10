@@ -13,6 +13,6 @@
         android:id="@+id/text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/day_night_pop_error_text"
+        android:textColor="@color/dn_pop_error_text"
         android:textSize="12sp" />
 </androidx.core.widget.NestedScrollView>

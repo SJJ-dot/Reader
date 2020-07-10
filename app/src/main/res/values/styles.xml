@@ -8,7 +8,7 @@
 
 
     <style name="Widget.Reader.Button" parent="@style/Widget.MaterialComponents.Button">
-        <item name="android:textColor">@color/material_reader_white</item>
+        <item name="android:textColor">@color/mdr_white</item>
         <item name="android:textSize">22sp</item>
     </style>
 
@@ -26,7 +26,7 @@
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">
         <item name="android:indeterminateTint">@color/colorPrimary</item>
         <item name="android:progressTint">@color/colorPrimary</item>
-        <item name="android:secondaryProgressTint">@color/material_reader_black</item>
+        <item name="android:secondaryProgressTint">@color/mdr_black</item>
     </style>
 
     <style name="ProgressBar.Horizontal" parent="Widget.AppCompat.ProgressBar.Horizontal">

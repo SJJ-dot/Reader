@@ -4,12 +4,12 @@
     <style name="AppTheme.DayNight" parent="AppTheme" />
 
     <style name="Splash" parent="AppTheme.DayNight">
-        <item name="android:windowBackground">@color/material_reader_grey_400</item>
+        <item name="android:windowBackground">@color/mdr_grey_400</item>
     </style>
 
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!--    设置窗口背景    -->
-        <item name="android:colorBackground">@color/day_night_background</item>
+        <item name="android:colorBackground">@color/dn_background</item>
         <!--System/Platform attributes-->
         <item name="android:windowBackground">?android:colorBackground</item>
 

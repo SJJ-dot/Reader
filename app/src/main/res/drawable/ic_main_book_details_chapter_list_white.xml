@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
     android:src="@mipmap/ic_main_book_details_chapter_list"
-    android:tint="@color/day_night_appbar_icon_tint" />
+    android:tint="@color/dn_appbar_icon_tint" />

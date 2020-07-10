@@ -92,6 +92,9 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         backward.setOnClickListener {
             webView?.goBack()
         }
+        mobile.setOnClickListener {
+            //
+        }
     }
 
     private fun showBottomNavigation() {
