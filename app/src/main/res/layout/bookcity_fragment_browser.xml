@@ -6,100 +6,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+    <com.sjianjun.reader.view.CustomWebView
+        android:id="@+id/custom_web_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <com.donkingliang.consecutivescroller.ConsecutiveScrollerLayout
-            android:id="@+id/browser_book_city_root"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <com.sjianjun.reader.view.DayNightMask
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/browser_book_city_toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:layout_gravity="bottom"
-            android:background="@color/dn_background"
-            app:layout_behavior="com.sjianjun.reader.view.HideBottomViewOnScrollBehavior2"
-            app:layout_scrollFlags="scroll|enterAlways"
-            tools:layout_height="56dp">
-
-            <ImageView
-                android:id="@+id/backward"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:rotation="180"
-                android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_forward"
-                app:layout_constraintEnd_toStartOf="@+id/forward"
-                app:layout_constraintStart_toStartOf="parent" />
-
-
-            <ImageView
-                android:id="@+id/forward"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_forward"
-                app:layout_constraintEnd_toStartOf="@+id/refresh"
-                app:layout_constraintStart_toEndOf="@+id/backward" />
-
-            <ImageView
-                android:id="@+id/refresh"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_refresh"
-                app:layout_constraintEnd_toStartOf="@+id/mobile"
-                app:layout_constraintStart_toEndOf="@+id/forward" />
-
-            <ImageView
-                android:id="@+id/mobile"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_view"
-                app:layout_constraintEnd_toStartOf="@+id/home"
-                app:layout_constraintStart_toEndOf="@+id/refresh" />
-
-            <ImageView
-                android:id="@+id/home"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_home"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/mobile" />
-
-            <View
-                style="@style/line.h"
-                android:layout_width="match_parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <androidx.core.widget.ContentLoadingProgressBar
-            android:id="@+id/progress_bar"
-            style="@style/ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:max="100"
-            android:progressBackgroundTint="@color/transparent"
-            android:progressTint="@color/colorPrimary"
-            android:visibility="gone"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:progress="50" />
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        android:layout_height="match_parent" />
 
     <FrameLayout
         android:id="@+id/bookcity_station_list_menu"
