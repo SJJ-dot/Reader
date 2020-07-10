@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_browser_close" android:state_selected="true" />
-    <item android:drawable="@drawable/ic_browser_refresh" />
+
+    <item android:state_selected="true">
+        <bitmap android:src="@drawable/ic_browser_close" android:tint="@color/dn_text_color_black" />
+    </item>
+    <item>
+        <bitmap android:src="@drawable/ic_browser_refresh" android:tint="@color/dn_text_color_black" />
+    </item>
 </selector>

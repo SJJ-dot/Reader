@@ -37,9 +37,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:rotation="180"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_arrow_forward"
-                android:tint="@color/dn_text_color_black"
-                android:tintMode="multiply"
+                android:src="@drawable/browser_navigation_forward"
                 app:layout_constraintEnd_toStartOf="@+id/forward"
                 app:layout_constraintStart_toStartOf="parent" />
 
@@ -50,9 +48,7 @@
                 android:layout_height="match_parent"
                 android:background="?android:attr/selectableItemBackground"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_arrow_forward"
-                android:tint="@color/dn_text_color_black"
-                android:tintMode="multiply"
+                android:src="@drawable/browser_navigation_forward"
                 app:layout_constraintEnd_toStartOf="@+id/refresh"
                 app:layout_constraintStart_toEndOf="@+id/backward" />
 
@@ -63,8 +59,6 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:scaleType="centerInside"
                 android:src="@drawable/browser_navigation_refresh"
-                android:tint="@color/dn_text_color_black"
-                android:tintMode="multiply"
                 app:layout_constraintEnd_toStartOf="@+id/mobile"
                 app:layout_constraintStart_toEndOf="@+id/forward" />
 
@@ -75,8 +69,6 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:scaleType="centerInside"
                 android:src="@drawable/browser_navigation_view"
-                android:tint="@color/dn_text_color_black"
-                android:tintMode="multiply"
                 app:layout_constraintEnd_toStartOf="@+id/home"
                 app:layout_constraintStart_toEndOf="@+id/refresh" />
 
@@ -86,9 +78,7 @@
                 android:layout_height="match_parent"
                 android:background="?android:attr/selectableItemBackground"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_browser_home"
-                android:tint="@color/dn_text_color_black"
-                android:tintMode="multiply"
+                android:src="@drawable/browser_navigation_home"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/mobile" />
 
