@@ -16,9 +16,7 @@ import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.animFadeIn
-import com.sjianjun.reader.utils.animFadeOut
-import com.sjianjun.reader.utils.canScrollVertically
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
 
@@ -98,8 +96,16 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
         backward.setOnClickListener {
             webView?.goBack()
         }
+
         mobile.setOnClickListener {
             mobile.isSelected = !mobile.isSelected
+            if (mobile.isSelected) {
+                webView?.settings?.userAgentString = WEB_VIEW_UA_DESKTOP
+            } else {
+                webView?.settings?.userAgentString = WEB_VIEW_UA_ANDROID
+            }
+//            webView?.loadUrl(webView?.originalUrl)
+            webView?.reload()
         }
     }
 
@@ -161,7 +167,7 @@ class BrowserBookCityFragment : BaseBrowserFragment() {
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url + " started:$started webView:${webView}")
+                Log.i(url + " started:$started UA ${webView?.settings?.userAgentString} webView:${webView} ")
                 if (started) {
                     started = false
 

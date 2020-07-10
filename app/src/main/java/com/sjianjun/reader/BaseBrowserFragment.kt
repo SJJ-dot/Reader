@@ -5,12 +5,10 @@ import android.net.Uri
 import android.os.Environment
 import android.view.View.SCROLLBARS_OUTSIDE_OVERLAY
 import android.view.ViewGroup
-import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import com.sjianjun.reader.repository.DataManager
-import sjj.alog.Log
+import com.sjianjun.reader.utils.WEB_VIEW_UA_ANDROID
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -21,8 +19,8 @@ abstract class BaseBrowserFragment : BaseAsyncFragment() {
         this.webView = webView ?: return
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
-        val webSettings = webView.getSettings();
-
+        val webSettings = webView.settings;
+        webSettings.userAgentString = WEB_VIEW_UA_ANDROID
         webSettings.javaScriptEnabled = true
 
 //设置自适应屏幕，两者合用
