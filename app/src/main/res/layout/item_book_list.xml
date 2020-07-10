@@ -17,7 +17,7 @@
             android:layout_height="0dp"
             android:layout_margin="5dp"
             android:minWidth="65dp"
-            android:tint="@color/day_night_dark_tint"
+            android:tint="@color/dn_dark_tint"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
@@ -33,7 +33,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:text="起"
-            android:textColor="@color/material_reader_white"
+            android:textColor="@color/mdr_white"
             android:textSize="10dp"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintEnd_toEndOf="@+id/bookCover"
@@ -146,7 +146,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
             android:src="@mipmap/ic_sync_error"
-            android:tint="@color/material_reader_red_100"
+            android:tint="@color/mdr_red_100"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -34,7 +34,7 @@
                             android:id="@+id/bookCover"
                             android:layout_width="100dp"
                             android:layout_height="150dp"
-                            android:tint="@color/day_night_dark_tint"
+                            android:tint="@color/dn_dark_tint"
                             android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
                             android:layout_marginEnd="16dp"
@@ -123,7 +123,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="16dp"
                             android:src="@mipmap/ic_sync_error"
-                            android:tint="@color/material_reader_red_100"
+                            android:tint="@color/mdr_red_100"
                             app:layout_constraintTop_toTopOf="@+id/latestChapterTitle"
                             app:layout_constraintBottom_toBottomOf="@+id/latestChapterTitle"
                             app:layout_constraintEnd_toEndOf="parent" />

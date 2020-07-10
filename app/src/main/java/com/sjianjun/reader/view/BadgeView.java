@@ -59,7 +59,7 @@ public class BadgeView extends AppCompatTextView {
         radius = 8;
 
         // set default background
-        setBackground(radius, getResources().getColor(R.color.day_night_badge_color));
+        setBackground(radius, getResources().getColor(R.color.dn_badge_color));
 
         setGravity(Gravity.CENTER);
 
@@ -117,7 +117,7 @@ public class BadgeView extends AppCompatTextView {
     }
 
     public void setHighlight(boolean highlight) {
-        setBackground(getResources().getColor(highlight ? R.color.day_night_badge_color : R.color.material_reader_grey_700));
+        setBackground(getResources().getColor(highlight ? R.color.dn_badge_color : R.color.mdr_grey_700));
     }
 
     public Integer getBadgeCount() {

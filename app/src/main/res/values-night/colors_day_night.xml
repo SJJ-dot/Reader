@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="day_night_background">@color/dark_background_color</color>
-    <color name="day_night_icon_tint_color">@color/material_reader_white</color>
-    <color name="day_night_text_color_black">@color/dark_text_primary_color</color>
-    <color name="day_night_text_color_black_secondary">@color/dark_text_secondary_color</color>
-    <color name="day_night_text_color_light">@color/material_reader_grey_500</color>
-    <color name="day_night_dark_tint">#55000000</color>
+    <color name="dn_background">@color/dark_background_color</color>
+    <color name="dn_icon_tint_color">@color/mdr_white</color>
+    <color name="dn_text_color_black">@color/mdr_white</color>
+    <color name="dn_text_color_black_disable">#805A5A5A</color>
+    <color name="dn_text_color_black_secondary">@color/dark_text_secondary_color</color>
+    <color name="dn_text_color_light">@color/mdr_grey_500</color>
+    <color name="dn_dark_tint">#55000000</color>
     <!--阅读器-->
-    <color name="day_night_reader_content_background">#1a1a1a</color>
-    <color name="day_night_reader_chapter_title_text_color">#80ffffff</color>
-    <color name="day_night_reader_chapter_content_text_color">#80ffffff</color>
-    <color name="day_night_reader_chapter_caption_text_color">#80ffffff</color>
+    <color name="dn_reader_content_background">#1a1a1a</color>
+    <color name="dn_reader_chapter_title_text_color">#80ffffff</color>
+    <color name="dn_reader_chapter_content_text_color">#80ffffff</color>
+    <color name="dn_reader_chapter_caption_text_color">#80ffffff</color>
     <!--  书城  -->
-    <color name="day_night_bookcity_indicator_selected_text">?attr/colorOnSurface</color>
+    <color name="dn_bookcity_indicator_selected_text">?attr/colorOnSurface</color>
 
-    <color name="day_night_pop_error_background">?attr/colorSurface</color>
-    <color name="day_night_pop_error_text">@color/dark_text_primary_color</color>
+    <color name="dn_pop_error_background">?attr/colorSurface</color>
+    <color name="dn_pop_error_text">@color/dark_text_primary_color</color>
     <!--  标题栏图标着色  -->
-    <color name="day_night_appbar_icon_tint">@color/dark_text_primary_color</color>
-    <color name="day_night_badge_color">@color/dark_text_primary_color</color>
+    <color name="dn_appbar_icon_tint">@color/dark_text_primary_color</color>
+    <color name="dn_badge_color">@color/dark_text_primary_color</color>
 </resources>

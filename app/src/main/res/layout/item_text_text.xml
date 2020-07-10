@@ -20,6 +20,6 @@
         android:layout_height="25dp"
         android:layout_gravity="end"
         android:layout_marginTop="-5dp"
-        android:background="@color/material_reader_grey_500"
+        android:background="@color/mdr_grey_500"
         android:rotation="-45" />
 </com.google.android.material.card.MaterialCardView>

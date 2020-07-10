@@ -1,6 +1,6 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="@color/material_reader_red_A700" />
+    <solid android:color="@color/mdr_red_A700" />
     <size
         android:width="5dp"
         android:height="5dp" />

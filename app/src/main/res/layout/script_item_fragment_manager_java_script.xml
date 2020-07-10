@@ -35,7 +35,7 @@
                 android:contentDescription="编辑"
                 android:padding="8dp"
                 android:src="@mipmap/ic_edit"
-                app:tint="@color/day_night_icon_tint_color" />
+                app:tint="@color/dn_icon_tint_color" />
 
             <ImageView
                 android:id="@+id/iv_del_source"
@@ -47,7 +47,7 @@
                 android:contentDescription="删除"
                 android:padding="8dp"
                 android:src="@mipmap/ic_clear_all"
-                app:tint="@color/day_night_icon_tint_color" />
+                app:tint="@color/dn_icon_tint_color" />
         </LinearLayout>
 
     </LinearLayout>

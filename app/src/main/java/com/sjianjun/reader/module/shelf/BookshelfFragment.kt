@@ -261,9 +261,9 @@ class BookshelfFragment : BaseAsyncFragment() {
                     sync_error.isClickable = false
                 } else {
                     sync_error.imageTintList = if (error != null) {
-                        ColorStateList.valueOf(R.color.material_reader_red_100.getColor())
+                        ColorStateList.valueOf(R.color.mdr_red_100.getColor())
                     } else {
-                        ColorStateList.valueOf(R.color.material_reader_grey_700.getColor())
+                        ColorStateList.valueOf(R.color.mdr_grey_700.getColor())
                     }
                     visibleSet.visible(sync_error)
                     sync_error.setOnClickListener {
