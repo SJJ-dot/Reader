@@ -6,5 +6,5 @@ $(window).on("reader:viewdone", function(){
         $("#xinnianhao_bot").hide();
     }
     $("#xinnianhao_bot").hide();
-    setInterval(adpbacker,600)
+    setInterval(adpbacker,501)
 })
