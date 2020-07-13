@@ -23,6 +23,10 @@
         <item name="materialButtonStyle">@style/dialog_button</item>
     </style>
 
+    <style name="reader_setting_dialog" parent="Theme.Design.BottomSheetDialog">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">
         <item name="android:indeterminateTint">@color/colorPrimary</item>
         <item name="android:progressTint">@color/colorPrimary</item>

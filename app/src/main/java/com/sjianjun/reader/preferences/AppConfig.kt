@@ -48,6 +48,21 @@ class AppConfig(val name: String) {
      * 需要拦截的广告SDK url
      */
     var adBlockUrlSet by DelegateSharedPreferences(emptySet<String>()) { getSharedPreferences() }
+
+    /**
+     * 阅读器亮度蒙层的颜色
+     */
+    val readerBrightnessMaskColor by DelegateLiveData(0) { getSharedPreferences() }
+
+    /**
+     * 阅读器 内容字体大小 、章节名称+4
+     */
+    val readerFontSize by DelegateLiveData(22) { getSharedPreferences() }
+
+    /**
+     * 阅读器 内容字体行间距
+     */
+    val readerLineSpacing by DelegateLiveData(1.5f) { getSharedPreferences() }
 }
 
 class BookConfig {

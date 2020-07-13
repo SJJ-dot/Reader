@@ -99,13 +99,20 @@ class MainActivity : BaseAsyncActivity() {
 
     private fun initDrawerMenuWidget() {
         nav_ui.getHeaderView(0)?.apply {
+            if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
+                day_night.setImageResource(R.drawable.ic_theme_dark_24px)
+            } else {
+                day_night.setImageResource(R.drawable.ic_theme_light_24px)
+            }
             day_night.setOnClickListener {
                 when (globalConfig.appDayNightMode) {
                     MODE_NIGHT_NO -> {
+                        day_night.setImageResource(R.drawable.ic_theme_light_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_YES
                         setDefaultNightMode(MODE_NIGHT_YES)
                     }
                     else -> {
+                        day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_NO
                         setDefaultNightMode(MODE_NIGHT_NO)
                     }

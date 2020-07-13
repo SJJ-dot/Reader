@@ -2,10 +2,12 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
@@ -17,6 +19,7 @@ import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.module.main.ChapterListFragment
+import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
@@ -28,6 +31,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -44,15 +48,79 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-        ImmersionBar.with(this)
-            .statusBarColor(R.color.dn_reader_content_background)
-            .statusBarDarkFont(globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES)
-//            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
-            .init()
-
+        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
+        val immersionBar = ImmersionBar.with(this)
+            .statusBarDarkFont(dark)
+        immersionBar.init()
+        val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
+        params?.topMargin = ImmersionBar.getStatusBarHeight(this)
+        Log.e("ImmersionBar.getStatusBarHeight(this) ${ImmersionBar.getStatusBarHeight(this)}")
         recycle_view.adapter = adapter
+        initSettingMenu()
         initScrollLoadChapter()
+        initTTS()
         initData()
+
+    }
+
+    private suspend fun speak(chapter: Chapter?, start: Int) {
+        chapter ?: return
+        ttsUtil.speak(chapter.index, chapter.content?.format() ?: "", start)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (this::readingRecord.isInitialized && readingRecord.bookUrl == bookUrl) {
+            val targetChapter = adapter.chapterList.indexOfFirst { it.url == chapterUrl }
+            if (targetChapter != -1) {
+                val manager = recycle_view.layoutManager as LinearLayoutManager
+                manager.scrollToPositionWithOffset(targetChapter, 0)
+            }
+        } else {
+            initData()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        saveReadRecord(0)
+    }
+
+    override fun onBackPressed() {
+        when {
+            drawer_layout.isDrawerOpen(GravityCompat.END) -> {
+                drawer_layout.closeDrawer(GravityCompat.END)
+            }
+            drawer_layout.isDrawerOpen(GravityCompat.START) -> {
+                drawer_layout.closeDrawer(GravityCompat.START)
+            }
+            else -> {
+                super.onBackPressed()
+            }
+        }
+    }
+
+    private fun initSettingMenu() {
+        globalConfig.readerBrightnessMaskColor.observe(this, Observer {
+            brightness_mask.setBackgroundColor(it)
+        })
+        globalConfig.readerLineSpacing.observe(this, Observer {
+            adapter.notifyDataSetChanged()
+        })
+        globalConfig.readerFontSize.observe(this, Observer {
+            adapter.notifyDataSetChanged()
+        })
+        setting.setOnClickListener {
+            drawer_layout?.closeDrawer(GravityCompat.END)
+            BookReaderSettingFragment().show(supportFragmentManager, "BookReaderSettingFragment")
+        }
+    }
+
+    /**
+     * TTS 语音阅读
+     */
+    private fun initTTS() {
         chapter_title.setOnClickListener {
             if (ttsUtil.isSpeaking) {
                 ttsUtil.stop()
@@ -114,38 +182,6 @@ class BookReaderActivity : BaseActivity() {
 
                 speak(chapter, y)
             }
-        }
-    }
-
-    private suspend fun speak(chapter: Chapter?, start: Int) {
-        chapter ?: return
-        ttsUtil.speak(chapter.index, chapter.content?.format() ?: "", start)
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        if (this::readingRecord.isInitialized && readingRecord.bookUrl == bookUrl) {
-            val targetChapter = adapter.chapterList.indexOfFirst { it.url == chapterUrl }
-            if (targetChapter != -1) {
-                val manager = recycle_view.layoutManager as LinearLayoutManager
-                manager.scrollToPositionWithOffset(targetChapter, 0)
-            }
-        } else {
-            initData()
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        saveReadRecord(0)
-    }
-
-    override fun onBackPressed() {
-        if (drawer_layout.isDrawerOpen(GravityCompat.END)) {
-            drawer_layout.closeDrawer(GravityCompat.END)
-        } else {
-            super.onBackPressed()
         }
     }
 
@@ -359,6 +395,12 @@ class BookReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
             holder.itemView.apply {
+                val fontSize = globalConfig.readerFontSize.value!!
+                chapter_title.setTextSize(TypedValue.COMPLEX_UNIT_SP, (fontSize + 4).toFloat())
+                chapter_content.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
+
+                chapter_content.setLineSpacing(0f, globalConfig.readerLineSpacing.value!!)
+
                 isClickable = false
                 chapter_title.isClickable = false
                 chapter_title.text = chapter.title
