@@ -147,14 +147,14 @@ class CustomWebView @JvmOverloads constructor(
                     it.matches(url)
                 }
                 if (block != null) {
-//                    Log.e("${request.method} $url webView:${view}")
+                    Log.e("${request.method} $url webView:${view}")
                     return WebResourceResponse(null, null, null)
                 }
                 if (path?.endsWith(".gif") == true ||
                     path?.endsWith(".js") == true ||
                     url.contains("sdk", true)
                 ) {
-                    Log.e("${request.method} ${request.url} webView:${view}")
+                    Log.w("${request.method} ${request.url} webView:${view}")
                 } else {
                     Log.i("${request.method} ${request.url} webView:${view}")
                 }
