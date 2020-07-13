@@ -8,6 +8,7 @@
     <color name="dn_text_color_black_secondary">@color/mdr_textBlack_secondaryText</color>
     <color name="dn_text_color_light">@color/mdr_textBlack_black</color>
     <color name="dn_dark_tint">#00000000</color>
+    <color name="dn_color_primary">@color/colorPrimary</color>
     <!--阅读器-->
     <color name="dn_reader_content_background">@color/mdr_white</color>
     <color name="dn_reader_chapter_title_text_color">#d9000000</color>
