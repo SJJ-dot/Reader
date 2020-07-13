@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -54,7 +55,6 @@ class BookReaderActivity : BaseActivity() {
         immersionBar.init()
         val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
         params?.topMargin = ImmersionBar.getStatusBarHeight(this)
-        Log.e("ImmersionBar.getStatusBarHeight(this) ${ImmersionBar.getStatusBarHeight(this)}")
         recycle_view.adapter = adapter
         initSettingMenu()
         initScrollLoadChapter()
