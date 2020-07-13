@@ -3,7 +3,7 @@ package com.sjianjun.reader.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
-import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.JS_SOURCE_QI_DIAN
@@ -36,7 +36,7 @@ class AppConfig(val name: String) {
      */
     var lastCheckUpdateTime by DelegateSharedPreferences(0L) { getSharedPreferences() }
 
-    var appDayNightMode by DelegateSharedPreferences(MODE_NIGHT_FOLLOW_SYSTEM) { getSharedPreferences() }
+    var appDayNightMode by DelegateSharedPreferences(MODE_NIGHT_NO) { getSharedPreferences() }
 
     val bookCityDefaultSource by DelegateLiveData(JS_SOURCE_QI_DIAN) { getSharedPreferences() }
 
