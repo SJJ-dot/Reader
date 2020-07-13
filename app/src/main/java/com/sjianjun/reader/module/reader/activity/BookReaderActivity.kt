@@ -169,17 +169,19 @@ class BookReaderActivity : BaseActivity() {
                         val maxIndex = min(lastPos + 1, chapterList.size)
 
                         val update = preLoadRefresh(chapterList, minIndex..maxIndex)
-
-                        val curFirstPos = manager.findFirstVisibleItemPosition()
-                        val curLastPos = manager.findLastVisibleItemPosition()
-                        if (update && curFirstPos <= maxIndex && curLastPos >= minIndex) {
-                            delay(1)
-                            adapter.notifyDataSetChanged()
+                        if (update) {
+                            val curFirstPos = manager.findFirstVisibleItemPosition()
+                            val curLastPos = manager.findLastVisibleItemPosition()
+                            if (curFirstPos <= maxIndex && curLastPos >= minIndex) {
+                                delay(1)
+                                adapter.notifyDataSetChanged()
+                            }
                         }
                     }
                 }
 
                 refreshChapterProgress()
+                saveReadRecord()
             }
         })
     }
@@ -232,7 +234,7 @@ class BookReaderActivity : BaseActivity() {
                 return@launch
             }
             this@BookReaderActivity.book = book
-
+            //设置章节列表
             supportFragmentManager.beginTransaction()
                 .replace(
                     R.id.drawer_chapter_list,
@@ -358,8 +360,8 @@ class BookReaderActivity : BaseActivity() {
             val chapter = chapterList[position]
             holder.itemView.apply {
                 isClickable = false
-                chapter_title.text = chapter.title
                 chapter_title.isClickable = false
+                chapter_title.text = chapter.title
                 if (chapter.content != null) {
                     chapter_content.text = chapter.content?.format()
                     if (chapter.isLoaded) {
