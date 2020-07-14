@@ -108,12 +108,13 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.apply {
                 val pageStyle = data[position]
                 image.setImageDrawable(pageStyle.getBackground(context))
-                if (globalConfig.readerPageStyle.value == position) {
+                if (globalConfig.readerPageStyle.value != position) {
                     image.borderColor = R.color.dn_text_color_black_disable.color(context)
                 } else {
                     image.borderColor = R.color.dn_color_primary.color(context)
                 }
                 setOnClickListener {
+                    notifyDataSetChanged()
                     globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
                 }
             }
