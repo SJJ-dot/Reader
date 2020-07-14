@@ -39,7 +39,7 @@ enum class PageStyle {
     STYLE_1 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style1_bg)
+            return createBackground(context, R.drawable.ic_reader_style1_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -57,10 +57,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#3E3C38".color
         }
-    },STYLE_2 {
-
+    },
+    STYLE_2 {
+        override val isDark: Boolean = true
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style2_bg)
+            return createBackground(context, R.drawable.ic_reader_style2_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -78,10 +79,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#999999".color
         }
-    },STYLE_3 {
+    },
+    STYLE_3 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style3_bg)
+            return createBackground(context, R.drawable.ic_reader_style3_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -99,10 +101,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#3B2405".color
         }
-    },STYLE_4 {
+    },
+    STYLE_4 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style4_bg)
+            return createBackground(context, R.drawable.ic_reader_style4_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -120,10 +123,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#422D10".color
         }
-    },STYLE_5 {
+    },
+    STYLE_5 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style5_bg)
+            return createBackground(context, R.drawable.ic_reader_style5_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -141,10 +145,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#3C1B12".color
         }
-    },STYLE_6 {
+    },
+    STYLE_6 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style6_bg)
+            return createBackground(context, R.drawable.ic_reader_style6_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -162,10 +167,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#1D321F".color
         }
-    },STYLE_7 {
-
+    },
+    STYLE_7 {
+        override val isDark: Boolean = true
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style7_bg)
+            return createBackground(context, R.drawable.ic_reader_style7_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -183,10 +189,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#A4A2A5".color
         }
-    },STYLE_8 {
+    },
+    STYLE_8 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style8_bg)
+            return createBackground(context, R.drawable.ic_reader_style8_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -204,10 +211,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#29251A".color
         }
-    },STYLE_9 {
+    },
+    STYLE_9 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style9_bg)
+            return createBackground(context, R.drawable.ic_reader_style9_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -225,10 +233,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#222421".color
         }
-    },STYLE_10 {
+    },
+    STYLE_10 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style10_bg)
+            return createBackground(context, R.drawable.ic_reader_style10_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -246,10 +255,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#3B3221".color
         }
-    },STYLE_11 {
+    },
+    STYLE_11 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style11_bg)
+            return createBackground(context, R.drawable.ic_reader_style11_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -267,10 +277,11 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#202020".color
         }
-    },STYLE_12 {
+    },
+    STYLE_12 {
 
         override fun getBackground(context: Context): Drawable {
-            return createBackground(context,R.drawable.ic_reader_style12_bg)
+            return createBackground(context, R.drawable.ic_reader_style12_bg)
         }
 
         override fun getSpacerColor(context: Context): Int {
@@ -292,8 +303,8 @@ enum class PageStyle {
 
     abstract fun getBackground(context: Context): Drawable
 
-    private var _background:WeakReference<Drawable?>? = null
-    fun createBackground(context: Context,resId:Int): Drawable {
+    private var _background: WeakReference<Drawable?>? = null
+    fun createBackground(context: Context, resId: Int): Drawable {
         var background = _background?.get()
         if (background == null) {
             val bitmap = BitmapFactory
@@ -307,6 +318,8 @@ enum class PageStyle {
         }
         return background
     }
+
+    open val isDark = false
 
     //分割线颜色
     @ColorInt
