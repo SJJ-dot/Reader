@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dn_reader_content_background"
     android:orientation="vertical">
 
     <TextView
@@ -19,6 +18,7 @@
         android:textIsSelectable="true"
         android:textSize="26sp"
         android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
         tools:text="章节标题" />
 
     <TextView
@@ -32,6 +32,7 @@
         android:textColor="@color/dn_reader_chapter_content_text_color"
         android:textIsSelectable="true"
         android:textSize="22sp"
+        app:layout_constraintTop_toBottomOf="@+id/chapter_title"
         tools:text="章节内容章节内容章节内容章节内容章节内容章节内容章节内容章节内容章节内容章节内容" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
