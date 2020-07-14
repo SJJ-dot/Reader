@@ -63,6 +63,11 @@ class AppConfig(val name: String) {
      * 阅读器 内容字体行间距
      */
     val readerLineSpacing by DelegateLiveData(1.5f) { getSharedPreferences() }
+
+    /**
+     * 阅读器 页面样式 位置索引
+     */
+    val readerPageStyle by DelegateLiveData(0) { getSharedPreferences() }
 }
 
 class BookConfig {

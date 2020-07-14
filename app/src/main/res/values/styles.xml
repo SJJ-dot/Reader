@@ -39,7 +39,7 @@
     </style>
 
     <style name="line">
-        <item name="android:background">#a0424242</item>
+        <item name="android:background">@color/spacer_color</item>
         <item name="android:layout_height">0.5dp</item>
         <item name="android:layout_width">0.5dp</item>
     </style>

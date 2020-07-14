@@ -1,7 +1,6 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -14,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.async.runOnIdle
 import com.sjianjun.reader.async.withIdle
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
@@ -25,6 +23,7 @@ import com.sjianjun.reader.coroutine.withIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
+import com.sjianjun.reader.module.reader.style.PageStyle
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
@@ -48,7 +47,7 @@ class BookReaderActivity : BaseActivity() {
     private val chapterUrl get() = intent.getStringExtra(CHAPTER_URL)
     private lateinit var book: Book
     private lateinit var readingRecord: ReadingRecord
-    private val adapter by lazy { ChapterListAdapter(this) }
+    private val adapter by lazy { ContentAdapter(this) }
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,11 +114,21 @@ class BookReaderActivity : BaseActivity() {
         globalConfig.readerFontSize.observe(this, Observer {
             adapter.notifyDataSetChanged()
         })
+        globalConfig.readerPageStyle.observe(this, Observer {
+            val pageStyle = PageStyle.getStyle(it)
+            reader_root.background = pageStyle.getBackground(this)
+            line.setBackgroundColor(pageStyle.getSpacerColor(this))
+            chapter_title.setTextColor(pageStyle.getLabelColor(this))
+            adapter.notifyDataSetChanged()
+        })
         setting.setOnClickListener {
             launch("setting") {
                 drawer_layout?.closeDrawer(GravityCompat.END)
                 withIdle {
-                    BookReaderSettingFragment().show(supportFragmentManager, "BookReaderSettingFragment")
+                    BookReaderSettingFragment().show(
+                        supportFragmentManager,
+                        "BookReaderSettingFragment"
+                    )
                 }
             }
         }
@@ -381,7 +390,7 @@ class BookReaderActivity : BaseActivity() {
         return@withIo true
     }
 
-    class ChapterListAdapter(val activity: BookReaderActivity) :
+    class ContentAdapter(val activity: BookReaderActivity) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         init {
             setHasStableIds(true)
@@ -403,11 +412,17 @@ class BookReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val chapter = chapterList[position]
             holder.itemView.apply {
+
                 val fontSize = globalConfig.readerFontSize.value!!
                 chapter_title.setTextSize(TypedValue.COMPLEX_UNIT_SP, (fontSize + 4).toFloat())
                 chapter_content.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
 
                 chapter_content.setLineSpacing(0f, globalConfig.readerLineSpacing.value!!)
+
+                val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value!!)
+                chapter_title.setTextColor(pageStyle.getChapterTitleColor(context))
+                chapter_content.setTextColor(pageStyle.getChapterContentColor(context))
+                background = pageStyle.getBackground(context)
 
                 isClickable = false
                 chapter_title.isClickable = false

@@ -31,6 +31,7 @@ class ChapterListFragment : BaseFragment() {
         ChapterListAdapter(
             this
         )
+
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -83,24 +84,27 @@ class ChapterListFragment : BaseFragment() {
             holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
             position: Int
         ) {
-            val c = data[position]
-            holder.itemView.text1.text = c.title
-            if (readingChapterUrl == c.url) {
-                holder.itemView.text1.setTextColorRes(R.color.mdr_green_500)
-            } else {
-                holder.itemView.text1.setTextColorRes(R.color.dn_text_color_light)
+            holder.itemView.apply {
+                val c = data[position]
+                text1.text = c.title
+                if (readingChapterUrl == c.url) {
+                    text1.setTextColorRes(R.color.mdr_green_500)
+                } else {
+                    text1.setTextColorRes(R.color.dn_text_color_light)
+                }
+                if (c.isLoaded) {
+                    mark.setBackgroundColor(R.color.mdr_green_A700.color(context))
+                } else {
+                    mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
+                }
+                setOnClickListener {
+                    fragment.startActivity<BookReaderActivity>(
+                        BOOK_URL to c.bookUrl,
+                        CHAPTER_URL to c.url
+                    )
+                }
             }
-            if (c.isLoaded) {
-                holder.itemView.mark.setBackgroundColor(R.color.mdr_green_A700.getColor())
-            } else {
-                holder.itemView.mark.setBackgroundColor(R.color.mdr_grey_500.getColor())
-            }
-            holder.itemView.setOnClickListener {
-                fragment.startActivity<BookReaderActivity>(
-                    BOOK_URL to c.bookUrl,
-                    CHAPTER_URL to c.url
-                )
-            }
+
         }
 
         override fun getItemId(position: Int): Long {
