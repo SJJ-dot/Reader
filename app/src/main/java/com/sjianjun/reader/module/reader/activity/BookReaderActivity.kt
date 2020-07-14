@@ -119,6 +119,11 @@ class BookReaderActivity : BaseActivity() {
             reader_root.background = pageStyle.getBackground(this)
             line.setBackgroundColor(pageStyle.getSpacerColor(this))
             chapter_title.setTextColor(pageStyle.getLabelColor(this))
+            if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                ImmersionBar.with(this).statusBarDarkFont(false).init()
+            } else {
+                ImmersionBar.with(this).statusBarDarkFont(true).init()
+            }
             adapter.notifyDataSetChanged()
         })
         setting.setOnClickListener {
