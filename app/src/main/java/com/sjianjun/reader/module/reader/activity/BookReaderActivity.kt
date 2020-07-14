@@ -14,11 +14,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.async.runOnIdle
+import com.sjianjun.reader.async.withIdle
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.coroutine.launchIo
+import com.sjianjun.reader.coroutine.withIo
+import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
@@ -112,8 +116,12 @@ class BookReaderActivity : BaseActivity() {
             adapter.notifyDataSetChanged()
         })
         setting.setOnClickListener {
-            drawer_layout?.closeDrawer(GravityCompat.END)
-            BookReaderSettingFragment().show(supportFragmentManager, "BookReaderSettingFragment")
+            launch("setting") {
+                drawer_layout?.closeDrawer(GravityCompat.END)
+                withIdle {
+                    BookReaderSettingFragment().show(supportFragmentManager, "BookReaderSettingFragment")
+                }
+            }
         }
     }
 

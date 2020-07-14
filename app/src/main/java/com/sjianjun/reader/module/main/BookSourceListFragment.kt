@@ -8,6 +8,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.coroutine.flowIo
 import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*

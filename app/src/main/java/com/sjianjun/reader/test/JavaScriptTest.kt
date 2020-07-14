@@ -5,9 +5,7 @@ import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.JavaScript.Func.*
 import com.sjianjun.reader.bean.SearchResult
-import com.sjianjun.reader.utils.withIo
-import org.jsoup.Jsoup
-import org.jsoup.internal.StringUtil
+import com.sjianjun.reader.coroutine.withIo
 import sjj.alog.Log
 
 /**
