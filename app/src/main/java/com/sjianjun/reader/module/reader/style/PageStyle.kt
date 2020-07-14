@@ -78,6 +78,216 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#999999".color
         }
+    },STYLE_3 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style3_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#883B2405".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#3B2405".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#3B2405".color
+        }
+    },STYLE_4 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style4_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#88422D10".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#422D10".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#422D10".color
+        }
+    },STYLE_5 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style5_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#883C1B12".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#3C1B12".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#3C1B12".color
+        }
+    },STYLE_6 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style6_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#881D321F".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#1D321F".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#1D321F".color
+        }
+    },STYLE_7 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style7_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#88A4A2A5".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#A4A2A5".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#A4A2A5".color
+        }
+    },STYLE_8 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style8_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#8829251A".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#29251A".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#29251A".color
+        }
+    },STYLE_9 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style9_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#88222421".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#222421".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#222421".color
+        }
+    },STYLE_10 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style10_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#883B3221".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#3B3221".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#3B3221".color
+        }
+    },STYLE_11 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style11_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#88202020".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#202020".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#202020".color
+        }
+    },STYLE_12 {
+
+        override fun getBackground(context: Context): Drawable {
+            return createBackground(context,R.drawable.ic_reader_style12_bg)
+        }
+
+        override fun getSpacerColor(context: Context): Int {
+            return getLabelColor(context)
+        }
+
+        override fun getLabelColor(context: Context): Int {
+            return "#88292019".color
+        }
+
+        override fun getChapterTitleColor(context: Context): Int {
+            return "#292019".color
+        }
+
+        override fun getChapterContentColor(context: Context): Int {
+            return "#292019".color
+        }
     };
 
     abstract fun getBackground(context: Context): Drawable
