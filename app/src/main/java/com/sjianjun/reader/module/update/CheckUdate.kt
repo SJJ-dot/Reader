@@ -9,6 +9,8 @@ import androidx.core.content.ContextCompat
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
+import com.sjianjun.reader.coroutine.withIo
+import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
