@@ -7,6 +7,12 @@
     android:layout_height="match_parent"
     android:background="@color/dn_background">
 
+    <ImageView
+        android:id="@+id/reader_root_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY" />
+
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"

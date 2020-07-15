@@ -116,7 +116,7 @@ class BookReaderActivity : BaseActivity() {
         })
         globalConfig.readerPageStyle.observe(this, Observer {
             val pageStyle = PageStyle.getStyle(it)
-            reader_root.background = pageStyle.getBackground(this)
+            reader_root_background.setImageDrawable(pageStyle.getBackground(this))
             line.setBackgroundColor(pageStyle.getSpacerColor(this))
             chapter_title.setTextColor(pageStyle.getLabelColor(this))
             if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
@@ -427,7 +427,8 @@ class BookReaderActivity : BaseActivity() {
                 val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value!!)
                 chapter_title.setTextColor(pageStyle.getChapterTitleColor(context))
                 chapter_content.setTextColor(pageStyle.getChapterContentColor(context))
-                background = pageStyle.getBackground(context)
+
+                chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
 
                 isClickable = false
                 chapter_title.isClickable = false
