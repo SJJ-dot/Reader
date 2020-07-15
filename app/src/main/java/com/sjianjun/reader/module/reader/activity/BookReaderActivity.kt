@@ -35,7 +35,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -427,8 +426,11 @@ class BookReaderActivity : BaseActivity() {
                 val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value!!)
                 chapter_title.setTextColor(pageStyle.getChapterTitleColor(context))
                 chapter_content.setTextColor(pageStyle.getChapterContentColor(context))
-
-                chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
+                if (pageStyle.canScroll) {
+                    chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
+                } else {
+                    chapter_content_background.setImageDrawable(null)
+                }
 
                 isClickable = false
                 chapter_title.isClickable = false

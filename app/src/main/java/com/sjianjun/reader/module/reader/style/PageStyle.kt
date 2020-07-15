@@ -17,7 +17,7 @@ import java.lang.ref.WeakReference
  */
 enum class PageStyle {
     STYLE_0 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return ColorDrawable(R.color.dn_reader_content_background.color(context))
         }
@@ -62,7 +62,7 @@ enum class PageStyle {
     },
     STYLE_2 {
         override val isDark: Boolean = true
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style2_bg)
         }
@@ -128,7 +128,7 @@ enum class PageStyle {
         }
     },
     STYLE_5 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style5_bg)
         }
@@ -150,7 +150,7 @@ enum class PageStyle {
         }
     },
     STYLE_6 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style6_bg)
         }
@@ -173,7 +173,7 @@ enum class PageStyle {
     },
     STYLE_7 {
         override val isDark: Boolean = true
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style7_bg)
         }
@@ -195,7 +195,7 @@ enum class PageStyle {
         }
     },
     STYLE_8 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style8_bg)
         }
@@ -217,7 +217,7 @@ enum class PageStyle {
         }
     },
     STYLE_9 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style9_bg)
         }
@@ -261,7 +261,7 @@ enum class PageStyle {
         }
     },
     STYLE_11 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style11_bg)
         }
@@ -283,7 +283,7 @@ enum class PageStyle {
         }
     },
     STYLE_12 {
-        override val isFixedBackground: Boolean = true
+        override val canScroll: Boolean = false
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style12_bg)
         }
@@ -321,8 +321,8 @@ enum class PageStyle {
     }
 
     open val isDark = false
-    //固定背景
-    open val isFixedBackground = false
+    //背景是否跟随内容滑动
+    open val canScroll = true
 
     //分割线颜色
     @ColorInt
