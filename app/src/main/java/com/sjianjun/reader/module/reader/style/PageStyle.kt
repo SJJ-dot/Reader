@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.reader.style
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
@@ -16,6 +17,7 @@ import java.lang.ref.WeakReference
  */
 enum class PageStyle {
     STYLE_0 {
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return ColorDrawable(R.color.dn_reader_content_background.color(context))
         }
@@ -60,6 +62,7 @@ enum class PageStyle {
     },
     STYLE_2 {
         override val isDark: Boolean = true
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style2_bg)
         }
@@ -125,7 +128,7 @@ enum class PageStyle {
         }
     },
     STYLE_5 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style5_bg)
         }
@@ -147,7 +150,7 @@ enum class PageStyle {
         }
     },
     STYLE_6 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style6_bg)
         }
@@ -170,6 +173,7 @@ enum class PageStyle {
     },
     STYLE_7 {
         override val isDark: Boolean = true
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style7_bg)
         }
@@ -191,7 +195,7 @@ enum class PageStyle {
         }
     },
     STYLE_8 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style8_bg)
         }
@@ -213,7 +217,7 @@ enum class PageStyle {
         }
     },
     STYLE_9 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style9_bg)
         }
@@ -257,7 +261,7 @@ enum class PageStyle {
         }
     },
     STYLE_11 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style11_bg)
         }
@@ -279,7 +283,7 @@ enum class PageStyle {
         }
     },
     STYLE_12 {
-
+        override val isFixedBackground: Boolean = true
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style12_bg)
         }
@@ -303,23 +307,22 @@ enum class PageStyle {
 
     abstract fun getBackground(context: Context): Drawable
 
-    private var _background: WeakReference<Drawable?>? = null
+    private var _bitmap: WeakReference<Bitmap>? = null
     fun createBackground(context: Context, resId: Int): Drawable {
-        var background = _background?.get()
-        if (background == null) {
-            val bitmap = BitmapFactory
-                .decodeResource(context.resources, resId)
-
-            val drawable = BitmapDrawable(context.resources, bitmap)
-            drawable.tileModeY = Shader.TileMode.MIRROR
-            drawable.tileModeX = Shader.TileMode.MIRROR
-            _background = WeakReference(drawable)
-            background = drawable
+        var bitmap = _bitmap?.get()
+        if (bitmap == null) {
+            bitmap = BitmapFactory.decodeResource(context.resources, resId)
+            _bitmap = WeakReference(bitmap)
         }
-        return background
+        val drawable = BitmapDrawable(context.resources, bitmap)
+        drawable.tileModeY = Shader.TileMode.REPEAT
+        drawable.tileModeX = Shader.TileMode.MIRROR
+        return drawable
     }
 
     open val isDark = false
+    //固定背景
+    open val isFixedBackground = false
 
     //分割线颜色
     @ColorInt

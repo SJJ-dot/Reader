@@ -96,6 +96,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initPageStyle() {
         page_style_list.adapter = Adapter(this)
+        page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
     }
 
     class Adapter(val fragment: BookReaderSettingFragment) :
