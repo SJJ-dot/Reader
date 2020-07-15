@@ -426,11 +426,8 @@ class BookReaderActivity : BaseActivity() {
                 val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value!!)
                 chapter_title.setTextColor(pageStyle.getChapterTitleColor(context))
                 chapter_content.setTextColor(pageStyle.getChapterContentColor(context))
-                if (pageStyle.canScroll) {
-                    chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
-                } else {
-                    chapter_content_background.setImageDrawable(null)
-                }
+
+                chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
 
                 isClickable = false
                 chapter_title.isClickable = false
