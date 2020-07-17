@@ -37,17 +37,12 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
+
+    var adBlockUrl: LinkedList<AdBlock>? = null
     var adBlockJs: String? = null
-    var adBlockUrl: List<Regex>? = null
 
     init {
         LayoutInflater.from(context).inflate(R.layout.custom_web_view, this)
-        isFocusable = true
-        isFocusableInTouchMode = true
-    }
-
-    override fun hasFocus(): Boolean {
-        return true
     }
 
     fun init(lifecycle: Lifecycle) {
@@ -74,7 +69,7 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): Boolean {
                 val url = request.url.toString()
-                Log.i("$url webView:${view}")
+                Log.i("$url ")
                 if (url.startsWith("http")) {
                     view?.loadUrl(url)
                 } else {
@@ -89,7 +84,7 @@ class CustomWebView @JvmOverloads constructor(
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 started = true
-                Log.i(url + "started:$started webView:${view}")
+                Log.i(url + "started:$started ")
 
 
 
@@ -134,7 +129,7 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onLoadResource(view: WebView?, url: String?) {
-                Log.i(url + " webView:${view}")
+                Log.i("$url")
             }
 
             override fun shouldInterceptRequest(
@@ -143,27 +138,32 @@ class CustomWebView @JvmOverloads constructor(
             ): WebResourceResponse? {
                 val path = request.url.path
                 val url = request.url.toString()
-                val block = adBlockUrl?.firstOrNull {
-                    it.matches(url)
+
+                val adBlockList = adBlockUrl
+                val index = adBlockList?.indexOfFirst {
+                    it.regex.matches(url)
                 }
-                if (block != null) {
-                    Log.e("${request.method} $url webView:${view}")
+                if (index != null && index != -1) {
+                    val block = adBlockList.removeAt(index)
+                    block.hitCount++
+                    adBlockList.addFirst(block)
+                    Log.e("${request.method} $url $block")
                     return WebResourceResponse(null, null, null)
                 }
                 if (path?.endsWith(".gif") == true ||
                     path?.endsWith(".js") == true ||
                     url.contains("sdk", true)
                 ) {
-                    Log.w("${request.method} ${request.url} webView:${view}")
+                    Log.w("${request.method} ${request.url} ")
                 } else {
-                    Log.i("${request.method} ${request.url} webView:${view}")
+                    Log.i("${request.method} ${request.url} ")
                 }
                 return super.shouldInterceptRequest(view, request)
             }
         }
         webView?.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                Log.i("progress:${newProgress} webView:${view}")
+                Log.i("progress:${newProgress} ")
                 progress_bar.progress = newProgress
                 if (newProgress == 100) {
                     progress_bar.animFadeOut()
@@ -175,7 +175,7 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onReceivedTitle(view: WebView?, title: String?) {
-                Log.i("title:${title} webView:${view}")
+                Log.i("title:${title} ")
 //                setTitle(title)
             }
 
@@ -185,7 +185,7 @@ class CustomWebView @JvmOverloads constructor(
                 message: String?,
                 result: JsResult?
             ): Boolean {
-                Log.i("message:${message} $url webView:${view}")
+                Log.i("message:${message} $url ")
                 return false
             }
 
@@ -195,7 +195,7 @@ class CustomWebView @JvmOverloads constructor(
                 message: String?,
                 result: JsResult?
             ): Boolean {
-                Log.i("message:${message} $url webView:${view}")
+                Log.i("message:${message} $url ")
                 return super.onJsConfirm(view, url, message, result)
             }
 
@@ -207,7 +207,7 @@ class CustomWebView @JvmOverloads constructor(
                 result: JsPromptResult?
             ): Boolean {
                 Log.i(
-                    "message:${message} defaultValue:$defaultValue $url webView:${view}"
+                    "message:${message} defaultValue:$defaultValue $url "
                 )
                 return super.onJsPrompt(view, url, message, defaultValue, result)
             }
@@ -340,5 +340,19 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
+    class AdBlock(val pattern: String) : Comparable<AdBlock> {
+        var hitCount: Int = 0
+        val regex: Regex = Regex("\\A$pattern.*")
+
+        override
+        fun compareTo(other: AdBlock): Int {
+            return hitCount.compareTo(other.hitCount)
+        }
+
+        override fun toString(): String {
+            return "{hitCount=$hitCount,regex=$regex}"
+        }
+
+    }
 
 }

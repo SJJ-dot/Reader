@@ -3,11 +3,9 @@
 package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
-import android.os.Looper
-import androidx.lifecycle.MutableLiveData
-import sjj.alog.Log
+import com.google.gson.reflect.TypeToken
+import sjj.novel.util.gson
 import kotlin.reflect.KClassifier
-import kotlin.reflect.KProperty
 
 fun <T> getSpValue(
     classifier: KClassifier?,
@@ -22,7 +20,15 @@ fun <T> getSpValue(
         Int::class -> sp.getInt(key, def as Int)
         Long::class -> sp.getLong(key, def as Long)
         Set::class -> sp.getStringSet(key, def as? Set<String>)
-        else -> throw IllegalArgumentException("only support String、Boolean、Float、Int、Long、Set<String>")
+        else -> {
+            val str = sp.getString(key, null)
+            if (str != null) {
+                gson.fromJson<T>(str, object : TypeToken<T>() {}.type)
+            } else {
+                def
+            }
+
+        }
     } as T
 }
 
@@ -35,7 +41,9 @@ fun <T> putSpValue(classifier: KClassifier?, key: String, value: T, sp: SharedPr
         Int::class -> edit.putInt(key, value as Int)
         Long::class -> edit.putLong(key, value as Long)
         Set::class -> edit.putStringSet(key, value as? Set<String>)
-        else -> throw IllegalArgumentException("only support String、Boolean、Float、Int、Long、Set<String>")
+        else -> {
+            edit.putString(key, gson.toJson(value))
+        }
     } as T
     edit.apply()
 }
