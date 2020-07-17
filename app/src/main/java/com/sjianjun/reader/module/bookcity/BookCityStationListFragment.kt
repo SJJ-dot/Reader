@@ -10,6 +10,7 @@ import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.utils.color
 import kotlinx.android.synthetic.main.bookcity_fragment_station_list.*
 import kotlinx.android.synthetic.main.bookcity_item_station.view.*
 import kotlinx.coroutines.flow.first
@@ -42,7 +43,13 @@ class BookCityStationListFragment : BaseAsyncFragment() {
             val javaScript = data[position]
             holder.itemView.apply {
                 title.text = javaScript.source
+                if (globalConfig.bookCityDefaultSource.value == javaScript.source) {
+                    title.setTextColor(R.color.dn_color_primary.color(context))
+                } else {
+                    title.setTextColor(R.color.dn_text_color_black.color(context))
+                }
                 setOnClickListener {
+                    notifyDataSetChanged()
                     globalConfig.bookCityDefaultSource.postValue(javaScript.source)
                 }
             }

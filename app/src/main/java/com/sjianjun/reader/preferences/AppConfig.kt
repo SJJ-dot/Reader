@@ -42,12 +42,12 @@ class AppConfig(val name: String) {
 
     val qqAuthLoginUri = MutableLiveData<Uri>()
 
-    var adBlockUrlSetVersion by DelegateSharedPreferences(0) { getSharedPreferences() }
+    var adBlockUrlListVersion by DelegateSharedPreferences(0) { getSharedPreferences() }
 
     /**
      * 需要拦截的广告SDK url
      */
-    var adBlockUrlSet by DelegateSharedPreferences(emptySet<String>()) { getSharedPreferences() }
+    var adBlockUrlList by DelegateSharedPreferences(emptyList<String>()) { getSharedPreferences() }
 
     /**
      * 阅读器亮度蒙层的颜色

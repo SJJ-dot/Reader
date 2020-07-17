@@ -75,9 +75,13 @@ object DataManager {
 
             val asyncUrlSet = async {
                 //广告拦截
-                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlSetVersion) {
-                    val urlSet = gson.fromJson<Set<String>>(loadScript("adBlock/filterUrl.json"))!!
-                    globalConfig.adBlockUrlSet = urlSet
+                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlListVersion) {
+                    val urlSet = gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
+                    val adBlockUrlList = globalConfig.adBlockUrlList.toMutableList()
+                    urlSet.removeAll(adBlockUrlList)
+                    adBlockUrlList.addAll(urlSet)
+                    globalConfig.adBlockUrlList = adBlockUrlList
+                    globalConfig.adBlockUrlListVersion = info.adBlockFilterUrlVersion
                 }
             }
 
