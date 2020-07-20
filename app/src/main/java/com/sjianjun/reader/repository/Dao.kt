@@ -173,6 +173,9 @@ interface Dao {
     @Query("select * from ChapterContent where url=:url")
     fun getChapterContent(url: String): Flow<ChapterContent?>
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertChapterContent(chapterContent: ChapterContent): Long
+
     @Query("delete from ChapterContent where bookUrl in (select url from Book where title=:bookTitle and author=:bookAuthor)")
     fun deleteChapterContentByBookTitleAndAuthor(bookTitle: String, bookAuthor: String)
 

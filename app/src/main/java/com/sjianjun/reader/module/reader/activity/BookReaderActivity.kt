@@ -50,6 +50,7 @@ class BookReaderActivity : BaseActivity() {
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ActivityManger.finishSameType(this)
         setContentView(R.layout.activity_book_reader)
         val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
         val immersionBar = ImmersionBar.with(this)

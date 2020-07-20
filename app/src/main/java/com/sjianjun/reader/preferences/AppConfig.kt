@@ -6,7 +6,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
-import com.sjianjun.reader.utils.JS_SOURCE_QI_DIAN
+import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
 
 val globalConfig by lazy { AppConfig("default") }
 val globalBookConfig by lazy { BookConfig() }
@@ -38,7 +38,7 @@ class AppConfig(val name: String) {
 
     var appDayNightMode by DelegateSharedPreferences(MODE_NIGHT_NO) { getSharedPreferences() }
 
-    val bookCityDefaultSource by DelegateLiveData(JS_SOURCE_QI_DIAN) { getSharedPreferences() }
+    val bookCityDefaultSource by DelegateLiveData(BOOK_SOURCE_QI_DIAN) { getSharedPreferences() }
 
     val qqAuthLoginUri = MutableLiveData<Uri>()
 

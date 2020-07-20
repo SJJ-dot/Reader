@@ -198,7 +198,7 @@ class CustomWebView @JvmOverloads constructor(
             val uri = Uri.parse(url)
             act?.also {
                 AlertDialog.Builder(it)
-                    .setTitle("是否允许下载文件 ${contentDisposition ?: ""}？")
+                    .setTitle("是否允许下载文件 ${contentDisposition ?: uri.lastPathSegment ?: ""}？")
                     .setMessage("文件大小：${DecimalFormat("0.##").format(contentLength.toFloat() / (1024 * 1024))}M")
                     .setPositiveButton("下载") { dialog, which ->
                         val fileName = uri.lastPathSegment ?: SimpleDateFormat(
