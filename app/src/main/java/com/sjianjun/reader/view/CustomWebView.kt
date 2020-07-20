@@ -173,44 +173,6 @@ class CustomWebView @JvmOverloads constructor(
                     webView?.evaluateJavascript(adBlockJs, null)
                 }
             }
-
-            override fun onReceivedTitle(view: WebView?, title: String?) {
-                Log.i("title:${title} ")
-//                setTitle(title)
-            }
-
-            override fun onJsAlert(
-                view: WebView?,
-                url: String?,
-                message: String?,
-                result: JsResult?
-            ): Boolean {
-                Log.i("message:${message} $url ")
-                return false
-            }
-
-            override fun onJsConfirm(
-                view: WebView?,
-                url: String?,
-                message: String?,
-                result: JsResult?
-            ): Boolean {
-                Log.i("message:${message} $url ")
-                return super.onJsConfirm(view, url, message, result)
-            }
-
-            override fun onJsPrompt(
-                view: WebView?,
-                url: String?,
-                message: String?,
-                defaultValue: String?,
-                result: JsPromptResult?
-            ): Boolean {
-                Log.i(
-                    "message:${message} defaultValue:$defaultValue $url "
-                )
-                return super.onJsPrompt(view, url, message, defaultValue, result)
-            }
         }
     }
 
