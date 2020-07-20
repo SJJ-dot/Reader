@@ -76,7 +76,8 @@ object DataManager {
             val asyncUrlSet = async {
                 //广告拦截
                 if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlListVersion) {
-                    val urlSet = gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
+                    val urlSet =
+                        gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
                     val adBlockUrlList = globalConfig.adBlockUrlList.toMutableList()
                     urlSet.removeAll(adBlockUrlList)
                     adBlockUrlList.addAll(urlSet)
@@ -236,8 +237,12 @@ object DataManager {
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): String? {
+        return insertBookAndSaveReadingRecord(searchResult.toBookList())
+    }
+
+    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String? {
         return withIo {
-            dao.insertBookAndSaveReadingRecord(searchResult.toBookList())
+            dao.insertBookAndSaveReadingRecord(bookList)
         }
     }
 
@@ -246,6 +251,11 @@ object DataManager {
         javaScript: JavaScript? = null,
         onlyLocal: Boolean = false
     ): Book? {
+
+        if (book.source == BOOK_SOURCE_FILE_IMPORT) {
+            return null
+        }
+
         return withIo {
             if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
                 //可能存在之前本地没有首发站书源，设置为null之后的情况
@@ -318,12 +328,20 @@ object DataManager {
     }
 
     suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null) = withIo {
-        book ?: return@withIo MessageException("书籍查找失败")
+
+        if (book?.source == BOOK_SOURCE_FILE_IMPORT) {
+            return@withIo
+        }
+
+        book ?: return@withIo
         val script = javaScript ?: dao.getJavaScriptBySource(book.source)
-        ?: return@withIo MessageException("未找到对应书籍书源")
-        book.isLoading = true
-        dao.updateBook(book)
         try {
+            if (script == null) {
+                throw MessageException("未找到对应书籍书源")
+            }
+            book.isLoading = true
+            dao.updateBook(book)
+
             val bookDetails = script.getDetails(book.url)!!
             bookDetails.url = book.url
 
@@ -336,11 +354,15 @@ object DataManager {
             book.error = null
             dao.updateBookDetails(bookDetails)
         } catch (e: Throwable) {
-            Log.i("${script.source}加载书籍详情：$book", e)
+            Log.i("${script?.source}加载书籍详情：$book", e)
             book.isLoading = false
             book.error = android.util.Log.getStackTraceString(e)
             dao.updateBook(book)
         }
+    }
+
+    suspend fun updateBookDetails(book: Book) {
+        dao.updateBookDetails(book)
     }
 
     fun getAllReadingBook(): Flow<List<Book>> {
@@ -399,7 +421,7 @@ object DataManager {
                 if (book != null) {
                     val record = dao.getReadingRecord(book.title, book.author)
                     val source = if (record?.startingStationBookSource.isNullOrBlank())
-                        JS_SOURCE_QI_DIAN
+                        BOOK_SOURCE_QI_DIAN
                     else
                         record!!.startingStationBookSource
                     val qiDianBook = dao.getBookByTitleAuthorAndSource(
@@ -484,6 +506,11 @@ object DataManager {
                 return@withIo
             }
             val book = dao.getBookByUrl(chapter.bookUrl).first()
+
+            if (book?.source == BOOK_SOURCE_FILE_IMPORT) {
+                return@withIo
+            }
+
             val js = dao.getJavaScriptBySource(book?.source ?: return@withIo)
             val content = js?.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
@@ -496,6 +523,11 @@ object DataManager {
         }
         return chapter
     }
+
+    suspend fun insertChapterContent(chapterContent: ChapterContent) = withIo {
+        dao.insertChapterContent(chapterContent)
+    }
+
 
     suspend fun setReadingRecord(record: ReadingRecord): Long {
         return dao.insertReadingRecord(record)

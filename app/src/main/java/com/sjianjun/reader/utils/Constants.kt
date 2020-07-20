@@ -23,9 +23,11 @@ const val CONTENT_TYPE_ANDROID = "application/vnd.android.package-archive"
 /**
  * 起点中文网 不能修改source
  */
-const val JS_SOURCE_QI_DIAN = "起点中文网"
-const val JS_SOURCE = "JS_SOURCE"
+const val BOOK_SOURCE_QI_DIAN = "起点中文网"
+const val BOOK_SOURCE = "JS_SOURCE"
 const val JS_FIELD_REQUEST_DELAY = "REQUEST_DELAY"
+//txt 文件导入
+const val BOOK_SOURCE_FILE_IMPORT = "文件导入"
 
 
 const val URL_ASSETS_BASE = "https://raw.githubusercontent.com/SJJ-dot/Reader/master/app/src/main/assets/"
