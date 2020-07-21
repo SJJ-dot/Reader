@@ -8,9 +8,9 @@
 
     <androidx.core.widget.ContentLoadingProgressBar
         android:id="@+id/progress_bar"
-        style="@style/ProgressBar.Horizontal"
+        style="@style/ProgressBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="100dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toTopOf="@+id/status"
@@ -20,6 +20,16 @@
         app:layout_constraintVertical_chainStyle="packed"
         tools:max="100"
         tools:progress="50" />
+
+    <TextView
+        android:id="@+id/chapter_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/dn_text_color_black"
+        app:layout_constraintBottom_toBottomOf="@+id/progress_bar"
+        app:layout_constraintEnd_toEndOf="@+id/progress_bar"
+        app:layout_constraintStart_toStartOf="@+id/progress_bar"
+        app:layout_constraintTop_toTopOf="@+id/progress_bar" />
 
     <TextView
         android:id="@+id/status"

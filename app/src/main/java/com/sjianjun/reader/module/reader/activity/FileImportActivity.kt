@@ -21,6 +21,7 @@ import kotlinx.android.synthetic.main.reader_activity_file_import.*
 import sjj.alog.Log
 import java.io.*
 import java.lang.StringBuilder
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
 
 /*
@@ -43,6 +44,18 @@ class FileImportActivity : BaseActivity() {
         readTxt(uri)
     }
 
+    private val refresh = AtomicBoolean()
+    private var count = 0
+    private fun postLine(count:Int) {
+        this.count = count
+        if (refresh.compareAndSet(false, true)) {
+            chapter_count.post {
+                refresh.lazySet(false)
+                chapter_count.text = "$count"
+            }
+        }
+    }
+
     private fun readTxt(uri: Uri?) {
         Log.e("uri:$uri")
         launchIo {
@@ -62,13 +75,17 @@ class FileImportActivity : BaseActivity() {
                 withMain { status.text = "解析并保存单章内容" }
                 contentResolver.openInputStream(uri).use {
                     val reader = BufferedReader(InputStreamReader(it, book.charset))
-                    progress_bar.max = it?.available() ?: 0
+
                     val chapterContent = StringBuilder()
-                    var line: String? = reader.readLine()
                     var chapterName: String? = book.book.title
+                    var countLine = 0
+
+                    var line: String? = reader.readLine()
+
                     while (line != null) {
                         //这个进度不准确。
-                        progress_bar.progress = progress_bar.progress + line.length * 2
+                        postLine(++countLine)
+
                         if (line.isNullOrBlank()) {
                             line = reader.readLine()
                             continue
@@ -77,14 +94,13 @@ class FileImportActivity : BaseActivity() {
                         val lastChapterName = chapterName
                         val matchName = match(line, chapterNamePattern)
 
-                        if (matchName.isNullOrBlank()) {
-                            chapterContent.append(line)
-                            chapterContent.append("<br/>")
-                        } else {
-                            chapterName = matchName
-                        }
+
                         //章节内容不为空 并且匹配到章节名或者章节字数超过限制
                         if (chapterContent.isNotEmpty() && (!matchName.isNullOrBlank() || chapterContent.length > CHAPTER_CONTENT_MAX_LENGTH)) {
+
+                            if (!matchName.isNullOrBlank()) {
+                                chapterName = matchName
+                            }
 
                             createChapter(
                                 book,
@@ -94,10 +110,14 @@ class FileImportActivity : BaseActivity() {
                             )
 
                             chapterContent.clear()
+                        } else {
+                            chapterContent.append(line)
+                            chapterContent.append("<br/>")
                         }
                         line = reader.readLine()
                     }
-                    if (chapterContent.isEmpty()) {
+
+                    if (chapterContent.isNotEmpty()) {
                         createChapter(book, chapterList, chapterName, chapterContent.toString())
                     }
                 }
@@ -217,19 +237,20 @@ class FileImportActivity : BaseActivity() {
     private val bookNamePattern = listOf(Pattern.compile("^.*《(.+)》.*$"))
     private val bookAuthorPattern = listOf(Pattern.compile("^作者：?(.+)$"))
     private val chapterNamePattern = listOf(
-        "^第[0-9[一二三四五六七八九零十百千万]]+[章节回](.+$)",
-        "^第[0-9[一二三四五六七八九零十百千万]]+ (.+$)",
-        "^[0-9[一二三四五六七八九零十百千万]]+[章节回](.+$)",
-        "^[0-9[一二三四五六七八九零十百千万]]+$",
-        "^序[0-9[一二三四五六七八九零十百千万]]+[章节回](.+$)",
-        "^序章$"
+        //匹配 "第xx章 xxxx"
+        "^ *[序第]{1} ?[0-9[一二三四五六七八九零十百千万]]+ ?[篇章节回]{1}.+$",
+        //匹配 "xx章 xxxx"
+        "^ *[0-9[一二三四五六七八九零十百千万]]+ ?[篇章节回]{1}.+$",
+        //匹配 "123 xxxx"
+        "^ +[0-9[一二三四五六七八九零十百千万]]+ .+$",
+        "^ *序章 *$"
     ).map(Pattern::compile)
 
     /**
      * 匹配章节名。找到则返回章节名否则返回空字符串
      */
     private fun match(string: String?, pattern: List<Pattern>): String? {
-        val title = string?.trim() ?: return null
+        val title = string ?: return null
         if (title.isBlank()) {
             return null
         }
@@ -238,7 +259,7 @@ class FileImportActivity : BaseActivity() {
 
             if (matcher.find()) {
                 return if (matcher.groupCount() < 1) {
-                    title
+                    title.trim()
                 } else {
                     matcher.group(1)?.trim() ?: title
                 }
