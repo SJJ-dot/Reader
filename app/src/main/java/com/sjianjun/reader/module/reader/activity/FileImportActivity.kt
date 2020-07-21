@@ -100,6 +100,9 @@ class FileImportActivity : BaseActivity() {
 
                             if (!matchName.isNullOrBlank()) {
                                 chapterName = matchName
+                            } else {
+                                chapterContent.append(line)
+                                chapterContent.append("<br/>")
                             }
 
                             createChapter(
