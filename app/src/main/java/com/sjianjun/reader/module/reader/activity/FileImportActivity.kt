@@ -46,7 +46,7 @@ class FileImportActivity : BaseActivity() {
 
     private val refresh = AtomicBoolean()
     private var count = 0
-    private fun postLine(count:Int) {
+    private fun postLine(count: Int) {
         this.count = count
         if (refresh.compareAndSet(false, true)) {
             chapter_count.post {
@@ -61,17 +61,14 @@ class FileImportActivity : BaseActivity() {
         launchIo {
 
             try {
-                Log.e("readBookInfo")
                 withMain { status.text = "读取书籍信息" }
                 val book = readBookInfo(uri!!)
-                Log.e("insertBookAndSaveReadingRecord")
                 withMain { status.text = "保存书籍信息" }
                 DataManager.insertBookAndSaveReadingRecord(listOf(book.book))
                 //保存章节信息
                 val chapterList = mutableListOf<Chapter>()
                 //单章最大字数
                 val CHAPTER_CONTENT_MAX_LENGTH = 10000
-                Log.e("读取章节内容")
                 withMain { status.text = "解析并保存单章内容" }
                 contentResolver.openInputStream(uri).use {
                     val reader = BufferedReader(InputStreamReader(it, book.charset))
@@ -83,7 +80,6 @@ class FileImportActivity : BaseActivity() {
                     var line: String? = reader.readLine()
 
                     while (line != null) {
-                        //这个进度不准确。
                         postLine(++countLine)
 
                         if (line.isNullOrBlank()) {
@@ -124,14 +120,12 @@ class FileImportActivity : BaseActivity() {
                         createChapter(book, chapterList, chapterName, chapterContent.toString())
                     }
                 }
-                Log.e("章节读取完成")
                 withMain { status.text = "章节解析完成，更新书籍信息……" }
                 book.book.chapterList = chapterList
                 DataManager.updateBookDetails(book.book)
                 withMain {
                     //导入小说创建成功
                     //
-                    Log.e("小说导入成功")
                     startActivity<MainActivity>()
                     toast("小说导入成功")
                     finish()
@@ -157,13 +151,13 @@ class FileImportActivity : BaseActivity() {
         chapter.url = "${book.book.url}_${chapterList.size}"
         chapter.bookUrl = book.book.url
         chapter.title = if (chapterName.isNullOrBlank())
-            book.book.title
+            "第${chapterList.size + 1}章 ${book.book.title}"
         else
             chapterName
 
         chapter.index = chapterList.size
         chapterList.add(chapter)
-        chapter.title = "第${chapterList.size}章 ${chapter.title}"
+//        chapter.title = "第${chapterList.size}章 ${chapter.title}"
 
         DataManager.insertChapterContent(
             ChapterContent(
@@ -184,7 +178,7 @@ class FileImportActivity : BaseActivity() {
             withMain { status.text = "解析文件字符编码" }
             val txtBook = TxtBook()
             txtBook.charset = CharsetDetector.detectCharset(it)
-            txtBook.book.title = fileName ?: "未知书名"
+            txtBook.book.title = fileName ?: ""
             txtBook.book.url = uri.toString()
             txtBook
         }
@@ -193,7 +187,7 @@ class FileImportActivity : BaseActivity() {
 
         contentResolver.openInputStream(uri).use { inputStream ->
             val reader = BufferedReader(InputStreamReader(inputStream, book.charset))
-            var matchTitle = false
+            var matchTitle = book.book.title.isNotEmpty()
             var matchAuthor = false
             var matchIntro = false
             val sb = StringBuilder()
@@ -234,6 +228,10 @@ class FileImportActivity : BaseActivity() {
             book.book.intro = sb.toString()
         }
 
+        if (book.book.title.isEmpty()) {
+            book.book.title = "导入TXT"
+        }
+
         return@withIo book
     }
 
@@ -241,7 +239,7 @@ class FileImportActivity : BaseActivity() {
     private val bookAuthorPattern = listOf(Pattern.compile("^作者：?(.+)$"))
     private val chapterNamePattern = listOf(
         //匹配 "第xx章 xxxx"
-        "^ *[序第]{1} ?[0-9[一二三四五六七八九零十百千万]]+ ?[篇章节回]{1}.+$",
+        "^ *[序第]{1} ?[0-9[一二三四五六七八九零十百千万]]+ ?[篇章节回]{1}.*$",
         //匹配 "xx章 xxxx"
         "^ *[0-9[一二三四五六七八九零十百千万]]+ ?[篇章节回]{1}.+$",
         //匹配 "123 xxxx"
