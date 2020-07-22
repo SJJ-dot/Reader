@@ -25,9 +25,9 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
     override val onLoadedView: (View) -> Unit = {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
         val adBlockUrlList = globalConfig.adBlockUrlList
-        custom_web_view.adBlockUrl = adBlockUrlList.mapTo(LinkedList<CustomWebView.AdBlock>()) {
-            CustomWebView.AdBlock(it)
-        }
+//        custom_web_view.adBlockUrl = adBlockUrlList.mapTo(LinkedList<CustomWebView.AdBlock>()) {
+//            CustomWebView.AdBlock(it)
+//        }
         Log.i(adBlockUrlList)
         setOnBackPressed {
             when {
@@ -74,10 +74,10 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        val list = custom_web_view.adBlockUrl
-        list?.sortDescending()
-        globalConfig.adBlockUrlList = list?.map { it.pattern } ?: emptyList()
-        Log.i(list)
+//        val list = custom_web_view.adBlockUrl
+//        list?.sortDescending()
+//        globalConfig.adBlockUrlList = list?.map { it.pattern } ?: emptyList()
+//        Log.i(list)
     }
 
 }

@@ -21,6 +21,10 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
 import kotlinx.android.synthetic.main.web_view.view.*
+import org.adblockplus.libadblockplus.android.AdblockEngine
+import org.adblockplus.libadblockplus.android.AndroidHttpClientResourceWrapper
+import org.adblockplus.libadblockplus.android.settings.AdblockHelper
+import org.adblockplus.libadblockplus.android.webview.AdblockWebView
 import sjj.alog.Log
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -48,6 +52,7 @@ class CustomWebView @JvmOverloads constructor(
     fun init(lifecycle: Lifecycle) {
         web_view_stub?.inflate()
         webView = web_view
+        initAdBlockWebView(web_view)
         initWebView(webView)
         initNavigation()
         lifecycle.addObserver(lifecycleObserver)
@@ -57,6 +62,33 @@ class CustomWebView @JvmOverloads constructor(
         this.url = url
         this.clearHistory = clearHistory
         webView?.loadUrl(url)
+    }
+
+    private fun initAdBlockWebView(adblockWebView: AdblockWebView) {
+
+        // it's not initialized here but we check it just to show API usage
+        if (!AdblockHelper.get().isInit()) {
+            // init Adblock
+            val basePath: String =
+                context.getDir(AdblockEngine.BASE_PATH_DIRECTORY, Context.MODE_PRIVATE).absolutePath
+
+            // provide preloaded subscriptions
+            val map: MutableMap<String, Int> = HashMap()
+            map[AndroidHttpClientResourceWrapper.EASYLIST] = R.raw.easylist
+            map[AndroidHttpClientResourceWrapper.EASYLIST_RUSSIAN] = R.raw.easylist
+            map[AndroidHttpClientResourceWrapper.EASYLIST_CHINESE] = R.raw.easylist
+            map[AndroidHttpClientResourceWrapper.ACCEPTABLE_ADS] = R.raw.exceptionrules
+            AdblockHelper
+                .get()
+                .init(context.applicationContext, basePath, true, AdblockHelper.PREFERENCE_NAME)
+                .preloadSubscriptions(AdblockHelper.PRELOAD_PREFERENCE_NAME, map)
+                .addEngineCreatedListener{
+                    Log.i("EngineCreated")
+                }
+                .addEngineDisposedListener {
+                    Log.i("EngineDisposed")
+                } //.setDisabledByDefault()
+        }
     }
 
     private fun initWebView(webView: WebView?) {

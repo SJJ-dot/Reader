@@ -126,4 +126,7 @@ dependencies {
     implementation 'com.github.donkingliang:ConsecutiveScroller:4.0.0'
     implementation 'com.github.lygttpod:SuperTextView:2.4.2'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
+    implementation 'org.adblockplus:adblock-android:3.23'
+    implementation 'org.adblockplus:adblock-android-settings:3.23'
+    implementation 'org.adblockplus:adblock-android-webview:3.23'
 }
