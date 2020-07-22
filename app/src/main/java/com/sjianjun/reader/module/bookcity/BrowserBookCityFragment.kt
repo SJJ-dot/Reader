@@ -66,7 +66,7 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
             custom_web_view.adBlockJs = sourceJs?.adBlockJs
             val hostUrl = sourceJs?.execute<String>("hostUrl;") ?: ""
             withMain {
-                custom_web_view?.loadUrl(hostUrl)
+                custom_web_view?.loadUrl(hostUrl, true)
                 activity?.supportActionBar?.title = sourceJs?.source
             }
         }
