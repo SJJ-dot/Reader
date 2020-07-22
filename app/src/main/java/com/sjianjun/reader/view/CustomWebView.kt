@@ -10,11 +10,13 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.webkit.*
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startActivity
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.OnLifecycleEvent
 import com.sjianjun.reader.R
@@ -22,6 +24,7 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
 import kotlinx.android.synthetic.main.web_view.view.*
 import sjj.alog.Log
+import java.net.URL
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -48,8 +51,10 @@ class CustomWebView @JvmOverloads constructor(
     fun init(lifecycle: Lifecycle) {
         web_view_stub?.inflate()
         webView = web_view
+        initWebViewSetting(webView)
         initWebView(webView)
         initNavigation()
+        initInputView()
         lifecycle.addObserver(lifecycleObserver)
     }
 
@@ -60,8 +65,6 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initWebView(webView: WebView?) {
-        initWebViewSetting(webView)
-
         webView?.webViewClient = object : WebViewClient() {
             var started = false
             override fun shouldOverrideUrlLoading(
@@ -70,23 +73,23 @@ class CustomWebView @JvmOverloads constructor(
             ): Boolean {
                 val url = request.url.toString()
                 Log.i("$url ")
-                if (url.startsWith("http")) {
-                    view?.loadUrl(url)
-                } else {
-                    try {
+                if (!url.startsWith("http")) {
+                     try {
                         startActivity(context, Intent(Intent.ACTION_VIEW, request.url), null)
                     } catch (e: Exception) {
-                        return false
                     }
+                    return true
                 }
-                return true
+                return false
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 started = true
                 Log.i(url + "started:$started ")
 
-
+                if (!edit_text.hasFocus()) {
+                    edit_text.setText(url)
+                }
 
                 progress_bar.animFadeIn()
 
@@ -254,6 +257,68 @@ class CustomWebView @JvmOverloads constructor(
                 webView?.settings?.userAgentString = WEB_VIEW_UA_ANDROID
             }
             webView?.reload()
+        }
+    }
+
+    private fun initInputView() {
+        input_mask.setOnClickListener {
+            edit_text.clearFocus()
+            webView?.requestFocus()
+        }
+        input_clear.setOnClickListener {
+            edit_text.setText("")
+        }
+
+        edit_text.doAfterTextChanged {
+            if (edit_text.hasFocus()) {
+                if (it.toString().isEmpty()) {
+                    input_clear.hide()
+                } else {
+                    input_clear.show()
+                }
+            } else {
+                input_clear.hide()
+            }
+        }
+
+        edit_text.setOnFocusChangeListener { v, hasFocus ->
+            if (hasFocus) {
+                if (!edit_text.text?.toString().isNullOrBlank()) {
+                    input_clear.show()
+                } else {
+                    input_clear.hide()
+                }
+                input_mask.show()
+                v.showKeyboard()
+            } else {
+                input_clear.hide()
+                input_mask.hide()
+                v.hideKeyboard()
+                edit_text.setText(webView?.url)
+            }
+        }
+
+        edit_text.setOnEditorActionListener { v, actionId, event ->
+            if (EditorInfo.IME_ACTION_GO == actionId) {
+                var url = edit_text.text.toString()
+                if (url.isBlank()) {
+                    toast("请输入正确的URL地址")
+                    return@setOnEditorActionListener true
+                }
+                if (!URLUtil.isValidUrl(url)) {
+                    url = "http://$url"
+                    if (!URLUtil.isValidUrl(url)) {
+                        toast("请输入正确的URL地址")
+                        return@setOnEditorActionListener true
+                    }
+                }
+
+                edit_text.setText("")
+                webView?.loadUrl(url)
+                edit_text.clearFocus()
+                webView?.requestFocus()
+            }
+            return@setOnEditorActionListener EditorInfo.IME_ACTION_GO == actionId
         }
     }
 
