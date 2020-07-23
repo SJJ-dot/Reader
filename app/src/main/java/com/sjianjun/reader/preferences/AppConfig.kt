@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
+import com.sjianjun.reader.view.CustomWebView
 
 val globalConfig by lazy { AppConfig("default") }
 val globalBookConfig by lazy { BookConfig() }
@@ -47,7 +48,7 @@ class AppConfig(val name: String) {
     /**
      * 需要拦截的广告SDK url
      */
-    var adBlockUrlList by DelegateSharedPreferences(emptyList<String>()) { getSharedPreferences() }
+    var adBlockList by DelegateSharedPreferences(emptyList<CustomWebView.AdBlock>()) { getSharedPreferences() }
 
     /**
      * 阅读器亮度蒙层的颜色

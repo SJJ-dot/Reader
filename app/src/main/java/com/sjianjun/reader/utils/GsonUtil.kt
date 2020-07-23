@@ -6,34 +6,42 @@ import com.google.gson.reflect.TypeToken
 import java.lang.reflect.Type
 
 val gson = GsonBuilder()
-        .apply {
-            ScalarsJsonDeserializer.types.forEach { registerTypeAdapter(it, ScalarsJsonDeserializer) }
-        }.addSerializationExclusionStrategy(object : ExclusionStrategy {
-            override fun shouldSkipClass(clazz: Class<*>?): Boolean = false
+    .apply {
+        ScalarsJsonDeserializer.types.forEach { registerTypeAdapter(it, ScalarsJsonDeserializer) }
+    }.addSerializationExclusionStrategy(object : ExclusionStrategy {
+        override fun shouldSkipClass(clazz: Class<*>?): Boolean {
+            val expose = clazz?.getAnnotation(Expose::class.java)
+            return expose != null && !expose.serialize
+        }
 
-            override fun shouldSkipField(f: FieldAttributes): Boolean {
-                val expose = f.getAnnotation(Expose::class.java)
-                return expose != null && !expose.serialize
-            }
-        }).create()
+        override fun shouldSkipField(f: FieldAttributes): Boolean {
+            val expose = f.getAnnotation(Expose::class.java)
+            return expose != null && !expose.serialize
+        }
+    }).create()
 
 inline fun <reified T> Gson.fromJson(json: String?): T? {
     return fromJson(json, object : TypeToken<T>() {}.type)
 }
 
 private object ScalarsJsonDeserializer : JsonDeserializer<Any> {
-    val types = arrayOf<Type>(String::class.java,
-            Boolean::class.java,
-            Byte::class.java,
-            Char::class.java,
-            Double::class.java,
-            Float::class.java,
-            Int::class.java,
-            Long::class.java,
-            Short::class.java
+    val types = arrayOf<Type>(
+        String::class.java,
+        Boolean::class.java,
+        Byte::class.java,
+        Char::class.java,
+        Double::class.java,
+        Float::class.java,
+        Int::class.java,
+        Long::class.java,
+        Short::class.java
     )
 
-    override fun deserialize(json: JsonElement?, typeOfT: Type, context: JsonDeserializationContext?): Any? {
+    override fun deserialize(
+        json: JsonElement?,
+        typeOfT: Type,
+        context: JsonDeserializationContext?
+    ): Any? {
         return try {
             when (TypeToken.get(typeOfT).rawType) {
                 String::class.java -> json?.asString

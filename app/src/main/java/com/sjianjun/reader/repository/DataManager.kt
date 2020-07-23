@@ -12,6 +12,7 @@ import com.sjianjun.reader.coroutine.withIo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.CustomWebView
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
@@ -76,12 +77,20 @@ object DataManager {
             val asyncUrlSet = async {
                 //广告拦截
                 if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlListVersion) {
+
                     val urlSet =
                         gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
-                    val adBlockUrlList = globalConfig.adBlockUrlList.toMutableList()
-                    urlSet.removeAll(adBlockUrlList)
-                    adBlockUrlList.addAll(urlSet)
-                    globalConfig.adBlockUrlList = adBlockUrlList
+
+                    val adBlockUrlList = globalConfig.adBlockList.toMutableList()
+
+                    urlSet.forEach {
+                        val adBlock = CustomWebView.AdBlock(it)
+                        if (!adBlockUrlList.contains(adBlock)) {
+                            adBlockUrlList.add(adBlock)
+                        }
+                    }
+
+                    globalConfig.adBlockList = adBlockUrlList
                     globalConfig.adBlockUrlListVersion = info.adBlockFilterUrlVersion
                 }
             }

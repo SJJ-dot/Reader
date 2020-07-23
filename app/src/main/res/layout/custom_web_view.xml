@@ -12,6 +12,20 @@
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
+        <androidx.core.widget.ContentLoadingProgressBar
+            android:id="@+id/progress_bar"
+            style="@style/ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_gravity="bottom"
+            android:max="100"
+            android:progressBackgroundTint="@color/transparent"
+            android:progressTint="@color/colorPrimary"
+            android:visibility="gone"
+            app:layout_isSticky="true"
+            tools:progress="50"
+            tools:visibility="visible" />
+
         <ViewStub
             android:id="@+id/web_view_stub"
             android:layout_width="match_parent"
@@ -54,10 +68,10 @@
                     android:layout_height="42dp"
                     android:background="@color/transparent"
                     android:imeOptions="actionGo"
-                    android:textColor="@color/dn_text_color_black_selector_focus"
                     android:paddingStart="8dp"
                     android:paddingEnd="8dp"
                     android:singleLine="true"
+                    android:textColor="@color/dn_text_color_black_selector_focus"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -75,18 +89,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.core.widget.ContentLoadingProgressBar
-                android:id="@+id/progress_bar"
-                style="@style/ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="4dp"
-                android:layout_gravity="bottom"
-                android:max="100"
-                android:progressBackgroundTint="@color/transparent"
-                android:progressTint="@color/colorPrimary"
-                android:visibility="gone"
-                tools:progress="50" />
 
         </com.google.android.material.card.MaterialCardView>
     </com.google.android.material.appbar.AppBarLayout>

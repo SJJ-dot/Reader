@@ -2,10 +2,8 @@ package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
 import androidx.lifecycle.MutableLiveData
-import sjj.alog.Log
-import java.lang.Exception
-import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 
 /**
@@ -23,10 +21,10 @@ class DelegateLiveData<T>(
     @Synchronized
     operator fun getValue(thisRef: Any?, property: KProperty<*>): MutableLiveData<T> {
         if (liveData == null) {
-            val classifier = property.returnType.arguments[0].type!!.classifier
+            val kType = property.returnType.arguments[0].type!!
             val key = k ?: property.name
             val sp = sharedPreferences ?: return MutableLiveData(def)
-            liveData = HoldLiveData(def, k ?: property.name, classifier, sp)
+            liveData = HoldLiveData(def, key, kType, sp)
         }
         return liveData!!
     }
@@ -41,16 +39,16 @@ class DelegateLiveData<T>(
 class HoldLiveData<T>(
     private val def: T,
     private val key: String,
-    private val classifier: KClassifier?,
+    private val kType:KType,
     private val sp: SharedPreferences
-) : MutableLiveData<T>(getSpValue(classifier, key, def, sp)) {
+) : MutableLiveData<T>(getSpValue(kType, key, def, sp)) {
 
 
     /**
      * 保存数据到 SharedPreferences 中
      */
     override fun setValue(value: T) {
-        putSpValue(classifier, key, value, sp)
+        putSpValue(kType, key, value, sp)
         super.setValue(value)
     }
 
