@@ -27,7 +27,7 @@ fun View.animFadeIn(time: Long = 500) {
 fun View.animFadeOut(time: Long = 500) {
     alpha = 1f
     if (time <= 0) {
-        gone()
+        hide()
         return
     }
     animate()
@@ -35,7 +35,7 @@ fun View.animFadeOut(time: Long = 500) {
         .setDuration(time)
         .setInterpolator(interpolator)
         .withEndAction {
-            gone()
+            hide()
         }.start()
 }
 

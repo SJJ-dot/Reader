@@ -9,10 +9,9 @@ import com.sjianjun.reader.coroutine.launchIo
 import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.view.CustomWebView
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
-import java.util.*
+import java.util.concurrent.ConcurrentLinkedDeque
 
 
 class BrowserBookCityFragment : BaseAsyncFragment() {
@@ -24,11 +23,8 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
 
     override val onLoadedView: (View) -> Unit = {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
-        val adBlockUrlList = globalConfig.adBlockUrlList
-        custom_web_view.adBlockUrl = adBlockUrlList.mapTo(LinkedList<CustomWebView.AdBlock>()) {
-            CustomWebView.AdBlock(it)
-        }
-        Log.i(adBlockUrlList)
+        custom_web_view.adBlockUrl = ConcurrentLinkedDeque(globalConfig.adBlockList)
+        Log.i(custom_web_view.adBlockUrl)
         setOnBackPressed {
             when {
                 drawer_layout.isDrawerOpen(GravityCompat.END) -> {
@@ -74,10 +70,12 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        val list = custom_web_view.adBlockUrl
-        list?.sortDescending()
-        globalConfig.adBlockUrlList = list?.map { it.pattern } ?: emptyList()
-        Log.i(list)
+        val list = custom_web_view.adBlockUrl?.toMutableList()
+        if (list != null) {
+            list.sortDescending()
+            globalConfig.adBlockList = list
+            Log.i(list)
+        }
     }
 
 }

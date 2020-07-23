@@ -15,11 +15,11 @@ class DelegateSharedPreferences<T>(
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
         val key: String = k ?: property.name
         val sp = sharedPreferences ?: return def
-        return getSpValue(property.returnType.classifier, key, def, sp)
+        return getSpValue(property.returnType, key, def, sp)
     }
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         val key: String = k ?: property.name
-        putSpValue(property.returnType.classifier, key, value, sp() ?: return)
+        putSpValue(property.returnType, key, value, sp() ?: return)
     }
 }

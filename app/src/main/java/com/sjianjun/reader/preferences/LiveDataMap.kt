@@ -2,8 +2,8 @@ package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
 import androidx.lifecycle.MutableLiveData
-import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
+import kotlin.reflect.KType
 
 class LiveDataMapImpl<T>(
     private val defValue: T,
@@ -12,10 +12,10 @@ class LiveDataMapImpl<T>(
 ) : LiveDataMap<T> {
 
     private val sharedPreferences by lazy { sharedPreferences() }
-    private lateinit var classifier: KClassifier
+    private lateinit var kType: KType
     @Synchronized
     operator fun getValue(thisRef: Any?, property: KProperty<*>): LiveDataMap<T> {
-        classifier = property.returnType.arguments[0].type!!.classifier!!
+        kType = property.returnType.arguments[0].type!!
         return this
     }
 
@@ -31,7 +31,7 @@ class LiveDataMapImpl<T>(
     override fun getValue(vararg params: String): MutableLiveData<T> {
         val key = key(*params)
         return map.getOrPut(key) {
-            HoldLiveData(defValue, key, classifier, sharedPreferences)
+            HoldLiveData(defValue, key, kType, sharedPreferences)
         }
     }
 

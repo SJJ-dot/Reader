@@ -3,17 +3,17 @@
 package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
-import com.google.gson.reflect.TypeToken
 import sjj.novel.util.gson
-import kotlin.reflect.KClassifier
+import kotlin.reflect.KType
+import kotlin.reflect.jvm.javaType
 
 fun <T> getSpValue(
-    classifier: KClassifier?,
+    kType: KType,
     key: String,
     def: T,
     sp: SharedPreferences
 ): T {
-    return when (classifier) {
+    return when (kType.classifier) {
         String::class -> sp.getString(key, def as? String)
         Boolean::class -> sp.getBoolean(key, def as Boolean)
         Float::class -> sp.getFloat(key, def as Float)
@@ -23,7 +23,7 @@ fun <T> getSpValue(
         else -> {
             val str = sp.getString(key, null)
             if (str != null) {
-                gson.fromJson<T>(str, object : TypeToken<T>() {}.type)
+                gson.fromJson(str, kType.javaType)
             } else {
                 def
             }
@@ -32,9 +32,9 @@ fun <T> getSpValue(
     } as T
 }
 
-fun <T> putSpValue(classifier: KClassifier?, key: String, value: T, sp: SharedPreferences) {
+fun <T> putSpValue(kType: KType, key: String, value: T, sp: SharedPreferences) {
     val edit = sp.edit()
-    when (classifier) {
+    when (kType.classifier) {
         String::class -> edit.putString(key, value as? String)
         Boolean::class -> edit.putBoolean(key, value as Boolean)
         Float::class -> edit.putFloat(key, value as Float)

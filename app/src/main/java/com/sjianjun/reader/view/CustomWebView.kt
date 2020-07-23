@@ -19,15 +19,16 @@ import androidx.core.content.ContextCompat.startActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.OnLifecycleEvent
+import com.google.gson.annotations.Expose
 import com.sjianjun.reader.R
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
 import kotlinx.android.synthetic.main.web_view.view.*
 import sjj.alog.Log
-import java.net.URL
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedDeque
 
 /*
  * Created by shen jian jun on 2020-07-10
@@ -41,7 +42,7 @@ class CustomWebView @JvmOverloads constructor(
     private var url: String? = null
     private var clearHistory: Boolean = false
 
-    var adBlockUrl: LinkedList<AdBlock>? = null
+    var adBlockUrl: ConcurrentLinkedDeque<AdBlock>? = null
     var adBlockJs: String? = null
 
     init {
@@ -66,7 +67,6 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun initWebView(webView: WebView?) {
         webView?.webViewClient = object : WebViewClient() {
-            var started = false
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest
@@ -74,18 +74,18 @@ class CustomWebView @JvmOverloads constructor(
                 val url = request.url.toString()
                 Log.i("$url ")
                 if (!url.startsWith("http")) {
-                     try {
+                    try {
                         startActivity(context, Intent(Intent.ACTION_VIEW, request.url), null)
                     } catch (e: Exception) {
                     }
                     return true
                 }
+
                 return false
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                started = true
-                Log.i(url + "started:$started ")
+                Log.i(url)
 
                 if (!edit_text.hasFocus()) {
                     edit_text.setText(url)
@@ -102,21 +102,19 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url + " started:$started UA ${webView?.settings?.userAgentString} webView:${webView} ")
-                if (started) {
-                    started = false
+                Log.i(url)
 
-                    //不是重定向
-                    val adBlockJs = adBlockJs
-                    if (!adBlockJs.isNullOrBlank()) {
-                        webView?.evaluateJavascript(adBlockJs, null)
-                        webView?.post {
-                            webView?.evaluateJavascript(adBlockJs) {
-                                Log.i("adBlockJs result:$it")
-                            }
+                //不是重定向
+                val adBlockJs = adBlockJs
+                if (!adBlockJs.isNullOrBlank()) {
+                    webView?.evaluateJavascript(adBlockJs, null)
+                    webView?.post {
+                        webView?.evaluateJavascript(adBlockJs) {
+                            Log.i("adBlockJs result:$it")
                         }
                     }
                 }
+
                 forward.isEnabled = webView?.canGoForward() == true
                 backward.isEnabled = webView?.canGoBack() == true
                 refresh.isSelected = false
@@ -143,14 +141,15 @@ class CustomWebView @JvmOverloads constructor(
                 val url = request.url.toString()
 
                 val adBlockList = adBlockUrl
-                val index = adBlockList?.indexOfFirst {
-                    it.regex.matches(url)
+                val adBlock = adBlockList?.find {
+                    it.regex?.matches(url) == true
                 }
-                if (index != null && index != -1) {
-                    val block = adBlockList.removeAt(index)
-                    block.hitCount++
-                    adBlockList.addFirst(block)
-                    Log.e("${request.method} $url $block")
+                if (adBlock != null) {
+                    adBlockList.remove(adBlock)
+                    adBlock.hitCount++
+                    adBlockList.addFirst(adBlock)
+
+                    Log.e("${request.method} $url $adBlock")
                     return WebResourceResponse(null, null, null)
                 }
                 if (path?.endsWith(".gif") == true ||
@@ -367,9 +366,17 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
-    class AdBlock(val pattern: String) : Comparable<AdBlock> {
+    data class AdBlock(val pattern: String = "") : Comparable<AdBlock> {
         var hitCount: Int = 0
-        val regex: Regex = Regex("\\A$pattern.*")
+
+        @Expose(serialize = false)
+        var regex: Regex? = null
+            get() {
+                if (field == null) {
+                    field = Regex("\\A$pattern.*")
+                }
+                return field
+            }
 
         override
         fun compareTo(other: AdBlock): Int {
@@ -380,6 +387,23 @@ class CustomWebView @JvmOverloads constructor(
             return "{hitCount=$hitCount,regex=$regex}"
         }
 
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as AdBlock
+
+            if (pattern != other.pattern) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return pattern.hashCode()
+        }
+
+
     }
+
 
 }
