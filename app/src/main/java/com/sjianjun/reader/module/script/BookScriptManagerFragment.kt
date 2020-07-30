@@ -1,20 +1,20 @@
 package com.sjianjun.reader.module.script
 
-import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import com.google.android.material.snackbar.Snackbar
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.coroutine.launch
-import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
+import com.sjianjun.reader.utils.id
+import com.sjianjun.reader.utils.showSnackbar
+import com.sjianjun.reader.utils.startActivity
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.flow.collectLatest

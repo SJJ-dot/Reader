@@ -3,12 +3,12 @@
 package com.sjianjun.reader.repository
 
 import android.content.res.AssetManager.ACCESS_BUFFER
+import com.sjianjun.coroutine.flowIo
+import com.sjianjun.coroutine.global
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.*
-import com.sjianjun.reader.coroutine.flowIo
-import com.sjianjun.reader.coroutine.launchGlobal
-import com.sjianjun.reader.coroutine.withIo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
@@ -31,7 +31,7 @@ object DataManager {
         private set
 
     init {
-        launchGlobal {
+        global {
             checkJavaScriptUpdate({
                 var version: InputStream? = null
                 val versionInfo = try {
@@ -48,7 +48,7 @@ object DataManager {
             })
         }
 
-        launchGlobal {
+        global {
             tryBlock {
                 jquery = App.app.assets.open("jquery-3.5.1.min.js", ACCESS_BUFFER).use { stream ->
                     stream.bufferedReader().readText()

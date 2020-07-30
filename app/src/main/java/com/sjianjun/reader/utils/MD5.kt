@@ -1,7 +1,5 @@
 package com.sjianjun.reader.utils
 
-import com.sjianjun.reader.coroutine.withIo
-import sjj.alog.Log
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream

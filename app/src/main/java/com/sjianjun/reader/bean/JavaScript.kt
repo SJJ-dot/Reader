@@ -3,7 +3,7 @@ package com.sjianjun.reader.bean
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import com.sjianjun.reader.coroutine.withIo
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode

@@ -3,18 +3,21 @@ package com.sjianjun.reader.module.main
 
 import android.os.Bundle
 import android.view.View
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.item_text_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_chapter_list.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 
 
 /**

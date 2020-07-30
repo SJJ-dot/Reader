@@ -3,10 +3,10 @@ package com.sjianjun.reader.module.bookcity
 import android.view.View
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
+import com.sjianjun.coroutine.launchIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.coroutine.launchIo
-import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*

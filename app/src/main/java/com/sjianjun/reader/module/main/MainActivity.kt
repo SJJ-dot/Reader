@@ -11,13 +11,13 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.sjianjun.coroutine.launch
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.async.AsyncInflateRequest
 import com.sjianjun.reader.async.runOnIdle
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest

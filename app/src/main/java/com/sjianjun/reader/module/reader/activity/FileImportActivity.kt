@@ -4,14 +4,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import com.sjianjun.charset.CharsetDetector
+import com.sjianjun.coroutine.launchIo
+import com.sjianjun.coroutine.withIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
-import com.sjianjun.reader.coroutine.launchIo
-import com.sjianjun.reader.coroutine.withIo
-import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.module.main.MainActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.BOOK_SOURCE_FILE_IMPORT
@@ -19,8 +19,8 @@ import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.reader_activity_file_import.*
 import sjj.alog.Log
-import java.io.*
-import java.lang.StringBuilder
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
 

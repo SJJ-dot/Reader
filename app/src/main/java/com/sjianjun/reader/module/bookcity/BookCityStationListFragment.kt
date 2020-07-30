@@ -2,12 +2,12 @@ package com.sjianjun.reader.module.bookcity
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
+import com.sjianjun.coroutine.launchIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.coroutine.launchIo
-import com.sjianjun.reader.coroutine.withMain
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.color

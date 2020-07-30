@@ -1,11 +1,11 @@
 package com.sjianjun.reader.test
 
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.JavaScript.Func.*
 import com.sjianjun.reader.bean.SearchResult
-import com.sjianjun.reader.coroutine.withIo
 import sjj.alog.Log
 
 /**
