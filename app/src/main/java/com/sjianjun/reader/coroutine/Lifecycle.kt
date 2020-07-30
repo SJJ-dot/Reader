@@ -46,12 +46,3 @@ fun Lifecycle.launch(
         return job
     }
 }
-
-fun Lifecycle.launchIo(
-    singleCoroutineKey: String = "",
-    context: CoroutineContext = Dispatchers.IO,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-): Job {
-    return launch(singleCoroutineKey, context, start, block)
-}

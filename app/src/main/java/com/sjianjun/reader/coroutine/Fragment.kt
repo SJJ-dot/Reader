@@ -15,8 +15,8 @@ fun Fragment.launchIo(
     context: CoroutineContext = Dispatchers.IO,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-): Job {
-    return viewLifecycleOwner.lifecycle.launch(singleCoroutineKey, context, start, block)
+): Job? {
+    return launch(singleCoroutineKey, context, start, block)
 }
 
 fun Fragment.launch(
@@ -24,6 +24,6 @@ fun Fragment.launch(
     context: CoroutineContext = Dispatchers.Main,
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-): Job {
-    return viewLifecycleOwner.lifecycle.launch(singleCoroutineKey, context, start, block)
+): Job? {
+    return viewLifecycleOwnerLiveData.value?.lifecycle?.launch(singleCoroutineKey, context, start, block)
 }
