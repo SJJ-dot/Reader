@@ -2,11 +2,10 @@ package com.sjianjun.reader.module.main
 
 import android.view.*
 import androidx.core.view.GravityCompat
-import androidx.navigation.fragment.findNavController
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager

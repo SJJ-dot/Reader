@@ -6,9 +6,9 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.ReleasesInfo
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.URL_RELEASE_DEF

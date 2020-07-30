@@ -3,10 +3,10 @@ package com.sjianjun.reader.module.script
 import android.os.Bundle
 import com.gyf.immersionbar.BarHide
 import com.gyf.immersionbar.ImmersionBar
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.coroutine.launch
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.toast
