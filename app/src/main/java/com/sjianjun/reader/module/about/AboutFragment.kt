@@ -1,13 +1,15 @@
 package com.sjianjun.reader.module.about
 
 import android.content.Intent
-import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.*
+import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BaseAsyncFragment
+import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
