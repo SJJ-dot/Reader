@@ -16,6 +16,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
+import sjj.alog.Log
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 
@@ -27,13 +28,20 @@ class AboutFragment : BaseAsyncFragment() {
         setHasOptionsMenu(true)
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {
-            launch {
-                val releasesInfo = checkUpdate(requireActivity() as BaseActivity, true)
-                setVersionInfo(releasesInfo)
-                setCode()
+            launch(singleCoroutineKey = "checkUpdate") {
+                //检查bugly更新
+                val appUpgradeInfo = Beta.getAppUpgradeInfo()
+                if (appUpgradeInfo == null || appUpgradeInfo.versionCode <= BuildConfig.VERSION_CODE) {
+                    checkUpdate(requireActivity() as BaseActivity, true)
+                    setVersionInfo()
+                } else {
+                    toast("已经是最新版了")
+                }
             }
         }
-        setVersionInfo(gson.fromJson(globalConfig.releasesInfo))
+
+        setVersionInfo()
+
         setCode()
     }
 
@@ -44,15 +52,10 @@ class AboutFragment : BaseAsyncFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.share -> {
-                var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
-                if (downloadUrl.isNullOrBlank()) {
-                    val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-                    downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
-                }
                 val sendIntent = Intent(Intent.ACTION_SEND)
                 sendIntent.putExtra(
                     Intent.EXTRA_TEXT,
-                    "小说app下载链接：${downloadUrl}"
+                    "小说app下载链接：${downloadUrl()}"
                 )
 //                sendIntent.setClassName("com.tencent.mm","com.tencent.mm.ui.tools.ShareImgUI")
                 sendIntent.type = "text/plain"
@@ -66,13 +69,8 @@ class AboutFragment : BaseAsyncFragment() {
 
     private fun setCode() {
         //设置二维码
-        var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
-        if (downloadUrl.isNullOrBlank()) {
-            val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-            downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
-        }
         val image = ZXingUtils.createQRImage(
-            downloadUrl,
+            downloadUrl(),
             150.dp2Px,
             150.dp2Px,
             R.color.dn_text_color_black.color(context),
@@ -82,14 +80,38 @@ class AboutFragment : BaseAsyncFragment() {
 
     }
 
-    private fun setVersionInfo(releasesInfo: ReleasesInfo?) {
-        val download = releasesInfo?.apkAssets
-        if (download != null) {
+    private fun setVersionInfo() {
+
+
+        val appUpgradeInfo = Beta.getAppUpgradeInfo()
+        val newestVersion = if (appUpgradeInfo != null &&
+            appUpgradeInfo.versionCode > BuildConfig.VERSION_CODE
+        ) {
+            appUpgradeInfo.versionName
+        } else {
+            val releasesInfo: ReleasesInfo? = gson.fromJson(globalConfig.releasesInfo)
+            releasesInfo?.tag_name?:BuildConfig.VERSION_NAME
+        }
+
+
+
+        if (newestVersion != null) {
             versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME}\n最新版：${releasesInfo.tag_name} | 下载次数：${download?.download_count}"
+                "当前版本：${BuildConfig.VERSION_NAME} | 最新版：${newestVersion}"
         } else {
             versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }
+    }
+
+    private fun downloadUrl(): String {
+        Log.e(gson.toJson(Beta.getAppUpgradeInfo()))
+        Log.e(gson.toJson(Beta.getUpgradeInfo()))
+        var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
+        if (downloadUrl.isNullOrBlank()) {
+            val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+            downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
+        }
+        return downloadUrl
     }
 
 }
