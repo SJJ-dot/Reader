@@ -13,8 +13,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.URL_RELEASE_DEF
-import com.sjianjun.reader.utils.URL_REPO
+import com.sjianjun.reader.utils.*
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
 import sjj.novel.util.fromJson
@@ -31,9 +30,11 @@ class AboutFragment : BaseAsyncFragment() {
             launch {
                 val releasesInfo = checkUpdate(requireActivity() as BaseActivity, true)
                 setVersionInfo(releasesInfo)
+                setCode()
             }
         }
         setVersionInfo(gson.fromJson(globalConfig.releasesInfo))
+        setCode()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -63,6 +64,23 @@ class AboutFragment : BaseAsyncFragment() {
         }
     }
 
+    private fun setCode() {
+        //设置二维码
+        var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
+        if (downloadUrl.isNullOrBlank()) {
+            val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+            downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
+        }
+        val image = ZXingUtils.createQRImage(
+            downloadUrl,
+            150.dp2Px,
+            150.dp2Px,
+            R.color.dn_text_color_black.color(context),
+            R.color.dn_background.color(context)
+        )
+        code.setImageBitmap(image)
+
+    }
 
     private fun setVersionInfo(releasesInfo: ReleasesInfo?) {
         val download = releasesInfo?.apkAssets
