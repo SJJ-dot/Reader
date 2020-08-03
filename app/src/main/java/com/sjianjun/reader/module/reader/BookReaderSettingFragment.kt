@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -117,6 +118,12 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 setOnClickListener {
                     notifyDataSetChanged()
                     globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
+                    //记录浅色 深色样式 和深色样式
+                    if (pageStyle.isDark && globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_NO) {
+                        globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
+                    } else if (!pageStyle.isDark && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO){
+                        globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
+                    }
                 }
             }
         }

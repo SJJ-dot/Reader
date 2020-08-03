@@ -10,7 +10,6 @@ import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
 import com.sjianjun.reader.view.CustomWebView
 
 val globalConfig by lazy { AppConfig("default") }
-val globalBookConfig by lazy { BookConfig() }
 
 class AppConfig(val name: String) {
     private fun getSharedPreferences(): SharedPreferences {
@@ -69,10 +68,15 @@ class AppConfig(val name: String) {
      * 阅读器 页面样式 位置索引
      */
     val readerPageStyle by DelegateLiveData(0) { getSharedPreferences() }
+
+    /**
+     * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
+     */
+    val lastDarkTheme by DelegateLiveData(0) { getSharedPreferences() }
+
+    /**
+     * 上一次使用的浅色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
+     */
+    val lastLightTheme by DelegateLiveData(0) { getSharedPreferences() }
 }
 
-class BookConfig {
-
-    private val config by lazy { App.app.getSharedPreferences("BookConfig", Context.MODE_PRIVATE) }
-
-}
