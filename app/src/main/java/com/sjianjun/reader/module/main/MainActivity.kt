@@ -18,6 +18,7 @@ import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.async.AsyncInflateRequest
 import com.sjianjun.reader.async.runOnIdle
+import com.sjianjun.reader.module.update.loadUpdateInfo
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
@@ -94,7 +95,9 @@ class MainActivity : BaseAsyncActivity() {
             launch {
                 JavaScriptTest.testJavaScript()
                 ParseTest.test()
-
+                //GitHub 更新信息
+                loadUpdateInfo()
+                //bugly 更新信息
                 Beta.checkAppUpgrade(false,false)
             }
         }

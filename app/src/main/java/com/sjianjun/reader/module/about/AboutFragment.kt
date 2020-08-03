@@ -104,8 +104,7 @@ class AboutFragment : BaseAsyncFragment() {
     }
 
     private fun downloadUrl(): String {
-        Log.e(gson.toJson(Beta.getAppUpgradeInfo()))
-        Log.e(gson.toJson(Beta.getUpgradeInfo()))
+
         var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
         if (downloadUrl.isNullOrBlank()) {
             val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)

@@ -18,34 +18,32 @@ import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 import kotlin.math.max
 
-suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo {
-    val releasesInfo =
-        if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
+suspend fun loadUpdateInfo(force: Boolean = false) {
+    if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
+        if (force) {
+            toast("正在加载版本信息……")
+        }
+        try {
+            val info = http.get(
+                URL_RELEASE_INFO,
+                header = mapOf("Content-Type" to "application/json;charset=UTF-8")
+            )
+            globalConfig.releasesInfo = info
+            globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
             if (force) {
-                toast("正在加载版本信息……")
+                toast("版本信息加载成功")
             }
-            val info = tryBlock {
-                http.get(
-                    URL_RELEASE_INFO,
-                    header = mapOf("Content-Type" to "application/json;charset=UTF-8")
-                )
-            } ?: ""
-            if (info.isNotEmpty()) {
-                globalConfig.releasesInfo = info
-                globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
-                if (force) {
-                    toast("版本信息加载成功")
-                }
-                gson.fromJson<ReleasesInfo>(info)
-            } else {
-                if (force) {
-                    toast("版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
-                }
-                gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+        } catch (e: Throwable) {
+            if (force) {
+                toast("版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
             }
-        } else {
-            gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-        } ?: return@withIo null
+        }
+    }
+}
+
+suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo {
+    loadUpdateInfo(force)
+    val releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo) ?: return@withIo null
 
 
     val download = releasesInfo.apkAssets
@@ -65,7 +63,10 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
                 val service = ContextCompat.getSystemService(activity, DownloadManager::class.java);
                 service?.enqueue(
                     DownloadManager.Request(Uri.parse(download?.browser_download_url))
-                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"${activity.packageName}/学习${releasesInfo.tag_name}.apk")
+                        .setDestinationInExternalPublicDir(
+                            Environment.DIRECTORY_DOWNLOADS,
+                            "${activity.packageName}/学习${releasesInfo.tag_name}.apk"
+                        )
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 )
             }
