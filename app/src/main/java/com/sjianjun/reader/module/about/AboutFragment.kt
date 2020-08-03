@@ -15,12 +15,12 @@ import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.URL_RELEASE_DEF
 import com.sjianjun.reader.utils.URL_REPO
+import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
 import sjj.novel.util.fromJson
 import sjj.novel.util.gson
 
 class AboutFragment : BaseAsyncFragment() {
-    private val downloadUrl = URL_RELEASE_DEF
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
@@ -43,11 +43,15 @@ class AboutFragment : BaseAsyncFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.share -> {
-                val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+                var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
+                if (downloadUrl.isNullOrBlank()) {
+                    val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+                    downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
+                }
                 val sendIntent = Intent(Intent.ACTION_SEND)
                 sendIntent.putExtra(
                     Intent.EXTRA_TEXT,
-                    "小说app下载链接：${releaseInfo?.apkDownloadUrl ?: downloadUrl}"
+                    "小说app下载链接：${downloadUrl}"
                 )
 //                sendIntent.setClassName("com.tencent.mm","com.tencent.mm.ui.tools.ShareImgUI")
                 sendIntent.type = "text/plain"
