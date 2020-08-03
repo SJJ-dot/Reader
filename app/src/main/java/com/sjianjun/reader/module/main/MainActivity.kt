@@ -112,11 +112,15 @@ class MainActivity : BaseAsyncActivity() {
                         day_night.setImageResource(R.drawable.ic_theme_light_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_YES
                         setDefaultNightMode(MODE_NIGHT_YES)
+                        //切换成深色模式。阅读器样式自动调整为上一次的深色样式
+                        globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
                     }
                     else -> {
                         day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_NO
                         setDefaultNightMode(MODE_NIGHT_NO)
+                        //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
+                        globalConfig.readerPageStyle.postValue(globalConfig.lastLightTheme.value)
                     }
                 }
 
