@@ -98,7 +98,7 @@ class MainActivity : BaseAsyncActivity() {
                 //GitHub 更新信息
                 loadUpdateInfo()
                 //bugly 更新信息
-                Beta.checkAppUpgrade(false,false)
+                Beta.checkAppUpgrade(false, false)
             }
         }
     }
@@ -155,7 +155,11 @@ class MainActivity : BaseAsyncActivity() {
         if (drawer_layout?.isDrawerOpen(GravityCompat.START) == true) {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
-            super.onBackPressed()
+            if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
+                finishAfterTransition()
+            } else {
+                super.onBackPressed()
+            }
         }
     }
 }
