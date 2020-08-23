@@ -12,12 +12,11 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launch
+import com.sjianjun.coroutine.runOnIdle
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.async.AsyncInflateRequest
-import com.sjianjun.reader.async.runOnIdle
 import com.sjianjun.reader.module.update.loadUpdateInfo
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest
@@ -32,19 +31,14 @@ class MainActivity : BaseAsyncActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
-    override val dispatchState: Boolean get() = true
     override val layoutRes: Int = R.layout.activity_main
-
+    override val fadeOut: Boolean = false
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme_DayNight)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
     }
 
-    override val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {
-        animTime = 0
-//        logger = Logger(Config.getDefaultConfig())
-    }
     override val onLoadedView: (View) -> Unit = {
         host_fragment_view_stub.inflate()
         drawer_content.requestApplyInsets()
@@ -83,7 +77,10 @@ class MainActivity : BaseAsyncActivity() {
         runOnIdle {
             PermissionUtil.requestPermissions(
                 this,
-                arrayOf(Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                arrayOf(
+                    Manifest.permission.INTERNET,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
             ) { list ->
                 if (!list.isGranted()) {
                     launch {
