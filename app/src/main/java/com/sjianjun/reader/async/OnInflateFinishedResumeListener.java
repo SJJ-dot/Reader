@@ -11,30 +11,29 @@ import androidx.lifecycle.OnLifecycleEvent;
 
 import com.sjianjun.async.OnInflateFinishedListener;
 
-import sjj.alog.Log;
+import org.jetbrains.annotations.NotNull;
 
 public class OnInflateFinishedResumeListener implements OnInflateFinishedListener, LifecycleObserver {
     private Lifecycle lifecycle;
     private OnInflateFinishedListener listener;
     private View view;
-    private int resid;
+    private int layoutRes;
     @Nullable
     private ViewGroup parent;
 
-    public OnInflateFinishedResumeListener(Lifecycle lifecycle,OnInflateFinishedListener listener) {
+    public OnInflateFinishedResumeListener(Lifecycle lifecycle, OnInflateFinishedListener listener) {
         this.lifecycle = lifecycle;
         this.listener = listener;
     }
 
 
     @Override
-    public void onInflateFinished(@NonNull View view, int layoutRes, @Nullable ViewGroup parent) {
-        Log.e(lifecycle.getCurrentState());
-        if (lifecycle.getCurrentState() == Lifecycle.State.RESUMED) {
+    public void onInflateFinished(@NonNull View view, int layoutRes, @NotNull ViewGroup parent) {
+        if (lifecycle.getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
             listener.onInflateFinished(view, layoutRes, parent);
         } else {
             this.view = view;
-            this.resid = layoutRes;
+            this.layoutRes = layoutRes;
             this.parent = parent;
             lifecycle.addObserver(this);
         }
@@ -42,11 +41,9 @@ public class OnInflateFinishedResumeListener implements OnInflateFinishedListene
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
-        Log.e(lifecycle.getCurrentState());
         lifecycle.removeObserver(this);
-        listener.onInflateFinished(view, resid, parent);
+        listener.onInflateFinished(view, layoutRes, parent);
     }
-
 
 
 }

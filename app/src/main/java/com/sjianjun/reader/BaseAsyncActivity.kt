@@ -19,7 +19,7 @@ abstract class BaseAsyncActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         if (!isFinishing) {
             val asyncInflateUtil = AsyncInflateUtil()
-            asyncInflateUtil.fadeOut = fadeOut
+            asyncInflateUtil.config.fadeOut = fadeOut
             val result = asyncInflateUtil.inflate(
                 this,
                 layoutRes,
