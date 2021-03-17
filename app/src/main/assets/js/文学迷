@@ -1,6 +1,6 @@
-var hostUrl = "https://wenxuemi6.com/";
+var hostUrl = "https://wenxuemi.cc/";
 function search(http,query){
-    var baseUrl = "https://www.wenxuemi6.com/";
+    var baseUrl = "https://www.wenxuemi.cc/";
     var html = http.get(baseUrl + "search.php?q=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select(".result-list > *");

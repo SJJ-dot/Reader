@@ -13,6 +13,7 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.CustomWebView
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
@@ -210,7 +211,7 @@ object DataManager {
     /**
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
-    suspend fun search(query: String): Flow<List<List<SearchResult>>>? {
+    suspend fun search(query: String): Flow<List<List<SearchResult>>> {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
@@ -222,10 +223,14 @@ object DataManager {
             allJavaScript.asFlow().flatMapMerge {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
                 flow<List<SearchResult>> {
-                    val search = tryBlock { it.search(query) }
-                    if (search != null) {
-                        emit(search)
-                        Log.i("search $search")
+                    try {
+                        val search = it.search(query)
+                        if (search != null) {
+                            emit(search)
+                            Log.i("search ${it.source} $search")
+                        }
+                    } catch (e: Exception) {
+                        Log.i("search error ${it.source}",e)
                     }
                 }
             }.map {
