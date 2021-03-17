@@ -4,20 +4,25 @@ import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
-import leakcanary.LeakCanaryProcess
+import sjj.alog.Config
+import java.io.File
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        if (LeakCanaryProcess.isInAnalyzerProcess(this)) {
-            //LeakCanary 分析内存堆转储文件时，单独启动一个进程，尽量避免影响主进程
-            return
-        }
         app = this
         handleDefaultException(this)
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
-
+        Config.getDefaultConfig().apply {
+            consolePrintAllLog = true
+            writeToFile = true
+            val dir = externalCacheDir
+            if (dir != null) {
+                writeToFileDir = File(dir,"alog")
+            }
+            writeToFileDirName = "reader"
+        }
     }
 
 

@@ -1,19 +1,30 @@
-var hostUrl = "http://fqxsw.cc/";
+var hostUrl = "https://fqxsw.cc/";
 function search(http,query){
-    var baseUrl = "http://www.fqxsw.cc/";
+    var baseUrl = "https://www.fqxsw.cc/";
     var html = http.get(baseUrl+"modules/article/search.php?searchkey=" + URLEncoder.encode(query, "gbk"));
     var parse = Jsoup.parse(html, baseUrl);
-    var bookListEl = parse.select("body > div.container.body-content > div.panel.panel-default > table > tbody > tr");
+    var bookListEl = parse.select(".book-coverlist");
     var results = new ArrayList();
     for (var i=1;i<bookListEl.size();i++){
         var bookEl = bookListEl.get(i);
         var result = new SearchResult();
         result.source = source;
-        result.bookTitle = bookEl.selectFirst("> td:nth-child(1) > a").text();
-        result.bookUrl = bookEl.selectFirst("> td:nth-child(1) > a").absUrl("href");
-        result.bookAuthor = bookEl.selectFirst("> td:nth-child(3)").text();
-        result.latestChapter = bookEl.selectFirst("> td:nth-child(2) > a").text();
+        result.bookTitle = bookEl.selectFirst(".caption a").text();
+        result.bookUrl = bookEl.selectFirst(".caption a").absUrl("href");
+        result.bookAuthor = bookEl.selectFirst(".caption small").text().replace("/ 著","");
+        //result.latestChapter = bookEl.selectFirst("> td:nth-child(2) > a").text();
         results.add(result);
+    }
+    if(results.size()==0){
+        try{
+            var result = new SearchResult();
+            result.source = source;
+            result.bookTitle = parse.selectFirst(".bookTitle").text();
+            result.bookUrl = parse.select("head > link:nth-child(3)").attr("href");
+            result.bookAuthor = parse.selectFirst("body > div.container.body-content > div:nth-child(2) > div > div > div.col-md-10 > h1 > small > a").text();
+            results.add(result);
+        }catch(error){
+        }
     }
     return results;
 }
@@ -26,10 +37,10 @@ function getDetails(http,url){
     var book = new Book();
     book.source = source;
     book.url = url;
-    book.title = parse.selectFirst("body > div.container.body-content > div:nth-child(2) > div > div > div.col-md-10 > h1").text();
-    book.author = parse.selectFirst("body > div.container.body-content > div:nth-child(2) > div > div > div.col-md-10 > p.booktag > a:nth-child(1)").text();
+    book.title = parse.selectFirst(".bookTitle").text();
+    book.author = parse.selectFirst("body > div.container.body-content > div:nth-child(2) > div > div > div.col-md-10 > h1 > small > a").text();
     book.intro = parse.selectFirst("#bookIntro").outerHtml();
-    book.cover = parse.selectFirst("body > div.container.body-content > div:nth-child(2) > div > div > div.col-md-2.col-xs-4.hidden-xs > img").absUrl("src");
+    book.cover = parse.selectFirst("#bookIntro > img").absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
     var chapterListEl = parse.select("#list-chapterAll a");

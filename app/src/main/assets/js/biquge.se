@@ -3,7 +3,9 @@ function search(http,query){
     var baseUrl = "http://www.biquge.se/";
     var queryMap = new HashMap();
     queryMap.put("key", URLEncoder.encode(query, "utf-8"));
-    var html = http.post(baseUrl + "case.php?m=search", queryMap);
+    var header = new HashMap();
+    header.put("Cookie", "PHPSESSID=4afgfbvq5qligvmjnaikeg5pv3; 98f1d9227b617f2bbfbc4a9a29a7bab0=1");
+    var html = http.post(baseUrl + "case.php?m=search", queryMap,header);
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select("#newscontent > div.l > ul > li");
     var results = new ArrayList();

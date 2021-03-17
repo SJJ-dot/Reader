@@ -1,9 +1,9 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = -1;
-var hostUrl = "https://23txt.com/";
+var hostUrl = "https://233txt.com/";
 function search(http,query){
-    var baseUrl = "https://www.23txt.com/";
-    var html = http.get(baseUrl + "search.php?keyword=" + URLEncoder.encode(query, "utf-8"));
+    var baseUrl = "https://www.233txt.com/";
+    var html = http.get(baseUrl + "search.php?q=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select("body > div.result-list > *");
     var results = new ArrayList();

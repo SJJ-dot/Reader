@@ -183,7 +183,7 @@ class SearchFragment : BaseAsyncFragment() {
         showProgress()
         search_refresh?.progress = 0
         val count = AtomicInteger()
-        DataManager.search(searchKeyWord)?.debounce(300)?.collect {
+        DataManager.search(searchKeyWord).debounce(300).collect {
             search_refresh?.progress = count.incrementAndGet()
             searchResult.postValue(it)
         }
