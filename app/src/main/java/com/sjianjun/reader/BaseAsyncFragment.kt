@@ -4,9 +4,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.sjianjun.async.Disposable
+import com.sjianjun.async.utils.AsyncInflateUtil
 import com.sjianjun.reader.async.*
 
 abstract class BaseAsyncFragment : BaseFragment() {
+    private var disposable: Disposable? = null
 
     @Deprecated(
         "should use onLoadedView field or onCreate field",
@@ -21,55 +24,26 @@ abstract class BaseAsyncFragment : BaseFragment() {
         if (BuildConfig.DEBUG && res == 0) {
             error("not set layout res")
         }
-        return asyncInflateRequest(res).apply {
-            onLoadedView = this@BaseAsyncFragment.onLoadedView
-            onStart = this@BaseAsyncFragment.onStart
-            onResume = this@BaseAsyncFragment.onResume
-            onPause = this@BaseAsyncFragment.onPause
-            onStop = this@BaseAsyncFragment.onStop
-            applyAsyncInflateRequest()
-        }.inflateWithLoading(inflater, dispatchState)
+        val result = AsyncInflateUtil().inflate(
+            requireContext(),
+            res,
+            OnInflateFinishedResumeListener(lifecycle) { view: View, _: Int, parent: ViewGroup ->
+                onLoadedView(view)
+            })
+
+        disposable = result.second
+        return result.first
     }
 
-    open val applyAsyncInflateRequest: AsyncInflateRequest.() -> Unit = {}
-
-    open val dispatchState = false
 
     abstract override fun getLayoutRes(): Int
 
-    open val onLoadedView: (View) -> Unit = emptyLoad
-    open val onStart: () -> Unit = empty
-    open val onResume: () -> Unit = empty
-    open val onPause: () -> Unit = empty
-    open val onStop: () -> Unit = empty
+    open val onLoadedView: (View) -> Unit = {}
 
-    @Deprecated(
-        "should use onLoadedView field or onCreate field",
-        ReplaceWith("override val onLoadedView = ...")
-    )
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        disposable?.dispose()
     }
-
-    @Deprecated("should use onCreate field", ReplaceWith("override val onCreate = ..."))
-    override fun onStart() {
-        super.onStart()
-    }
-
-    @Deprecated("should use onResume field", ReplaceWith("override val onResume = ..."))
-    override fun onResume() {
-        super.onResume()
-    }
-
-    @Deprecated("should use onPause field", ReplaceWith("override val onPause = ..."))
-    override fun onPause() {
-        super.onPause()
-    }
-
-    @Deprecated("should use onStop field", ReplaceWith("override val onStop = ..."))
-    override fun onStop() {
-        super.onStop()
-    }
-
 
 }

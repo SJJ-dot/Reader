@@ -76,7 +76,7 @@ val client = HttpClient.Builder()
                 }
                 it.proceed(newBuilder.build())
             }
-        clientBuilder?.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
+        clientBuilder?.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
 
     }
     .addConverterFactory(GsonCharsetCompatibleConverter.create())
@@ -106,7 +106,7 @@ class Http {
         try {
             client.post<String>(url, fieldMap, header)
         } catch (e: Exception) {
-            Log.i("网络请求失败:$url", e)
+            Log.e("网络请求失败:$url", e)
             ""
         }
     }
