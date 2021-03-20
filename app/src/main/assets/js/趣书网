@@ -1,22 +1,19 @@
-var hostUrl = "http://biquge.se/";
+var hostUrl = "http://wtxsw.com/";
 function search(http,query){
-    var baseUrl = "http://www.biquge.se/";
-    var queryMap = new HashMap();
-    queryMap.put("key", URLEncoder.encode(query, "utf-8"));
-    var header = new HashMap();
-    header.put("Cookie", "PHPSESSID=4afgfbvq5qligvmjnaikeg5pv3; 98f1d9227b617f2bbfbc4a9a29a7bab0=1");
-    var html = http.post(baseUrl + "case.php?m=search", queryMap,header);
+    var baseUrl = "http://www.wtxsw.com/";
+    var html = http.get(baseUrl+"shaopu.php?ie=gbk&q=" + URLEncoder.encode(query, "gbk"));
     var parse = Jsoup.parse(html, baseUrl);
-    var bookListEl = parse.select("#newscontent > div.l > ul > li");
+    var bookListEl = parse.select(".bookbox");
     var results = new ArrayList();
     for (var i=0;i<bookListEl.size();i++){
         var bookEl = bookListEl.get(i);
         var result = new SearchResult();
         result.source = source;
-        result.bookTitle = bookEl.select(":nth-child(1) > span.s2 > a").text();
-        result.bookUrl = bookEl.selectFirst(":nth-child(1) > span.s2 > a").absUrl("href");
-        result.bookAuthor = bookEl.select(":nth-child(1) > span.s4").text();
-        result.latestChapter = bookEl.selectFirst(":nth-child(1) > span.s3 > a").text();
+        result.bookTitle = bookEl.selectFirst(".bookname > a").text();
+        result.bookUrl = bookEl.selectFirst(".bookname > a").absUrl("href");
+        result.bookAuthor = bookEl.selectFirst(".author").text().replace("作者：","");
+        result.latestChapter = bookEl.selectFirst(".update > a").text();
+        result.bookCover = bookEl.selectFirst(".bookimg > img").absUrl("src");
         results.add(result);
     }
     return results;
@@ -31,17 +28,14 @@ function getDetails(http,url){
     book.source = source;
     book.url = url;
     book.title = parse.selectFirst("#info > h1").text();
-    book.author = parse.selectFirst("#info > p:nth-child(2)").text().split("者：")[1];
-    book.intro = parse.selectFirst("#intro").html();
+    book.author = parse.selectFirst("#info > p:nth-child(4)").text().replace("作    者：","");
+    book.intro = parse.selectFirst("#intro").outerHtml();
     book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
-    var chapterListEl = parse.select("#list > dl > *");
+    var chapterListEl = parse.select("#listmain a");
     for(i=chapterListEl.size() - 1; i>= 0;i--){
         var chapterEl = chapterListEl.get(i);
-        if ("dt".equals(chapterEl.tagName())) {
-            break;
-        }
         var chapterA = chapterEl.selectFirst("a");
         var chapter = new Chapter();
         chapter.title = chapterA.text();
@@ -55,5 +49,5 @@ function getDetails(http,url){
 
 function getChapterContent(http,url){
     var html = http.get(url);
-    return Jsoup.parse(html).select("#content").outerHtml();
+    return Jsoup.parse(html).selectFirst("#content").outerHtml();
 }

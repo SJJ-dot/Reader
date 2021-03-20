@@ -11,13 +11,9 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
-import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.launchIo
-import com.sjianjun.coroutine.withIo
-import com.sjianjun.coroutine.withMain
+import com.sjianjun.coroutine.*
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.async.withIdle
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord

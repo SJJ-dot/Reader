@@ -11,12 +11,9 @@ function search(http,query){
         var bookEl = bookListEl.get(i);
         var result = new SearchResult();
         result.source = source;
-        Log.e(bookEl.selectFirst("> span.s2 > a"));
         result.bookTitle = bookEl.selectFirst("> span.s2 > a").text();
         result.bookUrl = bookEl.selectFirst("> span.s2 > a").absUrl("href");
-         Log.e(bookEl.selectFirst("> span.s4"));
         result.bookAuthor = bookEl.selectFirst("> span.s4").text();
-         Log.e(bookEl.selectFirst("> span.s3 > a"));
         result.latestChapter = bookEl.selectFirst("> span.s3").text();
         results.add(result);
     }
