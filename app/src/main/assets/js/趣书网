@@ -13,7 +13,7 @@ function search(http,query){
         result.bookUrl = bookEl.selectFirst(".bookname > a").absUrl("href");
         result.bookAuthor = bookEl.selectFirst(".author").text().replace("作者：","");
         result.latestChapter = bookEl.selectFirst(".update > a").text();
-        result.bookCover = bookEl.selectFirst(".bookimg > img").absUrl("src");
+        result.bookCover = bookEl.selectFirst(".bookimg img").absUrl("src");
         results.add(result);
     }
     return results;
@@ -33,7 +33,7 @@ function getDetails(http,url){
     book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
     //加载章节列表
     var chapterList = new ArrayList();
-    var chapterListEl = parse.select("#listmain a");
+    var chapterListEl = parse.select(".listmain a");
     for(i=chapterListEl.size() - 1; i>= 0;i--){
         var chapterEl = chapterListEl.get(i);
         var chapterA = chapterEl.selectFirst("a");
