@@ -1,5 +1,5 @@
 {
-  "version": 27,
+  "version": 28,
   "adBlockFilterUrlVersion": 6,
   "versions": [
     {
@@ -74,7 +74,7 @@
     },
     {
       "fileName": "趣书网",
-      "version": "1"
+      "version": "2"
     }
   ],
   "inherit": true
