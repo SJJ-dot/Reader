@@ -4,7 +4,7 @@
     <style name="AppTheme.DayNight" parent="AppTheme" />
 
     <style name="Splash" parent="AppTheme.DayNight">
-        <item name="android:windowBackground">@color/mdr_grey_400</item>
+        <item name="android:background">@drawable/splash_bg</item>
     </style>
 
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">

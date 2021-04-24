@@ -10,11 +10,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/AsyncLayoutInflater" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/fastscroller" />
             <option value="$PROJECT_DIR$/pagerindicator" />
-            <option value="$PROJECT_DIR$/refreshbar" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />
