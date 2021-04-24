@@ -78,5 +78,11 @@ class AppConfig(val name: String) {
      * 上一次使用的浅色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
     val lastLightTheme by DelegateLiveData(0) { getSharedPreferences() }
+
+    /**
+     * 记录上一次启动时App版本
+     */
+    var lastAppVersion by DelegateSharedPreferences(0) { getSharedPreferences() }
+    var lastAppVersionName by DelegateSharedPreferences("") { getSharedPreferences() }
 }
 

@@ -16,7 +16,7 @@ class App : Application() {
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
         Config.getDefaultConfig().apply {
             consolePrintAllLog = true
-            writeToFile = true
+            writeToFile = false
             val dir = externalCacheDir
             if (dir != null) {
                 writeToFileDir = File(dir,"alog")

@@ -1,6 +1,7 @@
 var hostUrl = "http://biquge.se/";
 function search(http,query){
     var baseUrl = "http://www.biquge.se/";
+    var nothing = http.get(baseUrl);
     var queryMap = new HashMap();
     queryMap.put("key", URLEncoder.encode(query, "utf-8"));
     var header = new HashMap();

@@ -75,19 +75,6 @@ class MainActivity : BaseAsyncActivity() {
         initDrawerMenuWidget()
 
         runOnIdle {
-            PermissionUtil.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.INTERNET,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            ) { list ->
-                if (!list.isGranted()) {
-                    launch {
-                        toast("拒绝授权可能导致程序运行异常！")
-                    }
-                }
-            }
 
             launch {
                 JavaScriptTest.testJavaScript()

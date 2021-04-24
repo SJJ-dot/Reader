@@ -21,6 +21,7 @@
         android:label="${app_name}"
         android:theme="@style/AppTheme.DayNight"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         tools:replace="android:label">
         <activity android:name=".module.script.EditJavaScriptActivity" />
         <activity android:name=".module.reader.activity.BookReaderActivity" />
@@ -36,16 +37,17 @@
             android:value="portrait|landscape" />
 
         <activity
-            android:name=".module.main.MainActivity"
-            android:autoRemoveFromRecents="false"
+            android:name=".module.splash.SplashActivity"
             android:theme="@style/Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
+        <activity
+            android:name=".module.main.MainActivity"
+            android:autoRemoveFromRecents="false" />
         <activity
             android:name=".module.bookcity.QQAuthLoginReceiveActivity"
             android:launchMode="singleInstance"

@@ -1,3 +1,2 @@
-include ':AsyncLayoutInflater'
 rootProject.name='Reader'
-include ':app', ':refreshbar', ':fastscroller', ':pagerindicator'
+include ':app',':fastscroller', ':pagerindicator'

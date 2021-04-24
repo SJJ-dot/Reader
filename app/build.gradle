@@ -121,7 +121,7 @@ dependencies {
     implementation project(":fastscroller")
 
     implementation project(":pagerindicator")
-    implementation project(":AsyncLayoutInflater")
+    implementation 'com.github.SJJ-dot:AsyncInflateView:0.0.2'
 
     //拦截非必要crash
     implementation "com.github.SJJ-dot:Cockroach:2.0.1"
