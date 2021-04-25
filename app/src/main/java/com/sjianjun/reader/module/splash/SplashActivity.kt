@@ -3,11 +3,11 @@ package com.sjianjun.reader.module.splash
 import android.Manifest
 import android.os.Bundle
 import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.runOnIdle
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.R
 import com.sjianjun.reader.module.main.MainActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.APP_DATABASE_FILE
@@ -18,32 +18,31 @@ import java.io.File
 
 class SplashActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Splash_noback)
         super.onCreate(savedInstanceState)
-        runOnIdle {
-            PermissionUtil.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.INTERNET,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            ) { list ->
-                if (!list.isGranted()) {
-                    launch {
-                        toast("拒绝授权可能导致程序运行异常！")
-                    }
-                }
-
+        PermissionUtil.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.INTERNET,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        ) { list ->
+            if (!list.isGranted()) {
                 launch {
-                    initCopyDatabase()
-
-                    startActivity<MainActivity>()
-                    finish()
-                    globalConfig.lastAppVersion = BuildConfig.VERSION_CODE
-                    globalConfig.lastAppVersionName = BuildConfig.VERSION_NAME
+                    toast("拒绝授权可能导致程序运行异常！")
                 }
-
-
             }
+
+            launch {
+                initCopyDatabase()
+
+                startActivity<MainActivity>()
+                finish()
+                globalConfig.lastAppVersion = BuildConfig.VERSION_CODE
+                globalConfig.lastAppVersionName = BuildConfig.VERSION_NAME
+            }
+
+
         }
     }
 
@@ -62,6 +61,7 @@ class SplashActivity : BaseActivity() {
         if (!dataBaseDir.exists() || dataBaseDir.isFile) {
             dataBaseDir.delete()
         }
+        dataBaseDir.mkdirs()
         val dataBaseFile = File(APP_DATABASE_FILE)
 
         val databasePath = getDatabasePath("app_database")
