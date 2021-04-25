@@ -3,23 +3,27 @@ package com.sjianjun.reader.module.splash
 import android.Manifest
 import android.os.Bundle
 import com.sjianjun.coroutine.launch
+import com.sjianjun.coroutine.withIdle
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.R
 import com.sjianjun.reader.module.main.MainActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.APP_DATABASE_FILE
 import com.sjianjun.reader.utils.APP_DATA_DIR
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.delay
+import sjj.alog.Log
 import java.io.File
 
 class SplashActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.Splash_noback)
+//        setTheme(R.style.Splash_noback)
         super.onCreate(savedInstanceState)
+        val startTime = System.currentTimeMillis()
         PermissionUtil.requestPermissions(
             this,
             arrayOf(
@@ -35,11 +39,17 @@ class SplashActivity : BaseActivity() {
 
             launch {
                 initCopyDatabase()
-
-                startActivity<MainActivity>()
-                finish()
                 globalConfig.lastAppVersion = BuildConfig.VERSION_CODE
                 globalConfig.lastAppVersionName = BuildConfig.VERSION_NAME
+                withIdle {
+                    val currentTime = System.currentTimeMillis()
+                    Log.e("currentTime - startTime ${currentTime - startTime}")
+                    if (currentTime - startTime < 500) {
+                        delay(500 - (currentTime - startTime))
+                    }
+                    startActivity<MainActivity>()
+                    finish()
+                }
             }
 
 
@@ -49,7 +59,7 @@ class SplashActivity : BaseActivity() {
     /**
      * 数据库复制，将数据库存放到外部存储卡
      */
-    private fun initCopyDatabase() {
+    private suspend fun initCopyDatabase() {
         //376之后的版本升级修改了数据库设置
 //        if (globalConfig.lastAppVersion < 376) {
 //
@@ -66,7 +76,9 @@ class SplashActivity : BaseActivity() {
 
         val databasePath = getDatabasePath("app_database")
         if (databasePath.exists()) {
-            databasePath.copyTo(dataBaseFile)
+            withIo {
+                databasePath.copyTo(dataBaseFile)
+            }
         }
 
     }
