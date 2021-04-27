@@ -13,11 +13,11 @@ abstract class BaseActivity : AppCompatActivity() {
 
     override fun finish() {
         super.finish()
-        overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out)
+        overridePendingTransition(0,android.R.anim.fade_out)
     }
 
     override fun startActivityForResult(intent: Intent?, requestCode: Int, options: Bundle?) {
         super.startActivityForResult(intent, requestCode, options)
-        overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out)
+        overridePendingTransition(0,android.R.anim.fade_out)
     }
 }

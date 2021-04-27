@@ -1,6 +1,6 @@
 package com.sjianjun.reader.module.main
 
-import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -13,8 +13,6 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.runOnIdle
-import com.sjianjun.permission.util.PermissionUtil
-import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseAsyncActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.loadUpdateInfo
@@ -22,7 +20,6 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.ActivityManger
-import com.sjianjun.reader.utils.toast
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
@@ -140,7 +137,11 @@ class MainActivity : BaseAsyncActivity() {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
             if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
-                finishAfterTransition()
+//                finishAfterTransition()
+                val intent = Intent()
+                intent.action = Intent.ACTION_MAIN
+                intent.addCategory(Intent.CATEGORY_HOME)
+                startActivity(intent)
             } else {
                 super.onBackPressed()
             }
