@@ -42,11 +42,6 @@ class SplashActivity : BaseActivity() {
                 globalConfig.lastAppVersion = BuildConfig.VERSION_CODE
                 globalConfig.lastAppVersionName = BuildConfig.VERSION_NAME
                 withIdle {
-                    val currentTime = System.currentTimeMillis()
-                    Log.e("currentTime - startTime ${currentTime - startTime}")
-                    if (currentTime - startTime < 500) {
-                        delay(500 - (currentTime - startTime))
-                    }
                     startActivity<MainActivity>()
                     finish()
                 }
