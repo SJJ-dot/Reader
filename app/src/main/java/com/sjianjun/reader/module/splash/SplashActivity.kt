@@ -1,7 +1,12 @@
 package com.sjianjun.reader.module.splash
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.provider.Settings.canDrawOverlays
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withIdle
 import com.sjianjun.coroutine.withIo
@@ -15,15 +20,26 @@ import com.sjianjun.reader.utils.APP_DATABASE_FILE
 import com.sjianjun.reader.utils.APP_DATA_DIR
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.delay
-import sjj.alog.Log
+import com.tencent.matrix.trace.view.FrameDecorator
 import java.io.File
 
 class SplashActivity : BaseActivity() {
+
+    private val PERMISSION_REQUEST_CODE = 0x02;
     override fun onCreate(savedInstanceState: Bundle?) {
 //        setTheme(R.style.Splash_noback)
         super.onCreate(savedInstanceState)
-        val startTime = System.currentTimeMillis()
+
+        if (!canDrawOverlays()) {
+            requestWindowPermission()
+        } else {
+            requestPermissions()
+        }
+
+
+    }
+
+    private fun requestPermissions() {
         PermissionUtil.requestPermissions(
             this,
             arrayOf(
@@ -48,6 +64,30 @@ class SplashActivity : BaseActivity() {
             }
 
 
+        }
+    }
+
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun requestWindowPermission() {
+        val intent =
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        startActivityForResult(intent, PERMISSION_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (canDrawOverlays()) {
+                requestPermissions()
+            }
         }
     }
 
