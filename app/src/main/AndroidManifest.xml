@@ -90,6 +90,17 @@
             </intent-filter>
 
         </activity>
+        <activity android:name="com.sjianjun.reader.matrix.resource.ManualDumpActivity"/>
+        <activity android:name="com.sjianjun.reader.matrix.io.TestIOActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.resource.TestLeakActivity"
+            android:process=":leaktest"/>
+        <activity android:name="com.sjianjun.reader.matrix.trace.TestTraceMainActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.trace.TestTraceFragmentActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.trace.TestEnterActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.trace.TestFpsActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.sqlitelint.TestSQLiteLintActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.battery.TestBatteryActivity" />
+        <activity android:name="com.sjianjun.reader.matrix.issue.IssuesListActivity" android:launchMode="singleTask"/>
     </application>
 
 </manifest>

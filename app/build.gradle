@@ -1,3 +1,6 @@
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
@@ -61,7 +64,40 @@ android {
     kotlinOptions{
         jvmTarget = "1.8"
     }
-
+//    applicationVariants.all { variant ->
+//        if (variant.name.equalsIgnoreCase("debug")) {
+//            packageDebug.doLast {
+//                ProcessBuilder processBuilder = new ProcessBuilder();
+//                println configurations.apkCheckerDependency.getAt(0).getAbsolutePath()
+//                processBuilder.command("java",
+//                        "-jar", configurations.apkCheckerDependency.getAt(0).getAbsolutePath(),
+//                        "--apk", variant.outputs.first().outputFile.getAbsolutePath(),
+//                        "--output", project.getProjectDir().getAbsolutePath() + "/unused_resources",
+//                        "--format", "json",
+//                        "-unusedResources", "--rTxt", project.getBuildDir().getAbsolutePath() + "/intermediates/${AgpCompat.getIntermediatesSymbolDirName.invoke()}/${variant.name}/R.txt");
+//                Process process = processBuilder.start();
+//                process.waitFor()
+//                println process.inputStream.text
+//                println process.errorStream.text
+//                File outputFile = new File(project.getProjectDir().getAbsolutePath() + "/unused_resources.json");
+//                if (outputFile.exists()) {
+//                    Gson gson = new Gson();
+//                    JsonArray jsonArray = gson.fromJson(outputFile.text, JsonArray.class);
+//                    for (int i = 0; i < jsonArray.size(); i++) {
+//                        if (jsonArray.get(i).asJsonObject.get("taskType").asInt == 12) {
+//                            JsonArray resList = jsonArray.get(i).asJsonObject.get("unused-resources").asJsonArray;
+//                            for (int j = 0; j < resList.size(); j++) {
+//                                project.ext.unusedResourcesSet.add(resList.get(j).asString);
+//                            }
+//                            println "find unused resources:\n" + unusedResourcesSet
+//                            break;
+//                        }
+//                    }
+//                    outputFile.delete();
+//                }
+//            }
+//        }
+//    }
 }
 
 dependencies {
@@ -135,15 +171,22 @@ dependencies {
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
     debugImplementation 'com.squareup.leakcanary:leakcanary-android-process:2.6'
 
-    implementation group: "com.tencent.matrix", name: "matrix-android-lib", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-android-commons", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-trace-canary", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-resource-canary-android", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-resource-canary-common", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-io-canary", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-sqlite-lint-android-sdk", version: MATRIX_VERSION, changing: true
-    implementation group: "com.tencent.matrix", name: "matrix-battery-canary", version: MATRIX_VERSION, changing: true
+    def matrixModules = [
+            "matrix-commons",
+            "matrix-thread-canary",
+            "matrix-battery-canary",
+            "matrix-android-lib",
+            "matrix-android-commons",
+            "matrix-trace-canary",
+            "matrix-resource-canary-android",
+            "matrix-resource-canary-common",
+            "matrix-io-canary",
+            "matrix-sqlite-lint-android-sdk",
+    ]
 
+    matrixModules.each { moduleName ->
+        implementation group: "com.tencent.matrix", name: moduleName, version: MATRIX_VERSION, changing: true
+    }
 }
 
 apply plugin: 'com.tencent.matrix-plugin'
@@ -153,4 +196,5 @@ matrix {
         baseMethodMapFile = "${project.buildDir}/matrix_output/Debug.methodmap"
         blackListFile = "${project.projectDir}/matrixTrace/blackMethodList.txt"
     }
+
 }

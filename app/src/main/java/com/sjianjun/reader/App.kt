@@ -1,19 +1,31 @@
 package com.sjianjun.reader
 
 import android.app.Application
+import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
-import com.sjianjun.reader.matrix.DynamicConfigImplDemo
-import com.sjianjun.reader.matrix.TestPluginListener
+import com.sjianjun.reader.matrix.battery.BatteryCanaryInitHelper
+import com.sjianjun.reader.matrix.config.DynamicConfigImplDemo
+import com.sjianjun.reader.matrix.listener.TestPluginListener
+import com.sjianjun.reader.matrix.resource.ManualDumpActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.matrix.Matrix
 import com.tencent.matrix.batterycanary.BatteryMonitorPlugin
-import com.tencent.matrix.batterycanary.monitor.BatteryMonitorCallback.BatteryPrinter
-import com.tencent.matrix.batterycanary.monitor.BatteryMonitorConfig
-import com.tencent.matrix.batterycanary.monitor.feature.JiffiesMonitorFeature
 import com.tencent.matrix.iocanary.IOCanaryPlugin
 import com.tencent.matrix.iocanary.config.IOConfig
+import com.tencent.matrix.resource.ResourcePlugin
+import com.tencent.matrix.resource.config.ResourceConfig
+import com.tencent.matrix.resource.config.ResourceConfig.DumpMode
+import com.tencent.matrix.threadcanary.ThreadMonitor
+import com.tencent.matrix.threadcanary.ThreadMonitorConfig
+import com.tencent.matrix.trace.TracePlugin
+import com.tencent.matrix.trace.config.TraceConfig
+import com.tencent.matrix.util.MatrixLog
+import com.tencent.sqlitelint.SQLiteLint
+import com.tencent.sqlitelint.SQLiteLintPlugin
+import com.tencent.sqlitelint.config.SQLiteLintConfig
 import sjj.alog.Config
+import sjj.alog.Log
 import java.io.File
 
 
@@ -40,43 +52,84 @@ class App : Application() {
 
     private fun initMatrix(application: App) {
 
-        val config = BatteryMonitorConfig.Builder()
-            .enable(JiffiesMonitorFeature::class.java)
-            .enableStatPidProc(true)
-            .greyJiffiesTime(30 * 1000L)
-            .setCallback(BatteryPrinter())
+        val dynamicConfig = DynamicConfigImplDemo()
+        val matrixEnable: Boolean = dynamicConfig.isMatrixEnable()
+        val fpsEnable: Boolean = dynamicConfig.isFPSEnable()
+        val traceEnable: Boolean = dynamicConfig.isTraceEnable()
+
+
+        Log.i("MatrixApplication.onCreate")
+
+        val builder = Matrix.Builder(this)
+        builder.patchListener(TestPluginListener(this))
+
+        //trace
+
+        //trace
+        val traceConfig = TraceConfig.Builder()
+            .dynamicConfig(dynamicConfig)
+            .enableFPS(fpsEnable)
+            .enableEvilMethodTrace(traceEnable)
+            .enableAnrTrace(traceEnable)
+            .enableStartup(traceEnable)
+            .splashActivities("com.sjianjun.reader.matrix.SplashActivity;")
+            .isDebug(true)
+            .isDevEnv(false)
             .build()
 
-        val plugin = BatteryMonitorPlugin(config)
+        val tracePlugin = TracePlugin(traceConfig)
+        builder.plugin(tracePlugin)
 
-        val builder: Matrix.Builder = Matrix.Builder(application) // build matrix
+        if (matrixEnable) {
 
-        builder.patchListener(TestPluginListener(this)) // add general pluginListener
-
-        val dynamicConfig = DynamicConfigImplDemo() // dynamic config
-
-
-        // init plugin
-
-        // init plugin
-        val ioCanaryPlugin = IOCanaryPlugin(
-            IOConfig.Builder()
+            //resource
+            val intent = Intent()
+            val mode = DumpMode.MANUAL_DUMP
+            Log.i("Dump Activity Leak Mode=$mode")
+            intent.setClassName(this.packageName, "com.tencent.mm.ui.matrix.ManualDumpActivity")
+            val resourceConfig = ResourceConfig.Builder()
                 .dynamicConfig(dynamicConfig)
+                .setAutoDumpHprofMode(mode) //                .setDetectDebuger(true) //matrix test code
+                //                    .set(intent)
+                .setManualDumpTargetActivity(ManualDumpActivity::class.java.getName())
                 .build()
-        )
-        //add to matrix
-        //add to matrix
-        builder.plugin(ioCanaryPlugin).plugin(plugin)
+            builder.plugin(ResourcePlugin(resourceConfig))
+            ResourcePlugin.activityLeakFixer(this)
 
-        //init matrix
+            //io
+            val ioCanaryPlugin = IOCanaryPlugin(
+                IOConfig.Builder()
+                    .dynamicConfig(dynamicConfig)
+                    .build()
+            )
+            builder.plugin(ioCanaryPlugin)
 
-        //init matrix
+
+            // prevent api 19 UnsatisfiedLinkError
+            //sqlite
+            val sqlLiteConfig: SQLiteLintConfig
+            sqlLiteConfig = try {
+                SQLiteLintConfig(SQLiteLint.SqlExecutionCallbackMode.CUSTOM_NOTIFY)
+            } catch (t: Throwable) {
+                SQLiteLintConfig(SQLiteLint.SqlExecutionCallbackMode.CUSTOM_NOTIFY)
+            }
+            builder.plugin(SQLiteLintPlugin(sqlLiteConfig))
+            val threadMonitor = ThreadMonitor(ThreadMonitorConfig.Builder().build())
+            builder.plugin(threadMonitor)
+            val batteryMonitorPlugin: BatteryMonitorPlugin = BatteryCanaryInitHelper.createMonitor()
+            builder.plugin(batteryMonitorPlugin)
+        }
+
         Matrix.init(builder.build())
 
-        // start plugin
+        //start only startup tracer, close other tracer.
 
-        // start plugin
-        ioCanaryPlugin.start()
+        //start only startup tracer, close other tracer.
+        tracePlugin.start()
+        Matrix.with().getPluginByClass(ThreadMonitor::class.java).start()
+//        Matrix.with().getPluginByClass(BatteryMonitor.class).start();
+        //        Matrix.with().getPluginByClass(BatteryMonitor.class).start();
+        Log.i("Matrix.HackCallback end:${System.currentTimeMillis()}")
     }
 
     companion object {

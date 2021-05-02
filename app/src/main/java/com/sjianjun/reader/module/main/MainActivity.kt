@@ -26,7 +26,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 
 class MainActivity : BaseAsyncActivity() {
-    private val decorator by lazy { FrameDecorator.getInstance(applicationContext) }
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
     override val layoutRes: Int = R.layout.activity_main
@@ -35,7 +34,6 @@ class MainActivity : BaseAsyncActivity() {
         setTheme(R.style.AppTheme_DayNight)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
-        decorator.show()
     }
 
     override val onLoadedView: (View) -> Unit = {
