@@ -6,7 +6,6 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.sjianjun.okhttp3.interceptor.HttpLoggingInterceptor
 import com.sjianjun.reader.App
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.retrofit.converter.GsonCharsetCompatibleConverter
 import com.sjianjun.retrofit.simple.http.HttpClient
 import kotlinx.coroutines.runBlocking

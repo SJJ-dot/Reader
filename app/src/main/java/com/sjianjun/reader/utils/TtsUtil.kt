@@ -1,9 +1,7 @@
 package com.sjianjun.reader.utils
 
 import android.content.Context
-import android.media.AudioManager
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.Engine.*
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
 import androidx.lifecycle.Lifecycle

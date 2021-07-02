@@ -15,8 +15,6 @@ import com.sjianjun.reader.utils.APP_DATABASE_FILE
 import com.sjianjun.reader.utils.APP_DATA_DIR
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.delay
-import sjj.alog.Log
 import java.io.File
 
 class SplashActivity : BaseActivity() {

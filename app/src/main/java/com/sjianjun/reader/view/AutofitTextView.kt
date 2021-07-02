@@ -1,9 +1,9 @@
 package com.sjianjun.reader.view
 
 import android.content.Context
-import androidx.appcompat.widget.AppCompatTextView
 import android.util.AttributeSet
 import android.util.TypedValue
+import androidx.appcompat.widget.AppCompatTextView
 
 
 class AutofitTextView @JvmOverloads constructor(

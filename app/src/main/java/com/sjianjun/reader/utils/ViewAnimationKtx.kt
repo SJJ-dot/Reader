@@ -1,7 +1,9 @@
 package com.sjianjun.reader.utils
 
 import android.view.View
-import android.view.animation.*
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import androidx.annotation.AnimRes
 import androidx.annotation.UiThread
 import com.sjianjun.reader.App
