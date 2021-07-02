@@ -21,7 +21,7 @@ abstract class BaseAsyncFragment : BaseFragment() {
         if (BuildConfig.DEBUG && res == 0) {
             error("not set layout res")
         }
-        return AsyncView(requireContext(),res,callback = onLoadedView)
+        return AsyncView(requireContext(),res,0,callback = onLoadedView)
     }
 
 
