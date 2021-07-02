@@ -112,7 +112,7 @@ dependencies {
     implementation "com.github.bumptech.glide:glide:4.11.0"
     kapt 'com.github.bumptech.glide:compiler:4.11.0'
     implementation "com.google.android:flexbox:1.0.0"
-    implementation 'com.google.android.material:material:1.4.0-alpha01'
+    implementation 'com.google.android.material:material:1.4.0'
 
     implementation 'com.tencent.bugly:crashreport_upgrade:1.4.5'
     implementation "com.victor:lib:1.0.4"
@@ -121,7 +121,7 @@ dependencies {
     implementation project(":fastscroller")
 
     implementation project(":pagerindicator")
-    implementation 'com.github.SJJ-dot:AsyncInflateView:0.0.2'
+    implementation 'com.github.SJJ-dot:AsyncView:1.0.1'
 
     //拦截非必要crash
     implementation "com.github.SJJ-dot:Cockroach:2.0.1"

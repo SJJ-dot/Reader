@@ -26,6 +26,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -39,6 +40,7 @@ class BookshelfFragment : BaseAsyncFragment() {
         setHasOptionsMenu(true)
         adapter = Adapter(this@BookshelfFragment)
         book_shelf_recycle_view.adapter = adapter
+        Log.e("onLoadedView ${book_shelf_recycle_view}")
         initRefresh()
         initData()
     }

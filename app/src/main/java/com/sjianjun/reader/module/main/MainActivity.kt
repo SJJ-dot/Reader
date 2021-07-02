@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.main
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
-import android.view.View
 import androidx.appcompat.app.AppCompatDelegate.*
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -11,9 +10,10 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.runOnIdle
-import com.sjianjun.reader.BaseAsyncActivity
+import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.loadUpdateInfo
 import com.sjianjun.reader.preferences.globalConfig
@@ -24,64 +24,61 @@ import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 
-class MainActivity : BaseAsyncActivity() {
+class MainActivity : BaseActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
-    override val layoutRes: Int = R.layout.activity_main
-    override val fadeOut: Boolean = false
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme_DayNight)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
-    }
+        setContentView(AsyncView(this,R.layout.activity_main){
+            host_fragment_view_stub.inflate()
+            drawer_content.requestApplyInsets()
 
-    override val onLoadedView: (View) -> Unit = {
-        host_fragment_view_stub.inflate()
-        drawer_content.requestApplyInsets()
+            setSupportActionBar(toolbar)
 
-        setSupportActionBar(toolbar)
+            navController = findNavController(R.id.nav_host_fragment_main)
+            appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
+                .setOpenableLayout(drawer_layout)
+                .build()
 
-        navController = findNavController(R.id.nav_host_fragment_main)
-        appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
-            .setOpenableLayout(drawer_layout)
-            .build()
-
-        NavigationUI.setupActionBarWithNavController(
-            this,
-            navController!!,
-            appBarConfiguration!!
-        )
-        NavigationUI.setupWithNavController(nav_ui, navController!!)
-        navController!!.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.bookDetailsFragment -> {
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                    supportActionBar?.show()
-                }
-                R.id.browserBookCityFragment -> {
-                    supportActionBar?.hide()
-                }
-                else -> {
-                    supportActionBar?.show()
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+            NavigationUI.setupActionBarWithNavController(
+                this,
+                navController!!,
+                appBarConfiguration!!
+            )
+            NavigationUI.setupWithNavController(nav_ui, navController!!)
+            navController!!.addOnDestinationChangedListener { _, destination, _ ->
+                when (destination.id) {
+                    R.id.bookDetailsFragment -> {
+                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                        supportActionBar?.show()
+                    }
+                    R.id.browserBookCityFragment -> {
+                        supportActionBar?.hide()
+                    }
+                    else -> {
+                        supportActionBar?.show()
+                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                    }
                 }
             }
-        }
 
-        initDrawerMenuWidget()
+            initDrawerMenuWidget()
 
-        runOnIdle {
+            runOnIdle {
 
-            launch {
-                JavaScriptTest.testJavaScript()
-                ParseTest.test()
-                //GitHub 更新信息
-                loadUpdateInfo()
-                //bugly 更新信息
-                Beta.checkAppUpgrade(false, false)
+                launch {
+                    JavaScriptTest.testJavaScript()
+                    ParseTest.test()
+                    //GitHub 更新信息
+                    loadUpdateInfo()
+                    //bugly 更新信息
+                    Beta.checkAppUpgrade(false, false)
+                }
             }
-        }
+        })
     }
 
     private fun initDrawerMenuWidget() {
