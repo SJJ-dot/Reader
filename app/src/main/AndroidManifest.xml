@@ -39,15 +39,18 @@
         <activity
             android:name=".module.splash.SplashActivity"
             android:theme="@style/Splash">
+
+        </activity>
+        <activity
+            android:name=".module.main.MainActivity"
+            android:theme="@style/Splash"
+            android:autoRemoveFromRecents="false" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".module.main.MainActivity"
-            android:autoRemoveFromRecents="false" />
         <activity
             android:name=".module.bookcity.QQAuthLoginReceiveActivity"
             android:launchMode="singleInstance"
