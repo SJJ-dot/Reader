@@ -32,7 +32,7 @@ class MainActivity : BaseActivity() {
         setTheme(R.style.AppTheme_DayNight)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
-        setContentView(AsyncView(this,R.layout.activity_main){
+        setContentView(AsyncView(this,R.layout.activity_main,0){
             host_fragment_view_stub.inflate()
             drawer_content.requestApplyInsets()
 
