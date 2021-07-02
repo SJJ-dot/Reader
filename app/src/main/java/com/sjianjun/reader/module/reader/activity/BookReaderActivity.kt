@@ -125,12 +125,10 @@ class BookReaderActivity : BaseActivity() {
         setting.setOnClickListener {
             launch("setting") {
                 drawer_layout?.closeDrawer(GravityCompat.END)
-                withIdle {
-                    BookReaderSettingFragment().show(
-                        supportFragmentManager,
-                        "BookReaderSettingFragment"
-                    )
-                }
+                BookReaderSettingFragment().show(
+                    supportFragmentManager,
+                    "BookReaderSettingFragment"
+                )
             }
         }
 

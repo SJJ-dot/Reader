@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.sjianjun.async.AsyncView
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.module.reader.style.PageStyle
@@ -32,17 +33,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.reader_fragment_setting_view, container, false)
+    ): View {
+        return AsyncView(requireContext(),R.layout.reader_fragment_setting_view,0){
+            initBrightness()
+            initFontSize()
+            initLineSpacing()
+            initPageStyle()
+        }
 
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        initBrightness()
-        initFontSize()
-        initLineSpacing()
-        initPageStyle()
     }
 
     private fun initBrightness() {
