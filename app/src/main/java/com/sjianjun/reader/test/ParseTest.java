@@ -16,9 +16,7 @@ import org.jsoup.select.Elements;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import sjj.alog.Log;

@@ -1,9 +1,10 @@
 package sjj.novel.view.scroller;
 
 import android.content.Context;
+import android.util.AttributeSet;
+
 import androidx.annotation.ColorInt;
 import androidx.recyclerview.widget.RecyclerView;
-import android.util.AttributeSet;
 
 @SuppressWarnings("unused")
 public class FastScrollRecyclerView extends RecyclerView {

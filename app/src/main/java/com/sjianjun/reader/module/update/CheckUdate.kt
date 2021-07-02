@@ -6,11 +6,11 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import com.sjianjun.coroutine.withIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
-import com.sjianjun.coroutine.withIo
-import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
