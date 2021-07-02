@@ -73,7 +73,7 @@ class MainActivity : BaseActivity() {
                     JavaScriptTest.testJavaScript()
                     ParseTest.test()
                     //GitHub 更新信息
-                    loadUpdateInfo()
+//                    loadUpdateInfo()
                     //bugly 更新信息
                     Beta.checkAppUpgrade(false, false)
                 }

@@ -29,13 +29,8 @@ class AboutFragment : BaseAsyncFragment() {
         versionCode.setOnClickListener {
             launch(singleCoroutineKey = "checkUpdate") {
                 //检查bugly更新
-                val appUpgradeInfo = Beta.getAppUpgradeInfo()
-                if (appUpgradeInfo == null || appUpgradeInfo.versionCode <= BuildConfig.VERSION_CODE) {
-                    checkUpdate(requireActivity() as BaseActivity, true)
-                    setVersionInfo()
-                } else {
-                    toast("已经是最新版了")
-                }
+                Beta.checkAppUpgrade()
+                setVersionInfo()
             }
         }
 
@@ -88,8 +83,7 @@ class AboutFragment : BaseAsyncFragment() {
         ) {
             appUpgradeInfo.versionName
         } else {
-            val releasesInfo: ReleasesInfo? = gson.fromJson(globalConfig.releasesInfo)
-            releasesInfo?.tag_name?:BuildConfig.VERSION_NAME
+            null
         }
 
 
