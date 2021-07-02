@@ -29,7 +29,7 @@ class MainActivity : BaseActivity() {
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.AppTheme_DayNight)
+        setTheme(R.style.Splash_noback)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
         setContentView(AsyncView(this,R.layout.activity_main,0){
