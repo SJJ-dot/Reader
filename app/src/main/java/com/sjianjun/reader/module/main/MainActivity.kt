@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.main
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
@@ -13,13 +14,15 @@ import androidx.navigation.ui.NavigationUI
 import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.runOnIdle
+import com.sjianjun.permission.util.PermissionUtil
+import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.module.update.loadUpdateInfo
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.toast
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
@@ -28,57 +31,83 @@ class MainActivity : BaseActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
+    private var isGranted = false
+    private var isInflated = false
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Splash_noback)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
-        setContentView(AsyncView(this,R.layout.activity_main,0){
-            host_fragment_view_stub.inflate()
-            drawer_content.requestApplyInsets()
-
-            setSupportActionBar(toolbar)
-
-            navController = findNavController(R.id.nav_host_fragment_main)
-            appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
-                .setOpenableLayout(drawer_layout)
-                .build()
-
-            NavigationUI.setupActionBarWithNavController(
-                this,
-                navController!!,
-                appBarConfiguration!!
+        PermissionUtil.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.INTERNET,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-            NavigationUI.setupWithNavController(nav_ui, navController!!)
-            navController!!.addOnDestinationChangedListener { _, destination, _ ->
-                when (destination.id) {
-                    R.id.bookDetailsFragment -> {
-                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                        supportActionBar?.show()
-                    }
-                    R.id.browserBookCityFragment -> {
-                        supportActionBar?.hide()
-                    }
-                    else -> {
-                        supportActionBar?.show()
-                        drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                    }
-                }
+        ){
+            if (!it.isGranted()) {
+                toast("本应用必须要存储卡读写权限用于保存数据库")
+                finish()
+            } else {
+                isGranted = true
+                init()
             }
-
-            initDrawerMenuWidget()
-
-            runOnIdle {
-
-                launch {
-                    JavaScriptTest.testJavaScript()
-                    ParseTest.test()
-                    //GitHub 更新信息
-//                    loadUpdateInfo()
-                    //bugly 更新信息
-                    Beta.checkAppUpgrade(false, false)
-                }
-            }
+        }
+        setContentView(AsyncView(this,R.layout.activity_main,0){
+            isInflated = true
+            init()
         })
+    }
+    private fun init() {
+        if (!isGranted || !isInflated) {
+            return
+        }
+
+        host_fragment_view_stub.inflate()
+        drawer_content.requestApplyInsets()
+
+        setSupportActionBar(toolbar)
+
+        navController = findNavController(R.id.nav_host_fragment_main)
+        appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
+            .setOpenableLayout(drawer_layout)
+            .build()
+
+        NavigationUI.setupActionBarWithNavController(
+            this,
+            navController!!,
+            appBarConfiguration!!
+        )
+        NavigationUI.setupWithNavController(nav_ui, navController!!)
+        navController!!.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.bookDetailsFragment -> {
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    supportActionBar?.show()
+                }
+                R.id.browserBookCityFragment -> {
+                    supportActionBar?.hide()
+                }
+                else -> {
+                    supportActionBar?.show()
+                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                }
+            }
+        }
+
+        initDrawerMenuWidget()
+
+        runOnIdle {
+
+            launch {
+                JavaScriptTest.testJavaScript()
+                ParseTest.test()
+                //GitHub 更新信息
+//                    loadUpdateInfo()
+                //bugly 更新信息
+                Beta.checkAppUpgrade(false, false)
+            }
+        }
+
     }
 
     private fun initDrawerMenuWidget() {
