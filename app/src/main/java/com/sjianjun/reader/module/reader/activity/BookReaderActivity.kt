@@ -11,6 +11,7 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
+import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.*
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -47,19 +48,19 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ActivityManger.finishSameType(this)
-        setContentView(R.layout.activity_book_reader)
         val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
         val immersionBar = ImmersionBar.with(this)
             .statusBarDarkFont(dark)
         immersionBar.init()
-        val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
-        params?.topMargin = ImmersionBar.getStatusBarHeight(this)
-        recycle_view.adapter = adapter
-        initSettingMenu()
-        initScrollLoadChapter()
-        initTTS()
-        initData()
-
+        setContentView(AsyncView(this,R.layout.activity_book_reader){
+            val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
+            params?.topMargin = ImmersionBar.getStatusBarHeight(this)
+            recycle_view.adapter = adapter
+            initSettingMenu()
+            initScrollLoadChapter()
+            initTTS()
+            initData()
+        })
     }
 
     private suspend fun speak(chapter: Chapter?, start: Int) {
