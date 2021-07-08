@@ -23,3 +23,6 @@
 -keep public class com.tencent.bugly.**{*;}
 
 -keep class android.support.**{*;}
+
+ -keep class com.gyf.immersionbar.* {*;}
+ -dontwarn com.gyf.immersionbar.**

@@ -1,20 +1,20 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.4.21'
+    ext.kotlin_version = '1.5.20'
     repositories {
         google()
-        jcenter()
-        
+        maven {url 'https://repo.huaweicloud.com/repository/maven/'}
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.2'
+        classpath 'com.android.tools.build:gradle:4.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
+
 String localRepo() {
     if (hasProperty("LOCAL_REPO")) {
         return LOCAL_REPO
@@ -24,14 +24,13 @@ String localRepo() {
     }
     return new File(rootDir, "repository").toURI().toString()
 }
+
 ext.localRepo = localRepo()
 
 allprojects {
     repositories {
-//        maven{url localRepo}
         google()
-        jcenter()
-//        maven { url "https://raw.githubusercontent.com/SJJ-dot/repo/master/" }
+        maven {url 'https://repo.huaweicloud.com/repository/maven/'}
         maven { url "https://gitee.com/SJJ-dot/repo/raw/master" }
 
         //jitpack 依赖格式
