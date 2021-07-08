@@ -478,15 +478,15 @@ object DataManager {
             if (chapter != null) {
                 //根据章节名查询。取索引最接近那个
                 readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
-                    .firstOrNull()?.minBy { chapter.index - it.index }
+                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
                 if (readChapter == null) {
                     //如果章节名没查到。根据章节名模糊查询
                     readChapter = dao.getChapterByName(book.url, "%${chapter.name()}")
-                        .firstOrNull()?.minBy { chapter.index - it.index }
+                        .firstOrNull()?.minByOrNull { chapter.index - it.index }
                 }
                 if (readChapter == null) {
                     readChapter = dao.getChapterByName(book.url, "%${chapter.name()}%")
-                        .firstOrNull()?.minBy { chapter.index - it.index }
+                        .firstOrNull()?.minByOrNull { chapter.index - it.index }
                 }
                 if (readChapter == null) {
                     readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
