@@ -137,4 +137,8 @@ dependencies {
     def splitties_version ='3.0.0-beta02'
     implementation("com.louiscad.splitties:splitties-views-dsl-appcompat:$splitties_version")
     implementation("com.louiscad.splitties:splitties-views-dsl-constraintlayout:$splitties_version")
+    implementation("com.louiscad.splitties:splitties-views-dsl-coordinatorlayout:$splitties_version")
+    implementation("com.louiscad.splitties:splitties-views-dsl-material:$splitties_version")
+    implementation("com.louiscad.splitties:splitties-views-dsl-recyclerview:$splitties_version")
+
 }
