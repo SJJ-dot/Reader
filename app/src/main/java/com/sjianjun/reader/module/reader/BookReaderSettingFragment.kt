@@ -17,6 +17,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.module.reader.style.PageStyle
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
@@ -37,7 +38,11 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return AsyncView(requireContext(),R.layout.reader_fragment_setting_view,heightParam = 250.dp2Px){
+        return AsyncView(
+            requireContext(),
+            R.layout.reader_fragment_setting_view,
+            heightParam = 250.dp2Px
+        ) {
             initBrightness()
             initFontSize()
             initLineSpacing()
@@ -99,15 +104,24 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initPageStyle() {
-        page_style_list.adapter = Adapter(this)
-        page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
+        val adapter = Adapter(this)
+        page_style_list.adapter = adapter
+        launchIo {
+            PageStyle.values().forEach {
+                it.getBackground(requireContext())
+                withMain {
+                    adapter.data.add(it)
+                    adapter.notifyItemInserted(adapter.data.size-1)
+                }
+            }
+            withMain {
+                page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
+            }
+        }
     }
 
     class Adapter(val fragment: BookReaderSettingFragment) :
         BaseAdapter<PageStyle>(R.layout.reader_item_page_style) {
-        init {
-            data.addAll(PageStyle.values())
-        }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             holder.itemView.apply {
@@ -131,7 +145,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     //记录浅色 深色样式 和深色样式
                     if (pageStyle.isDark && globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_NO) {
                         globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
-                    } else if (!pageStyle.isDark && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO){
+                    } else if (!pageStyle.isDark && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
                         globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
                     }
                 }
