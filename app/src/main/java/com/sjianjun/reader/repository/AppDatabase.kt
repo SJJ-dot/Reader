@@ -18,7 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
     entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 9
+    version = 9,
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): Dao
