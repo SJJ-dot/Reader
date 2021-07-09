@@ -52,7 +52,7 @@ class BookReaderActivity : BaseActivity() {
         val immersionBar = ImmersionBar.with(this)
             .statusBarDarkFont(dark)
         immersionBar.init()
-        setContentView(AsyncView(this,R.layout.activity_book_reader){
+        setContentView(AsyncView(this, R.layout.activity_book_reader) {
             val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
             params?.topMargin = ImmersionBar.getStatusBarHeight(this)
             recycle_view.adapter = adapter
@@ -126,10 +126,12 @@ class BookReaderActivity : BaseActivity() {
         setting.setOnClickListener {
             launch("setting") {
                 drawer_layout?.closeDrawer(GravityCompat.END)
-                BookReaderSettingFragment().show(
-                    supportFragmentManager,
-                    "BookReaderSettingFragment"
-                )
+                drawer_layout?.postOnAnimation {
+                    BookReaderSettingFragment().show(
+                        supportFragmentManager,
+                        "BookReaderSettingFragment"
+                    )
+                }
             }
         }
 
@@ -449,7 +451,12 @@ class BookReaderActivity : BaseActivity() {
                 chapter_title.setTextColor(pageStyle.getChapterTitleColor(context))
                 chapter_content.setTextColor(pageStyle.getChapterContentColor(context))
 
-                chapter_content_background.setImageDrawable(pageStyle.getBackground(context))
+                activity.launchIo {
+                    val background = pageStyle.getBackground(context)
+                    withMain {
+                        chapter_content_background.setImageDrawable(background)
+                    }
+                }
 
                 isClickable = false
                 chapter_title.isClickable = false
