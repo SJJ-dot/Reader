@@ -11,11 +11,14 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sjianjun.async.AsyncView
+import com.sjianjun.coroutine.launchIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.module.reader.style.PageStyle
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.dp2Px
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
 import kotlinx.android.synthetic.main.reader_item_page_style.view.*
 import java.text.DecimalFormat
@@ -34,11 +37,13 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return AsyncView(requireContext(),R.layout.reader_fragment_setting_view,0){
+        return AsyncView(requireContext(),R.layout.reader_fragment_setting_view,heightParam = 250.dp2Px){
             initBrightness()
             initFontSize()
             initLineSpacing()
             initPageStyle()
+        }.apply {
+            setBackgroundColor(R.color.dn_background.color(context))
         }
 
     }
@@ -107,7 +112,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             holder.itemView.apply {
                 val pageStyle = data[position]
-                image.setImageDrawable(pageStyle.getBackground(context))
+
+                fragment.launchIo {
+                    val background = pageStyle.getBackground(context)
+                    withMain {
+                        image.setImageDrawable(background)
+                    }
+                }
+
                 if (globalConfig.readerPageStyle.value != position) {
                     image.borderColor = R.color.dn_text_color_black_disable.color(context)
                 } else {
