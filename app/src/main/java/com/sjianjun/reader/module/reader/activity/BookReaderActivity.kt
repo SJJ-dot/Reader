@@ -45,13 +45,19 @@ class BookReaderActivity : BaseActivity() {
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ContentAdapter(this) }
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
+
+    override fun immersionBar() {
+        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
+        ImmersionBar.with(this)
+            .statusBarDarkFont(dark)
+            .init()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ActivityManger.finishSameType(this)
-        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
-        val immersionBar = ImmersionBar.with(this)
-            .statusBarDarkFont(dark)
-        immersionBar.init()
+
+
         setContentView(AsyncView(this, R.layout.activity_book_reader) {
             val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
             params?.topMargin = ImmersionBar.getStatusBarHeight(this)
@@ -421,6 +427,7 @@ class BookReaderActivity : BaseActivity() {
     class ContentAdapter(val activity: BookReaderActivity) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         private val loadingStr = "拼命加载中…………………………………………………………………………………………………………………………"
+
         init {
             setHasStableIds(true)
         }
@@ -485,10 +492,10 @@ class BookReaderActivity : BaseActivity() {
                             chapter_content.text = cacheFormat
                             layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
                         } else {
-                            chapter_content.text="正在处理数据……"
+                            chapter_content.text = "正在处理数据……"
                             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
 
-                           tag = activity.launchIo {
+                            tag = activity.launchIo {
                                 val format = chapter.content?.format()
                                 withMain {
                                     chapter_content.text = format
@@ -503,7 +510,7 @@ class BookReaderActivity : BaseActivity() {
                         chapter_content.text = chapter.content?.content ?: loadingStr
                         layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                         setOnClickListener {
-                            chapter_content.text =loadingStr
+                            chapter_content.text = loadingStr
                             activity.launch {
                                 showSnackbar(it, "正在加载……")
                                 val intRange =
@@ -519,7 +526,7 @@ class BookReaderActivity : BaseActivity() {
                     }
                 } else {
                     layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    chapter_content.text =loadingStr
+                    chapter_content.text = loadingStr
                 }
             }
 

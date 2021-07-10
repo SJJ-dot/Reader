@@ -14,12 +14,15 @@ import kotlinx.android.synthetic.main.activity_edit_java_script.*
 
 class EditJavaScriptActivity : BaseActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_edit_java_script)
+    override fun immersionBar() {
         ImmersionBar.with(this)
             .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
             .init()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_edit_java_script)
         save_script.setOnClickListener {
             launch {
                 val javaScript = JavaScript(

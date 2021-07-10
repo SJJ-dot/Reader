@@ -133,7 +133,7 @@ dependencies {
     implementation 'com.google.zxing:core:3.3.0'
     //泄露检测
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android-process:2.6'
+//    debugImplementation 'com.squareup.leakcanary:leakcanary-android-process:2.6'
     def splitties_version ='3.0.0-beta02'
     implementation("com.louiscad.splitties:splitties-views-dsl-appcompat:$splitties_version")
     implementation("com.louiscad.splitties:splitties-views-dsl-constraintlayout:$splitties_version")
