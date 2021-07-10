@@ -1,6 +1,7 @@
 package com.sjianjun.reader.bean
 
 import android.text.SpannableStringBuilder
+import androidx.collection.LruCache
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.sjianjun.reader.utils.html
@@ -18,18 +19,25 @@ data class ChapterContent(
     var content: String? = null
 
 ) {
+
+    fun cacheFormat(): SpannableStringBuilder? {
+        return cache.get(content ?: return null)
+    }
+
     fun format(): SpannableStringBuilder {
-        val content = SpannableStringBuilder("$content".html())
-        Regex("\\A\\s*").find(content)?.apply {
-            content.replace(range.first,range.last+1,"")
+        val content = content ?: return SpannableStringBuilder()
+        val locContent = SpannableStringBuilder(content.html())
+        Regex("\\A\\s*").find(locContent)?.apply {
+            locContent.replace(range.first, range.last + 1, "")
         }
-        content.insert(0,"\u3000\u3000")
-        var result = Regex("\n+\\s*").find(content)
+        locContent.insert(0, "\u3000\u3000")
+        var result = Regex("\n+\\s*").find(locContent)
         while (result != null) {
-            content.replace(result.range.first,result.range.last+1,"\n\u3000\u3000")
+            locContent.replace(result.range.first, result.range.last + 1, "\n\u3000\u3000")
             result = result.next()
         }
-        return content
+        cache.put(content, locContent)
+        return locContent
     }
 
     override fun equals(other: Any?): Boolean {
@@ -50,5 +58,9 @@ data class ChapterContent(
         result = 31 * result + bookUrl.hashCode()
         result = 31 * result + (content?.hashCode() ?: 0)
         return result
+    }
+
+    companion object {
+        val cache = LruCache<String, SpannableStringBuilder>(5)
     }
 }
