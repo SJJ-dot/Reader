@@ -511,6 +511,7 @@ object DataManager {
             if (chapter.isLoaded && !force) {
                 val chapterContent = dao.getChapterContent(chapter.url).first()
                 chapter.content = chapterContent
+                chapter.content?.format()
                 if (chapter.content != null) {
                     return@withIo
                 }
@@ -530,6 +531,7 @@ object DataManager {
                 chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")
             } else {
                 chapter.content = ChapterContent(chapter.url, chapter.bookUrl, content)
+                chapter.content?.format()
                 chapter.isLoaded = true
                 dao.insertChapter(chapter, chapter.content!!)
             }

@@ -21,11 +21,11 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="32dp"
         android:layout_marginEnd="16dp"
-        android:drawableEnd="@mipmap/ic_chapter_sync"
         android:textColor="@color/dn_reader_chapter_title_text_color"
         android:textIsSelectable="true"
         android:textSize="26sp"
         android:textStyle="bold"
+        app:drawableEndCompat="@mipmap/ic_chapter_sync"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="章节标题" />
 

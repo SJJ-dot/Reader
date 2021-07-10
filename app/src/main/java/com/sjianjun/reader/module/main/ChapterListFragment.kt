@@ -2,7 +2,10 @@ package com.sjianjun.reader.module.main
 
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -36,12 +39,15 @@ class ChapterListFragment : BaseFragment() {
         )
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
-        recycle_view_chapter_list.adapter = adapter
-
-        initData()
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return AsyncView(requireContext(),R.layout.main_fragment_book_chapter_list){
+            recycle_view_chapter_list.adapter = adapter
+            initData()
+        }
     }
 
     private fun initData() {

@@ -2,13 +2,13 @@
 <com.google.android.material.card.MaterialCardView  xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="38dp"
     android:layout_margin="5dp">
 
     <TextView
         android:id="@+id/text1"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="22dp"
         android:layout_gravity="center_vertical"
         android:layout_margin="8dp"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"

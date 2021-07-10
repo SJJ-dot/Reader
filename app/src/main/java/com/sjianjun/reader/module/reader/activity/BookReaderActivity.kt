@@ -324,7 +324,7 @@ class BookReaderActivity : BaseActivity() {
                         BOOK_AUTHOR to book.author
                     )
                 )
-                .commitNowAllowingStateLoss()
+                .commitAllowingStateLoss()
 
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title, book.author)
@@ -420,6 +420,7 @@ class BookReaderActivity : BaseActivity() {
 
     class ContentAdapter(val activity: BookReaderActivity) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        private val loadingStr = "拼命加载中…………………………………………………………………………………………………………………………"
         init {
             setHasStableIds(true)
         }
@@ -441,6 +442,11 @@ class BookReaderActivity : BaseActivity() {
             val chapter = chapterList[position]
             holder.itemView.apply {
 
+                (tag as? Job)?.apply {
+                    if (isActive) {
+                        cancel()
+                    }
+                }
                 val fontSize = globalConfig.readerFontSize.value!!
                 chapter_title.setTextSize(TypedValue.COMPLEX_UNIT_SP, (fontSize + 4).toFloat())
                 chapter_content.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
@@ -458,36 +464,53 @@ class BookReaderActivity : BaseActivity() {
                     }
                 }
 
-                isClickable = false
-                chapter_title.isClickable = false
                 chapter_title.text = chapter.title
+                chapter_title.setOnClickListener {
+                    activity.launch {
+                        showSnackbar(it, "正在加载……")
+                        DataManager.getChapterContent(chapter, false, force = true)
+                        showSnackbar(it, "加载完成")
+                        if (holder.adapterPosition == position) {
+                            delay(1)
+                            notifyItemChanged(position)
+                        }
+                    }
+                }
+
+                isClickable = false
                 if (chapter.content != null) {
-                    chapter_content.text = chapter.content?.format()
                     if (chapter.isLoaded) {
-                        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                        chapter_title.setOnClickListener {
-                            activity.launch {
-                                showSnackbar(it, "正在加载……")
-                                DataManager.getChapterContent(chapter, false, force = true)
-                                showSnackbar(it, "加载完成")
-                                if (holder.adapterPosition == position) {
-                                    delay(1)
-                                    notifyItemChanged(position)
+                        val cacheFormat = chapter.content?.cacheFormat()
+                        if (cacheFormat != null) {
+                            chapter_content.text = cacheFormat
+                            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        } else {
+                            chapter_content.text="正在处理数据……"
+                            layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+
+                           tag = activity.launchIo {
+                                val format = chapter.content?.format()
+                                withMain {
+                                    chapter_content.text = format
+                                    if (chapter.isLoaded) {
+                                        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                                    }
                                 }
                             }
+
                         }
                     } else {
+                        chapter_content.text = chapter.content?.content ?: loadingStr
                         layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                         setOnClickListener {
-                            chapter_content.text =
-                                "拼命加载中…………………………………………………………………………………………………………………………"
+                            chapter_content.text =loadingStr
                             activity.launch {
                                 showSnackbar(it, "正在加载……")
                                 val intRange =
                                     max(position - 1, 0)..min(position + 1, chapterList.size - 1)
                                 val update = activity.preLoadRefresh(chapterList, intRange)
                                 showSnackbar(it, "加载完成")
-                                if (update && holder.adapterPosition == position) {
+                                if (update && holder.absoluteAdapterPosition == position) {
                                     delay(1)
                                     notifyDataSetChanged()
                                 }
@@ -496,8 +519,7 @@ class BookReaderActivity : BaseActivity() {
                     }
                 } else {
                     layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    chapter_content.text =
-                        "拼命加载中…………………………………………………………………………………………………………………………"
+                    chapter_content.text =loadingStr
                 }
             }
 
