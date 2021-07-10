@@ -104,7 +104,7 @@ dependencies {
     /**
      * 沉浸式
      */
-    implementation 'com.gyf.immersionbar:immersionbar:3.0.0'
+    implementation 'com.github.SJJ-dot.ImmersionBar:immersionbar:3.1.0'
 
     implementation 'com.github.razerdp:BasePopup:2.2.9'
     //cookie
