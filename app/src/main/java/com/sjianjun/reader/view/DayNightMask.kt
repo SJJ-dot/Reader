@@ -20,7 +20,7 @@ class DayNightMask @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr), LifecycleObserver {
 
     init {
-        act?.lifecycle?.addObserver(this)
+        post { act?.lifecycle?.addObserver(this) }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)

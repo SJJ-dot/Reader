@@ -10,6 +10,7 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
+import com.sjianjun.reader.preferences.adBlockConfig
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.CustomWebView
@@ -76,12 +77,12 @@ object DataManager {
 
             val asyncUrlSet = async {
                 //广告拦截
-                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > globalConfig.adBlockUrlListVersion) {
+                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > adBlockConfig.adBlockUrlListVersion) {
 
                     val urlSet =
                         gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
 
-                    val adBlockUrlList = globalConfig.adBlockList.toMutableList()
+                    val adBlockUrlList = adBlockConfig.adBlockList.toMutableList()
 
                     urlSet.forEach {
                         val adBlock = CustomWebView.AdBlock(it)
@@ -90,8 +91,8 @@ object DataManager {
                         }
                     }
 
-                    globalConfig.adBlockList = adBlockUrlList
-                    globalConfig.adBlockUrlListVersion = info.adBlockFilterUrlVersion
+                    adBlockConfig.adBlockList = adBlockUrlList
+                    adBlockConfig.adBlockUrlListVersion = info.adBlockFilterUrlVersion
                 }
             }
 
