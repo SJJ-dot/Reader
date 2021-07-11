@@ -229,7 +229,7 @@ object DataManager {
                             Log.i("search ${it.source} $search")
                         }
                     } catch (e: Exception) {
-                        Log.i("search error ${it.source}",e)
+                        Log.i("search error ${it.source}", e)
                     }
                 }
             }.map {

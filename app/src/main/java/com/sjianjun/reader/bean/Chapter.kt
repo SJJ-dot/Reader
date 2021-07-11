@@ -11,11 +11,13 @@ class Chapter {
     @JvmField
     @PrimaryKey
     var url: String = ""
+
     /**
      * 对应数据库id
      */
     @JvmField
     var bookUrl = ""
+
     @JvmField
     var title: String? = null
 

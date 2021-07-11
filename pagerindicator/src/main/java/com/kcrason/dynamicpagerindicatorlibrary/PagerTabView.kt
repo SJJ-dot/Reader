@@ -10,7 +10,7 @@ import android.widget.TextView
  * @date 2018/1/23
  */
 class PagerTabView @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : BasePagerTabView(context, attrs, defStyleAttr) {
     private var mTextView: TextView? = null
 

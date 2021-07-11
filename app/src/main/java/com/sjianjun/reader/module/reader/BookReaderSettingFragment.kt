@@ -17,7 +17,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.module.reader.style.PageStyle
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
@@ -111,7 +110,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 it.getBackground(requireContext())
                 withMain {
                     adapter.data.add(it)
-                    adapter.notifyItemInserted(adapter.data.size-1)
+                    adapter.notifyItemInserted(adapter.data.size - 1)
                 }
             }
             withMain {

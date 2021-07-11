@@ -7,7 +7,7 @@ fun bundle(k: String, v: Any?): Bundle {
     return bundle(k to v)
 }
 
-fun bundle(vararg params:Pair<String,Any?>): Bundle {
+fun bundle(vararg params: Pair<String, Any?>): Bundle {
     val bundle = Bundle()
     for (param in params) {
         val value = param.second

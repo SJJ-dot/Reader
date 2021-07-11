@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="text_body1" >
+    <style name="text_body1">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">?android:textColorPrimary</item>
     </style>
-    <style name="text_body2" >
+
+    <style name="text_body2">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">?android:textColorPrimary</item>
     </style>

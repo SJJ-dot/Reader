@@ -7,12 +7,13 @@ import androidx.appcompat.widget.AppCompatTextView
 
 
 class AutofitTextView @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : AppCompatTextView(context, attrs, defStyleAttr) {
     //    private var paint: TextPaint? = null
     private var minTextSize: Float = 0.toFloat()
     private var maxTextSize: Float = 0.toFloat()
     private val DEFAULT_MIN_TEXT_SIZE = 8f
+
     init {
         //        paint = getPaint()
         maxTextSize = textSize

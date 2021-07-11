@@ -13,6 +13,7 @@ class LiveDataMapImpl<T>(
 
     private val sharedPreferences by lazy { sharedPreferences() }
     private lateinit var kType: KType
+
     @Synchronized
     operator fun getValue(thisRef: Any?, property: KProperty<*>): LiveDataMap<T> {
         kType = property.returnType.arguments[0].type!!

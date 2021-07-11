@@ -19,7 +19,7 @@ class App : Application() {
             writeToFile = false
             val dir = externalCacheDir
             if (dir != null) {
-                writeToFileDir = File(dir,"alog")
+                writeToFileDir = File(dir, "alog")
             }
             writeToFileDirName = "reader"
         }

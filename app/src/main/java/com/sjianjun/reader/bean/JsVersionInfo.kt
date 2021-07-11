@@ -12,6 +12,7 @@ class JsVersionInfo {
     class Version {
         var fileName: String = ""
         var version = 0
+
         //广告屏蔽脚本版本
         var adBlockVersion = 0
 

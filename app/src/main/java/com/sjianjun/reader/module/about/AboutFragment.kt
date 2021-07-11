@@ -6,12 +6,10 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
-import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.tencent.bugly.beta.Beta

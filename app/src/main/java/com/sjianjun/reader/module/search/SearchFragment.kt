@@ -199,7 +199,8 @@ class SearchFragment : BaseAsyncFragment() {
         search_refresh?.animFadeOut()
     }
 
-    private class SearchHintAdapter : BaseAdapter<String>(R.layout.search_item_fragment_search_hint) {
+    private class SearchHintAdapter :
+        BaseAdapter<String>(R.layout.search_item_fragment_search_hint) {
         var itemClick: ((String) -> Unit)? = null
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -211,7 +212,8 @@ class SearchFragment : BaseAsyncFragment() {
         }
     }
 
-    private class SearchResultBookAdapter(val fragment: SearchFragment) : BaseAdapter<List<SearchResult>>() {
+    private class SearchResultBookAdapter(val fragment: SearchFragment) :
+        BaseAdapter<List<SearchResult>>() {
 
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.main_item_fragment_search_result

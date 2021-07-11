@@ -22,6 +22,7 @@ class ReleasesInfo {
         var browser_download_url = ""
         var content_type = ""
         var download_count = ""
+
         /**
          * 码云返回文件名字段
          */

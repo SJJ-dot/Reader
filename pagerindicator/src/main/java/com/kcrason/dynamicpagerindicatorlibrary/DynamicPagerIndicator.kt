@@ -821,6 +821,7 @@ open class DynamicPagerIndicator @JvmOverloads constructor(
          * 指示器滑动到居中位置的方式，PAGER_INDICATOR_SCROLL_MODE_SYNC ，联动模式，跟随页面一起移动到居中位置
          */
         const val PAGER_INDICATOR_SCROLL_TO_CENTER_MODE_LINKAGE = 1
+
         /**
          * 指示器滑动到居中位置的方式，PAGER_INDICATOR_SCROLL_MODE_SYNC ，异动模式，等页面滑动完成，再将对应的TabView移动到居中位置
          */
