@@ -7,6 +7,7 @@ import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.preferences.adBlockConfig
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
@@ -23,7 +24,7 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
 
     override val onLoadedView: (View) -> Unit = {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
-        custom_web_view.adBlockUrl = ConcurrentLinkedDeque(globalConfig.adBlockList)
+        custom_web_view.adBlockUrl = ConcurrentLinkedDeque(adBlockConfig.adBlockList)
         Log.i(custom_web_view.adBlockUrl)
         setOnBackPressed {
             when {
@@ -73,7 +74,7 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
         val list = custom_web_view.adBlockUrl?.toMutableList()
         if (list != null) {
             list.sortDescending()
-            globalConfig.adBlockList = list
+            adBlockConfig.adBlockList = list
             Log.i(list)
         }
     }
