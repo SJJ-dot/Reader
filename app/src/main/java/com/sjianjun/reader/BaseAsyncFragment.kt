@@ -9,7 +9,7 @@ import com.sjianjun.async.AsyncView
 abstract class BaseAsyncFragment : BaseFragment() {
 
     @Deprecated(
-        "should use onLoadedView field or onCreate field",
+        "onLoadedView , getLayoutRes()",
         ReplaceWith("override val onLoadedView = ...")
     )
     override fun onCreateView(
@@ -21,7 +21,7 @@ abstract class BaseAsyncFragment : BaseFragment() {
         if (BuildConfig.DEBUG && res == 0) {
             error("not set layout res")
         }
-        return AsyncView(requireContext(),res,0,callback = onLoadedView)
+        return AsyncView(requireContext(), res, 0, callback = onLoadedView)
     }
 
 

@@ -3,4 +3,7 @@
     <item name="visibility" type="id"/>
     <item name="recyclable" type="id"/>
     <item name="web_view" type="id"/>
+    <item name="book_shelf_swipe_refresh" type="id"/>
+    <item name="book_shelf_recycle_view" type="id"/>
+    <item name="book_shelf_refresh" type="id"/>
 </resources>

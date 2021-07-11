@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.shelf
 
+import android.annotation.SuppressLint
 import android.content.res.ColorStateList
+import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.NavHostFragment
@@ -10,7 +12,7 @@ import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.BaseAsyncFragment
+import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
@@ -21,26 +23,33 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.item_book_list.view.*
-import kotlinx.android.synthetic.main.main_fragment_book_shelf.*
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-class BookshelfFragment : BaseAsyncFragment() {
+@FlowPreview
+class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private lateinit var adapter: Adapter
-    override fun getLayoutRes() = R.layout.main_fragment_book_shelf
+    private lateinit var bookshelfUi: BookshelfUi
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        bookshelfUi = BookshelfUi(requireContext())
+        return bookshelfUi.root
+    }
 
-    override val onLoadedView: (View) -> Unit = {
-
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
         adapter = Adapter(this@BookshelfFragment)
-        book_shelf_recycle_view.adapter = adapter
-        Log.e("onLoadedView ${book_shelf_recycle_view}")
+        bookshelfUi.recyclerViw.adapter = adapter
         initRefresh()
         initData()
     }
@@ -56,7 +65,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 bookList.clear()
                 val bookNum = it.size
-                book_shelf_refresh.max = bookNum
+                bookshelfUi.loading.max = bookNum
                 it.asFlow().flatMapMerge { book ->
                     combine(
                         DataManager.getReadingRecord(book).map { record ->
@@ -82,7 +91,8 @@ class BookshelfFragment : BaseAsyncFragment() {
                         val bookScript = js.find { script ->
                             script.source == book.source
                         }
-                        val startingBook = DataManager.getStartingBook(book, bookScript,onlyLocal = true)
+                        val startingBook =
+                            DataManager.getStartingBook(book, bookScript, onlyLocal = true)
                         book.startingError = startingBook?.error
 
                         book
@@ -105,7 +115,7 @@ class BookshelfFragment : BaseAsyncFragment() {
 
 
     private fun initRefresh() {
-        book_shelf_swipe_refresh.setOnRefreshListener {
+        bookshelfUi.rootRefresh.setOnRefreshListener {
             launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
 
@@ -116,7 +126,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 startingStationRefreshActor(bookList.values.toList())
 
                 showProgressBar(SHOW_FLAG_REFRESH)
-                book_shelf_refresh.progress = 0
+                bookshelfUi.loading.progress = 0
                 sourceMap.map {
                     async {
                         val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
@@ -127,13 +137,13 @@ class BookshelfFragment : BaseAsyncFragment() {
                             it.value.map {
                                 async {
                                     DataManager.reloadBookFromNet(it)
-                                    book_shelf_refresh.progress = book_shelf_refresh.progress + 1
+                                    bookshelfUi.loading.progress = bookshelfUi.loading.progress + 1
                                 }
                             }.awaitAll()
                         } else {
                             it.value.apply { it.value.sortWith(bookComparator) }.forEach {
                                 DataManager.reloadBookFromNet(it)
-                                book_shelf_refresh.progress = book_shelf_refresh.progress + 1
+                                bookshelfUi.loading.progress = bookshelfUi.loading.progress + 1
                                 delay(delay)
                             }
                         }
@@ -141,7 +151,7 @@ class BookshelfFragment : BaseAsyncFragment() {
                 }.awaitAll()
                 withMain {
                     hideProgressBar(SHOW_FLAG_REFRESH)
-                    book_shelf_swipe_refresh?.isRefreshing = false
+                    bookshelfUi.rootRefresh.isRefreshing = false
                     adapter.notifyDataSetChanged()
                 }
             }
@@ -151,7 +161,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     private fun startingStationRefreshActor(msg: List<Book>) =
         launch(singleCoroutineKey = "startingStationRefreshActor") {
             showProgressBar(SHOW_FLAG_STARTING_STATION)
-            book_shelf_refresh?.secondaryProgress = 0
+            bookshelfUi.loading.secondaryProgress = 0
             val sourceMap = mutableMapOf<String, MutableList<Book>>()
             msg.map {
                 async {
@@ -174,12 +184,12 @@ class BookshelfFragment : BaseAsyncFragment() {
 
             val count = AtomicInteger()
 
-            val bookCount =if (sourceMap.isEmpty())
+            val bookCount = if (sourceMap.isEmpty())
                 0
             else
                 sourceMap.map { it.value.size }.reduce { acc, i -> acc + i }
-            count.lazySet((book_shelf_refresh?.max ?: 0) - bookCount)
-            book_shelf_refresh?.secondaryProgress = count.get()
+            count.lazySet(bookshelfUi.loading.max - bookCount)
+            bookshelfUi.loading.secondaryProgress = count.get()
 
             sourceMap.forEach { entry ->
                 val javaScript = DataManager.getJavaScript(entry.key)
@@ -187,14 +197,14 @@ class BookshelfFragment : BaseAsyncFragment() {
                 if (delay < 0) {
                     entry.value.map {
                         async {
-                            val error = DataManager.reloadBookFromNet(it, javaScript)
-                            book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
+                            DataManager.reloadBookFromNet(it, javaScript)
+                            bookshelfUi.loading.secondaryProgress = count.incrementAndGet()
                         }
                     }.awaitAll()
                 } else {
                     entry.value.forEach {
                         DataManager.reloadBookFromNet(it, javaScript)
-                        book_shelf_refresh?.secondaryProgress = count.incrementAndGet()
+                        bookshelfUi.loading.secondaryProgress = count.incrementAndGet()
                         delay(delay)
                     }
                 }
@@ -209,7 +219,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     private val SHOW_FLAG_STARTING_STATION = 2
     private suspend fun showProgressBar(flag: Int) = withMain {
         if (showState == 0) {
-            book_shelf_refresh.animFadeIn()
+            bookshelfUi.loading.animFadeIn()
         }
         showState = flag or SHOW_FLAG_REFRESH
     }
@@ -217,7 +227,7 @@ class BookshelfFragment : BaseAsyncFragment() {
     private suspend fun hideProgressBar(flag: Int) = withMain {
         showState = showState and flag.inv()
         if (showState == 0) {
-            book_shelf_refresh?.animFadeOut()
+            bookshelfUi.loading.animFadeOut()
         }
     }
 
@@ -247,6 +257,7 @@ class BookshelfFragment : BaseAsyncFragment() {
             return data[position].id
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
 //            holder.setRecyclable(!book.isLoading)
