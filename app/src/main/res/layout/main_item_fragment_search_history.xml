@@ -16,7 +16,7 @@
         android:padding="8dp"
         android:singleLine="true"
         android:text="@string/app_name"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        style="@style/text_body1"
         android:textSize="15sp"
         tools:ignore="RtlHardcoded" />
 

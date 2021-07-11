@@ -14,20 +14,15 @@ abstract class BaseAdapter<T>(val itemRes: Int = 0) :
 
     @Deprecated("use itemLayoutRes", ReplaceWith("itemLayoutRes"))
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return createViewHolder(
+        return object : RecyclerView.ViewHolder(
             LayoutInflater.from(parent.context).inflate(
                 itemLayoutRes(viewType),
                 parent,
                 false
             )
-        )
-    }
-
-    protected fun createViewHolder(view: View): RecyclerView.ViewHolder {
-        return object : RecyclerView.ViewHolder(view) {
+        ) {
         }
     }
-
 
     protected open fun itemLayoutRes(viewType: Int): Int {
         return itemRes

@@ -13,6 +13,6 @@
         android:layout_margin="8dp"
         android:ellipsize="end"
         android:maxLines="2"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        style="@style/text_body1"
         tools:text="标题" />
 </com.google.android.material.card.MaterialCardView>

@@ -34,13 +34,13 @@
                             android:id="@+id/bookCover"
                             android:layout_width="100dp"
                             android:layout_height="150dp"
-                            android:tint="@color/dn_dark_tint"
                             android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
                             android:layout_marginEnd="16dp"
                             android:layout_marginBottom="16dp"
                             android:outlineProvider="bounds"
                             android:padding="2dp"
+                            android:tint="@color/dn_dark_tint"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -50,7 +50,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_marginEnd="16dp"
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                            android:textColor="@color/text_primary_color"
                             android:textSize="20sp"
                             app:layout_constraintBottom_toTopOf="@+id/authorTitle"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -63,7 +63,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="作者："
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                            android:textColor="@color/textColorSecondary"
                             android:textSize="16sp"
                             app:layout_constraintBottom_toTopOf="@+id/latestChapterTitle"
                             app:layout_constraintStart_toStartOf="@+id/bookName"
@@ -71,11 +71,11 @@
 
                         <com.sjianjun.reader.view.AutofitTextView
                             android:id="@+id/author"
+                            style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
                             android:textSize="16sp"
                             app:layout_constraintBaseline_toBaselineOf="@+id/authorTitle"
                             app:layout_constraintEnd_toEndOf="@id/bookName"
@@ -91,17 +91,17 @@
                             android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
                             android:text="简介："
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                            android:textColor="@color/textColorSecondary"
                             android:textSize="16sp"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/bookCover" />
 
                         <TextView
                             android:id="@+id/originWebsite"
+                            style="@style/text_body1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="16dp"
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
                             app:layout_constraintBaseline_toBaselineOf="@+id/introTitle"
                             app:layout_constraintEnd_toEndOf="parent"
                             tools:text="www.baidu.com" />
@@ -111,7 +111,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="最新章节："
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
+                            android:textColor="@color/textColorSecondary"
                             android:textSize="16sp"
                             app:layout_constraintBottom_toTopOf="@+id/latestChapter"
                             app:layout_constraintStart_toStartOf="@+id/bookName"
@@ -124,15 +124,15 @@
                             android:layout_marginEnd="16dp"
                             android:src="@mipmap/ic_sync_error"
                             android:tint="@color/mdr_red_100"
-                            app:layout_constraintTop_toTopOf="@+id/latestChapterTitle"
                             app:layout_constraintBottom_toBottomOf="@+id/latestChapterTitle"
-                            app:layout_constraintEnd_toEndOf="parent" />
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="@+id/latestChapterTitle" />
 
                         <TextView
                             android:id="@+id/latestChapter"
+                            style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
                             android:textSize="16sp"
                             app:layout_constraintBottom_toBottomOf="@id/bookCover"
                             app:layout_constraintEnd_toEndOf="@id/bookName"
@@ -151,12 +151,12 @@
 
                         <TextView
                             android:id="@+id/intro"
+                            style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
                             android:layout_marginEnd="16dp"
-                            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
