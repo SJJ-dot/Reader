@@ -20,14 +20,16 @@ import splitties.views.dsl.recyclerview.recyclerView
 import splitties.views.recyclerview.verticalLayoutManager
 
 class BookshelfUi(override val ctx: Context) : Ui {
-    val recyclerViw = recyclerView {
+    val recyclerViw = recyclerView(R.id.book_shelf_recycle_view) {
         layoutManager = verticalLayoutManager()
     }
     val rootRefresh = SwipeRefreshLayout(ctx).apply {
+        id = R.id.book_shelf_swipe_refresh
         add(recyclerViw, ViewGroup.LayoutParams(-1, -1))
     }
     val loading =
         ContentLoadingProgressBar(ctx.wrapCtxIfNeeded(R.style.ProgressBar_Horizontal)).apply {
+            id = R.id.book_shelf_refresh
             visibility = GONE
             if (isInEditMode) {
                 visibility = View.VISIBLE
@@ -40,7 +42,7 @@ class BookshelfUi(override val ctx: Context) : Ui {
             bottomToBottom = parentId
             topToTop = parentId
         })
-        add(loading,lParams(-1,ctx.dp(8)) {
+        add(loading, lParams(-1, ctx.dp(8)) {
             topToTop = parentId
         })
     }
