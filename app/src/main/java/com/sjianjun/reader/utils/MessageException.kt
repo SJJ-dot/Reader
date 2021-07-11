@@ -5,7 +5,7 @@ import java.io.PrintWriter
 
 class MessageException(
     message: String?
-) : Exception(message, null, false, false){
+) : Exception(message, null, false, false) {
     override fun printStackTrace(s: PrintStream) {
         synchronized(s) {
             s.print(message)

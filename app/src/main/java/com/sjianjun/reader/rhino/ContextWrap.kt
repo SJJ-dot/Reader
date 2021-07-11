@@ -21,7 +21,7 @@ class ContextWrap(val context: Context) {
     }
 
     inline fun <reified T> jsToJava(value: Any?): T? {
-        return jsToJava(value,T::class.java) as T?
+        return jsToJava(value, T::class.java) as T?
     }
 
     fun jsToJava(value: Any?, desiredType: Class<*>): Any? {

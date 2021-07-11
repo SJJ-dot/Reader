@@ -44,7 +44,7 @@
         <activity
             android:name=".module.main.MainActivity"
             android:theme="@style/Splash"
-            android:autoRemoveFromRecents="false" >
+            android:autoRemoveFromRecents="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

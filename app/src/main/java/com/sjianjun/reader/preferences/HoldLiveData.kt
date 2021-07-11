@@ -39,7 +39,7 @@ class DelegateLiveData<T>(
 class HoldLiveData<T>(
     private val def: T,
     private val key: String,
-    private val kType:KType,
+    private val kType: KType,
     private val sp: SharedPreferences
 ) : MutableLiveData<T>(getSpValue(kType, key, def, sp)) {
 

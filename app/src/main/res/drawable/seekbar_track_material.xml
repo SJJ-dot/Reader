@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2014 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright (C) 2014 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,24 +14,29 @@
 -->
 
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@android:id/background"
-          android:gravity="center_vertical|fill_horizontal">
-        <shape android:shape="rectangle"
-               android:tint="@color/mdr_white_disable">
+    <item
+        android:id="@android:id/background"
+        android:gravity="center_vertical|fill_horizontal">
+        <shape
+            android:shape="rectangle"
+            android:tint="@color/mdr_white_disable">
             <corners android:radius="5dp" />
             <size android:height="2dp" />
             <solid android:color="@color/mdr_white_disable" />
         </shape>
     </item>
-    <item android:id="@android:id/secondaryProgress"
-          android:gravity="center_vertical|fill_horizontal">
+    <item
+        android:id="@android:id/secondaryProgress"
+        android:gravity="center_vertical|fill_horizontal">
         <scale android:scaleWidth="100%">
             <selector>
-                <item android:state_enabled="false"
-                      android:drawable="@color/transparent" />
+                <item
+                    android:state_enabled="false"
+                    android:drawable="@color/transparent" />
                 <item>
-                    <shape android:shape="rectangle"
-                           android:tint="?attr/colorControlActivated">
+                    <shape
+                        android:shape="rectangle"
+                        android:tint="?attr/colorControlActivated">
                         <corners android:radius="5dp" />
                         <size android:height="2dp" />
                         <solid android:color="@color/mdr_white_disable" />
@@ -41,15 +45,18 @@
             </selector>
         </scale>
     </item>
-    <item android:id="@android:id/progress"
-          android:gravity="center_vertical|fill_horizontal">
+    <item
+        android:id="@android:id/progress"
+        android:gravity="center_vertical|fill_horizontal">
         <scale android:scaleWidth="100%">
             <selector>
-                <item android:state_enabled="false"
-                      android:drawable="@color/transparent" />
+                <item
+                    android:state_enabled="false"
+                    android:drawable="@color/transparent" />
                 <item>
-                    <shape android:shape="rectangle"
-                           android:tint="@color/dn_color_primary">
+                    <shape
+                        android:shape="rectangle"
+                        android:tint="@color/dn_color_primary">
                         <corners android:radius="5dp" />
                         <size android:height="2dp" />
                         <solid android:color="@color/white" />

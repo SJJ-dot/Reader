@@ -17,7 +17,7 @@ import com.sjianjun.reader.utils.color
  */
 class DayNightMask @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) ,LifecycleObserver {
+) : View(context, attrs, defStyleAttr), LifecycleObserver {
 
     init {
         act?.lifecycle?.addObserver(this)

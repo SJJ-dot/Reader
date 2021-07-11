@@ -13,7 +13,7 @@ import android.view.View
  * @date 2018/1/21
  */
 class ScrollableLine @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
     private var mIndicatorLineRadius: Float = 0.toFloat()
@@ -61,7 +61,13 @@ class ScrollableLine @JvmOverloads constructor(
         return this
     }
 
-    fun updateScrollLineWidth(indicatorStartX: Float, indicatorEndX: Float, indicatorStartColor: Int, indicatorEndColor: Int, fraction: Float) {
+    fun updateScrollLineWidth(
+        indicatorStartX: Float,
+        indicatorEndX: Float,
+        indicatorStartColor: Int,
+        indicatorEndColor: Int,
+        fraction: Float
+    ) {
         this.mIndicatorStartX = indicatorStartX
         this.mIndicatorEndX = indicatorEndX
         mPaint!!.color = Utils.evaluateColor(indicatorStartColor, indicatorEndColor, fraction)

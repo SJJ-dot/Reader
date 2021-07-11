@@ -4,7 +4,7 @@ buildscript {
     ext.kotlin_version = '1.5.20'
     repositories {
         google()
-        maven {url 'https://repo.huaweicloud.com/repository/maven/'}
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.2.2'
@@ -30,7 +30,7 @@ ext.localRepo = localRepo()
 allprojects {
     repositories {
         google()
-        maven {url 'https://repo.huaweicloud.com/repository/maven/'}
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
         maven { url "https://gitee.com/SJJ-dot/repo/raw/master" }
 
         //jitpack 依赖格式

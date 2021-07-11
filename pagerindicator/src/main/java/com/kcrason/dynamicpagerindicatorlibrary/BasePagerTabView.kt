@@ -11,7 +11,7 @@ import android.widget.LinearLayout
  * @description
  */
 abstract class BasePagerTabView @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr), IPagerTabView {
 
     init {

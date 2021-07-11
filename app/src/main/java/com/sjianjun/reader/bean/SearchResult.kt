@@ -6,12 +6,16 @@ package com.sjianjun.reader.bean
 class SearchResult {
     @JvmField
     var source: String = ""
+
     @JvmField
     var bookTitle: String = ""
+
     @JvmField
     var bookAuthor: String = ""
+
     @JvmField
     var bookCover: String? = null
+
     @JvmField
     var bookUrl: String = ""
 

@@ -31,7 +31,7 @@ public final class ParseTest {
 //        Map<String, String> queryMap = new HashMap<>();
 //        queryMap.put("searchkey", URLEncoder.encode(query, "gbk"));
 //        String html = http.post(baseUrl + "modules/article/search.php", queryMap);
-        String html = http.get(baseUrl+"modules/article/search.php?searchkey=" + URLEncoder.encode(query, "gbk"));
+        String html = http.get(baseUrl + "modules/article/search.php?searchkey=" + URLEncoder.encode(query, "gbk"));
         Document parse = Jsoup.parse(html, baseUrl);
         Elements bookListEl = parse.select("body > div.container.body-content > div.panel.panel-default > table > tbody > tr");
         List<SearchResult> results = new ArrayList<>();
@@ -71,7 +71,7 @@ public final class ParseTest {
             chapter.bookUrl = book.url;
             chapter.title = chapterA.text();
             chapter.url = chapterA.absUrl("href");
-            chapterList.add(0,chapter);
+            chapterList.add(0, chapter);
         }
         book.chapterList = chapterList;
         return book;

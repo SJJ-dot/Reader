@@ -8,7 +8,7 @@ import java.util.*
 /*
  * Created by shen jian jun on 2020-07-20
  */
-object ActivityManger  {
+object ActivityManger {
 
     val activityList = LinkedList<Activity>()
 
@@ -35,11 +35,11 @@ object ActivityManger  {
 
     private val callback = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityPaused(activity: Activity) {
-            
+
         }
 
         override fun onActivityStarted(activity: Activity) {
-            
+
         }
 
         override fun onActivityDestroyed(activity: Activity) {
@@ -47,11 +47,11 @@ object ActivityManger  {
         }
 
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-            
+
         }
 
         override fun onActivityStopped(activity: Activity) {
-            
+
         }
 
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -59,9 +59,9 @@ object ActivityManger  {
         }
 
         override fun onActivityResumed(activity: Activity) {
-            
+
         }
     }
-    
+
 
 }

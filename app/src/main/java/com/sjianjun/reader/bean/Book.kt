@@ -11,19 +11,25 @@ class Book {
     @JvmField
     @PrimaryKey
     var url: String = ""
+
     /**
      * 书籍来源[JavaScript.source]
      */
     @JvmField
     var source: String = ""
+
     @JvmField
     var title: String = ""
+
     @JvmField
     var author: String = ""
+
     @JvmField
     var intro: String? = null
+
     @JvmField
     var cover: String? = null
+
     @JvmField
     var isLoading = false
 
@@ -39,11 +45,13 @@ class Book {
 
     @Ignore
     var record: ReadingRecord? = null
+
     /**
      * 包含本书的书源
      */
     @Ignore
     var javaScriptList: List<JavaScript>? = null
+
     /**
      * 未读章节数量
      */

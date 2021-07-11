@@ -27,11 +27,18 @@ fun Dialog.setText(@IdRes id: Int, text: CharSequence?): Dialog {
 }
 
 
-fun Dialog.onClick(@Nullable l: (view: View, dialog: Dialog) -> Unit, @IdRes vararg ids: Int): Dialog {
+fun Dialog.onClick(
+    @Nullable l: (view: View, dialog: Dialog) -> Unit,
+    @IdRes vararg ids: Int
+): Dialog {
     return onClick(l, true, *ids)
 }
 
-fun Dialog.onClick(@Nullable l: (view: View, dialog: Dialog) -> Unit, dismiss: Boolean, @IdRes vararg ids: Int): Dialog {
+fun Dialog.onClick(
+    @Nullable l: (view: View, dialog: Dialog) -> Unit,
+    dismiss: Boolean,
+    @IdRes vararg ids: Int
+): Dialog {
     ids.forEach {
         view<View>(it)?.setOnClickListener { view ->
             if (dismiss) {

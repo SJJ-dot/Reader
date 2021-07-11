@@ -6,6 +6,7 @@
     <style name="Splash" parent="AppTheme.DayNight">
         <item name="android:background">@drawable/splash_bg</item>
     </style>
+
     <style name="Splash.noback" parent="AppTheme.DayNight">
         <item name="android:background">@null</item>
     </style>

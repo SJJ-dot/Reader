@@ -17,7 +17,6 @@ import com.sjianjun.reader.utils.MyColors
 import com.sjianjun.reader.utils.isNight
 import com.sjianjun.reader.view.BadgeView
 import com.sjianjun.reader.view.RotateLoading
-import sjj.alog.Log
 import splitties.dimensions.dp
 import splitties.resources.color
 import splitties.views.assignAndGetGeneratedId

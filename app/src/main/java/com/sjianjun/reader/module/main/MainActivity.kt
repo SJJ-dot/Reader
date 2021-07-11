@@ -43,7 +43,7 @@ class MainActivity : BaseActivity() {
                 Manifest.permission.INTERNET,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-        ){
+        ) {
             if (!it.isGranted()) {
                 toast("本应用必须要存储卡读写权限用于保存数据库")
                 finish()
@@ -52,11 +52,12 @@ class MainActivity : BaseActivity() {
                 init()
             }
         }
-        setContentView(AsyncView(this,R.layout.activity_main,0){
+        setContentView(AsyncView(this, R.layout.activity_main, 0) {
             isInflated = true
             init()
         })
     }
+
     private fun init() {
         if (!isGranted || !isInflated) {
             return

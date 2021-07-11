@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatDelegate
 object MyColors {
     @ColorInt
     val NIGHT_FOREGROUND = Color.parseColor("#55000000")
+
     @ColorInt
     val NIGHT_BACKGROUND_1 = Color.parseColor("#121212")
 }

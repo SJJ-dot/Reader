@@ -244,7 +244,7 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
-    private class Adapter(val fragment: BookshelfFragment) : BaseViewAdapter<Book,BookListItem>() {
+    private class Adapter(val fragment: BookshelfFragment) : BaseViewAdapter<Book, BookListItem>() {
         init {
             setHasStableIds(true)
         }
