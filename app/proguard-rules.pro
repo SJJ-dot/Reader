@@ -26,3 +26,17 @@
 
  -keep class com.gyf.immersionbar.* {*;}
  -dontwarn com.gyf.immersionbar.**
+-keep class org.mozilla.javascript.** { *; }
+-keep class com.sjianjun.reader.view.** { *; }
+-keep class com.sjianjun.reader.module.bookcity.** { *; }
+-keep class com.sjianjun.reader.bean.** { *; }
+-keep class org.jsoup.Jsoup { *; }
+-keep class org.jsoup.** { *; }
+-keep class sjj.alog.Log { *; }
+-keep class com.sjianjun.reader.bean.SearchResult { *; }
+-keep class com.sjianjun.reader.bean.Chapter { *; }
+-keep class com.sjianjun.reader.bean.Book { *; }
+-keep class org.jsoup.internal.StringUtil { *; }
+-keep class com.sjianjun.reader.rhino.** { *; }
+-keep class com.sjianjun.reader.view.CustomWebView$AdBlock { *; }
+-keep class com.sjianjun.reader.http.Http { *; }

@@ -48,11 +48,12 @@ android {
             manifestPlaceholders = [app_name: "学习"]
         }
         debug {
-//            minifyEnabled true
-//            shrinkResources true
+            minifyEnabled true
+            shrinkResources true
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
             manifestPlaceholders = [app_name: "DEBUG"]
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
