@@ -14,4 +14,7 @@
     <color name="dark_text_primary_color">#5A5A5A</color>
     <color name="dark_text_secondary_color">#32373B</color>
     <color name="spacer_color">#55424242</color>
+
+    <color name="textColorSecondary">@color/text_secondary_color</color>
+    <color name="textColorPrimary">@color/text_primary_color</color>
 </resources>

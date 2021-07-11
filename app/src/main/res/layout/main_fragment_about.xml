@@ -48,16 +48,17 @@
     <TextView
         android:id="@+id/download_text"
         android:layout_width="wrap_content"
-        app:layout_constraintBottom_toTopOf="@+id/versionCode"
         android:layout_height="wrap_content"
         android:text="扫码下载"
         android:textColor="@color/dn_text_color_black"
-        app:layout_constraintTop_toBottomOf="@+id/code"
+        app:layout_constraintBottom_toTopOf="@+id/versionCode"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/code" />
 
     <TextView
         android:id="@+id/versionCode"
+        style="@style/text_body1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -66,9 +67,8 @@
         android:layout_marginBottom="8dp"
         android:gravity="center"
         android:text="版本号：0.1"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

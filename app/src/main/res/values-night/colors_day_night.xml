@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="dn_background">@color/dark_background_color</color>
+    <color name="dn_background_1">#121212</color>
     <color name="dn_icon_tint_color">@color/mdr_white</color>
     <color name="dn_text_color_black">@color/dark_text_primary_color</color>
     <color name="dn_text_color_black_disable">#805A5A5A</color>

@@ -115,7 +115,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.4.0'
 
     implementation 'com.tencent.bugly:crashreport_upgrade:1.4.5'
-    implementation "com.victor:lib:1.0.4"
+//    implementation "com.victor:lib:1.0.4"
 
 //    implementation project(":refreshbar")
     implementation project(":fastscroller")

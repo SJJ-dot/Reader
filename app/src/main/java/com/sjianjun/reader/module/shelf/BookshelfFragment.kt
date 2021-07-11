@@ -7,14 +7,13 @@ import android.view.*
 import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.adapter.BaseViewAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
@@ -22,7 +21,6 @@ import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
-import kotlinx.android.synthetic.main.item_book_list.view.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -246,23 +244,25 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
-    private class Adapter(val fragment: BookshelfFragment) : BaseAdapter<Book>() {
+    private class Adapter(val fragment: BookshelfFragment) : BaseViewAdapter<Book,BookListItem>() {
         init {
             setHasStableIds(true)
         }
-
-        override fun itemLayoutRes(viewType: Int) = R.layout.item_book_list
 
         override fun getItemId(position: Int): Long {
             return data[position].id
         }
 
+        override fun createView(parent: ViewGroup, viewType: Int): BookListItem {
+            return BookListItem(parent.context)
+        }
+
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: VH<BookListItem>, position: Int) {
             val book = data[position]
 //            holder.setRecyclable(!book.isLoading)
-            holder.itemView.apply {
-                val visibleSet = constraint_layout.visibleSet()
+            holder.itemV.apply {
+                val visibleSet = constraintLayout.visibleSet()
                 bookCover.glide(fragment, book.cover)
                 bookName.text = book.title
                 author.text = "作者：${book.author}"
@@ -272,16 +272,16 @@ class BookshelfFragment : BaseFragment() {
                 val error = book.error
                 val startingError = book.startingError
                 if (error == null && startingError == null) {
-                    visibleSet.invisible(sync_error)
-                    sync_error.isClickable = false
+                    visibleSet.invisible(syncError)
+                    syncError.isClickable = false
                 } else {
-                    sync_error.imageTintList = if (error != null) {
+                    syncError.imageTintList = if (error != null) {
                         ColorStateList.valueOf(R.color.mdr_red_100.color(context))
                     } else {
                         ColorStateList.valueOf(R.color.mdr_grey_700.color(context))
                     }
-                    visibleSet.visible(sync_error)
-                    sync_error.setOnClickListener {
+                    visibleSet.visible(syncError)
+                    syncError.setOnClickListener {
                         fragment.launchIo {
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init(
@@ -299,16 +299,16 @@ class BookshelfFragment : BaseFragment() {
                 }
 
                 if (book.lastChapter?.isLastChapter == false) {
-                    bv_unread.setHighlight(false)
+                    bvUnread.setHighlight(false)
                 } else {
-                    bv_unread.setHighlight(true)
+                    bvUnread.setHighlight(true)
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0) && book.lastChapter?.isLastChapter != false) {
-                    visibleSet.invisible(bv_unread)
+                    visibleSet.invisible(bvUnread)
                 } else {
-                    visibleSet.visible(bv_unread)
+                    visibleSet.visible(bvUnread)
                 }
-                bv_unread.badgeCount = book.unreadChapterCount
+                bvUnread.badgeCount = book.unreadChapterCount
 
                 origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
@@ -334,10 +334,10 @@ class BookshelfFragment : BaseFragment() {
                 if (source?.isNotBlank() == true &&
                     source != STARTING_STATION_BOOK_SOURCE_EMPTY
                 ) {
-                    starting_station.text = source.subSequence(0, 1)
-                    visibleSet.visible(starting_station)
+                    startingStation.text = source.subSequence(0, 1)
+                    visibleSet.visible(startingStation)
                 } else {
-                    visibleSet.invisible(starting_station)
+                    visibleSet.invisible(startingStation)
                 }
 
                 visibleSet.apply()
