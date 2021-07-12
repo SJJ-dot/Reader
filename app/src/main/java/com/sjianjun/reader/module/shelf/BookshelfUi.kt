@@ -9,6 +9,7 @@ import androidx.core.widget.ContentLoadingProgressBar
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.sjianjun.reader.R
 import splitties.dimensions.dp
+import splitties.views.assignAndGetGeneratedId
 import splitties.views.dsl.constraintlayout.constraintLayout
 import splitties.views.dsl.constraintlayout.lParams
 import splitties.views.dsl.constraintlayout.parentId
@@ -21,13 +22,16 @@ import splitties.views.recyclerview.verticalLayoutManager
 
 class BookshelfUi(override val ctx: Context) : Ui {
     val recyclerViw = recyclerView {
+        assignAndGetGeneratedId()
         layoutManager = verticalLayoutManager()
     }
     val rootRefresh = SwipeRefreshLayout(ctx).apply {
+        assignAndGetGeneratedId()
         add(recyclerViw, ViewGroup.LayoutParams(-1, -1))
     }
     val loading =
         ContentLoadingProgressBar(ctx.wrapCtxIfNeeded(R.style.ProgressBar_Horizontal)).apply {
+            assignAndGetGeneratedId()
             visibility = GONE
             if (isInEditMode) {
                 visibility = View.VISIBLE
@@ -36,6 +40,7 @@ class BookshelfUi(override val ctx: Context) : Ui {
             }
         }
     override val root: View = constraintLayout {
+        assignAndGetGeneratedId()
         add(rootRefresh, lParams(-1) {
             bottomToBottom = parentId
             topToTop = parentId
