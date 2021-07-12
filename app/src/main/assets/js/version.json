@@ -1,15 +1,11 @@
 {
-  "version": 28,
+  "version": 29,
   "adBlockFilterUrlVersion": 6,
   "versions": [
     {
       "fileName": "biquge5200",
       "version": "2",
       "adBlockVersion": "1"
-    },
-    {
-      "fileName": "biquge.se",
-      "version": "3"
     },
     {
       "fileName": "古古小说网（55小说网）",
@@ -20,22 +16,8 @@
       "version": "5"
     },
     {
-      "fileName": "天籁小说",
-      "version": "5",
-      "adBlockVersion": "2"
-    },
-    {
-      "fileName": "文学迷",
-      "version": "3",
-      "adBlockVersion": "2"
-    },
-    {
       "fileName": "溜达小说",
       "version": "3"
-    },
-    {
-      "fileName": "爱上中文6",
-      "version": "4"
     },
     {
       "fileName": "盗梦人小说",
@@ -63,14 +45,6 @@
       "version": "2",
       "starting": true,
       "priority": 98
-    },
-    {
-      "fileName": "番茄小说org",
-      "version": "3"
-    },
-    {
-      "fileName": "番茄小说cc",
-      "version": "3"
     },
     {
       "fileName": "趣书网",
