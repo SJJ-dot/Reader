@@ -230,7 +230,27 @@ object DataManager {
                     val list = group.getOrPut(result.key) { mutableListOf() }
                     list.add(result)
                 }
-                group.values.sortedByDescending { list -> list.size }
+                group.values.sortedWith { a, b ->
+                    val aEq = a.first().bookTitle == query
+                    val bEq = b.first().bookTitle == query
+                    if (aEq || bEq) {
+                        when {
+                            aEq && bEq -> return@sortedWith 0
+                            aEq -> return@sortedWith -1
+                            bEq -> return@sortedWith 1
+                        }
+                    }
+                    val aContains = a.first().bookTitle.contains(query,true)
+                    val bContains = b.first().bookTitle.contains(query,true)
+                    if (aContains || bContains) {
+                        when {
+                            aContains && bContains -> return@sortedWith 0
+                            aContains -> return@sortedWith -1
+                            bContains -> return@sortedWith 1
+                        }
+                    }
+                    b.size.compareTo(a.size)
+                }
             }.flowIo()
         }
     }
