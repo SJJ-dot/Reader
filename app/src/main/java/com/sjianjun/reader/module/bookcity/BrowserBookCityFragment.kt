@@ -25,7 +25,7 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
     override val onLoadedView: (View) -> Unit = {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
         custom_web_view.adBlockUrl = ConcurrentLinkedDeque(adBlockConfig.adBlockList)
-        Log.i(custom_web_view.adBlockUrl)
+//        Log.i(custom_web_view.adBlockUrl)
         setOnBackPressed {
             when {
                 drawer_layout.isDrawerOpen(GravityCompat.END) -> {

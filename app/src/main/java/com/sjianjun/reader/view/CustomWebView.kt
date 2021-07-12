@@ -185,7 +185,7 @@ class CustomWebView @JvmOverloads constructor(
         val webSettings = webView.settings;
         webSettings.userAgentString = WEB_VIEW_UA_ANDROID
         webSettings.javaScriptEnabled = true
-
+        webSettings.domStorageEnabled = true;
 //设置自适应屏幕，两者合用
         webSettings.setUseWideViewPort(true); //将图片调整到适合webview的大小
         webSettings.setLoadWithOverviewMode(true); // 缩放至屏幕的大小
