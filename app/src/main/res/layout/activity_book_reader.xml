@@ -7,12 +7,6 @@
     android:layout_height="match_parent"
     android:background="@color/dn_background">
 
-    <ImageView
-        android:id="@+id/reader_root_background"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY" />
-
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
@@ -27,7 +21,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
-
+            <ImageView
+                android:id="@+id/reader_root_background"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY" />
             <ImageView
                 android:id="@+id/audio"
                 android:layout_width="25dp"
@@ -75,6 +73,11 @@
                 app:layout_constraintBottom_toBottomOf="@+id/chapter_title"
                 tools:progress="50"
                 tools:secondaryProgress="50" />
+            <View
+                android:id="@+id/brightness_mask"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
 
@@ -111,8 +114,8 @@
                 android:layout_height="wrap_content"
                 android:background="@color/dn_background"
                 android:padding="16dp"
-                android:tint="@color/dn_text_color_black"
                 android:src="@drawable/ic_theme_dark_24px"
+                android:tint="@color/dn_text_color_black"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/setting" />
 
@@ -121,9 +124,5 @@
 
     </androidx.drawerlayout.widget.DrawerLayout>
 
-    <View
-        android:id="@+id/brightness_mask"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/transparent" />
+
 </FrameLayout>
