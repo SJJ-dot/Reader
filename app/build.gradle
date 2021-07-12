@@ -49,8 +49,8 @@ android {
             manifestPlaceholders = [app_name: "学习"]
         }
         debug {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
             manifestPlaceholders = [app_name: "DEBUG"]
