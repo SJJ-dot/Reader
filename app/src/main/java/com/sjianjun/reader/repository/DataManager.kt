@@ -28,8 +28,6 @@ import java.net.URLEncoder
  */
 object DataManager {
     private val dao = db.dao()
-    var jquery: String = ""
-        private set
 
     init {
         global {
@@ -49,13 +47,6 @@ object DataManager {
             })
         }
 
-        global {
-            tryBlock {
-                jquery = App.app.assets.open("jquery-3.5.1.min.js", ACCESS_BUFFER).use { stream ->
-                    stream.bufferedReader().readText()
-                }
-            }
-        }
     }
 
 
@@ -227,7 +218,7 @@ object DataManager {
                         val search = it.search(query)
                         if (search != null) {
                             emit(search)
-                            Log.i("search ${it.source} $search")
+                            Log.i("search ${it.source} resultNum:${search.size}")
                         }
                     } catch (e: Exception) {
                         Log.i("search error ${it.source}", e)
