@@ -29,6 +29,7 @@ class AboutFragment : BaseAsyncFragment() {
                 //检查bugly更新
                 Beta.checkAppUpgrade()
                 setVersionInfo()
+                setCode()
             }
         }
 
