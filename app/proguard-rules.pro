@@ -40,3 +40,4 @@
 -keep class com.sjianjun.reader.rhino.** { *; }
 -keep class com.sjianjun.reader.view.CustomWebView$AdBlock { *; }
 -keep class com.sjianjun.reader.http.Http { *; }
+-keep class androidx.core.content.FileProvider { *; }
