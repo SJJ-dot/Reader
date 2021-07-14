@@ -25,6 +25,7 @@ import splitties.views.dsl.core.*
 import splitties.views.dsl.isInPreview
 import splitties.views.imageResource
 import splitties.views.lines
+import splitties.views.setPaddingDp
 
 class BookListItem @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -91,6 +92,7 @@ class BookListItem @JvmOverloads constructor(
     }
     val origin = textView(theme = R.style.text_body2) {
         assignAndGetGeneratedId()
+        setPaddingDp(0,0,0,5)
         ellipsize = TextUtils.TruncateAt.END
         gravity = Gravity.CENTER_VERTICAL
         lines = 1
@@ -155,7 +157,6 @@ class BookListItem @JvmOverloads constructor(
             topToBottomOf(lastChapter)
         })
         add(origin, lParams(height = wrapContent) {
-            bottomMargin = dp(5)
             bottomToBottom = parentId
             endToEndOf(bookName)
             startToStartOf(bookName)
