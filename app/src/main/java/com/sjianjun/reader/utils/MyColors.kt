@@ -12,5 +12,5 @@ object MyColors {
     val NIGHT_BACKGROUND_1 = Color.parseColor("#121212")
 }
 
-val isNight: Boolean
+inline val isNight: Boolean
     get() = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES

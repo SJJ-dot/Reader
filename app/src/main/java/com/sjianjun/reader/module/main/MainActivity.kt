@@ -33,6 +33,14 @@ class MainActivity : BaseActivity() {
     private var appBarConfiguration: AppBarConfiguration? = null
     private var isGranted = false
     private var isInflated = false
+    override fun initTheme(isNight: Boolean) {
+        if (isNight) {
+            setTheme(R.style.Splash_noBackDark)
+        } else {
+            setTheme(R.style.Splash_noBack)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Splash_noback)
         ActivityManger.finishSameType(this)

@@ -7,7 +7,10 @@
         <item name="android:background">@drawable/splash_bg</item>
     </style>
 
-    <style name="Splash.noback" parent="AppTheme.DayNight">
+    <style name="Splash.noBackDark" parent="AppTheme.Dark">
+        <item name="android:background">@null</item>
+    </style>
+    <style name="Splash.noBack" parent="AppTheme">
         <item name="android:background">@null</item>
     </style>
 

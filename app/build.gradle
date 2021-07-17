@@ -32,7 +32,7 @@ android {
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
         versionName "$currentVersion"
-
+        resConfigs("zh")
     }
     android.applicationVariants.all { variant ->
         variant.outputs.all {
@@ -47,8 +47,8 @@ android {
             manifestPlaceholders = [app_name: "学习"]
         }
         debug {
-            minifyEnabled true
-            shrinkResources true
+//            minifyEnabled true
+//            shrinkResources true
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
             manifestPlaceholders = [app_name: "DEBUG"]
