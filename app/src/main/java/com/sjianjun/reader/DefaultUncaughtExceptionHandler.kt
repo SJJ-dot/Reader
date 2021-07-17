@@ -7,7 +7,7 @@ fun handleDefaultException(context: Context) {
     //
 //    CrashReport.initCrashReport(context, "d3d6da5bd7", BuildConfig.DEBUG);
     //检查应用更新 崩溃上报
-    Bugly.init(context, "d3d6da5bd7", BuildConfig.DEBUG)
+    Bugly.init(context, "d3d6da5bd7", false)
 //    val default = Thread.getDefaultUncaughtExceptionHandler()
 //    Cockroach.install(context, object : ExceptionHandler() {
 //        override fun onUncaughtExceptionHappened(thread: Thread?, throwable: Throwable?) {
