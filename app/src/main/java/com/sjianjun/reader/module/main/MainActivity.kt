@@ -42,7 +42,6 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.Splash_noback)
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
         PermissionUtil.requestPermissions(
@@ -55,7 +54,7 @@ class MainActivity : BaseActivity() {
             if (!it.isGranted()) {
                 toast("本应用必须要存储卡读写权限用于保存数据库")
                 finish()
-            } else {
+            } else if (!isDestroyed) {
                 isGranted = true
                 init()
             }
