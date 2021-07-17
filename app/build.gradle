@@ -97,16 +97,16 @@ dependencies {
     implementation "org.jsoup:jsoup:1.13.1"
 
     implementation 'com.github.SJJ-dot:ALOG:1.2.9'
-    implementation 'com.sjianjun:simple-http:0.0.4'
-    implementation 'com.sjianjun:permission-request:1.1.5'
+    implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
+    implementation 'com.github.SJJ-dot:RTPermission:1.1.5'
     implementation 'com.github.SJJ-dot:CoroutineKtx:0.0.3'
-//    implementation 'com.sjianjun:reflects:0.0.1'
-
-//    implementation "org.sufficientlysecure:html-textview:3.9"
     /**
      * 沉浸式
      */
     implementation 'com.github.SJJ-dot.ImmersionBar:immersionbar:3.1.0'
+    implementation 'com.github.SJJ-dot:AsyncView:1.1.5'
+    //拦截非必要crash
+//    implementation "com.github.SJJ-dot:Cockroach:2.0.1"
 
     implementation 'com.github.razerdp:BasePopup:2.2.9'
     //cookie
@@ -123,10 +123,7 @@ dependencies {
     implementation project(":fastscroller")
 
     implementation project(":pagerindicator")
-    implementation 'com.github.SJJ-dot:AsyncView:1.1.5'
 
-    //拦截非必要crash
-//    implementation "com.github.SJJ-dot:Cockroach:2.0.1"
     //嵌套滚动 可容纳多个view滚动
     implementation 'com.github.donkingliang:ConsecutiveScroller:4.0.0'
     implementation 'com.github.lygttpod:SuperTextView:2.4.2'
