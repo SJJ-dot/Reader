@@ -286,10 +286,12 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun saveReadRecord(delay: Long = 2000) {
+        recycle_view?:return
         launchIo(singleCoroutineKey = "saveReadRecord") {
             //延迟2s 保存
             delay(delay)
             withMain {
+                recycle_view?:return@withMain
                 val manager = recycle_view.layoutManager as LinearLayoutManager
                 var view = manager.getChildAt(0) ?: return@withMain
                 var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
