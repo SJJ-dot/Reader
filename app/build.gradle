@@ -140,4 +140,5 @@ dependencies {
     implementation("com.louiscad.splitties:splitties-views-dsl-material:$splitties_version")
     implementation("com.louiscad.splitties:splitties-views-dsl-recyclerview:$splitties_version")
 
+    implementation 'com.tencent:mmkv-static:1.2.10'
 }

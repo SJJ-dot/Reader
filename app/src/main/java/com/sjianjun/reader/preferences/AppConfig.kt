@@ -1,18 +1,15 @@
 package com.sjianjun.reader.preferences
 
-import android.content.Context
 import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
-import com.sjianjun.reader.view.CustomWebView
+import com.tencent.mmkv.MMKV
 
 val globalConfig by lazy { AppConfig("default") }
-val adBlockListConfig by lazy { AppConfig("adBlockList") }
 
 class AppConfig(val name: String) :
-    DelegateSharedPref(App.app.getSharedPreferences("AppConfig_$name", Context.MODE_PRIVATE)) {
+    DelegateSharedPref(MMKV.mmkvWithID("AppConfig_$name")) {
 
     var javaScriptVersion by intPref("javaScriptVersion")
 
