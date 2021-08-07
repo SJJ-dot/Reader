@@ -244,7 +244,7 @@ object DataManager {
                     val bContains = b.first().bookTitle.contains(query,true)
                     if (aContains || bContains) {
                         when {
-                            aContains && bContains -> return@sortedWith 0
+                            aContains && bContains -> b.size.compareTo(a.size)
                             aContains -> return@sortedWith -1
                             bContains -> return@sortedWith 1
                         }
