@@ -1,15 +1,21 @@
 package com.sjianjun.reader
 
 import android.app.Application
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.mmkv.MMKV
+import me.weishu.reflection.Reflection
 import sjj.alog.Config
 import java.io.File
 
 class App : Application() {
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        Reflection.unseal(base);
+    }
     override fun onCreate() {
         super.onCreate()
         app = this

@@ -28,7 +28,7 @@ function getDetails(http,url){
     book.source = source;
     book.url = url;
     book.title = parse.selectFirst("#info > h1").text();
-    book.author = parse.selectFirst("#info > p:nth-child(4)").text().replace("作    者：","");
+    book.author = parse.getElementsByTag("head").get(0).getElementsByAttributeValue("property","og:novel:author").attr("content");
     book.intro = parse.selectFirst("#intro").outerHtml();
     book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
     //加载章节列表
