@@ -18,8 +18,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
-import sjj.novel.util.fromJson
-import sjj.novel.util.gson
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import java.io.InputStream
 import java.net.URLEncoder
 

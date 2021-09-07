@@ -1,8 +1,7 @@
 package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
-import sjj.alog.Log
-import sjj.novel.util.gson
+import com.sjianjun.reader.utils.gson
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.KProperty
 

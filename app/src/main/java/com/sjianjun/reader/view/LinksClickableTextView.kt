@@ -1,4 +1,4 @@
-package sjj.novel.widget
+package com.sjianjun.reader.view
 
 import android.content.Context
 import android.text.method.LinkMovementMethod

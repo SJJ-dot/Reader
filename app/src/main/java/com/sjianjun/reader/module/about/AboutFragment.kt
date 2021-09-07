@@ -14,8 +14,8 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
-import sjj.novel.util.fromJson
-import sjj.novel.util.gson
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 
 class AboutFragment : BaseAsyncFragment() {
 

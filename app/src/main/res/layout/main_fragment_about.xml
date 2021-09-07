@@ -19,7 +19,7 @@
         app:srcCompat="@mipmap/ic_xue_xi" />
 
 
-    <sjj.novel.widget.LinksClickableTextView
+    <com.sjianjun.reader.view.LinksClickableTextView
         android:id="@+id/declare"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

@@ -1,4 +1,4 @@
-package sjj.novel.util
+package com.sjianjun.reader.utils
 
 import com.google.gson.*
 import com.google.gson.annotations.Expose

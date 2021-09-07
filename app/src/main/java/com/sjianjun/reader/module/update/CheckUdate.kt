@@ -14,8 +14,8 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
-import sjj.novel.util.fromJson
-import sjj.novel.util.gson
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import kotlin.math.max
 
 suspend fun loadUpdateInfo(force: Boolean = false) {
