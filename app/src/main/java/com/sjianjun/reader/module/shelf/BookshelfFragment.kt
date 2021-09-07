@@ -282,7 +282,7 @@ class BookshelfFragment : BaseFragment() {
                     }
                     visibleSet.visible(syncError)
                     syncError.setOnClickListener {
-                        fragment.launchIo {
+                        fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init(
                                     "${error ?: startingError}\n" +
@@ -290,10 +290,7 @@ class BookshelfFragment : BaseFragment() {
                                             (error ?: startingError)
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
-
-                            withMain {
-                                popup.showPopupWindow(it)
-                            }
+                            popup.showPopupWindow(it)
                         }
                     }
                 }

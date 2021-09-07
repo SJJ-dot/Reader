@@ -133,6 +133,7 @@ object DataManager {
                     }
                 }?.awaitAll().also {
                     if (it != null) {
+                        dao.deleteJavaScriptNotIn(info.versions?.map { it.fileName }!!)
                         dao.insertJavaScript(it.filterNotNull())
                         globalConfig.javaScriptVersion = info.version
                     }

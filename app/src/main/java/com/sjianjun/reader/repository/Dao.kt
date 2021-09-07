@@ -34,6 +34,8 @@ interface Dao {
     @Delete
     suspend fun deleteJavaScript(script: JavaScript)
 
+    @Query("delete from JavaScript where source not in (:sources)")
+    suspend fun deleteJavaScriptNotIn(sources: List<String>)
 
     @Update
     suspend fun updateJavaScript(script: JavaScript)
@@ -62,7 +64,7 @@ interface Dao {
         insertBook(bookList)
         val book = bookList.first()
         val readingRecord = getReadingRecord(book.title, book.author)
-        if (readingRecord == null) {
+        if (readingRecord?.bookUrl != book.url) {
             insertReadingRecord(ReadingRecord().apply {
                 bookTitle = book.title
                 bookAuthor = book.author
