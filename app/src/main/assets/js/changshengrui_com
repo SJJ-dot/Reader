@@ -1,0 +1,62 @@
+//请求延迟的时间ms，如果时长小于0将会并发
+var REQUEST_DELAY = 100;
+var hostUrl = "http://www.changshengrui.com/";
+function search(http,query){
+    var baseUrl = hostUrl;
+    var html = http.get(baseUrl+"search/?searchkey=" + URLEncoder.encode(query, "utf-8"));
+    var parse = Jsoup.parse(html,baseUrl);
+    var bookList = parse.select(".item");
+    var results = new ArrayList();
+    for (var i=1;i<bookList.size();i++){
+        var bookElement = bookList.get(i);
+        var result = new SearchResult();
+        result.source = source;
+        result.bookTitle = bookElement.selectFirst("dl > dt > a").text();
+        result.bookUrl = bookElement.selectFirst("dl > dt > a").absUrl("href");
+        result.bookAuthor = bookElement.selectFirst(".btm").ownText();
+        results.add(result);
+    }
+    return results;
+}
+
+/**
+ * 书籍详情[JavaScript.source]
+ */
+function getDetails(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var book = new Book();
+    book.source = source;
+    //书籍信息
+    book.url = url;
+    book.title = parse.selectFirst("#info > h1").text();
+    book.author = parse.selectFirst("#info > p:nth-child(2) > a").text();
+    book.intro = parse.selectFirst("#intro").html();
+    book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
+    var chapterUrl = parse.selectFirst("#maininfo .chapterlist").absUrl("href");
+    var chapterList = new ArrayList();
+    getChapterList(http,chapterUrl,chapterList)
+    book.chapterList = chapterList;
+    return book;
+}
+
+function getChapterList(http,url,chapterList){
+    var parse = Jsoup.parse(http.get(url),url);
+    var chapterListEl = parse.select("#list > dl > a");
+    for (var i=0;i<chapterListEl.size();i++){
+        var chapterEl = chapterListEl.get(i);
+        var chapter = new Chapter();
+        chapter.title = chapterEl.text();
+        chapter.url = chapterEl.absUrl("href");
+        chapterList.add(chapter);
+    }
+    var a = parse.selectFirst(".right a");
+    if(a.text().equals("下一页")){
+        getChapterList(http,a.absUrl("href"),chapterList)
+    }
+}
+
+function getChapterContent(http,url){
+    var parse = Jsoup.parse(http.get(url),url);
+    var content = parse.getElementById("booktxt").html();
+    return content;
+}

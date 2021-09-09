@@ -1,5 +1,5 @@
 {
-  "version": 30,
+  "version": 31,
   "adBlockFilterUrlVersion": 6,
   "versions": [
     {
@@ -41,6 +41,14 @@
     },
     {
       "fileName": "平板电子书",
+      "version": "1"
+    },
+    {
+      "fileName": "banzhuer_org",
+      "version": "1"
+    },
+    {
+      "fileName": "changshengrui_com",
       "version": "1"
     }
   ],
