@@ -12,15 +12,15 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.async.AsyncView
-import com.sjianjun.coroutine.launch
+import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.runOnIdle
 import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.test.JavaScriptTest
-import com.sjianjun.reader.test.ParseTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.toast
 import com.tencent.bugly.beta.Beta
@@ -106,13 +106,10 @@ class MainActivity : BaseActivity() {
 
         runOnIdle {
 
-            launch {
-                JavaScriptTest.testJavaScript()
-                ParseTest.test()
-                //GitHub 更新信息
-//                    loadUpdateInfo()
-                //bugly 更新信息
+            launchIo {
                 Beta.checkAppUpgrade(false, false)
+                JsUpdateManager.checkUpdate()
+                JavaScriptTest.testJavaScript()
             }
         }
 

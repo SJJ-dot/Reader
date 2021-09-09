@@ -1,0 +1,10 @@
+{
+  "filterUrlVersion": 6,
+  "sourceVersions": [
+    {
+      "source": "纵横中文网",
+      "version": 1
+    }
+  ],
+  "inherit": true
+}

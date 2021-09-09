@@ -77,7 +77,7 @@ val client = HttpClient.Builder()
             }
         clientBuilder?.addInterceptor(
             HttpLoggingInterceptor { Log.i(it) }.setLevel(
-                HttpLoggingInterceptor.Level.BASIC
+                HttpLoggingInterceptor.Level.BODY
             )
         )
 

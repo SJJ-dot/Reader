@@ -141,4 +141,5 @@ dependencies {
 
     implementation 'com.tencent:mmkv-static:1.2.10'
     implementation 'com.github.tiann:FreeReflection:3.1.0'
+    implementation 'org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5'
 }

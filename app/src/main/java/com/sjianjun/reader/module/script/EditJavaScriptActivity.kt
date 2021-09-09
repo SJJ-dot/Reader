@@ -7,6 +7,7 @@ import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.preferences.JsConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.toast
@@ -28,20 +29,13 @@ class EditJavaScriptActivity : BaseActivity() {
                 val javaScript = JavaScript(
                     source = script_source.text.toString(),
                     js = script.text.toString(),
-                    version = script_version.text.toString().toIntOrNull() ?: 1,
                     isStartingStation = script_starting.isChecked,
-                    priority = script_priority.text.toString().toIntOrNull() ?: 0,
-                    supportBookCity = support_book_city.isChecked
+                    priority = script_priority.text.toString().toIntOrNull() ?: 0
                 )
                 try {
-                    try {
-                        DataManager.insertJavaScript(javaScript)
-                        toast("创建脚本成功")
-                    } catch (e: Exception) {
-                        DataManager.updateJavaScript(javaScript)
-                        toast("脚本已更新")
-                    }
-
+                    val version = script_version.text.toString().toIntOrNull() ?: 1
+                    DataManager.saveJavaScript(javaScript, version)
+                    toast("脚本保存成功")
                     finish()
                 } catch (e: Throwable) {
                     toast("脚本保存失败")
@@ -58,9 +52,9 @@ class EditJavaScriptActivity : BaseActivity() {
                 script_source.isEnabled = false
             }
             script_starting.isChecked = js?.isStartingStation ?: false
-            script_version.setText((js?.version ?: 1).toString())
+            val version = js?.let { JsConfig.getJsVersion(it.source) }
+            script_version.setText((version ?: 1).toString())
             script_priority.setText((js?.priority ?: 0).toString())
-            support_book_city.isChecked = js?.supportBookCity ?: false
         }
     }
 }

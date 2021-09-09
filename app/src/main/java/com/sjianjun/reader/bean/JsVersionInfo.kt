@@ -1,70 +1,15 @@
 package com.sjianjun.reader.bean
 
 class JsVersionInfo {
+    var source: String = ""
     var version = 0
-    var versions: List<Version>? = null
-
     /**
-     * 广告SDK url集合
+     * 是不是首发站
      */
-    var adBlockFilterUrlVersion = 0
-
-    class Version {
-        var fileName: String = ""
-        var version = 0
-
-        //广告屏蔽脚本版本
-        var adBlockVersion = 0
-
-        /**
-         * 是不是首发站
-         */
-        var starting = false
-        var priority = 0
-        var supportBookCity = false
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Version
-
-            if (fileName != other.fileName) return false
-            if (version != other.version) return false
-            if (starting != other.starting) return false
-            if (priority != other.priority) return false
-            if (supportBookCity != other.supportBookCity) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = fileName.hashCode()
-            result = 31 * result + version
-            result = 31 * result + starting.hashCode()
-            result = 31 * result + priority
-            result = 31 * result + supportBookCity.hashCode()
-            return result
-        }
-
+    var starting = false
+    var priority = 0
+    override fun toString(): String {
+        return "JsVersionInfo(source='$source', version=$version, starting=$starting, priority=$priority)"
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as JsVersionInfo
-
-        if (version != other.version) return false
-        if (versions != other.versions) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = version
-        result = 31 * result + (versions?.hashCode() ?: 0)
-        return result
-    }
-
 
 }

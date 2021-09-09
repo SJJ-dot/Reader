@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.script
 
+import android.annotation.SuppressLint
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -10,7 +11,10 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.preferences.JsConfig
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.repository.JsManager
+import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.showSnackbar
@@ -18,21 +22,17 @@ import com.sjianjun.reader.utils.startActivity
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.flow.collectLatest
+import sjj.alog.Log
 
 class BookScriptManagerFragment : BaseAsyncFragment() {
-    override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
 
+    private val adapter = Adapter(this@BookScriptManagerFragment)
+
+    override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
-        val adapter = Adapter(this@BookScriptManagerFragment)
         recycle_view.adapter = adapter
-        launch {
-            DataManager.getAllJavaScript().collectLatest {
-                adapter.data.clear()
-                adapter.data.addAll(it)
-                adapter.notifyDataSetChanged()
-            }
-        }
+        initData()
     }
 
     override fun onDestroyView() {
@@ -51,9 +51,11 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 launch {
                     showSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
                     try {
-                        DataManager.reloadBookJavaScript()
+                        JsUpdateManager.checkRemoteJsUpdate()
                         showSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
+                        initData()
                     } catch (throwable: Throwable) {
+                        Log.i("小说脚本同步失败", throwable)
                         showSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
                     }
                 }
@@ -61,6 +63,16 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun initData() {
+        launch {
+            val allJs = JsManager.getAllJs()
+            adapter.data.clear()
+            adapter.data.addAll(allJs)
+            adapter.notifyDataSetChanged()
         }
     }
 
@@ -81,7 +93,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         ) {
             val script = data[p1]
             holder.itemView.cb_book_source.text =
-                "${script.source} V-${script.version} ${script.priority}"
+                "${script.source} V-${JsConfig.getJsVersion(script.source)} ${script.priority}"
             holder.itemView.iv_del_source.setOnClickListener {
                 fragment.launch {
                     DataManager.deleteJavaScript(script)
@@ -98,7 +110,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             holder.itemView.cb_book_source.setOnCheckedChangeListener { view, isChecked ->
                 fragment.launch {
                     script.enable = isChecked
-                    DataManager.updateJavaScript(script)
+                    DataManager.saveJavaScript(script, JsConfig.getJsVersion(script.source))
                     showSnackbar(view, if (isChecked) "已启用" else "已停用")
                 }
             }

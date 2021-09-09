@@ -1,56 +1,54 @@
-{
-  "version": 31,
-  "adBlockFilterUrlVersion": 6,
-  "versions": [
-    {
-      "fileName": "古古小说网（55小说网）",
-      "version": "2"
-    },
-    {
-      "fileName": "大文学(大书包网)",
-      "version": "5"
-    },
-    {
-      "fileName": "溜达小说",
-      "version": "3"
-    },
-    {
-      "fileName": "盗梦人小说",
-      "version": "2"
-    },
-    {
-      "fileName": "纵横中文网",
-      "version": "3",
-      "starting": true,
-      "priority": 99,
-      "adBlockVersion": "1"
-    },
-    {
-      "fileName": "起点中文网",
-      "version": "11",
-      "starting": true,
-      "priority": 100
-    },
-    {
-      "fileName": "顶点小说",
-      "version": "4"
-    },
-    {
-      "fileName": "趣书网",
-      "version": "3"
-    },
-    {
-      "fileName": "平板电子书",
-      "version": "1"
-    },
-    {
-      "fileName": "banzhuer_org",
-      "version": "1"
-    },
-    {
-      "fileName": "changshengrui_com",
-      "version": "1"
-    }
-  ],
-  "inherit": true
-}
+[
+  {
+    "source": "古古小说网（55小说网）",
+    "version": "2"
+  },
+  {
+    "source": "大文学(大书包网)",
+    "version": "5"
+  },
+  {
+    "source": "溜达小说",
+    "version": "3"
+  },
+  {
+    "source": "盗梦人小说",
+    "version": "2"
+  },
+  {
+    "source": "纵横中文网",
+    "version": "3",
+    "starting": true,
+    "priority": 99
+  },
+  {
+    "source": "起点中文网",
+    "version": "11",
+    "starting": true,
+    "priority": 100
+  },
+  {
+    "source": "顶点小说",
+    "version": "4"
+  },
+  {
+    "source": "趣书网",
+    "version": "3"
+  },
+  {
+    "source": "平板电子书",
+    "version": "1"
+  },
+  {
+    "source": "banzhuer_org",
+    "version": "1"
+  },
+  {
+    "source": "changshengrui_com",
+    "version": "1"
+  },
+  {
+    "source": "biquges_com",
+    "version": "1"
+  }
+]

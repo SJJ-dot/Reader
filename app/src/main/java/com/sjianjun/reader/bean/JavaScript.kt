@@ -1,8 +1,6 @@
 package com.sjianjun.reader.bean
 
-import androidx.room.Entity
 import androidx.room.Ignore
-import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
@@ -14,12 +12,10 @@ import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
 
-@Entity
 data class JavaScript constructor(
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
-    @PrimaryKey
     @JvmField
     var source: String = "",
 
@@ -30,17 +26,12 @@ data class JavaScript constructor(
     @JvmField
     var js: String = "",
 
-    var version: Int = 0,
-
     var isStartingStation: Boolean = false,
     var priority: Int = 0,
-    var supportBookCity: Boolean = false,
-    var adBlockVersion: Int = 0,
-    var adBlockJs: String = ""
+    @JvmField
+    var enable: Boolean = true
 ) {
 
-    @JvmField
-    var enable = true
 
     @Ignore
     val FIELD_NULL_VALUE = Any()
@@ -196,31 +187,17 @@ data class JavaScript constructor(
         other as JavaScript
 
         if (source != other.source) return false
-        if (js != other.js) return false
-        if (version != other.version) return false
-        if (isStartingStation != other.isStartingStation) return false
-        if (priority != other.priority) return false
-        if (supportBookCity != other.supportBookCity) return false
-        if (enable != other.enable) return false
-        if (fieldsMap != other.fieldsMap) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = source.hashCode()
-        result = 31 * result + js.hashCode()
-        result = 31 * result + version
-        result = 31 * result + isStartingStation.hashCode()
-        result = 31 * result + priority
-        result = 31 * result + supportBookCity.hashCode()
-        result = 31 * result + enable.hashCode()
-        result = 31 * result + fieldsMap.hashCode()
-        return result
+        return source.hashCode()
     }
 
+
     enum class Func {
-        search, getDetails, getChapterContent, loadPage, loadBookList
+        search, getDetails, getChapterContent, loadBookList
     }
 
 }

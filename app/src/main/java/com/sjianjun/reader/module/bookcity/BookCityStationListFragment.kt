@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.bookcity
 
+import android.annotation.SuppressLint
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.launchIo
@@ -9,11 +10,10 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.repository.JsManager
 import com.sjianjun.reader.utils.color
 import kotlinx.android.synthetic.main.bookcity_fragment_station_list.*
 import kotlinx.android.synthetic.main.bookcity_item_station.view.*
-import kotlinx.coroutines.flow.first
 
 class BookCityStationListFragment : BaseAsyncFragment() {
     val adapter = Adapter()
@@ -24,10 +24,12 @@ class BookCityStationListFragment : BaseAsyncFragment() {
         initData()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launchIo(singleCoroutineKey = "initBookCityStationList") {
-            val javaScriptList = DataManager.getAllJavaScript().first()
-                .filter { it.enable && !it.execute<String>("hostUrl;").isNullOrBlank() }
+            val javaScriptList = JsManager.getAllJs().filter {
+                it.enable && !it.execute<String>("hostUrl;").isNullOrBlank()
+            }
             withMain {
                 adapter.data.clear()
                 adapter.data.addAll(javaScriptList)

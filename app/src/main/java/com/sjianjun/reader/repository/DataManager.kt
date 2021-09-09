@@ -2,25 +2,14 @@
 
 package com.sjianjun.reader.repository
 
-import android.content.res.AssetManager.ACCESS_BUFFER
 import com.sjianjun.coroutine.flowIo
-import com.sjianjun.coroutine.global
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.App
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.preferences.adBlockConfig
-import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
-import com.sjianjun.reader.view.CustomWebView
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
-import java.io.InputStream
 import java.net.URLEncoder
 
 /**
@@ -29,152 +18,23 @@ import java.net.URLEncoder
 object DataManager {
     private val dao = db.dao()
 
-    init {
-        global {
-            checkJavaScriptUpdate({
-                var version: InputStream? = null
-                val versionInfo = try {
-                    version = App.app.assets.open("js/version.json", ACCESS_BUFFER)
-                    version.bufferedReader().readText()
-                } finally {
-                    version?.close()
-                }
-                versionInfo
-            }, {
-                App.app.assets.open(it, ACCESS_BUFFER).use { stream ->
-                    stream.bufferedReader().readText()
-                }
-            })
-        }
-
-    }
-
-
-    suspend fun reloadBookJavaScript() {
-        checkJavaScriptUpdate({
-            http.get(URL_ASSETS_BASE + "js/version.json")
-        }, {
-            http.get(URL_ASSETS_BASE + it)
-        })
-    }
-
-    private suspend inline fun checkJavaScriptUpdate(
-        crossinline versionInfo: () -> String,
-        crossinline loadScript: (fileName: String) -> String
-    ) {
-        withIo {
-            val versionJson = versionInfo()
-            val info = gson.fromJson<JsVersionInfo>(versionJson)!!
-
-            val asyncUrlSet = async {
-                //广告拦截
-                if (BuildConfig.DEBUG || info.adBlockFilterUrlVersion > adBlockConfig.adBlockUrlListVersion) {
-
-                    val urlSet =
-                        gson.fromJson<MutableList<String>>(loadScript("adBlock/filterUrl.json"))!!
-
-                    val adBlockUrlList = adBlockConfig.adBlockList.toMutableList()
-
-                    urlSet.forEach {
-                        val adBlock = CustomWebView.AdBlock(it)
-                        if (!adBlockUrlList.contains(adBlock)) {
-                            adBlockUrlList.add(adBlock)
-                        }
-                    }
-
-                    adBlockConfig.adBlockList = adBlockUrlList
-                    adBlockConfig.adBlockUrlListVersion = info.adBlockFilterUrlVersion
-                }
-            }
-
-            //加载网站解析脚本
-            if (BuildConfig.DEBUG || info.version >= globalConfig.javaScriptVersion) {
-                info.versions?.map {
-                    async {
-                        val javaScript = dao.getJavaScriptBySource(it.fileName)
-                        if (javaScript?.enable == false) {
-                            //脚本停用
-                            return@async javaScript
-                        }
-                        //不是DEBUG模式才检查 js 版本否则一律更新
-                        if (!BuildConfig.DEBUG && javaScript != null) {
-                            if (javaScript.version >= it.version && javaScript.adBlockVersion >= it.adBlockVersion) {
-                                return@async javaScript
-                            }
-                        }
-                        val js = async {
-                            if (it.version > 0 && (BuildConfig.DEBUG || javaScript == null || javaScript.version < it.version)) {
-                                loadScript("js/${it.fileName}")
-                            } else {
-                                javaScript?.js ?: ""
-                            }
-
-                        }
-                        val adBlockJs = async {
-                            if (it.adBlockVersion > 0 && (BuildConfig.DEBUG || javaScript == null || javaScript.adBlockVersion < it.adBlockVersion)) {
-                                loadScript("adBlock/${it.fileName}")
-                            } else {
-                                javaScript?.adBlockJs ?: ""
-                            }
-                        }
-
-                        tryBlock {
-                            JavaScript(
-                                it.fileName,
-                                js.await(),
-                                it.version,
-                                it.starting,
-                                it.priority,
-                                it.supportBookCity,
-                                adBlockVersion = it.adBlockVersion,
-                                adBlockJs = adBlockJs.await()
-                            )
-                        }
-                    }
-                }?.awaitAll().also {
-                    if (it != null) {
-                        dao.deleteJavaScriptNotIn(info.versions?.map { it.fileName }!!)
-                        dao.insertJavaScript(it.filterNotNull())
-                        globalConfig.javaScriptVersion = info.version
-                    }
-                }
-            }
-
-            asyncUrlSet.await()
-
-        }
-    }
-
-
-    fun getAllJavaScript(): Flow<List<JavaScript>> {
-        return dao.getAllJavaScript()
-    }
-
-    fun getAllSupportBookcityJavaScript(): Flow<List<JavaScript>> {
-        return dao.getAllSupportBookcityJavaScript()
-    }
-
     suspend fun getJavaScript(source: String): JavaScript? {
-        return withIo { dao.getJavaScriptBySource(source) }
+        return withIo { JsManager.getJs(source) }
     }
 
     fun getJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
-        return dao.getBookJavaScript(bookTitle, bookAuthor)
+        return flow { emit(JsManager.getAllBookJs(bookTitle, bookAuthor)) }
     }
 
     suspend fun deleteJavaScript(script: JavaScript) {
         withIo {
-            dao.deleteJavaScript(script)
+            JsManager.deleteJs(script.source)
         }
     }
 
 
-    suspend fun insertJavaScript(script: JavaScript) {
-        dao.insertJavaScript(script)
-    }
-
-    suspend fun updateJavaScript(script: JavaScript) {
-        dao.updateJavaScript(script)
+    suspend fun saveJavaScript(script: JavaScript, version: Int) {
+        JsManager.saveJs(script, version)
     }
 
     /**
@@ -207,7 +67,7 @@ object DataManager {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
-            val allJavaScript = dao.getAllJavaScript().firstOrNull()?.filter { it.enable }
+            val allJavaScript = JsManager.getAllJs().filter { it.enable }
             if (allJavaScript.isNullOrEmpty()) {
                 return@withIo emptyFlow<List<List<SearchResult>>>()
             }
@@ -241,8 +101,8 @@ object DataManager {
                             bEq -> return@sortedWith 1
                         }
                     }
-                    val aContains = a.first().bookTitle.contains(query,true)
-                    val bContains = b.first().bookTitle.contains(query,true)
+                    val aContains = a.first().bookTitle.contains(query, true)
+                    val bContains = b.first().bookTitle.contains(query, true)
                     if (aContains || bContains) {
                         when {
                             aContains && bContains -> b.size.compareTo(a.size)
@@ -303,7 +163,7 @@ object DataManager {
             if (!onlyLocal && record.startingStationBookSource.isBlank()) {
                 //到官方的网站查询并把书籍插入到本地数据库
                 var error = false
-                val startingBook = dao.getAllStartingJavaScript().map {
+                val startingBook = JsManager.getAllStartingJs().map {
                     async {
                         var startingBook = dao.getBookByTitleAuthorAndSource(
                             book.title,
@@ -360,7 +220,7 @@ object DataManager {
         }
 
         book ?: return@withIo
-        val script = javaScript ?: dao.getJavaScriptBySource(book.source)
+        val script = javaScript ?: JsManager.getJs(book.source)
         try {
             if (script == null) {
                 throw MessageException("未找到对应书籍书源")
@@ -538,7 +398,7 @@ object DataManager {
                 return@withIo
             }
 
-            val js = dao.getJavaScriptBySource(book?.source ?: return@withIo)
+            val js = JsManager.getJs(book?.source ?: return@withIo)
             val content = js?.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
                 chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")

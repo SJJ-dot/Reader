@@ -17,8 +17,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 @Database(
-    entities = [Book::class, JavaScript::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 9,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -83,6 +83,11 @@ val db by lazy {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE 'JavaScript' ADD COLUMN `adBlockJs` TEXT NOT NULL default ''")
                 database.execSQL("ALTER TABLE 'JavaScript' ADD COLUMN `adBlockVersion` INTEGER NOT NULL default 0")
+            }
+        })
+        .addMigrations(object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("DROP TABLE 'JavaScript'")
             }
         })
         .build()

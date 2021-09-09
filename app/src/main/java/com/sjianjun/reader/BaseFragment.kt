@@ -51,7 +51,6 @@ abstract class BaseFragment : DialogFragment() {
 
     @SuppressLint("WrongConstant")
     fun showSnackbar(view: View?, msg: String, duration: Int = Snackbar.LENGTH_SHORT) {
-        Log.i(msg)
         if (snackbar == null) {
             snackbar = Snackbar.make(view ?: return, msg, duration)
         } else {

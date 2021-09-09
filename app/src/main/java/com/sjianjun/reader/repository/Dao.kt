@@ -10,35 +10,8 @@ import sjj.alog.Log
 interface Dao {
 
 
-    @Query("SELECT * FROM JavaScript WHERE isStartingStation = 1 order by priority DESC")
-    fun getAllStartingJavaScript(): List<JavaScript>
-
-    @Query("SELECT * FROM JavaScript WHERE source = :source")
-    fun getJavaScriptBySource(source: String): JavaScript?
-
-    @Query("SELECT * FROM JavaScript order by priority DESC")
-    fun getAllJavaScript(): Flow<List<JavaScript>>
-
-    @Query("SELECT * FROM JavaScript where supportBookCity = 1 order by priority DESC")
-    fun getAllSupportBookcityJavaScript(): Flow<List<JavaScript>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertJavaScript(javaScript: List<JavaScript>)
-
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertJavaScript(javaScript: JavaScript)
-
-    @Query("select * from JavaScript where source in (select source from Book where title=:bookTitle and author=:bookAuthor)")
-    fun getBookJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>>
-
-    @Delete
-    suspend fun deleteJavaScript(script: JavaScript)
-
-    @Query("delete from JavaScript where source not in (:sources)")
-    suspend fun deleteJavaScriptNotIn(sources: List<String>)
-
-    @Update
-    suspend fun updateJavaScript(script: JavaScript)
+    @Query("select source from Book where title=:bookTitle and author=:bookAuthor")
+    suspend fun getAllBookSource(bookTitle: String, bookAuthor: String): List<String>
 
     /**
      * 查询全部搜索历史记录
