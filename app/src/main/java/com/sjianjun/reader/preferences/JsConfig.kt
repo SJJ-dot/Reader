@@ -13,30 +13,61 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
     /**
      * 全部小说源
      */
-    var allJsSource by dataPref<List<String>>("allJsSource", emptyList())
+    var allJsSource by dataPref<MutableSet<String>>("allJsSource", mutableSetOf())
+        private set
+    private val allJs: MutableMap<String, JavaScript?> = mutableMapOf()
 
-    fun saveJs(source: String, js: JavaScript) {
-        edit { putString("Js_${source}", gson.toJson(js)) }
-        Log.i("保存脚本:${source}")
+    fun saveJs(js: JavaScript) {
+        edit {
+            putString("Js_${js.source}", gson.toJson(js))
+        }
+        if (!allJsSource.contains(js.source)) {
+            allJsSource = allJsSource.apply {
+                add(js.source)
+            }
+        }
+        allJs[js.source] = js
+        Log.i("保存脚本:${js.source}")
     }
 
-    fun removeJs(source: String) {
-        edit {
-            remove("Js_${source}")
-            remove("JsVersion_${source}")
+    fun removeJs(vararg sources: String) {
+        if (sources.isEmpty()) {
+            return
         }
-        Log.i("删除脚本:${source}")
+        allJsSource = allJsSource.apply {
+            sources.forEach {
+                remove(it)
+                allJs.remove(it)
+            }
+        }
+
+        edit {
+            sources.forEach {
+                remove("Js_${it}")
+            }
+        }
+
+        Log.i("删除脚本:${sources.toList()}")
     }
 
     fun getJs(source: String): JavaScript? {
-        return gson.fromJson<JavaScript>(getString("Js_${source}", null))
+        if (allJs.containsKey(source)) {
+            return allJs[source]
+        }
+        val script = gson.fromJson<JavaScript>(getString("Js_${source}", null))
+        allJs[source] = script
+        return script
     }
 
-    fun saveJsVersion(source: String, version: Int) {
-        edit { putInt("JsVersion_${source}", version) }
+    fun getAllJs(): List<JavaScript> {
+        val source2 = allJsSource.toMutableSet()
+        allJs.forEach { (t, _) ->
+            source2.remove(t)
+        }
+        source2.forEach {
+            getJs(it)
+        }
+        return allJs.values.mapNotNull { it }
     }
 
-    fun getJsVersion(source: String): Int {
-        return getInt("JsVersion_${source}", 0)
-    }
 }

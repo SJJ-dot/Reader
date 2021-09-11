@@ -93,7 +93,7 @@ inline fun <reified T> SharedPreferences.dataPref(
     key: String,
     def: T
 ): DataPref<T> {
-    return object :DataPref<T>(this, key, def){}
+    return object : DataPref<T>(this, key, def) {}
 }
 
 abstract class DataPref<T>(
@@ -101,13 +101,25 @@ abstract class DataPref<T>(
     private val key: String,
     val def: T
 ) {
+    var cache: T? = null
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        val lCache = cache
+        if (lCache != null) {
+            return lCache
+        }
         val json = pref.getString(key, null)
+        if (json == null) {
+            cache = def
+            return def
+        }
         val superclass = this.javaClass.genericSuperclass as ParameterizedType
-        return gson.fromJson<T>(json ?: return def, superclass.actualTypeArguments[0])
+        val r = gson.fromJson<T>(json, superclass.actualTypeArguments[0])
+        cache = r
+        return r
     }
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T?) {
+        cache = value
         pref.edit().putString(key, gson.toJson(value)).apply()
     }
 }

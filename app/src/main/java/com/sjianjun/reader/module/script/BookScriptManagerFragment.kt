@@ -21,7 +21,6 @@ import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.startActivity
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
-import kotlinx.coroutines.flow.collectLatest
 import sjj.alog.Log
 
 class BookScriptManagerFragment : BaseAsyncFragment() {
@@ -93,7 +92,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         ) {
             val script = data[p1]
             holder.itemView.cb_book_source.text =
-                "${script.source} V-${JsConfig.getJsVersion(script.source)} ${script.priority}"
+                "${script.source} V-${script.version} ${script.priority}"
 
             holder.itemView.iv_edit_source.setOnClickListener {
                 fragment.startActivity<EditJavaScriptActivity>(JAVA_SCRIPT_SOURCE, script.source)
@@ -105,7 +104,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             holder.itemView.cb_book_source.setOnCheckedChangeListener { view, isChecked ->
                 fragment.launch {
                     script.enable = isChecked
-                    DataManager.saveJavaScript(script, JsConfig.getJsVersion(script.source))
+                    JsManager.saveJs(script)
                     showSnackbar(view, if (isChecked) "已启用" else "已停用")
                 }
             }

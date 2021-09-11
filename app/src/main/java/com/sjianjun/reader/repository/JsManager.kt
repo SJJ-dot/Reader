@@ -5,22 +5,16 @@ import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.preferences.JsConfig
 
 object JsManager {
-    private var allJs: List<JavaScript>? = null
     suspend fun getAllJs(): List<JavaScript> = withIo {
-        if (allJs == null) {
-            allJs = JsConfig.allJsSource.mapNotNull { source ->
-                JsConfig.getJs(source)
-            }
-        }
-        allJs ?: emptyList()
+        JsConfig.getAllJs()
     }
 
     suspend fun getAllStartingJs(): List<JavaScript> {
         return getAllJs().filter { it.isStartingStation }
     }
 
-    suspend fun getJs(source: String): JavaScript? {
-        return getAllJs().find { it.source == source }
+    fun getJs(source: String): JavaScript? {
+        return JsConfig.getJs(source)
     }
 
     suspend fun getAllBookJs(bookTitle: String, bookAuthor: String): List<JavaScript> {
@@ -28,22 +22,8 @@ object JsManager {
         return getAllJs().filter { list.contains(it.source) }
     }
 
-    fun saveJs(js: JavaScript, version: Int) {
-        JsConfig.saveJs(js.source, js)
-        JsConfig.saveJsVersion(js.source, version)
-        JsConfig.allJsSource.let {
-            if (!it.contains(js.source)) {
-                JsConfig.allJsSource = it.toMutableList().apply {
-                    add(js.source)
-                }
-            }
-        }
-        allJs?.toMutableList()?.let {
-            if (!it.contains(js)) {
-                it.add(js)
-            }
-            allJs = it
-        }
+    fun saveJs(js: JavaScript) {
+        JsConfig.saveJs(js)
     }
 
 

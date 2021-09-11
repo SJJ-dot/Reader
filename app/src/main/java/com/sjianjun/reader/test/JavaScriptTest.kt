@@ -76,7 +76,7 @@ function getChapterContent(http,url){
 }
 
             
-        """.trimIndent()
+        """.trimIndent(), 1
     )
 
     suspend fun testJavaScript() = withIo {

@@ -18,19 +18,6 @@ import java.net.URLEncoder
 object DataManager {
     private val dao = db.dao()
 
-    suspend fun getJavaScript(source: String): JavaScript? {
-        return withIo { JsManager.getJs(source) }
-    }
-
-    fun getJavaScript(bookTitle: String, bookAuthor: String): Flow<List<JavaScript>> {
-        return flow { emit(JsManager.getAllBookJs(bookTitle, bookAuthor)) }
-    }
-
-
-    suspend fun saveJavaScript(script: JavaScript, version: Int) {
-        JsManager.saveJs(script, version)
-    }
-
     /**
      * 搜素历史记录
      */

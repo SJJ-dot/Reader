@@ -17,15 +17,15 @@ data class JavaScript constructor(
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
     @JvmField
-    var source: String = "",
+    var source: String,
 
     /**
      * - js 脚本内容
      * - 多余的参数从arguments取
      */
     @JvmField
-    var js: String = "",
-
+    var js: String,
+    var version: Int,
     var isStartingStation: Boolean = false,
     var priority: Int = 0,
     @JvmField

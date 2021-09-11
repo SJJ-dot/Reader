@@ -19,6 +19,7 @@ import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.repository.JsManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.FlowPreview
@@ -70,9 +71,9 @@ class BookshelfFragment : BaseFragment() {
                             val id = record?.chapterUrl ?: return@map null
                             DataManager.getChapterByUrl(id).first() to record
                         },
-                        DataManager.getLastChapterByBookUrl(book.url),
-                        DataManager.getJavaScript(book.title, book.author)
-                    ) { readChapter, lastChapter, js ->
+                        DataManager.getLastChapterByBookUrl(book.url)
+                    ) { readChapter, lastChapter ->
+                        val js = JsManager.getAllBookJs(book.title, book.author)
                         book.record = readChapter?.second
                         book.readChapter = readChapter?.first
                         book.lastChapter = lastChapter
@@ -190,7 +191,7 @@ class BookshelfFragment : BaseFragment() {
             bookshelfUi.loading.secondaryProgress = count.get()
 
             sourceMap.forEach { entry ->
-                val javaScript = DataManager.getJavaScript(entry.key)
+                val javaScript =  JsManager.getJs(entry.key)
                 val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
                 if (delay < 0) {
                     entry.value.map {

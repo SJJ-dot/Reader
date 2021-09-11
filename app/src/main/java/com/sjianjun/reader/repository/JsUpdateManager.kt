@@ -69,13 +69,6 @@ object JsUpdateManager {
             }, {
                 loadAssets("js/${it.source}")
             })
-            JsConfig.allJsSource = JsConfig.allJsSource.toMutableList().apply {
-                jsVersionInfos?.forEach {
-                    if (!contains(it.source)) {
-                        add(it.source)
-                    }
-                }
-            }
         } catch (e: Exception) {
             Log.e("网站脚本配置加载失败", e)
         }
@@ -101,13 +94,11 @@ object JsUpdateManager {
             issues!!.find { it.title == js.source }?.body
         })
         jsVersionInfos?.also { list ->
-            val allJsSource = list.map { it.source }
-            val mutableList = JsConfig.allJsSource.toMutableList()
-            mutableList.removeAll(allJsSource)
-            mutableList.forEach {
-                JsConfig.removeJs(it)
+            val allLocalSource = JsConfig.allJsSource.toMutableSet()
+            list.forEach {
+                allLocalSource.remove(it.source)
             }
-            JsConfig.allJsSource = allJsSource
+            JsConfig.removeJs(*allLocalSource.toTypedArray())
         }
 
     }
@@ -144,17 +135,14 @@ object JsUpdateManager {
     ) {
         val jsVersionInfos = loadVersionInfo()
         jsVersionInfos.forEach {
-            if (JsConfig.getJsVersion(it.source) < it.version) {
+            val localVersion = JsConfig.getJs(it.source)?.version ?: 0
+            if (localVersion < it.version) {
                 loadJs(it)?.let { js ->
                     val b = JsConfig.getJs(it.source)?.enable ?: true
-                    JsConfig.saveJs(
-                        it.source,
-                        JavaScript(it.source, js, it.starting, it.priority, b)
-                    )
+                    val version = if (BuildConfig.DEBUG) localVersion else it.version
+                    JsConfig.saveJs(JavaScript(it.source, js, version, it.starting, it.priority, b))
                 }
-                if (!BuildConfig.DEBUG) {
-                    JsConfig.saveJsVersion(it.source, it.version)
-                }
+
             }
         }
     }
