@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <ImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/bookCover"
             android:layout_width="65dp"
             android:layout_height="0dp"
@@ -20,7 +20,7 @@
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/dn_dark_tint" />
+            android:tint="@color/dn_dark_tint" />
 
         <com.sjianjun.reader.view.AutofitTextView
             android:id="@+id/bookName"
