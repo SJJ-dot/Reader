@@ -94,12 +94,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             val script = data[p1]
             holder.itemView.cb_book_source.text =
                 "${script.source} V-${JsConfig.getJsVersion(script.source)} ${script.priority}"
-            holder.itemView.iv_del_source.setOnClickListener {
-                fragment.launch {
-                    DataManager.deleteJavaScript(script)
-                    showSnackbar(it, "删除成功")
-                }
-            }
+
             holder.itemView.iv_edit_source.setOnClickListener {
                 fragment.startActivity<EditJavaScriptActivity>(JAVA_SCRIPT_SOURCE, script.source)
             }

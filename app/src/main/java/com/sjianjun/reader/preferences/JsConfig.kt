@@ -8,7 +8,8 @@ import com.tencent.mmkv.MMKV
 import sjj.alog.Log
 
 object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
-    var localJsVersion by intPref("localJsVersion",0)
+    var localJsVersion by intPref("localJsVersion", 0)
+
     /**
      * 全部小说源
      */
@@ -20,7 +21,10 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
     }
 
     fun removeJs(source: String) {
-        edit { remove("Js_${source}") }
+        edit {
+            remove("Js_${source}")
+            remove("JsVersion_${source}")
+        }
         Log.i("删除脚本:${source}")
     }
 

@@ -16,11 +16,11 @@
             android:layout_height="0dp"
             android:layout_gravity="center_vertical"
             android:layout_margin="5dp"
-            android:tint="@color/dn_dark_tint"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/dn_dark_tint" />
 
         <com.sjianjun.reader.view.AutofitTextView
             android:id="@+id/bookName"

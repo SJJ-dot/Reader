@@ -28,16 +28,6 @@ object JsManager {
         return getAllJs().filter { list.contains(it.source) }
     }
 
-    fun deleteJs(source: String) {
-        JsConfig.removeJs(source)
-        JsConfig.allJsSource = JsConfig.allJsSource.toMutableList().apply {
-            remove(source)
-        }
-        allJs = allJs?.toMutableList()?.apply {
-            removeAll { it.source == source }
-        }
-    }
-
     fun saveJs(js: JavaScript, version: Int) {
         JsConfig.saveJs(js.source, js)
         JsConfig.saveJsVersion(js.source, version)

@@ -21,7 +21,7 @@
             app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:tint="@color/dn_dark_tint" />
+            app:tint="@color/dn_dark_tint" />
 
         <TextView
             android:id="@+id/starting_station"
@@ -142,6 +142,6 @@
             android:src="@mipmap/ic_sync_error"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:tint="@color/mdr_red_100" />
+            app:tint="@color/mdr_red_100" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

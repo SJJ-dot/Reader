@@ -10,13 +10,13 @@
         android:layout_height="124dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:tint="@color/dn_dark_tint"
         app:layout_constraintBottom_toTopOf="@+id/declare"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"
-        app:srcCompat="@mipmap/ic_xue_xi" />
+        app:srcCompat="@mipmap/ic_xue_xi"
+        app:tint="@color/dn_dark_tint" />
 
 
     <com.sjianjun.reader.view.LinksClickableTextView

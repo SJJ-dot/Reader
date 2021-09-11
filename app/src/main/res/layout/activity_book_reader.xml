@@ -115,9 +115,9 @@
                 android:background="@color/dn_background"
                 android:padding="16dp"
                 android:src="@drawable/ic_theme_dark_24px"
-                android:tint="@color/dn_text_color_black"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/setting" />
+                app:layout_constraintEnd_toStartOf="@+id/setting"
+                app:tint="@color/dn_text_color_black" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

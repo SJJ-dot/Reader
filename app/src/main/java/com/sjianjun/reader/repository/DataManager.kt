@@ -26,12 +26,6 @@ object DataManager {
         return flow { emit(JsManager.getAllBookJs(bookTitle, bookAuthor)) }
     }
 
-    suspend fun deleteJavaScript(script: JavaScript) {
-        withIo {
-            JsManager.deleteJs(script.source)
-        }
-    }
-
 
     suspend fun saveJavaScript(script: JavaScript, version: Int) {
         JsManager.saveJs(script, version)
