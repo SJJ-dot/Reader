@@ -11,7 +11,6 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.runOnIdle
 import com.sjianjun.permission.util.PermissionUtil
@@ -31,8 +30,6 @@ class MainActivity : BaseActivity() {
 
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
-    private var isGranted = false
-    private var isInflated = false
     override fun initTheme(isNight: Boolean) {
         if (isNight) {
             setTheme(R.style.Splash_noBackDark)
@@ -55,20 +52,14 @@ class MainActivity : BaseActivity() {
                 toast("本应用必须要存储卡读写权限用于保存数据库")
                 finish()
             } else if (!isDestroyed) {
-                isGranted = true
                 init()
             }
         }
-        setContentView(AsyncView(this, R.layout.activity_main, 0) {
-            isInflated = true
-            init()
-        })
     }
 
     private fun init() {
-        if (!isGranted || !isInflated) {
-            return
-        }
+
+        setContentView(R.layout.activity_main)
 
         host_fragment_view_stub.inflate()
         drawer_content.requestApplyInsets()
