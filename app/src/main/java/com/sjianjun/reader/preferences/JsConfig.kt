@@ -6,6 +6,7 @@ import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.tencent.mmkv.MMKV
 import sjj.alog.Log
+import java.util.concurrent.ConcurrentHashMap
 
 object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
     var localJsVersion by intPref("localJsVersion", 0)
@@ -13,9 +14,16 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
     /**
      * 全部小说源
      */
-    var allJsSource by dataPref<MutableSet<String>>("allJsSource", mutableSetOf())
-        private set
-    private val allJs: MutableMap<String, JavaScript?> = mutableMapOf()
+    var allJsSource: MutableSet<String> = ConcurrentHashMap.newKeySet()
+        private set(value) {
+            if (value !== field) {
+                field.clear()
+                field.addAll(value)
+            }
+            edit { putStringSet("allJsSource", field) }
+        }
+
+    private val allJs: MutableMap<String, JavaScript?> = ConcurrentHashMap()
 
     fun saveJs(js: JavaScript) {
         edit {
