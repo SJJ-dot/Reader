@@ -10,12 +10,14 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
+import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
+import sjj.alog.Log
 
 class AboutFragment : BaseAsyncFragment() {
 
@@ -28,6 +30,7 @@ class AboutFragment : BaseAsyncFragment() {
             launch(singleCoroutineKey = "checkUpdate") {
                 //检查bugly更新
                 Beta.checkAppUpgrade()
+                checkUpdate(true)
                 setVersionInfo()
                 setCode()
             }
@@ -75,7 +78,8 @@ class AboutFragment : BaseAsyncFragment() {
 
     private fun setVersionInfo() {
 
-
+        Log.i("AppUpgradeInfo:${Beta.getAppUpgradeInfo()}")
+        Log.i("Github AppUpgradeInfo${globalConfig.releasesInfo}")
         val appUpgradeInfo = Beta.getAppUpgradeInfo()
         val newestVersion = if (appUpgradeInfo != null &&
             appUpgradeInfo.versionCode > BuildConfig.VERSION_CODE
@@ -89,7 +93,7 @@ class AboutFragment : BaseAsyncFragment() {
 
         if (newestVersion != null) {
             versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME} | 最新版：${newestVersion}"
+                "当前版本：${BuildConfig.VERSION_NAME}"
         } else {
             versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }

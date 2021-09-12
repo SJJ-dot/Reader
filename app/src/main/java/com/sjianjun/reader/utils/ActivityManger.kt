@@ -16,6 +16,8 @@ object ActivityManger {
         application.registerActivityLifecycleCallbacks(callback)
     }
 
+    val currentActivity:Activity get() = activityList.last
+
     inline fun <reified T> finishAll() {
         activityList.forEach {
             if (it is T) {

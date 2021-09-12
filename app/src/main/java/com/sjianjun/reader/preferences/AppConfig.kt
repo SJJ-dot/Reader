@@ -11,8 +11,6 @@ val globalConfig by lazy { AppConfig("default") }
 class AppConfig(val name: String) :
     DelegateSharedPref(MMKV.mmkvWithID("AppConfig_$name")) {
 
-    var javaScriptVersion by intPref("javaScriptVersion")
-
     /**
      * github 发布的版本信息
      */

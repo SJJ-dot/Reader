@@ -17,6 +17,7 @@ import com.sjianjun.permission.util.PermissionUtil
 import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.test.JavaScriptTest
@@ -25,6 +26,7 @@ import com.sjianjun.reader.utils.toast
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
+import kotlinx.coroutines.delay
 
 class MainActivity : BaseActivity() {
 
@@ -98,9 +100,11 @@ class MainActivity : BaseActivity() {
         runOnIdle {
 
             launchIo {
-                Beta.checkAppUpgrade(false, false)
+                checkUpdate(false)
                 JsUpdateManager.checkUpdate()
                 JavaScriptTest.testJavaScript()
+                delay(5000)
+                Beta.checkAppUpgrade()
             }
         }
 

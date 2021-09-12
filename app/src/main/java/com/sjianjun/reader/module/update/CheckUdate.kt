@@ -8,64 +8,57 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
+import sjj.alog.Log
 import kotlin.math.max
 
-suspend fun loadUpdateInfo(force: Boolean = false) {
-    if (force || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > 1 * 60 * 60 * 1000) {
-        if (force) {
-            toast("正在加载版本信息……")
-        }
-        try {
-            val info = http.get(
-                URL_RELEASE_INFO,
-                header = mapOf("Content-Type" to "application/json;charset=UTF-8")
-            )
-            globalConfig.releasesInfo = info
-            globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
-            if (force) {
-                toast("版本信息加载成功")
-            }
-        } catch (e: Throwable) {
-            if (force) {
-                toast("版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
-            }
-        }
-    }
+suspend fun loadUpdateInfo() {
+    val info = http.get(
+        URL_RELEASE_INFO,
+        header = mapOf("Content-Type" to "application/json;charset=UTF-8")
+    )
+    globalConfig.releasesInfo = info
+    globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+    Log.i(info)
 }
 
-suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo {
-    loadUpdateInfo(force)
-    val releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo) ?: return@withIo null
+suspend fun checkUpdate(fromUser: Boolean = false) = withIo {
+    try {
+        loadUpdateInfo()
+    } catch (e: Exception) {
+        if (fromUser) {
+            toast("Github:版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
+        }
+        return@withIo
+    }
 
+    val releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo) ?: return@withIo
 
     val download = releasesInfo.apkAssets
     if (download?.browser_download_url.isNullOrEmpty()) {
-        return@withIo releasesInfo
+        return@withIo
     }
-    if (releasesInfo.prerelease && !(BuildConfig.DEBUG || force)) {
-        return@withIo releasesInfo
+    if (releasesInfo.prerelease && !(BuildConfig.DEBUG || fromUser)) {
+        return@withIo
     }
     val lastVersion = lastVersion(BuildConfig.VERSION_NAME, releasesInfo.tag_name)
     if (lastVersion != BuildConfig.VERSION_NAME) {
-        val dialog = AlertDialog.Builder(activity)
+        val currentActivity = ActivityManger.currentActivity
+        val dialog = AlertDialog.Builder(currentActivity)
             .setTitle(if (releasesInfo.name.isEmpty()) "版本更新" else releasesInfo.name)
             .setMessage("发现新版本是否现在升级？\n${releasesInfo.body}")
             .setPositiveButton("下载") { dialog, _ ->
                 dialog.dismiss()
-                val service = ContextCompat.getSystemService(activity, DownloadManager::class.java);
+                val service = ContextCompat.getSystemService(currentActivity, DownloadManager::class.java);
                 service?.enqueue(
                     DownloadManager.Request(Uri.parse(download?.browser_download_url))
                         .setDestinationInExternalPublicDir(
                             Environment.DIRECTORY_DOWNLOADS,
-                            "${activity.packageName}/学习${releasesInfo.tag_name}.apk"
+                            "${currentActivity.packageName}/学习${releasesInfo.tag_name}.apk"
                         )
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 )
@@ -73,8 +66,12 @@ suspend fun checkUpdate(activity: BaseActivity, force: Boolean = false) = withIo
         withMain {
             dialog.show()
         }
+    } else {
+        if (fromUser) {
+            toast("Github:已经是最新版本", Toast.LENGTH_LONG)
+        }
     }
-    return@withIo releasesInfo
+
 }
 
 private fun lastVersion(version1: String, version2: String): String {
@@ -84,8 +81,8 @@ private fun lastVersion(version1: String, version2: String): String {
     val split1 = version1.split(".")
     val split2 = version2.split(".")
     (0..max(split1.size, split2.size)).forEach {
-        val n1 = split1.getOrNull(it)?.toIntOrNull() ?: return version2
-        val n2 = split2.getOrNull(it)?.toIntOrNull() ?: return version1
+        val n1 = split1.getOrNull(it)?.toIntOrNull() ?: 0
+        val n2 = split2.getOrNull(it)?.toIntOrNull() ?: 0
         if (n1 > n2) {
             return version1
         }
