@@ -9,7 +9,6 @@ import com.sjianjun.reader.bean.JavaScript
 import com.sjianjun.reader.bean.JsVersionInfo
 import com.sjianjun.reader.preferences.AdBlockConfig
 import com.sjianjun.reader.preferences.JsConfig
-import com.sjianjun.reader.utils.GITHUB_TOKEN
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.view.CustomWebView
@@ -91,7 +90,7 @@ object JsUpdateManager {
     suspend fun checkRemoteJsUpdate() = withIo {
         var jsVersionInfos: List<JsVersionInfo>? = null
         var issues: List<Issue>? = null
-        val client = GitHubClient().setOAuth2Token(GITHUB_TOKEN)
+        val client = GitHubClient()//.setOAuth2Token(GITHUB_TOKEN)
         checkJsUpdate({
 
             val json = MilestoneService(client).getMilestone("SJJ-dot", "Reader", 1).description
