@@ -78,8 +78,8 @@ class AboutFragment : BaseAsyncFragment() {
 
     private fun setVersionInfo() {
 
-        Log.i("AppUpgradeInfo:${Beta.getAppUpgradeInfo()}")
-        Log.i("Github AppUpgradeInfo${globalConfig.releasesInfo}")
+//        Log.i("AppUpgradeInfo:${Beta.getAppUpgradeInfo()}")
+//        Log.i("Github AppUpgradeInfo${globalConfig.releasesInfo}")
         val appUpgradeInfo = Beta.getAppUpgradeInfo()
         val newestVersion = if (appUpgradeInfo != null &&
             appUpgradeInfo.versionCode > BuildConfig.VERSION_CODE
