@@ -32,7 +32,7 @@ const val JS_FIELD_REQUEST_DELAY = "REQUEST_DELAY"
 //txt 文件导入
 const val BOOK_SOURCE_FILE_IMPORT = "文件导入"
 
-const val GITHUB_TOKEN = "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"
+const val GITHUB_TOKEN = "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"
 const val URL_ASSETS_BASE =
     "https://raw.githubusercontent.com/SJJ-dot/Reader/master/app/src/main/assets/"
 const val URL_RELEASE_INFO = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
