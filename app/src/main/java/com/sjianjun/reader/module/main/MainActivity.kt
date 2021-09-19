@@ -104,7 +104,7 @@ class MainActivity : BaseActivity() {
                 JsUpdateManager.checkUpdate()
                 JavaScriptTest.testJavaScript()
                 delay(5000)
-                Beta.checkAppUpgrade()
+                Beta.checkAppUpgrade(false, false)
             }
         }
 

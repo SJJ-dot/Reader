@@ -14,9 +14,11 @@ import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.view.CustomWebView
 import kotlinx.coroutines.delay
 import org.eclipse.egit.github.core.Issue
+import org.eclipse.egit.github.core.client.GitHubClient
 import org.eclipse.egit.github.core.service.IssueService
 import org.eclipse.egit.github.core.service.MilestoneService
 import sjj.alog.Log
+import java.util.concurrent.TimeUnit
 
 object JsUpdateManager {
     suspend fun checkUpdate() {
@@ -25,13 +27,16 @@ object JsUpdateManager {
             Log.i("=========================开始检查JS脚本更新=================================")
             checkLocalAdBlackUpdate()
             checkLocalJsUpdate()
-            while (true) {
-                try {
-                    checkRemoteJsUpdate()
-                    break
-                } catch (e: Exception) {
-                    Log.e("网站脚本配置加载失败", e)
-                    delay(5000)
+            if (System.currentTimeMillis() - JsConfig.remoteJsCheckTime > TimeUnit.HOURS.toMillis(1)) {
+                while (true) {
+                    try {
+                        checkRemoteJsUpdate()
+                        JsConfig.remoteJsCheckTime = System.currentTimeMillis()
+                        break
+                    } catch (e: Exception) {
+                        Log.e("网站脚本配置加载失败", e)
+                        delay(60000)
+                    }
                 }
             }
             Log.i("===========================JS脚本更新结束==================================")
@@ -40,6 +45,12 @@ object JsUpdateManager {
 
     private suspend fun checkLocalAdBlackUpdate() {
         try {
+            if (JsConfig.localAdblockVersion >= BuildConfig.VERSION_CODE) {
+                return
+            }
+            if (!BuildConfig.DEBUG) {
+                JsConfig.localAdblockVersion = BuildConfig.VERSION_CODE
+            }
             checkAdBlackUpdate({
                 loadAssets("adBlock/version.json")
             }, {
@@ -77,14 +88,16 @@ object JsUpdateManager {
     suspend fun checkRemoteJsUpdate() = withIo {
         var jsVersionInfos: List<JsVersionInfo>? = null
         var issues: List<Issue>? = null
+        val client = GitHubClient().setOAuth2Token("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")
         checkJsUpdate({
-            val json = MilestoneService().getMilestone("SJJ-dot", "Reader", 1).description
+
+            val json = MilestoneService(client).getMilestone("SJJ-dot", "Reader", 1).description
             Log.i("remote:${json}")
             jsVersionInfos = gson.fromJson<List<JsVersionInfo>>(json)
             jsVersionInfos ?: emptyList()
         }, { js ->
             if (issues == null) {
-                issues = IssueService().getIssues(
+                issues = IssueService(client).getIssues(
                     "SJJ-dot",
                     "Reader",
                     mapOf("milestone" to "1")

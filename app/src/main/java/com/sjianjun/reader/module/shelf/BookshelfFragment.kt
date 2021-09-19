@@ -191,7 +191,7 @@ class BookshelfFragment : BaseFragment() {
             bookshelfUi.loading.secondaryProgress = count.get()
 
             sourceMap.forEach { entry ->
-                val javaScript =  JsManager.getJs(entry.key)
+                val javaScript = JsManager.getJs(entry.key)
                 val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
                 if (delay < 0) {
                     entry.value.map {

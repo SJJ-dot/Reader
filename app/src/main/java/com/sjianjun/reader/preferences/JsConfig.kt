@@ -9,7 +9,9 @@ import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
 object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
+    var remoteJsCheckTime by longPref("remoteJsVersionCheckTime", 0)
     var localJsVersion by intPref("localJsVersion", 0)
+    var localAdblockVersion by intPref("localAdblockVersion", 0)
 
     /**
      * 全部小说源
@@ -21,6 +23,12 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
                 field.addAll(value)
             }
             edit { putStringSet("allJsSource", field) }
+        }
+        get() {
+            if (field.isEmpty()) {
+                field.addAll(getStringSet("allJsSource", emptySet())!!)
+            }
+            return field
         }
 
     private val allJs: MutableMap<String, JavaScript?> = ConcurrentHashMap()
@@ -62,7 +70,7 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
         if (allJs.containsKey(source)) {
             return allJs[source]
         }
-        val script = gson.fromJson<JavaScript>(getString("Js_${source}", null))
+        val script = gson.fromJson<JavaScript>(getString("Js_${source}", null)) ?: return null
         allJs[source] = script
         return script
     }

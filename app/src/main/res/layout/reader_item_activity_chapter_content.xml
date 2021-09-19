@@ -25,6 +25,7 @@
         android:textIsSelectable="true"
         android:textSize="26sp"
         android:textStyle="bold"
+        android:drawableTint="@color/dn_reader_chapter_title_text_color"
         app:drawableEndCompat="@mipmap/ic_chapter_sync"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="章节标题" />
