@@ -21,8 +21,7 @@ suspend fun loadUpdateInfo() {
     if (System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > TimeUnit.HOURS.toMillis(1)) {
         val info = http.get(
             URL_RELEASE_INFO,
-//        queryMap = mapOf("access_token" to GITHUB_TOKEN),
-            header = mapOf("Content-Type" to "application/json;charset=UTF-8","Authorization" to "token $GITHUB_TOKEN")
+            header = mapOf("Content-Type" to "application/json;charset=UTF-8")
         )
         globalConfig.releasesInfo = info
         if (!BuildConfig.DEBUG) {
