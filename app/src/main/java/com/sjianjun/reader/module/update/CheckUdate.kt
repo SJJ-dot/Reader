@@ -22,10 +22,12 @@ suspend fun loadUpdateInfo() {
         val info = http.get(
             URL_RELEASE_INFO,
 //        queryMap = mapOf("access_token" to GITHUB_TOKEN),
-            header = mapOf("Content-Type" to "application/json;charset=UTF-8")
+            header = mapOf("Content-Type" to "application/json;charset=UTF-8","Authorization" to "token $GITHUB_TOKEN")
         )
         globalConfig.releasesInfo = info
-        globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+        if (!BuildConfig.DEBUG) {
+            globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+        }
         Log.i(info)
     }
 }
