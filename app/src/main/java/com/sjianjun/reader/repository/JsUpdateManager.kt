@@ -50,9 +50,6 @@ object JsUpdateManager {
             if (JsConfig.localAdblockVersion >= BuildConfig.VERSION_CODE) {
                 return
             }
-            if (!BuildConfig.DEBUG) {
-                JsConfig.localAdblockVersion = BuildConfig.VERSION_CODE
-            }
             checkAdBlackUpdate({
                 loadAssets("adBlock/version.json")
             }, {
@@ -60,6 +57,9 @@ object JsUpdateManager {
             }, {
                 loadAssets("adBlock/${it}")
             })
+            if (!BuildConfig.DEBUG) {
+                JsConfig.localAdblockVersion = BuildConfig.VERSION_CODE
+            }
         } catch (e: Exception) {
             Log.e("广告拦截配置加载失败", e)
         }
@@ -70,9 +70,7 @@ object JsUpdateManager {
             if (JsConfig.localJsVersion >= BuildConfig.VERSION_CODE) {
                 return
             }
-            if (!BuildConfig.DEBUG) {
-                JsConfig.localJsVersion = BuildConfig.VERSION_CODE
-            }
+
             var jsVersionInfos: List<JsVersionInfo>? = null
             checkJsUpdate({
                 val json = loadAssets("js/version.json")
@@ -82,6 +80,9 @@ object JsUpdateManager {
             }, {
                 loadAssets("js/${it.source}")
             })
+            if (!BuildConfig.DEBUG) {
+                JsConfig.localJsVersion = BuildConfig.VERSION_CODE
+            }
         } catch (e: Exception) {
             Log.e("网站脚本配置加载失败", e)
         }

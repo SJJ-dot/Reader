@@ -8,7 +8,7 @@ import com.tencent.mmkv.MMKV
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
-object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
+object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
     var remoteJsCheckTime by longPref("remoteJsVersionCheckTime", 0)
     var localJsVersion by intPref("localJsVersion", 0)
     var localAdblockVersion by intPref("localAdblockVersion", 0)
@@ -38,9 +38,8 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
             putString("Js_${js.source}", gson.toJson(js))
         }
         if (!allJsSource.contains(js.source)) {
-            allJsSource = allJsSource.apply {
-                add(js.source)
-            }
+            allJsSource.add(js.source)
+            allJsSource = allJsSource
         }
         allJs[js.source] = js
         Log.i("保存脚本:${js.source}")
@@ -50,12 +49,11 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig")) {
         if (sources.isEmpty()) {
             return
         }
-        allJsSource = allJsSource.apply {
-            sources.forEach {
-                remove(it)
-                allJs.remove(it)
-            }
+        sources.forEach {
+            allJsSource.remove(it)
+            allJs.remove(it)
         }
+        allJsSource = allJsSource
 
         edit {
             sources.forEach {

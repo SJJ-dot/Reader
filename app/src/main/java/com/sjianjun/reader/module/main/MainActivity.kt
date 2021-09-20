@@ -43,6 +43,13 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
+        launchIo {
+            checkUpdate(false)
+            JsUpdateManager.checkUpdate()
+            JavaScriptTest.testJavaScript()
+            delay(5000)
+            Beta.checkAppUpgrade(false, false)
+        }
         PermissionUtil.requestPermissions(
             this,
             arrayOf(
@@ -96,17 +103,6 @@ class MainActivity : BaseActivity() {
         }
 
         initDrawerMenuWidget()
-
-        runOnIdle {
-
-            launchIo {
-                checkUpdate(false)
-                JsUpdateManager.checkUpdate()
-                JavaScriptTest.testJavaScript()
-                delay(5000)
-                Beta.checkAppUpgrade(false, false)
-            }
-        }
 
     }
 
