@@ -50,7 +50,6 @@ const val WEB_VIEW_UA_DESKTOP =
 const val WEB_VIEW_UA_ANDROID =
     "Mozilla/5.0 (Linux; Android 9; MIX 2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.0 Mobile Safari/537.36 EdgA/44.11.2.4122"
 
-val APP_DATA_DIR by lazy { Environment.getExternalStorageDirectory().absolutePath + "/" + BuildConfig.APPLICATION_ID + "/database" }
-val APP_DATABASE_FILE by lazy { "$APP_DATA_DIR/app_database" }
+
 
 

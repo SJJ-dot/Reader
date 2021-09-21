@@ -3,10 +3,6 @@
 
     <style name="AppTheme.DayNight" parent="AppTheme" />
 
-    <style name="Splash" parent="AppTheme.DayNight">
-        <item name="android:background">@drawable/splash_bg</item>
-    </style>
-
     <style name="Splash.noBackDark" parent="AppTheme.Dark">
         <item name="android:background">@null</item>
     </style>

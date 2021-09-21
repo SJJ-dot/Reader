@@ -1,6 +1,5 @@
 package com.sjianjun.reader.module.main
 
-import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
@@ -11,10 +10,9 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.hjq.permissions.Permission
+import com.hjq.permissions.XXPermissions
 import com.sjianjun.coroutine.launchIo
-import com.sjianjun.coroutine.runOnIdle
-import com.sjianjun.permission.util.PermissionUtil
-import com.sjianjun.permission.util.isGranted
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
@@ -22,6 +20,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.AppDirUtil
 import com.sjianjun.reader.utils.toast
 import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
@@ -50,20 +49,17 @@ class MainActivity : BaseActivity() {
             delay(5000)
             Beta.checkAppUpgrade(false, false)
         }
-        PermissionUtil.requestPermissions(
-            this,
-            arrayOf(
-                Manifest.permission.INTERNET,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        ) {
-            if (!it.isGranted()) {
-                toast("本应用必须要存储卡读写权限用于保存数据库")
-                finish()
-            } else if (!isDestroyed) {
-                init()
+        XXPermissions.with(this)
+            .permission(Permission.MANAGE_EXTERNAL_STORAGE)
+            .request { _, all ->
+                if (!all) {
+                    toast("本应用必须要存储卡读写权限用于保存数据库")
+                    finish()
+                } else {
+                    AppDirUtil.init(this)
+                    init()
+                }
             }
-        }
     }
 
     private fun init() {

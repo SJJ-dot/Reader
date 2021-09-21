@@ -337,7 +337,7 @@ class BookReaderActivity : BaseActivity() {
 
             if (readingRecord.bookUrl == bookUrl) {
                 if (!chapterUrl.isNullOrBlank()) {
-                    readingRecord.chapterUrl = chapterUrl
+                    readingRecord.chapterUrl = chapterUrl?: ""
                     readingRecord.offest = 0
                 }
             } else {

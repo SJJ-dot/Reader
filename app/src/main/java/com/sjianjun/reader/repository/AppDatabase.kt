@@ -7,7 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
-import com.sjianjun.reader.utils.APP_DATABASE_FILE
+import com.sjianjun.reader.utils.AppDirUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
@@ -36,7 +36,7 @@ val queryExecutor = Executors.newFixedThreadPool(10) { r ->
 }
 
 val db by lazy {
-    Room.databaseBuilder(App.app, AppDatabase::class.java, APP_DATABASE_FILE)
+    Room.databaseBuilder(App.app, AppDatabase::class.java, AppDirUtil.APP_DATABASE_FILE)
         .setQueryExecutor(queryExecutor)
         .setTransactionExecutor(queryExecutor)
         .addMigrations(object : Migration(1, 2) {
