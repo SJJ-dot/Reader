@@ -19,18 +19,16 @@ function search(http,query){
         results.add(result);
         return results;
     }catch(error){
-        Log.e(error,error);
+        //Log.e(error,error);
         var bookList = parse.selectFirst("#content > table > tbody").select("tr");
         var results = new ArrayList();
         for (var i=1;i<bookList.size();i++){
             var bookElement = bookList.get(i);
             var result = new SearchResult();
             result.source = source;
-            result.bookTitle = bookElement.selectFirst("#nr > td:nth-child(1) > a").text();
-            result.bookUrl = bookElement.selectFirst("#nr > td:nth-child(1) > a").get(0).absUrl("href");
+            result.bookTitle = bookElement.selectFirst("a").text();
+            result.bookUrl = bookElement.selectFirst("a").absUrl("href");
             result.bookAuthor = bookElement.child(2).text();
-            //result.bookCover = bookElement.getElementsByClass("c").get(0).getElementsByTag("img").get(0).absUrl("src");
-            result.latestChapter = bookElement.select("#nr > td:nth-child(2) > a").text();
             results.add(result);
         }
         return results;
