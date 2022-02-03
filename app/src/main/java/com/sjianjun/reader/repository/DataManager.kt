@@ -157,6 +157,7 @@ object DataManager {
                                     result.bookTitle == book.title && result.bookAuthor == book.author
                                 }?.toBook()
                             } catch (e: Exception) {
+                                error = true
                                 Log.e("搜索出错：${it.source} ${book.title}")
                             }
                         }

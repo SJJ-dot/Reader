@@ -10,7 +10,7 @@ object JsManager {
     }
 
     suspend fun getAllStartingJs(): List<JavaScript> {
-        return getAllJs().filter { it.isStartingStation }
+        return getAllJs().filter { it.isStartingStation && it.enable }
     }
 
     fun getJs(source: String): JavaScript? {
