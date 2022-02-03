@@ -152,11 +152,10 @@ object JsUpdateManager {
         val jsVersionInfos = loadVersionInfo()
         jsVersionInfos.forEach {
             val localVersion = JsConfig.getJs(it.source)?.version ?: 0
-            if (localVersion < it.version) {
+            if (localVersion < it.version || (BuildConfig.DEBUG && localVersion == it.version)) {
                 loadJs(it)?.let { js ->
                     val b = JsConfig.getJs(it.source)?.enable ?: true
-                    val version = if (BuildConfig.DEBUG) localVersion else it.version
-                    JsConfig.saveJs(JavaScript(it.source, js, version, it.starting, it.priority, b))
+                    JsConfig.saveJs(JavaScript(it.source, js, it.version, it.starting, it.priority, b))
                 }
 
             }
