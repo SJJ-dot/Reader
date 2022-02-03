@@ -74,7 +74,6 @@
                             style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
                             android:layout_marginTop="16dp"
                             android:textSize="16sp"
                             app:layout_constraintBaseline_toBaselineOf="@+id/authorTitle"

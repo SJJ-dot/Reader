@@ -27,7 +27,7 @@ function getDetails(http,url){
     book.url = url;
     book.title = parse.selectFirst(".bookTitle").text().trim();
     book.author = parse.selectFirst(".booktag > a").text();
-    book.intro = parse.selectFirst("#bookIntro").outerHtml();
+    book.intro = parse.select(".col-sm-10 > p:nth-child(n+3):nth-last-child(n+3)").outerHtml();
     book.cover = parse.selectFirst(".img-thumbnail").absUrl("src");
     //加载章节列表
     var chapterUrl = parse.selectFirst(".bookmore .btn-info").absUrl("href");
