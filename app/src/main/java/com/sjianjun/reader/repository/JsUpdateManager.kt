@@ -114,7 +114,11 @@ object JsUpdateManager {
             list.forEach {
                 allLocalSource.remove(it.source)
             }
-            JsConfig.removeJs(*allLocalSource.toTypedArray())
+            if (BuildConfig.DEBUG) {
+                Log.e("DEBUG 忽略服务端被删除的内容。在正式版本下列的脚本将会被删除：${allLocalSource}")
+            } else {
+                JsConfig.removeJs(*allLocalSource.toTypedArray())
+            }
         }
 
     }

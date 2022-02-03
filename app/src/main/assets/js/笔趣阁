@@ -1,4 +1,4 @@
-var hostUrl = "https://www.biquges.com/";
+var hostUrl = "https://www.mayiwxw.com/";
 function search(http,query){
     var baseUrl = hostUrl;
     var map = new HashMap();
