@@ -27,20 +27,20 @@ object JsUpdateManager {
             Log.i("=========================开始检查JS脚本更新=================================")
             checkLocalAdBlackUpdate()
             checkLocalJsUpdate()
-            if (System.currentTimeMillis() - JsConfig.remoteJsCheckTime > TimeUnit.HOURS.toMillis(1)) {
-                while (true) {
-                    try {
-                        checkRemoteJsUpdate()
-                        if (!BuildConfig.DEBUG) {
-                            JsConfig.remoteJsCheckTime = System.currentTimeMillis()
-                        }
-                        break
-                    } catch (e: Exception) {
-                        Log.e("网站脚本配置加载失败", e)
-                        delay(60000)
-                    }
-                }
-            }
+//            if (System.currentTimeMillis() - JsConfig.remoteJsCheckTime > TimeUnit.HOURS.toMillis(1)) {
+//                while (true) {
+//                    try {
+//                        checkRemoteJsUpdate()
+//                        if (!BuildConfig.DEBUG) {
+//                            JsConfig.remoteJsCheckTime = System.currentTimeMillis()
+//                        }
+//                        break
+//                    } catch (e: Exception) {
+//                        Log.e("网站脚本配置加载失败", e)
+//                        delay(60000)
+//                    }
+//                }
+//            }
             Log.i("===========================JS脚本更新结束==================================")
         }
     }
