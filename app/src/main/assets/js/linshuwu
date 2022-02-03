@@ -39,8 +39,9 @@ function getDetails(http,url){
             if(++dt==2){
                 break;
             }
+            continue;
         }
-        Log.e(chapterEl);
+        //Log.e(chapterEl);
         var chapter = new Chapter();
         chapter.title = chapterEl.text();
         chapter.url = chapterEl.absUrl("href");
