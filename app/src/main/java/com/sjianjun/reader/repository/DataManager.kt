@@ -152,9 +152,13 @@ object DataManager {
                             it.source
                         ).first()
                         if (startingBook == null) {
-                            startingBook = it.search(book.title)?.find { result ->
-                                result.bookTitle == book.title && result.bookAuthor == book.author
-                            }?.toBook()
+                            try {
+                                startingBook = it.search(book.title)?.find { result ->
+                                    result.bookTitle == book.title && result.bookAuthor == book.author
+                                }?.toBook()
+                            } catch (e: Exception) {
+                                Log.e("搜索出错：${it.source} ${book.title}")
+                            }
                         }
                         startingBook
                     }
