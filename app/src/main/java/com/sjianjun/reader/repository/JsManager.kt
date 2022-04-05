@@ -18,7 +18,7 @@ object JsManager {
     }
 
     suspend fun getAllBookJs(bookTitle: String, bookAuthor: String): List<JavaScript> {
-        val list = db.dao().getAllBookSource(bookTitle, bookAuthor)
+        val list = AppDbFactory.db.dao().getAllBookSource(bookTitle, bookAuthor)
         return getAllJs().filter { list.contains(it.source) }
     }
 

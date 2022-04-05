@@ -9,7 +9,6 @@ import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
 object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
-    var remoteJsCheckTime by longPref("remoteJsVersionCheckTime", 0)
     var localJsVersion by intPref("localJsVersion", 0)
     var localAdblockVersion by intPref("localAdblockVersion", 0)
 

@@ -7,16 +7,22 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.utils.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.net.URLEncoder
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 
 /**
  * 界面数据从数据库订阅刷新
  */
 object DataManager {
-    private val dao = db.dao()
+    private val dao get() = AppDbFactory.db.dao()
 
     /**
      * 搜素历史记录
@@ -97,20 +103,16 @@ object DataManager {
         }
     }
 
-    suspend fun deleteSearchHistory(history: List<SearchHistory>) {
-        withIo {
-            dao.deleteSearchHistory(history)
-        }
+    suspend fun deleteSearchHistory(history: List<SearchHistory>) = withIo {
+        dao.deleteSearchHistory(history)
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): String? {
         return insertBookAndSaveReadingRecord(searchResult.toBookList())
     }
 
-    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String? {
-        return withIo {
-            dao.insertBookAndSaveReadingRecord(bookList)
-        }
+    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String = withIo {
+        dao.insertBookAndSaveReadingRecord(bookList)
     }
 
     suspend fun getStartingBook(
@@ -233,22 +235,20 @@ object DataManager {
         }
     }
 
-    suspend fun updateBookDetails(book: Book) {
+    suspend fun updateBookDetails(book: Book) = withIo {
         dao.updateBookDetails(book)
     }
 
-    fun getAllReadingBook(): Flow<List<Book>> {
-        return dao.getAllReadingBook()
+    suspend fun getAllReadingBook(): Flow<List<Book>> = withIo {
+        dao.getAllReadingBook()
     }
 
-    suspend fun deleteBook(book: Book) {
-        withIo {
-            dao.deleteBook(book)
-        }
+    suspend fun deleteBook(book: Book) = withIo {
+        dao.deleteBook(book)
     }
 
 
-    suspend fun deleteBookByUrl(book: Book): Boolean? {
+    suspend fun deleteBookByUrl(book: Book): Boolean {
         return withIo {
             val readingRecord = dao.getReadingRecord(book.title, book.author)
             if (readingRecord?.bookUrl == book.url) {
@@ -261,8 +261,8 @@ object DataManager {
         }
     }
 
-    fun getBookByUrl(url: String): Flow<Book?> {
-        return dao.getBookByUrl(url)
+    suspend fun getBookByUrl(url: String): Book? = withIo {
+        dao.getBookByUrl(url)
     }
 
     fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
@@ -288,7 +288,7 @@ object DataManager {
 
         return dao.getLastChapterByBookUrl(bookUrl).onEach {
             if (it != null) {
-                val book = dao.getBookByUrl(it.bookUrl).first()
+                val book = dao.getBookByUrl(it.bookUrl)
 
                 if (book != null) {
                     val record = dao.getReadingRecord(book.title, book.author)
@@ -324,41 +324,39 @@ object DataManager {
     /**
      * 切换正在阅读的书的书源
      */
-    suspend fun changeReadingRecordBookSource(book: Book) {
-        withIo {
-            val readingRecord = getReadingRecord(book).first()
-                ?: ReadingRecord(book.title, book.author)
-            if (readingRecord.bookUrl == book.url) {
-                return@withIo
-            }
-            readingRecord.bookUrl = book.url
-            val chapter = getChapterByUrl(readingRecord.chapterUrl).first()
-            var readChapter: Chapter? = null
-            if (chapter != null) {
-                //根据章节名查询。取索引最接近那个
-                readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
-                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
-                if (readChapter == null) {
-                    //如果章节名没查到。根据章节名模糊查询
-                    readChapter = dao.getChapterByName(book.url, "%${chapter.name()}")
-                        .firstOrNull()?.minByOrNull { chapter.index - it.index }
-                }
-                if (readChapter == null) {
-                    readChapter = dao.getChapterByName(book.url, "%${chapter.name()}%")
-                        .firstOrNull()?.minByOrNull { chapter.index - it.index }
-                }
-                if (readChapter == null) {
-                    readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
-                        ?: dao.getLastChapterByBookUrl(book.url).first()
-                }
-
-            }
-            readingRecord.chapterUrl = readChapter?.url ?: ""
-            if (readingRecord.chapterUrl.isBlank()) {
-                readingRecord.offest = 0
-            }
-            setReadingRecord(readingRecord)
+    suspend fun changeReadingRecordBookSource(book: Book) = withIo {
+        val readingRecord = getReadingRecord(book).first()
+            ?: ReadingRecord(book.title, book.author)
+        if (readingRecord.bookUrl == book.url) {
+            return@withIo
         }
+        readingRecord.bookUrl = book.url
+        val chapter = getChapterByUrl(readingRecord.chapterUrl).first()
+        var readChapter: Chapter? = null
+        if (chapter != null) {
+            //根据章节名查询。取索引最接近那个
+            readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
+                .firstOrNull()?.minByOrNull { chapter.index - it.index }
+            if (readChapter == null) {
+                //如果章节名没查到。根据章节名模糊查询
+                readChapter = dao.getChapterByName(book.url, "%${chapter.name()}")
+                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
+            }
+            if (readChapter == null) {
+                readChapter = dao.getChapterByName(book.url, "%${chapter.name()}%")
+                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
+            }
+            if (readChapter == null) {
+                readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
+                    ?: dao.getLastChapterByBookUrl(book.url).first()
+            }
+
+        }
+        readingRecord.chapterUrl = readChapter?.url ?: ""
+        if (readingRecord.chapterUrl.isBlank()) {
+            readingRecord.offest = 0
+        }
+        setReadingRecord(readingRecord)
     }
 
     suspend fun getChapterContent(
@@ -378,7 +376,7 @@ object DataManager {
             if (onlyLocal) {
                 return@withIo
             }
-            val book = dao.getBookByUrl(chapter.bookUrl).first()
+            val book = dao.getBookByUrl(chapter.bookUrl)
 
             if (book?.source == BOOK_SOURCE_FILE_IMPORT) {
                 return@withIo
@@ -403,8 +401,8 @@ object DataManager {
     }
 
 
-    suspend fun setReadingRecord(record: ReadingRecord): Long {
-        return dao.insertReadingRecord(record)
+    suspend fun setReadingRecord(record: ReadingRecord): Long = withIo {
+        dao.insertReadingRecord(record)
     }
 
 }

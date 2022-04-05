@@ -1,5 +1,6 @@
 package com.sjianjun.reader.preferences
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.sjianjun.reader.utils.gson
 import java.lang.reflect.ParameterizedType
@@ -65,6 +66,27 @@ class LongPref(
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Long) {
         pref.edit().putLong(key, value).apply()
+    }
+}
+
+fun SharedPreferences.boolPref(
+    key: String,
+    def: Boolean = false
+): BoolPref {
+    return BoolPref(this, key, def)
+}
+
+class BoolPref(
+    private val pref: SharedPreferences,
+    private val key: String,
+    val def: Boolean = false
+) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): Boolean {
+        return pref.getBoolean(key, def)
+    }
+
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Boolean) {
+        pref.edit().putBoolean(key, value).apply()
     }
 }
 

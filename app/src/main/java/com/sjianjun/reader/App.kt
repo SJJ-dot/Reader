@@ -6,9 +6,11 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.AppDirUtil
 import com.tencent.mmkv.MMKV
 import me.weishu.reflection.Reflection
 import sjj.alog.Config
+import sjj.alog.Log
 import java.io.File
 
 class App : Application() {
@@ -26,14 +28,17 @@ class App : Application() {
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
         Config.getDefaultConfig().apply {
             consolePrintAllLog = true
-            writeToFile = false
+            writeToFile = true
             val dir = externalCacheDir
             if (dir != null) {
                 writeToFileDir = File(dir, "alog")
             }
             writeToFileDirName = "reader"
         }
-
+        if (globalConfig.hasPermission) {
+            Log.i("APP启动，已有权限重新初始化")
+            AppDirUtil.init(this)
+        }
     }
 
     private fun importSharedPreferences() {

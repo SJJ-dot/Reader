@@ -12,9 +12,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.*
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.module.main.ChapterListFragment
@@ -25,10 +25,7 @@ import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicReference
@@ -40,7 +37,6 @@ import kotlin.math.roundToInt
 class BookReaderActivity : BaseActivity() {
     private val bookUrl get() = intent.getStringExtra(BOOK_URL)!!
     private val chapterUrl get() = intent.getStringExtra(CHAPTER_URL)
-    private lateinit var book: Book
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ContentAdapter(this) }
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
@@ -315,12 +311,11 @@ class BookReaderActivity : BaseActivity() {
     private fun initData() {
         initDataJob.get()?.cancel()
         launch(singleCoroutineKey = "initBookReaderData") {
-            val book = DataManager.getBookByUrl(bookUrl).first()
+            val book = DataManager.getBookByUrl(bookUrl)
             if (book == null) {
                 finish()
                 return@launch
             }
-            this@BookReaderActivity.book = book
             //设置章节列表
             supportFragmentManager.beginTransaction()
                 .replace(
@@ -331,7 +326,6 @@ class BookReaderActivity : BaseActivity() {
                     )
                 )
                 .commitAllowingStateLoss()
-
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title, book.author)
 
@@ -345,10 +339,8 @@ class BookReaderActivity : BaseActivity() {
                 readingRecord.chapterUrl = chapterUrl ?: ""
                 readingRecord.offest = 0
             }
-
             var first = true
             DataManager.getChapterList(bookUrl).collectLatest {
-
                 if (first) {
                     first = false
 

@@ -11,7 +11,7 @@ interface Dao {
 
 
     @Query("select source from Book where title=:bookTitle and author=:bookAuthor")
-    suspend fun getAllBookSource(bookTitle: String, bookAuthor: String): List<String>
+    fun getAllBookSource(bookTitle: String, bookAuthor: String): List<String>
 
     /**
      * 查询全部搜索历史记录
@@ -20,19 +20,19 @@ interface Dao {
     fun getAllSearchHistory(): Flow<List<SearchHistory>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSearchHistory(history: SearchHistory)
+    fun insertSearchHistory(history: SearchHistory)
 
     @Delete
-    suspend fun deleteSearchHistory(historyList: List<SearchHistory>)
+    fun deleteSearchHistory(historyList: List<SearchHistory>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertBook(bookList: List<Book>): List<Long>
+    fun insertBook(bookList: List<Book>): List<Long>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertBook(book: Book): Long
+    fun insertBook(book: Book): Long
 
     @Transaction
-    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
+    fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
         cleanDirtyData()
         insertBook(bookList)
         val book = bookList.first()
@@ -51,13 +51,13 @@ interface Dao {
 
 
     @Query("delete from Book where title=:title and author=:author ")
-    suspend fun deleteBook(title: String, author: String)
+    fun deleteBook(title: String, author: String)
 
     @Query("delete from Book where url=:url")
-    suspend fun deleteBookByUrl(url: String)
+    fun deleteBookByUrl(url: String)
 
     @Transaction
-    suspend fun deleteBook(book: Book) {
+    fun deleteBook(book: Book) {
         deleteChapterContentByBookTitleAndAuthor(book.title, book.author)
         deleteBook(book.title, book.author)
         deleteChapterByBook(book.title, book.author)
@@ -70,17 +70,17 @@ interface Dao {
      * 删除指定书源的书籍
      */
     @Transaction
-    suspend fun deleteBookByUrl(book: Book) {
+    fun deleteBookByUrl(book: Book) {
         deleteChapterContentByBookUrl(book.url)
         deleteBookByUrl(book.url)
         deleteChapterByBookUrl(book.url)
     }
 
     @Update
-    suspend fun updateBook(book: Book)
+    fun updateBook(book: Book)
 
     @Transaction
-    suspend fun updateBookDetails(book: Book) {
+    fun updateBookDetails(book: Book) {
         updateBook(book)
         val chapterList = book.chapterList ?: return
         deleteChapterByBookUrl(book.url)
@@ -95,7 +95,7 @@ interface Dao {
     fun getAllReadingBook(): Flow<List<Book>>
 
     @Query("select * from Book where url=:url")
-    fun getBookByUrl(url: String): Flow<Book?>
+    fun getBookByUrl(url: String): Book?
 
     @Query("select * from Book where title=:title and author=:author  order by source")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
@@ -128,22 +128,22 @@ interface Dao {
     fun getChapterByIndex(bookUrl: String, index: Int): Flow<Chapter?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChapter(chapterList: List<Chapter>): List<Long>
+    fun insertChapter(chapterList: List<Chapter>): List<Long>
 
     @Query("delete from Chapter where bookUrl=:bookUrl")
-    suspend fun deleteChapterByBookUrl(bookUrl: String)
+    fun deleteChapterByBookUrl(bookUrl: String)
 
     @Query("delete from Chapter where url not in (:urlList)")
-    suspend fun deleteChapterByUrl(urlList: List<String>)
+    fun deleteChapterByUrl(urlList: List<String>)
 
     @Query("delete from Chapter where bookUrl in (select url from book where title=:bookTitle and author=:bookAuthor)")
-    suspend fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
+    fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
 
     @Query("update Chapter set isLoaded=1 where bookUrl=:bookUrl and url in (select url from ChapterContent)")
-    suspend fun updateBookChapterIsLoaded(bookUrl: String)
+    fun updateBookChapterIsLoaded(bookUrl: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
+    fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
 
     @Query("select * from ChapterContent where url=:url")
     fun getChapterContent(url: String): Flow<ChapterContent?>
@@ -161,20 +161,20 @@ interface Dao {
     fun getReadingRecordFlow(bookTitle: String, bookAuthor: String): Flow<ReadingRecord?>
 
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
-    suspend fun getReadingRecord(bookTitle: String, bookAuthor: String): ReadingRecord?
+    fun getReadingRecord(bookTitle: String, bookAuthor: String): ReadingRecord?
 
     @Query("select * from ReadingRecord")
     fun getAllReadingRecordList(): Flow<List<ReadingRecord>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertReadingRecord(record: ReadingRecord): Long
+    fun insertReadingRecord(record: ReadingRecord): Long
 
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
-    suspend fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
+    fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
 
 
     @Transaction
-    suspend fun cleanDirtyData() {
+    fun cleanDirtyData() {
         cleanReadingBook()
         cleanBook()
         cleanChapter()
@@ -183,15 +183,15 @@ interface Dao {
 
     //有空再改连表查询吧
     @Query("delete from Book where not exists (select * from Book where url in (select bookUrl from ReadingRecord))")
-    suspend fun cleanBook()
+    fun cleanBook()
 
     @Query("delete from ReadingRecord where bookUrl not in (select url from Book)")
-    suspend fun cleanReadingBook()
+    fun cleanReadingBook()
 
     @Query("delete from Chapter where bookUrl not in (select url from Book)")
-    suspend fun cleanChapter()
+    fun cleanChapter()
 
     @Query("delete from ChapterContent where url not in (select url from Chapter)")
-    suspend fun cleanChapterContent()
+    fun cleanChapterContent()
 
 }
