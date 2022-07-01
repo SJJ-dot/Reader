@@ -2,6 +2,7 @@ package com.sjianjun.reader.bean
 
 import androidx.room.Ignore
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
@@ -64,6 +65,7 @@ data class JavaScript constructor(
     var headerScript = """
         ${importClassCode<Jsoup>()}
         ${importClassCode<Log>()}
+        ${importClassCode<CookieMgr>()}
         ${importClassCode<SearchResult>()}
         ${importClassCode<Chapter>()}
         ${importClassCode<Book>()}

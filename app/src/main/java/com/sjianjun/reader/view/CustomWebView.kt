@@ -21,9 +21,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.OnLifecycleEvent
 import com.google.gson.annotations.Expose
 import com.sjianjun.reader.R
+import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
 import kotlinx.android.synthetic.main.web_view.view.*
+import okhttp3.Cookie
+import okhttp3.HttpUrl
 import sjj.alog.Log
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -118,6 +121,14 @@ class CustomWebView @JvmOverloads constructor(
                 forward.isEnabled = webView?.canGoForward() == true
                 backward.isEnabled = webView?.canGoBack() == true
                 refresh.isSelected = false
+//                CookieMgr.saveFromResponse()
+                val cookieManager = CookieManager.getInstance()
+                val cookieStr = cookieManager.getCookie(url)
+                val httpUrl = HttpUrl.get(url ?: "")
+                val cookie = Cookie.parse(httpUrl, cookieStr)
+                cookie?.let { CookieMgr.saveFromResponse(httpUrl, mutableListOf(it)) }
+
+                Log.e(cookieStr)
             }
 
             override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {

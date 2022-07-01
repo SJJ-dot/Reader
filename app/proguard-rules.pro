@@ -49,6 +49,7 @@
 -keep class com.sjianjun.reader.rhino.** { *; }
 -keep class com.sjianjun.reader.view.CustomWebView$AdBlock { *; }
 -keep class com.sjianjun.reader.http.Http { *; }
+-keep class com.sjianjun.reader.http.CookieMgr { *; }
 -keep class androidx.core.content.FileProvider { *; }
 
 -keep public class * implements com.bumptech.glide.module.GlideModule

@@ -1,11 +1,7 @@
 package com.sjianjun.reader.http
 
-import com.franmontiel.persistentcookiejar.PersistentCookieJar
-import com.franmontiel.persistentcookiejar.cache.SetCookieCache
-import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.sjianjun.okhttp3.interceptor.HttpLoggingInterceptor
-import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.retrofit.converter.GsonCharsetCompatibleConverter
 import com.sjianjun.retrofit.simple.http.HttpClient
@@ -18,16 +14,17 @@ import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
 private fun header() = mutableMapOf(
-    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
-    "Cache-Control" to "no-cache",
     "Connection" to "keep-alive",
-    "Pragma" to "no-cache",
+    "sec-ch-ua" to """" Not;A Brand";v="99", "Microsoft Edge";v="103", "Chromium";v="103"""",
+    "sec-ch-ua-mobile" to "?0",
+    "sec-ch-ua-platform" to "\"Windows\"",
     "Sec-Fetch-Dest" to "document",
     "Sec-Fetch-Mode" to "navigate",
-    "Sec-Fetch-Site" to "none",
-    "Sec-Fetch-User" to "?1",
-    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+    "Sec-Fetch-Site" to "same-origin",
+    "Upgrade-Insecure-Requests" to "1",
+    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.53 Safari/537.36 Edg/103.0.1264.37"
 )
 
 val client = HttpClient.Builder()
@@ -56,12 +53,7 @@ val client = HttpClient.Builder()
             .writeTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .cookieJar(
-                PersistentCookieJar(
-                    SetCookieCache(),
-                    SharedPrefsCookiePersistor(App.app)
-                )
-            )
+            .cookieJar(CookieMgr)
             .addInterceptor {
 
                 val header = header()
@@ -71,6 +63,7 @@ val client = HttpClient.Builder()
                 val host = it.request().url().host()
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader("Host", host)
+                newBuilder.addHeader("Referer", it.request().url().toString())
                 header.forEach { (t, u) ->
                     newBuilder.addHeader(t, u)
                 }
