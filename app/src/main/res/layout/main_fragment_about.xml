@@ -15,8 +15,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"
-        app:srcCompat="@mipmap/ic_xue_xi"
-        app:tint="@color/dn_dark_tint" />
+        android:src="@mipmap/ic_xue_xi"
+        android:tint="@color/dn_dark_tint" />
 
 
     <com.sjianjun.reader.view.LinksClickableTextView

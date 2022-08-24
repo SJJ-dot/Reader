@@ -27,7 +27,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "0.6.1"
+        versionName "0.6.2"
         resConfigs("zh")
     }
 
