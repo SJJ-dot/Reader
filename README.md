@@ -1,4 +1,4 @@
-# 一个自用的小说阅读器
+# 一个自用的小说阅读器 JavaScript驱动解析书源
 kotlin 协程、rhino、Javascript
 
 
