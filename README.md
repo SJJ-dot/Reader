@@ -1,7 +1,7 @@
 # 一个自用的小说阅读器 JavaScript驱动解析书源
 kotlin 协程、rhino、Javascript
 
-# 不限期停止维护书源。喜欢看小说的朋友建议使用 https://github.com/gedoor/legado
+# 书源比较少。喜欢看小说的朋友建议使用 https://github.com/gedoor/legado
 
 
 
