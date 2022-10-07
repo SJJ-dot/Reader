@@ -22,21 +22,21 @@ class ReleasesInfo {
     val isNewVersion:Boolean
         get() {
             if (BuildConfig.VERSION_NAME == tag_name) {
-                return version1
+                return false
             }
-            val split1 = version1.split(".")
-            val split2 = version2.split(".")
+            val split1 = tag_name.split(".").mapNotNull { it.toIntOrNull() }
+            val split2 = BuildConfig.VERSION_NAME.split(".").mapNotNull { it.toIntOrNull() }
             (0..max(split1.size, split2.size)).forEach {
-                val n1 = split1.getOrNull(it)?.toIntOrNull() ?: 0
-                val n2 = split2.getOrNull(it)?.toIntOrNull() ?: 0
+                val n1 = split1.getOrNull(it) ?: 0
+                val n2 = split2.getOrNull(it) ?: 0
                 if (n1 > n2) {
-                    return version1
+                    return true
                 }
                 if (n1 < n2) {
-                    return version2
+                    return false
                 }
             }
-            return version1
+            return false
         }
 
     class Assets {

@@ -121,10 +121,6 @@ object DataManager {
         onlyLocal: Boolean = false
     ): Book? {
 
-        if (book.source == BOOK_SOURCE_FILE_IMPORT) {
-            return null
-        }
-
         return withIo {
             if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
                 //可能存在之前本地没有首发站书源，设置为null之后的情况
@@ -202,10 +198,6 @@ object DataManager {
     }
 
     suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null) = withIo {
-
-        if (book?.source == BOOK_SOURCE_FILE_IMPORT) {
-            return@withIo
-        }
 
         book ?: return@withIo
         val script = javaScript ?: JsManager.getJs(book.source)
@@ -377,10 +369,6 @@ object DataManager {
                 return@withIo
             }
             val book = dao.getBookByUrl(chapter.bookUrl)
-
-            if (book?.source == BOOK_SOURCE_FILE_IMPORT) {
-                return@withIo
-            }
 
             val js = JsManager.getJs(book?.source ?: return@withIo)
             val content = js?.getChapterContent(chapter.url)
