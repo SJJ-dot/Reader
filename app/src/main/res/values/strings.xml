@@ -1,4 +1,4 @@
 <resources>
-    <string name="about_app">喜欢看小说的朋友推荐使用：https://github.com/gedoor/legado\n下载地址：https://www.coolapk.com/apk/io.legado.app.release\n书源订阅地址：http://alanskycn.gitee.io/vip/bk/B1.html\n声明：\n本项目为研究学习用途，禁止他人擅自应用于商业行为。\n应用内容均来自网络，如果您认为应用内容侵犯了您网站的权利请通过邮箱联系通知。\n欢迎前往github提交建议。\n<a href="mailto:978622005@qq.com">邮箱：978622005@qq.com</a>\n<a href="%1$s">项目地址：%1$s</a></string>
+    <string name="about_app">欢迎前往github提交建议，或者直接联系我。\n<a href="%1$s">项目地址：%1$s</a></string>
 
 </resources>

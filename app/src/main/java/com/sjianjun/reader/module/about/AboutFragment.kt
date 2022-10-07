@@ -13,11 +13,7 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
-import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.main_fragment_about.*
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
-import sjj.alog.Log
 
 class AboutFragment : BaseAsyncFragment() {
 
@@ -28,8 +24,6 @@ class AboutFragment : BaseAsyncFragment() {
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {
             launch(singleCoroutineKey = "checkUpdate") {
-                //检查bugly更新
-                Beta.checkAppUpgrade()
                 checkUpdate(true)
                 setVersionInfo()
                 setCode()
@@ -78,35 +72,18 @@ class AboutFragment : BaseAsyncFragment() {
 
     private fun setVersionInfo() {
 
-//        Log.i("AppUpgradeInfo:${Beta.getAppUpgradeInfo()}")
-//        Log.i("Github AppUpgradeInfo${globalConfig.releasesInfo}")
-        val appUpgradeInfo = Beta.getAppUpgradeInfo()
-        val newestVersion = if (appUpgradeInfo != null &&
-            appUpgradeInfo.versionCode > BuildConfig.VERSION_CODE
-        ) {
-            appUpgradeInfo.versionName
-        } else {
-            null
-        }
+        val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
 
-
-
-        if (newestVersion != null) {
-            versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME}"
+        if (releaseInfo?.isNewVersion == true) {
+            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.tag_name}"
         } else {
             versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }
     }
 
     private fun downloadUrl(): String {
-
-        var downloadUrl = Beta.getAppUpgradeInfo()?.apkUrl
-        if (downloadUrl.isNullOrBlank()) {
-            val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-            downloadUrl = releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
-        }
-        return downloadUrl
+        val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+        return releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
     }
 
 }

@@ -120,7 +120,7 @@ dependencies {
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation 'com.google.android.material:material:1.4.0'
 
-    implementation 'com.tencent.bugly:crashreport_upgrade:1.4.5'
+    implementation 'com.tencent.bugly:crashreport:latest.release'
 //    implementation "com.victor:lib:1.0.4"
 
 //    implementation project(":refreshbar")

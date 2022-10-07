@@ -1,6 +1,8 @@
 package com.sjianjun.reader.bean
 
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
+import kotlin.math.max
 
 class ReleasesInfo {
     var tag_name: String = ""
@@ -16,6 +18,26 @@ class ReleasesInfo {
 
     val apkDownloadUrl: String?
         get() = apkAssets?.browser_download_url
+
+    val isNewVersion:Boolean
+        get() {
+            if (BuildConfig.VERSION_NAME == tag_name) {
+                return version1
+            }
+            val split1 = version1.split(".")
+            val split2 = version2.split(".")
+            (0..max(split1.size, split2.size)).forEach {
+                val n1 = split1.getOrNull(it)?.toIntOrNull() ?: 0
+                val n2 = split2.getOrNull(it)?.toIntOrNull() ?: 0
+                if (n1 > n2) {
+                    return version1
+                }
+                if (n1 < n2) {
+                    return version2
+                }
+            }
+            return version1
+        }
 
     class Assets {
 

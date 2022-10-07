@@ -15,28 +15,23 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
 import sjj.alog.Log
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-
-suspend fun loadUpdateInfo() {
-    if (System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > TimeUnit.HOURS.toMillis(1)) {
-        val info = http.get(
-            URL_RELEASE_INFO,
-            header = mapOf("Content-Type" to "application/json;charset=UTF-8")
-        )
-        globalConfig.releasesInfo = info
-        if (!BuildConfig.DEBUG) {
-            globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
-        }
-        Log.i(info)
-    }
-}
 
 suspend fun checkUpdate(fromUser: Boolean = false) = withIo {
     try {
-        loadUpdateInfo()
+        if (fromUser || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime > TimeUnit.HOURS.toMillis(1)) {
+            val info = http.get(
+                URL_RELEASE_INFO,
+                header = mapOf("Content-Type" to "application/json;charset=UTF-8")
+            )
+            globalConfig.releasesInfo = info
+            if (!BuildConfig.DEBUG) {
+                globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
+            }
+            Log.i(info)
+        }
     } catch (e: Exception) {
         if (fromUser) {
-            toast("Github:版本信息加载失败，访问不稳定开启代理再试", Toast.LENGTH_LONG)
+            toast("版本信息加载失败：${e.message}", Toast.LENGTH_LONG)
         }
         return@withIo
     }
@@ -50,8 +45,7 @@ suspend fun checkUpdate(fromUser: Boolean = false) = withIo {
     if (releasesInfo.prerelease && !(BuildConfig.DEBUG || fromUser)) {
         return@withIo
     }
-    val lastVersion = lastVersion(BuildConfig.VERSION_NAME, releasesInfo.tag_name)
-    if (lastVersion != BuildConfig.VERSION_NAME) {
+    if (releasesInfo.isNewVersion) {
         val currentActivity = ActivityManger.currentActivity
         val dialog = AlertDialog.Builder(currentActivity)
             .setTitle(if (releasesInfo.name.isEmpty()) "版本更新" else releasesInfo.name)
@@ -73,27 +67,8 @@ suspend fun checkUpdate(fromUser: Boolean = false) = withIo {
         }
     } else {
         if (fromUser) {
-            toast("Github:已经是最新版本", Toast.LENGTH_LONG)
+            toast("当前已经是最新版本", Toast.LENGTH_LONG)
         }
     }
 
-}
-
-private fun lastVersion(version1: String, version2: String): String {
-    if (version1 == version2) {
-        return version1
-    }
-    val split1 = version1.split(".")
-    val split2 = version2.split(".")
-    (0..max(split1.size, split2.size)).forEach {
-        val n1 = split1.getOrNull(it)?.toIntOrNull() ?: 0
-        val n2 = split2.getOrNull(it)?.toIntOrNull() ?: 0
-        if (n1 > n2) {
-            return version1
-        }
-        if (n1 < n2) {
-            return version2
-        }
-    }
-    return version1
 }

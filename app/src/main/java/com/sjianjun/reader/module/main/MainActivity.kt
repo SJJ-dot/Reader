@@ -22,7 +22,6 @@ import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
 import com.sjianjun.reader.utils.toast
-import com.tencent.bugly.beta.Beta
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 import kotlinx.coroutines.delay
@@ -46,8 +45,6 @@ class MainActivity : BaseActivity() {
             checkUpdate(false)
             JsUpdateManager.checkUpdate()
             JavaScriptTest.testJavaScript()
-            delay(5000)
-            Beta.checkAppUpgrade(false, false)
         }
         XXPermissions.with(this)
             .permission(Permission.MANAGE_EXTERNAL_STORAGE)
