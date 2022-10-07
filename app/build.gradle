@@ -27,7 +27,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "0.6.2"
+        versionName "0.6.3"
         resConfigs("zh")
     }
 
@@ -69,9 +69,6 @@ android {
         kotlinCompilerExtensionVersion '1.0.1'
     }
 }
-configurations {
-    localDeps
-}
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
@@ -96,14 +93,14 @@ dependencies {
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation "androidx.room:room-ktx:2.3.0"
 
-    implementation 'com.google.code.gson:gson:2.8.8'
+    implementation 'com.google.code.gson:gson:2.8.9'
 
     implementation "org.mozilla:rhino:1.7.12"
     implementation "org.jsoup:jsoup:1.13.1"
 
-    localDeps 'com.github.SJJ-dot:ALOG:1.2.9'
+    implementation 'com.github.SJJ-dot:ALOG:1.2.9'
     implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
-    implementation 'com.github.SJJ-dot:CoroutineKtx:0.0.3'
+    implementation 'com.github.SJJ-dot:CoroutineKtx:0.0.5'
     /**
      * 沉浸式
      */
@@ -161,12 +158,7 @@ dependencies {
     // UI Tests
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4:1.0.2'
 
-    localDeps 'com.github.getActivity:XXPermissions:12.3'
+    implementation 'com.github.getActivity:XXPermissions:12.3'
 //    implementation 'io.github.jeremyliao:live-event-bus-x:1.8.0'
-    implementation configurations.localDeps
-}
-task copyToLib(type: Copy) {
-    configurations.localDeps.setCanBeResolved(true)
-    from configurations.localDeps
-    into "$buildDir/output/lib"
+
 }
