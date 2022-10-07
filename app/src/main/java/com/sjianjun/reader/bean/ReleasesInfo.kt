@@ -72,6 +72,10 @@ class ReleasesInfo {
             return result
         }
 
+        override fun toString(): String {
+            return "Assets(browser_download_url='$browser_download_url', content_type='$content_type', download_count='$download_count', name='$name')"
+        }
+
     }
 
     override fun equals(other: Any?): Boolean {
@@ -96,6 +100,10 @@ class ReleasesInfo {
         result = 31 * result + prerelease.hashCode()
         result = 31 * result + (assets?.hashCode() ?: 0)
         return result
+    }
+
+    override fun toString(): String {
+        return "ReleasesInfo(tag_name='$tag_name', name='$name', body='$body', prerelease=$prerelease, assets=$assets)"
     }
 
 }

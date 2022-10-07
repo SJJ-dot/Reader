@@ -27,7 +27,8 @@ suspend fun checkUpdate(fromUser: Boolean = false) = withIo {
             if (!BuildConfig.DEBUG) {
                 globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
             }
-            Log.i(info)
+            val releasesInfo = gson.fromJson<ReleasesInfo>(info)
+            Log.i(releasesInfo)
         }
     } catch (e: Exception) {
         if (fromUser) {
