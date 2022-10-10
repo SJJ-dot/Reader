@@ -90,12 +90,13 @@ data class JavaScript constructor(
             for(k in data){
                 query.put(k,URLEncoder.encode(data[k],enc))
             }
-            
+            var resp;
             if(params.type=="post"){
-                return http.post(params.url,query,header)
+                resp = http.post(params.url,query,header)
             }else{
-                return http.get(params.url,query,header)
+                resp = http.get(params.url,query,header)
             }
+            return Jsoup.parse(resp,params.url);
         }
         
         function get(params){
@@ -108,6 +109,18 @@ data class JavaScript constructor(
             return request(params)
         }
         
+        function encode(s,enc){
+            return URLEncoder.encode(s,enc||"utf-8")
+        }
+        
+        function decode(s,enc){
+            return URLEncoder.decode(s,enc||"utf-8")
+        }
+        
+        function getCookie(url,name){
+            return CookieMgr.getCookie(url,name)
+        }
+        
     """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
@@ -118,10 +131,10 @@ data class JavaScript constructor(
         return execute {
             val paramList = params.filter { it?.isNotEmpty() == true }
             val result = if (paramList.isEmpty()) {
-                eval("${functionName}(http)")
+                eval("${functionName}()")
             } else {
                 val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-                eval("${functionName}(http,${param})")
+                eval("${functionName}(${param})")
             }
             jsToJava<T>(result)
         }
@@ -138,7 +151,7 @@ data class JavaScript constructor(
         return js {
             putProperty("source", javaToJS(source))
             putProperty("http", javaToJS(http))
-            putProperty("context", this)
+//            putProperty("context", this)
 
             eval(headerScript)
             eval(js)
