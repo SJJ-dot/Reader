@@ -30,7 +30,7 @@ const val BOOK_SOURCE = "JS_SOURCE"
 const val JS_FIELD_REQUEST_DELAY = "REQUEST_DELAY"
 
 const val URL_RELEASE_INFO = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
-const val URL_RELEASE_DEF = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
+const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/download/0.6.3/com.sjianjun.reader-master-release.474.-0.6.3.apk"
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
 
 /**
