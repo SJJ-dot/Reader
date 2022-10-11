@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class SearchHistory(
     @PrimaryKey
     @JvmField
-    var query: String = ""
+    var query: String
 
 ) {
     override fun equals(other: Any?): Boolean {

@@ -45,22 +45,22 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.sync_book_script -> {
-                //同步书源。退出后就会停止同步。用actor会更好一点。
-                launch {
-                    showSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
-                    try {
-                        JsUpdateManager.checkRemoteJsUpdate()
-                        showSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
-                        initData()
-                    } catch (throwable: Throwable) {
-                        Log.i("小说脚本同步失败", throwable)
-                        showSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
-                    }
-                }
-
-                true
-            }
+//            R.id.sync_book_script -> {
+//                //同步书源。退出后就会停止同步。用actor会更好一点。
+//                launch {
+//                    showSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
+//                    try {
+//                        JsUpdateManager.checkRemoteJsUpdate()
+//                        showSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
+//                        initData()
+//                    } catch (throwable: Throwable) {
+//                        Log.i("小说脚本同步失败", throwable)
+//                        showSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
+//                    }
+//                }
+//
+//                true
+//            }
             else -> super.onOptionsItemSelected(item)
         }
     }

@@ -4,15 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
     <item
-        android:id="@+id/sync_book_script"
-        android:icon="@mipmap/ic_sync"
-        android:title="同步"
-        app:iconTint="@color/dn_appbar_icon_tint"
-        app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/set_book_script"
-        android:icon="@mipmap/ic_setting"
-        android:title="设置"
-        app:iconTint="@color/dn_appbar_icon_tint"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/import_source"
+        android:title="导入书源"
+        app:showAsAction="never" />
 </menu>

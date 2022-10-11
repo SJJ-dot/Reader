@@ -5,8 +5,8 @@ import com.sjianjun.reader.utils.STARTING_STATION_BOOK_SOURCE_EMPTY
 
 @Entity(primaryKeys = ["bookTitle", "bookAuthor"])
 class ReadingRecord(
-    var bookTitle: String = "",
-    var bookAuthor: String = ""
+    var bookTitle: String,
+    var bookAuthor: String
 ) {
 
     var bookUrl = ""

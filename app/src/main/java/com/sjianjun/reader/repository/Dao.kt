@@ -38,9 +38,7 @@ interface Dao {
         val book = bookList.first()
         val readingRecord = getReadingRecord(book.title, book.author)
         if (readingRecord?.bookUrl != book.url) {
-            insertReadingRecord(ReadingRecord().apply {
-                bookTitle = book.title
-                bookAuthor = book.author
+            insertReadingRecord(ReadingRecord(book.title,book.author).apply {
                 bookUrl = book.url
             })
             return book.url
