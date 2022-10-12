@@ -42,7 +42,7 @@ class MainActivity : BaseActivity() {
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
         launchIo {
-            checkUpdate(false)
+            checkUpdate(this@MainActivity,false)
             JsUpdateManager.checkUpdate()
             JavaScriptTest.testJavaScript()
         }

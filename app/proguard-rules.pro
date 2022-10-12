@@ -66,3 +66,6 @@
 
 # for DexGuard only
 #-keepresourcexmlelements manifest/application/meta-data@value=GlideModule
+
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Service

@@ -24,7 +24,7 @@ class AboutFragment : BaseAsyncFragment() {
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {
             launch(singleCoroutineKey = "checkUpdate") {
-                checkUpdate(true)
+                checkUpdate(requireActivity(), true)
                 setVersionInfo()
                 setCode()
             }
@@ -73,11 +73,12 @@ class AboutFragment : BaseAsyncFragment() {
     private fun setVersionInfo() {
 
         val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-
+        val count = releaseInfo?.apkAssets?.download_count ?: "?"
         if (releaseInfo?.isNewVersion == true) {
-            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.tag_name}"
+            versionCode.text =
+                "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.tag_name} | 下载次数：${count}"
         } else {
-            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
+            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME} | 下载次数：${count}"
         }
     }
 

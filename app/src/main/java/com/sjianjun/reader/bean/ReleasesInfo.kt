@@ -19,7 +19,7 @@ class ReleasesInfo {
     val apkDownloadUrl: String?
         get() = apkAssets?.browser_download_url
 
-    val isNewVersion:Boolean
+    val isNewVersion: Boolean
         get() {
             if (BuildConfig.VERSION_NAME == tag_name) {
                 return false
@@ -49,7 +49,7 @@ class ReleasesInfo {
          * 码云返回文件名字段
          */
         var name = ""
-
+        var size = 0
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

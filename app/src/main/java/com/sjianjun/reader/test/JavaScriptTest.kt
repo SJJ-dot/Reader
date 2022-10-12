@@ -16,7 +16,7 @@ import sjj.alog.Log
  * 不支持：乐安宣书网(搜索结果没有作者)、
  */
 object JavaScriptTest {
-    var test = true
+    var test = false
     val javaScript by lazy {
         val jsStr = App.app.assets.open("js/JsTemplate.js", AssetManager.ACCESS_BUFFER).use { stream ->
             stream.bufferedReader().readText()
