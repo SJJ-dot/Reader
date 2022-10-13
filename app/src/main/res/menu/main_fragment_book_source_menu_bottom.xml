@@ -4,17 +4,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
     <item
-        android:id="@+id/source_import"
-        android:title="导入书源"
+        android:id="@+id/source_enable_select"
+        android:title="启用书源"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/source_enable"
-        android:title="已启用"
+        android:id="@+id/source_disable_select"
+        android:title="禁用书源"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/source_disable"
-        android:title="已禁用"
+        android:id="@+id/source_check_select"
+        android:title="校验书源"
         app:showAsAction="never" />
 </menu>

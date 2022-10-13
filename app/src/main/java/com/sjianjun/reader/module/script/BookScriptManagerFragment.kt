@@ -5,6 +5,8 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
+import androidx.appcompat.widget.PopupMenu
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
@@ -15,10 +17,7 @@ import com.sjianjun.reader.preferences.JsConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.repository.JsManager
 import com.sjianjun.reader.repository.JsUpdateManager
-import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
-import com.sjianjun.reader.utils.id
-import com.sjianjun.reader.utils.showSnackbar
-import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import sjj.alog.Log
@@ -31,6 +30,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         recycle_view.adapter = adapter
+        source_menu.setOnClickListener(this::showPopupMenu)
         initData()
     }
 
@@ -73,6 +73,16 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
         }
+    }
+
+    private fun showPopupMenu(view: View) {
+        val popupMenu = PopupMenu(view.context, view)
+        popupMenu.menuInflater.inflate(R.menu.main_fragment_book_source_menu_bottom,popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener {
+            toast("${it.title}")
+            return@setOnMenuItemClickListener false
+        }
+        popupMenu.show()
     }
 
 
