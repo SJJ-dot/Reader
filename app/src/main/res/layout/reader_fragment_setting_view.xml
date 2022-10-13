@@ -52,7 +52,7 @@
         app:layout_constraintStart_toStartOf="@id/brightness_text"
         app:layout_constraintTop_toBottomOf="@+id/brightness_text" />
 
-    <com.allen.library.SuperButton
+    <com.coorchice.library.SuperTextView
         android:id="@+id/font_decrease"
         android:layout_width="wrap_content"
         android:layout_height="42dp"
@@ -67,10 +67,10 @@
         app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintStart_toEndOf="@+id/barrier"
         app:layout_constraintTop_toTopOf="@+id/font_size"
-        app:sCornersRadius="5dp"
-        app:sSolidColor="@color/dn_background"
-        app:sStrokeColor="@color/dn_color_primary"
-        app:sStrokeWidth="1dp" />
+        app:stv_corner="5dp"
+        app:stv_solid="@color/dn_background"
+        app:stv_stroke_color="@color/dn_color_primary"
+        app:stv_stroke_width="1dp" />
 
     <TextView
         android:id="@+id/font_text"
@@ -87,7 +87,7 @@
         app:layout_constraintStart_toEndOf="@+id/font_decrease"
         app:layout_constraintTop_toTopOf="@+id/font_size" />
 
-    <com.allen.library.SuperButton
+    <com.coorchice.library.SuperTextView
         android:id="@+id/font_increase"
         android:layout_width="wrap_content"
         android:layout_height="42dp"
@@ -101,10 +101,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/font_text"
         app:layout_constraintTop_toTopOf="@+id/font_size"
-        app:sCornersRadius="5dp"
-        app:sSolidColor="@color/dn_background"
-        app:sStrokeColor="@color/dn_color_primary"
-        app:sStrokeWidth="1dp" />
+        app:stv_corner="5dp"
+        app:stv_solid="@color/dn_background"
+        app:stv_stroke_color="@color/dn_color_primary"
+        app:stv_stroke_width="1dp" />
 
     <TextView
         android:id="@+id/line_spacing"
@@ -116,7 +116,7 @@
         app:layout_constraintStart_toStartOf="@id/brightness_text"
         app:layout_constraintTop_toBottomOf="@+id/font_size" />
 
-    <com.allen.library.SuperButton
+    <com.coorchice.library.SuperTextView
         android:id="@+id/line_spacing_decrease"
         android:layout_width="wrap_content"
         android:layout_height="42dp"
@@ -131,10 +131,10 @@
         app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintStart_toEndOf="@+id/barrier"
         app:layout_constraintTop_toTopOf="@+id/line_spacing"
-        app:sCornersRadius="5dp"
-        app:sSolidColor="@color/dn_background"
-        app:sStrokeColor="@color/dn_color_primary"
-        app:sStrokeWidth="1dp" />
+        app:stv_corner="5dp"
+        app:stv_solid="@color/dn_background"
+        app:stv_stroke_color="@color/dn_color_primary"
+        app:stv_stroke_width="1dp" />
 
     <TextView
         android:id="@+id/line_spacing_text"
@@ -151,7 +151,7 @@
         app:layout_constraintStart_toEndOf="@+id/line_spacing_decrease"
         app:layout_constraintTop_toTopOf="@+id/line_spacing" />
 
-    <com.allen.library.SuperButton
+    <com.coorchice.library.SuperTextView
         android:id="@+id/line_spacing_increase"
         android:layout_width="wrap_content"
         android:layout_height="42dp"
@@ -165,10 +165,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/line_spacing_text"
         app:layout_constraintTop_toTopOf="@+id/line_spacing"
-        app:sCornersRadius="5dp"
-        app:sSolidColor="@color/dn_background"
-        app:sStrokeColor="@color/dn_color_primary"
-        app:sStrokeWidth="1dp" />
+        app:stv_corner="5dp"
+        app:stv_solid="@color/dn_background"
+        app:stv_stroke_color="@color/dn_color_primary"
+        app:stv_stroke_width="1dp" />
 
 
     <TextView

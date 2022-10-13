@@ -59,7 +59,7 @@
                         android:tint="@color/dn_color_primary">
                         <corners android:radius="5dp" />
                         <size android:height="2dp" />
-                        <solid android:color="@color/white" />
+                        <solid android:color="#ffffff" />
                     </shape>
                 </item>
             </selector>

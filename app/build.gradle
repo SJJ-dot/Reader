@@ -126,7 +126,8 @@ dependencies {
 
     //嵌套滚动 可容纳多个view滚动
     implementation 'com.github.donkingliang:ConsecutiveScroller:4.0.0'
-    implementation 'com.github.lygttpod:SuperTextView:2.4.2'
+//    implementation 'com.github.lygttpod:SuperTextView:2.4.2'
+    implementation 'com.github.chenBingX:SuperTextView:v3.2.6.99'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
 
     implementation 'com.google.zxing:core:3.3.0'
