@@ -1,26 +1,25 @@
 package com.sjianjun.reader.module.script
 
 import android.annotation.SuppressLint
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
-import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.preferences.JsConfig
-import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.JsManager
-import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.utils.*
+import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
-import sjj.alog.Log
+import splitties.views.inflate
 
 class BookScriptManagerFragment : BaseAsyncFragment() {
 
@@ -45,6 +44,32 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.source_import -> {
+                val view =
+                    LayoutInflater.from(requireContext()).inflate<View>(R.layout.dialog_edit_text)
+                view.edit_view.apply {
+                    setFilterValues(globalConfig.bookSourceImportUrls)
+                    delCallBack = {
+                        globalConfig.bookSourceImportUrls.remove(it)
+                        globalConfig.bookSourceImportUrls = globalConfig.bookSourceImportUrls
+                    }
+                }
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("书源导入")
+                    .setView(view)
+                    .setPositiveButton(android.R.string.ok) { dialog, _ ->
+                        val url = view.edit_view.text.toString()
+                        globalConfig.bookSourceImportUrls.remove(url)
+                        if (url.isNotBlank()) {
+                            globalConfig.bookSourceImportUrls.add(url)
+                        }
+                        globalConfig.bookSourceImportUrls = globalConfig.bookSourceImportUrls
+                        toast("导入")
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                true
+            }
 //            R.id.sync_book_script -> {
 //                //同步书源。退出后就会停止同步。用actor会更好一点。
 //                launch {
@@ -77,7 +102,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     private fun showPopupMenu(view: View) {
         val popupMenu = PopupMenu(view.context, view)
-        popupMenu.menuInflater.inflate(R.menu.main_fragment_book_source_menu_bottom,popupMenu.menu)
+        popupMenu.menuInflater.inflate(R.menu.main_fragment_book_source_menu_bottom, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener {
             toast("${it.title}")
             return@setOnMenuItemClickListener false

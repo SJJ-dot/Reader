@@ -64,5 +64,7 @@ class AppConfig(val name: String) :
      */
     var lastAppVersion by intPref("lastAppVersion")
     var lastAppVersionName by strPref("lastAppVersionName")
+
+    var bookSourceImportUrls by dataPref<MutableList<String>>("bookSourceImportUrl", mutableListOf())
 }
 

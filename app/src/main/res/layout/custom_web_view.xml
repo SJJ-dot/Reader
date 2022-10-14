@@ -1,39 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
-    <com.donkingliang.consecutivescroller.ConsecutiveScrollerLayout
-        android:id="@+id/browser_book_city_root"
+    <androidx.core.widget.ContentLoadingProgressBar
+        android:id="@+id/progress_bar"
+        style="@style/ProgressBar.Horizontal"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+        android:layout_height="4dp"
+        android:layout_gravity="bottom"
+        android:max="100"
+        android:progressBackgroundTint="@color/transparent"
+        android:progressTint="@color/colorPrimary"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
+        tools:progress="50"
+        tools:visibility="visible" />
 
-        <androidx.core.widget.ContentLoadingProgressBar
-            android:id="@+id/progress_bar"
-            style="@style/ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_gravity="bottom"
-            android:max="100"
-            android:progressBackgroundTint="@color/transparent"
-            android:progressTint="@color/colorPrimary"
-            android:visibility="gone"
-            app:layout_isSticky="true"
-            tools:progress="50"
-            tools:visibility="visible" />
-
-        <ViewStub
-            android:id="@+id/web_view_stub"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout="@layout/web_view" />
-
-
-    </com.donkingliang.consecutivescroller.ConsecutiveScrollerLayout>
+    <ViewStub
+        android:id="@+id/web_view_stub"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout="@layout/web_view"
+        app:layout_constraintBottom_toTopOf="@+id/browser_book_city_toolbar"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
 
     <View
         android:id="@+id/input_mask"
@@ -48,7 +41,8 @@
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background">
+        android:background="@color/dn_background"
+        app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -94,6 +88,7 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <com.sjianjun.reader.view.DayNightMask
+        android:id="@+id/day_night_mask"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
@@ -105,6 +100,7 @@
         android:layout_gravity="bottom"
         android:background="@color/dn_background"
         app:layout_behavior="com.sjianjun.reader.view.HideBottomViewOnScrollBehavior2"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_scrollFlags="scroll|enterAlways"
         tools:layout_height="56dp">
 
@@ -165,4 +161,4 @@
             android:layout_width="match_parent"
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
