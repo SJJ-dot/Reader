@@ -40,6 +40,11 @@ data class JavaScript constructor(
     @Ignore
     val fieldsMap = ConcurrentHashMap<String, Any?>()
 
+    /**
+     * 书源管理页面是否被选中
+     */
+    var selected = false
+
     inline fun <reified T : Any> getScriptField(fieldName: String): T? {
         if (fieldsMap.contains(fieldName)) {
             val value = fieldsMap[fieldName]

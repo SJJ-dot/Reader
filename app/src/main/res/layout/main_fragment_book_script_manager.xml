@@ -32,16 +32,18 @@
                 android:layout_width="140dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
+                android:background="@drawable/bg_ib_pre_round"
                 android:gravity="center"
+                android:text="全选（13/33）"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                android:text="全选（13/33）" />
+                app:layout_constraintTop_toTopOf="parent" />
 
             <com.coorchice.library.SuperTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_ib_pre_round"
                 android:paddingStart="16dp"
                 android:paddingTop="5dp"
                 android:paddingEnd="16dp"
@@ -59,6 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_ib_pre_round"
                 android:paddingStart="16dp"
                 android:paddingTop="5dp"
                 android:paddingEnd="16dp"
@@ -75,6 +78,7 @@
                 android:id="@+id/source_menu"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:background="@drawable/bg_ib_pre_round"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:src="@drawable/ic_more_vert"

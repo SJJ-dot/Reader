@@ -19,6 +19,7 @@ import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
+import sjj.alog.Log
 import splitties.views.inflate
 
 class BookScriptManagerFragment : BaseAsyncFragment() {
@@ -29,7 +30,27 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         recycle_view.adapter = adapter
+        adapter.onSelectSource = {
+            val selectedAll = adapter.data.find { !it.selected } == null
+            if (selectedAll != cb_select_all.isChecked) {
+                cb_select_all.isChecked = selectedAll
+            }
+            refreshSelectAll()
+        }
         source_menu.setOnClickListener(this::showPopupMenu)
+        cb_select_all.setOnCheckedChangeListener { _, b ->
+            var isChange = false
+            if (b || adapter.data.find { !it.selected } == null) {
+                adapter.data.forEach {
+                    if (it.selected != b) {
+                        it.selected = b
+                        isChange = true
+                    }
+                }
+            }
+            if (isChange) adapter.notifyDataSetChanged()
+            refreshSelectAll()
+        }
         initData()
     }
 
@@ -97,6 +118,16 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             adapter.data.clear()
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
+            refreshSelectAll()
+        }
+    }
+
+    private fun refreshSelectAll() {
+        val selected = adapter.data.count { it.selected }
+        if (selected == adapter.data.size) {
+            cb_select_all.text = "取消（${selected}/${selected}）"
+        } else {
+            cb_select_all.text = "全选（${selected}/${adapter.data.size}）"
         }
     }
 
@@ -112,6 +143,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
 
     class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter<JavaScript>() {
+        lateinit var onSelectSource: () -> Unit
 
         init {
             setHasStableIds(true)
@@ -125,25 +157,32 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
             p1: Int
         ) {
-            val script = data[p1]
-            holder.itemView.cb_book_source.text =
-                "${script.source} V-${script.version} ${script.priority}"
+            holder.itemView.apply {
+                val script = data[p1]
+                tv_source_name.text = "${script.source} V-${script.version} ${script.priority}"
+                cb_book_source.setOnCheckedChangeListener(null)
+                cb_book_source.isChecked = script.selected
+                cb_book_source.setOnCheckedChangeListener { _, b ->
+                    script.selected = b
+                    onSelectSource()
+                }
+                iv_edit_source.setOnClickListener {
+                    fragment.startActivity<EditJavaScriptActivity>(
+                        JAVA_SCRIPT_SOURCE,
+                        script.source
+                    )
+                }
+                sw_source_enable.setOnCheckedChangeListener(null)
+                sw_source_enable.isChecked = script.enable
 
-            holder.itemView.iv_edit_source.setOnClickListener {
-                fragment.startActivity<EditJavaScriptActivity>(JAVA_SCRIPT_SOURCE, script.source)
-            }
-
-            holder.itemView.cb_book_source.setOnCheckedChangeListener(null)
-            holder.itemView.cb_book_source.isChecked = script.enable
-
-            holder.itemView.cb_book_source.setOnCheckedChangeListener { view, isChecked ->
-                fragment.launch {
-                    script.enable = isChecked
-                    JsManager.saveJs(script)
-                    showSnackbar(view, if (isChecked) "已启用" else "已停用")
+                sw_source_enable.setOnCheckedChangeListener { view, isChecked ->
+                    fragment.launch {
+                        script.enable = isChecked
+                        JsManager.saveJs(script)
+                        showSnackbar(view, if (isChecked) "已启用" else "已禁用")
+                    }
                 }
             }
-
         }
 
         override fun getItemId(position: Int): Long {
