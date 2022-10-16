@@ -13,7 +13,7 @@ class Book {
     var url: String = ""
 
     /**
-     * 书籍来源[JavaScript.source]
+     * 书籍来源[BookSource.source]
      */
     @JvmField
     var source: String = ""
@@ -50,7 +50,7 @@ class Book {
      * 包含本书的书源
      */
     @Ignore
-    var javaScriptList: List<JavaScript>? = null
+    var javaScriptList: List<BookSource>? = null
 
     /**
      * 未读章节数量

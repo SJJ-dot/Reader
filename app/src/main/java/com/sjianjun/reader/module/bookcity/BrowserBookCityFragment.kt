@@ -9,8 +9,7 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.AdBlockConfig
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.repository.JsManager
+import com.sjianjun.reader.repository.BookSourceManager
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -60,9 +59,9 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
     private fun initData() {
         val source = source ?: return
         launchIo {
-            val sourceJs =  JsManager.getJs(source)
+            val sourceJs =  BookSourceManager.getJs(source)
             custom_web_view.adBlockJs = AdBlockConfig.getAdBlockJs(source)
-            val hostUrl = sourceJs?.execute<String>("hostUrl;") ?: ""
+            val hostUrl = sourceJs?.website ?: ""
             withMain {
                 custom_web_view?.loadUrl(hostUrl, true)
                 activity?.supportActionBar?.title = sourceJs?.source

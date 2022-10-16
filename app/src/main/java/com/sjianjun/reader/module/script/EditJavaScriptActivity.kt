@@ -6,8 +6,8 @@ import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.repository.JsManager
+import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
@@ -25,15 +25,14 @@ class EditJavaScriptActivity : BaseActivity() {
         setContentView(R.layout.activity_edit_java_script)
         save_script.setOnClickListener {
             launch {
-                val javaScript = JavaScript(
+                val bookSource = BookSource(
                     source = script_source.text.toString(),
                     js = script.text.toString(),
                     version = script_version.text.toString().toIntOrNull() ?: 1,
-                    isStartingStation = script_starting.isChecked,
-                    priority = script_priority.text.toString().toIntOrNull() ?: 0
+                    isStartingStation = script_starting.isChecked
                 )
                 try {
-                    JsManager.saveJs(javaScript)
+                    BookSourceManager.saveJs(bookSource)
                     toast("脚本保存成功")
                     finish()
                 } catch (e: Throwable) {
@@ -43,7 +42,7 @@ class EditJavaScriptActivity : BaseActivity() {
         }
         launch {
             val source = intent.getStringExtra(JAVA_SCRIPT_SOURCE) ?: return@launch
-            val js =  JsManager.getJs(source)
+            val js =  BookSourceManager.getJs(source)
             script_source.setText(js?.source)
             script.setText(js?.js)
             //禁止修改脚本标志名称
@@ -52,7 +51,6 @@ class EditJavaScriptActivity : BaseActivity() {
             }
             script_starting.isChecked = js?.isStartingStation ?: false
             script_version.setText((js?.version ?: 1).toString())
-            script_priority.setText((js?.priority ?: 0).toString())
         }
     }
 }

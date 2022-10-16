@@ -1,5 +1,5 @@
 var hostUrl = "http://www.fanqianxs.com/";
-function search(http,query){
+function search(query){
     var baseUrl = hostUrl;
     var map = new HashMap();
     map.put("keyword",URLEncoder.encode(query,"utf-8"))

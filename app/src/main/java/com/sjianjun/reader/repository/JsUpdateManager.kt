@@ -5,20 +5,18 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.AdBlackVersion
-import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.JsVersionInfo
 import com.sjianjun.reader.preferences.AdBlockConfig
 import com.sjianjun.reader.preferences.JsConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.view.CustomWebView
-import kotlinx.coroutines.delay
 import org.eclipse.egit.github.core.Issue
 import org.eclipse.egit.github.core.client.GitHubClient
 import org.eclipse.egit.github.core.service.IssueService
 import org.eclipse.egit.github.core.service.MilestoneService
 import sjj.alog.Log
-import java.util.concurrent.TimeUnit
 
 object JsUpdateManager {
     suspend fun checkUpdate() {
@@ -159,7 +157,7 @@ object JsUpdateManager {
             if (localVersion < it.version || (BuildConfig.DEBUG && localVersion == it.version)) {
                 loadJs(it)?.let { js ->
                     val b = JsConfig.getJs(it.source)?.enable ?: true
-                    JsConfig.saveJs(JavaScript(it.source, js, it.version, it.starting, it.priority, b))
+                    JsConfig.saveJs(BookSource(it.source, js, it.version, it.starting, b))
                 }
 
             }

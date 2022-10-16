@@ -12,19 +12,8 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:hint="脚本标识，不能与其他脚本重复"
-        app:layout_constraintEnd_toStartOf="@+id/script_priority"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/script_priority"
-        style="@style/text_body1"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:hint="优先级"
-        android:inputType="number"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/script_version"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText

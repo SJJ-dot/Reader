@@ -1,5 +1,5 @@
 var hostUrl = "http://wtxsw.com/";
-function search(http,query){
+function search(query){
     var baseUrl = "http://www.wtxsw.com/";
     var html = http.get(baseUrl+"shaopu.php?ie=gbk&q=" + URLEncoder.encode(query, "gbk"));
     var parse = Jsoup.parse(html, baseUrl);

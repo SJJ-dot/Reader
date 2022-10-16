@@ -1,5 +1,5 @@
 var hostUrl = "http://www.txtjia8.com/";
-function search(http,query){
+function search(query){
     var baseUrl = hostUrl;
     var html = http.get(baseUrl+"search/?searchkey=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html, baseUrl);

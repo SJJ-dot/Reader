@@ -1,5 +1,5 @@
 var hostUrl = "http://www.sw2021.com/";
-function search(http,query){
+function search(query){
     var baseUrl = hostUrl;
     var map = new HashMap();
     map.put("searchtype", "all")

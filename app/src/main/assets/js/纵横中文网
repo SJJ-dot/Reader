@@ -1,7 +1,7 @@
 //请求延迟的时间ms，如果时长小于0将会并发
 var REQUEST_DELAY = -1;
 var hostUrl = "http://zongheng.com/";
-function search(http,query){
+function search(query){
     var baseUrl = "http://search.zongheng.com/";
     var html = http.get(baseUrl + "s?keyword=" + URLEncoder.encode(query, "utf-8"));
     var parse = Jsoup.parse(html, baseUrl);

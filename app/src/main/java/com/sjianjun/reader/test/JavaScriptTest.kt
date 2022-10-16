@@ -6,8 +6,8 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ChapterContent
-import com.sjianjun.reader.bean.JavaScript
-import com.sjianjun.reader.bean.JavaScript.Func.*
+import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.bean.BookSource.Func.*
 import com.sjianjun.reader.bean.SearchResult
 import sjj.alog.Log
 
@@ -18,10 +18,10 @@ import sjj.alog.Log
 object JavaScriptTest {
     var test = false
     val javaScript by lazy {
-        val jsStr = App.app.assets.open("js/JsTemplate.js", AssetManager.ACCESS_BUFFER).use { stream ->
+        val jsStr = App.app.assets.open("js/BookSourceTemplate.js", AssetManager.ACCESS_BUFFER).use { stream ->
             stream.bufferedReader().readText()
         }
-        JavaScript("test_source",jsStr,1)
+        BookSource("test_source",jsStr,1)
     }
 
     suspend fun testJavaScript() = withIo {

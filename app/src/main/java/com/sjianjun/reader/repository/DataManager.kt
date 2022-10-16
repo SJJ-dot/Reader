@@ -7,16 +7,10 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.utils.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.net.URLEncoder
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.concurrent.thread
 
 /**
  * 界面数据从数据库订阅刷新
@@ -54,7 +48,7 @@ object DataManager {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
-            val allJavaScript = JsManager.getAllJs().filter { it.enable }
+            val allJavaScript = BookSourceManager.getAllJs().filter { it.enable }
             if (allJavaScript.isNullOrEmpty()) {
                 return@withIo emptyFlow<List<List<SearchResult>>>()
             }
@@ -117,7 +111,7 @@ object DataManager {
 
     suspend fun getStartingBook(
         book: Book,
-        javaScript: JavaScript? = null,
+        javaScript: BookSource? = null,
         onlyLocal: Boolean = false
     ): Book? {
 
@@ -142,7 +136,7 @@ object DataManager {
             if (!onlyLocal && record.startingStationBookSource.isBlank()) {
                 //到官方的网站查询并把书籍插入到本地数据库
                 var error = false
-                val startingBook = JsManager.getAllStartingJs().map {
+                val startingBook = BookSourceManager.getAllStartingJs().map {
                     async {
                         var startingBook = dao.getBookByTitleAuthorAndSource(
                             book.title,
@@ -197,10 +191,10 @@ object DataManager {
         }
     }
 
-    suspend fun reloadBookFromNet(book: Book?, javaScript: JavaScript? = null) = withIo {
+    suspend fun reloadBookFromNet(book: Book?, javaScript: BookSource? = null) = withIo {
 
         book ?: return@withIo
-        val script = javaScript ?: JsManager.getJs(book.source)
+        val script = javaScript ?: BookSourceManager.getJs(book.source)
         try {
             if (script == null) {
                 throw MessageException("未找到对应书籍书源")
@@ -370,7 +364,7 @@ object DataManager {
             }
             val book = dao.getBookByUrl(chapter.bookUrl)
 
-            val js = JsManager.getJs(book?.source ?: return@withIo)
+            val js = BookSourceManager.getJs(book?.source ?: return@withIo)
             val content = js?.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
                 chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")

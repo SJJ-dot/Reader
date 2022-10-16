@@ -19,7 +19,7 @@ import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.repository.JsManager
+import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.FlowPreview
@@ -73,7 +73,7 @@ class BookshelfFragment : BaseFragment() {
                         },
                         DataManager.getLastChapterByBookUrl(book.url)
                     ) { readChapter, lastChapter ->
-                        val js = JsManager.getAllBookJs(book.title, book.author)
+                        val js = BookSourceManager.getAllBookJs(book.title, book.author)
                         book.record = readChapter?.second
                         book.readChapter = readChapter?.first
                         book.lastChapter = lastChapter
@@ -131,7 +131,7 @@ class BookshelfFragment : BaseFragment() {
                         val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
                             js.source == it.key
                         }
-                        val delay = script?.getScriptField(JS_FIELD_REQUEST_DELAY) ?: 1000L
+                        val delay = script?.requestDelay ?: 1000L
                         if (delay < 0) {
                             it.value.map {
                                 async {
@@ -171,7 +171,7 @@ class BookshelfFragment : BaseFragment() {
                     if (book == it) {
                         null
                     } else {
-                        val delay = bookScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY)
+                        val delay = bookScript?.requestDelay
                         delay(delay ?: 1000)
                         book
                     }
@@ -191,8 +191,8 @@ class BookshelfFragment : BaseFragment() {
             bookshelfUi.loading.secondaryProgress = count.get()
 
             sourceMap.forEach { entry ->
-                val javaScript = JsManager.getJs(entry.key)
-                val delay = javaScript?.getScriptField<Long>(JS_FIELD_REQUEST_DELAY) ?: 1000
+                val javaScript = BookSourceManager.getJs(entry.key)
+                val delay = javaScript?.requestDelay ?: 1000
                 if (delay < 0) {
                     entry.value.map {
                         async {

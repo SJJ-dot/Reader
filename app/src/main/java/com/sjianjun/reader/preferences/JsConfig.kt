@@ -1,7 +1,7 @@
 package com.sjianjun.reader.preferences
 
 import androidx.core.content.edit
-import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.tencent.mmkv.MMKV
@@ -30,9 +30,9 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
             return field
         }
 
-    private val allJs: MutableMap<String, JavaScript?> = ConcurrentHashMap()
+    private val allJs: MutableMap<String, BookSource?> = ConcurrentHashMap()
 
-    fun saveJs(js: JavaScript) {
+    fun saveJs(js: BookSource) {
         edit {
             putString("Js_${js.source}", gson.toJson(js))
         }
@@ -63,16 +63,16 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
         Log.i("删除脚本:${sources.toList()}")
     }
 
-    fun getJs(source: String): JavaScript? {
+    fun getJs(source: String): BookSource? {
         if (allJs.containsKey(source)) {
             return allJs[source]
         }
-        val script = gson.fromJson<JavaScript>(getString("Js_${source}", null)) ?: return null
+        val script = gson.fromJson<BookSource>(getString("Js_${source}", null)) ?: return null
         allJs[source] = script
         return script
     }
 
-    fun getAllJs(): List<JavaScript> {
+    fun getAllJs(): List<BookSource> {
         val source2 = allJsSource.toMutableSet()
         allJs.forEach { (t, _) ->
             source2.remove(t)

@@ -4,6 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
     <item
+        android:id="@+id/search_view"
+        android:title="搜索"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/source_import"
         android:title="导入书源"
         app:showAsAction="never" />

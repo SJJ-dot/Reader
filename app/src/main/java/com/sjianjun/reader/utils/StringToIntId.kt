@@ -2,7 +2,7 @@ package com.sjianjun.reader.utils
 
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -21,7 +21,7 @@ val Chapter.id: Long
     get() = url.id
 
 
-val JavaScript.id: Long
+val BookSource.id: Long
     get() = source.id
 
 val SearchResult.id: Long

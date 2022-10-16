@@ -6,35 +6,41 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.PopupMenu
+import androidx.appcompat.widget.SearchView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
-import com.sjianjun.reader.bean.JavaScript
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.JsManager
+import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
 import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flow
 import sjj.alog.Log
 import splitties.views.inflate
+import java.util.concurrent.Executors
 
 class BookScriptManagerFragment : BaseAsyncFragment() {
-
+    private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
     private val adapter = Adapter(this@BookScriptManagerFragment)
-
+    private lateinit var searchView: SearchView
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         recycle_view.adapter = adapter
         adapter.onSelectSource = {
-            val selectedAll = adapter.data.find { !it.selected } == null
-            if (selectedAll != cb_select_all.isChecked) {
-                cb_select_all.isChecked = selectedAll
-            }
             refreshSelectAll()
         }
         source_menu.setOnClickListener(this::showPopupMenu)
@@ -51,6 +57,27 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             if (isChange) adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
+        source_reverse.setOnClickListener {
+            adapter.data.forEach {
+                it.selected = !it.selected
+            }
+            adapter.notifyDataSetChanged()
+            refreshSelectAll()
+        }
+        source_delete.setOnClickListener {
+            val list = adapter.data.filter { it.selected }
+            if (list.isEmpty()) {
+                toast("请选择要删除的书源")
+                return@setOnClickListener
+            }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("确认删除")
+                .setMessage("确定要删除选中的${list.size}个书源吗？")
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    BookSourceManager.delete(*list.toTypedArray())
+                }.setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
         initData()
     }
 
@@ -61,6 +88,25 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_fragment_book_source_menu, menu)
+        val searchView = menu.findItem(R.id.search_view)?.actionView as SearchView
+        searchView.queryHint = "书源搜索"
+        searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
+//        searchView.isIconified = false
+//        searchView.clearFocus()
+//        searchView.isSubmitButtonEnabled = true
+        this.searchView = searchView
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                query()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                query()
+                return false
+            }
+        })
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -91,22 +137,6 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                     .show()
                 true
             }
-//            R.id.sync_book_script -> {
-//                //同步书源。退出后就会停止同步。用actor会更好一点。
-//                launch {
-//                    showSnackbar(recycle_view, "正在同步书源，请勿退出……", Snackbar.LENGTH_INDEFINITE)
-//                    try {
-//                        JsUpdateManager.checkRemoteJsUpdate()
-//                        showSnackbar(recycle_view, "同步成功", Snackbar.LENGTH_SHORT)
-//                        initData()
-//                    } catch (throwable: Throwable) {
-//                        Log.i("小说脚本同步失败", throwable)
-//                        showSnackbar(recycle_view, "同步失败", Snackbar.LENGTH_SHORT)
-//                    }
-//                }
-//
-//                true
-//            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -114,9 +144,30 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launch {
-            val allJs = JsManager.getAllJs()
+            val allJs = BookSourceManager.getAllJs()
             adapter.data.clear()
             adapter.data.addAll(allJs)
+            adapter.notifyDataSetChanged()
+            refreshSelectAll()
+        }
+    }
+
+    private fun query() {
+        launch {
+            val query = searchView.query
+            val allJs = BookSourceManager.getAllJs()
+            adapter.data.clear()
+            if (query.isNullOrEmpty()) {
+                adapter.data.addAll(allJs)
+            } else {
+                adapter.data.addAll(allJs.filter {
+                    it.source.contains(query) || it.group.contains(query)
+                            || it.checkResult.contains(query)
+                })
+            }
+            adapter.data.forEach {
+                it.selected = true
+            }
             adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
@@ -129,20 +180,113 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         } else {
             cb_select_all.text = "全选（${selected}/${adapter.data.size}）"
         }
+        val selectedAll = adapter.data.find { !it.selected } == null
+        if (selectedAll != cb_select_all.isChecked) {
+            cb_select_all.isChecked = selectedAll
+        }
     }
 
-    private fun showPopupMenu(view: View) {
-        val popupMenu = PopupMenu(view.context, view)
+    private fun showPopupMenu(anchor: View) {
+        val popupMenu = PopupMenu(anchor.context, anchor)
         popupMenu.menuInflater.inflate(R.menu.main_fragment_book_source_menu_bottom, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener {
-            toast("${it.title}")
-            return@setOnMenuItemClickListener false
+            when (it.itemId) {
+                R.id.source_enable_select -> {
+                    val list = adapter.data.filter { it.selected }
+                    if (list.isEmpty()) {
+                        toast("请选择书源")
+                    } else {
+                        list.forEach { it.enable = true }
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+                R.id.source_disable_select -> {
+                    val list = adapter.data.filter { it.selected }
+                    if (list.isEmpty()) {
+                        toast("请选择书源")
+                    } else {
+                        list.forEach { it.enable = false }
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+                R.id.source_check_select -> {
+                    val list = adapter.data.filter { it.selected }
+                    if (list.isEmpty()) {
+                        toast("请选择书源")
+                    } else {
+                        val view = LayoutInflater.from(requireContext())
+                            .inflate<View>(R.layout.dialog_edit_text)
+                        view.edit_view.setText("我的")
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("测试搜索书名、作者")
+                            .setView(view)
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                val key = view.edit_view.text.toString().trim()
+                                if (key.isBlank()) {
+                                    toast("请输入测试搜索书名、作者")
+                                } else {
+                                    launch {
+                                        var count = 0
+                                        showSnackbar(
+                                            recycle_view,
+                                            "书源校验中，请稍后……(0/${list.size})",
+                                            Snackbar.LENGTH_INDEFINITE
+                                        )
+                                        val deferreds = list.map { js ->
+                                            async(dispatcher) {
+                                                BookSourceManager.check(
+                                                    js,
+                                                    key
+                                                );js
+                                            }
+                                        }.onEach { deferred ->
+                                            deferred.invokeOnCompletion {
+                                                launch {
+                                                    val source = deferred.await()
+                                                    if (++count == list.size) {
+                                                        showSnackbar(
+                                                            recycle_view,
+                                                            "书源校完成(${count}/${list.size})",
+                                                            Snackbar.LENGTH_INDEFINITE
+                                                        )
+                                                    } else {
+                                                        showSnackbar(
+                                                            recycle_view,
+                                                            "书源校验中，请稍后……(${count}/${list.size})",
+                                                            Snackbar.LENGTH_INDEFINITE
+                                                        )
+                                                    }
+                                                    val index = adapter.data.indexOf(source)
+                                                    if (index != -1) adapter.notifyItemChanged(index)
+                                                }
+                                            }
+                                        }
+                                        deferreds.awaitAll()
+                                        withMain {
+                                            dismissSnackbar()
+                                            searchView.onActionViewExpanded()
+                                            searchView.setQuery("校验失败", true)
+                                            searchView.clearFocus()
+                                            query()
+                                        }
+
+                                    }
+                                }
+                            }.setNegativeButton(android.R.string.cancel, null)
+                            .show()
+
+
+                    }
+                }
+            }
+
+            true
         }
         popupMenu.show()
     }
 
 
-    class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter<JavaScript>() {
+    class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter<BookSource>() {
         lateinit var onSelectSource: () -> Unit
 
         init {
@@ -159,12 +303,17 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         ) {
             holder.itemView.apply {
                 val script = data[p1]
-                tv_source_name.text = "${script.source} V-${script.version} ${script.priority}"
+                tv_source_name.text = "${script.source}"
                 cb_book_source.setOnCheckedChangeListener(null)
                 cb_book_source.isChecked = script.selected
                 cb_book_source.setOnCheckedChangeListener { _, b ->
                     script.selected = b
                     onSelectSource()
+                }
+                if (script.checkResult.isBlank()) {
+                    iv_source_group.text = script.group
+                } else {
+                    iv_source_group.text = "${script.group}(${script.checkResult})"
                 }
                 iv_edit_source.setOnClickListener {
                     fragment.startActivity<EditJavaScriptActivity>(
@@ -178,8 +327,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 sw_source_enable.setOnCheckedChangeListener { view, isChecked ->
                     fragment.launch {
                         script.enable = isChecked
-                        JsManager.saveJs(script)
-                        showSnackbar(view, if (isChecked) "已启用" else "已禁用")
+                        BookSourceManager.saveJs(script)
                     }
                 }
             }

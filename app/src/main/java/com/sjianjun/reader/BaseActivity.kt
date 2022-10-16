@@ -33,4 +33,8 @@ abstract class BaseActivity : AppCompatActivity() {
         super.startActivityForResult(intent, requestCode, options)
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+    }
 }

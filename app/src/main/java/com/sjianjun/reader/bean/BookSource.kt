@@ -1,6 +1,7 @@
 package com.sjianjun.reader.bean
 
 import androidx.room.Ignore
+import com.google.gson.annotations.Expose
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.http.http
@@ -10,10 +11,9 @@ import com.sjianjun.reader.rhino.js
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
-import java.util.concurrent.ConcurrentHashMap
 
 
-data class JavaScript constructor(
+data class BookSource constructor(
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
@@ -28,41 +28,25 @@ data class JavaScript constructor(
     var js: String,
     var version: Int,
     var isStartingStation: Boolean = false,
-    var priority: Int = 0,
     @JvmField
-    var enable: Boolean = true
+    var enable: Boolean = true,
+    var group: String = "本地书源",
+    var requestDelay: Long = 1000L,
+    var website: String = ""
 ) {
 
-
-    @Ignore
-    val FIELD_NULL_VALUE = Any()
-
-    @Ignore
-    val fieldsMap = ConcurrentHashMap<String, Any?>()
 
     /**
      * 书源管理页面是否被选中
      */
+    @Expose(serialize = false)
     var selected = false
 
-    inline fun <reified T : Any> getScriptField(fieldName: String): T? {
-        if (fieldsMap.contains(fieldName)) {
-            val value = fieldsMap[fieldName]
-            return if (value === FIELD_NULL_VALUE) {
-                null
-            } else {
-                value as T
-            }
-        }
-        return try {
-            val value = execute<T>("$fieldName;") ?: FIELD_NULL_VALUE
-            fieldsMap[fieldName] = value
-            value as T?
-        } catch (throwable: Throwable) {
-            fieldsMap[fieldName] = FIELD_NULL_VALUE
-            null
-        }
-    }
+    /**
+     * 书源校验结果
+     */
+    @Expose(serialize = false)
+    var checkResult = ""
 
 
     @Ignore
@@ -188,23 +172,11 @@ data class JavaScript constructor(
     }
 
 
-    suspend fun loadBookList(script: String): List<Book>? {
-        return withIo {
-            if (script.isEmpty()) {
-                execute<List<Book>>(Func.loadBookList)
-            } else {
-                execute {
-                    jsToJava<List<Book>>(eval(script))
-                }
-            }
-        }
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as JavaScript
+        other as BookSource
 
         if (source != other.source) return false
 
@@ -217,7 +189,7 @@ data class JavaScript constructor(
 
 
     enum class Func {
-        search, getDetails, getChapterContent, loadBookList
+        search, getDetails, getChapterContent
     }
 
 }

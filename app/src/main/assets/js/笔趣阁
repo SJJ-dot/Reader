@@ -1,5 +1,5 @@
 var hostUrl = "https://www.mayiwxw.com/";
-function search(http,query){
+function search(query){
     var baseUrl = hostUrl;
     var map = new HashMap();
     map.put("searchtype", "articlename")

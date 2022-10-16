@@ -21,11 +21,8 @@ str.replace("著","")
 str.trim()
 */
 
-//书源名称
-var sourceName = "书源名称";
 //书源地址
 var sourceUrl = "https://www.qidian.com"
-var sourceId = "qidian.com"
 function search(query){
     var doc = get({url:"https://www.qidian.com/soushu/" + encode(query, "utf-8")+".html"})
     var bookListEl = doc.select(".res-book-item");
