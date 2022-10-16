@@ -19,6 +19,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
@@ -131,7 +132,16 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                             globalConfig.bookSourceImportUrls.add(url)
                         }
                         globalConfig.bookSourceImportUrls = globalConfig.bookSourceImportUrls
-                        toast("导入")
+                        view.edit_view.hideKeyboard()
+                        launch {
+                            try {
+                                showSnackbar(recycle_view,"正在导入书源",Snackbar.LENGTH_INDEFINITE)
+                                BookSourceManager.import(url)
+                                showSnackbar(recycle_view,"书源导入成功")
+                            } catch (e: Exception) {
+                                showSnackbar(recycle_view,"书源导入失败：${e.message}")
+                            }
+                        }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
@@ -162,7 +172,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             } else {
                 adapter.data.addAll(allJs.filter {
                     it.source.contains(query) || it.group.contains(query)
-                            || it.checkResult.contains(query)
+                            || it.checkResult?.contains(query) == true
                 })
             }
             adapter.data.forEach {
@@ -310,7 +320,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                     script.selected = b
                     onSelectSource()
                 }
-                if (script.checkResult.isBlank()) {
+                if (script.checkResult.isNullOrBlank()) {
                     iv_source_group.text = script.group
                 } else {
                     iv_source_group.text = "${script.group}(${script.checkResult})"

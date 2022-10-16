@@ -1,22 +1,19 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.view.View
-import androidx.core.view.GravityCompat
 import androidx.lifecycle.Observer
-import com.sjianjun.coroutine.launchIo
+import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.AdBlockConfig
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceManager
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentLinkedDeque
 
 
 class BrowserBookCityFragment : BaseAsyncFragment() {
-    private var source: String? = null
 
     override fun getLayoutRes(): Int {
         return R.layout.bookcity_fragment_browser
@@ -26,46 +23,20 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
         custom_web_view.adBlockUrl = ConcurrentLinkedDeque(AdBlockConfig.adBlockList)
 //        Log.i(custom_web_view.adBlockUrl)
-        setOnBackPressed {
-            when {
-                drawer_layout.isDrawerOpen(GravityCompat.END) -> {
-                    drawer_layout.closeDrawer(GravityCompat.END)
-                    true
-                }
+        setOnBackPressed { custom_web_view.onBackPressed() }
 
-                else -> {
-                    custom_web_view.onBackPressed()
-                }
-            }
-        }
-
-        childFragmentManager
-            .beginTransaction()
-            .add(R.id.bookcity_station_list_menu, BookCityStationListFragment())
-            .commitAllowingStateLoss()
         //QQ登录
         globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
             val url = it?.toString() ?: return@Observer
             custom_web_view.loadUrl(url, true)
         })
-        globalConfig.bookCityDefaultSource.observe(this, Observer {
-            drawer_layout.closeDrawer(GravityCompat.END)
-            source = it
-            initData()
-        })
-
+        initData()
     }
 
     private fun initData() {
-        val source = source ?: return
-        launchIo {
-            val sourceJs =  BookSourceManager.getJs(source)
-            custom_web_view.adBlockJs = AdBlockConfig.getAdBlockJs(source)
-            val hostUrl = sourceJs?.website ?: ""
-            withMain {
-                custom_web_view?.loadUrl(hostUrl, true)
-                activity?.supportActionBar?.title = sourceJs?.source
-            }
+        launch {
+            custom_web_view?.loadUrl("https://www.qidian.com", true)
+            activity?.supportActionBar?.title = "起点"
         }
     }
 

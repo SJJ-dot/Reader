@@ -46,7 +46,7 @@ data class BookSource constructor(
      * 书源校验结果
      */
     @Expose(serialize = false)
-    var checkResult = ""
+    var checkResult: String? = null
 
 
     @Ignore

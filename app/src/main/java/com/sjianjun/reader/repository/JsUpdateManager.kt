@@ -19,72 +19,6 @@ import org.eclipse.egit.github.core.service.MilestoneService
 import sjj.alog.Log
 
 object JsUpdateManager {
-    suspend fun checkUpdate() {
-        //检查本地文件更新
-        withIo {
-            Log.i("=========================开始检查JS脚本更新=================================")
-            checkLocalAdBlackUpdate()
-            checkLocalJsUpdate()
-//            if (System.currentTimeMillis() - JsConfig.remoteJsCheckTime > TimeUnit.HOURS.toMillis(1)) {
-//                while (true) {
-//                    try {
-//                        checkRemoteJsUpdate()
-//                        if (!BuildConfig.DEBUG) {
-//                            JsConfig.remoteJsCheckTime = System.currentTimeMillis()
-//                        }
-//                        break
-//                    } catch (e: Exception) {
-//                        Log.e("网站脚本配置加载失败", e)
-//                        delay(60000)
-//                    }
-//                }
-//            }
-            Log.i("===========================JS脚本更新结束==================================")
-        }
-    }
-
-    private suspend fun checkLocalAdBlackUpdate() {
-        try {
-            if (JsConfig.localAdblockVersion >= BuildConfig.VERSION_CODE) {
-                return
-            }
-            checkAdBlackUpdate({
-                loadAssets("adBlock/version.json")
-            }, {
-                loadAssets("adBlock/filterUrl.json")
-            }, {
-                loadAssets("adBlock/${it}")
-            })
-            if (!BuildConfig.DEBUG) {
-                JsConfig.localAdblockVersion = BuildConfig.VERSION_CODE
-            }
-        } catch (e: Exception) {
-            Log.e("广告拦截配置加载失败", e)
-        }
-    }
-
-    private suspend fun checkLocalJsUpdate() {
-        try {
-            if (JsConfig.localJsVersion >= BuildConfig.VERSION_CODE) {
-                return
-            }
-
-            var jsVersionInfos: List<JsVersionInfo>? = null
-            checkJsUpdate({
-                val json = loadAssets("js/version.json")
-                Log.i("local:${json}")
-                jsVersionInfos = gson.fromJson<List<JsVersionInfo>>(json)
-                jsVersionInfos ?: emptyList()
-            }, {
-                loadAssets("js/${it.source}")
-            })
-            if (!BuildConfig.DEBUG) {
-                JsConfig.localJsVersion = BuildConfig.VERSION_CODE
-            }
-        } catch (e: Exception) {
-            Log.e("网站脚本配置加载失败", e)
-        }
-    }
 
     suspend fun checkRemoteJsUpdate() = withIo {
         var jsVersionInfos: List<JsVersionInfo>? = null
@@ -121,32 +55,6 @@ object JsUpdateManager {
 
     }
 
-    private suspend fun checkAdBlackUpdate(
-        loadAdBlackVersionInfo: suspend () -> String,
-        loadFilterUrls: suspend () -> String,
-        loadWebsite: suspend (source: String) -> String,
-    ) {
-        val json = loadAdBlackVersionInfo()
-        val adBlackVersion = gson.fromJson<AdBlackVersion>(json) ?: return
-        if (AdBlockConfig.adBlockFilterUrlVersion < adBlackVersion.filterUrlVersion) {
-            val urlSet = gson.fromJson<List<String>>(loadFilterUrls())
-            if (urlSet != null) {
-                AdBlockConfig.adBlockList = urlSet.map { CustomWebView.AdBlock(it) }
-            }
-            if (!BuildConfig.DEBUG) {
-                AdBlockConfig.adBlockFilterUrlVersion = adBlackVersion.filterUrlVersion
-            }
-        }
-        adBlackVersion.sourceVersions?.forEach {
-            if (it.version > AdBlockConfig.getAdBlockJsVersion(it.source)) {
-                AdBlockConfig.saveAdBlockJs(it.source, loadWebsite(it.source))
-                if (!BuildConfig.DEBUG) {
-                    AdBlockConfig.saveAdBlockJsVersion(it.source, it.version)
-                }
-            }
-        }
-    }
-
     private suspend fun checkJsUpdate(
         loadVersionInfo: suspend () -> List<JsVersionInfo>,
         loadJs: suspend (JsVersionInfo) -> String?
@@ -164,9 +72,4 @@ object JsUpdateManager {
         }
     }
 
-    private fun loadAssets(fileName: String): String {
-        return App.app.assets.open(fileName, AssetManager.ACCESS_BUFFER).use { stream ->
-            stream.bufferedReader().readText()
-        }
-    }
 }

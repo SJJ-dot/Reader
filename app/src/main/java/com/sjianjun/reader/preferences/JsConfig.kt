@@ -32,16 +32,22 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
 
     private val allJs: MutableMap<String, BookSource?> = ConcurrentHashMap()
 
-    fun saveJs(js: BookSource) {
+    fun saveJs(vararg js: BookSource) {
         edit {
-            putString("Js_${js.source}", gson.toJson(js))
+            js.forEach { js ->
+                putString("Js_${js.source}", gson.toJson(js))
+            }
         }
-        if (!allJsSource.contains(js.source)) {
-            allJsSource.add(js.source)
-            allJsSource = allJsSource
+        js.forEach { js ->
+            if (!allJsSource.contains(js.source)) {
+                allJsSource.add(js.source)
+            }
+            allJs[js.source] = js
         }
-        allJs[js.source] = js
-        Log.i("保存脚本:${js.source}")
+        allJsSource = allJsSource
+
+
+        Log.i("保存脚本:${js.map { it.source }}")
     }
 
     fun removeJs(vararg sources: String) {

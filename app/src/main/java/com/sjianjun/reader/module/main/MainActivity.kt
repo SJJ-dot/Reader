@@ -17,14 +17,12 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
-import kotlinx.coroutines.delay
 
 class MainActivity : BaseActivity() {
 
@@ -43,7 +41,6 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         launchIo {
             checkUpdate(this@MainActivity,false)
-            JsUpdateManager.checkUpdate()
             JavaScriptTest.testJavaScript()
         }
         XXPermissions.with(this)

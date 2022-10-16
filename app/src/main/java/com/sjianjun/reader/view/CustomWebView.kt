@@ -105,7 +105,10 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url)
+                Log.i(url?:return)
+                if (!url.startsWith("http")) {
+                    return
+                }
 
                 //不是重定向
                 val adBlockJs = adBlockJs

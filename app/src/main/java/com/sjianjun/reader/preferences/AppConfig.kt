@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
+import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
 import com.tencent.mmkv.MMKV
 
 val globalConfig by lazy { AppConfig("default") }
@@ -24,8 +25,6 @@ class AppConfig(val name: String) :
     var lastCheckUpdateTime by longPref("lastCheckUpdateTime", 0)
 
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
-
-    val bookCityDefaultSource = strLivedata("bookCityDefaultSource", BOOK_SOURCE_QI_DIAN)
 
     val qqAuthLoginUri = MutableLiveData<Uri>()
 
@@ -59,12 +58,6 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme = intLivedata("lastLightTheme")
 
-    /**
-     * 记录上一次启动时App版本
-     */
-    var lastAppVersion by intPref("lastAppVersion")
-    var lastAppVersionName by strPref("lastAppVersionName")
-
-    var bookSourceImportUrls by dataPref<MutableList<String>>("bookSourceImportUrl", mutableListOf())
+    var bookSourceImportUrls by dataPref("bookSourceImportUrl", mutableListOf(URL_BOOK_SOURCE_DEF))
 }
 
