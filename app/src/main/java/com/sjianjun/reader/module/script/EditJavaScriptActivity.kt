@@ -29,7 +29,7 @@ class EditJavaScriptActivity : BaseActivity() {
                     source = script_source.text.toString(),
                     js = script.text.toString(),
                     version = script_version.text.toString().toIntOrNull() ?: 1,
-                    isStartingStation = script_starting.isChecked
+                    isOriginal = script_starting.isChecked
                 )
                 try {
                     BookSourceManager.saveJs(bookSource)
@@ -49,7 +49,7 @@ class EditJavaScriptActivity : BaseActivity() {
             if (!js?.source.isNullOrEmpty()) {
                 script_source.isEnabled = false
             }
-            script_starting.isChecked = js?.isStartingStation ?: false
+            script_starting.isChecked = js?.isOriginal ?: false
             script_version.setText((js?.version ?: 1).toString())
         }
     }

@@ -27,7 +27,7 @@ data class BookSource constructor(
     @JvmField
     var js: String,
     var version: Int,
-    var isStartingStation: Boolean = false,
+    var isOriginal: Boolean = false,
     @JvmField
     var enable: Boolean = true,
     var group: String = "本地书源",

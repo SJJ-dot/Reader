@@ -116,7 +116,7 @@ object DataManager {
     ): Book? {
 
         return withIo {
-            if (javaScript?.isStartingStation == true && javaScript.source == book.source) {
+            if (javaScript?.isOriginal == true && javaScript.source == book.source) {
                 //可能存在之前本地没有首发站书源，设置为null之后的情况
                 if (book.record?.startingStationBookSource?.isEmpty() == true ||
                     book.record?.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY

@@ -13,7 +13,7 @@ object BookSourceManager {
     }
 
     suspend fun getAllStartingJs(): List<BookSource> {
-        return getAllJs().filter { it.isStartingStation && it.enable }
+        return getAllJs().filter { it.isOriginal && it.enable }
     }
 
     fun getJs(source: String): BookSource? {
@@ -39,7 +39,7 @@ object BookSourceManager {
             search = js.search(key)!!.first()
         } catch (e: Exception) {
             js.checkResult = "校验失败：搜索出错"
-            Log.e(js.checkResult, e)
+            Log.e("${js.source}:${js.checkResult}", e)
             return
         }
         val details: Book
@@ -47,7 +47,7 @@ object BookSourceManager {
             details = js.getDetails(search.bookUrl)!!
         } catch (e: Exception) {
             js.checkResult = "校验失败：详情加载失败"
-            Log.e(js.checkResult, e)
+            Log.e("${js.source}:${js.checkResult}", e)
             return
         }
         try {
@@ -56,7 +56,7 @@ object BookSourceManager {
             assert(content!!.isNotBlank())
         } catch (e: Exception) {
             js.checkResult = "校验失败：章节内容加载失败"
-            Log.e(js.checkResult, e)
+            Log.e("${js.source}:${js.checkResult}", e)
             return
         }
         js.checkResult = "校验成功"
