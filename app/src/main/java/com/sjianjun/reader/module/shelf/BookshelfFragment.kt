@@ -286,9 +286,7 @@ class BookshelfFragment : BaseFragment() {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init(
-                                    "${error ?: startingError}\n" +
-                                            "StackTrace:\n" +
-                                            (error ?: startingError)
+                                    "${error ?: startingError}"
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
                             popup.showPopupWindow(it)

@@ -1,11 +1,7 @@
 package com.sjianjun.reader.module.script
 
 import android.annotation.SuppressLint
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
@@ -17,9 +13,9 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceManager
-import com.sjianjun.reader.repository.JsUpdateManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
@@ -27,8 +23,6 @@ import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.v
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
 import sjj.alog.Log
 import splitties.views.inflate
 import java.util.concurrent.Executors
@@ -373,6 +367,18 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                     fragment.launch {
                         script.enable = isChecked
                         BookSourceManager.saveJs(script)
+                    }
+                }
+                if (script.checkErrorMsg.isNullOrBlank()) {
+                    iv_error_hint.hide()
+                    iv_error_hint.setOnClickListener(null)
+                } else {
+                    iv_error_hint.show()
+                    iv_error_hint.setOnClickListener{
+                        val popup = ErrorMsgPopup(fragment.context)
+                            .init("${script.checkErrorMsg}")
+                            .setPopupGravity(Gravity.TOP or Gravity.START)
+                        popup.showPopupWindow(it)
                     }
                 }
             }

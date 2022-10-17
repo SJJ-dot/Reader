@@ -17,6 +17,18 @@
             android:layout_height="match_parent"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <ImageView
+            android:id="@+id/iv_error_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:src="@mipmap/ic_sync_error"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/iv_source_group"
+            app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/mdr_red_100" />
+
         <TextView
             android:id="@+id/tv_source_name"
             style="@style/text_body1"
@@ -24,7 +36,7 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             app:layout_constraintBottom_toTopOf="@+id/iv_source_group"
-            app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
+            app:layout_constraintEnd_toStartOf="@+id/iv_error_hint"
             app:layout_constraintStart_toEndOf="@id/cb_book_source"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed"

@@ -45,6 +45,7 @@ object BookSourceManager {
             search = js.search(key)!!.first()
         } catch (e: Exception) {
             js.checkResult = "校验失败：搜索出错"
+            js.checkErrorMsg = e.stackTraceToString()
             Log.e("${js.source}:${js.checkResult}", e)
             return
         }
@@ -53,6 +54,7 @@ object BookSourceManager {
             details = js.getDetails(search.bookUrl)!!
         } catch (e: Exception) {
             js.checkResult = "校验失败：详情加载失败"
+            js.checkErrorMsg = e.stackTraceToString()
             Log.e("${js.source}:${js.checkResult}", e)
             return
         }
@@ -62,10 +64,12 @@ object BookSourceManager {
             assert(content!!.isNotBlank())
         } catch (e: Exception) {
             js.checkResult = "校验失败：章节内容加载失败"
+            js.checkErrorMsg = e.stackTraceToString()
             Log.e("${js.source}:${js.checkResult}", e)
             return
         }
         js.checkResult = "校验成功"
+        js.checkErrorMsg = null
     }
 
     suspend fun import(url: String) = withIo {

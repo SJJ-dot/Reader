@@ -48,6 +48,8 @@ data class BookSource constructor(
     @Expose(serialize = false)
     var checkResult: String? = null
 
+    @Expose(serialize = false)
+    var checkErrorMsg: String? = null
 
     @Ignore
     @JvmField
