@@ -76,6 +76,9 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 .setMessage("确定要删除选中的${list.size}个书源吗？")
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     BookSourceManager.delete(*list.toTypedArray())
+                    adapter.data.removeAll(list)
+                    adapter.notifyDataSetChanged()
+                    refreshSelectAll()
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
@@ -92,8 +95,8 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
         val searchView = menu.findItem(R.id.search_view)?.actionView as SearchView
         searchView.queryHint = "书源搜索"
         searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
-//        searchView.isIconified = false
-//        searchView.clearFocus()
+        searchView.isIconified = false
+        searchView.clearFocus()
 //        searchView.isSubmitButtonEnabled = true
         this.searchView = searchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -108,6 +111,10 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 return false
             }
         })
+        searchView.setOnCloseListener {
+            Log.e("setOnCloseListener")
+            true
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -135,16 +142,32 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                         view.edit_view.hideKeyboard()
                         launch {
                             try {
-                                showSnackbar(recycle_view,"正在导入书源",Snackbar.LENGTH_INDEFINITE)
+                                showSnackbar(recycle_view, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
                                 BookSourceManager.import(url)
-                                showSnackbar(recycle_view,"书源导入成功")
+                                initData()
+                                showSnackbar(recycle_view, "书源导入成功")
                             } catch (e: Exception) {
-                                showSnackbar(recycle_view,"书源导入失败：${e.message}")
+                                showSnackbar(recycle_view, "书源导入失败：${e.message}")
                             }
                         }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
+                true
+            }
+            R.id.source_enable -> {
+                searchView.setQuery("已启用", false)
+                query()
+                true
+            }
+            R.id.source_disable -> {
+                searchView.setQuery("已禁用", false)
+                query()
+                true
+            }
+            R.id.source_all -> {
+                searchView.setQuery("", false)
+                query()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -164,15 +187,21 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
     private fun query() {
         launch {
-            val query = searchView.query
+            val query = searchView.query.toString().trim()
             val allJs = BookSourceManager.getAllJs()
             adapter.data.clear()
-            if (query.isNullOrEmpty()) {
+            if (query.isBlank()) {
                 adapter.data.addAll(allJs)
             } else {
                 adapter.data.addAll(allJs.filter {
-                    it.source.contains(query) || it.group.contains(query)
-                            || it.checkResult?.contains(query) == true
+                    if (query == "已启用") {
+                        it.enable
+                    }else if (query == "已禁用") {
+                        !it.enable
+                    } else {
+                        it.source.contains(query) || it.group.contains(query)
+                                || it.checkResult?.contains(query) == true
+                    }
                 })
             }
             adapter.data.forEach {
@@ -207,6 +236,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                         toast("请选择书源")
                     } else {
                         list.forEach { it.enable = true }
+                        BookSourceManager.saveJs(*list.toTypedArray())
                         adapter.notifyDataSetChanged()
                     }
                 }
@@ -216,6 +246,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                         toast("请选择书源")
                     } else {
                         list.forEach { it.enable = false }
+                        BookSourceManager.saveJs(*list.toTypedArray())
                         adapter.notifyDataSetChanged()
                     }
                 }
@@ -256,7 +287,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                                                     if (++count == list.size) {
                                                         showSnackbar(
                                                             recycle_view,
-                                                            "书源校完成(${count}/${list.size})",
+                                                            "书源校验完成(${count}/${list.size})",
                                                             Snackbar.LENGTH_INDEFINITE
                                                         )
                                                     } else {
@@ -274,10 +305,14 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                                         deferreds.awaitAll()
                                         withMain {
                                             dismissSnackbar()
-                                            searchView.onActionViewExpanded()
-                                            searchView.setQuery("校验失败", true)
-                                            searchView.clearFocus()
-                                            query()
+                                            val errorList = adapter.data.filter {
+                                                it.checkResult?.contains("失败") == true
+                                            }
+                                            if (errorList.isNotEmpty()) {
+                                                searchView.setQuery("校验失败", true)
+//                                            searchView.clearFocus()
+                                                query()
+                                            }
                                         }
 
                                     }
