@@ -31,6 +31,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
     private val adapter = Adapter(this@BookScriptManagerFragment)
     private lateinit var searchView: SearchView
+    private lateinit var popupMenu: PopupMenu
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
@@ -106,9 +107,19 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
             }
         })
         searchView.setOnCloseListener {
-            Log.e("setOnCloseListener")
+            searchView.hideKeyboard()
+            searchView.clearFocus()
             true
         }
+        searchView.setOnQueryTextFocusChangeListener { view, b ->
+            if (!b) {
+                searchView.hideKeyboard()
+            }
+        }
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        searchView.hideKeyboard()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -220,6 +231,11 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     }
 
     private fun showPopupMenu(anchor: View) {
+        if (this::popupMenu.isInitialized) {
+            searchView.clearFocus()
+            popupMenu.show()
+            return
+        }
         val popupMenu = PopupMenu(anchor.context, anchor)
         popupMenu.menuInflater.inflate(R.menu.main_fragment_book_source_menu_bottom, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener {
@@ -321,7 +337,9 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
 
             true
         }
+        searchView.clearFocus()
         popupMenu.show()
+        this.popupMenu = popupMenu
     }
 
 
