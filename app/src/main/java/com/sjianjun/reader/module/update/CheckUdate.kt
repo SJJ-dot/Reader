@@ -10,63 +10,91 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
+import org.json.JSONObject
 import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
+enum class Channels {
+    FastGit {
+        override fun getReleaseInfo(): ReleasesInfo {
+            val url = "https://raw.fastgit.org/SJJ-dot/readerRepo/main/releases/checkUpdate.json"
+            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url))!!
+            releasesInfo.channel = name
+            releasesInfo.downloadApkUrl =
+                "https://raw.fastgit.org/SJJ-dot/readerRepo/main/releases/${releasesInfo.lastVersion}/app.apk"
+            return releasesInfo
+        }
+    },
+    Github {
+        override fun getReleaseInfo(): ReleasesInfo {
+            val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
+            val info = JSONObject(http.get(url))
+
+            val releasesInfo = ReleasesInfo()
+            releasesInfo.channel = name
+            releasesInfo.lastVersion = info.getString("tag_name")
+            releasesInfo.updateContent = info.getString("body")
+            releasesInfo.downloadApkUrl =
+                info.getJSONArray("assets").getJSONObject(0).getString("browser_download_url")
+            return releasesInfo
+        }
+    };
+
+    abstract fun getReleaseInfo(): ReleasesInfo
+
+}
+
 suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
-    try {
-        if (fromUser || System.currentTimeMillis() - globalConfig.lastCheckUpdateTime >
-            TimeUnit.HOURS.toMillis(1)
-        ) {
-            val info = http.get(
-                URL_RELEASE_INFO,
-                header = mapOf("Content-Type" to "application/json;charset=UTF-8")
-            )
-            globalConfig.releasesInfo = info
-            if (!BuildConfig.DEBUG) {
-                globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
-            }
-            val releasesInfo = gson.fromJson<ReleasesInfo>(info)
-            Log.i(releasesInfo)
+    if (!fromUser && System.currentTimeMillis() - globalConfig.lastCheckUpdateTime <
+        TimeUnit.MINUTES.toMillis(30)
+    ) {
+        return@withIo
+    }
+    var releasesInfo: ReleasesInfo? = null
+    for (ch in Channels.values()) {
+        try {
+            releasesInfo = ch.getReleaseInfo()
+            globalConfig.releasesInfo = gson.toJson(releasesInfo)
+            break
+        } catch (e: Exception) {
+            Log.e("版本信息加载失败：${e.message}")
         }
-    } catch (e: Exception) {
+    }
+    if (releasesInfo == null && !fromUser) {
+        val info = globalConfig.releasesInfo
+        if (info != null) {
+            releasesInfo = gson.fromJson<ReleasesInfo>(info)!!
+        }
+    }
+    if (releasesInfo == null) {
         if (fromUser) {
-            toast("版本信息加载失败：${e.message}", Toast.LENGTH_LONG)
+            toast("版本信息加载失败", Toast.LENGTH_LONG)
         }
         return@withIo
     }
-
-    val releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo) ?: return@withIo
-
-    val download = releasesInfo.apkAssets
-    val browserDownloadUrl = download?.browser_download_url
-    if (browserDownloadUrl.isNullOrEmpty()) {
-        return@withIo
+    if (!BuildConfig.DEBUG) {
+        globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
     }
-    if (releasesInfo.prerelease && !(BuildConfig.DEBUG || fromUser)) {
-        return@withIo
-    }
+
     if (releasesInfo.isNewVersion) {
-
         val manager = DownloadManager.Builder(ativity).run {
-            apkUrl(browserDownloadUrl)
-            apkName(download.name)
+            apkUrl(releasesInfo.downloadApkUrl!!)
+            apkName("reader-${releasesInfo.lastVersion}.apk")
             smallIcon(R.mipmap.ic_xue_xi)
             //设置了此参数，那么内部会自动判断是否需要显示更新对话框，否则需要自己判断是否需要更新
-            apkVersionCode(BuildConfig.VERSION_CODE+1)
+            apkVersionCode(BuildConfig.VERSION_CODE + 1)
             //同时下面三个参数也必须要设置
-            apkVersionName(releasesInfo.tag_name)
-            apkSize("${(releasesInfo.apkAssets?.size ?: 0) / 1024 / 1024}MB")
-            apkDescription(releasesInfo.body)
+            apkVersionName(releasesInfo.lastVersion!!)
+            apkDescription(releasesInfo.updateContent!!)
             //省略一些非必须参数...
             build()
         }
-
         manager.download()
     } else {
         if (fromUser) {
             toast("当前已经是最新版本", Toast.LENGTH_LONG)
         }
     }
+
 
 }

@@ -26,13 +26,10 @@ const val CONTENT_TYPE_ANDROID = "application/vnd.android.package-archive"
  * 起点中文网 不能修改source
  */
 const val BOOK_SOURCE_QI_DIAN = "起点中文网"
-const val BOOK_SOURCE = "JS_SOURCE"
-const val JS_FIELD_REQUEST_DELAY = "REQUEST_DELAY"
 
-const val URL_RELEASE_INFO = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
-const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/download/0.6.3/com.sjianjun.reader-master-release.474.-0.6.3.apk"
+const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/download/1.0.0/com.sjianjun.reader-master-release.493.-1.0.0.apk"
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
-const val URL_BOOK_SOURCE_DEF = "https://raw.fastgit.org/SJJ-dot/Reader/master/BookSource/default.json"
+const val URL_BOOK_SOURCE_DEF = "https://raw.fastgit.org/SJJ-dot/readerRepo/master/BookSource/default.json"
 
 
 /**

@@ -10,6 +10,7 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
+import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
@@ -73,18 +74,20 @@ class AboutFragment : BaseAsyncFragment() {
     private fun setVersionInfo() {
 
         val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-        val count = releaseInfo?.apkAssets?.download_count ?: "?"
         if (releaseInfo?.isNewVersion == true) {
             versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.tag_name} | 下载次数：${count}"
+                "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.lastVersion}"
         } else {
-            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME} | 下载次数：${count}"
+            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
         }
     }
 
     private fun downloadUrl(): String {
         val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-        return releaseInfo?.apkDownloadUrl ?: URL_RELEASE_DEF
+        if (releaseInfo != null) {
+            return releaseInfo.downloadApkUrl!!
+        }
+        return URL_RELEASE_DEF
     }
 
 }

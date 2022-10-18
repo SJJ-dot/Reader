@@ -17,7 +17,7 @@ class AppConfig(val name: String) :
     /**
      * github 发布的版本信息
      */
-    var releasesInfo by strPref("releasesInfo", null)
+    var releasesInfo by strPref("releasesInfo_new", null)
 
     /**
      * 上次检查更新的时间
