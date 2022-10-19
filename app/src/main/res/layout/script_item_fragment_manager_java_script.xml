@@ -23,8 +23,8 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="5dp"
             android:src="@mipmap/ic_sync_error"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="@+id/iv_source_group"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/iv_source_check_res"
             app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/mdr_red_100" />
@@ -34,8 +34,8 @@
             style="@style/text_body1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            app:layout_constraintBottom_toTopOf="@+id/iv_source_group"
+            android:singleLine="true"
+            app:layout_constraintBottom_toTopOf="@+id/iv_source_check_res"
             app:layout_constraintEnd_toStartOf="@+id/iv_error_hint"
             app:layout_constraintStart_toEndOf="@id/cb_book_source"
             app:layout_constraintTop_toTopOf="parent"
@@ -43,16 +43,17 @@
             tools:text="测试书源名称" />
 
         <TextView
-            android:id="@+id/iv_source_group"
+            android:id="@+id/iv_source_check_res"
             style="@style/text_body2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:maxLines="1"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
             app:layout_constraintStart_toEndOf="@id/cb_book_source"
             app:layout_constraintTop_toBottomOf="@+id/tv_source_name"
-            tools:text="测试书源分组" />
+            tools:text="校验失败：搜索出错" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/sw_source_enable"
@@ -72,18 +73,6 @@
             android:contentDescription="编辑"
             android:padding="8dp"
             android:src="@mipmap/ic_edit"
-            app:layout_constraintEnd_toStartOf="@+id/iv__source_debug"
-            app:tint="@color/dn_icon_tint_color" />
-
-        <ImageView
-            android:id="@+id/iv__source_debug"
-            android:layout_width="40dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_ib_pre_round"
-            android:contentDescription="调试"
-            android:padding="10dp"
-            android:src="@mipmap/ic_debug"
             app:layout_constraintEnd_toEndOf="parent"
             app:tint="@color/dn_icon_tint_color" />
 

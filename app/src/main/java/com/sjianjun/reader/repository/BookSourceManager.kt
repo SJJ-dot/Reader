@@ -76,13 +76,12 @@ object BookSourceManager {
         val sources = (0 until bookSourceArray.length()).map {
             val obj = bookSourceArray.getJSONObject(it)
             BookSource(
-                obj.getString("source"),
+                "${source.optString("group")}:${obj.getString("source")}",
                 Base64.decode(obj.getString("js"), Base64.NO_WRAP)
                     .toString(Charset.forName("utf-8")),
                 obj.optInt("version", -1),
                 obj.optBoolean("original", false),
                 obj.optBoolean("enable", true),
-                source.optString("group"),
                 obj.optLong("requestDelay", -1),
                 obj.optString("website")
             )

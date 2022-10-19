@@ -15,7 +15,7 @@
         tools:layout="@layout/search_fragment_search" />
     <fragment
         android:id="@+id/novelScriptFragment"
-        android:name="com.sjianjun.reader.module.script.BookScriptManagerFragment"
+        android:name="com.sjianjun.reader.module.script.BookSourceManagerFragment"
         android:label="脚本"
         tools:layout="@layout/main_fragment_book_script_manager" />
     <fragment

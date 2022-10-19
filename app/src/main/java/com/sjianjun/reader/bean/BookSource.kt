@@ -31,7 +31,6 @@ data class BookSource constructor(
     var isOriginal: Boolean = false,
     @JvmField
     var enable: Boolean = true,
-    var group: String = "本地书源",
     var requestDelay: Long = 1000L,
     var website: String = ""
 ) {

@@ -23,13 +23,12 @@ import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.v
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import sjj.alog.Log
 import splitties.views.inflate
 import java.util.concurrent.Executors
 
-class BookScriptManagerFragment : BaseAsyncFragment() {
+class BookSourceManagerFragment : BaseAsyncFragment() {
     private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
-    private val adapter = Adapter(this@BookScriptManagerFragment)
+    private val adapter = Adapter(this@BookSourceManagerFragment)
     private lateinit var searchView: SearchView
     private lateinit var popupMenu: PopupMenu
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
@@ -201,11 +200,10 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                 adapter.data.addAll(allJs.filter {
                     if (query == "已启用") {
                         it.enable
-                    }else if (query == "已禁用") {
+                    } else if (query == "已禁用") {
                         !it.enable
                     } else {
-                        it.source.contains(query) || it.group.contains(query)
-                                || it.checkResult?.contains(query) == true
+                        it.source.contains(query) || it.checkResult?.contains(query) == true
                     }
                 })
             }
@@ -343,7 +341,7 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
     }
 
 
-    class Adapter(val fragment: BookScriptManagerFragment) : BaseAdapter<BookSource>() {
+    class Adapter(val fragment: BookSourceManagerFragment) : BaseAdapter<BookSource>() {
         lateinit var onSelectSource: () -> Unit
 
         init {
@@ -368,9 +366,10 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                     onSelectSource()
                 }
                 if (script.checkResult.isNullOrBlank()) {
-                    iv_source_group.text = script.group
+                    iv_source_check_res.gone()
                 } else {
-                    iv_source_group.text = "${script.group}(${script.checkResult})"
+                    iv_source_check_res.show()
+                    iv_source_check_res.text = "${script.checkResult}"
                 }
                 iv_edit_source.setOnClickListener {
                     fragment.startActivity<EditJavaScriptActivity>(
@@ -388,11 +387,11 @@ class BookScriptManagerFragment : BaseAsyncFragment() {
                     }
                 }
                 if (script.checkErrorMsg.isNullOrBlank()) {
-                    iv_error_hint.hide()
+                    iv_error_hint.gone()
                     iv_error_hint.setOnClickListener(null)
                 } else {
                     iv_error_hint.show()
-                    iv_error_hint.setOnClickListener{
+                    iv_error_hint.setOnClickListener {
                         val popup = ErrorMsgPopup(fragment.context)
                             .init("${script.checkErrorMsg}")
                             .setPopupGravity(Gravity.TOP or Gravity.START)

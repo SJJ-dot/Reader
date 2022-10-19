@@ -60,11 +60,11 @@ object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
         }
 
         source2.forEach {
-            if (!it.startsWith("!allJs")) {
-                getJs(it)
+            if (it.startsWith("Js_")) {
+                getJs(it.replace("Js_",""))
             }
         }
-        return allJs.values.mapNotNull { it }
+        return allJs.values.mapNotNull { it }.sortedBy { it.source }
     }
 
 }
