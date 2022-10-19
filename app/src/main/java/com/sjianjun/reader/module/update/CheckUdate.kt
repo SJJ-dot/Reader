@@ -17,11 +17,11 @@ import java.util.concurrent.TimeUnit
 enum class Channels {
     FastGit {
         override fun getReleaseInfo(): ReleasesInfo {
-            val url = "https://raw.fastgit.org/SJJ-dot/readerRepo/main/releases/checkUpdate.json"
+            val url = "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
             val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url))!!
             releasesInfo.channel = name
             releasesInfo.downloadApkUrl =
-                "https://raw.fastgit.org/SJJ-dot/readerRepo/main/releases/${releasesInfo.lastVersion}/app.apk"
+                "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
             return releasesInfo
         }
     },
