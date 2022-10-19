@@ -7,8 +7,6 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.JsConfig
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
 import org.json.JSONObject
 import sjj.alog.Log
 import java.nio.charset.Charset
@@ -18,7 +16,7 @@ object BookSourceManager {
         JsConfig.getAllJs()
     }
 
-    suspend fun getAllStartingJs(): List<BookSource> {
+    suspend fun getAllOriginalSource(): List<BookSource> {
         return getAllJs().filter { it.isOriginal && it.enable }
     }
 
@@ -36,7 +34,7 @@ object BookSourceManager {
     }
 
     fun delete(vararg js: BookSource) {
-        JsConfig.removeJs(*js.map { it.source }.toTypedArray())
+        JsConfig.removeJs(*js)
     }
 
     suspend fun check(js: BookSource, key: String) {
@@ -81,15 +79,19 @@ object BookSourceManager {
                 obj.getString("source"),
                 Base64.decode(obj.getString("js"), Base64.NO_WRAP)
                     .toString(Charset.forName("utf-8")),
-                obj.getInt("version"),
-                obj.getBoolean("original"),
-                obj.getBoolean("enable"),
-                source.getString("group"),
-                obj.getLong("requestDelay"),
-                obj.getString("website"),
+                obj.optInt("version", -1),
+                obj.optBoolean("original", false),
+                obj.optBoolean("enable", true),
+                source.optString("group"),
+                obj.optLong("requestDelay", -1),
+                obj.optString("website")
             )
         }
-        saveJs(*sources.toTypedArray())
+        val allJs = getAllJs()
+        saveJs(*sources.filter { s ->
+            val local = allJs.find { it.source == s.source }
+            (local?.version ?: -1) <= s.version
+        }.toTypedArray())
     }
 
 }

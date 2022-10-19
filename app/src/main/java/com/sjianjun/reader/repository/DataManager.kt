@@ -136,7 +136,7 @@ object DataManager {
             if (!onlyLocal && record.startingStationBookSource.isBlank()) {
                 //到官方的网站查询并把书籍插入到本地数据库
                 var error = false
-                val startingBook = BookSourceManager.getAllStartingJs().map {
+                val startingBook = BookSourceManager.getAllOriginalSource().map {
                     async {
                         var startingBook = dao.getBookByTitleAuthorAndSource(
                             book.title,

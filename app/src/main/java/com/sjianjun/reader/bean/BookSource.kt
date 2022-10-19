@@ -8,6 +8,7 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
+import com.sjianjun.reader.utils.md5
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
@@ -51,68 +52,6 @@ data class BookSource constructor(
     @Expose(serialize = false)
     var checkErrorMsg: String? = null
 
-    @Ignore
-    @JvmField
-    var headerScript = """
-        ${importClassCode<Jsoup>()}
-        ${importClassCode<Log>()}
-        ${importClassCode<CookieMgr>()}
-        ${importClassCode<SearchResult>()}
-        ${importClassCode<Chapter>()}
-        ${importClassCode<Book>()}
-        ${importClassCode<StringUtil>()}
-
-        importClass(Packages.java.util.ArrayList)
-        importClass(Packages.java.util.HashMap)
-        importClass(Packages.java.net.URLEncoder)
-        importClass(Packages.java.net.URLDecoder)
-        
-        function request(params){
-            // url type header data enc
-            var header = new HashMap();
-            var hd = params.header || {}
-            for(k in hd){
-                header.put(k,hd[k])
-            }
-            
-            var query = new HashMap();
-            var data = params.data || {}
-            var enc = params.enc || "utf-8"
-            for(k in data){
-                query.put(k,URLEncoder.encode(data[k],enc))
-            }
-            var resp;
-            if(params.type=="post"){
-                resp = http.post(params.url,query,header)
-            }else{
-                resp = http.get(params.url,query,header)
-            }
-            return Jsoup.parse(resp,params.url);
-        }
-        
-        function get(params){
-            params.type = "get"
-            return request(params)
-        }
-        
-        function post(params){
-            params.type = "post"
-            return request(params)
-        }
-        
-        function encode(s,enc){
-            return URLEncoder.encode(s,enc||"utf-8")
-        }
-        
-        function decode(s,enc){
-            return URLEncoder.decode(s,enc||"utf-8")
-        }
-        
-        function getCookie(url,name){
-            return CookieMgr.getCookie(url,name)
-        }
-        
-    """.trimIndent()
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         return execute(func.name, *params)
@@ -195,3 +134,64 @@ data class BookSource constructor(
     }
 
 }
+
+val headerScript = """
+        ${importClassCode<Jsoup>()}
+        ${importClassCode<Log>()}
+        ${importClassCode<CookieMgr>()}
+        ${importClassCode<SearchResult>()}
+        ${importClassCode<Chapter>()}
+        ${importClassCode<Book>()}
+        ${importClassCode<StringUtil>()}
+
+        importClass(Packages.java.util.ArrayList)
+        importClass(Packages.java.util.HashMap)
+        importClass(Packages.java.net.URLEncoder)
+        importClass(Packages.java.net.URLDecoder)
+        
+        function request(params){
+            // url type header data enc
+            var header = new HashMap();
+            var hd = params.header || {}
+            for(k in hd){
+                header.put(k,hd[k])
+            }
+            
+            var query = new HashMap();
+            var data = params.data || {}
+            var enc = params.enc || "utf-8"
+            for(k in data){
+                query.put(k,URLEncoder.encode(data[k],enc))
+            }
+            var resp;
+            if(params.type=="post"){
+                resp = http.post(params.url,query,header)
+            }else{
+                resp = http.get(params.url,query,header)
+            }
+            return Jsoup.parse(resp,params.url);
+        }
+        
+        function get(params){
+            params.type = "get"
+            return request(params)
+        }
+        
+        function post(params){
+            params.type = "post"
+            return request(params)
+        }
+        
+        function encode(s,enc){
+            return URLEncoder.encode(s,enc||"utf-8")
+        }
+        
+        function decode(s,enc){
+            return URLEncoder.decode(s,enc||"utf-8")
+        }
+        
+        function getCookie(url,name){
+            return CookieMgr.getCookie(url,name)
+        }
+        
+    """.trimIndent()
