@@ -25,6 +25,16 @@ enum class Channels {
             return releasesInfo
         }
     },
+    IqiqIo {
+        override fun getReleaseInfo(): ReleasesInfo {
+            val url = "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
+            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url))!!
+            releasesInfo.channel = name
+            releasesInfo.downloadApkUrl =
+                "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
+            return releasesInfo
+        }
+    },
     Github {
         override fun getReleaseInfo(): ReleasesInfo {
             val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
