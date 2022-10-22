@@ -82,9 +82,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
         }
         return@withIo
     }
-    if (!BuildConfig.DEBUG) {
-        globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
-    }
+    globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
 
     if (releasesInfo.isNewVersion) {
         val manager = DownloadManager.Builder(ativity).run {

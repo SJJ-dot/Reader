@@ -71,12 +71,6 @@ data class BookSource constructor(
     }
 
 
-    inline fun <reified T> execute(script: String): T? {
-        return execute {
-            jsToJava<T>(eval(script))
-        }
-    }
-
     inline fun <reified T> execute(runner: ContextWrap.() -> T?): T? {
         return js {
             putProperty("source", javaToJS(source))
