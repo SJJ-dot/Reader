@@ -35,6 +35,7 @@ data class BookSource constructor(
     var website: String = ""
 ) {
 
+    val jsProps = mutableListOf<Pair<String, Any>>()
 
     /**
      * 书源管理页面是否被选中
@@ -80,6 +81,9 @@ data class BookSource constructor(
         return js {
             putProperty("source", javaToJS(source))
             putProperty("http", javaToJS(http))
+            jsProps.forEach {
+                putProperty(it.first, javaToJS(it.second))
+            }
 //            putProperty("context", this)
 
             eval(headerScript)
