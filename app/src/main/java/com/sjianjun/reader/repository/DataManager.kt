@@ -203,7 +203,7 @@ object DataManager {
             dao.updateBook(book)
 
             val bookDetails = script.getDetails(book.url)!!
-            bookDetails.url = book.url
+//            bookDetails.url = book.url
 
             val chapterList = bookDetails.chapterList!!
             chapterList.forEachIndexed { index, chapter ->

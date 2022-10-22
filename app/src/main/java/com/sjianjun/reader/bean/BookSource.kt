@@ -9,6 +9,7 @@ import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
 import com.sjianjun.reader.utils.md5
+import okhttp3.HttpUrl
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
@@ -88,13 +89,19 @@ data class BookSource constructor(
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
-            execute<List<SearchResult>>(Func.search, query)
+            execute<List<SearchResult>>(Func.search, query)?.also {
+                it.forEach {
+                    it.source = source
+                }
+            }
         }
     }
 
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
-            execute<Book>(Func.getDetails, bookUrl)
+            execute<Book>(Func.getDetails, bookUrl)?.also {
+                it.source = source
+            }
         }
     }
 
@@ -140,6 +147,7 @@ val headerScript = """
         ${importClassCode<Chapter>()}
         ${importClassCode<Book>()}
         ${importClassCode<StringUtil>()}
+        ${importClassCode<HttpUrl>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
@@ -160,13 +168,21 @@ val headerScript = """
             for(k in data){
                 query.put(k,URLEncoder.encode(data[k],enc))
             }
+            
+            var url;
+            if(params.baseUrl==undefined){
+                url = HttpUrl.get(params.url).url().toString()
+            }else{
+                url = HttpUrl.get(params.baseUrl).newBuilder(params.url).build().url().toString()
+            }
+            
             var resp;
             if(params.type=="post"){
-                resp = http.post(params.url,query,header)
+                resp = http.post(url,query,header)
             }else{
-                resp = http.get(params.url,query,header)
+                resp = http.get(url,query,header)
             }
-            return Jsoup.parse(resp,params.url);
+            return Jsoup.parse(resp,url);
         }
         
         function get(params){
