@@ -8,6 +8,7 @@ import com.sjianjun.retrofit.simple.http.HttpClient
 import kotlinx.coroutines.runBlocking
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.TlsVersion
 import sjj.alog.Log
@@ -96,7 +97,7 @@ class Http {
         queryMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap()
     ): String = runBlocking {
-        client.get<String>(url, queryMap, header)
+        client.get<String>(HttpUrl.get(url).url().toString(), queryMap, header)
     }
 
     @JvmOverloads
@@ -106,7 +107,7 @@ class Http {
         header: Map<String, String> = emptyMap()
     ): String = runBlocking {
         try {
-            client.post<String>(url, fieldMap, header)
+            client.post<String>(HttpUrl.get(url).url().toString(), fieldMap, header)
         } catch (e: Exception) {
             Log.e("网络请求失败:$url", e)
             ""
