@@ -201,8 +201,10 @@ object DataManager {
             }
             book.isLoading = true
             dao.updateBook(book)
-
             val bookDetails = script.getDetails(book.url)!!
+            if (bookDetails.url != book.url) {
+                deleteBookByUrl(book)
+            }
 //            bookDetails.url = book.url
 
             val chapterList = bookDetails.chapterList!!
