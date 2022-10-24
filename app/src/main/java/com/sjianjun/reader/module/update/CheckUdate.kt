@@ -16,9 +16,9 @@ import java.util.concurrent.TimeUnit
 
 enum class Channels {
     FastGit {
-        override fun getReleaseInfo(): ReleasesInfo {
+        override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
-            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url))!!
+            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
             releasesInfo.channel = name
             releasesInfo.downloadApkUrl =
                 "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
@@ -26,9 +26,9 @@ enum class Channels {
         }
     },
     IqiqIo {
-        override fun getReleaseInfo(): ReleasesInfo {
+        override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
-            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url))!!
+            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
             releasesInfo.channel = name
             releasesInfo.downloadApkUrl =
                 "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
@@ -36,9 +36,9 @@ enum class Channels {
         }
     },
     Github {
-        override fun getReleaseInfo(): ReleasesInfo {
+        override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
-            val info = JSONObject(http.get(url))
+            val info = JSONObject(http.get(url).body)
 
             val releasesInfo = ReleasesInfo()
             releasesInfo.channel = name
@@ -50,7 +50,7 @@ enum class Channels {
         }
     };
 
-    abstract fun getReleaseInfo(): ReleasesInfo
+    abstract suspend fun getReleaseInfo(): ReleasesInfo
 
 }
 

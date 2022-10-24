@@ -182,17 +182,17 @@ val headerScript = """
             }else{
                 resp = http.get(url,query,header)
             }
-            return Jsoup.parse(resp,url);
+            return resp;
         }
         
         function get(params){
             params.type = "get"
-            return request(params)
+            return Jsoup.parse(request(params).body,url)
         }
         
         function post(params){
             params.type = "post"
-            return request(params)
+            return Jsoup.parse(request(params).body,url)
         }
         
         function encode(s,enc){

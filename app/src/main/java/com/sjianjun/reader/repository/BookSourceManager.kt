@@ -71,7 +71,7 @@ object BookSourceManager {
     }
 
     suspend fun import(url: String) = withIo {
-        val source = JSONObject(http.get(url))
+        val source = JSONObject(http.get(url).body)
         val bookSourceArray = source.getJSONArray("bookSource")
         val sources = (0 until bookSourceArray.length()).map {
             val obj = bookSourceArray.getJSONObject(it)

@@ -1,17 +1,7 @@
 package com.sjianjun.reader.http
 
-import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
-import com.sjianjun.okhttp3.interceptor.HttpLoggingInterceptor
-import com.sjianjun.reader.BuildConfig
-import com.sjianjun.retrofit.converter.GsonCharsetCompatibleConverter
-import com.sjianjun.retrofit.simple.http.HttpClient
-import kotlinx.coroutines.runBlocking
-import okhttp3.CipherSuite
-import okhttp3.ConnectionSpec
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.TlsVersion
-import sjj.alog.Log
+import com.sjianjun.coroutine.withIo
+import okhttp3.*
 import java.util.concurrent.TimeUnit
 
 private fun header() = mutableMapOf(
@@ -28,89 +18,108 @@ private fun header() = mutableMapOf(
     "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.53 Safari/537.36 Edg/103.0.1264.37"
 )
 
-val client = HttpClient.Builder()
-    .apply {
-        val spec = ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
-            .supportsTlsExtensions(true)
-            .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_1, TlsVersion.TLS_1_0)
-            .cipherSuites(
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-                CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
-                CipherSuite.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
-                CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-                CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
-                CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA
-            )
-            .build()
-        clientBuilder = OkHttpClient.Builder()
-            .connectionSpecs(listOf(spec, ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .cookieJar(CookieMgr)
-            .addInterceptor {
-
-                val header = header()
-                it.request().headers().names().forEach { name ->
-                    header.remove(name)
-                }
-                val host = it.request().url().host()
-                val newBuilder = it.request().newBuilder()
-                newBuilder.addHeader("Host", host)
-                newBuilder.addHeader("Referer", it.request().url().toString())
-                header.forEach { (t, u) ->
-                    newBuilder.addHeader(t, u)
-                }
-                it.proceed(newBuilder.build())
-            }
-        clientBuilder?.addInterceptor(
-            HttpLoggingInterceptor { Log.i(it) }.setLevel(
-                if (BuildConfig.DEBUG) {
-                    HttpLoggingInterceptor.Level.BODY
-                } else {
-                    HttpLoggingInterceptor.Level.HEADERS
-                }
-
-            )
+private val okClient = OkHttpClient.Builder()
+    .connectionSpecs(
+        listOf(
+            ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
+                .supportsTlsExtensions(true)
+                .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_1, TlsVersion.TLS_1_0)
+                .cipherSuites(
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                    CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
+                    CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+                ).build(),
+            ConnectionSpec.MODERN_TLS,
+            ConnectionSpec.CLEARTEXT
         )
+    )
+    .connectTimeout(10, TimeUnit.SECONDS)
+    .writeTimeout(10, TimeUnit.SECONDS)
+    .readTimeout(10, TimeUnit.SECONDS)
+    .retryOnConnectionFailure(true)
+    .cookieJar(CookieMgr)
+    .addInterceptor {
+        val header = header()
+        it.request().headers().names().forEach { name ->
+            header.remove(name)
+        }
+        val host = it.request().url().host()
+        val newBuilder = it.request().newBuilder()
+        newBuilder.addHeader("Host", host)
+        newBuilder.addHeader("Referer", it.request().url().toString())
+        header.forEach { (t, u) ->
+            newBuilder.addHeader(t, u)
+        }
+        it.proceed(newBuilder.build())
+    }.build()
 
-    }
-    .addConverterFactory(GsonCharsetCompatibleConverter.create())
-    .addCallAdapterFactory(CoroutineCallAdapterFactory())
-    .build()
+private val stringConverter = StringConverter()
 
 val http = Http()
 
+class Resp(val url: String, val body: String)
 
 class Http {
 
     @JvmOverloads
-    fun get(
+    suspend fun get(
         url: String,
         queryMap: Map<String, String> = emptyMap(),
-        header: Map<String, String> = emptyMap()
-    ): String = runBlocking {
-        client.get<String>(HttpUrl.get(url).url().toString(), queryMap, header)
+        header: Map<String, String> = emptyMap(),
+        encoded: Boolean = false
+    ): Resp = withIo {
+        val urlBuilder = HttpUrl.get(url).newBuilder()
+        queryMap.forEach {
+            if (encoded) {
+                urlBuilder.addEncodedQueryParameter(it.key, it.value)
+            } else {
+                urlBuilder.addQueryParameter(it.key, it.value)
+            }
+        }
+        val builder = Request.Builder().url(urlBuilder.build())
+        header.forEach {
+            builder.header(it.key, it.value)
+        }
+        val response = okClient.newCall(builder.build()).execute()
+        return@withIo Resp(
+            response.request().url().toString(),
+            stringConverter.stringConverter(response.body())
+        )
     }
 
     @JvmOverloads
-    fun post(
+    suspend fun post(
         url: String,
         fieldMap: Map<String, String> = emptyMap(),
-        header: Map<String, String> = emptyMap()
-    ): String = runBlocking {
-        try {
-            client.post<String>(HttpUrl.get(url).url().toString(), fieldMap, header)
-        } catch (e: Exception) {
-            Log.e("网络请求失败:$url", e)
-            ""
+        header: Map<String, String> = emptyMap(),
+        encoded: Boolean = false
+    ): Resp = withIo {
+        val formBody = FormBody.Builder()
+        fieldMap.forEach {
+            if (encoded) {
+                formBody.addEncoded(it.key, it.value)
+            } else {
+                formBody.add(it.key, it.value)
+            }
         }
+        val builder = Request.Builder().url(HttpUrl.get(url)).post(formBody.build())
+        header.forEach {
+            builder.header(it.key, it.value)
+        }
+        val response = okClient.newCall(builder.build()).execute()
+        return@withIo Resp(
+            response.request().url().toString(),
+            stringConverter.stringConverter(response.body())
+        )
     }
+
 }

@@ -31,7 +31,7 @@ object DataManager {
                 val result = http.post(
                     "https://book.easou.com/ta/tsAjax.m",
                     mapOf("k" to URLEncoder.encode(query, "utf-8"))
-                )
+                ).body
                 return@withIo gson.fromJson<List<String>>(result)
             } catch (e: Exception) {
                 Log.i("搜索提示加载失败 $e")

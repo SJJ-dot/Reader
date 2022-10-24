@@ -97,8 +97,10 @@ dependencies {
     implementation "org.mozilla:rhino:1.7.12"
     implementation "org.jsoup:jsoup:1.13.1"
 
+    implementation "com.github.SJJ-dot.retrofit-ext:charset-detector:1.0.1"
     implementation 'com.github.SJJ-dot:ALOG:1.2.9'
-    implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
+//    implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
+    implementation 'com.squareup.okhttp3:okhttp:3.14.9'
     implementation 'com.github.SJJ-dot:CoroutineKtx:0.0.5'
     /**
      * 沉浸式
