@@ -1,6 +1,7 @@
 package com.sjianjun.reader.http
 
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.BuildConfig
 import okhttp3.*
 import sjj.alog.Log
 import java.util.concurrent.TimeUnit
@@ -48,6 +49,14 @@ private val okClient = OkHttpClient.Builder()
     .readTimeout(10, TimeUnit.SECONDS)
     .retryOnConnectionFailure(true)
     .cookieJar(CookieMgr)
+    .addInterceptor(HttpLoggingInterceptor { Log.i(it) }.setLevel(
+        if (BuildConfig.DEBUG) {
+            HttpLoggingInterceptor.Level.BODY
+        } else {
+            HttpLoggingInterceptor.Level.HEADERS
+        }
+
+    ))
     .addInterceptor {
         val header = header()
         it.request().headers().names().forEach { name ->
@@ -91,11 +100,9 @@ class Http {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
-        val respStr = stringConverter.stringConverter(response.body())
-        Log.i(respStr)
         return Resp(
             response.request().url().toString(),
-            respStr
+            stringConverter.stringConverter(response.body())
         )
     }
 
@@ -120,12 +127,9 @@ class Http {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
-        val respStr = stringConverter.stringConverter(response.body())
-        Log.i("<<")
-        Log.i(respStr)
         return Resp(
             response.request().url().toString(),
-            respStr
+            stringConverter.stringConverter(response.body())
         )
     }
 
