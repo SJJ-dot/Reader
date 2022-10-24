@@ -2,6 +2,7 @@ package com.sjianjun.reader.http
 
 import com.sjianjun.coroutine.withIo
 import okhttp3.*
+import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
 private fun header() = mutableMapOf(
@@ -71,12 +72,12 @@ class Resp(val url: String, val body: String)
 class Http {
 
     @JvmOverloads
-    suspend fun get(
+    fun get(
         url: String,
         queryMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap(),
-        encoded: Boolean = false
-    ): Resp = withIo {
+        encoded: Boolean = true
+    ): Resp {
         val urlBuilder = HttpUrl.get(url).newBuilder()
         queryMap.forEach {
             if (encoded) {
@@ -90,19 +91,21 @@ class Http {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
-        return@withIo Resp(
+        val respStr = stringConverter.stringConverter(response.body())
+        Log.i(respStr)
+        return Resp(
             response.request().url().toString(),
-            stringConverter.stringConverter(response.body())
+            respStr
         )
     }
 
     @JvmOverloads
-    suspend fun post(
+    fun post(
         url: String,
         fieldMap: Map<String, String> = emptyMap(),
         header: Map<String, String> = emptyMap(),
-        encoded: Boolean = false
-    ): Resp = withIo {
+        encoded: Boolean = true
+    ): Resp {
         val formBody = FormBody.Builder()
         fieldMap.forEach {
             if (encoded) {
@@ -110,15 +113,19 @@ class Http {
             } else {
                 formBody.add(it.key, it.value)
             }
+
         }
         val builder = Request.Builder().url(HttpUrl.get(url)).post(formBody.build())
         header.forEach {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
-        return@withIo Resp(
+        val respStr = stringConverter.stringConverter(response.body())
+        Log.i("<<")
+        Log.i(respStr)
+        return Resp(
             response.request().url().toString(),
-            stringConverter.stringConverter(response.body())
+            respStr
         )
     }
 

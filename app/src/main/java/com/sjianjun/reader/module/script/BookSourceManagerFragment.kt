@@ -23,6 +23,7 @@ import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.v
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import sjj.alog.Log
 import splitties.views.inflate
 import java.util.concurrent.Executors
 
@@ -151,6 +152,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                 initData()
                                 showSnackbar(recycle_view, "书源导入成功")
                             } catch (e: Exception) {
+                                Log.e("书源导入失败",e)
                                 showSnackbar(recycle_view, "书源导入失败：${e.message}")
                             }
                         }
