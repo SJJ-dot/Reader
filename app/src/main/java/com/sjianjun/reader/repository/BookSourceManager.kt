@@ -77,8 +77,7 @@ object BookSourceManager {
             val obj = bookSourceArray.getJSONObject(it)
             BookSource(
                 "${source.optString("group")}:${obj.getString("source")}",
-                Base64.decode(obj.getString("js"), Base64.NO_WRAP)
-                    .toString(Charset.forName("utf-8")),
+                obj.getString("js"),
                 obj.optInt("version", -1),
                 obj.optBoolean("original", false),
                 obj.optBoolean("enable", true),

@@ -52,14 +52,6 @@ object JavaScriptTest {
     }
 
     suspend fun testJavaScript() = withIo {
-        val jsonArray = JSONArray(http.get(URL_BOOK_SOURCE_DEF).body)
-        (0 until jsonArray.length()).forEach {
-            var js = jsonArray.getJSONObject(it).getString("js")
-            js = Base64.decode(js, Base64.NO_WRAP)
-                .toString(Charset.forName("utf-8"))
-            jsonArray.getJSONObject(it).put("js",js)
-        }
-        Log.e(jsonArray)
 //        javaScript.jsProps.add("rule" to JSONArray(getAssetsTxt("js/hh.json")).getJSONObject(0).toString())
 //        javaScript.search("我的")
 ////        Log.e(base.newBuilder("/absaa/html.hh"))
