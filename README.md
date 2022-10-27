@@ -8,7 +8,8 @@
 完善书源管理功能，支持导入网络书源
 
 # 书源规则参考 
-书源js脚本需包含3个方法
+书源js脚本需包含3个方法参考：
+[默认书源地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
 ```
 脚本模板还没写……
 ```
