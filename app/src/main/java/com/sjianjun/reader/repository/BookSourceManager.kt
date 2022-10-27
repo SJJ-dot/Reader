@@ -9,7 +9,7 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.JsConfig
 import org.json.JSONObject
 import sjj.alog.Log
-import java.nio.charset.Charset
+import java.util.zip.GZIPInputStream
 
 object BookSourceManager {
     suspend fun getAllJs(): List<BookSource> = withIo {
@@ -70,8 +70,13 @@ object BookSourceManager {
         js.checkErrorMsg = null
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun import(url: String) = withIo {
-        val source = JSONObject(http.get(url).body)
+        var body = http.get(url).body
+        if (url.endsWith("gzip")) {
+            body = GZIPInputStream(Base64.decode(body,Base64.NO_WRAP).inputStream()).reader().readText()
+        }
+        val source = JSONObject(body)
         val bookSourceArray = source.getJSONArray("bookSource")
         val sources = (0 until bookSourceArray.length()).map {
             val obj = bookSourceArray.getJSONObject(it)
