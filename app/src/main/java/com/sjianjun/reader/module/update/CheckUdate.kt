@@ -15,16 +15,16 @@ import sjj.alog.Log
 import java.util.concurrent.TimeUnit
 
 enum class Channels {
-    FastGit {
-        override suspend fun getReleaseInfo(): ReleasesInfo {
-            val url = "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
-            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
-            releasesInfo.channel = name
-            releasesInfo.downloadApkUrl =
-                "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
-            return releasesInfo
-        }
-    },
+//    FastGit {
+//        override suspend fun getReleaseInfo(): ReleasesInfo {
+//            val url = "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
+//            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
+//            releasesInfo.channel = name
+//            releasesInfo.downloadApkUrl =
+//                "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
+//            return releasesInfo
+//        }
+//    },
     IqiqIo {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
