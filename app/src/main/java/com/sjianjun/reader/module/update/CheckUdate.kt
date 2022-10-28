@@ -1,7 +1,9 @@
 package com.sjianjun.reader.module.update
 
 import android.app.Activity
+import android.util.Base64
 import android.widget.Toast
+import com.alibaba.sdk.android.oss.model.GetObjectRequest
 import com.azhon.appupdate.listener.OnDownloadListener
 import com.azhon.appupdate.manager.DownloadManager
 import com.sjianjun.coroutine.withIo
@@ -14,19 +16,23 @@ import com.sjianjun.reader.utils.*
 import org.json.JSONObject
 import sjj.alog.Log
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 enum class Channels {
-//    FastGit {
-//        override suspend fun getReleaseInfo(): ReleasesInfo {
-//            val url = "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
-//            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
-//            releasesInfo.channel = name
-//            releasesInfo.downloadApkUrl =
-//                "https://raw.fastgit.org/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
-//            return releasesInfo
-//        }
-//    },
+    OSS {
+        override suspend fun getReleaseInfo(): ReleasesInfo {
+            val oss = OssUtil.getOSSClient()
+            val request = GetObjectRequest("reader-repo", "releases/checkUpdate.json")
+            val body = oss.getObject(request).objectContent.reader().readText()
+            val releasesInfo = gson.fromJson<ReleasesInfo>(body)!!
+            releasesInfo.channel = name
+            val url =
+                oss.presignConstrainedObjectURL("reader-repo", "releases/${releasesInfo.lastVersion}/app.apk", 60 * 60)
+            releasesInfo.downloadApkUrl = url
+            return releasesInfo
+        }
+    },
     IqiqIo {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/checkUpdate.json"

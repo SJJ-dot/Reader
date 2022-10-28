@@ -10,6 +10,11 @@ def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger()
 def currentBranch = 'git symbolic-ref --short -q HEAD'.execute().text.trim()
 //创建版本号===
 //获取之前的版本列表
+
+InputStream inputStream = rootProject.file('local.properties').newDataInputStream();
+Properties properties = new Properties()
+properties.load(inputStream)
+
 android {
     signingConfigs {
         debug {
@@ -17,6 +22,12 @@ android {
             storePassword '123456'
             keyAlias = 'debug'
             keyPassword '123456'
+        }
+        release {
+            storeFile file('../reader.jks')
+            storePassword properties.getProperty("sign.storePassword")
+            keyAlias properties.getProperty("sign.keyAlias")
+            keyPassword properties.getProperty("sign.keyPassword")
         }
     }
     compileSdkVersion COMPILE_SDK_VERSION
@@ -26,11 +37,13 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.1.1"
+        versionName "1.1.2"
         resConfigs("zh")
         ndk {
             abiFilters 'armeabi-v7a'//,'armeabi', 'arm64-v8a' // 'x86', 'x86_64'
         }
+        buildConfigField "String", "k1", "\"${properties.getProperty('k1')}\""
+        buildConfigField "String", "k2", "\"${properties.getProperty('k2')}\""
     }
 
 //    buildFeatures {
@@ -165,5 +178,5 @@ dependencies {
 
     implementation 'com.github.getActivity:XXPermissions:12.3'
     implementation 'io.github.azhon:appupdate:4.2.4'
-
+    implementation 'com.aliyun.dpa:oss-android-sdk:2.9.9'
 }
