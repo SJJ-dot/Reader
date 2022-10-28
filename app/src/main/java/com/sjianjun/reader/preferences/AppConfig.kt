@@ -3,7 +3,7 @@ package com.sjianjun.reader.preferences
 import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.utils.BOOK_SOURCE_QI_DIAN
+import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
 import com.tencent.mmkv.MMKV
 
@@ -18,6 +18,8 @@ class AppConfig(val name: String) :
      * github 发布的版本信息
      */
     var releasesInfo by strPref("releasesInfo_new", null)
+
+    var downloadChannel by intPref("downloadChannel", Channels.IqiqIo.ordinal)
 
     /**
      * 上次检查更新的时间
