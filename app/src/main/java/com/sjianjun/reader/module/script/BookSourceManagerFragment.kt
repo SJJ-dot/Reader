@@ -152,7 +152,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                 initData()
                                 showSnackbar(recycle_view, "书源导入成功")
                             } catch (e: Exception) {
-                                Log.e("书源导入失败",e)
+                                Log.e("书源导入失败", e)
                                 showSnackbar(recycle_view, "书源导入失败：${e.message}")
                             }
                         }
@@ -183,7 +183,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launch {
-            val allJs = BookSourceManager.getAllJs()
+            val allJs = BookSourceManager.getAllJs().sort()
             adapter.data.clear()
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
@@ -191,10 +191,25 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         }
     }
 
+    private fun List<BookSource>.sort(): List<BookSource> {
+        return sortedWith { p0, p1 ->
+            val g0 = p0.source.substringBefore(":")
+            val g1 = p1.source.substringBefore(":")
+            if (g0 != g1) {
+                return@sortedWith g0.compareTo(g1)
+            }
+            if (p0.enable != p1.enable) {
+                return@sortedWith if (p0.enable) -1 else 1
+            }
+            return@sortedWith p0.source.compareTo(p1.source)
+
+        }
+    }
+
     private fun query() {
         launch {
             val query = searchView.query.toString().trim()
-            val allJs = BookSourceManager.getAllJs()
+            val allJs = BookSourceManager.getAllJs().sort()
             adapter.data.clear()
             if (query.isBlank()) {
                 adapter.data.addAll(allJs)
