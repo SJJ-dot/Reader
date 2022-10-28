@@ -58,6 +58,6 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme = intLivedata("lastLightTheme")
 
-    var bookSourceImportUrls by dataPref("bookSourceImportUrl", mutableListOf(URL_BOOK_SOURCE_DEF))
+    var bookSourceImportUrls by dataPref("bookSourceImportUrl2", mutableListOf(URL_BOOK_SOURCE_DEF))
 }
 

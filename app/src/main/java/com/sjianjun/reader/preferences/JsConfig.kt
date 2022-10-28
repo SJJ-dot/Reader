@@ -8,7 +8,7 @@ import com.tencent.mmkv.MMKV
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
-object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig2")) {
+object JsConfig : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_JsConfig3")) {
 
 
     private val allJs: MutableMap<String, BookSource?> = ConcurrentHashMap()
