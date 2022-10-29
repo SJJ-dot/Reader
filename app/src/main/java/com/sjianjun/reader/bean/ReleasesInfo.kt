@@ -29,4 +29,9 @@ class ReleasesInfo {
             return false
         }
 
+    override fun toString(): String {
+        return "ReleasesInfo(channel=$channel, lastVersion=$lastVersion, updateContent=$updateContent, downloadApkUrl=$downloadApkUrl)"
+    }
+
+
 }

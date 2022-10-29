@@ -33,16 +33,6 @@ enum class Channels {
             return releasesInfo
         }
     },
-    IqiqIo {
-        override suspend fun getReleaseInfo(): ReleasesInfo {
-            val url = "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/checkUpdate.json"
-            val releasesInfo = gson.fromJson<ReleasesInfo>(http.get(url).body)!!
-            releasesInfo.channel = name
-            releasesInfo.downloadApkUrl =
-                "https://raw.iqiq.io/SJJ-dot/reader-repo/main/releases/${releasesInfo.lastVersion}/app.apk"
-            return releasesInfo
-        }
-    },
     Github {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
@@ -92,6 +82,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
         }
         return@withIo
     }
+    Log.i(releasesInfo)
     globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
 
     if (releasesInfo.isNewVersion) {
