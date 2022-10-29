@@ -4,24 +4,39 @@ import android.app.Application
 import android.content.Context
 import android.os.Environment
 import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.preferences.globalConfig
+import sjj.alog.Log
 import java.io.File
 
 object AppDirUtil {
 
-    private lateinit var SD_CARD_ROOT: String
 
-    lateinit var APP_DIR: String
-        private set
-    lateinit var APP_DATABASE_DIR: String
-        private set
     lateinit var APP_DATABASE_FILE: String
         private set
 
     fun init(context: Application) {
-        SD_CARD_ROOT = Environment.getExternalStorageDirectory().absolutePath + "/"
-        APP_DIR = mkdir(SD_CARD_ROOT + BuildConfig.APPLICATION_ID + "/")
-        APP_DATABASE_DIR = mkdir(APP_DIR + "database/")
-        APP_DATABASE_FILE = "$APP_DATABASE_DIR/app_database"
+        migrateOldDb(context)
+        val newDbDir = context.getDir("database", Context.MODE_PRIVATE)
+        APP_DATABASE_FILE = File(newDbDir, "app_database").absolutePath
+    }
+
+    private fun migrateOldDb(context: Application) {
+        if (!globalConfig.hasPermission) {
+            return
+        }
+        val newDbDir = context.getDir("database", Context.MODE_PRIVATE)
+        val root = Environment.getExternalStorageDirectory().absolutePath + "/"
+        val appDir = mkdir(root + BuildConfig.APPLICATION_ID + "/")
+        val oldDbDir = mkdir(appDir + "database/")
+        if (!File(oldDbDir).exists()) {
+            return
+        }
+        if (File(oldDbDir).listFiles().isNullOrEmpty()) {
+            return
+        }
+        File(oldDbDir).copyRecursively(newDbDir, overwrite = true)
+        File(appDir).deleteRecursively()
+        Log.e("数据库迁移成功")
     }
 
     private fun mkdir(path: String): String {

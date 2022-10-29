@@ -43,18 +43,23 @@ class MainActivity : BaseActivity() {
             checkUpdate(this@MainActivity,false)
             JavaScriptTest.testJavaScript()
         }
-        XXPermissions.with(this)
-            .permission(Permission.MANAGE_EXTERNAL_STORAGE)
-            .request { _, all ->
-                globalConfig.hasPermission = all
-                if (!all) {
-                    toast("本应用必须要存储卡读写权限用于保存数据库")
-                    finish()
-                } else {
-                    AppDirUtil.init(application)
-                    init()
+        if (globalConfig.hasPermission) {
+            XXPermissions.with(this)
+                .permission(Permission.MANAGE_EXTERNAL_STORAGE)
+                .request { _, all ->
+                    globalConfig.hasPermission = all
+                    if (!all) {
+                        toast("本应用必须要存储卡读写权限用于保存数据库")
+                        finish()
+                    } else {
+                        AppDirUtil.init(application)
+                        init()
+                    }
                 }
-            }
+        } else {
+            AppDirUtil.init(application)
+            init()
+        }
     }
 
     private fun init() {
