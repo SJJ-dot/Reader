@@ -36,6 +36,7 @@ object AppDirUtil {
         }
         File(oldDbDir).copyRecursively(newDbDir, overwrite = true)
         File(appDir).deleteRecursively()
+        globalConfig.hasPermission = false
         Log.e("数据库迁移成功")
     }
 
