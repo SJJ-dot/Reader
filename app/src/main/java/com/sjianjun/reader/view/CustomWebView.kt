@@ -105,7 +105,7 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url?:return)
+                Log.i(url ?: return)
                 if (!url.startsWith("http")) {
                     return
                 }
@@ -126,7 +126,7 @@ class CustomWebView @JvmOverloads constructor(
                 refresh.isSelected = false
 //                CookieMgr.saveFromResponse()
                 val cookieManager = CookieManager.getInstance()
-                val cookieStr = cookieManager.getCookie(url)
+                val cookieStr = cookieManager.getCookie(url) ?: return
                 val httpUrl = HttpUrl.get(url ?: "")
                 val cookie = Cookie.parse(httpUrl, cookieStr)
                 cookie?.let { CookieMgr.saveFromResponse(httpUrl, mutableListOf(it)) }

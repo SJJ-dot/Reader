@@ -20,7 +20,7 @@ private fun header() = mutableMapOf(
     "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.53 Safari/537.36 Edg/103.0.1264.37"
 )
 
-private val okClient = OkHttpClient.Builder()
+val okClient = OkHttpClient.Builder()
     .connectionSpecs(
         listOf(
             ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
@@ -72,7 +72,7 @@ private val okClient = OkHttpClient.Builder()
         it.proceed(newBuilder.build())
     }.build()
 
-private val stringConverter = StringConverter()
+val stringConverter = StringConverter()
 
 val http = Http()
 

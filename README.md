@@ -19,8 +19,8 @@
   "group": "默认书源",
   "bookSource": [
     {
-      "source": "古古小说网（55小说网）",
-      "js": "base64 js",
+      "source": "古古小说网",
+      "js": "js",
       "version": 2,
       "original": false,
       "enable": true,
