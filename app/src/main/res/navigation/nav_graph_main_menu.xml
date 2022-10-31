@@ -19,6 +19,11 @@
         android:label="脚本"
         tools:layout="@layout/main_fragment_book_script_manager" />
     <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.sjianjun.reader.module.setting.SettingsFragment"
+        android:label="脚本"
+        tools:layout="@layout/fragment_settings" />
+    <fragment
         android:id="@+id/aboutFragment"
         android:name="com.sjianjun.reader.module.about.AboutFragment"
         android:label="关于"

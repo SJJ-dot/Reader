@@ -242,8 +242,6 @@ open class WebDav(val path: String, val authorization: Authorization) {
                     }
                 }
             }
-        }.onFailure {
-            Log.e("WebDav创建目录失败\n${it.localizedMessage}")
         }.isSuccess
     }
 

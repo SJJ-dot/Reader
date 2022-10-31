@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".module.setting.SettingsFragment">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/reader_progress_backup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/webdav_group_title"
+                style="@style/text_body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="恢复&amp;备份"
+                android:textColor="@color/dn_colorAccent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/webdav_save"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:enabled="false"
+                android:text="保存"
+                android:textSize="12sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/webdav_server_url"
+                style="@style/text_body1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="WebDav服务器地址"
+                app:layout_constraintStart_toStartOf="@+id/webdav_group_title"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_group_title" />
+
+            <EditText
+                android:id="@+id/webdav_server_url_input"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:background="@color/transparent"
+                android:gravity="center_vertical"
+                android:text="https://dav.jianguoyun.com/dav/"
+                android:hint="https://dav.jianguoyun.com/dav/"
+                android:textColor="@color/dn_text_color_black_secondary"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/webdav_server_url"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_server_url" />
+
+            <TextView
+                android:id="@+id/webdav_username"
+                style="@style/text_body1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="WebDav用户名"
+                app:layout_constraintStart_toStartOf="@+id/webdav_group_title"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_server_url_input" />
+
+            <EditText
+                android:id="@+id/webdav_username_input"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:background="@color/transparent"
+                android:gravity="center_vertical"
+                android:hint="请输入用户名"
+                android:inputType="textEmailAddress"
+                android:textColor="@color/dn_text_color_black_secondary"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/webdav_server_url"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_username" />
+
+            <TextView
+                android:id="@+id/webdav_password"
+                style="@style/text_body1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="WebDav密码"
+                app:layout_constraintStart_toStartOf="@+id/webdav_group_title"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_username_input" />
+
+            <EditText
+                android:id="@+id/webdav_password_input"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:background="@color/transparent"
+                android:gravity="center_vertical"
+                android:hint="请输入密码"
+                android:inputType="textPassword"
+                android:textColor="@color/dn_text_color_black_secondary"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/webdav_server_url"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_password" />
+
+            <TextView
+                android:id="@+id/webdav_dir"
+                style="@style/text_body1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="子文件夹"
+                app:layout_constraintStart_toStartOf="@+id/webdav_group_title"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_password_input" />
+
+            <EditText
+                android:id="@+id/webdav_dir_input"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/transparent"
+                android:gravity="center_vertical"
+                android:hint="请输入子文件夹名称"
+                android:text="reader"
+                android:textColor="@color/dn_text_color_black_secondary"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/webdav_server_url"
+                app:layout_constraintTop_toBottomOf="@+id/webdav_dir" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

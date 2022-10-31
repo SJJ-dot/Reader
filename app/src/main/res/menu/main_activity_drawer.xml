@@ -16,6 +16,10 @@
     <item
         android:id="@+id/novelScriptFragment"
         android:title="脚本" />
+
+    <item
+        android:id="@+id/settingsFragment"
+        android:title="设置" />
     <item
         android:id="@+id/aboutFragment"
         android:title="关于" />

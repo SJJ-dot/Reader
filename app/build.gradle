@@ -181,4 +181,5 @@ dependencies {
     implementation 'com.github.getActivity:XXPermissions:12.3'
     implementation 'io.github.azhon:appupdate:4.2.4'
     implementation 'com.aliyun.dpa:oss-android-sdk:2.9.9'
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.6"
 }

@@ -61,5 +61,17 @@ class AppConfig(val name: String) :
     val lastLightTheme = intLivedata("lastLightTheme")
 
     var bookSourceImportUrls by dataPref("bookSourceImportUrl2", mutableListOf(URL_BOOK_SOURCE_DEF))
+
+    var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
+    var webdavUsername by strPref("webdavUsername", null)
+    var webdavPassword by strPref("webdavPassword", null)
+    var webdavSubdir by strPref("webdavSubdir", null)
+
+    /**
+     * 0 unset
+     * 1 need
+     * 2 success
+     */
+    var webdavConfigStatus by intPref("webdavNeedSave",0)
 }
 
