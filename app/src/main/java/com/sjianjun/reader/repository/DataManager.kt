@@ -202,8 +202,11 @@ object DataManager {
             book.isLoading = true
             dao.updateBook(book)
             val bookDetails = script.getDetails(book.url)!!
-            if (bookDetails.url != book.url) {
+            if (bookDetails.url.isNotBlank() && bookDetails.url != book.url) {
+                dao.insertBook(bookDetails)
+                changeReadingRecordBookSource(bookDetails)
                 deleteBookByUrl(book)
+                book.url = bookDetails.url
             }
 //            bookDetails.url = book.url
 
