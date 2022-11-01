@@ -226,8 +226,8 @@ open class WebDav(val path: String, val authorization: Authorization) {
      * 根据自己的URL，在远程处创建对应的文件夹
      * @return 是否创建成功
      */
-    suspend fun makeAsDir(): Boolean {
-        val url = httpUrl ?: return false
+    suspend fun makeAsDir(): Result<Unit> {
+        val url = httpUrl ?: return Result.failure(Exception("url为空"))
         //防止报错
         return kotlin.runCatching {
             if (!exists()) {
@@ -242,7 +242,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
                     }
                 }
             }
-        }.isSuccess
+        }
     }
 
     /**

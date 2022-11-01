@@ -67,11 +67,6 @@ class AppConfig(val name: String) :
     var webdavPassword by strPref("webdavPassword", null)
     var webdavSubdir by strPref("webdavSubdir", null)
 
-    /**
-     * 0 unset
-     * 1 need
-     * 2 success
-     */
-    var webdavConfigStatus by intPref("webdavNeedSave",0)
+    var webdavHasCfg by boolPref("webdavHasCfg")
 }
 
