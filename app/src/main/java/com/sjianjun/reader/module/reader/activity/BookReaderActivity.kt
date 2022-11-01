@@ -22,6 +22,7 @@ import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.style.PageStyle
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
+import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.*
@@ -303,6 +304,7 @@ class BookReaderActivity : BaseActivity() {
 
                 readingRecord.isEnd = isEnd
                 DataManager.setReadingRecord(readingRecord)
+                WebDavMgr.sync { uploadReadingRecord() }
             }
         }
     }

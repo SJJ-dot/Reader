@@ -101,8 +101,13 @@ object DataManager {
         dao.deleteSearchHistory(history)
     }
 
-    suspend fun saveSearchResult(searchResult: List<SearchResult>): String? {
-        return insertBookAndSaveReadingRecord(searchResult.toBookList())
+    suspend fun saveSearchResult(searchResult: List<SearchResult>): String {
+        return insertBookAndSaveReadingRecord(searchResult.toBookList()).also {
+            WebDavMgr.sync {
+                uploadBookInfo()
+                uploadReadingRecord()
+            }
+        }
     }
 
     suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String = withIo {
@@ -236,6 +241,10 @@ object DataManager {
 
     suspend fun deleteBook(book: Book) = withIo {
         dao.deleteBook(book)
+        WebDavMgr.sync {
+            uploadBookInfo()
+            uploadReadingRecord()
+        }
     }
 
 
@@ -248,6 +257,7 @@ object DataManager {
                 changeReadingRecordBookSource(otherBook)
             }
             dao.deleteBookByUrl(book)
+            WebDavMgr.sync { uploadBookInfo() }
             return@withIo true
         }
     }

@@ -15,6 +15,7 @@ import com.sjianjun.reader.utils.toast
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
 import kotlinx.android.synthetic.main.fragment_settings.*
+import sjj.alog.Log
 
 /**
  * A simple [Fragment] subclass.
@@ -62,7 +63,12 @@ class SettingsFragment : Fragment() {
                     webdav_dir_input.text.toString().trim()
                 )
                 toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
+                Log.i(init)
                 if (init.isSuccess) {
+                    WebDavMgr.sync {
+                        uploadReadingRecord()
+                        uploadBookInfo()
+                    }
                     webdav_save.isEnabled = false
                 }
             }

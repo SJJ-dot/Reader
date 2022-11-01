@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
 import com.tencent.mmkv.MMKV
+import java.util.UUID
 
 val globalConfig by lazy { AppConfig("default") }
 
@@ -65,8 +66,10 @@ class AppConfig(val name: String) :
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)
     var webdavPassword by strPref("webdavPassword", null)
-    var webdavSubdir by strPref("webdavSubdir", null)
+    var webdavSubdir by strPref("webdavSubdir", "reader")
 
     var webdavHasCfg by boolPref("webdavHasCfg")
+
+    var webDavId by strPref("webDavId",UUID.randomUUID().toString())
 }
 

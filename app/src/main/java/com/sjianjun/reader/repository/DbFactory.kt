@@ -7,6 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
+import com.sjianjun.reader.repository.dao.Dao
 import com.sjianjun.reader.utils.AppDirUtil
 
 @Database(

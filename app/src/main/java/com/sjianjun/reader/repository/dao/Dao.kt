@@ -1,8 +1,9 @@
-package com.sjianjun.reader.repository
+package com.sjianjun.reader.repository.dao
 
 import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
+import com.sjianjun.reader.repository.BookSourceManager
 import kotlinx.coroutines.flow.Flow
 import sjj.alog.Log
 
@@ -35,16 +36,19 @@ interface Dao {
     fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
         cleanDirtyData()
         insertBook(bookList)
-        val book = bookList.first()
+        var book = bookList.find { BookSourceManager.getJs(it.source)?.isOriginal == true }
+        if (book == null) {
+            book = bookList.first()
+        }
         val readingRecord = getReadingRecord(book.title, book.author)
-        if (readingRecord?.bookUrl != book.url) {
-            insertReadingRecord(ReadingRecord(book.title,book.author).apply {
+        if (bookList.find { it.url == readingRecord?.bookUrl } == null) {
+            insertReadingRecord(ReadingRecord(book.title, book.author).apply {
                 bookUrl = book.url
             })
             return book.url
         }
         Log.i("保存搜索结果记录：$readingRecord $bookList")
-        return readingRecord.bookUrl
+        return readingRecord!!.bookUrl
     }
 
 
@@ -161,15 +165,17 @@ interface Dao {
     @Query("select * from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun getReadingRecord(bookTitle: String, bookAuthor: String): ReadingRecord?
 
-    @Query("select * from ReadingRecord")
-    fun getAllReadingRecordList(): Flow<List<ReadingRecord>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertReadingRecord(record: ReadingRecord): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertReadingRecordList(record: List<ReadingRecord>): List<Long>
+
+    @Query("select * from ReadingRecord")
+    fun getAllReadingRecord(): List<ReadingRecord>
+
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
-
 
     @Transaction
     fun cleanDirtyData() {

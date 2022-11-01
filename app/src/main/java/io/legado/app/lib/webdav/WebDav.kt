@@ -17,6 +17,7 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.charset.Charset
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -273,7 +274,12 @@ open class WebDav(val path: String, val authorization: Authorization) {
             it.readBytes()
         }
     }
-
+    @Throws(WebDavException::class)
+    suspend fun downloadStr(): String {
+        return downloadInputStream().use {
+            it.readBytes()
+        }.toString(Charset.forName("utf-8"))
+    }
     /**
      * 上传文件
      */
@@ -281,8 +287,8 @@ open class WebDav(val path: String, val authorization: Authorization) {
     suspend fun upload(
         localPath: String,
         contentType: String = "application/octet-stream"
-    ) {
-        kotlin.runCatching {
+    ): Result<Unit> {
+        return kotlin.runCatching {
             val file = File(localPath)
             if (!file.exists()) throw WebDavException("文件不存在")
             // 务必注意RequestBody不要嵌套，不然上传时内容可能会被追加多余的文件信息
@@ -304,9 +310,9 @@ open class WebDav(val path: String, val authorization: Authorization) {
     }
 
     @Throws(WebDavException::class)
-    suspend fun upload(byteArray: ByteArray, contentType: String) {
+    suspend fun upload(byteArray: ByteArray, contentType: String = "application/octet-stream"): Result<Unit> {
         // 务必注意RequestBody不要嵌套，不然上传时内容可能会被追加多余的文件信息
-        kotlin.runCatching {
+       return kotlin.runCatching {
             val fileBody = RequestBody.create(MediaType.parse(contentType), byteArray)
             val url = httpUrl ?: throw NoStackTraceException("url不能为空")
             withIo {
@@ -319,8 +325,6 @@ open class WebDav(val path: String, val authorization: Authorization) {
                     checkResult(it)
                 }
             }
-        }.onFailure {
-            throw WebDavException("WebDav上传失败\n${it.localizedMessage}")
         }
     }
 
