@@ -1,16 +1,27 @@
 package com.sjianjun.reader.repository
 
+import androidx.room.Database
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
+import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.utils.AppDirUtil
-import sjj.alog.Log
 
-object AppDbFactory {
+@Database(
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
+    version = 10,
+    exportSchema = false
+)
+abstract class Db : RoomDatabase() {
+    abstract fun dao(): Dao
+}
 
-    fun room(): AppDb {
-        val room = Room.databaseBuilder(App.app, AppDb::class.java, AppDirUtil.APP_DATABASE_FILE)
+object DbFactory {
+
+    fun room(): Db {
+        val room = Room.databaseBuilder(App.app, Db::class.java, AppDirUtil.APP_DATABASE_FILE)
             .addMigrations(object : Migration(1, 2) {
                 override fun migrate(database: SupportSQLiteDatabase) {
 //                    ALTER TABLE 表名 ADD COLUMN 列名 数据类型
@@ -67,5 +78,5 @@ object AppDbFactory {
     }
 
     @JvmStatic
-    val db: AppDb = room()
+    val db: Db = room()
 }

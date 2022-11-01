@@ -25,7 +25,7 @@ object BookSourceManager {
     }
 
     suspend fun getAllBookJs(bookTitle: String, bookAuthor: String): List<BookSource> {
-        val list = AppDbFactory.db.dao().getAllBookSource(bookTitle, bookAuthor)
+        val list = DbFactory.db.dao().getAllBookSource(bookTitle, bookAuthor)
         return getAllJs().filter { list.contains(it.source) }
     }
 

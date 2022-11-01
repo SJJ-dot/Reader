@@ -16,7 +16,7 @@ import java.net.URLEncoder
  * 界面数据从数据库订阅刷新
  */
 object DataManager {
-    private val dao get() = AppDbFactory.db.dao()
+    private val dao get() = DbFactory.db.dao()
 
     /**
      * 搜素历史记录
