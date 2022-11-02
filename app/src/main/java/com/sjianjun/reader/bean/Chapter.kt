@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 class Chapter {
     @JvmField
     @PrimaryKey
-    var url: String = ""
+    var id: String = ""
 
-    /**
-     * 对应数据库id
-     */
     @JvmField
-    var bookUrl = ""
+    var bookId = ""
+
+    @JvmField
+    var url: String = ""
 
     @JvmField
     var title: String? = null
@@ -45,7 +45,7 @@ class Chapter {
     var isLastChapter = true
 
     override fun toString(): String {
-        return "Chapter(url='$url', bookUrl='$bookUrl', title=$title, isLoaded=$isLoaded, index=$index)"
+        return "Chapter(url='$url', title=$title, isLoaded=$isLoaded, index=$index)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -54,26 +54,13 @@ class Chapter {
 
         other as Chapter
 
-        if (url != other.url) return false
-        if (bookUrl != other.bookUrl) return false
-        if (title != other.title) return false
-        if (isLoaded != other.isLoaded) return false
-        if (content != other.content) return false
-        if (index != other.index) return false
-        if (isLastChapter != other.isLastChapter) return false
+        if (id != other.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = url.hashCode()
-        result = 31 * result + bookUrl.hashCode()
-        result = 31 * result + (title?.hashCode() ?: 0)
-        result = 31 * result + isLoaded.hashCode()
-        result = 31 * result + (content?.hashCode() ?: 0)
-        result = 31 * result + index
-        result = 31 * result + isLastChapter.hashCode()
-        return result
+        return id.hashCode()
     }
 
 

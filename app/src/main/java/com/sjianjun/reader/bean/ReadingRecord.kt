@@ -9,9 +9,9 @@ class ReadingRecord(
     var bookAuthor: String
 ) {
 
-    var bookUrl = ""
+    var bookId = ""
 
-    var chapterUrl = ""
+    var chapterIndex = 0
 
     var offest = 0
 
@@ -23,9 +23,7 @@ class ReadingRecord(
      */
     var startingStationBookSource = ""
 
-    override fun toString(): String {
-        return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', bookUrl='$bookUrl', chapterUrl='$chapterUrl')"
-    }
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -35,11 +33,6 @@ class ReadingRecord(
 
         if (bookTitle != other.bookTitle) return false
         if (bookAuthor != other.bookAuthor) return false
-        if (bookUrl != other.bookUrl) return false
-        if (chapterUrl != other.chapterUrl) return false
-        if (offest != other.offest) return false
-        if (isEnd != other.isEnd) return false
-        if (startingStationBookSource != other.startingStationBookSource) return false
 
         return true
     }
@@ -47,13 +40,11 @@ class ReadingRecord(
     override fun hashCode(): Int {
         var result = bookTitle.hashCode()
         result = 31 * result + bookAuthor.hashCode()
-        result = 31 * result + bookUrl.hashCode()
-        result = 31 * result + chapterUrl.hashCode()
-        result = 31 * result + offest
-        result = 31 * result + isEnd.hashCode()
-        result = 31 * result + startingStationBookSource.hashCode()
         return result
     }
 
+    override fun toString(): String {
+        return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', chapterIndex=$chapterIndex, isEnd=$isEnd)"
+    }
 
 }

@@ -292,20 +292,18 @@ object DataManager {
                 val book = dao.getBookByUrl(it.bookUrl)
 
                 if (book != null) {
-                    val record = dao.getReadingRecord(book.title, book.author)
-                    val source = if (record?.startingStationBookSource.isNullOrBlank())
-                        BOOK_SOURCE_QI_DIAN
-                    else
-                        record!!.startingStationBookSource
-                    val qiDianBook = dao.getBookByTitleAuthorAndSource(
-                        book.title,
-                        book.author,
-                        source
-                    ).first()
-                    if (qiDianBook != null) {
-                        val qiDianLastChapter = dao.getLastChapterByBookUrl(qiDianBook.url).first()
-                        it.isLastChapter =
-                            qiDianLastChapter == null || it.name() == qiDianLastChapter.name()
+                    val oriBook = dao.getReadingRecord(
+                        book.title, book.author
+                    )?.startingStationBookSource?.let {
+                        dao.getBookByTitleAuthorAndSource(
+                            book.title,
+                            book.author,
+                            it
+                        ).first()
+                    }
+                    if (oriBook != null) {
+                        val lastChapter = dao.getLastChapterByBookUrl(oriBook.url).first()
+                        it.isLastChapter = lastChapter == null || it.name() == lastChapter.name()
                     }
                 } else {
                     it.isLastChapter = true

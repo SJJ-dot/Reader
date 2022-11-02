@@ -7,18 +7,15 @@ import androidx.room.PrimaryKey
 import com.sjianjun.reader.utils.html
 
 @Entity
-data class ChapterContent(
+class ChapterContent {
     /**
      * 章节内容主键应该和章节信息主键相同
      */
     @PrimaryKey
-    var url: String,
+    var id: String = ""
+    var bookId: String = ""
 
-    var bookUrl: String,
-
-    var content: String?
-
-) {
+    var content: String? = null
 
     fun cacheFormat(): SpannableStringBuilder? {
         return cache.get(content ?: return null)
@@ -46,18 +43,13 @@ data class ChapterContent(
 
         other as ChapterContent
 
-        if (url != other.url) return false
-        if (bookUrl != other.bookUrl) return false
-        if (content != other.content) return false
+        if (id != other.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = url.hashCode()
-        result = 31 * result + bookUrl.hashCode()
-        result = 31 * result + (content?.hashCode() ?: 0)
-        return result
+        return id.hashCode()
     }
 
     companion object {
