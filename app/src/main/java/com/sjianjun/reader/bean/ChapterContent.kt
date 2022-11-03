@@ -6,15 +6,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.sjianjun.reader.utils.html
 
-@Entity
+@Entity(primaryKeys = ["chapterIndex", "bookId"])
 class ChapterContent {
-    /**
-     * 章节内容主键应该和章节信息主键相同
-     */
-    @PrimaryKey
-    var id: String = ""
+    var chapterIndex: Int = 0
     var bookId: String = ""
-
     var content: String? = null
 
     fun cacheFormat(): SpannableStringBuilder? {
@@ -43,14 +38,18 @@ class ChapterContent {
 
         other as ChapterContent
 
-        if (id != other.id) return false
+        if (chapterIndex != other.chapterIndex) return false
+        if (bookId != other.bookId) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return id.hashCode()
+        var result = chapterIndex
+        result = 31 * result + bookId.hashCode()
+        return result
     }
+
 
     companion object {
         val cache = LruCache<String, SpannableStringBuilder>(5)

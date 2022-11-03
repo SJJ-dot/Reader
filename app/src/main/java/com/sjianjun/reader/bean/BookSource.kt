@@ -1,56 +1,52 @@
 package com.sjianjun.reader.bean
 
+import androidx.room.Entity
 import androidx.room.Ignore
-import com.google.gson.annotations.Expose
+import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
-import com.sjianjun.reader.utils.md5
 import okhttp3.HttpUrl
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
-
-data class BookSource constructor(
+@Entity
+class BookSource {
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
-    @JvmField
-    var source: String,
+    @PrimaryKey
+    var source: String = ""
 
     /**
      * - js 脚本内容
      * - 多余的参数从arguments取
      */
-    @JvmField
-    var js: String,
-    var version: Int,
-    var isOriginal: Boolean = false,
-    @JvmField
-    var enable: Boolean = true,
-    var requestDelay: Long = 1000L,
-    var website: String = ""
-) {
+    var js: String = ""
+    var version: Int = 1
+    var enable: Boolean = true
+    var requestDelay: Long = 1000L
 
+    @Ignore
     val jsProps = mutableListOf<Pair<String, Any>>()
 
     /**
      * 书源管理页面是否被选中
      */
-    @Expose(serialize = false)
+    @Ignore
     var selected = false
 
     /**
      * 书源校验结果
      */
-    @Expose(serialize = false)
+    @Ignore
     var checkResult: String? = null
 
-    @Expose(serialize = false)
+    @Ignore
     var checkErrorMsg: String? = null
 
 

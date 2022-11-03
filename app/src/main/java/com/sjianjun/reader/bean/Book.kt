@@ -4,12 +4,14 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.Expose
+import java.util.UUID
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
 @Entity(indices = [Index(value = ["author", "title", "source"])])
 class Book {
     @PrimaryKey
-    var id: String = ""
+    var id: String = UUID.randomUUID().toString()
 
     @JvmField
     var url: String = ""
@@ -33,40 +35,45 @@ class Book {
     var cover: String? = null
 
     @JvmField
+    @Expose(serialize = false)
     var isLoading = false
 
     @Ignore
     @JvmField
+    @Expose(serialize = false)
     var chapterList: List<Chapter>? = null
 
     @Ignore
+    @Expose(serialize = false)
     var lastChapter: Chapter? = null
 
     @Ignore
+    @Expose(serialize = false)
     var readChapter: Chapter? = null
 
     @Ignore
+    @Expose(serialize = false)
     var record: ReadingRecord? = null
 
     /**
      * 包含本书的书源
      */
     @Ignore
+    @Expose(serialize = false)
     var javaScriptList: List<BookSource>? = null
 
     /**
      * 未读章节数量
      */
     @Ignore
+    @Expose(serialize = false)
     var unreadChapterCount = 0
 
     /**
      * 书籍加载错误提示
      */
+    @Expose(serialize = false)
     var error: String? = null
-
-    @Ignore
-    var startingError: String? = null
 
     override fun toString(): String {
         return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
@@ -78,42 +85,13 @@ class Book {
 
         other as Book
 
-        if (url != other.url) return false
-        if (source != other.source) return false
-        if (title != other.title) return false
-        if (author != other.author) return false
-        if (intro != other.intro) return false
-        if (cover != other.cover) return false
-        if (isLoading != other.isLoading) return false
-        if (chapterList != other.chapterList) return false
-        if (lastChapter != other.lastChapter) return false
-        if (readChapter != other.readChapter) return false
-        if (record != other.record) return false
-        if (javaScriptList != other.javaScriptList) return false
-        if (unreadChapterCount != other.unreadChapterCount) return false
-        if (error != other.error) return false
-        if (startingError != other.startingError) return false
+        if (id != other.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = url.hashCode()
-        result = 31 * result + source.hashCode()
-        result = 31 * result + title.hashCode()
-        result = 31 * result + author.hashCode()
-        result = 31 * result + (intro?.hashCode() ?: 0)
-        result = 31 * result + (cover?.hashCode() ?: 0)
-        result = 31 * result + isLoading.hashCode()
-        result = 31 * result + (chapterList?.hashCode() ?: 0)
-        result = 31 * result + (lastChapter?.hashCode() ?: 0)
-        result = 31 * result + (readChapter?.hashCode() ?: 0)
-        result = 31 * result + (record?.hashCode() ?: 0)
-        result = 31 * result + (javaScriptList?.hashCode() ?: 0)
-        result = 31 * result + unreadChapterCount
-        result = 31 * result + (error?.hashCode() ?: 0)
-        result = 31 * result + (startingError?.hashCode() ?: 0)
-        return result
+        return id.hashCode()
     }
 
 

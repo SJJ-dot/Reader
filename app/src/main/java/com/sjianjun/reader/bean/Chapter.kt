@@ -6,17 +6,14 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Entity(indices = [Index(value = ["bookUrl"])])
+@Entity(indices = [Index(value = ["bookUrl"])], primaryKeys = ["bookId", "index"])
 class Chapter {
-    @JvmField
-    @PrimaryKey
-    var id: String = ""
-
-    @JvmField
-    var bookId = ""
 
     @JvmField
     var url: String = ""
+
+    @JvmField
+    var bookId = ""
 
     @JvmField
     var title: String? = null

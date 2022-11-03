@@ -6,24 +6,14 @@ import com.sjianjun.reader.utils.STARTING_STATION_BOOK_SOURCE_EMPTY
 @Entity(primaryKeys = ["bookTitle", "bookAuthor"])
 class ReadingRecord(
     var bookTitle: String,
-    var bookAuthor: String
+    var bookAuthor: String,
+    var bookId: String = ""
 ) {
-
-    var bookId = ""
-
     var chapterIndex = 0
 
     var offest = 0
 
     var isEnd = false
-
-    /**
-     * 首发站书籍地址
-     * [STARTING_STATION_BOOK_SOURCE_EMPTY]
-     */
-    var startingStationBookSource = ""
-
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

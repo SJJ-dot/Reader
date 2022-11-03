@@ -11,6 +11,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 import java.net.URLEncoder
+import java.util.UUID
+import kotlin.math.abs
 
 /**
  * 界面数据从数据库订阅刷新
@@ -207,17 +209,9 @@ object DataManager {
             book.isLoading = true
             dao.updateBook(book)
             val bookDetails = script.getDetails(book.url)!!
-            if (bookDetails.url.isNotBlank() && bookDetails.url != book.url) {
-                dao.insertBook(bookDetails)
-                changeReadingRecordBookSource(bookDetails)
-                deleteBookByUrl(book)
-                book.url = bookDetails.url
-            }
-//            bookDetails.url = book.url
-
             val chapterList = bookDetails.chapterList!!
             chapterList.forEachIndexed { index, chapter ->
-                chapter.bookUrl = book.url
+                chapter.bookId = book.id
                 chapter.index = index
             }
             book.isLoading = false
@@ -251,7 +245,7 @@ object DataManager {
     suspend fun deleteBookByUrl(book: Book): Boolean {
         return withIo {
             val readingRecord = dao.getReadingRecord(book.title, book.author)
-            if (readingRecord?.bookUrl == book.url) {
+            if (readingRecord?.bookId == book.id) {
                 val otherBook = dao.getBookByTitleAndAuthor(book.title, book.author).first()
                     .find { it.url != book.url } ?: return@withIo false
                 changeReadingRecordBookSource(otherBook)
@@ -262,8 +256,8 @@ object DataManager {
         }
     }
 
-    suspend fun getBookByUrl(url: String): Book? = withIo {
-        dao.getBookByUrl(url)
+    suspend fun getBookById(id: String): Book? = withIo {
+        dao.getBookById(id)
     }
 
     fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
@@ -285,11 +279,11 @@ object DataManager {
         return dao.getChapterListByBookUrl(bookUrl)
     }
 
-    fun getLastChapterByBookUrl(bookUrl: String): Flow<Chapter?> {
+    fun getLastChapterByBookId(bookId: String): Flow<Chapter?> {
 
-        return dao.getLastChapterByBookUrl(bookUrl).onEach {
+        return dao.getLastChapterByBookId(bookId).onEach {
             if (it != null) {
-                val book = dao.getBookByUrl(it.bookUrl)
+                val book = dao.getBookById(it.bookId)
 
                 if (book != null) {
                     val oriBook = dao.getReadingRecord(
@@ -302,7 +296,7 @@ object DataManager {
                         ).first()
                     }
                     if (oriBook != null) {
-                        val lastChapter = dao.getLastChapterByBookUrl(oriBook.url).first()
+                        val lastChapter = dao.getLastChapterByBookId(oriBook.id).first()
                         it.isLastChapter = lastChapter == null || it.name() == lastChapter.name()
                     }
                 } else {
@@ -326,24 +320,24 @@ object DataManager {
     suspend fun changeReadingRecordBookSource(book: Book) = withIo {
         val readingRecord = getReadingRecord(book).first()
             ?: ReadingRecord(book.title, book.author)
-        if (readingRecord.bookUrl == book.url) {
+        if (readingRecord.bookId == book.id) {
             return@withIo
         }
-        readingRecord.bookUrl = book.url
+        readingRecord.bookId = book.id
         val chapter = getChapterByUrl(readingRecord.chapterUrl).first()
         var readChapter: Chapter? = null
         if (chapter != null) {
             //根据章节名查询。取索引最接近那个
             readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
-                .firstOrNull()?.minByOrNull { chapter.index - it.index }
+                .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             if (readChapter == null) {
                 //如果章节名没查到。根据章节名模糊查询
-                readChapter = dao.getChapterByName(book.url, "%${chapter.name()}")
-                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
+                readChapter = dao.getChapterLikeName(book.url, "%${chapter.name()}")
+                    .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             }
             if (readChapter == null) {
-                readChapter = dao.getChapterByName(book.url, "%${chapter.name()}%")
-                    .firstOrNull()?.minByOrNull { chapter.index - it.index }
+                readChapter = dao.getChapterLikeName(book.url, "%${chapter.name()}%")
+                    .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             }
             if (readChapter == null) {
                 readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
