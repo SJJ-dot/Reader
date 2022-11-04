@@ -3,17 +3,17 @@ package com.sjianjun.reader.repository.dao
 import androidx.room.*
 import androidx.room.Dao
 import com.sjianjun.reader.bean.*
-import com.sjianjun.reader.repository.BookSourceManager
 import kotlinx.coroutines.flow.Flow
 import sjj.alog.Log
 
 @Dao
 interface Dao {
+    //<<<<<<<<<<<<<<<<<<<<<<<<<BookSource>>>>>>>>>>>>>>>>>>>>>>>>>
+    @Query("select * from BookSource where source in (select source from Book where title=:bookTitle and author=:bookAuthor)")
+    fun getAllBookSource(bookTitle: String, bookAuthor: String): List<BookSource>
 
 
-    @Query("select source from Book where title=:bookTitle and author=:bookAuthor")
-    fun getAllBookSource(bookTitle: String, bookAuthor: String): List<String>
-
+    //<<<<<<<<<<<<<<<<<<<<<<<<<SearchHistory>>>>>>>>>>>>>>>>>>>>>>>>>
     /**
      * 查询全部搜索历史记录
      */
@@ -26,6 +26,7 @@ interface Dao {
     @Delete
     fun deleteSearchHistory(historyList: List<SearchHistory>)
 
+    //<<<<<<<<<<<<<<<<<<<<<<<<<Book>>>>>>>>>>>>>>>>>>>>>>>>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertBook(bookList: List<Book>): List<Long>
 
@@ -36,10 +37,7 @@ interface Dao {
     fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
         cleanDirtyData()
         insertBook(bookList)
-        var book = bookList.find { BookSourceManager.getJs(it.source)?.isOriginal == true }
-        if (book == null) {
-            book = bookList.first()
-        }
+        val book = bookList.first()
         val readingRecord = getReadingRecord(book.title, book.author)
         if (bookList.find { it.id == readingRecord?.bookId } == null) {
             insertReadingRecord(ReadingRecord(book.title, book.author, book.id))
@@ -60,7 +58,7 @@ interface Dao {
     fun deleteBook(book: Book) {
         deleteChapterContentByBookTitleAndAuthor(book.title, book.author)
         deleteBook(book.title, book.author)
-        deleteChapterByBook(book.title, book.author)
+        deleteChapterByBookTitleAndAuthor(book.title, book.author)
         deleteReadingRecord(book.title, book.author)
 
         cleanDirtyData()
@@ -106,6 +104,9 @@ interface Dao {
     @Query("select * from Book where id in (select bookId from ReadingRecord where bookTitle=:title and bookAuthor=:author)")
     fun getReadingBook(title: String, author: String): Flow<Book?>
 
+
+
+//    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Chapter>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     @Query("select * from Chapter where bookId=:bookId order by `index` DESC limit 1")
     fun getLastChapterByBookId(bookId: String): Flow<Chapter?>
 
@@ -114,9 +115,6 @@ interface Dao {
      */
     @Query("select * from Chapter where bookId=:bookId  order by `index`")
     fun getChapterListByBookId(bookId: String): Flow<List<Chapter>>
-
-    @Query("select * from Chapter where url=:url")
-    fun getChapterByUrl(url: String): Flow<Chapter?>
 
     @Query("select * from Chapter where title=:title and bookId=:bookId")
     fun getChapterByTitle(bookId: String, title: String): Flow<List<Chapter>>
@@ -133,13 +131,10 @@ interface Dao {
     @Query("delete from Chapter where bookId=:bookId")
     fun deleteChapterByBookId(bookId: String)
 
-    @Query("delete from Chapter where url not in (:urlList)")
-    fun deleteChapterByUrl(urlList: List<String>)
-
     @Query("delete from Chapter where bookId in (select id from book where title=:bookTitle and author=:bookAuthor)")
-    fun deleteChapterByBook(bookTitle: String, bookAuthor: String)
+    fun deleteChapterByBookTitleAndAuthor(bookTitle: String, bookAuthor: String)
 
-    @Query("update Chapter set isLoaded=1 where bookId=:bookId and url in (select url from ChapterContent)")
+    @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent)")
     fun updateBookChapterIsLoaded(bookId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
