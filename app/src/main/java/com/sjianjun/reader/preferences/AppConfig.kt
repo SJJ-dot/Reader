@@ -2,6 +2,7 @@ package com.sjianjun.reader.preferences
 
 import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
@@ -70,6 +71,12 @@ class AppConfig(val name: String) :
 
     var webdavHasCfg by boolPref("webdavHasCfg")
 
-    var webDavId by strPref("webDavId",UUID.randomUUID().toString())
+    val webDavId: String
+        get() {
+            if (!contains("webDavId")) {
+                edit { putString("webDavId", UUID.randomUUID().toString()) }
+            }
+            return getString("webDavId", null)!!
+        }
 }
 

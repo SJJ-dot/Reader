@@ -47,10 +47,12 @@ object WebDavMgr {
         return makeDir
     }
 
-    suspend fun sync(run:suspend WebDavMgr.() -> Unit = {}) {
+    suspend fun sync(run: suspend WebDavMgr.() -> Unit = {}) = withIo {
         if (needPull()) {
             pull()
-            webDav(WEB_DAV_ID).upload(globalConfig.webDavId!!.toByteArray(Charsets.UTF_8))
+            val webDavId =
+                webDav(WEB_DAV_ID).upload(globalConfig.webDavId!!.toByteArray(Charsets.UTF_8))
+            Log.i("webDavId 同步结果：${webDavId} put ID:${globalConfig.webDavId}")
         }
 
         WebDavMgr.run()
@@ -94,8 +96,10 @@ object WebDavMgr {
         val bookList =
             gson.fromJson<List<Book>>(webDav(BOOK_INFO_LIST).downloadStr()) ?: emptyList()
 
-        dao.insertBook(bookList)
-        dao.insertReadingRecordList(readingList)
+        val list = dao.insertBook(bookList)
+        Log.i("保存书籍数据：${list} $bookList")
+        val list1 = dao.insertReadingRecordList(readingList)
+        Log.i("保存阅读记录：${list1} $readingList")
     }
 
     private suspend fun needPull(): Boolean {
@@ -109,6 +113,7 @@ object WebDavMgr {
             }
             val webDavId = webDav(WEB_DAV_ID).downloadStr()
             if (webDavId != globalConfig.webDavId) {
+                Log.i("ID不一致 loc:${globalConfig.webDavId} remote:${webDavId}")
                 return true
             }
             return false

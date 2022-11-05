@@ -160,7 +160,7 @@ interface Dao {
     @Query("delete from Chapter where bookId in (select id from Book where title=:bookTitle and author=:bookAuthor)")
     fun deleteChapterByBookTitleAndAuthor(bookTitle: String, bookAuthor: String): Int
 
-    @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent)")
+    @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent where bookId=:bookId)")
     fun updateBookChapterIsLoaded(bookId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -210,7 +210,7 @@ interface Dao {
     }
 
     //有空再改连表查询吧
-    @Query("delete from Book where id not in (select bookId from ReadingRecord)")
+    @Query("delete from Book where (title+author) not in (select (bookTitle+bookAuthor) from ReadingRecord)")
     fun cleanBook(): Int
 
     @Query("delete from ReadingRecord where bookId not in (select id from Book)")

@@ -26,7 +26,7 @@
         tools:replace="android:label">
         <activity android:name=".module.script.EditJavaScriptActivity" />
         <activity android:name=".module.reader.activity.BookReaderActivity"
-            android:launchMode="singleInstance"/>
+            android:launchMode="singleTask"/>
 
         <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
