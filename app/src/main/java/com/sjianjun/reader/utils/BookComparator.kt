@@ -11,22 +11,16 @@ class BookComparator : Comparator<Book> {
             return -compareTo
         }
 
-        if (o1.lastChapter?.isLastChapter == false || o2.lastChapter?.isLastChapter == false) {
-            return if (o1.lastChapter?.isLastChapter == false) -1 else 1
-        }
 
         if (o1.error != null || o2.error != null) {
             return if (o1.error != null) -1 else 1
-        }
-
-        if (o1.startingError != null || o2.startingError != null) {
-            return if (o1.startingError != null) -1 else 1
         }
 
         val compareTitle = o1.title.compareTo(o2.title)
         if (compareTitle != 0) {
             return -compareTitle
         }
-        return o1.source.compareTo(o2.source)
+
+        return o1.bookSourceId.compareTo(o2.bookSourceId)
     }
 }

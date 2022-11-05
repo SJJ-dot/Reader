@@ -14,15 +14,5 @@ val String.id: Long
     get() = strIdMap.getOrPut(this, idCreator)
 
 
-val Book.id: Long
-    get() = "$title $author $source".id
-
-val Chapter.id: Long
-    get() = url.id
-
-
-val BookSource.id: Long
-    get() = source.id
-
 val SearchResult.id: Long
-    get() = "$bookTitle $bookAuthor $source".id
+    get() = "$bookTitle $bookAuthor ${bookSource?.id}".id

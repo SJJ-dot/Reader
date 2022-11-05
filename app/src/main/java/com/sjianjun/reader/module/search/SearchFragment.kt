@@ -49,7 +49,7 @@ class SearchFragment : BaseAsyncFragment() {
 
     private fun initData() {
         launchIo {
-            val javaScriptList = BookSourceManager.getAllJs().filter { it.enable }
+            val javaScriptList = BookSourceManager.getAllEnableBookSource()
             search_refresh.max = javaScriptList.size
         }
     }
@@ -224,7 +224,7 @@ class SearchFragment : BaseAsyncFragment() {
             holder.itemView.bookName.text = searchResult.bookTitle
             holder.itemView.author.text = "作者：${searchResult.bookAuthor}"
             holder.itemView.lastChapter.text = "最新章节：${searchResult.latestChapter}"
-            holder.itemView.haveRead.text = "来源：${searchResult.source} 共${data[position].size}个源"
+            holder.itemView.haveRead.text = "来源：${searchResult.bookSource?.group}-${searchResult.bookSource?.name} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
                 fragment.launch {

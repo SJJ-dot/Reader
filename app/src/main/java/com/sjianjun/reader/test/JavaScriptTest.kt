@@ -30,7 +30,9 @@ fun getAssetsTxt(name: String): String {
 object JavaScriptTest {
     var test = false
     val javaScript by lazy {
-        BookSource("test_source", getAssetsTxt("js/BookSourceLegado.js"), 1)
+        BookSource().apply {
+            js = getAssetsTxt("js/BookSourceLegado.js")
+        }
     }
 
 
@@ -64,11 +66,11 @@ object JavaScriptTest {
         }
         val query = "诡秘之主"
 //        val query = "哈利波特"
-        Log.e("${javaScript.source} 搜索 $query")
+        Log.e("${javaScript.name} 搜索 $query")
         val result = javaScript.execute<List<SearchResult>>(search, query)
         Log.e(result)
         if (result.isNullOrEmpty()) {
-            Log.e("${javaScript.source} 搜索结果为空")
+            Log.e("${javaScript.name} 搜索结果为空")
             return@withIo
         }
         val first = result.first()
@@ -78,11 +80,11 @@ object JavaScriptTest {
             Log.e("${first.source}  书籍加载失败")
             return@withIo
         }
-        Log.e("${book.source} chapterCount:${book.chapterList?.size} 加载章节内容:${book.chapterList?.firstOrNull()?.title} $book")
+        Log.e("${book.title} chapterCount:${book.chapterList?.size} 加载章节内容:${book.chapterList?.firstOrNull()?.title} $book")
         val chapter = book.chapterList?.firstOrNull()
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
-            chapter.content = ChapterContent(chapter.url, chapter.bookUrl, c ?: "")
+            chapter.content = ChapterContent(chapter.url, chapter.index, c ?: "")
             Log.e("测试：${if (c.isNullOrBlank()) "失败" else "通过"} ${chapter.content} ")
         }
         Unit

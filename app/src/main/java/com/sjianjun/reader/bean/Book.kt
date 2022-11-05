@@ -2,16 +2,20 @@ package com.sjianjun.reader.bean
 
 import androidx.room.Entity
 import androidx.room.Ignore
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.Expose
-import java.util.UUID
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
-@Entity(indices = [Index(value = ["author", "title", "source"])])
+@Entity
 class Book {
     @PrimaryKey
-    var id: String = UUID.randomUUID().toString()
+    var id: String = ""
+        get() {
+            if (field.isEmpty()) {
+                field = url.trim()
+            }
+            return field
+        }
 
     @JvmField
     var url: String = ""
@@ -19,8 +23,11 @@ class Book {
     /**
      * 书籍来源[BookSource.source]
      */
-    @JvmField
+    @Ignore
+    @Expose(serialize = false)
     var source: String = ""
+    @JvmField
+    var bookSourceId: String = ""
 
     @JvmField
     var title: String = ""
@@ -75,8 +82,12 @@ class Book {
     @Expose(serialize = false)
     var error: String? = null
 
+    @Ignore
+    @Expose(serialize = false)
+    var bookSource: BookSource? = null
+
     override fun toString(): String {
-        return "Book(url=$url, source=$source, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
+        return "Book(url=$url, bookSourceId=$bookSourceId, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
     }
 
     override fun equals(other: Any?): Boolean {

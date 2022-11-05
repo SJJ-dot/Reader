@@ -16,12 +16,12 @@
     <fragment
         android:id="@+id/novelScriptFragment"
         android:name="com.sjianjun.reader.module.script.BookSourceManagerFragment"
-        android:label="脚本"
+        android:label="书源"
         tools:layout="@layout/main_fragment_book_script_manager" />
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.sjianjun.reader.module.setting.SettingsFragment"
-        android:label="脚本"
+        android:label="设置"
         tools:layout="@layout/fragment_settings" />
     <fragment
         android:id="@+id/aboutFragment"

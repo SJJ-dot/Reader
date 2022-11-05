@@ -24,18 +24,7 @@
         android:hint="版本"
         android:inputType="number"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/script_starting"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <CheckBox
-        android:id="@+id/script_starting"
-        style="@style/text_body1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="首发"
-        app:layout_constraintBottom_toBottomOf="@+id/script_version"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/script_version" />
 
     <com.sjianjun.reader.view.HorizontalScrollView2
         android:id="@+id/script_container"

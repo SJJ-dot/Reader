@@ -6,6 +6,8 @@ package com.sjianjun.reader.bean
 class SearchResult {
     @JvmField
     var source: String = ""
+    @JvmField
+    var bookSource: BookSource? = null
 
     @JvmField
     var bookTitle: String = ""
@@ -35,24 +37,14 @@ class SearchResult {
 
         other as SearchResult
 
-        if (source != other.source) return false
-        if (bookTitle != other.bookTitle) return false
-        if (bookAuthor != other.bookAuthor) return false
-        if (bookCover != other.bookCover) return false
         if (bookUrl != other.bookUrl) return false
-        if (latestChapter != other.latestChapter) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = source.hashCode()
-        result = 31 * result + bookTitle.hashCode()
-        result = 31 * result + bookAuthor.hashCode()
-        result = 31 * result + (bookCover?.hashCode() ?: 0)
-        result = 31 * result + bookUrl.hashCode()
-        result = 31 * result + (latestChapter?.hashCode() ?: 0)
-        return result
+        return bookUrl.hashCode()
     }
+
 
 }

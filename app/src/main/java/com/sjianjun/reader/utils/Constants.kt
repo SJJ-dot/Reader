@@ -3,9 +3,9 @@ package com.sjianjun.reader.utils
 import android.os.Environment
 import com.sjianjun.reader.BuildConfig
 
-const val BOOK_URL = "BOOK_URL"
-const val CHAPTER_URL = "CHAPTER_URL"
-const val JAVA_SCRIPT_SOURCE = "JAVA_SCRIPT_SOURCE"
+const val BOOK_ID = "BOOK_ID"
+const val CHAPTER_INDEX = "CHAPTER_INDEX"
+const val BOOK_SOURCE_ID = "BOOK_SOURCE_ID"
 
 const val BOOK_TITLE = "BOOK_TITLE"
 const val BOOK_AUTHOR = "BOOK_AUTHOR"

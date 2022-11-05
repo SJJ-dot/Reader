@@ -68,17 +68,18 @@ class BookshelfFragment : BaseFragment() {
                 it.asFlow().flatMapMerge { book ->
                     combine(
                         DataManager.getReadingRecord(book).map { record ->
-                            val id = record?.chapterUrl ?: return@map null
-                            DataManager.getChapterByUrl(id).first() to record
+                            val id = record?.chapterIndex ?: return@map null
+                            DataManager.getChapterByIndex(record.bookId, id).first() to record
                         },
-                        DataManager.getLastChapterByBookUrl(book.url)
+                        DataManager.getLastChapterByBookId(book.id)
                     ) { readChapter, lastChapter ->
-                        val js = BookSourceManager.getAllBookJs(book.title, book.author)
+                        val js = BookSourceManager.getBookBookSource(book.title, book.author)
                         book.record = readChapter?.second
                         book.readChapter = readChapter?.first
                         book.lastChapter = lastChapter
                         book.javaScriptList = js
-
+                        book.bookSource =
+                            BookSourceManager.getBookSourceById(book.bookSourceId).firstOrNull()
                         val lastChapterIndex = book.lastChapter?.index ?: 0
                         val readChapterIndex = book.readChapter?.index ?: 0
                         book.unreadChapterCount = if (book.record?.isEnd == true) {
@@ -88,12 +89,8 @@ class BookshelfFragment : BaseFragment() {
                         }
 
                         val bookScript = js.find { script ->
-                            script.source == book.source
+                            script.id == book.bookSourceId
                         }
-                        val startingBook =
-                            DataManager.getStartingBook(book, bookScript, onlyLocal = true)
-                        book.startingError = startingBook?.error
-
                         book
                     }
                 }.mapNotNull { book ->
@@ -119,17 +116,16 @@ class BookshelfFragment : BaseFragment() {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
 
                 bookList.values.forEach {
-                    val list = sourceMap.getOrPut(it.source, { mutableListOf() })
+                    val list = sourceMap.getOrPut(it.bookSourceId) { mutableListOf() }
                     list.add(it)
                 }
-                startingStationRefreshActor(bookList.values.toList())
 
                 showProgressBar(SHOW_FLAG_REFRESH)
                 bookshelfUi.loading.progress = 0
                 sourceMap.map {
                     async {
                         val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
-                            js.source == it.key
+                            js.id == it.key
                         }
                         val delay = script?.requestDelay ?: 1000L
                         if (delay < 0) {
@@ -156,62 +152,6 @@ class BookshelfFragment : BaseFragment() {
             }
         }
     }
-
-    private fun startingStationRefreshActor(msg: List<Book>) =
-        launch(singleCoroutineKey = "startingStationRefreshActor") {
-            showProgressBar(SHOW_FLAG_STARTING_STATION)
-            bookshelfUi.loading.secondaryProgress = 0
-            val sourceMap = mutableMapOf<String, MutableList<Book>>()
-            msg.map {
-                async {
-                    val bookScript = it.javaScriptList?.find { script ->
-                        script.source == it.source
-                    }
-                    val book = DataManager.getStartingBook(it, bookScript)
-                    if (book == it) {
-                        null
-                    } else {
-                        val delay = bookScript?.requestDelay
-                        delay(delay ?: 1000)
-                        book
-                    }
-                }
-            }.awaitAll().filterNotNull().forEach {
-                val list = sourceMap.getOrPut(it.source, { mutableListOf() })
-                list.add(it)
-            }
-
-            val count = AtomicInteger()
-
-            val bookCount = if (sourceMap.isEmpty())
-                0
-            else
-                sourceMap.map { it.value.size }.reduce { acc, i -> acc + i }
-            count.lazySet(bookshelfUi.loading.max - bookCount)
-            bookshelfUi.loading.secondaryProgress = count.get()
-
-            sourceMap.forEach { entry ->
-                val javaScript = BookSourceManager.getJs(entry.key)
-                val delay = javaScript?.requestDelay ?: 1000
-                if (delay < 0) {
-                    entry.value.map {
-                        async {
-                            DataManager.reloadBookFromNet(it, javaScript)
-                            bookshelfUi.loading.secondaryProgress = count.incrementAndGet()
-                        }
-                    }.awaitAll()
-                } else {
-                    entry.value.forEach {
-                        DataManager.reloadBookFromNet(it, javaScript)
-                        bookshelfUi.loading.secondaryProgress = count.incrementAndGet()
-                        delay(delay)
-                    }
-                }
-
-            }
-
-            hideProgressBar(SHOW_FLAG_STARTING_STATION)
-        }
 
     private var showState = 0
     private val SHOW_FLAG_REFRESH = 1
@@ -251,7 +191,7 @@ class BookshelfFragment : BaseFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id
+            return data[position].id.id
         }
 
         override fun createView(parent: ViewGroup, viewType: Int): BookListItem {
@@ -271,8 +211,7 @@ class BookshelfFragment : BaseFragment() {
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
                 loading.isLoading = book.isLoading
                 val error = book.error
-                val startingError = book.startingError
-                if (error == null && startingError == null) {
+                if (error == null) {
                     visibleSet.invisible(syncError)
                     syncError.isClickable = false
                 } else {
@@ -286,27 +225,23 @@ class BookshelfFragment : BaseFragment() {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init(
-                                    "${error ?: startingError}"
+                                    "${error}"
                                 )
                                 .setPopupGravity(Gravity.TOP or Gravity.START)
                             popup.showPopupWindow(it)
                         }
                     }
                 }
-
-                if (book.lastChapter?.isLastChapter == false) {
-                    bvUnread.setHighlight(false)
-                } else {
-                    bvUnread.setHighlight(true)
-                }
-                if ((book.isLoading || book.unreadChapterCount <= 0) && book.lastChapter?.isLastChapter != false) {
+                bvUnread.setHighlight(true)
+                if ((book.isLoading || book.unreadChapterCount <= 0)) {
                     visibleSet.invisible(bvUnread)
                 } else {
                     visibleSet.visible(bvUnread)
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
 
-                origin.text = "来源：${book.source}共${book.javaScriptList?.size}个源"
+                origin.text =
+                    "来源：${book.bookSource?.group}-${book.bookSource?.name}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title,
@@ -323,18 +258,10 @@ class BookshelfFragment : BaseFragment() {
                 }
 
                 setOnClickListener {
-                    fragment.startActivity<BookReaderActivity>(BOOK_URL, book.url)
+                    fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
                 }
 
-                val source = book.record?.startingStationBookSource
-                if (source?.isNotBlank() == true &&
-                    source != STARTING_STATION_BOOK_SOURCE_EMPTY
-                ) {
-                    startingStation.text = source.subSequence(0, 1)
-                    visibleSet.visible(startingStation)
-                } else {
-                    visibleSet.invisible(startingStation)
-                }
+                visibleSet.invisible(startingStation)
 
                 visibleSet.apply()
 

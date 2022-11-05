@@ -53,5 +53,13 @@ class ChapterContent {
 
     companion object {
         val cache = LruCache<String, SpannableStringBuilder>(5)
+
+        operator fun invoke(bookId: String, chapterIndex: Int, chapterContent: String): ChapterContent {
+            val cc = ChapterContent()
+            cc.bookId = bookId
+            cc.chapterIndex = chapterIndex
+            cc.content = chapterContent
+            return cc
+        }
     }
 }

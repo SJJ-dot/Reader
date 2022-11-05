@@ -9,6 +9,7 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
+import com.sjianjun.reader.utils.md5
 import okhttp3.HttpUrl
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
@@ -16,21 +17,41 @@ import sjj.alog.Log
 
 @Entity
 class BookSource {
+
+    @PrimaryKey
+    var id: String = ""
+        get() {
+            if (field.isEmpty()) {
+                field = "${group.trim()}:${name.trim()}"
+            }
+            return field
+        }
+
     /**
      * 来源 与书籍[Book.source]对应。例如：笔趣阁
      */
-    @PrimaryKey
-    var source: String = ""
+    var name: String = ""
+
+    /**
+     * 分组名称
+     */
+    var group: String = ""
 
     /**
      * - js 脚本内容
      * - 多余的参数从arguments取
      */
     var js: String = ""
-    var version: Int = 1
+    var version: Int = -1
     var enable: Boolean = true
     var requestDelay: Long = 1000L
 
+    /**
+     * 书源校验结果
+     */
+    var checkResult: String? = null
+
+    var checkErrorMsg: String? = null
     @Ignore
     val jsProps = mutableListOf<Pair<String, Any>>()
 
@@ -39,15 +60,6 @@ class BookSource {
      */
     @Ignore
     var selected = false
-
-    /**
-     * 书源校验结果
-     */
-    @Ignore
-    var checkResult: String? = null
-
-    @Ignore
-    var checkErrorMsg: String? = null
 
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
@@ -70,7 +82,8 @@ class BookSource {
 
     inline fun <reified T> execute(runner: ContextWrap.() -> T?): T? {
         return js {
-            putProperty("source", javaToJS(source))
+            //以前的脚本使用了这个值。以后应该删除这个属性
+            putProperty("source", javaToJS(name))
             putProperty("http", javaToJS(http))
             jsProps.forEach {
                 putProperty(it.first, javaToJS(it.second))
@@ -87,7 +100,7 @@ class BookSource {
         return withIo {
             execute<List<SearchResult>>(Func.search, query)?.also {
                 it.forEach {
-                    it.source = source
+                    it.bookSource = this@BookSource
                 }
             }
         }
@@ -96,7 +109,7 @@ class BookSource {
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
             execute<Book>(Func.getDetails, bookUrl)?.also {
-                it.source = source
+                it.bookSourceId = id
             }
         }
     }
@@ -106,12 +119,11 @@ class BookSource {
             try {
                 execute<String>(Func.getChapterContent, chapterUrl)
             } catch (t: Throwable) {
-                Log.e("$source 加载章节内容出错：$chapterUrl", t)
+                Log.e("$name 加载章节内容出错：$chapterUrl", t)
                 null
             }
         }
     }
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -119,13 +131,16 @@ class BookSource {
 
         other as BookSource
 
-        if (source != other.source) return false
+        if (name != other.name) return false
+        if (group != other.group) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return source.hashCode()
+        var result = name.hashCode()
+        result = 31 * result + group.hashCode()
+        return result
     }
 
 

@@ -6,46 +6,47 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.preferences.JsConfig
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import org.json.JSONObject
 import sjj.alog.Log
 import java.util.zip.GZIPInputStream
 
 object BookSourceManager {
-    suspend fun getAllJs(): List<BookSource> = withIo {
-        JsConfig.getAllJs()
+    private val dao = DbFactory.db.dao()
+    suspend fun getAllBookSource(): List<BookSource> = withIo {
+        dao.getAllBookSource().first()
     }
 
-    suspend fun getAllOriginalSource(): List<BookSource> {
-        return getAllJs().filter { it.isOriginal && it.enable }
+    suspend fun getAllEnableBookSource(): List<BookSource> = withIo {
+        dao.getAllEnableBookSource().first()
     }
 
-    fun getJs(source: String): BookSource? {
-        return JsConfig.getJs(source)
+    suspend fun getBookSourceById(sourceId: String) = withIo {
+        dao.getBookSourceById(sourceId)
     }
 
-    suspend fun getAllBookJs(bookTitle: String, bookAuthor: String): List<BookSource> {
-        val list = DbFactory.db.dao().getAllBookSource(bookTitle, bookAuthor)
-        return getAllJs().filter { list.contains(it.source) }
+    suspend fun getBookBookSource(bookTitle: String, bookAuthor: String) = withIo {
+        dao.getBookBookSource(bookTitle, bookAuthor)
     }
 
-    fun saveJs(vararg js: BookSource) {
-        JsConfig.saveJs(*js)
+    suspend fun saveJs(vararg js: BookSource) = withIo {
+        dao.insertBookSource(js.asList())
     }
 
-    fun delete(vararg js: BookSource) {
-        JsConfig.removeJs(*js)
+    suspend fun delete(vararg js: BookSource) = withIo {
+        dao.deleteBookSource(js.asList())
     }
 
-    suspend fun check(js: BookSource, key: String) {
+    suspend fun check(js: BookSource, key: String) = withIo {
         val search: SearchResult
         try {
             search = js.search(key)!!.first()
         } catch (e: Exception) {
             js.checkResult = "校验失败：搜索出错"
             js.checkErrorMsg = e.stackTraceToString()
-            Log.e("${js.source}:${js.checkResult}", e)
-            return
+            Log.e("${js.group}-${js.name}:${js.checkResult}", e)
+            return@withIo
         }
         val details: Book
         try {
@@ -53,8 +54,8 @@ object BookSourceManager {
         } catch (e: Exception) {
             js.checkResult = "校验失败：详情加载失败"
             js.checkErrorMsg = e.stackTraceToString()
-            Log.e("${js.source}:${js.checkResult}", e)
-            return
+            Log.e("${js.group}-${js.name}:${js.checkResult}", e)
+            return@withIo
         }
         try {
             val chapter = details.chapterList?.firstOrNull()!!
@@ -63,36 +64,38 @@ object BookSourceManager {
         } catch (e: Exception) {
             js.checkResult = "校验失败：章节内容加载失败"
             js.checkErrorMsg = e.stackTraceToString()
-            Log.e("${js.source}:${js.checkResult}", e)
-            return
+            Log.e("${js.group}-${js.name}:${js.checkResult}", e)
+            return@withIo
         }
         js.checkResult = "校验成功"
         js.checkErrorMsg = null
+    }.apply {
+        dao.insertBookSource(listOf(js))
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun import(url: String) = withIo {
         var body = http.get(url).body
         if (url.endsWith("gzip")) {
-            body = GZIPInputStream(Base64.decode(body,Base64.NO_WRAP).inputStream()).reader().readText()
+            body = GZIPInputStream(Base64.decode(body, Base64.NO_WRAP).inputStream()).reader()
+                .readText()
         }
         val source = JSONObject(body)
         val bookSourceArray = source.getJSONArray("bookSource")
         val sources = (0 until bookSourceArray.length()).map {
             val obj = bookSourceArray.getJSONObject(it)
-            BookSource(
-                "${source.optString("group")}:${obj.getString("source")}",
-                obj.getString("js"),
-                obj.optInt("version", -1),
-                obj.optBoolean("original", false),
-                obj.optBoolean("enable", true),
-                obj.optLong("requestDelay", -1),
-                obj.optString("website")
-            )
+            BookSource().apply {
+                name = obj.getString("source")
+                group = source.optString("group")
+                js = obj.getString("js")
+                version = obj.optInt("js", -1)
+                enable = obj.optBoolean("enable", true)
+                requestDelay = obj.optLong("requestDelay", -1)
+            }
         }
-        val allJs = getAllJs()
+        val allJs = getAllBookSource()
         saveJs(*sources.filter { s ->
-            val local = allJs.find { it.source == s.source }
+            val local = allJs.find { it.id == s.id }
             (local?.version ?: -1) <= s.version
         }.toTypedArray())
     }

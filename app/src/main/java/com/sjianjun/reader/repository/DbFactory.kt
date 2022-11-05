@@ -11,8 +11,8 @@ import com.sjianjun.reader.repository.dao.Dao
 import com.sjianjun.reader.utils.AppDirUtil
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class],
-    version = 11,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
+    version = 12,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {

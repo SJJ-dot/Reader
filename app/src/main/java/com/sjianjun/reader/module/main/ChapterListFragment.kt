@@ -56,20 +56,20 @@ class ChapterListFragment : BaseFragment() {
                 if (it == null) {
                     emptyFlow<Pair<List<Chapter>, ReadingRecord>>()
                 } else {
-                    DataManager.getChapterList(it.url)
+                    DataManager.getChapterList(it.id)
                         .combine(DataManager.getReadingRecord(it)) { chapterList, readingRecord ->
                             chapterList to readingRecord
                         }
                 }
             }.collectLatest { (chapterList, readingRecord) ->
-                val change = adapter.readingChapterUrl != readingRecord?.chapterUrl ?: ""
-                adapter.readingChapterUrl = readingRecord?.chapterUrl ?: ""
+                val change = adapter.readingChapterIndex != readingRecord?.chapterIndex ?: ""
+                adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
                 adapter.data.clear()
                 adapter.data.addAll(chapterList)
                 adapter.notifyDataSetChanged()
                 if (change) {
                     val index = adapter.data.indexOfFirst {
-                        it.url == adapter.readingChapterUrl
+                        it.index == adapter.readingChapterIndex
                     }
                     recycle_view_chapter_list.scrollToPosition(index)
                 }
@@ -82,7 +82,7 @@ class ChapterListFragment : BaseFragment() {
             setHasStableIds(true)
         }
 
-        var readingChapterUrl = ""
+        var readingChapterIndex = 0
 
 
         override fun itemLayoutRes(viewType: Int): Int {
@@ -96,7 +96,7 @@ class ChapterListFragment : BaseFragment() {
             holder.itemView.apply {
                 val c = data[position]
                 text1.text = c.title
-                if (readingChapterUrl == c.url) {
+                if (readingChapterIndex == c.index) {
                     text1.setTextColorRes(R.color.mdr_green_500)
                 } else {
                     text1.setTextColorRes(R.color.dn_text_color_light)
@@ -108,8 +108,8 @@ class ChapterListFragment : BaseFragment() {
                 }
                 setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(
-                        BOOK_URL to c.bookUrl,
-                        CHAPTER_URL to c.url
+                        BOOK_ID to c.bookId,
+                        CHAPTER_INDEX to c.index
                     )
                 }
             }
@@ -117,7 +117,7 @@ class ChapterListFragment : BaseFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id
+            return data[position].index.toLong()
         }
     }
 

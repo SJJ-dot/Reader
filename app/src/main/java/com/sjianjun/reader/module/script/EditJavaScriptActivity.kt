@@ -8,12 +8,13 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.repository.BookSourceManager
-import com.sjianjun.reader.utils.JAVA_SCRIPT_SOURCE
+import com.sjianjun.reader.utils.BOOK_SOURCE_ID
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
+import kotlinx.coroutines.flow.firstOrNull
 
 class EditJavaScriptActivity : BaseActivity() {
-
+    private var bookSource: BookSource? = null
     override fun immersionBar() {
         ImmersionBar.with(this)
             .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
@@ -25,12 +26,13 @@ class EditJavaScriptActivity : BaseActivity() {
         setContentView(R.layout.activity_edit_java_script)
         save_script.setOnClickListener {
             launch {
-                val bookSource = BookSource(
-                    source = script_source.text.toString(),
-                    js = script.text.toString(),
-                    version = script_version.text.toString().toIntOrNull() ?: 1,
-                    isOriginal = script_starting.isChecked
-                )
+                val bookSource = bookSource?:return@launch
+                bookSource.apply {
+                    name = script_source.text.toString()
+                    js = script.text.toString()
+                    version = script_version.text.toString().toIntOrNull() ?: 1
+                }
+
                 try {
                     BookSourceManager.saveJs(bookSource)
                     toast("脚本保存成功")
@@ -41,16 +43,15 @@ class EditJavaScriptActivity : BaseActivity() {
             }
         }
         launch {
-            val source = intent.getStringExtra(JAVA_SCRIPT_SOURCE) ?: return@launch
-            val js =  BookSourceManager.getJs(source)
-            script_source.setText(js?.source)
-            script.setText(js?.js)
+            val sourceId = intent.getStringExtra(BOOK_SOURCE_ID) ?: return@launch
+            bookSource = BookSourceManager.getBookSourceById(sourceId).firstOrNull()
+            script_source.setText(bookSource?.name)
+            script.setText(bookSource?.js)
             //禁止修改脚本标志名称
-            if (!js?.source.isNullOrEmpty()) {
-                script_source.isEnabled = false
-            }
-            script_starting.isChecked = js?.isOriginal ?: false
-            script_version.setText((js?.version ?: 1).toString())
+//            if (!js?.name.isNullOrEmpty()) {
+//                script_source.isEnabled = false
+//            }
+            script_version.setText((bookSource?.version ?: 1).toString())
         }
     }
 }

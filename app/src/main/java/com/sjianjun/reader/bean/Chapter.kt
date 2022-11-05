@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Entity(indices = [Index(value = ["bookUrl"])], primaryKeys = ["bookId", "index"])
+@Entity(primaryKeys = ["bookId", "index"])
 class Chapter {
 
     @JvmField
@@ -37,10 +37,6 @@ class Chapter {
     @JvmField
     var index = 0
 
-    @JvmField
-    @Ignore
-    var isLastChapter = true
-
     override fun toString(): String {
         return "Chapter(url='$url', title=$title, isLoaded=$isLoaded, index=$index)"
     }
@@ -51,14 +47,15 @@ class Chapter {
 
         other as Chapter
 
-        if (id != other.id) return false
+        if (bookId != other.bookId) return false
+        if (index != other.index) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return id.hashCode()
+        var result = bookId.hashCode()
+        result = 31 * result + index
+        return result
     }
-
-
 }

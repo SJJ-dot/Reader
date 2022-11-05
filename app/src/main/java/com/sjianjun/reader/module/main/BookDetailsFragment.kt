@@ -8,6 +8,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
+import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
@@ -55,14 +56,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         book ?: return
         launch(singleCoroutineKey = "refreshBookDetails") {
             detailsRefreshLayout?.isRefreshing = true
-            val qiDian = async {
-                val startingBook = DataManager.getStartingBook(book)
-                if (startingBook?.source != book.source) {
-                    DataManager.reloadBookFromNet(startingBook)
-                }
-            }
             DataManager.reloadBookFromNet(book)
-            qiDian.await()
             detailsRefreshLayout?.isRefreshing = false
         }
     }
@@ -82,11 +76,6 @@ class BookDetailsFragment : BaseAsyncFragment() {
         launch(singleCoroutineKey = "initBookDetailsData") {
             var first = true
             DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
-                if (it != null) {
-                    val startingBook = DataManager.getStartingBook(it, onlyLocal = true)
-                    it.startingError = startingBook?.error
-                }
-
                 fillView(it)
 
                 initListener(it)
@@ -107,9 +96,12 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         intro?.text = book?.intro.html()
 
-        val bookList = DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor).firstOrNull()
-        originWebsite?.text = "来源：${book?.source}共${bookList?.size}个源"
-        val error = book?.error ?: book?.startingError
+        val count = DataManager.getBookBookSourceNum(bookTitle, bookAuthor)
+        val source = book?.bookSourceId?.let {
+            BookSourceManager.getBookSourceById(it).firstOrNull()
+        }
+        originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个源"
+        val error = book?.error
         if (error == null) {
             sync_error.hide()
         } else {
@@ -133,24 +125,19 @@ class BookDetailsFragment : BaseAsyncFragment() {
         }
         reading.setOnClickListener {
             book ?: return@setOnClickListener
-            startActivity<BookReaderActivity>(BOOK_URL, book.url)
+            startActivity<BookReaderActivity>(BOOK_ID, book.id)
         }
     }
 
     private suspend fun initLatestChapter(book: Book?) {
-        DataManager.getLastChapterByBookUrl(book?.url ?: "")
+        DataManager.getLastChapterByBookId(book?.id ?: "")
             .collectLatest { lastChapter ->
                 latestChapter?.text = lastChapter?.title
-                if (lastChapter?.isLastChapter == false) {
-                    red_dot.show()
-                } else {
-                    red_dot.hide()
-                }
                 latestChapter.setOnClickListener { _ ->
                     book ?: return@setOnClickListener
                     startActivity<BookReaderActivity>(
-                        BOOK_URL to book.url,
-                        CHAPTER_URL to lastChapter?.url
+                        BOOK_ID to book.id,
+                        CHAPTER_INDEX to lastChapter?.index
                     )
                 }
             }

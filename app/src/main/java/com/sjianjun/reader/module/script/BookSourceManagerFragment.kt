@@ -70,10 +70,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 .setTitle("确认删除")
                 .setMessage("确定要删除选中的${list.size}个书源吗？")
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    BookSourceManager.delete(*list.toTypedArray())
-                    adapter.data.removeAll(list)
-                    adapter.notifyDataSetChanged()
-                    refreshSelectAll()
+                    launch {
+                        BookSourceManager.delete(*list.toTypedArray())
+                        adapter.data.removeAll(list)
+                        adapter.notifyDataSetChanged()
+                        refreshSelectAll()
+                    }
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
@@ -183,7 +185,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launch {
-            val allJs = BookSourceManager.getAllJs().sort()
+            val allJs = BookSourceManager.getAllBookSource().sort()
             adapter.data.clear()
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
@@ -193,15 +195,15 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
     private fun List<BookSource>.sort(): List<BookSource> {
         return sortedWith { p0, p1 ->
-            val g0 = p0.source.substringBefore(":")
-            val g1 = p1.source.substringBefore(":")
+            val g0 = p0.group
+            val g1 = p1.group
             if (g0 != g1) {
                 return@sortedWith g0.compareTo(g1)
             }
             if (p0.enable != p1.enable) {
                 return@sortedWith if (p0.enable) -1 else 1
             }
-            return@sortedWith p0.source.compareTo(p1.source)
+            return@sortedWith p0.name.compareTo(p1.name)
 
         }
     }
@@ -209,7 +211,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     private fun query() {
         launch {
             val query = searchView.query.toString().trim()
-            val allJs = BookSourceManager.getAllJs().sort()
+            val allJs = BookSourceManager.getAllBookSource().sort()
             adapter.data.clear()
             if (query.isBlank()) {
                 adapter.data.addAll(allJs)
@@ -220,7 +222,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     } else if (query == "已禁用") {
                         !it.enable
                     } else {
-                        it.source.contains(query) || it.checkResult?.contains(query) == true
+                        it.id.contains(query) || it.checkResult?.contains(query) == true
                     }
                 })
             }
@@ -260,9 +262,11 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     if (list.isEmpty()) {
                         toast("请选择书源")
                     } else {
-                        list.forEach { it.enable = true }
-                        BookSourceManager.saveJs(*list.toTypedArray())
-                        adapter.notifyDataSetChanged()
+                        launch {
+                            list.forEach { it.enable = true }
+                            BookSourceManager.saveJs(*list.toTypedArray())
+                            adapter.notifyDataSetChanged()
+                        }
                     }
                 }
                 R.id.source_disable_select -> {
@@ -270,9 +274,11 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     if (list.isEmpty()) {
                         toast("请选择书源")
                     } else {
-                        list.forEach { it.enable = false }
-                        BookSourceManager.saveJs(*list.toTypedArray())
-                        adapter.notifyDataSetChanged()
+                        launch {
+                            list.forEach { it.enable = false }
+                            BookSourceManager.saveJs(*list.toTypedArray())
+                            adapter.notifyDataSetChanged()
+                        }
                     }
                 }
                 R.id.source_check_select -> {
@@ -303,7 +309,8 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                                 BookSourceManager.check(
                                                     js,
                                                     key
-                                                );js
+                                                );
+                                                js
                                             }
                                         }.onEach { deferred ->
                                             deferred.invokeOnCompletion {
@@ -375,7 +382,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         ) {
             holder.itemView.apply {
                 val script = data[p1]
-                tv_source_name.text = "${script.source}"
+                tv_source_name.text = "${script.group}-${script.name}"
                 cb_book_source.setOnCheckedChangeListener(null)
                 cb_book_source.isChecked = script.selected
                 cb_book_source.setOnCheckedChangeListener { _, b ->
@@ -390,8 +397,8 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 }
                 iv_edit_source.setOnClickListener {
                     fragment.startActivity<EditJavaScriptActivity>(
-                        JAVA_SCRIPT_SOURCE,
-                        script.source
+                        BOOK_SOURCE_ID,
+                        script.id
                     )
                 }
                 sw_source_enable.setOnCheckedChangeListener(null)
@@ -419,7 +426,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id
+            return data[position].id.id
         }
     }
 }

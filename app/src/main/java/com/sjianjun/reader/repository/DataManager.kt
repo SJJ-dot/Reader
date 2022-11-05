@@ -1,5 +1,3 @@
-@file:Suppress("BlockingMethodInNonBlockingContext")
-
 package com.sjianjun.reader.repository
 
 import com.sjianjun.coroutine.flowIo
@@ -11,7 +9,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 import java.net.URLEncoder
-import java.util.UUID
 import kotlin.math.abs
 
 /**
@@ -20,6 +17,7 @@ import kotlin.math.abs
 object DataManager {
     private val dao get() = DbFactory.db.dao()
 
+//    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<搜索>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     /**
      * 搜素历史记录
      */
@@ -50,22 +48,23 @@ object DataManager {
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
-            val allJavaScript = BookSourceManager.getAllJs().filter { it.enable }
-            if (allJavaScript.isNullOrEmpty()) {
+            val allJavaScript = dao.getAllBookSource().first().filter { it.enable }
+            if (allJavaScript.isEmpty()) {
+                toast("无可用书源，请导入书源")
                 return@withIo emptyFlow<List<List<SearchResult>>>()
             }
             val group = mutableMapOf<String, MutableList<SearchResult>>()
             allJavaScript.asFlow().flatMapMerge {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
-                flow<List<SearchResult>> {
+                flow {
                     try {
                         val search = it.search(query)
                         if (search != null) {
                             emit(search)
-                            Log.i("search ${it.source} resultNum:${search.size}")
+                            Log.i("search ${it.id} resultNum:${search.size}")
                         }
                     } catch (e: Exception) {
-                        Log.i("search error ${it.source}", e)
+                        Log.i("search error ${it.id}", e)
                     }
                 }
             }.map {
@@ -103,8 +102,8 @@ object DataManager {
         dao.deleteSearchHistory(history)
     }
 
-    suspend fun saveSearchResult(searchResult: List<SearchResult>): String {
-        return insertBookAndSaveReadingRecord(searchResult.toBookList()).also {
+    suspend fun saveSearchResult(searchResult: List<SearchResult>): String = withIo {
+        dao.saveSearchResult(searchResult.toBookList()).also {
             WebDavMgr.sync {
                 uploadBookInfo()
                 uploadReadingRecord()
@@ -112,96 +111,10 @@ object DataManager {
         }
     }
 
-    suspend fun insertBookAndSaveReadingRecord(bookList: List<Book>): String = withIo {
-        dao.insertBookAndSaveReadingRecord(bookList)
-    }
-
-    suspend fun getStartingBook(
-        book: Book,
-        javaScript: BookSource? = null,
-        onlyLocal: Boolean = false
-    ): Book? {
-
-        return withIo {
-            if (javaScript?.isOriginal == true && javaScript.source == book.source) {
-                //可能存在之前本地没有首发站书源，设置为null之后的情况
-                if (book.record?.startingStationBookSource?.isEmpty() == true ||
-                    book.record?.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY
-                ) {
-                    dao.getReadingRecord(book.title, book.author)?.let {
-                        it.startingStationBookSource = javaScript.source
-                        dao.insertReadingRecord(it)
-                    }
-                }
-                return@withIo book
-            }
-            val record = dao.getReadingRecord(book.title, book.author) ?: return@withIo null
-            if (book.source == record.startingStationBookSource) {
-                return@withIo book
-            }
-
-            if (!onlyLocal && record.startingStationBookSource.isBlank()) {
-                //到官方的网站查询并把书籍插入到本地数据库
-                var error = false
-                val startingBook = BookSourceManager.getAllOriginalSource().map {
-                    async {
-                        var startingBook = dao.getBookByTitleAuthorAndSource(
-                            book.title,
-                            book.author,
-                            it.source
-                        ).first()
-                        if (startingBook == null) {
-                            try {
-                                startingBook = it.search(book.title)?.find { result ->
-                                    result.bookTitle == book.title && result.bookAuthor == book.author
-                                }?.toBook()
-                            } catch (e: Exception) {
-                                error = true
-                                Log.e("搜索出错：${it.source} ${book.title}")
-                            }
-                        }
-                        startingBook
-                    }
-                }.find {
-                    try {
-                        it.await() != null
-                    } catch (e: Exception) {
-                        error = true
-                        false
-                    }
-                }?.await()
-                if (startingBook == null) {
-                    if (!error) {//只有在搜索没有发生错误的时候才保存
-                        record.startingStationBookSource = STARTING_STATION_BOOK_SOURCE_EMPTY
-                        dao.insertReadingRecord(record)
-                    }
-                    return@withIo null
-                }
-                try {
-                    dao.insertBook(startingBook)
-                } catch (error: Throwable) {
-                    //nothing to do
-                }
-                record.startingStationBookSource = startingBook.source
-                dao.insertReadingRecord(record)
-            }
-            if (record.startingStationBookSource == STARTING_STATION_BOOK_SOURCE_EMPTY) {
-                return@withIo null
-            }
-
-            return@withIo dao.getBookByTitleAuthorAndSource(
-                book.title,
-                book.author,
-                record.startingStationBookSource
-            ).first()
-
-        }
-    }
-
     suspend fun reloadBookFromNet(book: Book?, javaScript: BookSource? = null) = withIo {
 
         book ?: return@withIo
-        val script = javaScript ?: BookSourceManager.getJs(book.source)
+        val script = javaScript ?: dao.getBookSourceById(book.bookSourceId).firstOrNull()
         try {
             if (script == null) {
                 throw MessageException("未找到对应书籍书源")
@@ -218,7 +131,7 @@ object DataManager {
             book.error = null
             dao.updateBookDetails(bookDetails)
         } catch (e: Throwable) {
-            Log.i("${script?.source}加载书籍详情：$book", e)
+            Log.i("${script?.id}加载书籍详情：$book", e)
             book.isLoading = false
             book.error = android.util.Log.getStackTraceString(e)
             dao.updateBook(book)
@@ -242,15 +155,15 @@ object DataManager {
     }
 
 
-    suspend fun deleteBookByUrl(book: Book): Boolean {
+    suspend fun deleteBookById(book: Book): Boolean {
         return withIo {
             val readingRecord = dao.getReadingRecord(book.title, book.author)
             if (readingRecord?.bookId == book.id) {
                 val otherBook = dao.getBookByTitleAndAuthor(book.title, book.author).first()
-                    .find { it.url != book.url } ?: return@withIo false
+                    .find { it.id != book.id } ?: return@withIo false
                 changeReadingRecordBookSource(otherBook)
             }
-            dao.deleteBookByUrl(book)
+            dao.deleteBookById(book)
             WebDavMgr.sync { uploadBookInfo() }
             return@withIo true
         }
@@ -258,6 +171,13 @@ object DataManager {
 
     suspend fun getBookById(id: String): Book? = withIo {
         dao.getBookById(id)
+    }
+
+    suspend fun getBookBookSourceNum(title: String?, author: String?): Int = withIo {
+        if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
+            return@withIo 0
+        }
+        return@withIo dao.getBookBookSourceNum(title, author)
     }
 
     fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
@@ -275,39 +195,16 @@ object DataManager {
     }
 
 
-    fun getChapterList(bookUrl: String): Flow<List<Chapter>> {
-        return dao.getChapterListByBookUrl(bookUrl)
+    fun getChapterList(bookId: String): Flow<List<Chapter>> {
+        return dao.getChapterListByBookId(bookId)
     }
 
     fun getLastChapterByBookId(bookId: String): Flow<Chapter?> {
-
-        return dao.getLastChapterByBookId(bookId).onEach {
-            if (it != null) {
-                val book = dao.getBookById(it.bookId)
-
-                if (book != null) {
-                    val oriBook = dao.getReadingRecord(
-                        book.title, book.author
-                    )?.startingStationBookSource?.let {
-                        dao.getBookByTitleAuthorAndSource(
-                            book.title,
-                            book.author,
-                            it
-                        ).first()
-                    }
-                    if (oriBook != null) {
-                        val lastChapter = dao.getLastChapterByBookId(oriBook.id).first()
-                        it.isLastChapter = lastChapter == null || it.name() == lastChapter.name()
-                    }
-                } else {
-                    it.isLastChapter = true
-                }
-            }
-        }.flowIo()
+        return dao.getLastChapterByBookId(bookId).flowIo()
     }
 
-    fun getChapterByUrl(url: String): Flow<Chapter?> {
-        return dao.getChapterByUrl(url)
+    fun getChapterByIndex(bookId: String, index: Int): Flow<Chapter?> {
+        return dao.getChapterByIndex(bookId, index)
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
@@ -323,30 +220,32 @@ object DataManager {
         if (readingRecord.bookId == book.id) {
             return@withIo
         }
-        readingRecord.bookId = book.id
-        val chapter = getChapterByUrl(readingRecord.chapterUrl).first()
+
+        val chapter =
+            dao.getChapterByIndex(readingRecord.bookId, readingRecord.chapterIndex).first()
         var readChapter: Chapter? = null
         if (chapter != null) {
-            //根据章节名查询。取索引最接近那个
-            readChapter = dao.getChapterByTitle(book.url, chapter.title!!)
+            //根据章节名查询。取索引最接近那个 这里将章节名转拼音按相似度排序在模糊搜索的时候更准确
+            readChapter = dao.getChapterByTitle(book.id, chapter.title!!)
                 .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             if (readChapter == null) {
                 //如果章节名没查到。根据章节名模糊查询
-                readChapter = dao.getChapterLikeName(book.url, "%${chapter.name()}")
+                readChapter = dao.getChapterLikeName(book.id, "%${chapter.name()}")
                     .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             }
             if (readChapter == null) {
-                readChapter = dao.getChapterLikeName(book.url, "%${chapter.name()}%")
+                readChapter = dao.getChapterLikeName(book.id, "%${chapter.name()}%")
                     .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             }
             if (readChapter == null) {
-                readChapter = dao.getChapterByIndex(book.url, chapter.index).first()
-                    ?: dao.getLastChapterByBookUrl(book.url).first()
+                readChapter = dao.getChapterByIndex(book.id, chapter.index).first()
+                    ?: dao.getLastChapterByBookId(book.id).first()
             }
 
         }
-        readingRecord.chapterUrl = readChapter?.url ?: ""
-        if (readingRecord.chapterUrl.isBlank()) {
+        readingRecord.bookId = book.id
+        readingRecord.chapterIndex = readChapter?.index ?: -1
+        if (readingRecord.chapterIndex == -1) {
             readingRecord.offest = 0
         }
         setReadingRecord(readingRecord)
@@ -359,7 +258,7 @@ object DataManager {
     ): Chapter {
         withIo {
             if (chapter.isLoaded && !force) {
-                val chapterContent = dao.getChapterContent(chapter.url).first()
+                val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index).first()
                 chapter.content = chapterContent
                 chapter.content?.format()
                 if (chapter.content != null) {
@@ -369,14 +268,13 @@ object DataManager {
             if (onlyLocal) {
                 return@withIo
             }
-            val book = dao.getBookByUrl(chapter.bookUrl)
 
-            val js = BookSourceManager.getJs(book?.source ?: return@withIo)
-            val content = js?.getChapterContent(chapter.url)
+            val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo
+            val content = js.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
-                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, "章节内容加载失败")
+                chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败")
             } else {
-                chapter.content = ChapterContent(chapter.url, chapter.bookUrl, content)
+                chapter.content = ChapterContent(chapter.bookId, chapter.index, content)
                 chapter.content?.format()
                 chapter.isLoaded = true
                 dao.insertChapter(chapter, chapter.content!!)

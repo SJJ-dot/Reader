@@ -154,7 +154,7 @@ dependencies {
     //泄露检测
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android-process:2.6'
-    def splitties_version = '3.0.0-beta02'
+    def splitties_version = '3.0.0'
     implementation("com.louiscad.splitties:splitties-views-dsl-appcompat:$splitties_version")
     implementation("com.louiscad.splitties:splitties-views-dsl-constraintlayout:$splitties_version")
     implementation("com.louiscad.splitties:splitties-views-dsl-coordinatorlayout:$splitties_version")
@@ -182,4 +182,5 @@ dependencies {
     implementation 'io.github.azhon:appupdate:4.2.4'
     implementation 'com.aliyun.dpa:oss-android-sdk:2.9.9'
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.6"
+//    implementation 'io.github.jeremyliao:live-event-bus-x:1.8.0'
 }

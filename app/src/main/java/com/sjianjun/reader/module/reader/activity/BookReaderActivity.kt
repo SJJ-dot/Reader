@@ -36,8 +36,8 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 class BookReaderActivity : BaseActivity() {
-    private val bookUrl get() = intent.getStringExtra(BOOK_URL)!!
-    private val chapterUrl get() = intent.getStringExtra(CHAPTER_URL)
+    private val bookId get() = intent.getStringExtra(BOOK_ID)!!
+    private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX)?:"0").toInt()
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ContentAdapter(this) }
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
@@ -72,8 +72,8 @@ class BookReaderActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (this::readingRecord.isInitialized && readingRecord.bookUrl == bookUrl) {
-            val targetChapter = adapter.chapterList.indexOfFirst { it.url == chapterUrl }
+        if (this::readingRecord.isInitialized && readingRecord.bookId == bookId) {
+            val targetChapter = adapter.chapterList.indexOfFirst { it.index == chapterIndex }
             if (targetChapter != -1) {
                 val manager = recycle_view.layoutManager as LinearLayoutManager
                 manager.scrollToPositionWithOffset(targetChapter, 0)
@@ -83,9 +83,9 @@ class BookReaderActivity : BaseActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        saveReadRecord(0)
+    override fun onStop() {
+        super.onStop()
+        saveReadRecord()
     }
 
     override fun onBackPressed() {
@@ -186,7 +186,7 @@ class BookReaderActivity : BaseActivity() {
                         dy = max(min(dy, 0), -view.height)
 
                         manager.scrollToPositionWithOffset(chapterIndex, dy)
-                        saveReadRecord()
+
                         refreshChapterProgress()
 
                         if (ttsUtil.isSpeakEnd) {
@@ -263,7 +263,6 @@ class BookReaderActivity : BaseActivity() {
                 }
 
                 refreshChapterProgress()
-                saveReadRecord()
             }
         })
     }
@@ -280,32 +279,27 @@ class BookReaderActivity : BaseActivity() {
         }
     }
 
-    private fun saveReadRecord(delay: Long = 2000) {
+    private fun saveReadRecord() {
         recycle_view?:return
-        launchIo(singleCoroutineKey = "saveReadRecord") {
-            //延迟2s 保存
-            delay(delay)
-            withMain {
-                recycle_view?:return@withMain
-                val manager = recycle_view.layoutManager as LinearLayoutManager
-                var view = manager.getChildAt(0) ?: return@withMain
-                var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+        val manager = recycle_view.layoutManager as LinearLayoutManager
+        var view = manager.getChildAt(0) ?: return
+        var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
 
-                if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
-                    view = manager.getChildAt(manager.childCount - 1) ?: view
-                    isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
-                }
+        if (isEnd && manager.findLastVisibleItemPosition() == adapter.chapterList.size - 1) {
+            view = manager.getChildAt(manager.childCount - 1) ?: view
+            isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
+        }
 
-                val top = view.top
-                val pos = manager.getPosition(view)
-                val readingChapter = adapter.chapterList.getOrNull(pos)
-                readingRecord.chapterUrl = readingChapter?.url ?: readingRecord.chapterUrl
-                readingRecord.offest = top
+        val top = view.top
+        val pos = manager.getPosition(view)
+        val readingChapter = adapter.chapterList.getOrNull(pos)
+        readingRecord.chapterIndex = readingChapter?.index ?: readingRecord.chapterIndex
+        readingRecord.offest = top
 
-                readingRecord.isEnd = isEnd
-                DataManager.setReadingRecord(readingRecord)
-                WebDavMgr.sync { uploadReadingRecord() }
-            }
+        readingRecord.isEnd = isEnd
+        launchIo {
+            DataManager.setReadingRecord(readingRecord)
+            WebDavMgr.sync { uploadReadingRecord() }
         }
     }
 
@@ -313,7 +307,7 @@ class BookReaderActivity : BaseActivity() {
     private fun initData() {
         initDataJob.get()?.cancel()
         launch(singleCoroutineKey = "initBookReaderData") {
-            val book = DataManager.getBookByUrl(bookUrl)
+            val book = DataManager.getBookById(bookId)
             if (book == null) {
                 finish()
                 return@launch
@@ -331,23 +325,17 @@ class BookReaderActivity : BaseActivity() {
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title, book.author)
 
-            if (readingRecord.bookUrl == bookUrl) {
-                if (!chapterUrl.isNullOrBlank()) {
-                    readingRecord.chapterUrl = chapterUrl?: ""
-                    readingRecord.offest = 0
-                }
-            } else {
-                readingRecord.bookUrl = bookUrl
-                readingRecord.chapterUrl = chapterUrl ?: ""
-                readingRecord.offest = 0
-            }
+            readingRecord.bookId = bookId
+            readingRecord.chapterIndex = chapterIndex
+            readingRecord.offest = 0
+
             var first = true
-            DataManager.getChapterList(bookUrl).collectLatest {
+            DataManager.getChapterList(bookId).collectLatest {
                 if (first) {
                     first = false
 
                     var index = it.indexOfFirst { chapter ->
-                        chapter.url == readingRecord.chapterUrl
+                        chapter.index == readingRecord.chapterIndex
                     }
                     if (index > -1) {
                         if (readingRecord.isEnd && index < it.size - 1) {

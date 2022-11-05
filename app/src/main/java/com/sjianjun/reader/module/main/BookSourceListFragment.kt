@@ -10,6 +10,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
@@ -46,7 +47,8 @@ class BookSourceListFragment : BaseFragment() {
                     //并发读取章节列表
                     it.asFlow().flatMapMerge { book ->
                         flow {
-                            book.lastChapter = DataManager.getLastChapterByBookUrl(book.url).first()
+                            book.lastChapter = DataManager.getLastChapterByBookId(book.id).firstOrNull()
+                            book.bookSource = BookSourceManager.getBookSourceById(book.bookSourceId).firstOrNull()
                             emit(book)
                         }
                     }.toList().sortedWith(bookComparator)
@@ -96,12 +98,8 @@ class BookSourceListFragment : BaseFragment() {
                 bookName.text = book.title
                 author.text = "作者：${book.author}"
                 lastChapter.text = "最新：${book.lastChapter?.title}"
-                if (book.lastChapter?.isLastChapter == false) {
-                    red_dot.show()
-                } else {
-                    red_dot.hide()
-                }
-                haveRead.text = "来源：${book.source}"
+
+                haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
                 loading.isLoading = book.isLoading
                 setOnClickListener {
                     fragment.launch {
@@ -116,8 +114,8 @@ class BookSourceListFragment : BaseFragment() {
                         .setMessage("确定要删除《${book.title}》吗?")
                         .setPositiveButton("删除") { _, _ ->
                             fragment.launch {
-                                val success = DataManager.deleteBookByUrl(book)
-                                if (success == false) {
+                                val success = DataManager.deleteBookById(book)
+                                if (!success) {
                                     toast("删除失败")
                                 } else {
                                     data.removeAt(position)
@@ -132,7 +130,7 @@ class BookSourceListFragment : BaseFragment() {
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id
+            return data[position].id.id
         }
     }
 

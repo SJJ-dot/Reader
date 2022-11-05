@@ -5,7 +5,7 @@ import com.sjianjun.reader.bean.SearchResult
 
 fun SearchResult.toBook(): Book {
     val book = Book()
-    book.source = source
+    book.bookSourceId = bookSource?.id.toString()
     book.title = bookTitle
     book.author = bookAuthor
     book.cover = bookCover

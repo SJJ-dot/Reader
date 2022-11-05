@@ -15,7 +15,7 @@
 
     <item
         android:id="@+id/novelScriptFragment"
-        android:title="脚本" />
+        android:title="书源" />
 
     <item
         android:id="@+id/settingsFragment"

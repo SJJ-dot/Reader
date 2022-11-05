@@ -9,9 +9,26 @@ import sjj.alog.Log
 @Dao
 interface Dao {
     //<<<<<<<<<<<<<<<<<<<<<<<<<BookSource>>>>>>>>>>>>>>>>>>>>>>>>>
-    @Query("select * from BookSource where source in (select source from Book where title=:bookTitle and author=:bookAuthor)")
-    fun getAllBookSource(bookTitle: String, bookAuthor: String): List<BookSource>
+    @Query("select * from BookSource where id in (select bookSourceId from Book where title=:bookTitle and author=:bookAuthor)")
+    fun getBookBookSource(bookTitle: String, bookAuthor: String): List<BookSource>
 
+    @Query("select * from BookSource where id = (select bookSourceId from Book where id=:bookId)")
+    fun getBookSourceByBookId(bookId: String): BookSource?
+
+    @Query("select * from BookSource")
+    fun getAllBookSource(): Flow<List<BookSource>>
+
+    @Query("select * from BookSource where enable!=0")
+    fun getAllEnableBookSource(): Flow<List<BookSource>>
+
+    @Query("select * from BookSource where id=:id")
+    fun getBookSourceById(id: String): Flow<BookSource?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertBookSource(source: List<BookSource>)
+
+    @Delete
+    fun deleteBookSource(source: List<BookSource>)
 
     //<<<<<<<<<<<<<<<<<<<<<<<<<SearchHistory>>>>>>>>>>>>>>>>>>>>>>>>>
     /**
@@ -34,7 +51,7 @@ interface Dao {
     fun insertBook(book: Book): Long
 
     @Transaction
-    fun insertBookAndSaveReadingRecord(bookList: List<Book>): String {
+    fun saveSearchResult(bookList: List<Book>): String {
         cleanDirtyData()
         insertBook(bookList)
         val book = bookList.first()
@@ -95,18 +112,24 @@ interface Dao {
     @Query("select * from Book where id=:id")
     fun getBookById(id: String): Book?
 
-    @Query("select * from Book where title=:title and author=:author  order by source")
+    @Query("select count(*) from Book where title=:title and author=:author")
+    fun getBookBookSourceNum(title: String, author: String): Int
+
+    @Query("select * from Book where title=:title and author=:author  order by bookSourceId")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
-    @Query("select * from Book where title=:title and author=:author and source=:source")
-    fun getBookByTitleAuthorAndSource(title: String, author: String, source: String): Flow<Book?>
+    @Query("select * from Book where title=:title and author=:author and bookSourceId=:bookSourceId")
+    fun getBookByTitleAuthorAndSource(
+        title: String,
+        author: String,
+        bookSourceId: String
+    ): Flow<Book?>
 
     @Query("select * from Book where id in (select bookId from ReadingRecord where bookTitle=:title and bookAuthor=:author)")
     fun getReadingBook(title: String, author: String): Flow<Book?>
 
 
-
-//    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Chapter>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    //    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Chapter>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     @Query("select * from Chapter where bookId=:bookId order by `index` DESC limit 1")
     fun getLastChapterByBookId(bookId: String): Flow<Chapter?>
 
