@@ -1,7 +1,6 @@
 package com.sjianjun.reader.test
 
 import android.content.res.AssetManager
-import android.util.Base64
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
@@ -11,11 +10,10 @@ import com.sjianjun.reader.bean.BookSource.Func.*
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
 import org.json.JSONArray
 import org.json.JSONObject
+import org.jsoup.Jsoup
 import sjj.alog.Log
-import java.nio.charset.Charset
 
 fun getAssetsTxt(name: String): String {
     return App.app.assets.open(name, AssetManager.ACCESS_BUFFER).use { stream ->
@@ -31,7 +29,8 @@ object JavaScriptTest {
     var test = false
     val javaScript by lazy {
         BookSource().apply {
-            js = getAssetsTxt("js/BookSourceLegado.js")
+            name = "起点"
+            js = getAssetsTxt("js/QD.js")
         }
     }
 
@@ -52,19 +51,19 @@ object JavaScriptTest {
             newJson.put(newObj)
         }
     }
+    private fun jsoupTest() {
+        val parse = Jsoup.parse("")
+        parse.select("").select("")
+    }
 
     suspend fun testJavaScript() = withIo {
-//        javaScript.jsProps.add("rule" to JSONArray(getAssetsTxt("js/hh.json")).getJSONObject(0).toString())
-//        javaScript.search("我的")
-////        Log.e(base.newBuilder("/absaa/html.hh"))
-////        val base11 = HttpUrl.get("https://raw.iqiq.io/XIU2/Yuedu/master/shuyuan")
-////        Log.e(base11.newBuilder("aa/html.hh"))
-////        Log.e(base.newBuilder("/absaa/html.hh"))
-////        HttpUrl.Builder().host()
         if (!test || !BuildConfig.DEBUG) {
             return@withIo
         }
-        val query = "诡秘之主"
+
+
+        val query = "我的"
+//        Log.e(javaScript.js)
 //        val query = "哈利波特"
         Log.e("${javaScript.name} 搜索 $query")
         val result = javaScript.execute<List<SearchResult>>(search, query)
@@ -85,7 +84,7 @@ object JavaScriptTest {
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
             chapter.content = ChapterContent(chapter.url, chapter.index, c ?: "")
-            Log.e("测试：${if (c.isNullOrBlank()) "失败" else "通过"} ${chapter.content} ")
+            Log.e("测试：${if (c.isNullOrBlank()) "失败" else "通过"} ${chapter.content?.content} ")
         }
         Unit
     }

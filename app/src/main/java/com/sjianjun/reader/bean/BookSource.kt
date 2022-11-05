@@ -168,7 +168,7 @@ val headerScript = """
         importClass(Packages.java.util.HashMap)
         importClass(Packages.java.net.URLEncoder)
         importClass(Packages.java.net.URLDecoder)
-        
+        var requestUrl;
         function request(params){
             // url type header data enc
             var header = new HashMap();
@@ -183,31 +183,30 @@ val headerScript = """
             for(k in data){
                 query.put(k,URLEncoder.encode(data[k],enc))
             }
-            
-            var url;
+    
             if(params.baseUrl==undefined){
-                url = HttpUrl.get(params.url).url().toString()
+                requestUrl = HttpUrl.get(params.url).url().toString()
             }else{
-                url = HttpUrl.get(params.baseUrl).newBuilder(params.url).build().url().toString()
+                requestUrl = HttpUrl.get(params.baseUrl).newBuilder(params.url).build().url().toString()
             }
             
             var resp;
             if(params.type=="post"){
-                resp = http.post(url,query,header)
+                resp = http.post(requestUrl,query,header)
             }else{
-                resp = http.get(url,query,header)
+                resp = http.get(requestUrl,query,header)
             }
             return resp;
         }
         
         function get(params){
             params.type = "get"
-            return Jsoup.parse(request(params).body,url)
+            return Jsoup.parse(request(params).body,requestUrl)
         }
         
         function post(params){
             params.type = "post"
-            return Jsoup.parse(request(params).body,url)
+            return Jsoup.parse(request(params).body,requestUrl)
         }
         
         function encode(s,enc){

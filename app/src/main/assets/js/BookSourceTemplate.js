@@ -20,83 +20,50 @@ java常用方法
 str.replace("著","")
 str.trim()
 */
-
-//请求延迟的时间ms，如果时长小于0将会并发
 function search(query){
-//    var baseUrl = "https://m.qidian.com/";
-//    var html = http.get(baseUrl + "soushu/" + URLEncoder.encode(query, "utf-8"))+".html";
-//    var parse = Jsoup.parse(html,baseUrl);
-    var parse = get({url:"https://www.qidian.com/soushu/" + encode(query, "utf-8")+".html"})
-    var bookListEl = parse.select(".book-layout");
+    var baseUrl = "https://www.qidian.com/";
+    var url = "soushu/" + URLEncoder.encode(query, "utf-8")+".html";
+    var doc = get({baseUrl:baseUrl,url:url})
+
+    var bookListEl = doc.select(".res-book-item");
     var results = new ArrayList();
     for (var i=0;i<bookListEl.size();i++){
         var bookEl = bookListEl.get(i);
-
         var result = new SearchResult();
         result.source = source;
-        result.bookTitle = bookEl.selectFirst(".book-title").text();
-        result.bookUrl = bookEl.absUrl("href")+".html";
-        result.bookAuthor = bookEl.selectFirst(".book-author").ownText();
+        result.bookTitle = bookEl.select(".book-info-title").get(0).select("a").get(0).text();
+        result.bookUrl = "https://m.qidian.com/book/"+(bookEl.select("a[data-bid]").attr("data-bid"));
+        result.bookAuthor = bookEl.select(".author").select(".name").get(0).text();
         results.add(result);
     }
     return results;
 }
 
-/**
- * 书籍详情[JavaScript.source]
- */
 function getDetails(url){
-    if(url.indexOf("?")!=-1){
-        url = url + "&_csrfToken="+CookieMgr.getCookie(url,"_csrfToken")
-    }else{
-        url = url + "?_csrfToken="+CookieMgr.getCookie(url,"_csrfToken")
-    }
-
-    var parse = Jsoup.parse(http.get(url),url);
+    var doc = get({url:url});
     var book = new Book();
-    book.source = source;
-
-    book.url = url;
-    book.title = parse.selectFirst(".book-summary-bookname").text();
-    book.author = parse.selectFirst(".book-summary-author").text().replace("著","").trim();
-    book.intro = parse.selectFirst(".book-intro-info").ownText();
-    book.cover = parse.selectFirst(".book-name-img").absUrl("src");
-    //加载章节列表
-    var bookId = "";
-    var elements = parse.select("script");
-    for (i = 0; i < elements.size(); i++) {
-        var data = elements.get(i).data();
-        if (data.indexOf("g_data.book")!=-1) {
-            try{
-                context.eval(data);
-                bookId = g_data.book["bookId"]
-                break;
-            }catch(error){
-                Log.e(source+"解析章节列表出错，"+error)
-                break;
-            }
-        }
-    }
+    book.title = doc.select("meta[property=\"og:novel:book_name\"]").attr("content");
+    book.author = doc.select("meta[property=\"og:novel:author\"]").attr("content");
+    book.intro = doc.select("meta[property=\"og:description\"]").attr("content");
+    book.cover = doc.select("meta[property=\"og:image\"]").attr("content");
+    var chapterListUrl = doc.select("#details-menu").get(0).absUrl("href");
+    var docChapterList = get({url:chapterListUrl});
+    var elements = docChapterList.select("script");
     var chapterList = new ArrayList();
-    //var chapterUrl = "https://m.qidian.com/majax/book/category"+"?_csrfToken="+CookieMgr.getCookie(url,"_csrfToken")+"&bookId="+bookId;
-    var chapterListUrl = "https://m.qidian.com/book/" + bookId + "/catalog";
-    var chapterListHtml = http.get(chapterListUrl);
-    var chapterListParse =  Jsoup.parse(chapterListHtml,chapterListUrl);
-    var elements = chapterListParse.select("script");
+    var bookId = url.match(/\d+/)
     for (i = 0; i < elements.size(); i++) {
         var data = elements.get(i).data();
         if (data.contains("g_data.volumes")) {
             try{
-                context.eval(data);
-                for (i = 0; i < g_data.volumes.length; i++) {
-                    var chapterListJson = g_data.volumes[i]["cs"]
+                data = eval(data+"\n"+"g_data.volumes");
+                Log.e(data)
+                for (i = 0; i < data.length; i++) {
+                    var chapterListJson = data[i]["cs"]
                     for (j = 0; j < chapterListJson.length; j++) {
-//                        https://m.qidian.com/book/1018313916/516635756
                         var chapterJson = chapterListJson[j];
                         var chapter = new Chapter();
-                        chapter.bookUrl = book.url;
                         chapter.title = chapterJson["cN"];
-                        chapter.url = "https://m.qidian.com/book/"+bookId+"/"+chapterJson["id"];
+                        chapter.url = "https://vipreader.qidian.com/chapter/"+bookId+"/"+chapterJson["id"];
                         chapterList.add(chapter);
                     }
                 }
@@ -112,10 +79,6 @@ function getDetails(url){
 }
 
 function getChapterContent(url){
-    var html = http.get(url);
-    if (url.startsWith("https://m.qidian.com/")) {
-        return Jsoup.parse(html).select(".jsChapterWrapper > div").outerHtml();
-    } else {
-        return Jsoup.parse(html).select(".main-text-wrap  div.read-content").html();
-    }
+    var doc = get({url:url});
+    return doc.select(".read-content").html()
 }
