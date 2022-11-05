@@ -49,10 +49,8 @@ object WebDavMgr {
 
     suspend fun sync(run:suspend WebDavMgr.() -> Unit = {}) {
         if (needPull()) {
-            val pull = pull()
-            if (pull.isFailure) {
-                return
-            }
+            pull()
+            webDav(WEB_DAV_ID).upload(globalConfig.webDavId!!.toByteArray(Charsets.UTF_8))
         }
 
         WebDavMgr.run()
@@ -82,7 +80,6 @@ object WebDavMgr {
         }
         Log.i("上传阅读记录:${upload}")
         return@withIo upload
-        //webDav(WEB_DAV_ID).upload(globalConfig.webDavId!!.toByteArray(Charsets.UTF_8))
     }
 
     private suspend fun pull(): Result<Unit> = kotlin.runCatching {

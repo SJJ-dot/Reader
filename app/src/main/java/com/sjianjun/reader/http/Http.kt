@@ -51,9 +51,9 @@ val okClient = OkHttpClient.Builder()
     .cookieJar(CookieMgr)
     .addInterceptor(HttpLoggingInterceptor { Log.i(it) }.setLevel(
         if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.HEADERS
+            HttpLoggingInterceptor.Level.BASIC
         } else {
-            HttpLoggingInterceptor.Level.HEADERS
+            HttpLoggingInterceptor.Level.BODY
         }
 
     ))

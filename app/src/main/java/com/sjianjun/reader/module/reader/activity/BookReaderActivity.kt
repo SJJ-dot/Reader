@@ -29,6 +29,7 @@ import kotlinx.android.synthetic.main.reader_item_activity_chapter_content.view.
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -37,7 +38,7 @@ import kotlin.math.roundToInt
 
 class BookReaderActivity : BaseActivity() {
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
-    private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX)?:"0").toInt()
+    private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX) ?: "-1").toInt()
     private lateinit var readingRecord: ReadingRecord
     private val adapter by lazy { ContentAdapter(this) }
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
@@ -74,9 +75,12 @@ class BookReaderActivity : BaseActivity() {
         setIntent(intent)
         if (this::readingRecord.isInitialized && readingRecord.bookId == bookId) {
             val targetChapter = adapter.chapterList.indexOfFirst { it.index == chapterIndex }
-            if (targetChapter != -1) {
+            if (targetChapter != -1 && readingRecord.chapterIndex != chapterIndex) {
                 val manager = recycle_view.layoutManager as LinearLayoutManager
                 manager.scrollToPositionWithOffset(targetChapter, 0)
+                recycle_view.post {
+                    saveReadRecord()
+                }
             }
         } else {
             initData()
@@ -186,7 +190,6 @@ class BookReaderActivity : BaseActivity() {
                         dy = max(min(dy, 0), -view.height)
 
                         manager.scrollToPositionWithOffset(chapterIndex, dy)
-
                         refreshChapterProgress()
 
                         if (ttsUtil.isSpeakEnd) {
@@ -260,8 +263,8 @@ class BookReaderActivity : BaseActivity() {
                             }
                         }
                     }
+                    saveReadRecord()
                 }
-
                 refreshChapterProgress()
             }
         })
@@ -280,7 +283,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun saveReadRecord() {
-        recycle_view?:return
+        recycle_view ?: return
         val manager = recycle_view.layoutManager as LinearLayoutManager
         var view = manager.getChildAt(0) ?: return
         var isEnd = view.height + view.top - recycle_view.height < recycle_view.height / 6
@@ -296,7 +299,7 @@ class BookReaderActivity : BaseActivity() {
         readingRecord.chapterIndex = readingChapter?.index ?: readingRecord.chapterIndex
         readingRecord.offest = top
 
-        readingRecord.isEnd = isEnd
+        readingRecord.isEnd = isEnd && readingChapter?.isLoaded == true
         launchIo {
             DataManager.setReadingRecord(readingRecord)
             WebDavMgr.sync { uploadReadingRecord() }
@@ -326,8 +329,12 @@ class BookReaderActivity : BaseActivity() {
                 ?: ReadingRecord(book.title, book.author)
 
             readingRecord.bookId = bookId
-            readingRecord.chapterIndex = chapterIndex
-            readingRecord.offest = 0
+            if (chapterIndex != -1) {
+                readingRecord.chapterIndex = chapterIndex
+                readingRecord.offest = 0
+                readingRecord.isEnd = false
+                DataManager.setReadingRecord(readingRecord)
+            }
 
             var first = true
             DataManager.getChapterList(bookId).collectLatest {
@@ -367,7 +374,7 @@ class BookReaderActivity : BaseActivity() {
                 }
             }
 
-        }.also(initDataJob::lazySet)
+        }.also(initDataJob::set)
     }
 
     private suspend fun preLoadRefresh(

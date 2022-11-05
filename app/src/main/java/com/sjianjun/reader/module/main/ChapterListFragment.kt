@@ -27,23 +27,18 @@ import kotlinx.coroutines.flow.flatMapLatest
  *展示章节列表
  */
 class ChapterListFragment : BaseFragment() {
-    val bookTitle: String
-        get() = requireArguments().getString(BOOK_TITLE)!!
+    val bookTitle: String get() = requireArguments().getString(BOOK_TITLE)!!
 
-    val bookAuthor: String
-        get() = requireArguments().getString(BOOK_AUTHOR)!!
+    val bookAuthor: String get() = requireArguments().getString(BOOK_AUTHOR)!!
 
-    private val adapter =
-        ChapterListAdapter(
-            this
-        )
+    private val adapter = ChapterListAdapter(this)
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         return AsyncView(requireContext(), R.layout.main_fragment_book_chapter_list) {
             recycle_view_chapter_list.adapter = adapter
             initData()
@@ -61,8 +56,8 @@ class ChapterListFragment : BaseFragment() {
                             chapterList to readingRecord
                         }
                 }
-            }.collectLatest { (chapterList, readingRecord) ->
-                val change = adapter.readingChapterIndex != readingRecord?.chapterIndex ?: ""
+            }.debounce(300).collectLatest { (chapterList, readingRecord) ->
+                val change = adapter.readingChapterIndex != readingRecord?.chapterIndex
                 adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
                 adapter.data.clear()
                 adapter.data.addAll(chapterList)

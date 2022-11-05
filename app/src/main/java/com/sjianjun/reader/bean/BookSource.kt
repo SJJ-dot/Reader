@@ -143,6 +143,10 @@ class BookSource {
         return result
     }
 
+    override fun toString(): String {
+        return "BookSource(name='$name', group='$group', version=$version, enable=$enable)"
+    }
+
 
     enum class Func {
         search, getDetails, getChapterContent

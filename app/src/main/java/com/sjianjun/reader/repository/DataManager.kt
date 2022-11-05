@@ -138,10 +138,6 @@ object DataManager {
         }
     }
 
-    suspend fun updateBookDetails(book: Book) = withIo {
-        dao.updateBookDetails(book)
-    }
-
     suspend fun getAllReadingBook(): Flow<List<Book>> = withIo {
         dao.getAllReadingBook()
     }

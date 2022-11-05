@@ -66,18 +66,21 @@ interface Dao {
 
 
     @Query("delete from Book where title=:title and author=:author ")
-    fun deleteBook(title: String, author: String)
+    fun deleteBook(title: String, author: String): Int
 
     @Query("delete from Book where id=:id")
     fun deleteBookById(id: String)
 
     @Transaction
     fun deleteBook(book: Book) {
-        deleteChapterContentByBookTitleAndAuthor(book.title, book.author)
-        deleteBook(book.title, book.author)
-        deleteChapterByBookTitleAndAuthor(book.title, book.author)
-        deleteReadingRecord(book.title, book.author)
-
+        val ccnum = deleteChapterContentByBookTitleAndAuthor(book.title, book.author)
+        Log.i("删除内容数量：$ccnum")
+        val bookNum = deleteBook(book.title, book.author)
+        Log.i("删除书籍数量：$bookNum")
+        val chapterNum = deleteChapterByBookTitleAndAuthor(book.title, book.author)
+        Log.i("删除章节数量：$chapterNum")
+        val rn = deleteReadingRecord(book.title, book.author)
+        Log.i("删除阅读记录数量：$rn")
         cleanDirtyData()
     }
 
@@ -154,8 +157,8 @@ interface Dao {
     @Query("delete from Chapter where bookId=:bookId")
     fun deleteChapterByBookId(bookId: String)
 
-    @Query("delete from Chapter where bookId in (select id from book where title=:bookTitle and author=:bookAuthor)")
-    fun deleteChapterByBookTitleAndAuthor(bookTitle: String, bookAuthor: String)
+    @Query("delete from Chapter where bookId in (select id from Book where title=:bookTitle and author=:bookAuthor)")
+    fun deleteChapterByBookTitleAndAuthor(bookTitle: String, bookAuthor: String): Int
 
     @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent)")
     fun updateBookChapterIsLoaded(bookId: String)
@@ -170,7 +173,7 @@ interface Dao {
     fun insertChapterContent(chapterContent: ChapterContent): Long
 
     @Query("delete from ChapterContent where bookId in (select id from Book where title=:bookTitle and author=:bookAuthor)")
-    fun deleteChapterContentByBookTitleAndAuthor(bookTitle: String, bookAuthor: String)
+    fun deleteChapterContentByBookTitleAndAuthor(bookTitle: String, bookAuthor: String): Int
 
     @Query("delete from ChapterContent where bookId=:bookId")
     fun deleteChapterContentByBookId(bookId: String)
@@ -191,26 +194,31 @@ interface Dao {
     fun getAllReadingRecord(): List<ReadingRecord>
 
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
-    fun deleteReadingRecord(bookTitle: String, bookAuthor: String)
+    fun deleteReadingRecord(bookTitle: String, bookAuthor: String): Int
 
     @Transaction
     fun cleanDirtyData() {
-        cleanReadingBook()
-        cleanBook()
-        cleanChapter()
-        cleanChapterContent()
+        val readingRecord = cleanReadingBook()
+        Log.i("清理脏数据 readingRecord $readingRecord")
+        val book = cleanBook()
+        Log.i("清理脏数据 book $book")
+        val chapter = cleanChapter()
+        Log.i("清理脏数据 chapter $chapter")
+        val content = cleanChapterContent()
+        Log.i("清理脏数据 content $content")
+
     }
 
     //有空再改连表查询吧
-    @Query("delete from Book where not exists (select * from Book where id in (select bookId from ReadingRecord))")
-    fun cleanBook()
+    @Query("delete from Book where id not in (select bookId from ReadingRecord)")
+    fun cleanBook(): Int
 
     @Query("delete from ReadingRecord where bookId not in (select id from Book)")
-    fun cleanReadingBook()
+    fun cleanReadingBook(): Int
 
     @Query("delete from Chapter where bookId not in (select id from Book)")
-    fun cleanChapter()
+    fun cleanChapter(): Int
 
-    @Query("delete from ChapterContent where (bookId+chapterIndex) not in (select (bookId+`index`) from Chapter)")
-    fun cleanChapterContent()
+    @Query("delete from ChapterContent where bookId not in (select id from Book)")
+    fun cleanChapterContent(): Int
 }

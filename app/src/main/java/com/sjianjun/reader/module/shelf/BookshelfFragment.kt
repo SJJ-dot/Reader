@@ -27,6 +27,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -88,9 +89,6 @@ class BookshelfFragment : BaseFragment() {
                             lastChapterIndex - readChapterIndex + 1
                         }
 
-                        val bookScript = js.find { script ->
-                            script.id == book.bookSourceId
-                        }
                         book
                     }
                 }.mapNotNull { book ->
