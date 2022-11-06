@@ -4,7 +4,6 @@ import android.content.res.AssetManager
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.BookSource.Func.*
 import com.sjianjun.reader.bean.ChapterContent
@@ -30,7 +29,7 @@ object JavaScriptTest {
     val javaScript by lazy {
         BookSource().apply {
             name = "起点"
-            js = getAssetsTxt("js/QD.js")
+            js = getAssetsTxt("js/test.js")
         }
     }
 
@@ -73,7 +72,7 @@ object JavaScriptTest {
         }
         val first = result.first()
         Log.e("${first.source} bookCount:${result.size} 加载书籍详情 ${first.bookTitle} ${first.bookUrl}")
-        val book = javaScript.execute<Book>(getDetails, first.bookUrl)
+        val book = javaScript.getDetails(first.bookUrl)
         if (book == null) {
             Log.e("${first.source}  书籍加载失败")
             return@withIo
