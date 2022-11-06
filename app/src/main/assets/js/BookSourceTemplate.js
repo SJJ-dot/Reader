@@ -42,6 +42,7 @@ function search(query){
 function getDetails(url){
     var doc = get({url:url});
     var book = new Book();
+    book.url = url;
     book.title = doc.select("meta[property=\"og:novel:book_name\"]").attr("content");
     book.author = doc.select("meta[property=\"og:novel:author\"]").attr("content");
     book.intro = doc.select("meta[property=\"og:description\"]").attr("content");
