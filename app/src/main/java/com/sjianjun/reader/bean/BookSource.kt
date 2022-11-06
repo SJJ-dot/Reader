@@ -70,10 +70,10 @@ class BookSource {
         return execute {
             val paramList = params.filter { it?.isNotEmpty() == true }
             val result = if (paramList.isEmpty()) {
-                eval("${functionName}()")
+                eval("${functionName}()","call_func0")
             } else {
                 val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-                eval("${functionName}(${param})")
+                eval("${functionName}(${param})","call_func0")
             }
             jsToJava<T>(result)
         }
@@ -90,8 +90,8 @@ class BookSource {
             }
 //            putProperty("context", this)
 
-            eval(headerScript)
-            eval(js)
+            eval(headerScript,"headerScript")
+            eval(js,"BookSource_${name}")
             runner()
         }
     }

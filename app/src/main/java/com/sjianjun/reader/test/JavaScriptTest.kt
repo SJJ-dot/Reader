@@ -10,6 +10,7 @@ import com.sjianjun.reader.bean.BookSource.Func.*
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
+import kotlinx.coroutines.delay
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -26,7 +27,6 @@ fun getAssetsTxt(name: String): String {
  * 不支持：乐安宣书网(搜索结果没有作者)、
  */
 object JavaScriptTest {
-    var test = false
     val javaScript by lazy {
         BookSource().apply {
             name = "起点"
@@ -57,12 +57,11 @@ object JavaScriptTest {
     }
 
     suspend fun testJavaScript() = withIo {
-        if (!test || !BuildConfig.DEBUG) {
+        if (!BuildConfig.DEBUG || true) {
             return@withIo
         }
-
-
-        val query = "我的"
+        delay(3000)
+        val query = "修仙就是这样子的"
 //        Log.e(javaScript.js)
 //        val query = "哈利波特"
         Log.e("${javaScript.name} 搜索 $query")
@@ -79,7 +78,7 @@ object JavaScriptTest {
             Log.e("${first.source}  书籍加载失败")
             return@withIo
         }
-        Log.e("${book.title} chapterCount:${book.chapterList?.size} 加载章节内容:${book.chapterList?.firstOrNull()?.title} $book")
+        Log.e("${book.title} chapterCount:${book.chapterList?.size} 加载章节内容:${book.chapterList?.firstOrNull()?.title}")
         val chapter = book.chapterList?.firstOrNull()
         if (chapter != null) {
             val c = javaScript.execute<String>(getChapterContent, chapter.url)
