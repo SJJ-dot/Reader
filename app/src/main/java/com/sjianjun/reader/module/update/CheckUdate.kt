@@ -91,7 +91,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
             apkName("reader-${releasesInfo.lastVersion}.apk")
             smallIcon(R.mipmap.ic_xue_xi)
             //设置了此参数，那么内部会自动判断是否需要显示更新对话框，否则需要自己判断是否需要更新
-            apkVersionCode(BuildConfig.VERSION_CODE + 1)
+            apkVersionCode(BuildConfig.VERSION_CODE + 100)
             //同时下面三个参数也必须要设置
             apkVersionName(releasesInfo.lastVersion!!)
             apkDescription(releasesInfo.updateContent!!)

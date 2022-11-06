@@ -30,7 +30,7 @@ class ReleasesInfo {
         }
 
     override fun toString(): String {
-        return "ReleasesInfo(channel=$channel, lastVersion=$lastVersion, updateContent=$updateContent, downloadApkUrl=$downloadApkUrl)"
+        return "ReleasesInfo(channel=$channel, localVersion=${BuildConfig.VERSION_CODE}, lastVersion=$lastVersion, updateContent=$updateContent, downloadApkUrl=$downloadApkUrl)"
     }
 
 
