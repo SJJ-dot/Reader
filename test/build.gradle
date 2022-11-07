@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+sourceSets {
+//    main.kotlin.srcDirs += 'src/main/java'
+    main.java.srcDirs += 'src/main/java'
+}
+
+dependencies {
+    implementation "org.jsoup:jsoup:1.13.1"
+    implementation "org.mozilla:rhino:1.7.12"
+    implementation 'com.squareup.okhttp3:okhttp:3.14.9'
+    implementation "com.github.SJJ-dot.retrofit-ext:charset-detector:1.0.1"
+    implementation 'com.google.code.gson:gson:2.8.9'
+}

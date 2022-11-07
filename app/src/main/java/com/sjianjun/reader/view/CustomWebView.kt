@@ -45,9 +45,6 @@ class CustomWebView @JvmOverloads constructor(
     private var url: String? = null
     private var clearHistory: Boolean = false
 
-    var adBlockUrl: ConcurrentLinkedDeque<AdBlock>? = null
-    var adBlockJs: String? = null
-
     init {
         LayoutInflater.from(context).inflate(R.layout.custom_web_view, this)
     }
@@ -96,11 +93,6 @@ class CustomWebView @JvmOverloads constructor(
 
                 progress_bar.animFadeIn()
 
-                val adBlockJs = adBlockJs
-                if (!adBlockJs.isNullOrBlank()) {
-                    webView?.evaluateJavascript(adBlockJs, null)
-                }
-
                 refresh.isSelected = true
             }
 
@@ -108,17 +100,6 @@ class CustomWebView @JvmOverloads constructor(
                 Log.i(url ?: return)
                 if (!url.startsWith("http")) {
                     return
-                }
-
-                //不是重定向
-                val adBlockJs = adBlockJs
-                if (!adBlockJs.isNullOrBlank()) {
-                    webView?.evaluateJavascript(adBlockJs, null)
-                    webView?.post {
-                        webView?.evaluateJavascript(adBlockJs) {
-                            Log.i("adBlockJs result:$it")
-                        }
-                    }
                 }
 
                 forward.isEnabled = webView?.canGoForward() == true
@@ -154,18 +135,6 @@ class CustomWebView @JvmOverloads constructor(
                 val path = request.url.path
                 val url = request.url.toString()
 
-                val adBlockList = adBlockUrl
-                val adBlock = adBlockList?.find {
-                    it.regex?.matches(url) == true
-                }
-                if (adBlock != null) {
-                    adBlockList.remove(adBlock)
-                    adBlock.hitCount++
-                    adBlockList.addFirst(adBlock)
-
-                    Log.e("${request.method} $url $adBlock")
-                    return WebResourceResponse(null, null, null)
-                }
                 if (path?.endsWith(".gif") == true ||
                     path?.endsWith(".js") == true ||
                     url.contains("sdk", true)
@@ -183,10 +152,6 @@ class CustomWebView @JvmOverloads constructor(
                 progress_bar.progress = newProgress
                 if (newProgress == 100) {
                     progress_bar.animFadeOut()
-                }
-                val adBlockJs = adBlockJs
-                if (!adBlockJs.isNullOrBlank()) {
-                    webView?.evaluateJavascript(adBlockJs, null)
                 }
             }
         }
