@@ -34,6 +34,8 @@ class AboutFragment : BaseAsyncFragment() {
         setVersionInfo()
 
         setCode()
+
+        versionCode.performClick()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

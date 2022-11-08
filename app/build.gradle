@@ -37,13 +37,17 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.1.6"
+        versionName "1.2.0"
         resConfigs("zh")
         ndk {
             abiFilters 'armeabi-v7a'//,'armeabi', 'arm64-v8a' // 'x86', 'x86_64'
         }
         buildConfigField "String", "k1", "\"${properties.getProperty('k1')}\""
         buildConfigField "String", "k2", "\"${properties.getProperty('k2')}\""
+        manifestPlaceholders["PGYER_API_KEY"] = "${properties.getProperty('PGYER_API_KEY')}"
+        manifestPlaceholders["PGYER_FRONTJS_KEY"] = "${properties.getProperty('PGYER_FRONTJS_KEY')}"
+
+
     }
 
 //    buildFeatures {
@@ -62,14 +66,14 @@ android {
             shrinkResources true
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            manifestPlaceholders = [app_name: "学习"]
+            manifestPlaceholders["app_name"] = "学习"
         }
         debug {
 //            minifyEnabled true
 //            shrinkResources true
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
-            manifestPlaceholders = [app_name: "DEBUG"]
+            manifestPlaceholders["app_name"] = "DEBUG"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -183,4 +187,5 @@ dependencies {
     implementation 'com.aliyun.dpa:oss-android-sdk:2.9.9'
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.6"
 //    implementation 'io.github.jeremyliao:live-event-bus-x:1.8.0'
+    implementation 'com.pgyer:analytics:4.3.2'
 }

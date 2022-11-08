@@ -7,7 +7,10 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import sjj.alog.Log
@@ -72,6 +75,19 @@ object BookSourceManager {
         js.checkErrorMsg = null
     }.apply {
         dao.insertBookSource(listOf(js))
+    }
+
+    suspend fun autoImport() = withIo {
+        if (System.currentTimeMillis() - globalConfig.lastAutoImportTime < 60 * 60 * 1000) {
+            return@withIo
+        }
+        globalConfig.lastAutoImportTime = System.currentTimeMillis()
+
+        globalConfig.bookSourceImportUrls.map {
+            async {
+                import(it)
+            }
+        }.awaitAll()
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")

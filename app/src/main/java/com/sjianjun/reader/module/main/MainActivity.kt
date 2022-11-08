@@ -42,9 +42,7 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         launchIo {
             launchIo { checkUpdate(this@MainActivity, false) }
-            globalConfig.bookSourceImportUrls.forEach {
-                launchIo { BookSourceManager.import(it) }
-            }
+            launchIo { BookSourceManager.autoImport() }
         }
         if (globalConfig.hasPermission) {
             XXPermissions.with(this)

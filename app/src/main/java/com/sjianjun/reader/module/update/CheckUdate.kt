@@ -28,7 +28,11 @@ enum class Channels {
             val releasesInfo = gson.fromJson<ReleasesInfo>(body)!!
             releasesInfo.channel = name
             val url =
-                oss.presignConstrainedObjectURL("reader-repo", "releases/${releasesInfo.lastVersion}/app.apk", 60 * 60)
+                oss.presignConstrainedObjectURL(
+                    "reader-repo",
+                    "releases/${releasesInfo.lastVersion}/app.apk",
+                    24 * 60 * 60
+                )
             releasesInfo.downloadApkUrl = url
             return releasesInfo
         }

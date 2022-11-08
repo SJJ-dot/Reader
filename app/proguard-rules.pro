@@ -63,3 +63,7 @@
 -keep class com.coorchice.library.gifdecoder.JNI { *; }
 -keep class okhttp3.** { *; }
 -keep class com.alibaba.sdk.android.** { *; }
+
+-keep class com.pgyer.pgyersdk.** { *; }
+-keep class com.pgyer.pgyersdk.**$* { *; }
+

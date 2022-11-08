@@ -76,6 +76,7 @@ class AppConfig(val name: String) :
             }
             return field
         }
+    var lastAutoImportTime by longPref("lastAutoImportTime", 0)
 
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)
