@@ -1,12 +1,11 @@
 # 一个完全离线的小说阅读器
 ## kotlin 协程、rhino、Javascript
-## 支持自定义书源
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
 | - | - |- |
 
 ## 1.0.0
-完善书源管理功能，支持导入网络书源
+完善书源管理功能，支持导入自定义的网络书源
 
 ## 书源相关
 默认书源导入链接：
