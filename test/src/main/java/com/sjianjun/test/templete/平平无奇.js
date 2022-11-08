@@ -1,25 +1,3 @@
-/*
-可用方法：
-encode(s,enc)
-decode(s,enc)
-get({baseUrl:str,url:str,data:{},header:{},enc:str}) -> doc
-post({baseUrl:str,url:str,data:{},header:{},enc:str}) -> doc
-
-doc el 常用方法
-select(cssQuery) -> list[el]
-selectFirst(cssQuery) -> el
-child(n)
-children()
-text()  <p>Hello <b>there</b> now! </p>, p.text() returns "Hello there now!"
-ownText() <p>Hello <b>there</b> now!</p>, p.ownText() returns "Hello now!"
-outerHtml() <div><p></p></div> return <div><p></p></div>
-html() <div><p>Para</p></div> return <p>Para</p>
-absUrl("href")
-absUrl("src")
-java常用方法
-str.replace("著","")
-str.trim()
-*/
 
 function search(query){
     var baseUrl = "https://www.mayiwxw.com/";

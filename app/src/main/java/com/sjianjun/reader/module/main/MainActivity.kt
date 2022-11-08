@@ -18,7 +18,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.WebDavMgr
-import com.sjianjun.reader.test.JavaScriptTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
 import com.sjianjun.reader.utils.toast
@@ -42,7 +41,6 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         launchIo {
             checkUpdate(this@MainActivity, false)
-            JavaScriptTest.testJavaScript()
         }
         if (globalConfig.hasPermission) {
             XXPermissions.with(this)

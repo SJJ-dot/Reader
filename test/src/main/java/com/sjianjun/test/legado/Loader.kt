@@ -28,6 +28,6 @@ object Loader {
 
 suspend fun main(args: Array<String>) {
     val rule = Loader.simpleSource()
-    FileCaches.save("aa.json",rule.toString())
+    FileCaches.save(rule.toString())
     println(rule)
 }
