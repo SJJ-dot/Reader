@@ -6,27 +6,12 @@
 
 ## 1.0.0
 完善书源管理功能，支持导入网络书源
-
+默认书源导入链接：
+[https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json)
+默认书源导入链接Gzip：
+[https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
 # 书源规则参考 
-书源js脚本需包含3个方法参考：
-[默认书源地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
-```
-脚本模板还没写……
-```
-脚本导入
-```
-{
-  "group": "默认书源",
-  "bookSource": [
-    {
-      "source": "古古小说网",
-      "js": "js",
-      "version": 2,
-      "original": false,
-      "enable": true,
-      "requestDelay": -1,
-      "website": ""
-    }
-  ]
-}
-```
+
+[默认书源格式参考地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
+
+[书源模板参考](https://github.com/SJJ-dot/Reader/tree/master/test/src/main/java/com/sjianjun/test/templete)
