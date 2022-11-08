@@ -1,8 +1,5 @@
 package com.sjianjun.reader.utils
 
-import android.os.Environment
-import com.sjianjun.reader.BuildConfig
-
 const val BOOK_ID = "BOOK_ID"
 const val CHAPTER_INDEX = "CHAPTER_INDEX"
 const val BOOK_SOURCE_ID = "BOOK_SOURCE_ID"
@@ -11,21 +8,8 @@ const val BOOK_TITLE = "BOOK_TITLE"
 const val BOOK_AUTHOR = "BOOK_AUTHOR"
 
 
-const val PAGE_ID = "page_page_script_id"
-
-
 const val SEARCH_KEY = "SEARCH_KEY"
 
-
-/**
- * github release info 返回的apk类型信息
- */
-const val CONTENT_TYPE_ANDROID = "application/vnd.android.package-archive"
-
-/**
- * 起点中文网 不能修改source
- */
-const val BOOK_SOURCE_QI_DIAN = "起点中文网"
 
 const val URL_RELEASE_DEF = "https://github.com/SJJ-dot/Reader/releases/download/1.0.0/com.sjianjun.reader-master-release.493.-1.0.0.apk"
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"

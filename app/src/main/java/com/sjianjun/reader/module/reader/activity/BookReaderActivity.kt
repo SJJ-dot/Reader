@@ -207,7 +207,7 @@ class BookReaderActivity : BaseActivity() {
                 launch {
                     if (preLoadRefresh(
                             adapter.chapterList,
-                            chapterIndex - 1..chapterIndex + 1
+                            chapterIndex - 1..chapterIndex + 3
                         )
                     ) {
                         adapter.notifyDataSetChanged()
@@ -251,7 +251,7 @@ class BookReaderActivity : BaseActivity() {
 
                     launch(singleCoroutineKey = "onScrolledCheckChapterContentCache") {
                         val minIndex = max(firstPos - 1, 0)
-                        val maxIndex = min(lastPos + 1, chapterList.size)
+                        val maxIndex = min(lastPos + 3, chapterList.size)
 
                         val update = preLoadRefresh(chapterList, minIndex..maxIndex)
                         if (update) {
@@ -354,7 +354,7 @@ class BookReaderActivity : BaseActivity() {
                         }
                     }
                     //只加载本地的数据
-                    val intRange = max(index - 1, 0)..min(index + 1, it.size - 1)
+                    val intRange = max(index - 1, 0)..min(index + 3, it.size - 1)
                     preLoadRefresh(it, intRange, true)
                     if (adapter.chapterList.size != it.size) {
                         adapter.chapterList = it
@@ -503,7 +503,7 @@ class BookReaderActivity : BaseActivity() {
                             activity.launch {
                                 showSnackbar(it, "正在加载……")
                                 val intRange =
-                                    max(position - 1, 0)..min(position + 1, chapterList.size - 1)
+                                    max(position - 1, 0)..min(position + 3, chapterList.size - 1)
                                 val update = activity.preLoadRefresh(chapterList, intRange)
                                 showSnackbar(it, "加载完成")
                                 if (update && holder.absoluteAdapterPosition == position) {

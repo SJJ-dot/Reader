@@ -1,13 +1,14 @@
 package com.sjianjun.reader.repository
 
 import android.util.Base64
+import android.widget.Toast
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import org.json.JSONObject
 import sjj.alog.Log
 import java.util.zip.GZIPInputStream
@@ -94,10 +95,20 @@ object BookSourceManager {
             }
         }
         val allJs = getAllBookSource()
-        saveJs(*sources.filter { s ->
+        val updates = sources.filter { s ->
             val local = allJs.find { it.id == s.id }
-            (local?.version ?: -1) <= s.version
-        }.toTypedArray())
+            local != null && local.version < s.version
+        }
+        val newSource = sources.filter { s ->
+            val local = allJs.find { it.id == s.id }
+            local == null
+        }
+        if (updates.isEmpty() || newSource.isEmpty()) {
+//            return@withIo
+        }
+        saveJs(*updates.toTypedArray(), *newSource.toTypedArray())
+
+        toast("书源：新增${newSource.size}个，更新${updates.size}", Toast.LENGTH_LONG)
     }
 
 }

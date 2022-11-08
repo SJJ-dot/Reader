@@ -62,7 +62,20 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme = intLivedata("lastLightTheme")
 
-    var bookSourceImportUrls by dataPref("bookSourceImportUrl2", mutableListOf(URL_BOOK_SOURCE_DEF))
+    private var bookSourceImportUrlsField by dataPref(
+        "bookSourceImportUrl2", mutableListOf<String>(URL_BOOK_SOURCE_DEF)
+    )
+
+    var bookSourceImportUrls: MutableList<String> = bookSourceImportUrlsField
+        set(value) {
+            bookSourceImportUrlsField = value
+        }
+        get() {
+            if (field.isEmpty()) {
+                field.add(URL_BOOK_SOURCE_DEF)
+            }
+            return field
+        }
 
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)

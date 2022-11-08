@@ -1,7 +1,6 @@
 package com.sjianjun.reader.bean
 
 import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.utils.CONTENT_TYPE_ANDROID
 import kotlin.math.max
 
 class ReleasesInfo {
