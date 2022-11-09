@@ -63,3 +63,20 @@
 -keep class com.coorchice.library.gifdecoder.JNI { *; }
 -keep class okhttp3.** { *; }
 -keep class com.alibaba.sdk.android.** { *; }
+
+
+-keep class com.umeng.** {*;}
+
+-keep class org.repackage.** {*;}
+
+-keepclassmembers class * {
+   public <init> (org.json.JSONObject);
+}
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+-keep public class com.sjianjun.reader.R$*{
+public static final int *;
+}

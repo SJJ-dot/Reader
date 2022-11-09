@@ -22,6 +22,7 @@ import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
 import com.sjianjun.reader.utils.toast
+import com.umeng.commonsdk.UMConfigure
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
 
@@ -43,6 +44,7 @@ class MainActivity : BaseActivity() {
         launchIo {
             launchIo { checkUpdate(this@MainActivity, false) }
             launchIo { BookSourceManager.autoImport() }
+            UMConfigure.init(application,UMConfigure.DEVICE_TYPE_PHONE,"")
         }
         if (globalConfig.hasPermission) {
             XXPermissions.with(this)

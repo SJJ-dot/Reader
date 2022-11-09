@@ -8,6 +8,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
 import com.tencent.mmkv.MMKV
+import com.umeng.commonsdk.UMConfigure
 import me.weishu.reflection.Reflection
 import sjj.alog.Config
 import sjj.alog.Log
@@ -23,6 +24,8 @@ class App : Application() {
         app = this
         MMKV.initialize(this)
         importSharedPreferences()
+        UMConfigure.setLogEnabled(true)
+        UMConfigure.preInit(this,"63520d0c88ccdf4b7e50c31f","")
         handleDefaultException(this)
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)

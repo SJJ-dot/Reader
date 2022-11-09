@@ -37,7 +37,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.2.1"
+        versionName "1.2.2"
         resConfigs("zh")
 //        ndk {
 //            abiFilters 'armeabi-v7a'//,'armeabi', 'arm64-v8a' // 'x86', 'x86_64'
@@ -181,4 +181,8 @@ dependencies {
     implementation 'com.aliyun.dpa:oss-android-sdk:2.9.9'
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.6"
 //    implementation 'io.github.jeremyliao:live-event-bus-x:1.8.0'
+    // 友盟基础组件库（所有友盟业务SDK都依赖基础组件库）
+    implementation  'com.umeng.umsdk:common:9.5.2'// (必选)
+    implementation  'com.umeng.umsdk:asms:1.6.3'// 必选
+    implementation  'com.umeng.umsdk:abtest:1.0.1'//使用U-App中ABTest能力，可选
 }
