@@ -10,7 +10,6 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
-import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
@@ -78,9 +77,9 @@ class AboutFragment : BaseAsyncFragment() {
         val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
         if (releaseInfo?.isNewVersion == true) {
             versionCode.text =
-                "当前版本：${BuildConfig.VERSION_NAME}->${releaseInfo.lastVersion}"
+                "当前版本：${AppInfoUtil.versionName()}->${releaseInfo.lastVersion}"
         } else {
-            versionCode.text = "当前版本：${BuildConfig.VERSION_NAME}"
+            versionCode.text = "当前版本：${AppInfoUtil.versionName()}"
         }
     }
 

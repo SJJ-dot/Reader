@@ -26,8 +26,8 @@ object OssUtil {
         conf.setSocketTimeout(15 * 1000); // socket超时，默认15秒。
         conf.setMaxConcurrentRequest(5); // 最大并发请求数，默认5个。
         conf.setMaxErrorRetry(2); // 失败后最大重试次数，默认2次。
-        val k1 = Base64.decode(BuildConfig.k1, Base64.NO_WRAP).toString(StandardCharsets.UTF_8)
-        val k2 = Base64.decode(BuildConfig.k2, Base64.NO_WRAP).toString(StandardCharsets.UTF_8)
+        val k1 = Base64.decode("TFRBSTV0Q3pnVzdIZnVnODIyM0c0dGth", Base64.NO_WRAP).toString(StandardCharsets.UTF_8)
+        val k2 = Base64.decode("M2dqUzZXekZ1ZWZCV1RTa3pwRjVSTThlb0dJOElM", Base64.NO_WRAP).toString(StandardCharsets.UTF_8)
         return OSSClient(
             App.app,
             endpoint,

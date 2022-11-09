@@ -1,6 +1,7 @@
 package com.sjianjun.reader.bean
 
 import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.utils.AppInfoUtil
 import kotlin.math.max
 
 class ReleasesInfo {
@@ -10,11 +11,11 @@ class ReleasesInfo {
     var downloadApkUrl: String? = null
     val isNewVersion: Boolean
         get() {
-            if (BuildConfig.VERSION_NAME == lastVersion) {
+            if (AppInfoUtil.versionName() == lastVersion) {
                 return false
             }
             val split1 = lastVersion!!.split(".").mapNotNull { it.toIntOrNull() }
-            val split2 = BuildConfig.VERSION_NAME.split(".").mapNotNull { it.toIntOrNull() }
+            val split2 = AppInfoUtil.versionName().split(".").mapNotNull { it.toIntOrNull() }
             (0..max(split1.size, split2.size)).forEach {
                 val n1 = split1.getOrNull(it) ?: 0
                 val n2 = split2.getOrNull(it) ?: 0
@@ -29,7 +30,7 @@ class ReleasesInfo {
         }
 
     override fun toString(): String {
-        return "ReleasesInfo(channel=$channel, localVersion=${BuildConfig.VERSION_NAME}, lastVersion=$lastVersion, updateContent=$updateContent, downloadApkUrl=$downloadApkUrl)"
+        return "ReleasesInfo(channel=$channel, localVersion=${AppInfoUtil.versionName()}, lastVersion=$lastVersion, updateContent=$updateContent, downloadApkUrl=$downloadApkUrl)"
     }
 
 

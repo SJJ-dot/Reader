@@ -42,12 +42,6 @@ android {
         ndk {
             abiFilters 'armeabi-v7a'//,'armeabi', 'arm64-v8a' // 'x86', 'x86_64'
         }
-        buildConfigField "String", "k1", "\"${properties.getProperty('k1')}\""
-        buildConfigField "String", "k2", "\"${properties.getProperty('k2')}\""
-        manifestPlaceholders["PGYER_API_KEY"] = "${properties.getProperty('PGYER_API_KEY')}"
-        manifestPlaceholders["PGYER_FRONTJS_KEY"] = "${properties.getProperty('PGYER_FRONTJS_KEY')}"
-
-
     }
 
 //    buildFeatures {

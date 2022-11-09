@@ -1,12 +1,13 @@
 package com.sjianjun.reader.module.update
 
 import android.app.Activity
-import android.util.Base64
+import android.content.pm.PackageManager
 import android.widget.Toast
 import com.alibaba.sdk.android.oss.model.GetObjectRequest
 import com.azhon.appupdate.listener.OnDownloadListener
 import com.azhon.appupdate.manager.DownloadManager
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.App
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
@@ -16,10 +17,29 @@ import com.sjianjun.reader.utils.*
 import org.json.JSONObject
 import sjj.alog.Log
 import java.io.File
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
+
 enum class Channels {
+    PGY {
+        override suspend fun getReleaseInfo(): ReleasesInfo {
+            val metaData = App.app.packageManager.getApplicationInfo(
+                App.app.packageName, PackageManager.GET_META_DATA
+            )
+            val _api_key = AppInfoUtil.metaData("PGYER_API_KEY")
+            val token = AppInfoUtil.metaData("PGYER_FRONTJS_KEY")
+            val url =
+                "https://www.pgyer.com/apiv2/app/check?_api_key=${_api_key}&token=${token}&buildVersion=${AppInfoUtil.versionCode()}"
+            val info = JSONObject(http.get(url).body).getJSONObject("data")
+
+            val releasesInfo = ReleasesInfo()
+            releasesInfo.channel = name
+            releasesInfo.lastVersion = info.getString("buildVersion")
+            releasesInfo.updateContent = info.getString("buildUpdateDescription")
+            releasesInfo.downloadApkUrl = info.getString("downloadURL")
+            return releasesInfo
+        }
+    },
     OSS {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             val oss = OssUtil.getOSSClient()
@@ -62,18 +82,27 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
     ) {
         return@withIo
     }
-    var releasesInfo: ReleasesInfo? = null
+    val releasesInfoMap = mutableMapOf<Channels, ReleasesInfo>()
+
     for (ch in Channels.values()) {
         try {
-            releasesInfo = Channels.values()[globalConfig.downloadChannel].getReleaseInfo()
-            globalConfig.releasesInfo = gson.toJson(releasesInfo)
-            break
+            val releasesInfo = ch.getReleaseInfo()
+            releasesInfoMap[ch] = releasesInfo
+            Log.i("$ch $releasesInfo")
+            if (releasesInfo.isNewVersion) {
+                break
+            }
         } catch (e: Exception) {
             Log.e("版本信息加载失败：${e.message}")
-            globalConfig.downloadChannel =
-                (globalConfig.downloadChannel + 1) % Channels.values().size
         }
     }
+    var newVersions = releasesInfoMap.filter { it.value.isNewVersion }
+    if (newVersions.isEmpty()) {
+        newVersions = releasesInfoMap
+    }
+    var releasesInfo = newVersions.toList().sortedBy { it.first.ordinal }.getOrNull(0)?.second
+    globalConfig.releasesInfo = gson.toJson(releasesInfo)
+    Log.i("版本更新信息：${releasesInfo}")
     if (releasesInfo == null && !fromUser) {
         val info = globalConfig.releasesInfo
         if (info != null) {
@@ -95,7 +124,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
             apkName("reader-${releasesInfo.lastVersion}.apk")
             smallIcon(R.mipmap.ic_xue_xi)
             //设置了此参数，那么内部会自动判断是否需要显示更新对话框，否则需要自己判断是否需要更新
-            apkVersionCode(BuildConfig.VERSION_CODE + 100)
+            apkVersionCode((AppInfoUtil.versionCode() + 100).toInt())
             //同时下面三个参数也必须要设置
             apkVersionName(releasesInfo.lastVersion!!)
             apkDescription(releasesInfo.updateContent!!)
@@ -112,8 +141,6 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
                 override fun error(e: Throwable) {
                     toast("APK下载失败：${e.message}")
                     //下载失败更换下载渠道
-                    globalConfig.downloadChannel =
-                        (globalConfig.downloadChannel + 1) % Channels.values().size
                 }
 
                 override fun start() {

@@ -119,12 +119,12 @@ object BookSourceManager {
             val local = allJs.find { it.id == s.id }
             local == null
         }
-        if (updates.isEmpty() || newSource.isEmpty()) {
-//            return@withIo
+        if (updates.isEmpty() && newSource.isEmpty()) {
+            return@withIo
         }
         saveJs(*updates.toTypedArray(), *newSource.toTypedArray())
 
-        toast("书源：新增${newSource.size}个，更新${updates.size}", Toast.LENGTH_LONG)
+        toast("${sources.first().group}：新增${newSource.size}、更新${updates.size}", Toast.LENGTH_LONG)
     }
 
 }

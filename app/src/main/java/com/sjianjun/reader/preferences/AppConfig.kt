@@ -21,8 +21,6 @@ class AppConfig(val name: String) :
      */
     var releasesInfo by strPref("releasesInfo_new", null)
 
-    var downloadChannel by intPref("downloadChannel2", Channels.OSS.ordinal)
-
     /**
      * 上次检查更新的时间
      */
