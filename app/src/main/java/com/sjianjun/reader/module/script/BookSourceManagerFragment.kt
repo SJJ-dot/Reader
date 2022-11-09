@@ -130,10 +130,11 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 val view =
                     LayoutInflater.from(requireContext()).inflate<View>(R.layout.dialog_edit_text)
                 view.edit_view.apply {
-                    setFilterValues(globalConfig.bookSourceImportUrls)
+                    val urls = globalConfig.bookSourceImportUrls
+                    setFilterValues(urls)
                     delCallBack = {
-                        globalConfig.bookSourceImportUrls.remove(it)
-                        globalConfig.bookSourceImportUrls = globalConfig.bookSourceImportUrls
+                        urls.remove(it)
+                        globalConfig.bookSourceImportUrls = urls
                     }
                 }
                 MaterialAlertDialogBuilder(requireContext())
@@ -141,11 +142,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     .setView(view)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
                         val url = view.edit_view.text.toString()
-                        globalConfig.bookSourceImportUrls.removeAll(listOf(url))
+                        val urls = globalConfig.bookSourceImportUrls
+                        urls.remove(url)
                         if (url.isNotBlank()) {
-                            globalConfig.bookSourceImportUrls.add(url)
+                            urls.add(url)
                         }
-                        globalConfig.bookSourceImportUrls = globalConfig.bookSourceImportUrls
+                        globalConfig.bookSourceImportUrls = urls
                         view.edit_view.hideKeyboard()
                         launch {
                             try {

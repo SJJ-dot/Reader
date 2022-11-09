@@ -4,10 +4,11 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.module.update.Channels
 import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import com.tencent.mmkv.MMKV
-import java.util.UUID
+import java.util.*
 
 val globalConfig by lazy { AppConfig("default") }
 
@@ -60,19 +61,19 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme = intLivedata("lastLightTheme")
 
-    private var bookSourceImportUrlsField by dataPref(
-        "bookSourceImportUrl2", mutableListOf<String>(URL_BOOK_SOURCE_DEF)
-    )
-
-    var bookSourceImportUrls: MutableList<String> = bookSourceImportUrlsField
+    var bookSourceImportUrls: MutableList<String>
         set(value) {
-            bookSourceImportUrlsField = value
+            edit {
+                putString("bookSourceImportUrl2", gson.toJson(value))
+            }
         }
         get() {
-            if (field.isEmpty()) {
-                field.add(URL_BOOK_SOURCE_DEF)
+            val urlsStr = getString("bookSourceImportUrl2", null)
+            val urls = gson.fromJson<MutableList<String>>(urlsStr)
+            if (urls.isNullOrEmpty()) {
+                return mutableListOf(URL_BOOK_SOURCE_DEF)
             }
-            return field
+            return urls
         }
     var lastAutoImportTime by longPref("lastAutoImportTime", 0)
 
