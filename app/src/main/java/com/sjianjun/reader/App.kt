@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate
-import com.pgyer.pgyersdk.PgyerSDKManager
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.AppDirUtil
@@ -25,7 +24,6 @@ class App : Application() {
         MMKV.initialize(this)
         importSharedPreferences()
         handleDefaultException(this)
-        initPagerSdk(this)
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
         Config.getDefaultConfig().apply {
@@ -41,13 +39,6 @@ class App : Application() {
             Log.i("APP启动，已有权限重新初始化")
             AppDirUtil.init(this)
         }
-    }
-
-    private fun initPagerSdk(application: Application){
-        PgyerSDKManager
-            .Init()
-            .setContext(application)
-            .start()
     }
 
     private fun importSharedPreferences() {

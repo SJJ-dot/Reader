@@ -39,7 +39,6 @@ allprojects {
         maven {url 'https://maven.aliyun.com/repository/google/'}
         maven {url 'https://maven.aliyun.com/repository/central/'}
         maven {url 'https://maven.aliyun.com/repository/gradle-plugin/'}
-        maven { url "https://frontjs-static.pgyer.com/dist/sdk/pgyersdk" }
         google()
         maven { url "https://gitee.com/SJJ-dot/repo/raw/master" }
         mavenCentral()

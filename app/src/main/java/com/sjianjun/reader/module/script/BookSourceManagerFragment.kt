@@ -141,7 +141,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     .setView(view)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
                         val url = view.edit_view.text.toString()
-                        globalConfig.bookSourceImportUrls.remove(url)
+                        globalConfig.bookSourceImportUrls.removeAll(listOf(url))
                         if (url.isNotBlank()) {
                             globalConfig.bookSourceImportUrls.add(url)
                         }

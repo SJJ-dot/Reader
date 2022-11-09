@@ -20,13 +20,14 @@
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_xue_xi"
         android:label="${app_name}"
+        android:requestLegacyExternalStorage="true"
         android:theme="@style/AppTheme.DayNight"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true"
         tools:replace="android:label">
         <activity android:name=".module.script.EditJavaScriptActivity" />
-        <activity android:name=".module.reader.activity.BookReaderActivity"
-            android:launchMode="singleTask"/>
+        <activity
+            android:name=".module.reader.activity.BookReaderActivity"
+            android:launchMode="singleTask" />
 
         <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
@@ -37,21 +38,11 @@
         <meta-data
             android:name="notch.config"
             android:value="portrait|landscape" />
-        <meta-data
-            android:name="PGYER_API_KEY"
-            android:value="fbdcc7e3fea0c654fed879db614f9031"/>
-        <meta-data
-            android:name="PGYER_FRONTJS_KEY"
-            android:value="32c53fd779044ade5f832f8cb57d37f7"/>
-        <!-- 设置fps阈值 -->
-        <meta-data
-            android:name="PGYER_FPS_THRESHOLD"
-            android:value="1"/>
 
         <activity
-            android:exported="true"
             android:name=".module.main.MainActivity"
-            android:autoRemoveFromRecents="false">
+            android:autoRemoveFromRecents="false"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -59,8 +50,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:exported="true"
             android:name=".module.bookcity.QQAuthLoginReceiveActivity"
+            android:exported="true"
             android:launchMode="singleInstance"
             android:theme="@style/translucent">
             <intent-filter>
