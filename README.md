@@ -7,6 +7,10 @@
 ## 1.0.0
 完善书源管理功能，支持导入自定义的网络书源
 
+## 体验APP下载
+
+<img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
+
 ## 书源相关
 默认书源导入链接：
 [https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json)
