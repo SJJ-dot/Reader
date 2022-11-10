@@ -80,3 +80,6 @@
 -keep public class com.sjianjun.reader.R$*{
 public static final int *;
 }
+
+-keep class com.pgyer.pgyersdk.** { *; }
+-keep class com.pgyer.pgyersdk.**$* { *; }

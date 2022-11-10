@@ -185,4 +185,5 @@ dependencies {
     implementation  'com.umeng.umsdk:common:9.5.2'// (必选)
     implementation  'com.umeng.umsdk:asms:1.6.3'// 必选
     implementation  'com.umeng.umsdk:abtest:1.0.1'//使用U-App中ABTest能力，可选
+    implementation 'com.pgyer:analytics:4.3.2'
 }
