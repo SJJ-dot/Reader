@@ -73,12 +73,7 @@ enum class Channels {
 
 }
 
-suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
-    if (!fromUser && System.currentTimeMillis() - globalConfig.lastCheckUpdateTime <
-        TimeUnit.MINUTES.toMillis(30)
-    ) {
-        return@withIo
-    }
+suspend fun checkUpdate(ativity: Activity) = withIo {
     val releasesInfoMap = mutableMapOf<Channels, ReleasesInfo>()
 
     for (ch in Channels.values()) {
@@ -99,21 +94,18 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
     }
     var releasesInfo = newVersions.toList().sortedBy { it.first.ordinal }.getOrNull(0)?.second
     globalConfig.releasesInfo = gson.toJson(releasesInfo)
-    Log.i("版本更新信息：${releasesInfo}")
-    if (releasesInfo == null && !fromUser) {
+
+    if (releasesInfo == null) {
         val info = globalConfig.releasesInfo
         if (info != null) {
             releasesInfo = gson.fromJson<ReleasesInfo>(info)!!
         }
     }
+    Log.i("版本更新信息：${releasesInfo}")
     if (releasesInfo == null) {
-        if (fromUser) {
-            toast("版本信息加载失败", Toast.LENGTH_LONG)
-        }
+        toast("版本信息加载失败", Toast.LENGTH_LONG)
         return@withIo
     }
-    Log.i(releasesInfo)
-    globalConfig.lastCheckUpdateTime = System.currentTimeMillis()
 
     if (releasesInfo.isNewVersion) {
         val manager = DownloadManager.Builder(ativity).run {
@@ -148,9 +140,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = false) = withIo {
         }
         manager.download()
     } else {
-        if (fromUser) {
-            toast("当前已经是最新版本", Toast.LENGTH_LONG)
-        }
+        toast("当前已经是最新版本", Toast.LENGTH_LONG)
     }
 
 

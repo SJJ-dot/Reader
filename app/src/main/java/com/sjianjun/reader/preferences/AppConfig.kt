@@ -22,11 +22,6 @@ class AppConfig(val name: String) :
      */
     var releasesInfo by strPref("releasesInfo_new", null)
 
-    /**
-     * 上次检查更新的时间
-     */
-    var lastCheckUpdateTime by longPref("lastCheckUpdateTime", 0)
-
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
 
     val qqAuthLoginUri = MutableLiveData<Uri>()

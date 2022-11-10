@@ -24,7 +24,7 @@ class AboutFragment : BaseAsyncFragment() {
         declare.text = getString(R.string.about_app, URL_REPO)
         versionCode.setOnClickListener {
             launch(singleCoroutineKey = "checkUpdate") {
-                checkUpdate(requireActivity(), true)
+                checkUpdate(requireActivity())
                 setVersionInfo()
                 setCode()
             }
