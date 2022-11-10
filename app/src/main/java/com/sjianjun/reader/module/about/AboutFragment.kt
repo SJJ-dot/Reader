@@ -75,7 +75,7 @@ class AboutFragment : BaseAsyncFragment() {
     private fun setVersionInfo() {
 
         val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-        if (releaseInfo?.isNewVersion == true) {
+        if (releaseInfo?.isUpgradeable() == true) {
             versionCode.text =
                 "当前版本：${AppInfoUtil.versionName()}->${releaseInfo.lastVersion}"
         } else {

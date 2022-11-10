@@ -1,23 +1,21 @@
 package com.sjianjun.reader.module.update
 
 import android.app.Activity
-import android.content.pm.PackageManager
 import android.widget.Toast
 import com.alibaba.sdk.android.oss.model.GetObjectRequest
 import com.azhon.appupdate.listener.OnDownloadListener
 import com.azhon.appupdate.manager.DownloadManager
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.App
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import org.json.JSONObject
 import sjj.alog.Log
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 
 enum class Channels {
@@ -73,41 +71,45 @@ enum class Channels {
 
 }
 
-suspend fun checkUpdate(ativity: Activity) = withIo {
-    val releasesInfoMap = mutableMapOf<Channels, ReleasesInfo>()
-
-    for (ch in Channels.values()) {
-        try {
-            val releasesInfo = ch.getReleaseInfo()
-            releasesInfoMap[ch] = releasesInfo
-            Log.i("$ch $releasesInfo")
-            if (releasesInfo.isNewVersion) {
-                break
+suspend fun getReleaseInfo(): ReleasesInfo? = withIo {
+    val awaitAll = Channels.values().map {
+        async {
+            try {
+                it to it.getReleaseInfo()
+            } catch (e: Exception) {
+                Log.i("版本信息加载失败：${it}", e)
+                null
             }
-        } catch (e: Exception) {
-            Log.e("版本信息加载失败：${e.message}")
         }
-    }
-    var newVersions = releasesInfoMap.filter { it.value.isNewVersion }
-    if (newVersions.isEmpty()) {
-        newVersions = releasesInfoMap
-    }
-    var releasesInfo = newVersions.toList().sortedBy { it.first.ordinal }.getOrNull(0)?.second
-    globalConfig.releasesInfo = gson.toJson(releasesInfo)
+    }.awaitAll().filterNotNull()
 
-    if (releasesInfo == null) {
-        val info = globalConfig.releasesInfo
-        if (info != null) {
-            releasesInfo = gson.fromJson<ReleasesInfo>(info)!!
+    val list = awaitAll.sortedWith(Comparator { o1, o2 ->
+        val compareTo = o1.second.compareTo(o2.second)
+        if (compareTo == 0) {
+            return@Comparator o1.first.compareTo(o2.first)
+        }
+        return@Comparator -compareTo
+    })
+    return@withIo list.firstOrNull()?.second
+}
+
+suspend fun checkUpdate(ativity: Activity) = withIo {
+    var releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+    if (releasesInfo?.isUpgradeable() != true) {
+        val netInfo = getReleaseInfo()
+        if (netInfo != null) {
+            if (releasesInfo == null || netInfo > releasesInfo) {
+                releasesInfo = netInfo
+                globalConfig.releasesInfo = gson.toJson(netInfo)
+            }
         }
     }
     Log.i("版本更新信息：${releasesInfo}")
     if (releasesInfo == null) {
-        toast("版本信息加载失败", Toast.LENGTH_LONG)
+        toast("版本信息加载失败", Toast.LENGTH_SHORT)
         return@withIo
     }
-
-    if (releasesInfo.isNewVersion) {
+    if (releasesInfo.isUpgradeable()) {
         val manager = DownloadManager.Builder(ativity).run {
             apkUrl(releasesInfo.downloadApkUrl!!)
             apkName("reader-${releasesInfo.lastVersion}.apk")
@@ -140,8 +142,6 @@ suspend fun checkUpdate(ativity: Activity) = withIo {
         }
         manager.download()
     } else {
-        toast("当前已经是最新版本", Toast.LENGTH_LONG)
+        toast("当前已经是最新版本", Toast.LENGTH_SHORT)
     }
-
-
 }
