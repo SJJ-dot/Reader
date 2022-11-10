@@ -12,6 +12,7 @@
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
 ## 书源相关
+
 默认书源导入链接：
 [https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json)
 
@@ -19,6 +20,7 @@
 [https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
 
 ### 书源规则参考 
+想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。
 
 [默认书源格式参考地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
 
