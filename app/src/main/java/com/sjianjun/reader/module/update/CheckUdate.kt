@@ -54,16 +54,22 @@ enum class Channels {
     },
     Github {
         override suspend fun getReleaseInfo(): ReleasesInfo {
-            val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
-            val info = JSONObject(http.get(url).body)
+            try {
+                val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
+                val info = JSONObject(http.get(url).body)
 
-            val releasesInfo = ReleasesInfo()
-            releasesInfo.channel = name
-            releasesInfo.lastVersion = info.getString("tag_name")
-            releasesInfo.updateContent = info.getString("body")
-            releasesInfo.downloadApkUrl =
-                info.getJSONArray("assets").getJSONObject(0).getString("browser_download_url")
-            return releasesInfo
+                val releasesInfo = ReleasesInfo()
+                releasesInfo.channel = name
+                releasesInfo.lastVersion = info.getString("tag_name")
+                releasesInfo.updateContent = info.getString("body")
+                releasesInfo.downloadApkUrl =
+                    info.getJSONArray("assets").getJSONObject(0).getString("browser_download_url")
+                globalConfig.releasesInfoGithub = releasesInfo
+                return releasesInfo
+            } catch (e: Exception) {
+                Log.e("GitHub 版本信息加载失败")
+                return globalConfig.releasesInfoGithub!!
+            }
         }
     };
 
@@ -94,16 +100,13 @@ suspend fun getReleaseInfo(): ReleasesInfo? = withIo {
 }
 
 suspend fun checkUpdate(ativity: Activity) = withIo {
-    var releasesInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
-    if (releasesInfo?.isUpgradeable() != true) {
-        val netInfo = getReleaseInfo()
-        if (netInfo != null) {
-            if (releasesInfo == null || netInfo > releasesInfo) {
-                releasesInfo = netInfo
-                globalConfig.releasesInfo = gson.toJson(netInfo)
-            }
-        }
+    var releasesInfo = getReleaseInfo()
+    if (releasesInfo == null) {
+        releasesInfo = globalConfig.releasesInfo
+    } else {
+        globalConfig.releasesInfo = releasesInfo
     }
+
     Log.i("版本更新信息：${releasesInfo}")
     if (releasesInfo == null) {
         toast("版本信息加载失败", Toast.LENGTH_SHORT)

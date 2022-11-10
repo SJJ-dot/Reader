@@ -74,7 +74,7 @@ class AboutFragment : BaseAsyncFragment() {
 
     private fun setVersionInfo() {
 
-        val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+        val releaseInfo = globalConfig.releasesInfo
         if (releaseInfo?.isUpgradeable() == true) {
             versionCode.text =
                 "当前版本：${AppInfoUtil.versionName()}->${releaseInfo.lastVersion}"
@@ -84,7 +84,7 @@ class AboutFragment : BaseAsyncFragment() {
     }
 
     private fun downloadUrl(): String {
-        val releaseInfo = gson.fromJson<ReleasesInfo>(globalConfig.releasesInfo)
+        val releaseInfo = globalConfig.releasesInfo
         if (releaseInfo != null) {
             return releaseInfo.downloadApkUrl!!
         }

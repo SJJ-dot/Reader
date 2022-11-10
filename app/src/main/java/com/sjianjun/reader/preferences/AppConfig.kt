@@ -4,9 +4,8 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
+import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
 import com.tencent.mmkv.MMKV
 import java.util.*
 
@@ -20,7 +19,8 @@ class AppConfig(val name: String) :
     /**
      * github 发布的版本信息
      */
-    var releasesInfo by strPref("releasesInfo_new", null)
+    var releasesInfo by dataPref<ReleasesInfo?>("releasesInfo_new222", null)
+    var releasesInfoGithub by dataPref<ReleasesInfo?>("releasesInfoGithub", null)
 
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
 
@@ -56,20 +56,16 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme = intLivedata("lastLightTheme")
 
-    var bookSourceImportUrls: MutableList<String>
-        set(value) {
-            edit {
-                putString("bookSourceImportUrl2", gson.toJson(value))
-            }
-        }
-        get() {
-            val urlsStr = getString("bookSourceImportUrl2", null)
-            val urls = gson.fromJson<MutableList<String>>(urlsStr)
-            if (urls.isNullOrEmpty()) {
-                return mutableListOf(URL_BOOK_SOURCE_DEF)
-            }
-            return urls
-        }
+    var bookSourceImportUrlsNet by dataPref(
+        "bookSourceImportUrlsNet",
+        listOf(URL_BOOK_SOURCE_DEF)
+    )
+
+    var bookSourceImportUrlsLoc by dataPref(
+        "bookSourceImportUrlsLoc",
+        mutableListOf<String>()
+    )
+
     var lastAutoImportTime by longPref("lastAutoImportTime", 0)
 
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")

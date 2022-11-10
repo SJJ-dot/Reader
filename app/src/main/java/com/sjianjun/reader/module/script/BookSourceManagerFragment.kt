@@ -130,29 +130,36 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 val view =
                     LayoutInflater.from(requireContext()).inflate<View>(R.layout.dialog_edit_text)
                 view.edit_view.apply {
-                    val urls = globalConfig.bookSourceImportUrls
-                    setFilterValues(urls)
+                    val allSource = mutableListOf<String>()
+                    globalConfig.bookSourceImportUrlsNet.forEach { allSource.add(it) }
+                    val urlsLoc = globalConfig.bookSourceImportUrlsLoc
+                    urlsLoc.forEach { allSource.add(it) }
+
+                    setFilterValues(allSource)
                     delCallBack = {
-                        urls.remove(it)
-                        globalConfig.bookSourceImportUrls = urls
+                        if (urlsLoc.remove(it)) {
+                            globalConfig.bookSourceImportUrlsLoc = urlsLoc
+                        }
                     }
                 }
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("书源导入")
                     .setView(view)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        val url = view.edit_view.text.toString()
-                        val urls = globalConfig.bookSourceImportUrls
-                        urls.remove(url)
-                        if (url.isNotBlank()) {
-                            urls.add(url)
+                        val url = view.edit_view.text.toString().trim()
+                        val urlsLoc = globalConfig.bookSourceImportUrlsLoc
+                        val urlsNet = globalConfig.bookSourceImportUrlsNet
+                        if (!urlsNet.contains(url)) {
+                            urlsLoc.remove(url)
+                            urlsLoc.add(url)
+                            globalConfig.bookSourceImportUrlsLoc = urlsLoc
                         }
-                        globalConfig.bookSourceImportUrls = urls
+
                         view.edit_view.hideKeyboard()
                         launch {
                             try {
                                 showSnackbar(recycle_view, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
-                                BookSourceManager.import(url)
+                                BookSourceManager.import(listOf(url))
                                 initData()
                                 showSnackbar(recycle_view, "书源导入成功")
                             } catch (e: Exception) {

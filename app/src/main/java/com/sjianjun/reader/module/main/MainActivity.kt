@@ -43,8 +43,10 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         launchIo {
             launchIo { checkUpdate(this@MainActivity) }
-            launchIo { BookSourceManager.autoImport() }
-            UMConfigure.init(application,UMConfigure.DEVICE_TYPE_PHONE,"")
+            launchIo {
+                BookSourceManager.autoImport()
+            }
+            UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
         }
         if (globalConfig.hasPermission) {
             XXPermissions.with(this)
