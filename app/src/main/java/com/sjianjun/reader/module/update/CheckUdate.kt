@@ -99,7 +99,7 @@ suspend fun getReleaseInfo(): ReleasesInfo? = withIo {
     return@withIo list.firstOrNull()?.second
 }
 
-suspend fun checkUpdate(ativity: Activity) = withIo {
+suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = true) = withIo {
     var releasesInfo = getReleaseInfo()
     if (releasesInfo == null) {
         releasesInfo = globalConfig.releasesInfo
@@ -145,6 +145,8 @@ suspend fun checkUpdate(ativity: Activity) = withIo {
         }
         manager.download()
     } else {
-        toast("当前已经是最新版本", Toast.LENGTH_SHORT)
+        if (fromUser) {
+            toast("当前已经是最新版本", Toast.LENGTH_SHORT)
+        }
     }
 }

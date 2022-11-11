@@ -42,7 +42,7 @@ class MainActivity : BaseActivity() {
         ActivityManger.finishSameType(this)
         super.onCreate(savedInstanceState)
         launchIo {
-            launchIo { checkUpdate(this@MainActivity) }
+            launchIo { checkUpdate(this@MainActivity, false) }
             launchIo {
                 BookSourceManager.autoImport()
             }
