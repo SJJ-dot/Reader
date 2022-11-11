@@ -11,7 +11,7 @@
 
 [Releases](https://github.com/SJJ-dot/Reader/releases)
 
-[蒲公英下载链接（最新）](https://www.pgyer.com/SJJ-dot-reader)
+[蒲公英扫码下载（最新）](https://www.pgyer.com/SJJ-dot-reader)
 
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
