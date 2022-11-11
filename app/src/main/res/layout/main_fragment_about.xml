@@ -40,6 +40,7 @@
         android:id="@+id/code"
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:src="@mipmap/ic_reader"
         app:layout_constraintBottom_toTopOf="@+id/download_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

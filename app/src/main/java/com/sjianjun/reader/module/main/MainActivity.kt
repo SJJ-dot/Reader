@@ -162,11 +162,11 @@ class MainActivity : BaseActivity() {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
             if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
-//                finishAfterTransition()
-                val intent = Intent()
-                intent.action = Intent.ACTION_MAIN
-                intent.addCategory(Intent.CATEGORY_HOME)
-                startActivity(intent)
+                finishAfterTransition()
+//                val intent = Intent()
+//                intent.action = Intent.ACTION_MAIN
+//                intent.addCategory(Intent.CATEGORY_HOME)
+//                startActivity(intent)
             } else {
                 super.onBackPressed()
             }

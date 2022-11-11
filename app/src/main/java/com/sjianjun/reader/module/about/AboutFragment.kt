@@ -26,14 +26,10 @@ class AboutFragment : BaseAsyncFragment() {
             launch(singleCoroutineKey = "checkUpdate") {
                 checkUpdate(requireActivity())
                 setVersionInfo()
-                setCode()
             }
         }
 
         setVersionInfo()
-
-        setCode()
-
         versionCode.performClick()
     }
 
@@ -47,7 +43,7 @@ class AboutFragment : BaseAsyncFragment() {
                 val sendIntent = Intent(Intent.ACTION_SEND)
                 sendIntent.putExtra(
                     Intent.EXTRA_TEXT,
-                    "小说app下载链接：${downloadUrl()}"
+                    "小说app下载链接：https://www.pgyer.com/SJJ-dot-reader"
                 )
 //                sendIntent.setClassName("com.tencent.mm","com.tencent.mm.ui.tools.ShareImgUI")
                 sendIntent.type = "text/plain"
@@ -59,19 +55,6 @@ class AboutFragment : BaseAsyncFragment() {
         }
     }
 
-    private fun setCode() {
-        //设置二维码
-        val image = ZXingUtils.createQRImage(
-            downloadUrl(),
-            150.dp2Px,
-            150.dp2Px,
-            R.color.dn_text_color_black.color(context),
-            R.color.dn_background.color(context)
-        )
-        code.setImageBitmap(image)
-
-    }
-
     private fun setVersionInfo() {
 
         val releaseInfo = globalConfig.releasesInfo
@@ -81,14 +64,6 @@ class AboutFragment : BaseAsyncFragment() {
         } else {
             versionCode.text = "当前版本：${AppInfoUtil.versionName()}"
         }
-    }
-
-    private fun downloadUrl(): String {
-        val releaseInfo = globalConfig.releasesInfo
-        if (releaseInfo != null) {
-            return releaseInfo.downloadApkUrl!!
-        }
-        return URL_RELEASE_DEF
     }
 
 }

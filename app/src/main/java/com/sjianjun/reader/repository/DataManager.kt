@@ -127,6 +127,7 @@ object DataManager {
                 chapter.bookId = book.id
                 chapter.index = index
             }
+            book.chapterList = chapterList
             book.isLoading = false
             book.error = null
             dao.updateBookDetails(bookDetails)
@@ -216,7 +217,11 @@ object DataManager {
         if (readingRecord.bookId == book.id) {
             return@withIo
         }
-
+        val lastChapter = getLastChapterByBookId(book.id).firstOrNull()
+        if (lastChapter == null) {
+            //获取最新章节失败，尝试重新加载书籍，如果还是加载失败就算了。不管怎样换源必须成功
+            reloadBookFromNet(book)
+        }
         val chapter =
             dao.getChapterByIndex(readingRecord.bookId, readingRecord.chapterIndex).first()
         var readChapter: Chapter? = null
@@ -237,10 +242,9 @@ object DataManager {
                 readChapter = dao.getChapterByIndex(book.id, chapter.index).first()
                     ?: dao.getLastChapterByBookId(book.id).first()
             }
-
         }
         readingRecord.bookId = book.id
-        readingRecord.chapterIndex = readChapter?.index ?: -1
+        readingRecord.chapterIndex = readChapter?.index ?: readingRecord.chapterIndex
         if (readingRecord.chapterIndex == -1) {
             readingRecord.offest = 0
         }
@@ -249,7 +253,6 @@ object DataManager {
 
     suspend fun getChapterContent(
         chapter: Chapter,
-        onlyLocal: Boolean,
         force: Boolean = false
     ): Chapter {
         withIo {
@@ -260,9 +263,6 @@ object DataManager {
                 if (chapter.content != null) {
                     return@withIo
                 }
-            }
-            if (onlyLocal) {
-                return@withIo
             }
 
             val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo

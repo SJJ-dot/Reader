@@ -3,197 +3,330 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="250dp"
-    android:background="@color/dn_background"
-    android:clickable="true"
-    android:focusable="true"
-    android:paddingTop="16dp"
-    android:paddingBottom="16dp">
+    android:layout_height="wrap_content"
+    android:background="@color/transparent">
 
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/barrier"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_begin="120dp" />
-
-    <TextView
-        android:id="@+id/brightness_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="亮度"
-        android:textColor="@color/dn_text_color_black"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <SeekBar
-        android:id="@+id/brightness_seek_bar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:max="255"
-        android:progressDrawable="@drawable/seekbar_track_material"
-        app:layout_constraintBottom_toBottomOf="@+id/brightness_text"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/barrier"
-        app:layout_constraintTop_toTopOf="@+id/brightness_text"
-        tools:progress="50" />
-
-
-    <TextView
-        android:id="@+id/font_size"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="字号"
-        android:textColor="@color/dn_text_color_black"
-        app:layout_constraintStart_toStartOf="@id/brightness_text"
-        app:layout_constraintTop_toBottomOf="@+id/brightness_text" />
-
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/font_decrease"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
-        android:layout_marginStart="16dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="A-"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/font_size"
-        app:layout_constraintEnd_toStartOf="@+id/font_text"
-        app:layout_constraintHorizontal_chainStyle="spread_inside"
-        app:layout_constraintStart_toEndOf="@+id/barrier"
-        app:layout_constraintTop_toTopOf="@+id/font_size"
-        app:stv_corner="5dp"
-        app:stv_solid="@color/dn_background"
-        app:stv_stroke_color="@color/dn_color_primary"
-        app:stv_stroke_width="1dp" />
-
-    <TextView
-        android:id="@+id/font_text"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
-        android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="22"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/font_size"
-        app:layout_constraintEnd_toStartOf="@+id/font_increase"
-        app:layout_constraintStart_toEndOf="@+id/font_decrease"
-        app:layout_constraintTop_toTopOf="@+id/font_size" />
-
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/font_increase"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
+    <ImageButton
+        android:id="@+id/day_night"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="A+"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/font_size"
+        android:background="@color/transparent"
+        android:padding="8dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/ic_theme_dark_24px"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/font_text"
-        app:layout_constraintTop_toTopOf="@+id/font_size"
-        app:stv_corner="5dp"
-        app:stv_solid="@color/dn_background"
-        app:stv_stroke_color="@color/dn_color_primary"
-        app:stv_stroke_width="1dp" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/dn_text_color_black" />
 
-    <TextView
-        android:id="@+id/line_spacing"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="行间距"
-        android:textColor="@color/dn_text_color_black"
-        app:layout_constraintStart_toStartOf="@id/brightness_text"
-        app:layout_constraintTop_toBottomOf="@+id/font_size" />
-
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/line_spacing_decrease"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
-        android:layout_marginStart="16dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="-0.1"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
-        app:layout_constraintEnd_toStartOf="@+id/line_spacing_text"
-        app:layout_constraintHorizontal_chainStyle="spread_inside"
-        app:layout_constraintStart_toEndOf="@+id/barrier"
-        app:layout_constraintTop_toTopOf="@+id/line_spacing"
-        app:stv_corner="5dp"
-        app:stv_solid="@color/dn_background"
-        app:stv_stroke_color="@color/dn_color_primary"
-        app:stv_stroke_width="1dp" />
-
-    <TextView
-        android:id="@+id/line_spacing_text"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
-        android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="1.5"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
-        app:layout_constraintEnd_toStartOf="@+id/line_spacing_increase"
-        app:layout_constraintStart_toEndOf="@+id/line_spacing_decrease"
-        app:layout_constraintTop_toTopOf="@+id/line_spacing" />
-
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/line_spacing_increase"
-        android:layout_width="wrap_content"
-        android:layout_height="42dp"
-        android:layout_marginEnd="16dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="+0.1"
-        android:textColor="@color/dn_text_color_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/line_spacing_text"
-        app:layout_constraintTop_toTopOf="@+id/line_spacing"
-        app:stv_corner="5dp"
-        app:stv_solid="@color/dn_background"
-        app:stv_stroke_color="@color/dn_color_primary"
-        app:stv_stroke_width="1dp" />
+        android:background="@color/dn_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/day_night">
 
 
-    <TextView
-        android:id="@+id/page_style"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="样式"
-        android:textColor="@color/dn_text_color_black"
-        app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
-        app:layout_constraintStart_toStartOf="@id/brightness_text"
-        app:layout_constraintTop_toTopOf="@+id/page_style_list" />
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/barrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_begin="80dp" />
+
+        <TextView
+            android:id="@+id/brightness_text"
+            android:layout_width="64dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="center"
+            android:text="亮度"
+            android:textColor="@color/dn_text_color_black"
+            app:layout_constraintEnd_toStartOf="@+id/barrier"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <SeekBar
+            android:id="@+id/brightness_seek_bar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:max="255"
+            android:progressDrawable="@drawable/seekbar_track_material"
+            app:layout_constraintBottom_toBottomOf="@+id/brightness_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/barrier"
+            app:layout_constraintTop_toTopOf="@+id/brightness_text"
+            tools:progress="50" />
 
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/page_style_list"
-        android:layout_width="0dp"
-        android:layout_height="58dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:orientation="horizontal"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/barrier"
-        app:layout_constraintTop_toBottomOf="@+id/line_spacing_decrease"
-        tools:listitem="@layout/reader_item_page_style" />
+        <TextView
+            android:id="@+id/font_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:text="字号"
+            android:textColor="@color/dn_text_color_black"
+            app:layout_constraintEnd_toEndOf="@+id/brightness_text"
+            app:layout_constraintStart_toStartOf="@id/brightness_text"
+            app:layout_constraintTop_toBottomOf="@+id/brightness_text" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/font_decrease"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="A-"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/font_size"
+            app:layout_constraintEnd_toStartOf="@+id/font_text"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintStart_toEndOf="@+id/barrier"
+            app:layout_constraintTop_toTopOf="@+id/font_size"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <TextView
+            android:id="@+id/font_text"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="22"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="20dp"
+            app:layout_constraintBottom_toBottomOf="@+id/font_size"
+            app:layout_constraintEnd_toStartOf="@+id/font_increase"
+            app:layout_constraintStart_toEndOf="@+id/font_decrease"
+            app:layout_constraintTop_toTopOf="@+id/font_size" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/font_increase"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="A+"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/font_size"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/font_text"
+            app:layout_constraintTop_toTopOf="@+id/font_size"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <TextView
+            android:id="@+id/line_spacing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:text="行间距"
+            android:textColor="@color/dn_text_color_black"
+            app:layout_constraintEnd_toEndOf="@+id/brightness_text"
+            app:layout_constraintStart_toStartOf="@id/brightness_text"
+            app:layout_constraintTop_toBottomOf="@+id/font_size" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/line_spacing_decrease"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="-0.1"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
+            app:layout_constraintEnd_toStartOf="@+id/line_spacing_text"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintStart_toEndOf="@+id/barrier"
+            app:layout_constraintTop_toTopOf="@+id/line_spacing"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <TextView
+            android:id="@+id/line_spacing_text"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="1.5"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="20dp"
+            app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
+            app:layout_constraintEnd_toStartOf="@+id/line_spacing_increase"
+            app:layout_constraintStart_toEndOf="@+id/line_spacing_decrease"
+            app:layout_constraintTop_toTopOf="@+id/line_spacing" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/line_spacing_increase"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="+0.1"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/line_spacing"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/line_spacing_text"
+            app:layout_constraintTop_toTopOf="@+id/line_spacing"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+
+        <TextView
+            android:id="@+id/page_style"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="样式"
+            android:textColor="@color/dn_text_color_black"
+            app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
+            app:layout_constraintEnd_toEndOf="@+id/brightness_text"
+            app:layout_constraintStart_toStartOf="@id/brightness_text"
+            app:layout_constraintTop_toTopOf="@+id/page_style_list" />
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/page_style_list"
+            android:layout_width="0dp"
+            android:layout_height="58dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/barrier"
+            app:layout_constraintTop_toBottomOf="@+id/line_spacing_decrease"
+            tools:listitem="@layout/reader_item_page_style" />
+
+        <TextView
+            android:id="@+id/page_model"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="翻页模式"
+            android:textColor="@color/dn_text_color_black"
+            app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+            app:layout_constraintEnd_toEndOf="@+id/brightness_text"
+            app:layout_constraintStart_toStartOf="@id/brightness_text"
+            app:layout_constraintTop_toTopOf="@+id/page_model_simulation" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_model_simulation"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center"
+            android:text="仿真"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/page_model_cover"
+            app:layout_constraintStart_toEndOf="@+id/barrier"
+            app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_model_cover"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="覆盖"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/page_model_slide"
+            app:layout_constraintStart_toEndOf="@+id/page_model_simulation"
+            app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_model_slide"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="平移"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/page_model_scroll"
+            app:layout_constraintStart_toEndOf="@+id/page_model_cover"
+            app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_model_scroll"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="滚动"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/page_model_none"
+            app:layout_constraintStart_toEndOf="@+id/page_model_slide"
+            app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_model_none"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:text="无"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/page_model_scroll"
+            app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -11,6 +11,9 @@ class ReadingRecord(
 ) {
     var chapterIndex = 0
 
+    /**
+     * 原来没有页数用这个值当作页数
+     */
     var offest = 0
 
     var isEnd = false

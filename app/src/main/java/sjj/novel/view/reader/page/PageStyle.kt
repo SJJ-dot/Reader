@@ -1,16 +1,22 @@
-package com.sjianjun.reader.module.reader.style
+package sjj.novel.view.reader.page
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Shader
+import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import androidx.annotation.ColorInt
 import com.sjianjun.reader.R
-import com.sjianjun.reader.utils.color
+import sjj.alog.Log
 import java.lang.ref.WeakReference
+
+fun Int.color(context: Context): Int {
+    return context.resources.getColor(this, null)
+}
+
+val String.color
+    get() = Color.parseColor(this)
 
 /*
  * Created by shen jian jun on 2020-07-13
@@ -23,7 +29,7 @@ enum class PageStyle {
         }
 
         override fun getSpacerColor(context: Context): Int {
-            return R.color.spacer_color.color(context)
+            return "#55424242".color
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -304,6 +310,10 @@ enum class PageStyle {
         }
     };
 
+    fun getBg(context: Context): BgDrawable {
+        return BgDrawable(getBackground(context))
+    }
+
     abstract fun getBackground(context: Context): Drawable
 
     private var _bitmap: WeakReference<Bitmap>? = null
@@ -335,8 +345,33 @@ enum class PageStyle {
     abstract fun getChapterContentColor(context: Context): Int
 
     companion object {
+        @JvmStatic
         fun getStyle(ordinal: Int): PageStyle {
             return values().getOrNull(ordinal) ?: STYLE_0
+        }
+
+        @JvmField
+        val BG_def = PageStyle.STYLE_1
+    }
+
+    class BgDrawable(private val drawable: Drawable) : Drawable() {
+        private val rect: Rect = Rect()
+        override fun draw(canvas: Canvas) {
+            canvas.getClipBounds(rect)
+            drawable.bounds = rect
+            drawable.draw(canvas)
+        }
+
+        override fun setAlpha(alpha: Int) {
+            drawable.alpha = alpha
+        }
+
+        override fun setColorFilter(colorFilter: ColorFilter?) {
+            drawable.colorFilter = colorFilter
+        }
+
+        override fun getOpacity(): Int {
+            return drawable.opacity
         }
     }
 }

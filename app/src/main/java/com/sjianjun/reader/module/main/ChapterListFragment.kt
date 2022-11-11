@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import sjj.alog.Log
 
 
 /**
@@ -57,7 +58,8 @@ class ChapterListFragment : BaseFragment() {
                         }
                 }
             }.debounce(300).collectLatest { (chapterList, readingRecord) ->
-                val change = adapter.readingChapterIndex != readingRecord?.chapterIndex
+                var change = adapter.readingChapterIndex != readingRecord?.chapterIndex
+                change = change || (adapter.data.size != chapterList.size)
                 adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
                 adapter.data.clear()
                 adapter.data.addAll(chapterList)

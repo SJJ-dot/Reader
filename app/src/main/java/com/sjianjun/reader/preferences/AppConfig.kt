@@ -39,12 +39,17 @@ class AppConfig(val name: String) :
     /**
      * 阅读器 内容字体行间距
      */
-    val readerLineSpacing = floatLivedata("readerLineSpacing", 1.5f)
+    val readerLineSpacing = floatLivedata("readerLineSpacing2", 0.5f)
 
     /**
      * 阅读器 页面样式 位置索引
      */
-    val readerPageStyle = intLivedata("readerPageStyle")
+    val readerPageStyle = intLivedata("readerPageStyle", 1)
+
+    /**
+     * 阅读器 页面样式 位置索引
+     */
+    val readerPageMode = intLivedata("readerPageMode", 0)
 
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
