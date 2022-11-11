@@ -21,8 +21,8 @@ import java.io.File
 enum class Channels {
     PGY {
         override suspend fun getReleaseInfo(): ReleasesInfo {
-            val _api_key = AppInfoUtil.metaData("PGYER_API_KEY")
-            val token = AppInfoUtil.metaData("PGYER_FRONTJS_KEY")
+            val _api_key = "fbdcc7e3fea0c654fed879db614f9031"
+            val token = "32c53fd779044ade5f832f8cb57d37f7"
             val url =
                 "https://www.pgyer.com/apiv2/app/check?_api_key=${_api_key}&token=${token}&buildVersion=${AppInfoUtil.versionCode()}"
             val info = JSONObject(http.get(url).body).getJSONObject("data")
