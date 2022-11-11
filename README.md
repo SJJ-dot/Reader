@@ -8,7 +8,8 @@
 完善书源管理功能，支持导入自定义的网络书源
 
 ## 体验APP下载
-
+[Releases](https://github.com/SJJ-dot/Reader/releases)
+[蒲公英下载链接（最新）](https://www.pgyer.com/SJJ-dot-reader)
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
 ## 书源相关
