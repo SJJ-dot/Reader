@@ -7,6 +7,9 @@
 ## 1.0.0
 完善书源管理功能，支持导入自定义的网络书源
 
+## 1.2.5
+增加仿真翻页等常规翻页模式
+
 ## 体验APP下载
 
 [Releases](https://github.com/SJJ-dot/Reader/releases)
