@@ -93,14 +93,18 @@ class BookReaderActivity : BaseActivity() {
     private fun initSettingMenu() {
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {
+                if (mPageLoader.pageStatus == STATUS_LOADING) {
+                    return@launch
+                }
+                mPageLoader.pageStatus = STATUS_LOADING
                 val curChapter = mPageLoader.curChapter
                 val txtChapter =
                     book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
-                showSnackbar(content, "正在加载中，请稍候……")
+                toast("正在加载中，请稍候……")
                 val chapter = DataManager.getChapterContent(txtChapter, true)
                 curChapter.content = chapter.content?.format().toString()
                 mPageLoader.refreshChapter(curChapter)
-                showSnackbar(content, "加载完成")
+                toast("加载完成")
             }
         }
 

@@ -485,6 +485,11 @@ public abstract class PageLoader {
         return mStatus;
     }
 
+    public void setPageStatus(int status) {
+        mStatus = status;
+        mPageView.drawCurPage(false);
+    }
+
     /**
      * 获取书籍信息
      *
