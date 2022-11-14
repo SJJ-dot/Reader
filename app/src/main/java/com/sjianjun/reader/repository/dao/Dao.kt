@@ -163,6 +163,7 @@ interface Dao {
     @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent where bookId=:bookId)")
     fun updateBookChapterIsLoaded(bookId: String)
 
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<ChapterContent>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
 

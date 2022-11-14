@@ -10,13 +10,10 @@ import android.text.TextUtils;
 
 public class TxtChapter {
     //保存10章的章节内容 这里的10个字符串会导致内存泄漏。但不重要
-    private static String cacheBookId;
     private static final LruCache<String, String> contents = new LruCache<>(50);
 
-    public static void checkCache(String bookId) {
-        if (TextUtils.isEmpty(cacheBookId)||!bookId.equals(cacheBookId)) {
-            contents.evictAll();
-        }
+    public static void evictAll() {
+        contents.evictAll();
     }
     public int chapterIndex;
     //章节所属的小说(网络)
@@ -35,7 +32,6 @@ public class TxtChapter {
     }
 
     public void setContent(String content) {
-        cacheBookId = bookId;
         if (!TextUtils.isEmpty(content))
             contents.put(link, content);
     }

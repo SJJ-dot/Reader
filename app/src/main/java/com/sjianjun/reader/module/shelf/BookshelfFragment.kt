@@ -68,7 +68,7 @@ class BookshelfFragment : BaseFragment() {
         MaterialAlertDialogBuilder(requireActivity())
             .setTitle("欢迎使用本APP")
             .setMessage("首次使用APP,你可以：\n1、从左侧菜单进入书城选择一本书。\n2、还是从左侧菜单进入搜索页，搜索你想看的书籍。\n3、点击搜索结果即可开始阅读，书籍会被自动加入书架\n4、为防阅读记录丢失建议配置WebDav保存阅读记录")
-            .setPositiveButton(android.R.string.ok,null)
+            .setPositiveButton(android.R.string.ok, null)
             .show()
     }
 
@@ -81,16 +81,22 @@ class BookshelfFragment : BaseFragment() {
                 bookshelfUi.loading.max = bookNum
                 it.asFlow().flatMapMerge { book ->
                     combine(
-                        DataManager.getReadingRecord(book).map { record ->
-                            val id = record?.chapterIndex ?: return@map null
-                            DataManager.getChapterByIndex(record.bookId, id).first() to record
-                        },
+                        DataManager.getReadingRecord(book),
                         DataManager.getLastChapterByBookId(book.id)
-                    ) { readChapter, lastChapter ->
-                        val js = BookSourceManager.getBookBookSource(book.title, book.author)
-                        book.record = readChapter?.second
-                        book.readChapter = readChapter?.first
+                    ) { record, lastChapter ->
+                        book.record = record
+                        val chapter = DataManager.getChapterByIndex(
+                            record?.bookId ?: "",
+                            record?.chapterIndex ?: -1
+                        ).firstOrNull()
+                        book.readChapter = chapter
+                        if (chapter != null) {
+                            val content = DataManager.getChapterContent(chapter, -1)
+                            book.readingContentError = content.content?.contentError
+                        }
+
                         book.lastChapter = lastChapter
+                        val js = BookSourceManager.getBookBookSource(book.title, book.author)
                         book.javaScriptList = js
                         book.bookSource =
                             BookSourceManager.getBookSourceById(book.bookSourceId).firstOrNull()
@@ -248,7 +254,11 @@ class BookshelfFragment : BaseFragment() {
                         }
                     }
                 }
-                bvUnread.setHighlight(true)
+                if (book.readingContentError == true) {
+                    bvUnread.setHighlight(false)
+                } else {
+                    bvUnread.setHighlight(true)
+                }
                 if ((book.isLoading || book.unreadChapterCount <= 0)) {
                     visibleSet.invisible(bvUnread)
                 } else {

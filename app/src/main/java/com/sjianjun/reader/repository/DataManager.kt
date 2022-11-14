@@ -131,6 +131,13 @@ object DataManager {
             book.isLoading = false
             book.error = null
             dao.updateBookDetails(bookDetails)
+
+            val record = dao.getReadingRecord(book.title, book.author)
+            val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1).firstOrNull()
+            if (content?.contentError == true) {
+                chapterList[content.chapterIndex].content = content
+                getChapterContent(chapterList[content.chapterIndex], 1)
+            }
         } catch (e: Throwable) {
             Log.i("${script?.id}加载书籍详情：$book", e)
             book.isLoading = false
@@ -251,27 +258,38 @@ object DataManager {
         setReadingRecord(readingRecord)
     }
 
+    /**
+     * -1 local ,0 normal,1 force
+     */
     suspend fun getChapterContent(
         chapter: Chapter,
-        force: Boolean = false
+        force: Int = 0
     ): Chapter {
         withIo {
-            if (chapter.isLoaded && !force) {
+            if (chapter.isLoaded) {
                 val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index).first()
                 chapter.content = chapterContent
-                chapter.content?.format()
-                if (chapter.content != null) {
+                if (force != 1 && chapter.content != null && chapter.content?.contentError != true) {
                     return@withIo
                 }
+            }
+
+            if (force == -1) {
+                return@withIo
             }
 
             val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo
             val content = js.getChapterContent(chapter.url)
             if (content.isNullOrBlank()) {
-                chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败")
+                chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败", true)
             } else {
-                chapter.content = ChapterContent(chapter.bookId, chapter.index, content)
-                chapter.content?.format()
+                var contentError = false
+                if (chapter.content?.contentError == true && chapter.content?.content == content) {
+                    contentError = true
+                }
+
+                chapter.content =
+                    ChapterContent(chapter.bookId, chapter.index, content, contentError)
                 chapter.isLoaded = true
                 dao.insertChapter(chapter, chapter.content!!)
             }

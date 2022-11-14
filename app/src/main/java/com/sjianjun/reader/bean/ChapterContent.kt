@@ -12,9 +12,7 @@ class ChapterContent {
     var bookId: String = ""
     var content: String? = null
 
-    fun cacheFormat(): SpannableStringBuilder? {
-        return cache.get(content ?: return null)
-    }
+    var contentError: Boolean = false
 
     fun format(): SpannableStringBuilder {
         val content = content ?: return SpannableStringBuilder()
@@ -28,7 +26,6 @@ class ChapterContent {
             locContent.replace(result.range.first, result.range.last + 1, "\n\u3000\u3000")
             result = result.next()
         }
-        cache.put(content, locContent)
         return locContent
     }
 
@@ -52,13 +49,17 @@ class ChapterContent {
 
 
     companion object {
-        val cache = LruCache<String, SpannableStringBuilder>(5)
-
-        operator fun invoke(bookId: String, chapterIndex: Int, chapterContent: String): ChapterContent {
+        operator fun invoke(
+            bookId: String,
+            chapterIndex: Int,
+            chapterContent: String,
+            contentError: Boolean = false
+        ): ChapterContent {
             val cc = ChapterContent()
             cc.bookId = bookId
             cc.chapterIndex = chapterIndex
             cc.content = chapterContent
+            cc.contentError = contentError
             return cc
         }
     }

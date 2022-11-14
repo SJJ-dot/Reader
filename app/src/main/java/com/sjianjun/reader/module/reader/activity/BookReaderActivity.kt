@@ -101,10 +101,36 @@ class BookReaderActivity : BaseActivity() {
                 val txtChapter =
                     book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
                 toast("正在加载中，请稍候……")
-                val chapter = DataManager.getChapterContent(txtChapter, true)
+                val chapter = DataManager.getChapterContent(txtChapter, 1)
                 curChapter.content = chapter.content?.format().toString()
                 mPageLoader.refreshChapter(curChapter)
                 toast("加载完成")
+            }
+        }
+        observe<String>(EventKey.CHAPTER_CONTENT_ERROR) {
+            launch {
+                if (mPageLoader.pageStatus == STATUS_LOADING) {
+                    toast("书籍正在加载中")
+                    return@launch
+                }
+                val curChapter = mPageLoader.chapterPos
+                val chapter = book?.chapterList?.getOrNull(curChapter)
+                if (chapter == null) {
+                    toast("当前章节获取失败")
+                    return@launch
+                }
+                if (!chapter.isLoaded || chapter.content == null) {
+                    toast("章节未加载成功 ${chapter}")
+                    return@launch
+                }
+                if (chapter.content?.contentError != false) {
+                    chapter.content?.contentError = false
+                    toast("已取消标记章节内容错误")
+                } else {
+                    chapter.content?.contentError = true
+                    toast("已标记章节内容错误")
+                }
+                DataManager.insertChapterContent(chapter.content!!)
             }
         }
 

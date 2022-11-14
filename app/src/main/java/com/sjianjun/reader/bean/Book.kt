@@ -86,6 +86,10 @@ class Book {
     @Expose(serialize = false)
     var bookSource: BookSource? = null
 
+    @Ignore
+    @Expose(serialize = false)
+    var readingContentError: Boolean? = null
+
     override fun toString(): String {
         return "Book(url=$url, bookSourceId=$bookSourceId, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
     }

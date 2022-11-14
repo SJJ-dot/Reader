@@ -164,8 +164,8 @@ public abstract class PageLoader {
     }
 
     public void setBook(BookBean book) {
+        TxtChapter.evictAll();
         mCollBook = book;
-        TxtChapter.checkCache(book.id);
     }
 
     /**
