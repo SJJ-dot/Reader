@@ -83,3 +83,8 @@ public static final int *;
 
 -keep class com.pgyer.pgyersdk.** { *; }
 -keep class com.pgyer.pgyersdk.**$* { *; }
+
+-dontwarn com.jeremyliao.liveeventbus.**
+-keep class com.jeremyliao.liveeventbus.** { *; }
+-keep class androidx.lifecycle.** { *; }
+-keep class androidx.arch.core.** { *; }
