@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
-import com.gyf.immersionbar.BarHide
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
@@ -17,6 +16,8 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.event.observe
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
@@ -29,18 +30,15 @@ import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
-import sjj.novel.view.reader.page.PageLoader
+import sjj.novel.view.reader.page.*
 import sjj.novel.view.reader.page.PageLoader.STATUS_LOADING
-import sjj.novel.view.reader.page.PageMode
-import sjj.novel.view.reader.page.PageStyle
-import sjj.novel.view.reader.page.PageView
-import sjj.novel.view.reader.page.TxtChapter
 import kotlin.math.max
 import kotlin.math.min
 
 class BookReaderActivity : BaseActivity() {
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
+    private var book: Book? = null
     private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX) ?: "-1").toInt()
     private lateinit var readingRecord: ReadingRecord
 
@@ -49,17 +47,16 @@ class BookReaderActivity : BaseActivity() {
     private val mPageLoader by lazy { page_view.pageLoader }
     override fun immersionBar() {
 //        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
-        ImmersionBar.with(this)
-            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
-            .init()
+        ImmersionBar.with(this).init()
+//            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
+//            .init()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
 
-        val params = drawer_layout.layoutParams as? ViewGroup.MarginLayoutParams
-//        params?.topMargin = ImmersionBar.getStatusBarHeight(this)
+        content?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
         initData()
     }
@@ -94,7 +91,20 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
-        globalConfig.readerPageMode.observe(this){
+        observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
+            launch("CHAPTER_SYNC_FORCE") {
+                val curChapter = mPageLoader.curChapter
+                val txtChapter =
+                    book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
+                showSnackbar(content, "正在加载中，请稍候……")
+                val chapter = DataManager.getChapterContent(txtChapter, true)
+                curChapter.content = chapter.content?.format().toString()
+                mPageLoader.refreshChapter(curChapter)
+                showSnackbar(content, "加载完成")
+            }
+        }
+
+        globalConfig.readerPageMode.observe(this) {
             mPageLoader.setPageMode(PageMode.values()[it])
         }
         globalConfig.readerBrightnessMaskColor.observe(this) {
@@ -116,7 +126,7 @@ class BookReaderActivity : BaseActivity() {
 
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
-//            reader_root_background.setImageDrawable(pageStyle.getBackground(this))
+            content.background = pageStyle.getBackground(this)
 //            line.setBackgroundColor(pageStyle.getSpacerColor(this))
 //            chapter_title.setTextColor(pageStyle.getLabelColor(this))
             if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
@@ -165,6 +175,7 @@ class BookReaderActivity : BaseActivity() {
                 finish()
                 return@launch
             }
+            this@BookReaderActivity.book = book
             Log.i("设置章节列表 ChapterListFragment")
             supportFragmentManager.beginTransaction()
                 .replace(

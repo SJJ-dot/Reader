@@ -40,10 +40,12 @@ class ChapterListFragment : BaseFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return AsyncView(requireContext(), R.layout.main_fragment_book_chapter_list) {
-            recycle_view_chapter_list.adapter = adapter
-            initData()
-        }
+        return inflater.inflate(R.layout.main_fragment_book_chapter_list, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        recycle_view_chapter_list.adapter = adapter
+        initData()
     }
 
     private fun initData() {

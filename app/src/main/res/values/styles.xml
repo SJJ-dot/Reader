@@ -24,7 +24,7 @@
     </style>
 
     <style name="reader_setting_dialog" parent="Theme.Design.BottomSheetDialog">
-        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
     </style>
 
     <style name="ProgressBar" parent="Widget.AppCompat.ProgressBar">

@@ -17,6 +17,8 @@ import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
@@ -44,6 +46,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
+        initChapterSync()
         initDayNight()
         initBrightness()
         initFontSize()
@@ -56,6 +59,12 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         return dialog
+    }
+
+    private fun initChapterSync() {
+        chapter_sync.setOnClickListener {
+            EventBus.post(EventKey.CHAPTER_SYNC_FORCE)
+        }
     }
 
     private fun initPageModel() {
