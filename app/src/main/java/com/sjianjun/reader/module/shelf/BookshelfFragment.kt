@@ -7,6 +7,7 @@ import android.view.*
 import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
@@ -18,8 +19,8 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.FlowPreview
@@ -27,9 +28,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+
+private var needShowWelcome = true
 
 @FlowPreview
 class BookshelfFragment : BaseFragment() {
@@ -57,6 +58,18 @@ class BookshelfFragment : BaseFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
+    }
+
+    private fun welcome() {
+        if (!needShowWelcome) {
+            return
+        }
+        needShowWelcome = false
+        MaterialAlertDialogBuilder(requireActivity())
+            .setTitle("欢迎使用本APP")
+            .setMessage("首次使用APP,你可以：\n1、从左侧菜单进入书城选择一本书。\n2、还是从左侧菜单进入搜索页，搜索你想看的书籍。\n3、点击搜索结果即可开始阅读，书籍会被自动加入书架\n4、为防阅读记录丢失建议配置WebDav保存阅读记录")
+            .setPositiveButton(android.R.string.ok,null)
+            .show()
     }
 
     private fun initData() {
@@ -99,6 +112,11 @@ class BookshelfFragment : BaseFragment() {
                         null
                     }
                 }.flowIo().debounce(100).collect { list ->
+                    if (list.isEmpty()) {
+                        welcome()
+                    } else {
+                        needShowWelcome = false
+                    }
                     adapter.data.clear()
                     adapter.data.addAll(list)
                     adapter.notifyDataSetChanged()

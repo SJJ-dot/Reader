@@ -14,8 +14,6 @@ val globalConfig by lazy { AppConfig("default") }
 class AppConfig(val name: String) :
     DelegateSharedPref(MMKV.mmkvWithID("AppConfig_$name")) {
 
-    var isFirst by boolPref("isFirstUse", true)
-
     var hasPermission by boolPref("hasPermission", false)
 
     /**

@@ -9,7 +9,6 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.sjianjun.coroutine.launchIo
@@ -64,19 +63,6 @@ class MainActivity : BaseActivity() {
         } else {
             AppDirUtil.init(application)
             init()
-        }
-        welcome()
-    }
-
-    private fun welcome() {
-        if (globalConfig.isFirst) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("你好呀，欢迎使用本APP")
-                .setMessage("首次使用APP，你可以从左侧菜单进入书城选择一本书，然后还是从左侧菜单进入搜索页，搜索你想看的书籍，点击搜索结果即可开始阅读，书籍会被自动加入书架\n为防阅读记录丢失建议配置WebDav保存阅读记录")
-                .setOnDismissListener {
-                    globalConfig.isFirst = false
-                }
-                .show()
         }
     }
 
