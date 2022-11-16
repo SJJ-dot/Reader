@@ -1,4 +1,4 @@
-# 🚀😄一个完全离线的网络小说阅读器，支持自定义书源，支持常规阅读翻页模式，欢迎下载体验
+# 🚀😄离线的网络小说阅读器，支持自定义书源，欢迎下载体验
 ## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
@@ -22,6 +22,7 @@
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
 ## 书源相关
+* 如果有好用的网站可以在issue提出
 
 默认书源导入链接：
 [https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json)
@@ -30,6 +31,7 @@
 [https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
 
 ### 书源规则参考 
+
 想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。
 
 [默认书源格式参考地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
