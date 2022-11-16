@@ -1,14 +1,17 @@
-# 一个完全离线的小说阅读器
-## kotlin 协程、rhino、Javascript
+# 🚀😄一个完全离线的网络小说阅读器，支持自定义书源，支持常规阅读翻页模式，欢迎下载体验
+## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
 | - | - |- |
 
-## 1.0.0
-完善书源管理功能，支持导入自定义的网络书源
+## 1.2.9
+章节错误标记功能（追书的时候很有用）
 
 ## 1.2.5
 增加仿真翻页等常规翻页模式
+
+## 1.0.0
+完善书源管理功能，支持导入自定义的网络书源
 
 ## 体验APP下载
 
