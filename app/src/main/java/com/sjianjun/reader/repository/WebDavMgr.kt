@@ -57,9 +57,9 @@ object WebDavMgr {
         job = CoroutineScope(Dispatchers.IO).launch {
             launch {
                 Log.i("监听书籍信息变化")
-                var lastBook = emptyList<String>()
+                var lastBook = emptySet<String>()
                 dao.getAllBook().debounce(1000).collect {
-                    val bookListInfo = it.map { it.title + it.author + it.bookSourceId }
+                    val bookListInfo = it.map { it.title + it.author + it.bookSourceId }.toSet()
                     Log.i("同步书籍记录 change:${lastBook != bookListInfo}")
                     if (lastBook != bookListInfo) {
                         sync { uploadBookInfo(it) }
@@ -69,9 +69,9 @@ object WebDavMgr {
             }
             launch {
                 Log.i("监听阅读记录变化")
-                var lastRecord = emptyList<String>()
+                var lastRecord = emptySet<String>()
                 dao.getAllReadingRecord().debounce(1000).collect {
-                    val bookListInfo = it.map { it.bookId + it.chapterIndex + it.offest }
+                    val bookListInfo = it.map { it.bookId + it.chapterIndex + it.offest }.toSet()
                     Log.i("同步阅读记录 change:${lastRecord != bookListInfo}")
                     if (lastRecord != bookListInfo) {
                         sync { uploadReadingRecord(it) }

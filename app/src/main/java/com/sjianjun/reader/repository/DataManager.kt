@@ -125,14 +125,15 @@ object DataManager {
             book.chapterList = chapterList
             book.isLoading = false
             book.error = null
-            dao.updateBookDetails(bookDetails)
-
+            //先检查章节内容是否有错
             val record = dao.getReadingRecord(book.title, book.author)
             val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1).firstOrNull()
             if (content?.contentError == true) {
                 chapterList[content.chapterIndex].content = content
                 getChapterContent(chapterList[content.chapterIndex], 1)
             }
+
+            dao.updateBookDetails(bookDetails)
         } catch (e: Throwable) {
             Log.i("${script?.id}加载书籍详情：$book", e)
             book.isLoading = false

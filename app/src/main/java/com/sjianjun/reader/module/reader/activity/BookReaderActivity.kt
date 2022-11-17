@@ -97,6 +97,7 @@ class BookReaderActivity : BaseActivity() {
                     return@launch
                 }
                 mPageLoader.pageStatus = STATUS_LOADING
+
                 val curChapter = mPageLoader.curChapter
                 val txtChapter =
                     book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
@@ -113,6 +114,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("书籍正在加载中")
                     return@launch
                 }
+                val txtChapter = mPageLoader.curChapter
                 val curChapter = mPageLoader.chapterPos
                 val chapter = book?.chapterList?.getOrNull(curChapter)
                 if (chapter == null) {
@@ -120,16 +122,21 @@ class BookReaderActivity : BaseActivity() {
                     return@launch
                 }
                 if (!chapter.isLoaded || chapter.content == null) {
-                    toast("章节未加载成功 ${chapter}")
+                    toast("章节未加载成功 $chapter")
                     return@launch
                 }
                 if (chapter.content?.contentError != false) {
                     chapter.content?.contentError = false
+                    txtChapter?.title = chapter.title
                     toast("已取消标记章节内容错误")
                 } else {
                     chapter.content?.contentError = true
+                    txtChapter?.title = chapter.title +"(章节内容错误)"
                     toast("已标记章节内容错误")
                 }
+                val pagePos = mPageLoader.pagePos
+                mPageLoader.skipToChapter(curChapter)
+                mPageLoader.skipToPage(pagePos)
                 DataManager.insertChapterContent(chapter.content!!)
             }
         }
@@ -255,6 +262,8 @@ class BookReaderActivity : BaseActivity() {
             Log.i("设置阅读器内容")
             mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun onChapterChange(pos: Int) {
+                    Log.i("章节：${pos}")
+                    mPageLoader.saveRecord()
                 }
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
@@ -269,6 +278,9 @@ class BookReaderActivity : BaseActivity() {
                                 val txtChapter =
                                     requestChapters.find { it.chapterIndex == chapter.index }
                                 txtChapter?.content = chapter.content?.format().toString()
+                                if (chapter.content?.contentError == true) {
+                                    txtChapter?.title = chapter.title +"(章节内容错误)"
+                                }
                             }
                             Log.i("章节内容加载结束 Status:${mPageLoader.pageStatus}")
                             if (mPageLoader.pageStatus == STATUS_LOADING) {
