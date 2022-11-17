@@ -1,4 +1,4 @@
-# 🚀😄离线的网络小说阅读器，支持自定义书源，欢迎下载体验
+# 🚀😄android 小说阅读器，欢迎下载APK体验，自带书源持续更新中，也可以根据书源模板自行制作
 ## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
