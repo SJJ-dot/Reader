@@ -104,9 +104,7 @@ class MainActivity : BaseActivity() {
         }
 
         initDrawerMenuWidget()
-        launchIo {
-            WebDavMgr.sync()
-        }
+        WebDavMgr.init()
     }
 
     private fun initDrawerMenuWidget() {

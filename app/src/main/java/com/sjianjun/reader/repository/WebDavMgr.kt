@@ -9,7 +9,11 @@ import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 
 object WebDavMgr {
@@ -17,13 +21,14 @@ object WebDavMgr {
     const val BOOK_INFO_LIST = "bookInfoList.json"
     const val READING_RECORD_LIST = "readingRecordList.json"
     private val dao get() = DbFactory.db.dao()
+    private var job: Job? = null
 
     private fun webDav(relativePath: String) = globalConfig.let {
         val auth = Authorization(it.webdavUsername ?: "", it.webdavPassword ?: "")
         WebDav("${it.webdavUrl}${it.webdavSubdir}/${relativePath}", auth)
     }
 
-    suspend fun init(
+    suspend fun setAccount(
         url: String,
         username: String,
         password: String,
@@ -47,7 +52,39 @@ object WebDavMgr {
         return makeDir
     }
 
-    suspend fun sync(run: suspend WebDavMgr.() -> Unit = {}) = withIo {
+    fun init() {
+        job?.cancel()
+        job = CoroutineScope(Dispatchers.IO).launch {
+            launch {
+                Log.i("监听书籍信息变化")
+                var lastBook = emptyList<String>()
+                dao.getAllBook().debounce(1000).collect {
+                    val bookListInfo = it.map { it.title + it.author + it.bookSourceId }
+                    Log.i("同步书籍记录 change:${lastBook != bookListInfo}")
+                    if (lastBook != bookListInfo) {
+                        sync { uploadBookInfo(it) }
+                        lastBook = bookListInfo
+                    }
+                }
+            }
+            launch {
+                Log.i("监听阅读记录变化")
+                var lastRecord = emptyList<String>()
+                dao.getAllReadingRecord().debounce(1000).collect {
+                    val bookListInfo = it.map { it.bookId + it.chapterIndex + it.offest }
+                    Log.i("同步阅读记录 change:${lastRecord != bookListInfo}")
+                    if (lastRecord != bookListInfo) {
+                        sync { uploadReadingRecord(it) }
+                        lastRecord = bookListInfo
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    private suspend fun sync(run: suspend WebDavMgr.() -> Unit = {}) = withIo {
         if (needPull()) {
             pull()
             val webDavId =
@@ -58,12 +95,12 @@ object WebDavMgr {
         WebDavMgr.run()
     }
 
-    suspend fun uploadBookInfo(): Result<Unit> = withIo {
+    private suspend fun uploadBookInfo(bookList: List<Book>): Result<Unit> = withIo {
         if (!globalConfig.webdavHasCfg) {
             return@withIo Result.failure(Exception("没有配置webDav账号信息"))
         }
         val upload =
-            webDav(BOOK_INFO_LIST).upload(gson.toJson(dao.getAllBook().firstOrNull()).toByteArray())
+            webDav(BOOK_INFO_LIST).upload(gson.toJson(bookList).toByteArray())
         if (upload.isFailure) {
             toast("书籍信息上传失败")
         }
@@ -71,11 +108,10 @@ object WebDavMgr {
         return@withIo upload
     }
 
-    suspend fun uploadReadingRecord() = withIo {
+    private suspend fun uploadReadingRecord(record: List<ReadingRecord>) = withIo {
         if (!globalConfig.webdavHasCfg) {
             return@withIo Result.failure(Exception("没有配置webDav账号信息"))
         }
-        val record = dao.getAllReadingRecord()
         val upload = webDav(READING_RECORD_LIST).upload(gson.toJson(record).toByteArray())
         if (upload.isFailure) {
             toast("阅读记录上传失败")

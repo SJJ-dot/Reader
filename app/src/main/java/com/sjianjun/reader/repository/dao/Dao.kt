@@ -192,7 +192,7 @@ interface Dao {
     fun insertReadingRecordList(record: List<ReadingRecord>): List<Long>
 
     @Query("select * from ReadingRecord")
-    fun getAllReadingRecord(): List<ReadingRecord>
+    fun getAllReadingRecord(): Flow<List<ReadingRecord>>
 
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
     fun deleteReadingRecord(bookTitle: String, bookAuthor: String): Int

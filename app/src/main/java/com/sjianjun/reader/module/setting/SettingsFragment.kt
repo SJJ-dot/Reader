@@ -12,8 +12,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.toast
-import io.legado.app.lib.webdav.Authorization
-import io.legado.app.lib.webdav.WebDav
 import kotlinx.android.synthetic.main.fragment_settings.*
 import sjj.alog.Log
 
@@ -56,7 +54,7 @@ class SettingsFragment : Fragment() {
 
         webdav_save.setOnClickListener {
             launch {
-                val init = WebDavMgr.init(
+                val init = WebDavMgr.setAccount(
                     webdav_server_url_input.text.toString().trim(),
                     webdav_username_input.text.toString().trim(),
                     webdav_password_input.text.toString().trim(),
@@ -65,10 +63,7 @@ class SettingsFragment : Fragment() {
                 toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
                 Log.i(init)
                 if (init.isSuccess) {
-                    WebDavMgr.sync {
-                        uploadReadingRecord()
-                        uploadBookInfo()
-                    }
+                    WebDavMgr.init()
                     webdav_save.isEnabled = false
                 }
             }

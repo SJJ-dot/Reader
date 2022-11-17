@@ -103,12 +103,7 @@ object DataManager {
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): String = withIo {
-        dao.saveSearchResult(searchResult.toBookList()).also {
-            WebDavMgr.sync {
-                uploadBookInfo()
-                uploadReadingRecord()
-            }
-        }
+        dao.saveSearchResult(searchResult.toBookList())
     }
 
     suspend fun reloadBookFromNet(book: Book?, javaScript: BookSource? = null) = withIo {
@@ -152,10 +147,6 @@ object DataManager {
 
     suspend fun deleteBook(book: Book) = withIo {
         dao.deleteBook(book)
-        WebDavMgr.sync {
-            uploadBookInfo()
-            uploadReadingRecord()
-        }
     }
 
 
@@ -168,7 +159,6 @@ object DataManager {
                 changeReadingRecordBookSource(otherBook)
             }
             dao.deleteBookById(book)
-            WebDavMgr.sync { uploadBookInfo() }
             return@withIo true
         }
     }

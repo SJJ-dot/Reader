@@ -117,7 +117,7 @@ class BookshelfFragment : BaseFragment() {
                     } else {
                         null
                     }
-                }.flowIo().debounce(100).collect { list ->
+                }.flowIo().debounce(1000).collect { list ->
                     if (list.isEmpty()) {
                         welcome()
                     } else {
