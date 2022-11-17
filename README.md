@@ -25,15 +25,15 @@
 * 如果有好用的网站可以在issue提出
 
 默认书源导入链接：
-[https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json)
+[https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json](https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json)
 
 默认书源导入链接Gzip：
-[https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
+[https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
 
 ### 书源规则参考 
 
-想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。
+想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。书源调试可使用test模块，已设置好测试环境
 
-[默认书源格式参考地址](https://github.com/SJJ-dot/reader-repo/blob/main/BookSource/default.json)
+[默认书源格式参考：https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json](https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json)
 
 [书源模板参考](https://github.com/SJJ-dot/Reader/tree/master/test/src/main/java/com/sjianjun/test/templete)
