@@ -861,7 +861,7 @@ public abstract class PageLoader {
 
         // 获取内容显示位置的大小
         mVisibleWidth = mDisplayWidth - mMarginWidth * 2;
-        mVisibleHeight = mDisplayHeight - mMarginHeight - screenUtils.dpToPx(2);//至减去上边距
+        mVisibleHeight = mDisplayHeight - mMarginHeight - screenUtils.dpToPx(4);//至减去上边距
 
         // 重置 PageMode
         mPageView.setPageMode(mPageMode);
