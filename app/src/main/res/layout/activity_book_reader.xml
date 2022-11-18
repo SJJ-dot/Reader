@@ -4,15 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/reader_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/dn_background">
+    android:layout_height="match_parent">
 
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fitsSystemWindows="false"
-        tools:context=".module.reader.activity.BookReaderActivity"
         tools:openDrawer="right">
 
 

@@ -75,6 +75,9 @@ public class PageView extends View {
 
     public PageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        if (isInEditMode()) {
+            return;
+        }
         mPageLoader = new EmptyPageLoader(this);
     }
 
@@ -194,14 +197,16 @@ public class PageView extends View {
         if (mBackground != null) {
             mBackground.draw(canvas);
         }
-        //绘制动画
-        mPageAnim.draw(canvas);
+        if (mPageAnim != null) {
+            //绘制动画
+            mPageAnim.draw(canvas);
+        }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
-        if (mTouchListener != null&& mTouchListener.intercept(event)) {
+        if (mTouchListener != null && mTouchListener.intercept(event)) {
             return true;
         }
 
@@ -273,7 +278,9 @@ public class PageView extends View {
     @Override
     public void computeScroll() {
         //进行滑动
-        mPageAnim.scrollAnim();
+        if (mPageAnim != null) {
+            mPageAnim.scrollAnim();
+        }
         super.computeScroll();
     }
 
@@ -312,7 +319,7 @@ public class PageView extends View {
      * @param isUpdate
      */
     public void drawCurPage(boolean isUpdate) {
-        Log.i("绘制书籍内容 isPrepare:"+isPrepare+" isUpdate:"+isUpdate);
+        Log.i("绘制书籍内容 isPrepare:" + isPrepare + " isUpdate:" + isUpdate);
         if (!isPrepare) return;
 
         if (!isUpdate) {
@@ -355,6 +362,7 @@ public class PageView extends View {
 
     public interface TouchListener {
         boolean intercept(MotionEvent event);
+
         void center();
     }
 }

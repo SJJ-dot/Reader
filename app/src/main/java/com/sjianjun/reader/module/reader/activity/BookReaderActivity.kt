@@ -56,7 +56,7 @@ class BookReaderActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
 
-        content?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
+        reader_root?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
         initData()
     }
@@ -163,7 +163,7 @@ class BookReaderActivity : BaseActivity() {
 
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
-            content.background = pageStyle.getBackground(this)
+            reader_root.background = pageStyle.getBackground(this)
 //            line.setBackgroundColor(pageStyle.getSpacerColor(this))
 //            chapter_title.setTextColor(pageStyle.getLabelColor(this))
             if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
