@@ -6,8 +6,8 @@
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
+        android:layout_height="450dp"
         android:background="@color/dn_background"
-        android:layout_height="90dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <androidx.recyclerview.widget.RecyclerView

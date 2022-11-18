@@ -52,12 +52,7 @@ class BookSourceListFragment : BaseFragment() {
                             emit(book)
                         }
                     }.toList().sortedWith(bookComparator)
-                }.flowIo().debounce(100).collect {
-                    val size = it.size
-                    if (adapter.data.size != size) {
-                        swipe_refresh.layoutParams.height = max(min(size, 5), 1) * 90.dp2Px
-                        swipe_refresh.requestLayout()
-                    }
+                }.flowIo().debounce(300).collect {
                     adapter.data.clear()
                     adapter.data.addAll(it)
                     adapter.notifyDataSetChanged()
