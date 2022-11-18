@@ -7,7 +7,7 @@ import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
@@ -96,7 +96,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         val count = DataManager.getBookBookSourceNum(bookTitle, bookAuthor)
         val source = book?.bookSourceId?.let {
-            BookSourceManager.getBookSourceById(it).firstOrNull()
+            BookSourceMgr.getBookSourceById(it).firstOrNull()
         }
         originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个源"
         val error = book?.error

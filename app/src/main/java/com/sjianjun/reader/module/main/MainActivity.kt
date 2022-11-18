@@ -14,7 +14,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.umeng.commonsdk.UMConfigure
@@ -39,7 +39,7 @@ class MainActivity : BaseActivity() {
         launchIo {
             launchIo { checkUpdate(this@MainActivity, false) }
             launchIo {
-                BookSourceManager.autoImport()
+                BookSourceMgr.autoImport()
             }
             UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
         }

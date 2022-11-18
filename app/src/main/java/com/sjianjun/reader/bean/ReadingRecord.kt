@@ -17,6 +17,12 @@ class ReadingRecord(
 
     var isEnd = false
 
+
+
+    override fun toString(): String {
+        return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', chapterIndex=$chapterIndex, isEnd=$isEnd)"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -25,6 +31,10 @@ class ReadingRecord(
 
         if (bookTitle != other.bookTitle) return false
         if (bookAuthor != other.bookAuthor) return false
+        if (bookId != other.bookId) return false
+        if (chapterIndex != other.chapterIndex) return false
+        if (offest != other.offest) return false
+        if (isEnd != other.isEnd) return false
 
         return true
     }
@@ -32,11 +42,11 @@ class ReadingRecord(
     override fun hashCode(): Int {
         var result = bookTitle.hashCode()
         result = 31 * result + bookAuthor.hashCode()
+        result = 31 * result + bookId.hashCode()
+        result = 31 * result + chapterIndex
+        result = 31 * result + offest
+        result = 31 * result + isEnd.hashCode()
         return result
-    }
-
-    override fun toString(): String {
-        return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', chapterIndex=$chapterIndex, isEnd=$isEnd)"
     }
 
 }

@@ -5,7 +5,6 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.utils.*
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
 import java.net.URLEncoder
@@ -109,7 +108,8 @@ object DataManager {
     suspend fun reloadBookFromNet(book: Book?, javaScript: BookSource? = null) = withIo {
 
         book ?: return@withIo
-        val script = javaScript ?: dao.getBookSourceById(book.bookSourceId).firstOrNull()
+        val script =
+            javaScript ?: book.bookSource ?: dao.getBookSourceById(book.bookSourceId).firstOrNull()
         try {
             if (script == null) {
                 throw MessageException("未找到对应书籍书源")
@@ -127,7 +127,7 @@ object DataManager {
             book.error = null
             //先检查章节内容是否有错
             val record = dao.getReadingRecord(book.title, book.author)
-            val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1).firstOrNull()
+            val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1)
             if (content?.contentError == true) {
                 chapterList[content.chapterIndex].content = content
                 getChapterContent(chapterList[content.chapterIndex], 1)
@@ -198,7 +198,7 @@ object DataManager {
         return dao.getLastChapterByBookId(bookId).flowIo()
     }
 
-    fun getChapterByIndex(bookId: String, index: Int): Flow<Chapter?> {
+    fun getChapterByIndex(bookId: String, index: Int): Chapter? {
         return dao.getChapterByIndex(bookId, index)
     }
 
@@ -221,23 +221,18 @@ object DataManager {
             reloadBookFromNet(book)
         }
         val chapter =
-            dao.getChapterByIndex(readingRecord.bookId, readingRecord.chapterIndex).first()
+            dao.getChapterByIndex(readingRecord.bookId, readingRecord.chapterIndex)
         var readChapter: Chapter? = null
         if (chapter != null) {
             //根据章节名查询。取索引最接近那个 这里将章节名转拼音按相似度排序在模糊搜索的时候更准确
             readChapter = dao.getChapterByTitle(book.id, chapter.title!!)
                 .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
             if (readChapter == null) {
-                //如果章节名没查到。根据章节名模糊查询
-                readChapter = dao.getChapterLikeName(book.id, "%${chapter.name()}")
-                    .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
-            }
-            if (readChapter == null) {
                 readChapter = dao.getChapterLikeName(book.id, "%${chapter.name()}%")
-                    .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
+                    .minByOrNull { abs(chapter.index - it.index) }
             }
             if (readChapter == null) {
-                readChapter = dao.getChapterByIndex(book.id, chapter.index).first()
+                readChapter = dao.getChapterByIndex(book.id, chapter.index)
                     ?: dao.getLastChapterByBookId(book.id).first()
             }
         }
@@ -258,7 +253,7 @@ object DataManager {
     ): Chapter {
         withIo {
             if (chapter.isLoaded) {
-                val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index).first()
+                val chapterContent = dao.getChapterContentFlow(chapter.bookId, chapter.index).first()
                 chapter.content = chapterContent
                 if (force != 1 && chapter.content != null && chapter.content?.contentError != true) {
                     return@withIo

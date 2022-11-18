@@ -86,9 +86,7 @@ class Book {
     @Expose(serialize = false)
     var bookSource: BookSource? = null
 
-    @Ignore
-    @Expose(serialize = false)
-    var readingContentError: Boolean? = null
+    constructor()
 
     override fun toString(): String {
         return "Book(url=$url, bookSourceId=$bookSourceId, title=$title, author=$author, intro=$intro, cover=$cover, chapterList=$chapterList)"
@@ -101,12 +99,27 @@ class Book {
         other as Book
 
         if (id != other.id) return false
+        if (url != other.url) return false
+        if (bookSourceId != other.bookSourceId) return false
+        if (title != other.title) return false
+        if (author != other.author) return false
+        if (intro != other.intro) return false
+        if (cover != other.cover) return false
+        if (isLoading != other.isLoading) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return id.hashCode()
+        var result = id.hashCode()
+        result = 31 * result + url.hashCode()
+        result = 31 * result + bookSourceId.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + author.hashCode()
+        result = 31 * result + (intro?.hashCode() ?: 0)
+        result = 31 * result + (cover?.hashCode() ?: 0)
+        result = 31 * result + isLoading.hashCode()
+        return result
     }
 
 

@@ -18,7 +18,7 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
@@ -87,18 +87,17 @@ class BookshelfFragment : BaseFragment() {
                         val chapter = DataManager.getChapterByIndex(
                             record?.bookId ?: "",
                             record?.chapterIndex ?: -1
-                        ).firstOrNull()
+                        )
                         book.readChapter = chapter
                         if (chapter != null) {
-                            val content = DataManager.getChapterContent(chapter, -1)
-                            book.readingContentError = content.content?.contentError
+                            DataManager.getChapterContent(chapter, -1)
                         }
 
                         book.lastChapter = lastChapter
-                        val js = BookSourceManager.getBookBookSource(book.title, book.author)
+                        val js = BookSourceMgr.getBookBookSource(book.title, book.author)
                         book.javaScriptList = js
                         book.bookSource =
-                            BookSourceManager.getBookSourceById(book.bookSourceId).firstOrNull()
+                            BookSourceMgr.getBookSourceById(book.bookSourceId).firstOrNull()
                         val lastChapterIndex = book.lastChapter?.index ?: 0
                         val readChapterIndex = book.readChapter?.index ?: 0
                         book.unreadChapterCount = if (book.record?.isEnd == true) {
@@ -176,7 +175,6 @@ class BookshelfFragment : BaseFragment() {
 
     private var showState = 0
     private val SHOW_FLAG_REFRESH = 1
-    private val SHOW_FLAG_STARTING_STATION = 2
     private suspend fun showProgressBar(flag: Int) = withMain {
         if (showState == 0) {
             bookshelfUi.loading.animFadeIn()
@@ -253,7 +251,8 @@ class BookshelfFragment : BaseFragment() {
                         }
                     }
                 }
-                if (book.readingContentError == true) {
+
+                if (book.readChapter?.content?.contentError == true) {
                     bvUnread.setHighlight(false)
                 } else {
                     bvUnread.setHighlight(true)

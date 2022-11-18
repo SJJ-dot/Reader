@@ -7,7 +7,7 @@ import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.BookSource
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.BOOK_SOURCE_ID
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
@@ -34,7 +34,7 @@ class EditJavaScriptActivity : BaseActivity() {
                 }
 
                 try {
-                    BookSourceManager.saveJs(bookSource)
+                    BookSourceMgr.saveJs(bookSource)
                     toast("脚本保存成功")
                     finish()
                 } catch (e: Throwable) {
@@ -44,7 +44,7 @@ class EditJavaScriptActivity : BaseActivity() {
         }
         launch {
             val sourceId = intent.getStringExtra(BOOK_SOURCE_ID) ?: return@launch
-            bookSource = BookSourceManager.getBookSourceById(sourceId).firstOrNull()
+            bookSource = BookSourceMgr.getBookSourceById(sourceId).firstOrNull()
             script_source.setText(bookSource?.name)
             script.setText(bookSource?.js)
             //禁止修改脚本标志名称

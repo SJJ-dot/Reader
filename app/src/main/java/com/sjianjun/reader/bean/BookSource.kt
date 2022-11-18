@@ -63,6 +63,7 @@ class BookSource {
 
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
+        Log.i("调用脚本方法：${func}")
         return execute(func.name, *params)
     }
 
@@ -125,14 +126,27 @@ class BookSource {
         }
     }
 
+
+
+    override fun toString(): String {
+        return "BookSource(name='$name', group='$group', version=$version, enable=$enable)"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as BookSource
 
+        if (id != other.id) return false
         if (name != other.name) return false
         if (group != other.group) return false
+        if (js != other.js) return false
+        if (version != other.version) return false
+        if (enable != other.enable) return false
+        if (requestDelay != other.requestDelay) return false
+        if (checkResult != other.checkResult) return false
+        if (checkErrorMsg != other.checkErrorMsg) return false
 
         return true
     }
@@ -140,11 +154,13 @@ class BookSource {
     override fun hashCode(): Int {
         var result = name.hashCode()
         result = 31 * result + group.hashCode()
+        result = 31 * result + js.hashCode()
+        result = 31 * result + version
+        result = 31 * result + enable.hashCode()
+        result = 31 * result + requestDelay.hashCode()
+        result = 31 * result + (checkResult?.hashCode() ?: 0)
+        result = 31 * result + (checkErrorMsg?.hashCode() ?: 0)
         return result
-    }
-
-    override fun toString(): String {
-        return "BookSource(name='$name', group='$group', version=$version, enable=$enable)"
     }
 
 

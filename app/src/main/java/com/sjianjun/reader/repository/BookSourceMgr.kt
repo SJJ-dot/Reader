@@ -19,7 +19,7 @@ import org.json.JSONObject
 import sjj.alog.Log
 import java.util.zip.GZIPInputStream
 
-object BookSourceManager {
+object BookSourceMgr {
     private val dao = DbFactory.db.dao()
     suspend fun getAllBookSource(): List<BookSource> = withIo {
         dao.getAllBookSource().first()

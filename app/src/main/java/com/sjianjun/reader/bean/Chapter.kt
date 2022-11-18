@@ -47,15 +47,23 @@ class Chapter {
 
         other as Chapter
 
+        if (url != other.url) return false
         if (bookId != other.bookId) return false
+        if (title != other.title) return false
+        if (isLoaded != other.isLoaded) return false
         if (index != other.index) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = bookId.hashCode()
+        var result = url.hashCode()
+        result = 31 * result + bookId.hashCode()
+        result = 31 * result + (title?.hashCode() ?: 0)
+        result = 31 * result + isLoaded.hashCode()
         result = 31 * result + index
         return result
     }
+
+
 }

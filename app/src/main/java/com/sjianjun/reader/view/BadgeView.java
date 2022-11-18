@@ -68,6 +68,7 @@ public class BadgeView extends AppCompatTextView {
         setBadgeCount(0);
         setMinWidth(dip2Px(16));
         setMinHeight(dip2Px(16));
+        setIncludeFontPadding(false);
     }
 
     public void setBackground(float dipRadius, int badgeColor) {

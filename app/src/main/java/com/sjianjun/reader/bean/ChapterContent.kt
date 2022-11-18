@@ -37,6 +37,8 @@ class ChapterContent {
 
         if (chapterIndex != other.chapterIndex) return false
         if (bookId != other.bookId) return false
+        if (content != other.content) return false
+        if (contentError != other.contentError) return false
 
         return true
     }
@@ -44,6 +46,8 @@ class ChapterContent {
     override fun hashCode(): Int {
         var result = chapterIndex
         result = 31 * result + bookId.hashCode()
+        result = 31 * result + (content?.hashCode() ?: 0)
+        result = 31 * result + contentError.hashCode()
         return result
     }
 

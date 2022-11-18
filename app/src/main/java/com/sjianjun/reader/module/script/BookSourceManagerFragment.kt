@@ -16,7 +16,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.dialog_edit_text.view.*
 import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
@@ -72,7 +72,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 .setMessage("确定要删除选中的${list.size}个书源吗？")
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     launch {
-                        BookSourceManager.delete(*list.toTypedArray())
+                        BookSourceMgr.delete(*list.toTypedArray())
                         adapter.data.removeAll(list)
                         adapter.notifyDataSetChanged()
                         refreshSelectAll()
@@ -160,7 +160,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         launch {
                             try {
                                 showSnackbar(recycle_view, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
-                                BookSourceManager.import(listOf(url))
+                                BookSourceMgr.import(listOf(url))
                                 initData()
                                 showSnackbar(recycle_view, "书源导入成功")
                             } catch (e: Exception) {
@@ -195,7 +195,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launch {
-            val allJs = BookSourceManager.getAllBookSource().sort()
+            val allJs = BookSourceMgr.getAllBookSource().sort()
             adapter.data.clear()
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
@@ -221,7 +221,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     private fun query() {
         launch {
             val query = searchView.query.toString().trim()
-            val allJs = BookSourceManager.getAllBookSource().sort()
+            val allJs = BookSourceMgr.getAllBookSource().sort()
             adapter.data.clear()
             if (query.isBlank()) {
                 adapter.data.addAll(allJs)
@@ -274,7 +274,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     } else {
                         launch {
                             list.forEach { it.enable = true }
-                            BookSourceManager.saveJs(*list.toTypedArray())
+                            BookSourceMgr.saveJs(*list.toTypedArray())
                             adapter.notifyDataSetChanged()
                         }
                     }
@@ -286,7 +286,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     } else {
                         launch {
                             list.forEach { it.enable = false }
-                            BookSourceManager.saveJs(*list.toTypedArray())
+                            BookSourceMgr.saveJs(*list.toTypedArray())
                             adapter.notifyDataSetChanged()
                         }
                     }
@@ -316,7 +316,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                         )
                                         val deferreds = list.map { js ->
                                             async(dispatcher) {
-                                                BookSourceManager.check(
+                                                BookSourceMgr.check(
                                                     js,
                                                     key
                                                 );
@@ -417,7 +417,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 sw_source_enable.setOnCheckedChangeListener { view, isChecked ->
                     fragment.launch {
                         script.enable = isChecked
-                        BookSourceManager.saveJs(script)
+                        BookSourceMgr.saveJs(script)
                     }
                 }
                 if (script.checkErrorMsg.isNullOrBlank()) {

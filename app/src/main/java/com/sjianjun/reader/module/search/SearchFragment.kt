@@ -17,7 +17,7 @@ import com.sjianjun.reader.*
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.repository.BookSourceManager
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
 import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
@@ -48,7 +48,7 @@ class SearchFragment : BaseAsyncFragment() {
 
     private fun initData() {
         launchIo {
-            val javaScriptList = BookSourceManager.getAllEnableBookSource()
+            val javaScriptList = BookSourceMgr.getAllEnableBookSource()
             search_refresh.max = javaScriptList.size
         }
     }

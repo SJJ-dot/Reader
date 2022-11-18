@@ -3,8 +3,10 @@ package com.sjianjun.reader.module.main
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
-import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BOOK_AUTHOR
 import com.sjianjun.reader.BOOK_TITLE
@@ -12,69 +14,50 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
 import kotlinx.android.synthetic.main.main_fragment_book_source_list.*
 import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.*
-import kotlin.math.max
-import kotlin.math.min
+import kotlinx.coroutines.launch
 
 
+@Suppress("UNCHECKED_CAST")
 class BookSourceListFragment : BaseFragment() {
-
-    private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE)!! }
-    private val bookAuthor by lazy { requireArguments().getString(BOOK_AUTHOR)!! }
-
-
-    private val adapter by lazy {
-        BookListAdapter(
-            this
-        )
+    private val vm by lazy {
+        ViewModelProvider(this, object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val bookTitle = requireArguments().getString(BOOK_TITLE)!!
+                val bookAuthor = requireArguments().getString(BOOK_AUTHOR)!!
+                return BookSourceListViewModel(bookTitle, bookAuthor) as T
+//                return modelClass.getConstructor(String::class.java, String::class.java)
+//                    .newInstance(bookAuthor, bookTitle)
+            }
+        }).get(BookSourceListViewModel::class.java)
     }
+
+    private val adapter by lazy { BookListAdapter(this) }
 
     override fun getLayoutRes() = R.layout.main_fragment_book_source_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recycle_view.adapter = adapter
-
-        launch {
-            DataManager.getBookByTitleAndAuthor(bookTitle, bookAuthor)
-                .map {
-                    //并发读取章节列表
-                    it.asFlow().flatMapMerge { book ->
-                        flow {
-                            book.lastChapter = DataManager.getLastChapterByBookId(book.id).firstOrNull()
-                            book.bookSource = BookSourceManager.getBookSourceById(book.bookSourceId).firstOrNull()
-                            emit(book)
-                        }
-                    }.toList().sortedWith(bookComparator)
-                }.flowIo().debounce(300).collect {
-                    adapter.data.clear()
-                    adapter.data.addAll(it)
-                    adapter.notifyDataSetChanged()
-                }
+        vm.bookList.observe(this) {
+            adapter.data.clear()
+            adapter.data.addAll(it)
+            adapter.notifyDataSetChanged()
         }
-
         initRefresh()
     }
 
     private fun initRefresh() {
 
         swipe_refresh.setOnRefreshListener {
-            launch {
+            vm.viewModelScope.launch {
                 swipe_refresh.isRefreshing = false
                 swipe_refresh.isEnabled = false
-                adapter.data.map {
-                    async {
-                        DataManager.reloadBookFromNet(it)
-                    }
-                }.awaitAll()
+                vm.reloadAllBookFromNet()
                 swipe_refresh.isEnabled = true
             }
         }
@@ -98,6 +81,19 @@ class BookSourceListFragment : BaseFragment() {
 
                 haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
                 loading.isLoading = book.isLoading
+
+                if (book.readChapter?.content?.contentError == true) {
+                    bv_unread.setHighlight(false)
+                } else {
+                    bv_unread.setHighlight(true)
+                }
+                if ((book.isLoading)) {
+                    bv_unread.hide()
+                } else {
+                    bv_unread.show()
+                }
+                bv_unread.badgeCount = book.unreadChapterCount
+
                 setOnClickListener {
                     fragment.launch {
                         DataManager.changeReadingRecordBookSource(book)

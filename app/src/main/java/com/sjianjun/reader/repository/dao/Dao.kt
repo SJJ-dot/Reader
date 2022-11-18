@@ -121,6 +121,9 @@ interface Dao {
     @Query("select * from Book where title=:title and author=:author  order by bookSourceId")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
+    @Query("select * from Book where title=:title and author=:author  order by bookSourceId")
+    fun getBookAllSourceFlow(title: String, author: String): Flow<List<Book>>
+
     @Query("select * from Book where title=:title and author=:author and bookSourceId=:bookSourceId")
     fun getBookByTitleAuthorAndSource(
         title: String,
@@ -146,10 +149,10 @@ interface Dao {
     fun getChapterByTitle(bookId: String, title: String): Flow<List<Chapter>>
 
     @Query("select * from Chapter where bookId=:bookId and title like :name")
-    fun getChapterLikeName(bookId: String, name: String): Flow<List<Chapter>>
+    fun getChapterLikeName(bookId: String, name: String): List<Chapter>
 
     @Query("select * from Chapter where bookId=:bookId and `index` =:index")
-    fun getChapterByIndex(bookId: String, index: Int): Flow<Chapter?>
+    fun getChapterByIndex(bookId: String, index: Int): Chapter?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapter(chapterList: List<Chapter>): List<Long>
@@ -168,7 +171,10 @@ interface Dao {
     fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
 
     @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex")
-    fun getChapterContent(bookId: String, chapterIndex: Int): Flow<ChapterContent?>
+    fun getChapterContentFlow(bookId: String, chapterIndex: Int): Flow<ChapterContent?>
+
+    @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex")
+    fun getChapterContent(bookId: String, chapterIndex: Int): ChapterContent?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapterContent(chapterContent: ChapterContent): Long
