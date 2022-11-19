@@ -51,7 +51,7 @@ object BookMgr {
             val content = dao.getChapterContent(book.id, chapterLikeName?.index ?: -1)
             if (content?.contentError == true) {
                 chapterList[content.chapterIndex].content = content
-                DataManager.getChapterContent(chapterList[content.chapterIndex], 1)
+                ChapterMgr.getChapterContentByNet(chapterList[content.chapterIndex])
             }
 
             dao.updateBookDetails(bookDetails)

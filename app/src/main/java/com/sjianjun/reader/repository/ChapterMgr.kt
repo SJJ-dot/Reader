@@ -12,14 +12,31 @@ object ChapterMgr {
         return@withIo dao.getLastChapterByBookId(bookId).firstOrNull()
     }
 
-    suspend fun getChapterContentLocal(chapter: Chapter): ChapterContent? {
+    suspend fun getChapterContentLocal(chapter: Chapter): ChapterContent? = withIo {
         if (chapter.isLoaded) {
             val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index)
             chapter.content = chapterContent
-            return chapterContent
+            return@withIo chapterContent
         }
-        return null
+        return@withIo null
     }
+
+    suspend fun getChapterContentByNet(chapter: Chapter) = withIo {
+        val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo
+        val content = js.getChapterContent(chapter.url)
+        if (content.isNullOrBlank()) {
+            chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败", true)
+        } else {
+            var contentError = false
+            if (chapter.content?.contentError == true && chapter.content?.content == content) {
+                contentError = true
+            }
+            chapter.content = ChapterContent(chapter.bookId, chapter.index, content, contentError)
+            chapter.isLoaded = true
+            dao.insertChapter(chapter, chapter.content!!)
+        }
+    }
+
 
     fun getChapterByIndex(bookId: String, index: Int): Chapter? {
         return dao.getChapterByIndex(bookId, index)
