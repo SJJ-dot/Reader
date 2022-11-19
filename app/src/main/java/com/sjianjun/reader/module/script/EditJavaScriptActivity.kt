@@ -8,7 +8,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.repository.BookSourceManager
-import com.sjianjun.reader.utils.BOOK_SOURCE_ID
+import com.sjianjun.reader.BOOK_SOURCE_ID
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.activity_edit_java_script.*
 import kotlinx.coroutines.flow.firstOrNull

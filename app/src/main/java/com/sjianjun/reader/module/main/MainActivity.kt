@@ -9,8 +9,6 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.hjq.permissions.Permission
-import com.hjq.permissions.XXPermissions
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -19,8 +17,6 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
-import com.sjianjun.reader.utils.AppDirUtil
-import com.sjianjun.reader.utils.toast
 import com.umeng.commonsdk.UMConfigure
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
@@ -47,23 +43,7 @@ class MainActivity : BaseActivity() {
             }
             UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
         }
-        if (globalConfig.hasPermission) {
-            XXPermissions.with(this)
-                .permission(Permission.MANAGE_EXTERNAL_STORAGE)
-                .request { _, all ->
-                    globalConfig.hasPermission = all
-                    if (!all) {
-                        toast("本应用必须要存储卡读写权限用于保存数据库")
-                        finish()
-                    } else {
-                        AppDirUtil.init(application)
-                        init()
-                    }
-                }
-        } else {
-            AppDirUtil.init(application)
-            init()
-        }
+        init()
     }
 
 

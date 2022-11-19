@@ -1,7 +1,6 @@
 package com.sjianjun.reader.bean
 
 import androidx.room.Entity
-import com.sjianjun.reader.utils.STARTING_STATION_BOOK_SOURCE_EMPTY
 
 @Entity(primaryKeys = ["bookTitle", "bookAuthor"])
 class ReadingRecord(

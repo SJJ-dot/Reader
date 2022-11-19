@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.reader.activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.MotionEvent
-import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
@@ -11,8 +10,7 @@ import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.BaseActivity
-import com.sjianjun.reader.R
+import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord

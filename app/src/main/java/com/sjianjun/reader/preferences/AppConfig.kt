@@ -5,7 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.bean.ReleasesInfo
-import com.sjianjun.reader.utils.URL_BOOK_SOURCE_DEF
+import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.tencent.mmkv.MMKV
 import java.util.*
 

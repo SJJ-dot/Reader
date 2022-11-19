@@ -21,6 +21,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.OnLifecycleEvent
 import com.google.gson.annotations.Expose
 import com.sjianjun.reader.R
+import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
+import com.sjianjun.reader.WEB_VIEW_UA_DESKTOP
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
@@ -31,7 +33,6 @@ import sjj.alog.Log
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ConcurrentLinkedDeque
 
 /*
  * Created by shen jian jun on 2020-07-10

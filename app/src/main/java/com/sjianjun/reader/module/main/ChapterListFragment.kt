@@ -5,10 +5,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.sjianjun.async.AsyncView
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.BaseFragment
-import com.sjianjun.reader.R
+import com.sjianjun.reader.*
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
@@ -21,7 +19,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import sjj.alog.Log
 
 
 /**

@@ -6,6 +6,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
+import com.sjianjun.reader.BOOK_AUTHOR
+import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter

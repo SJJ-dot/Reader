@@ -5,12 +5,10 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
-import com.sjianjun.reader.utils.AppDirUtil
 import com.tencent.mmkv.MMKV
 import com.umeng.commonsdk.UMConfigure
 import me.weishu.reflection.Reflection
 import sjj.alog.Config
-import sjj.alog.Log
 import java.io.File
 
 class App : Application() {
@@ -35,10 +33,6 @@ class App : Application() {
                 writeToFileDir = File(dir, "alog")
             }
             writeToFileDirName = "reader"
-        }
-        if (globalConfig.hasPermission) {
-            Log.i("APP启动，已有权限重新初始化")
-            AppDirUtil.init(this)
         }
     }
 

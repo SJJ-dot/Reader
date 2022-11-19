@@ -1,5 +1,6 @@
 package com.sjianjun.reader.repository
 
+import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -8,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.repository.dao.Dao
-import com.sjianjun.reader.utils.AppDirUtil
+import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
@@ -22,7 +23,9 @@ abstract class Db : RoomDatabase() {
 object DbFactory {
 
     fun room(): Db {
-        val room = Room.databaseBuilder(App.app, Db::class.java, AppDirUtil.APP_DATABASE_FILE)
+        val newDbDir = App.app.getDir("database", Context.MODE_PRIVATE)
+        val dbFile = File(newDbDir, "app_database").absolutePath
+        val room = Room.databaseBuilder(App.app, Db::class.java, dbFile)
             .fallbackToDestructiveMigration()
             .addMigrations(object : Migration(12, 13) {
                 override fun migrate(database: SupportSQLiteDatabase) {

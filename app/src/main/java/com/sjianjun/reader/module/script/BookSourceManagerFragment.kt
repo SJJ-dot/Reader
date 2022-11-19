@@ -9,6 +9,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withMain
+import com.sjianjun.reader.BOOK_SOURCE_ID
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter

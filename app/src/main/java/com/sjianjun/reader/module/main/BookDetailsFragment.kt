@@ -3,8 +3,7 @@ package com.sjianjun.reader.module.main
 import android.view.*
 import androidx.core.view.GravityCompat
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.R
+import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
@@ -12,7 +11,6 @@ import com.sjianjun.reader.repository.BookSourceManager
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.main_fragment_book_details.*
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 

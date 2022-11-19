@@ -8,7 +8,7 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.URL_BOOK_SOURCE_URL_LIST
+import com.sjianjun.reader.URL_BOOK_SOURCE_URL_LIST
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast

@@ -13,8 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.BaseAsyncFragment
-import com.sjianjun.reader.R
+import com.sjianjun.reader.*
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.repository.DataManager
