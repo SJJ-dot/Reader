@@ -15,10 +15,10 @@ interface Dao {
     @Query("select * from BookSource where id = (select bookSourceId from Book where id=:bookId)")
     fun getBookSourceByBookId(bookId: String): BookSource?
 
-    @Query("select * from BookSource")
+    @Query("select * from BookSource order by id")
     fun getAllBookSource(): Flow<List<BookSource>>
 
-    @Query("select * from BookSource where enable!=0")
+    @Query("select * from BookSource where enable!=0 order by id")
     fun getAllEnableBookSource(): Flow<List<BookSource>>
 
     @Query("select * from BookSource where id=:id")
@@ -106,10 +106,10 @@ interface Dao {
         updateBookChapterIsLoaded(book.id)
     }
 
-    @Query("select * from Book")
+    @Query("select * from Book order by id")
     fun getAllBook(): Flow<List<Book>>
 
-    @Query("select * from Book where id in (select bookId from ReadingRecord) order by title")
+    @Query("select * from Book where id in (select bookId from ReadingRecord) order by id")
     fun getAllReadingBook(): Flow<List<Book>>
 
     @Query("select * from Book where id=:id")
@@ -118,18 +118,11 @@ interface Dao {
     @Query("select count(*) from Book where title=:title and author=:author")
     fun getBookBookSourceNum(title: String, author: String): Int
 
-    @Query("select * from Book where title=:title and author=:author  order by bookSourceId")
+    @Query("select * from Book where title=:title and author=:author order by bookSourceId")
     fun getBookByTitleAndAuthor(title: String, author: String): Flow<List<Book>>
 
-    @Query("select * from Book where title=:title and author=:author  order by bookSourceId")
+    @Query("select * from Book where title=:title and author=:author order by bookSourceId")
     fun getBookAllSourceFlow(title: String, author: String): Flow<List<Book>>
-
-    @Query("select * from Book where title=:title and author=:author and bookSourceId=:bookSourceId")
-    fun getBookByTitleAuthorAndSource(
-        title: String,
-        author: String,
-        bookSourceId: String
-    ): Flow<Book?>
 
     @Query("select * from Book where id in (select bookId from ReadingRecord where bookTitle=:title and bookAuthor=:author)")
     fun getReadingBook(title: String, author: String): Flow<Book?>
@@ -145,7 +138,7 @@ interface Dao {
     @Query("select * from Chapter where bookId=:bookId  order by `index`")
     fun getChapterListByBookId(bookId: String): Flow<List<Chapter>>
 
-    @Query("select * from Chapter where title=:title and bookId=:bookId")
+    @Query("select * from Chapter where title=:title and bookId=:bookId order by `index`")
     fun getChapterByTitle(bookId: String, title: String): Flow<List<Chapter>>
 
     @Query("select * from Chapter where bookId=:bookId and title like :name")
@@ -197,7 +190,7 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertReadingRecordList(record: List<ReadingRecord>): List<Long>
 
-    @Query("select * from ReadingRecord")
+    @Query("select * from ReadingRecord  order by bookId")
     fun getAllReadingRecord(): Flow<List<ReadingRecord>>
 
     @Query("delete from ReadingRecord where bookTitle=:bookTitle and bookAuthor=:bookAuthor")
