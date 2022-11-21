@@ -4,6 +4,10 @@
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
 | - | - |- |
 
+# 部分版本更新说明
+## 1.3.2
+书源切换体验优化
+
 ## 1.2.9
 章节错误标记功能（追书的时候很有用）
 
@@ -13,7 +17,7 @@
 ## 1.0.0
 完善书源管理功能，支持导入自定义的网络书源
 
-## 体验APP下载
+# APP下载
 
 [Releases](https://github.com/SJJ-dot/Reader/releases)
 
