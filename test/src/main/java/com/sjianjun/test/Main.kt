@@ -2,6 +2,7 @@ package com.sjianjun.test
 
 import com.sjianjun.test.bean.BookSource
 import java.io.File
+import kotlin.math.min
 
 val test = File("./test/src/main/java/com/sjianjun/test/test.js").readText()
 
@@ -35,6 +36,12 @@ suspend fun main(args: Array<String>) {
         println("校验失败")
         return
     } else {
+        println("搜索结果》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
+        println(resultList)
+        println("详情》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
+        println(details)
+        println("章节内容》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》长度：${content.length}")
+        println(content.subSequence(0, min(100,content.length)))
         println("校验成功")
     }
 

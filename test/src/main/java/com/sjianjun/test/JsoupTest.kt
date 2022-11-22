@@ -6,4 +6,6 @@ import org.jsoup.Jsoup
 fun main(args: Array<String>) {
     val document = Jsoup.parse(FileCaches.get())
     document.tagName()
+    document.select("").text()
+    document.selectFirst("").absUrl("")
 }
