@@ -1,4 +1,4 @@
-# 🚀😄android 小说阅读器(自用)，欢迎下载APK体验，自带书源持续更新中，也可以根据书源模板自行制作
+# 🚀😄android 小说阅读器(自用)，欢迎下载APK体验，持续更新中，支持自定义书源
 ## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
@@ -19,7 +19,7 @@
 
 # APP下载
 
-[Releases](https://github.com/SJJ-dot/Reader/releases)
+[Releases版本可能不是最新的](https://github.com/SJJ-dot/Reader/releases)
 
 [蒲公英扫码下载（最新）](https://www.pgyer.com/SJJ-dot-reader)
 
