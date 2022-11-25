@@ -93,10 +93,6 @@ object BookSourceMgr {
     }
 
     suspend fun autoImport() = withIo {
-        if (System.currentTimeMillis() - globalConfig.lastAutoImportTime < 60 * 60 * 1000) {
-            return@withIo
-        }
-        globalConfig.lastAutoImportTime = System.currentTimeMillis()
         fetchSourceUrl()
         import(globalConfig.bookSourceImportUrlsNet)
         import(globalConfig.bookSourceImportUrlsLoc)

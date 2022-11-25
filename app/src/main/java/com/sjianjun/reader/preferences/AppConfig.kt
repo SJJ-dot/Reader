@@ -71,8 +71,6 @@ class AppConfig(val name: String) :
         mutableListOf<String>()
     )
 
-    var lastAutoImportTime by longPref("lastAutoImportTime", 0)
-
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)
     var webdavPassword by strPref("webdavPassword", null)
