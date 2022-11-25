@@ -4,7 +4,7 @@ import com.sjianjun.test.bean.BookSource
 import java.io.File
 import kotlin.math.min
 
-val test = File("./test/src/main/java/com/sjianjun/test/test.js").readText()
+val test = File("./src/main/java/com/sjianjun/test/test.js").readText()
 
 
 suspend fun main(args: Array<String>) {

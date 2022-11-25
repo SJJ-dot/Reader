@@ -5,7 +5,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 
 object FileCaches {
-    private val cacheRoot = File("./test/cache/")
+    private val cacheRoot = File("./cache/")
 
     init {
         cacheRoot.mkdirs()
