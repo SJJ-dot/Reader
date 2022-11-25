@@ -5,6 +5,7 @@ package com.sjianjun.reader.bean
  */
 class SearchResult {
     @JvmField
+    @Deprecated("没用了这个属性")
     var source: String = ""
     @JvmField
     var bookSource: BookSource? = null

@@ -7,6 +7,7 @@ import java.lang.reflect.Type
 
 val gson = GsonBuilder()
     .disableHtmlEscaping()
+    .setPrettyPrinting()
     .apply {
         ScalarsJsonDeserializer.types.forEach { registerTypeAdapter(it, ScalarsJsonDeserializer) }
     }.addSerializationExclusionStrategy(object : ExclusionStrategy {
