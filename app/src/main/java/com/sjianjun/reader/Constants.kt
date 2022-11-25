@@ -12,8 +12,8 @@ const val SEARCH_KEY = "SEARCH_KEY"
 
 
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
-const val URL_BOOK_SOURCE_DEF = "https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json.gzip"
-const val URL_BOOK_SOURCE_URL_LIST = "https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/UrlList.json"
+const val URL_BOOK_SOURCE_DEF = "https://gitee.com/SJJ-dot/Reader/raw/master/test/BookSource/default.json.gzip"
+const val URL_BOOK_SOURCE_URL_LIST = "https://gitee.com/SJJ-dot/Reader/raw/master/test/BookSource/UrlList.json"
 
 
 const val WEB_VIEW_UA_DESKTOP =
