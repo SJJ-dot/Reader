@@ -7,7 +7,14 @@ java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
-
+repositories {
+    maven {url 'https://maven.aliyun.com/repository/public/'}
+    maven {url 'https://maven.aliyun.com/repository/google/'}
+    maven {url 'https://maven.aliyun.com/repository/central/'}
+    maven {url 'https://maven.aliyun.com/repository/gradle-plugin/'}
+    mavenCentral()
+    google()
+}
 sourceSets {
 //    main.kotlin.srcDirs += 'src/main/java'
     main.java.srcDirs += 'src/main/java'

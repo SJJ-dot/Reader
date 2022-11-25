@@ -1,3 +1,4 @@
+
 function search(query){
     var baseUrl = "http://www.linshuwu.com/";
     var html = http.get(baseUrl+"search/?searchkey=" + URLEncoder.encode(query, "utf-8")).body;
