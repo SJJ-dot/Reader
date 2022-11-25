@@ -38,6 +38,6 @@ fun <T> BaseActivity.observe(key: String, observer: Observer<T>) {
     EventBus.observe(key, this, observer)
 }
 
-fun <T> BaseActivity.observe(clazz: Class<T>, observer: Observer<T>) {
-    EventBus.observe(clazz.name, this, observer)
+inline fun <reified T> BaseActivity.observe(observer: Observer<T>) {
+    EventBus.observe(T::class.java, this, observer)
 }

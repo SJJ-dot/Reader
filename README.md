@@ -1,8 +1,12 @@
-# 🚀😄android 小说阅读器，欢迎下载APK体验，自带书源持续更新中，也可以根据书源模板自行制作
+# 🚀😄android 小说阅读器(自用)，欢迎下载APK体验，持续更新中，支持自定义书源
 ## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
 | - | - |- |
+
+# 部分版本更新说明
+## 1.3.2
+书源切换体验优化
 
 ## 1.2.9
 章节错误标记功能（追书的时候很有用）
@@ -13,9 +17,9 @@
 ## 1.0.0
 完善书源管理功能，支持导入自定义的网络书源
 
-## 体验APP下载
+# APP下载
 
-[Releases](https://github.com/SJJ-dot/Reader/releases)
+[Releases版本可能不是最新的](https://github.com/SJJ-dot/Reader/releases)
 
 [蒲公英扫码下载（最新）](https://www.pgyer.com/SJJ-dot-reader)
 
@@ -32,7 +36,7 @@
 
 ### 书源规则参考 
 
-想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。书源调试可使用test模块，已设置好测试环境
+想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。书源调试可使用test模块（test模块需要作为项目根目录直接打开），已设置好测试环境
 
 [默认书源格式参考：https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json](https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json)
 
