@@ -25,6 +25,7 @@ class Book {
      */
     @Ignore
     @Expose(serialize = false)
+    @Deprecated("没用了这个属性")
     var source: String = ""
     @JvmField
     var bookSourceId: String = ""
