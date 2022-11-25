@@ -37,6 +37,7 @@
  -dontwarn com.gyf.immersionbar.**
 -keep class org.mozilla.javascript.** { *; }
 -keep class com.sjianjun.reader.** { *; }
+-keep class sjj.novel.view.reader.** { *; }
 -keep class org.jsoup.Jsoup { *; }
 -keep class org.jsoup.** { *; }
 -keep class sjj.alog.Log { *; }
