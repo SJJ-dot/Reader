@@ -12,7 +12,7 @@ function search(query){
     for (var i=0;i<bookList.size();i++){
         var bookElement = bookList.get(i);
         var result = new SearchResult();
-        result.bookTitle = bookElement.select("font").text();
+        result.bookTitle = bookElement.select(".bookcase_title").text().replace("[连载]","").replace("[完结]","");
         result.bookUrl = bookElement.select("a").get(0).absUrl("href").replace("//m.","//www.");
         result.bookAuthor = bookElement.select("dd p").get(0).text().replace("作者：","");
         results.add(result);
