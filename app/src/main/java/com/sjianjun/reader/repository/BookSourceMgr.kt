@@ -112,13 +112,14 @@ object BookSourceMgr {
                     }
                     val source = JSONObject(body)
                     val bookSourceArray = source.getJSONArray("bookSource")
+                    val groupName = source.optString("group")
                     (0 until bookSourceArray.length()).map {
                         val obj = bookSourceArray.getJSONObject(it)
                         BookSource().apply {
                             name = obj.getString("source")
-                            group = source.optString("group")
+                            group = obj.optString("group", groupName)
                             js = obj.getString("js")
-                            version = obj.optInt("js", -1)
+                            version = obj.optInt("version", -1)
                             enable = obj.optBoolean("enable", true)
                             requestDelay = obj.optLong("requestDelay", -1)
                         }
