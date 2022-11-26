@@ -110,11 +110,7 @@ class BookshelfFragment : BaseFragment() {
                     }
                 }.mapNotNull { book ->
                     bookList[book.key] = book
-                    if (bookList.size == bookNum) {
-                        bookList.values.sortedWith(bookComparator)
-                    } else {
-                        null
-                    }
+                    bookList.values.sortedWith(bookComparator)
                 }.flowIo().debounce(300).collect { list ->
                     if (list.isEmpty()) {
                         welcome()
