@@ -64,6 +64,14 @@ object BookSourceMgr {
             Log.e("${js.group}-${js.name}:${js.checkResult}", e)
             return@withIo
         }
+
+        val ta = "${search.bookTitle}_${search.bookAuthor}"
+        if (ta != "${details.title}_${details.author}") {
+            js.checkResult = "校验失败：书名、作者发生变化"
+            js.checkErrorMsg = "搜索结果书名与详情页不同：${ta}==>${details.title}_${details.author}"
+            return@withIo
+        }
+
         try {
             val chapter = details.chapterList?.firstOrNull()!!
             val content = js.getChapterContent(chapter.url)
@@ -125,7 +133,7 @@ object BookSourceMgr {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.i("书源导入失败:${url}",e)
+                    Log.i("书源导入失败:${url}", e)
                     emptyList()
                 }
             }
