@@ -19,15 +19,25 @@ suspend fun main(args: Array<String>) {
     if (resultList.isNullOrEmpty()) {
         return
     }
-    var details = javaScript.getDetails(resultList[0].bookUrl)
+    val selectBook = resultList[0]
+    val ta = "${selectBook.bookTitle}_${selectBook.bookAuthor}"
+    var details = javaScript.getDetails(selectBook.bookUrl)
     println("搜索到章节数量：${details?.chapterList?.size}")
     if (details?.chapterList.isNullOrEmpty()) {
+        return
+    }
+    if (ta != "${details!!.title}_${details.author}") {
+        println("搜索结果书名与详情页不同1：${ta}==>${details.title}_${details.author}")
         return
     }
 
     details = javaScript.getDetails(details!!.url)
     println("详情页再次加载搜索到章节数量：${details?.chapterList?.size}")
     if (details?.chapterList.isNullOrEmpty()) {
+        return
+    }
+    if (ta != "${details!!.title}_${details.author}") {
+        println("搜索结果书名与详情页不同2：${ta}==>${details.title}_${details.author}")
         return
     }
 
