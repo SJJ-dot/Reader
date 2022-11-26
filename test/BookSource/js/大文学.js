@@ -9,7 +9,7 @@ function search(query){
 
     var bookList = parse.select("dl");
     var results = new ArrayList();
-    for (var i=1;i<bookList.size();i++){
+    for (var i=0;i<bookList.size();i++){
         var bookElement = bookList.get(i);
         var result = new SearchResult();
         result.bookTitle = bookElement.select("font").text();

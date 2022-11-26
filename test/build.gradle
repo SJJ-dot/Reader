@@ -30,4 +30,5 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.14.9'
     implementation "com.github.SJJ-dot.retrofit-ext:charset-detector:1.0.1"
     implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0'
 }

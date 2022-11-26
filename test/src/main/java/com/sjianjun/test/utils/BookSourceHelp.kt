@@ -2,6 +2,7 @@ package com.sjianjun.test.utils
 
 import com.google.gson.JsonObject
 import java.io.File
+import java.util.*
 
 fun main(args: Array<String>) {
     val text = File("BookSource/default.json").readText()
@@ -36,5 +37,10 @@ fun main(args: Array<String>) {
             jsonArray.add(nObj)
         }
     }
-    File("BookSource/default.json").writeText(gson.toJson(jsonObject))
+    val json = gson.toJson(jsonObject)
+    val gz = Base64.getEncoder().encodeToString(json.zip())
+    File("BookSource/default.json").writeText(json)
+    File("BookSource/default.json.gzip").writeText(gz)
+
+
 }

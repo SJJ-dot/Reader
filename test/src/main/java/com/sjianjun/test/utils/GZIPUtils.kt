@@ -1,4 +1,4 @@
-package com.sjianjun.reader.utils
+package com.sjianjun.test.utils
 
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
