@@ -1,75 +1,53 @@
+//请求延迟的时间ms，如果时长小于0将会并发
 function search(query){
-    var baseUrl = "http://www.linshuwu.com/";
-    var html = http.get(baseUrl+"search/?searchkey=" + URLEncoder.encode(query, "utf-8")).body;
-    var parse = Jsoup.parse(html, baseUrl);
-    //多个class 不能加空格
-    var bookListEl = parse.select(".col-xs-4.book-coverlist");
-    Log.e(">>>>>bookListEl Size "+bookListEl.size()+">>>>>>>>>>>>>>>>>>>>")
+    var baseUrl = "https://m.wcxsw.org/search.php";
+    var map = new HashMap();
+    map.put("keyword",URLEncoder.encode(query,"utf-8"))
+    map.put("submit",URLEncoder.encode("搜索","utf-8"))
+    var html = http.post(baseUrl,map).body;
+    var parse = Jsoup.parse(html,baseUrl);
+
+    var bookList = parse.select("dl");
     var results = new ArrayList();
-    for (var i=0;i<bookListEl.size();i++){
-        var bookEl = bookListEl.get(i);
-        Log.e(bookEl.tagName()+">>>>>"+i+">>>>>>>>>>>>>>>>>>>>")
-        Log.e("bookEl>>>>")
-        Log.e(bookEl)
+    for (var i=0;i<bookList.size();i++){
+        var bookElement = bookList.get(i);
         var result = new SearchResult();
-        Log.e("bookTitle>>>>")
-        result.bookTitle = bookEl.select(".fs-16.text-muted > a").text();
-        Log.e(result.bookTitle)
-        Log.e("bookUrl>>>>")
-        result.bookUrl = bookEl.selectFirst(".fs-16.text-muted > a").absUrl("href");
-        Log.e(result.bookUrl)
-        Log.e("bookAuthor>>>>")
-        result.bookAuthor = bookEl.selectFirst(".fs-14.text-muted").text();
-        Log.e(result.bookAuthor)
+        result.bookTitle = bookElement.select("font").text();
+        result.bookUrl = bookElement.select("a").get(0).absUrl("href").replace("//m.","//www.");
+        result.bookAuthor = bookElement.select("dd p").get(0).text().replace("作者：","");
         results.add(result);
-        Log.e(bookEl.tagName()+"<<<<<"+i+"<<<<<<<<<<<<<<<<<<<<")
     }
     return results;
 }
 
-
 function getDetails(url){
     var parse = Jsoup.parse(http.get(url).body,url);
     var book = new Book();
+    //书籍信息
     book.url = url;
-    Log.e("title>>>>")
-    book.title = parse.selectFirst("h1.bookTitle").text().trim();
-    Log.e(book.title)
-    Log.e("author>>>>")
-    book.author = parse.selectFirst("p.booktag a.red").text();
-    Log.e(book.author)
-    Log.e("intro>>>>")
-    //选择没有子元素的P元素
-    book.intro = parse.selectFirst(".col-sm-10.pl0 > p:empty").outerHtml();
-    Log.e(book.intro)
-    Log.e("cover>>>>")
-    book.cover = parse.selectFirst(".img-thumbnail").absUrl("src");
-    Log.e(book.cover)
+    book.title = parse.select("#maininfo #info h1").text();
+    book.author = parse.select("#maininfo #info p").get(0).text().replace("作 者：","");
+    book.intro = parse.select("#intro").html();
+    book.cover = parse.select("#fmimg img").get(0).absUrl("src");
     //加载章节列表
-    var chapterUrl = parse.selectFirst(".bookmore .btn.btn-info").absUrl("href");
+    var children = parse.select("#list dl").get(0).children();
     var chapterList = new ArrayList();
-    getChapterList(http,chapterUrl,chapterList)
+    for(i=children.size()-1; i>=0; i--){
+        var chapterEl = children.get(i);
+        if(chapterEl.tagName() == "dt"){
+            break;
+        }
+        var chapter = new Chapter();
+        chapter.title = chapterEl.child(0).text();
+        chapter.url = chapterEl.child(0).absUrl("href");
+        chapterList.add(0,chapter);
+    }
     book.chapterList = chapterList;
     return book;
 }
 
-function getChapterList(http,url,chapterList){
-    var parse = Jsoup.parse(http.get(url).body,url);
-    var chapterListEl = parse.select(".col-sm-3 a");
-    for (var i=0;i<chapterListEl.size();i++){
-        var chapterEl = chapterListEl.get(i);
-        var chapter = new Chapter();
-        chapter.title = chapterEl.text();
-        chapter.url = chapterEl.absUrl("href");
-        chapterList.add(chapter);
-    }
-    var a = parse.selectFirst(".index-container-btn");
-    if(a.text().equals("下一页")){
-        getChapterList(http,a.absUrl("href"),chapterList)
-    }
-}
-
 function getChapterContent(url){
-    var html = http.get(url).body;
-    return Jsoup.parse(html).selectFirst("#booktxt").outerHtml();
+    var parse = Jsoup.parse(http.get(url).body,url);
+    var content = parse.getElementById("content").html();
+    return content;
 }

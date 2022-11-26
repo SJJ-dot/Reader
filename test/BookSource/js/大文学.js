@@ -26,7 +26,7 @@ function getDetails(url){
     //书籍信息
     book.url = url;
     book.title = parse.select("#maininfo #info h1").text();
-    book.author = parse.select("#maininfo #info p").text().replace("作 者：","");
+    book.author = parse.select("#maininfo #info p").get(0).text().replace("作 者：","");
     book.intro = parse.select("#intro").html();
     book.cover = parse.select("#fmimg img").get(0).absUrl("src");
     //加载章节列表

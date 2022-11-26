@@ -14,7 +14,7 @@ suspend fun main(args: Array<String>) {
             js = test
         }
     }
-    val resultList = javaScript.search("我的")
+    val resultList = javaScript.search("霍格沃茨之灰巫师")
     println("搜索到结果数量：${resultList?.size}")
     if (resultList.isNullOrEmpty()) {
         return
@@ -37,9 +37,13 @@ suspend fun main(args: Array<String>) {
         return
     } else {
         println("搜索结果》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
-        println(resultList)
+        println("搜索到结果数量：${resultList.size}")
         println("详情》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
-        println(details)
+        println("书名：${details.title}")
+        println("作者：${details.author}")
+        println("链接：${details.url}")
+        println("简介：${details.intro}")
+        println("封面：${details.cover}")
         println("章节内容》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》长度：${content.length}")
         println(content.subSequence(0, min(100,content.length)))
         println("校验成功")
