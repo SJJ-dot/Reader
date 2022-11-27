@@ -6,10 +6,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.OnBackPressedCallback
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import com.google.android.material.snackbar.Snackbar
@@ -72,15 +70,7 @@ abstract class BaseFragment : DialogFragment() {
     }
 
 
-    fun setOnBackPressed(owner: LifecycleOwner = viewLifecycleOwner, onBackPressed: () -> Boolean) {
-        activity?.onBackPressedDispatcher?.addCallback(owner, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (!onBackPressed()) {
-                    isEnabled = false
-                    activity?.onBackPressedDispatcher?.onBackPressed()
-                    isEnabled = true
-                }
-            }
-        })
+    fun setOnBackPressed(onBackPressed: () -> Boolean) {
+        activity?.setOnBackPressed(onBackPressed)
     }
 }

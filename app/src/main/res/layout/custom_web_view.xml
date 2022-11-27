@@ -20,11 +20,10 @@
         tools:progress="50"
         tools:visibility="visible" />
 
-    <ViewStub
-        android:id="@+id/web_view_stub"
+    <com.sjianjun.reader.view.CustomActionWebView
+        android:id="@+id/web_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout="@layout/web_view"
         app:layout_constraintBottom_toTopOf="@+id/browser_book_city_toolbar"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
 

@@ -1,26 +1,24 @@
 package com.sjianjun.reader.module.bookcity
 
+import android.os.Bundle
 import android.view.View
 import androidx.lifecycle.Observer
 import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.BaseAsyncFragment
+import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.globalConfig
 import kotlinx.android.synthetic.main.bookcity_fragment_browser.*
-import sjj.alog.Log
-import java.util.concurrent.ConcurrentLinkedDeque
 
 
-class BrowserBookCityFragment : BaseAsyncFragment() {
+class BrowserBookCityFragment : BaseFragment() {
 
     override fun getLayoutRes(): Int {
         return R.layout.bookcity_fragment_browser
     }
 
-    override val onLoadedView: (View) -> Unit = {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         custom_web_view.init(viewLifecycleOwner.lifecycle)
-        setOnBackPressed { custom_web_view.onBackPressed() }
+        setOnBackPressed { custom_web_view?.onBackPressed() == true }
 
         //QQ登录
         globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
@@ -32,7 +30,7 @@ class BrowserBookCityFragment : BaseAsyncFragment() {
 
     private fun initData() {
         launch {
-            custom_web_view?.loadUrl("https://www.qidian.com", true)
+            custom_web_view?.loadUrl("https://m.qidian.com", true)
             activity?.supportActionBar?.title = "起点"
         }
     }

@@ -26,7 +26,6 @@ import com.sjianjun.reader.WEB_VIEW_UA_DESKTOP
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.*
 import kotlinx.android.synthetic.main.custom_web_view.view.*
-import kotlinx.android.synthetic.main.web_view.view.*
 import okhttp3.Cookie
 import okhttp3.HttpUrl
 import sjj.alog.Log
@@ -51,7 +50,6 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun init(lifecycle: Lifecycle) {
-        web_view_stub?.inflate()
         webView = web_view
         initWebViewSetting(webView)
         initWebView(webView)
@@ -385,5 +383,11 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
+
+}
+
+class CustomActionWebView @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null
+) : WebView(context, attrs) {
 
 }
