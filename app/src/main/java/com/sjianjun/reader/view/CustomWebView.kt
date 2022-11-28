@@ -65,6 +65,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initWebView(webView: WebView?) {
+        var allow = true
         webView?.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
@@ -74,7 +75,10 @@ class CustomWebView @JvmOverloads constructor(
                 Log.i("$url ")
                 if (!url.startsWith("http")) {
                     try {
-                        startActivity(context, Intent(Intent.ACTION_VIEW, request.url), null)
+                        if (allow) {
+                            allow = false
+                            startActivity(context, Intent(Intent.ACTION_VIEW, request.url), null)
+                        }
                     } catch (e: Exception) {
                     }
                     return true
@@ -100,7 +104,7 @@ class CustomWebView @JvmOverloads constructor(
                 if (!url.startsWith("http")) {
                     return
                 }
-
+                allow = true
                 forward.isEnabled = webView?.canGoForward() == true
                 backward.isEnabled = webView?.canGoBack() == true
                 refresh.isSelected = false
