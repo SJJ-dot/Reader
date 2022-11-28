@@ -1,4 +1,5 @@
 # 🚀😄android 小说阅读器(自用)，欢迎下载APK体验，持续更新中，支持自定义书源
+# 如果喜欢就动动小手点个star吧😁😁😁😁
 ## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
@@ -17,7 +18,7 @@
 ## 1.0.0
 完善书源管理功能，支持导入自定义的网络书源
 
-# APP下载
+# APP下载 如果喜欢就动动小手点个star吧😁😁😁😁
 
 [Releases版本可能不是最新的](https://github.com/SJJ-dot/Reader/releases)
 
@@ -28,16 +29,10 @@
 ## 书源相关
 * 如果有好用的网站可以在issue提出
 
-默认书源导入链接：
-[https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json](https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json)
-
-默认书源导入链接Gzip：
-[https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json.gzip](https://raw.fastgit.org/SJJ-dot/reader-repo/master/BookSource/default.json.gzip)
-
 ### 书源规则参考 
 
 想要自制书源的朋友请参考书源模板，选择合适的模板复制改改就行。书源调试可使用test模块（test模块需要作为项目根目录直接打开），已设置好测试环境
 
-[默认书源格式参考：https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json](https://gitee.com/SJJ-dot/reader-repo/raw/main/BookSource/default.json)
+[默认书源格式参考：https://github.com/SJJ-dot/Reader/blob/master/test/BookSource/default.json](test/BookSource/default.json)
 
-[书源模板参考](https://github.com/SJJ-dot/Reader/tree/master/test/src/main/java/com/sjianjun/test/templete)
+[书源模板参考](test/src/main/java/com/sjianjun/test/templete)
