@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -327,6 +329,51 @@ class CustomWebView @JvmOverloads constructor(
             return true
         }
         return false
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        if (state is State) {
+            super.onRestoreInstanceState(state.superState)
+            state.url?.let { webView?.loadUrl(it) }
+        } else {
+            super.onRestoreInstanceState(state)
+        }
+    }
+
+    override fun onSaveInstanceState(): Parcelable {
+        val state = State(super.onSaveInstanceState())
+        state.url = webView?.url
+        return state
+    }
+
+    class State : BaseSavedState {
+        var url: String? = null
+
+        constructor(superState: Parcelable?) : super(superState)
+
+        constructor(parcel: Parcel) : super(parcel) {
+            url = parcel.readString()
+        }
+
+        override fun writeToParcel(parcel: Parcel, flags: Int) {
+            super.writeToParcel(parcel, flags)
+            parcel.writeString(url)
+        }
+
+        override fun describeContents(): Int {
+            return 0
+        }
+
+        companion object CREATOR : Parcelable.Creator<State> {
+            override fun createFromParcel(parcel: Parcel): State {
+                return State(parcel)
+            }
+
+            override fun newArray(size: Int): Array<State?> {
+                return arrayOfNulls(size)
+            }
+        }
+
     }
 
     class LifecycleObserver(val customWebView: CustomWebView) :

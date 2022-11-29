@@ -5,7 +5,6 @@ import android.view.View
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.SEARCH_KEY
@@ -42,10 +41,8 @@ class BrowserBookCityFragment : BaseFragment() {
     }
 
     private fun initData() {
-        launch {
-            custom_web_view?.loadUrl("https://m.qidian.com", true)
-            activity?.supportActionBar?.title = "起点"
-        }
+        custom_web_view?.loadUrl("https://m.qidian.com", true)
+        activity?.supportActionBar?.title = "起点"
     }
 
 }

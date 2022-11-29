@@ -10,7 +10,7 @@ import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.utils.isNight
 
 abstract class BaseActivity : AppCompatActivity() {
-    private val backPressedListeners = mutableListOf<() -> Boolean>()
+    private val backPressedListeners = mutableListOf<OnBackPressedListener>()
     open fun immersionBar() {
 
     }
@@ -43,28 +43,33 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (backPressedListeners.find { it() } == null) {
+        if (backPressedListeners.find { it.onBackPressed() } == null) {
             super.onBackPressed()
         }
     }
 
     fun setOnBackPressed(lifecycle: Lifecycle, onBackPressed: () -> Boolean) {
-        backPressedListeners.add(onBackPressed)
-        lifecycle.addObserver(OnBackPressedListener(backPressedListeners, onBackPressed))
+        backPressedListeners.add(OnBackPressedListener(lifecycle, onBackPressed))
+
     }
 
-    private class OnBackPressedListener(
-        val list: MutableList<() -> Boolean>, val listener: () -> Boolean
+    private  inner class OnBackPressedListener(val lifecycle: Lifecycle,val listener: () -> Boolean
     ) : LifecycleEventObserver {
         init {
-            list.add(listener)
+            backPressedListeners.add(this)
+            lifecycle.addObserver(this)
         }
 
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
             if (event == Lifecycle.Event.ON_DESTROY) {
-                list.remove(listener)
+                backPressedListeners.remove(this)
             }
         }
-
+        fun onBackPressed(): Boolean {
+            if (lifecycle.currentState == Lifecycle.State.RESUMED) {
+                return listener()
+            }
+            return false
+        }
     }
 }
