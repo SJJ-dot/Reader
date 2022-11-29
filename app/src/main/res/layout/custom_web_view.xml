@@ -20,7 +20,7 @@
         tools:progress="50"
         tools:visibility="visible" />
 
-    <com.sjianjun.reader.view.CustomActionWebView
+    <WebView
         android:id="@+id/web_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"

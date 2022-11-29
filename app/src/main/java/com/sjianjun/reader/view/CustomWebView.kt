@@ -19,7 +19,6 @@ import androidx.core.content.ContextCompat.startActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.OnLifecycleEvent
-import com.google.gson.annotations.Expose
 import com.sjianjun.reader.R
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.WEB_VIEW_UA_DESKTOP
@@ -44,12 +43,14 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
+    private lateinit var onSelectBook: (String) -> Unit
 
     init {
         LayoutInflater.from(context).inflate(R.layout.custom_web_view, this)
     }
 
-    fun init(lifecycle: Lifecycle) {
+    fun init(lifecycle: Lifecycle, onSelectBook: (String) -> Unit) {
+        this.onSelectBook = onSelectBook
         webView = web_view
         initWebViewSetting(webView)
         initWebView(webView)
@@ -65,6 +66,23 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initWebView(webView: WebView?) {
+
+        webView?.setOnLongClickListener {
+            webView.evaluateJavascript(
+                """
+                document.querySelector(".book-cell h2.book-title").innerText
+            """.trimIndent()
+            ) {
+                var str = it?.toString()
+                if (str.isNullOrBlank() || str == "null") {
+                    return@evaluateJavascript
+                }
+                str = str.substring(1, str.length - 1)
+                onSelectBook(str)
+            }
+            true
+        }
+
         var allow = true
         webView?.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
@@ -348,50 +366,5 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
-    data class AdBlock(val pattern: String = "") : Comparable<AdBlock> {
-        var hitCount: Int = 0
-
-        @Expose(serialize = false)
-        var regex: Regex? = null
-            get() {
-                if (field == null) {
-                    field = Regex("\\A$pattern.*")
-                }
-                return field
-            }
-
-        override
-        fun compareTo(other: AdBlock): Int {
-            return hitCount.compareTo(other.hitCount)
-        }
-
-        override fun toString(): String {
-            return "{hitCount=$hitCount,regex=$regex}"
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as AdBlock
-
-            if (pattern != other.pattern) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return pattern.hashCode()
-        }
-
-
-    }
-
-
-}
-
-class CustomActionWebView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
-) : WebView(context, attrs) {
 
 }
