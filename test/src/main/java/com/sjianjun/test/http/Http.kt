@@ -53,7 +53,7 @@ val okClient = OkHttpClient.Builder()
             HttpLoggingInterceptor.Level.BODY
         )
     )
-    .cache(Cache(File("./test/cache/"), 100 * 1024 * 1024))
+    .cache(Cache(File("./cache/http/"), 100 * 1024 * 1024))
     .addInterceptor {
         val header = header()
         it.request().headers().names().forEach { name ->

@@ -5,7 +5,6 @@ import com.sjianjun.test.http.http
 import com.sjianjun.test.rhino.ContextWrap
 import com.sjianjun.test.rhino.importClassCode
 import com.sjianjun.test.rhino.js
-import com.sjianjun.test.utils.FileCaches
 import com.sjianjun.test.utils.Log
 import okhttp3.HttpUrl
 import org.jsoup.Jsoup
@@ -149,7 +148,6 @@ val headerScript = """
         ${importClassCode<Book>()}
         ${importClassCode<StringUtil>()}
         ${importClassCode<HttpUrl>()}
-        ${importClassCode<FileCaches>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
@@ -183,7 +181,6 @@ val headerScript = """
             }else{
                 resp = http.get(requestUrl,query,header)
             }
-            FileCaches.save(resp.body)
             return resp;
         }
         

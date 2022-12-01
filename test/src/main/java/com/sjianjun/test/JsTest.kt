@@ -1,10 +1,16 @@
 package com.sjianjun.test
 
+import com.sjianjun.test.bean.Book
 import com.sjianjun.test.bean.BookSource
 import com.sjianjun.test.bean.SearchResult
+import com.sjianjun.test.http.http
+import com.sjianjun.test.utils.FileCaches
+import com.sjianjun.test.utils.fromJson
+import com.sjianjun.test.utils.gson
 import kotlinx.coroutines.*
+import org.jsoup.Jsoup
 import java.io.File
-import kotlin.math.min
+import kotlin.math.max
 
 suspend fun test(name: String, script: String, query: String): List<SearchResult> {
     val javaScript by lazy {
@@ -13,14 +19,21 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
             js = script
         }
     }
-    val resultList = javaScript.search(query)
+    var resultList: List<SearchResult>? = null
+    var details: Book? = null
+
+    resultList = javaScript.search(query)
     println("搜索到结果数量：${resultList?.size}")
     if (resultList.isNullOrEmpty()) {
         return emptyList()
     }
-    val selectBook = resultList[0]
+//    缓存搜索结果方便调试
+    FileCaches.save("${name}_searchResult", gson.toJson(resultList[0]))
+
+
+    val selectBook = gson.fromJson<SearchResult>(FileCaches.get("${name}_searchResult"))!!
     val ta = "${selectBook.bookTitle}_${selectBook.bookAuthor}"
-    var details = javaScript.getDetails(selectBook.bookUrl)
+    details = javaScript.getDetails(selectBook.bookUrl)
     println("搜索到章节数量：${details?.chapterList?.size}")
     if (details?.chapterList.isNullOrEmpty()) {
         return emptyList()
@@ -39,24 +52,27 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
         println("搜索结果书名与详情页不同2：${ta}==>${details.title}_${details.author}")
         return emptyList()
     }
+    FileCaches.save("${name}ChapterContent", details.chapterList?.first()!!.url)
 
-    val content = javaScript.getChapterContent(details?.chapterList?.first()!!.url)
+    val url = FileCaches.get("${name}ChapterContent")
+    val content = javaScript.getChapterContent(url)
     if (content.isNullOrEmpty()) {
         println("校验失败")
         return emptyList()
     } else {
         println("搜索结果》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
-        println("搜索到结果数量：${resultList.size}")
+        println("搜索到结果数量：${resultList?.size}")
         println("详情》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》")
-        println("书名：${details.title}")
-        println("作者：${details.author}")
-        println("链接：${details.url}")
-        println("简介：${details.intro}")
-        println("封面：${details.cover}")
+        println("书名：${details?.title}")
+        println("作者：${details?.author}")
+        println("链接：${details?.url}")
+        println("简介：${details?.intro}")
+        println("封面：${details?.cover}")
         println("章节内容》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》长度：${content.length}")
-        println(content.subSequence(0, min(100, content.length)))
+        println(url)
+        println(content.subSequence(max(0, content.length - 200), content.length))
         println("校验成功")
-        return resultList
+        return resultList ?: emptyList()
     }
 }
 
@@ -87,9 +103,20 @@ suspend fun testAll() = withContext(Dispatchers.IO) {
     }
 }
 
-fun main(args: Array<String>) = runBlocking {
-//    val test = File("./src/main/java/com/sjianjun/test/test.js").readText()
-//    test("测试脚本", test, "霍格沃茨之灰巫师")
+fun main(args: Array<String>) {
+    runBlocking {
+        val test = File("./src/main/java/com/sjianjun/test/test.js").readText()
+        test("测试脚本", test, "我的")
 
-    testAll()
+//    testAll()
+    }
+}
+
+
+val test = {
+    val url = FileCaches.get("测试脚本ChapterContent")
+    val document = Jsoup.parse(http.get(url).body)
+    document.tagName()
+    document.select("").text()
+    document.selectFirst("").absUrl("")
 }
