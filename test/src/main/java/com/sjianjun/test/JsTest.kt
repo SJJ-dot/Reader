@@ -11,6 +11,7 @@ import kotlinx.coroutines.*
 import org.jsoup.Jsoup
 import java.io.File
 import kotlin.math.max
+import kotlin.system.exitProcess
 
 suspend fun test(name: String, script: String, query: String): List<SearchResult> {
     val javaScript by lazy {
@@ -110,6 +111,7 @@ fun main(args: Array<String>) {
 
 //    testAll()
     }
+    exitProcess(0)
 }
 
 

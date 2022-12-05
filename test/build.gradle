@@ -1,6 +1,15 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.7.10'
-    id 'java'
+    id 'application'
+}
+
+application {
+    // mainClass = 'com.sjianjun.test.JsTestKt'
+    mainClass = 'com.sjianjun.test.utils.BookSourceHelpKt'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }
 
 java {
@@ -31,4 +40,5 @@ dependencies {
     implementation "com.github.SJJ-dot.retrofit-ext:charset-detector:1.0.1"
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0'
+    implementation 'com.belerweb:pinyin4j:2.5.1'
 }

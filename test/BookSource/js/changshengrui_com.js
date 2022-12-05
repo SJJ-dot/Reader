@@ -1,7 +1,5 @@
-//请求延迟的时间ms，如果时长小于0将会并发
-var hostUrl = "http://www.changshengrui.com/";
 function search(query){
-    var baseUrl = hostUrl;
+    var baseUrl = "http://www.changshengrui.com/";
     var html = http.get(baseUrl+"search/?searchkey=" + URLEncoder.encode(query, "utf-8")).body;
     var parse = Jsoup.parse(html,baseUrl);
     var bookList = parse.select(".item");
@@ -53,16 +51,14 @@ function getChapterList(http,url,chapterList){
 }
 
 function getChapterContent(url){
-    return getChapterContent0(url);
-}
-
-function getChapterContent0(url){
     var str = http.get(url).body
     var parse = Jsoup.parse(str,url);
     var content = parse.getElementById("booktxt").html();
     var a = parse.select(".next_url").get(0)
     if(a.text().equals("下一页")){
-        return content+"\n"+getChapterContent0(str.match(/const\snext_page\s=\s'(.+)';/)[1])
+        var next_url = str.match(/const\snext_page\s=\s'(.+)';/)[1]
+        next_url = next_url.replace("wap.ukaxs.com","www.changshengrui.com")
+        return content+"\n"+getChapterContent(next_url)
     }
     return content;
 }
