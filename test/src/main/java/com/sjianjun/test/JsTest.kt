@@ -69,6 +69,7 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
         println("链接：${details?.url}")
         println("简介：${details?.intro}")
         println("封面：${details?.cover}")
+        println("章节数量：${details?.chapterList?.size}")
         println("章节内容》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》长度：${content.length}")
         println(url)
         println(content.subSequence(max(0, content.length - 200), content.length))

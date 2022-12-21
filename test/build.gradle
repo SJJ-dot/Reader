@@ -4,8 +4,8 @@ plugins {
 }
 
 application {
-    // mainClass = 'com.sjianjun.test.JsTestKt'
-    mainClass = 'com.sjianjun.test.utils.BookSourceHelpKt'
+    mainClass = 'com.sjianjun.test.JsTestKt'
+    // mainClass = 'com.sjianjun.test.utils.BookSourceHelpKt'
 }
 
 tasks.withType(JavaCompile) {
