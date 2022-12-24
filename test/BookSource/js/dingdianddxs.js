@@ -24,7 +24,7 @@ function search(query){
             result.bookUrl = parseBook.select("meta[name=\"og:novel:read_url\"]").attr("content");
             Log.e(result.bookUrl)
             Log.e("bookAuthor>>>>")
-            result.bookAuthor = parseBook.select(".btitle i").get(0).text();
+            result.bookAuthor = parseBook.select(".btitle i").get(0).text().replace("作者：","");
             Log.e(result.bookAuthor)
             results.add(result);
         }catch(error){
@@ -41,7 +41,7 @@ function getDetails(url){
     //书籍信息
     book.url = url;
     book.title = parse.select(".btitle h1").get(0).text();
-    book.author = parse.select(".btitle i").get(0).text();
+    book.author = parse.select(".btitle i").get(0).text().replace("作者：","");
     book.intro = parse.select(".intro").html();
     book.cover = parse.select(".pic > img").get(0).absUrl("src");
     //加载章节列表
