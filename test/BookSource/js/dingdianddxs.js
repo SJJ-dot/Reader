@@ -7,14 +7,21 @@ function search(query){
 
     Log.e(">>>>>bookListEl Size "+bookListEl.size()+">>>>>>>>>>>>>>>>>>>>")
     var results = new ArrayList();
+    var urlCache = new ArrayList();
     for (var i=0;i<bookListEl.size();i++){
-        var bookEl = bookListEl.get(i);
-        Log.e(bookEl.tagName()+">>>>>"+i+">>>>>>>>>>>>>>>>>>>>")
-        Log.e("bookEl>>>>")
-        Log.e(bookEl.text())
-        var url = bookEl.text().match(/^(https?:\/\/[a-zA-Z0-9]+\.ddxs.com\/[a-zA-Z0-9]+)\/?/)[1].replace("//m.","//www.")
-        Log.e("url>>>>"+url)
         try{
+            var bookEl = bookListEl.get(i);
+            Log.e(bookEl.tagName()+">>>>>"+i+">>>>>>>>>>>>>>>>>>>>")
+            Log.e("bookEl>>>>")
+            Log.e(bookEl.text())
+            var url = bookEl.text().match(/^(https?:\/\/[a-zA-Z0-9]+\.ddxs.com\/[a-zA-Z0-9]+)\/?/)[1].replace("//m.","//www.")
+            Log.e("url>>>>"+url)
+            if(urlCache.contains(url)){
+                Log.e("url已加载")
+                continue
+            }
+            urlCache.add(url)
+
             var parseBook = Jsoup.parse(http.get(url).body,url);
             var result = new SearchResult();
             Log.e("bookTitle>>>>")

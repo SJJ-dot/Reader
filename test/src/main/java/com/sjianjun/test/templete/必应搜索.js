@@ -7,14 +7,21 @@ function search(query){
 
     Log.e(">>>>>bookListEl Size "+bookListEl.size()+">>>>>>>>>>>>>>>>>>>>")
     var results = new ArrayList();
+    var urlCache = new ArrayList();
     for (var i=0;i<bookListEl.size();i++){
-        var bookEl = bookListEl.get(i);
-        Log.e(bookEl.tagName()+">>>>>"+i+">>>>>>>>>>>>>>>>>>>>")
-        Log.e("bookEl>>>>")
-        Log.e(bookEl.text())
-        var url = bookEl.text().match(/^(https?:\/\/[a-zA-Z0-9]+\.ddxs.com\/[a-zA-Z0-9]+)\/?/)[1].replace("//m.","//www.")
-        Log.e("url>>>>"+url)
         try{
+            var bookEl = bookListEl.get(i);
+            Log.e(bookEl.tagName()+">>>>>"+i+">>>>>>>>>>>>>>>>>>>>")
+            Log.e("bookEl>>>>")
+            Log.e(bookEl.text())
+            var url = bookEl.text().match(/^(https?:\/\/[a-zA-Z0-9]+\.ddxs.com\/[a-zA-Z0-9]+)\/?/)[1].replace("//m.","//www.")
+            Log.e("url>>>>"+url)
+            if(urlCache.contains(url)){
+                Log.e("url已加载")
+                continue
+            }
+            urlCache.add(url)
+
             var parseBook = Jsoup.parse(http.get(url).body,url);
             var result = new SearchResult();
             Log.e("bookTitle>>>>")
@@ -24,7 +31,7 @@ function search(query){
             result.bookUrl = parseBook.select("meta[name=\"og:novel:read_url\"]").attr("content");
             Log.e(result.bookUrl)
             Log.e("bookAuthor>>>>")
-            result.bookAuthor = parseBook.select(".btitle i").get(0).text();
+            result.bookAuthor = parseBook.select(".btitle i").get(0).text().replace("作者：","");
             Log.e(result.bookAuthor)
             results.add(result);
         }catch(error){
@@ -41,7 +48,7 @@ function getDetails(url){
     //书籍信息
     book.url = url;
     book.title = parse.select(".btitle h1").get(0).text();
-    book.author = parse.select(".btitle i").get(0).text();
+    book.author = parse.select(".btitle i").get(0).text().replace("作者：","");
     book.intro = parse.select(".intro").html();
     book.cover = parse.select(".pic > img").get(0).absUrl("src");
     //加载章节列表
