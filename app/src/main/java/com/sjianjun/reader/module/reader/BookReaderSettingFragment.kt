@@ -46,6 +46,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
+        initChapterList()
         initChapterError()
         initChapterSync()
         initDayNight()
@@ -60,6 +61,13 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         return dialog
+    }
+
+    private fun initChapterList() {
+        chapter_list.setOnClickListener {
+            EventBus.post(EventKey.CHAPTER_LIST)
+            dismiss()
+        }
     }
 
     private fun initChapterError() {

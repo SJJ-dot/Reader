@@ -41,7 +41,7 @@ class BookReaderActivity : BaseActivity() {
     private lateinit var readingRecord: ReadingRecord
 
     //    private val adapter by lazy { ContentAdapter(this) }
-    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
+//    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     private val mPageLoader by lazy { page_view.pageLoader }
     override fun immersionBar() {
 //        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
@@ -89,6 +89,9 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
+        observe<String>(EventKey.CHAPTER_LIST) {
+            drawer_layout.openDrawer(GravityCompat.END)
+        }
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {
                 if (mPageLoader.pageStatus == STATUS_LOADING) {
@@ -129,7 +132,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("已取消标记章节内容错误")
                 } else {
                     chapter.content?.contentError = true
-                    txtChapter?.title = chapter.title +"(章节内容错误)"
+                    txtChapter?.title = chapter.title + "(章节内容错误)"
                     toast("已标记章节内容错误")
                 }
                 val pagePos = mPageLoader.pagePos
@@ -277,7 +280,7 @@ class BookReaderActivity : BaseActivity() {
                                     requestChapters.find { it.chapterIndex == chapter.index }
                                 txtChapter?.content = chapter.content?.format().toString()
                                 if (chapter.content?.contentError == true) {
-                                    txtChapter?.title = chapter.title +"(章节内容错误)"
+                                    txtChapter?.title = chapter.title + "(章节内容错误)"
                                 }
                             }
                             Log.i("章节内容加载结束 Status:${mPageLoader.pageStatus}")
