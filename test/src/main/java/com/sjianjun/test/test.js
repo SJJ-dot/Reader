@@ -20,7 +20,7 @@ function search(query){
         result.bookTitle = bookEl.selectFirst("a").text();
         Log.e(result.bookTitle)
         Log.e("bookUrl>>>>")
-        result.bookUrl = bookEl.selectFirst("a").absUrl("href");
+        result.bookUrl = bookEl.selectFirst("a").absUrl("href").replace("mulu_","").replace(".html","/");
         Log.e(result.bookUrl)
         Log.e("bookAuthor>>>>")
         result.bookAuthor = bookEl.select("span").get(1).text().replace("作者：","");
@@ -36,43 +36,22 @@ function getDetails(url){
     var book = new Book();
     //书籍信息
     book.url = url;
-    book.title = parse.select(".Mulu_title").get(0).text();
+    book.title = parse.select(".Mulu_title").get(0).ownText();
     book.author = parse.select(".Look a").get(0).text();
     book.intro = parse.select(".Look > div > div").get(0).html();
 //    book.cover = parse.select(".pic > img").get(0).absUrl("src");
     //加载章节列表
-    var children = parse.select(".Look_list li");
+    var children = parse.select(".Look_list_dir .chapter a");
     var chapterList = new ArrayList();
     for(i=0; i<children.size(); i++){
-        var chapterEl = children.get(i).select("a").get(0);
+        var chapterEl = children.get(i);
         var chapter = new Chapter();
         chapter.title = chapterEl.text();
         chapter.url = chapterEl.absUrl("href");
-        chapterList.add(0,chapter);
-    }
-    var a = parse.selectFirst(".next.number");
-    if(!a.text().equals(url)){
-        getChapterList(http,a.absUrl("href"),chapterList)
+        chapterList.add(chapter);
     }
     book.chapterList = chapterList;
     return book;
-}
-
-function getChapterList(http,url,chapterList){
-
-    var parse = Jsoup.parse(http.get(url).body,url);
-    var chapterListEl = parse.select(".Look_list li");
-    for (var i=0;i<chapterListEl.size();i++){
-        var chapterEl = chapterListEl.get(i).select("a").get(0);
-        var chapter = new Chapter();
-        chapter.title = chapterEl.text();
-        chapter.url = chapterEl.absUrl("href");
-        chapterList.add(0,chapter);
-    }
-    var a = parse.selectFirst(".next.number");
-    if(!a.absUrl("href").equals(url)){
-        getChapterList(http,a.absUrl("href"),chapterList)
-    }
 }
 
 function getChapterContent(url){

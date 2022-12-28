@@ -51,7 +51,7 @@ fun main(args: Array<String>) {
         val source = it.nameWithoutExtension
         val obj = names[toPinyin(source)]
         if (obj != null) {
-            if (obj.get("js").asString != content) {
+            if (obj.get("js").asString.replace("\r\n","\n") != content.replace("\r\n","\n")) {
                 obj.addProperty("js", content)
                 obj.addProperty("version", obj.get("version").asInt + 1)
             }

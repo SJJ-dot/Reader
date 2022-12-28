@@ -3,6 +3,7 @@ package com.sjianjun.test
 import com.sjianjun.test.bean.Book
 import com.sjianjun.test.bean.BookSource
 import com.sjianjun.test.bean.SearchResult
+import com.sjianjun.test.bean.Chapter
 import com.sjianjun.test.http.http
 import com.sjianjun.test.utils.FileCaches
 import com.sjianjun.test.utils.fromJson
@@ -53,9 +54,9 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
         println("搜索结果书名与详情页不同2：${ta}==>${details.title}_${details.author}")
         return emptyList()
     }
-    FileCaches.save("${name}ChapterContent", details.chapterList?.first()!!.url)
-
-    val url = FileCaches.get("${name}ChapterContent")
+    FileCaches.save("${name}ChapterContent",  gson.toJson(details.chapterList?.first()))
+    val chapter = gson.fromJson<Chapter>(FileCaches.get("${name}ChapterContent"))!!
+    val url = chapter.url
     val content = javaScript.getChapterContent(url)
     if (content.isNullOrEmpty()) {
         println("校验失败")
@@ -70,6 +71,7 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
         println("简介：${details?.intro}")
         println("封面：${details?.cover}")
         println("章节数量：${details?.chapterList?.size}")
+        println("章节标题：${chapter.title}")
         println("章节内容》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》长度：${content.length}")
         println(url)
         println(content.subSequence(max(0, content.length - 200), content.length))
