@@ -38,7 +38,7 @@ function getDetails(url){
     book.url = url;
     book.title = parse.select(".Mulu_title").get(0).ownText();
     book.author = parse.select(".Look a").get(0).text();
-    book.intro = parse.select(".Look > div > div").get(0).html();
+    book.intro = parse.select(".Look > div").get(1).html();
 //    book.cover = parse.select(".pic > img").get(0).absUrl("src");
     //加载章节列表
     var children = parse.select(".Look_list_dir .chapter a");
