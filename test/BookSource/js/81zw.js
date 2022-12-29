@@ -51,5 +51,5 @@ function getDetails(url){
 
 function getChapterContent(url){
     var html = http.get(url).body;
-    return Jsoup.parse(html).selectFirst("#content").outerHtml();
+    return Jsoup.parse(html).selectFirst("#content").outerHtml().split("网页版章节内容慢，请下载爱阅小说app阅读最新内容")[0];
 }
