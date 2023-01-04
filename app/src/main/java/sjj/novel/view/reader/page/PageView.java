@@ -214,12 +214,17 @@ public class PageView extends View {
         int y = (int) event.getY();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                mHasPerformedLongPress = false;
                 mStartX = x;
                 mStartY = y;
                 isMove = false;
                 mPageAnim.onTouchEvent(event);
+                postDelayed(longClick, ViewConfiguration.getLongPressTimeout());
                 break;
             case MotionEvent.ACTION_MOVE:
+                if (mHasPerformedLongPress) {
+                    return true;
+                }
                 // 判断是否大于最小滑动值。
                 int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
                 if (!isMove) {
@@ -229,14 +234,22 @@ public class PageView extends View {
                 // 如果滑动了，则进行翻页。
                 if (isMove) {
                     mPageAnim.onTouchEvent(event);
+                    removeCallbacks(longClick);
                 }
                 break;
             case MotionEvent.ACTION_UP:
+                if (mHasPerformedLongPress) {
+                    return true;
+                }
+                removeCallbacks(longClick);
                 if (!isMove) {
                     //设置中间区域范围
                     if (mCenterRect == null) {
                         mCenterRect = new RectF(mViewWidth / 5, mViewHeight / 3,
                                 mViewWidth * 4 / 5, mViewHeight * 2 / 3);
+                    }
+                    if (mPageLoader.onClick()) {
+                        return true;
                     }
 
                     //是否点击了中间
@@ -252,6 +265,12 @@ public class PageView extends View {
         }
         return true;
     }
+
+    private boolean mHasPerformedLongPress = false;
+    private Runnable longClick = () -> {
+        mHasPerformedLongPress = true;
+        mPageLoader.onLongPress(mStartX,mStartY);
+    };
 
     /**
      * 判断是否存在上一页

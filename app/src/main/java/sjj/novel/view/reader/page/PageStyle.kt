@@ -5,10 +5,8 @@ import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
 import androidx.annotation.ColorInt
 import com.sjianjun.reader.R
-import sjj.alog.Log
 import java.lang.ref.WeakReference
 
 fun Int.color(context: Context): Int {
@@ -308,6 +306,7 @@ enum class PageStyle {
         override fun getChapterContentColor(context: Context): Int {
             return "#292019".color
         }
+
     };
 
     fun getBg(context: Context): BgDrawable {
@@ -343,6 +342,10 @@ enum class PageStyle {
 
     @ColorInt
     abstract fun getChapterContentColor(context: Context): Int
+
+    open fun getSelectedColor(context: Context): Int {
+        return Color.parseColor("#ffd54f")
+    }
 
     companion object {
         @JvmStatic

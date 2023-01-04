@@ -3,6 +3,7 @@ package sjj.novel.view.reader.page;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -10,6 +11,11 @@ import android.text.TextPaint;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.jaeger.library.OnSelectListener;
+import com.jaeger.library.SelectableTextHelper;
+import com.jaeger.library.SelectionInfo;
+import com.jaeger.library.TxtLocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +25,7 @@ import io.reactivex.SingleEmitter;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.disposables.Disposable;
+import kotlin.text.StringsKt;
 import sjj.alog.Log;
 import sjj.novel.view.reader.bean.BookBean;
 import sjj.novel.view.reader.bean.BookRecordBean;
@@ -32,7 +39,7 @@ import sjj.novel.view.reader.utils.StringUtils;
  */
 
 @SuppressWarnings("ALL")
-public abstract class PageLoader {
+public abstract class PageLoader implements OnSelectListener {
     private static final String TAG = "PageLoader";
 
     // 当前页面的状态
@@ -61,6 +68,7 @@ public abstract class PageLoader {
     private PageView mPageView;
     // 当前显示的页
     private TxtPage mCurPage;
+    private Paint.FontMetrics metrics = new Paint.FontMetrics();
     // 上一章的页面列表缓存
     private List<TxtPage> mPrePageList;
     // 当前章节的页面列表
@@ -76,6 +84,7 @@ public abstract class PageLoader {
     private Paint mTitlePaint;
     // 绘制背景颜色的画笔(用来擦除需要重绘的部分)
     private Paint mBgPaint;
+    private Paint mSelectedPaint;
     // 绘制小说内容的画笔
     private TextPaint mTextPaint;
     // 阅读器的配置选项
@@ -136,12 +145,17 @@ public abstract class PageLoader {
     private int mLastChapterPos = 0;
     private ScreenUtils screenUtils;
 
+    private SelectableTextHelper mSelectableTextHelper;
+    private TxtLocationImpl mLocation = new TxtLocationImpl();
+
     /*****************************init params*******************************/
     public PageLoader(PageView pageView) {
         mPageView = pageView;
         mContext = pageView.getContext();
         mChapterList = new ArrayList<>(1);
         screenUtils = new ScreenUtils(mContext);
+        mSelectableTextHelper = new SelectableTextHelper.Builder(pageView, mLocation).build();
+        mSelectableTextHelper.setSelectListener(this);
         // 初始化数据
         initData();
         // 初始化画笔
@@ -197,12 +211,14 @@ public abstract class PageLoader {
 
         // 绘制页面内容的画笔
         mTextPaint = new TextPaint();
+        mTextPaint.setSubpixelText(true);
         mTextPaint.setColor(mTextColor);
         mTextPaint.setTextSize(mTextSize);
         mTextPaint.setAntiAlias(true);
 
         // 绘制标题的画笔
         mTitlePaint = new TextPaint();
+        mTitlePaint.setSubpixelText(true);
         mTitlePaint.setColor(mTextColor);
         mTitlePaint.setTextSize(mTitleSize);
         mTitlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -211,6 +227,12 @@ public abstract class PageLoader {
 
         // 绘制背景的画笔
         mBgPaint = new Paint();
+        mSelectedPaint = new Paint();
+        mSelectedPaint.setSubpixelText(true);
+        mSelectedPaint.setColor(Color.parseColor("#ffd54f"));
+        mSelectedPaint.setTextSize(mTextSize);
+        mSelectedPaint.setAntiAlias(true);
+        mSelectedPaint.setStyle(Paint.Style.FILL_AND_STROKE);
 
         // 绘制电池的画笔
         mBatteryPaint = new Paint();
@@ -384,7 +406,7 @@ public abstract class PageLoader {
         mTitlePaint.setTextSize(mTitleSize);
         // 存储文字大小
         mSettingManager.setTextSize(mTextSize);
-        Log.e("字体大小："+mTextSize+" 标题大小:"+mTitleSize);
+        Log.e("字体大小：" + mTextSize + " 标题大小:" + mTitleSize);
         // 取消缓存
         mPrePageList = null;
         mNextPageList = null;
@@ -424,6 +446,7 @@ public abstract class PageLoader {
         mTipPaint.setColor(pageStyle.getLabelColor(mContext));
         mTitlePaint.setColor(pageStyle.getChapterTitleColor(mContext));
         mTextPaint.setColor(mTextColor);
+        mSelectedPaint.setColor(pageStyle.getSelectedColor(mContext));
 
         mPageView.drawCurPage(false);
     }
@@ -802,6 +825,33 @@ public abstract class PageLoader {
             float pivotY = (mDisplayHeight - textHeight) / 2;
             canvas.drawText(tip, pivotX, pivotY, mTextPaint);
         } else {
+            if (mSelectableTextHelper.mSelectionInfo.select) {
+                int start = mSelectableTextHelper.mSelectionInfo.start;
+                int end = mSelectableTextHelper.mSelectionInfo.end;
+
+                int startLine = mLocation.getLineForOffset(start);
+                int endLine = mLocation.getLineForOffset(end);
+//                Log.e("startLine:" + startLine + " endLine:" + endLine + " start:" + start + " end:" + end);
+                for (int i = startLine; i <= endLine; i++) {
+                    TxtLine txtLine = mCurPage.lines.get(i);
+                    int left;
+                    int right;
+                    if (startLine == i) {
+                        left = mLocation.getHorizontalLeft(start);
+                    } else {
+                        left = mLocation.getLineStart(i);
+                    }
+                    if (endLine == i) {
+                        right = mLocation.getHorizontalLeft(end);
+                    } else {
+                        right = mLocation.getLineEnd(i);
+                    }
+//                    Log.e("left:" + left + " top:" + txtLine.top + " right:" + right + " bottom:" + txtLine.bottom + " " + txtLine);
+                    canvas.drawRect(left, txtLine.top, right, txtLine.bottom, mSelectedPaint);
+                }
+
+            }
+
             float top;
 
             if (mPageMode == PageMode.SCROLL) {
@@ -815,22 +865,25 @@ public abstract class PageLoader {
             int para = mTextPara + (int) mTextPaint.getTextSize();
             int titleInterval = mTitleInterval + (int) mTitlePaint.getTextSize();
             int titlePara = mTitlePara + (int) mTextPaint.getTextSize();
-            String str = null;
+            TxtLine line = null;
 
             //对标题进行绘制
+            mTitlePaint.getFontMetrics(metrics);
             for (int i = 0; i < mCurPage.titleLines; ++i) {
-                str = mCurPage.lines.get(i);
-
+                line = mCurPage.lines.get(i);
                 //设置顶部间距
                 if (i == 0) {
                     top += mTitlePara;
                 }
 
                 //计算文字显示的起始点
-                int start = (int) (mDisplayWidth - mTitlePaint.measureText(str)) / 2;
+                int start = (int) (mDisplayWidth - mTitlePaint.measureText(line.txt)) / 2;
                 //进行绘制
-                canvas.drawText(str, start, top, mTitlePaint);
-
+                canvas.drawText(line.txt, start, top, mTitlePaint);
+                line.left = start;
+                line.top = Math.round(top + metrics.ascent);
+                line.right = mDisplayWidth - line.left;
+                line.bottom = Math.round(top + metrics.descent);
                 //设置尾部间距
                 if (i == mCurPage.titleLines - 1) {
                     top += titlePara;
@@ -842,15 +895,20 @@ public abstract class PageLoader {
 
             //对内容进行绘制
             for (int i = mCurPage.titleLines; i < mCurPage.lines.size(); ++i) {
-                str = mCurPage.lines.get(i);
+                line = mCurPage.lines.get(i);
 
-                canvas.drawText(str, mMarginWidth, top, mTextPaint);
-                if (str.endsWith("\n")) {
+                canvas.drawText(line.txt, mMarginWidth, top, mTextPaint);
+                line.left = mMarginWidth;
+                line.top = Math.round(top + metrics.ascent);
+                line.right = mDisplayWidth - line.left;
+                line.bottom = Math.round(top + metrics.descent);
+                if (line.txt.endsWith("\n")) {
                     top += para;
                 } else {
                     top += interval;
                 }
             }
+
         }
     }
 
@@ -1188,11 +1246,18 @@ public abstract class PageLoader {
      * @return
      */
     private List<TxtPage> loadPages(TxtChapter chapter) {
-        int convertType = mSettingManager.getConvertType();
+//        String str = "啊啊啊啊啊啊";
+//        float width = mTextPaint.measureText(str, 0, 1);
+//        Log.e("width3:"+width);
+//        int offset = mTextPaint.breakText(str, 0, str.length(), true, 30, null);
+//        Log.e("offset30："+offset);
+//        offset = mTextPaint.breakText(str, 0, str.length(), true, 80, null);
+//        Log.e("offset80："+offset);
+//        mTextPaint.measureText(str,)
         //生成的页面
         List<TxtPage> pages = new ArrayList<>();
         //使用流的方式加载
-        List<String> lines = new ArrayList<>();
+        List<TxtLine> lines = new ArrayList<>();
         int rHeight = mVisibleHeight;
         int titleLinesCount = 0;
         boolean showTitle = true; // 是否展示标题
@@ -1252,7 +1317,7 @@ public abstract class PageLoader {
                 subStr = paragraph.substring(0, wordCount);
                 if (!subStr.equals("\n")) {
                     //将一行字节，存储到lines中
-                    lines.add(subStr);
+                    lines.add(new TxtLine(subStr, showTitle));
 
                     //设置段落间距
                     if (showTitle) {
@@ -1287,6 +1352,16 @@ public abstract class PageLoader {
             pages.add(page);
             //重置Lines
             lines.clear();
+        }
+        for (int idx = 0; idx < pages.size(); idx++) {
+            TxtPage page = pages.get(idx);
+            int nextCharStart = 0;
+            for (int line = 0; line < page.lines.size(); line++) {
+                TxtLine txtLine = page.lines.get(line);
+                txtLine.index = line;
+                txtLine.charStart = nextCharStart;
+                nextCharStart = nextCharStart + txtLine.txt.length();
+            }
         }
         return pages;
     }
@@ -1371,6 +1446,337 @@ public abstract class PageLoader {
         }
         return true;
     }
+
+    public boolean onClick() {
+        if (!mSelectableTextHelper.mSelectionInfo.select) {
+            return false;
+        }
+        mSelectableTextHelper.resetSelectionInfo();
+        mSelectableTextHelper.hideSelectView();
+        mPageView.drawNextPage();
+        return true;
+    }
+
+    public void onLongPress(int x, int y) {
+        Log.e("长按 x:" + x + " y:" + y);
+        mSelectableTextHelper.showSelectView(x, y);
+    }
+
+    @Override
+    public void onTextSelected(SelectionInfo info) {
+        Log.e("被选中的文字");
+    }
+
+    @Override
+    public void onTextSelectedChange(SelectionInfo info) {
+        mPageView.drawNextPage();
+    }
+
+    private class TxtLocationImpl implements TxtLocation {
+        @Override
+        public int getLine(int y) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            for (TxtLine line : page.lines) {
+                if (line.top <= y && line.bottom >= y) {
+                    return line.index;
+                }
+            }
+            return -1;
+        }
+
+        @Override
+        public int getLineForOffset(int offset) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            for (TxtLine line : page.lines) {
+                if (line.charStart <= offset && line.charStart + line.txt.length() > offset) {
+                    return line.index;
+                }
+            }
+            return page.lines.size() - 1;
+        }
+
+        @Override
+        public int getLineStart(int line) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            if (StringsKt.isBlank(txtLine.txt)) {
+                return -1;
+            }
+            for (int i = 0; i < txtLine.txt.length(); i++) {
+                if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                    continue;
+                }
+                return getHorizontalLeft(txtLine.charStart + i);
+            }
+            return -1;
+        }
+
+        @Override
+        public int getLineStartOffset(int line) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            return txtLine.charStart;
+        }
+
+        @Override
+        public int getLineEnd(int line) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            if (StringsKt.isBlank(txtLine.txt)) {
+                return -1;
+            }
+            for (int i = txtLine.txt.length() - 1; i >= 0; i--) {
+                if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                    continue;
+                }
+                return getHorizontalRight(txtLine.charStart + i);
+            }
+            return -1;
+        }
+
+        @Override
+        public int getOffset(int x, int y) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            int line = getLine(y);
+            if (line == -1) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            Paint paint;
+            if (txtLine.isTitle) {
+                paint = mTitlePaint;
+            } else {
+                paint = mTextPaint;
+            }
+//            Log.e(txtLine);
+//            Log.e(page.lines.get(line + 1));
+//            Log.e("len:" + txtLine.txt.length() + ">>" + txtLine.txt);
+            int lineStart = getLineStart(txtLine.index);
+            if (x < lineStart) {
+                return -1;
+            }
+            int lineEnd = getLineEnd(txtLine.index);
+            if (x > lineEnd) {
+                return -1;
+            }
+            int word = paint.breakText(txtLine.txt, 0, txtLine.txt.length(), true, x - txtLine.left, null);
+            return word + txtLine.charStart;
+        }
+
+        @Override
+        public int getHysteresisOffset(int x, int y, int oldOffset, boolean isLeft) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return oldOffset;
+            }
+            int line = getLine(y);
+            if (line == -1) {
+                line = getLineForOffset(oldOffset);
+            }
+            TxtLine txtLine = page.lines.get(line);
+
+            if (StringsKt.isBlank(txtLine.txt)) {
+                if (isLeft) {
+                    int idx = getNotWhitespace(line + 1, isLeft);
+                    return idx == -1 ? oldOffset : idx;
+                } else {
+                    int idx = getNotWhitespace(line - 1, isLeft);
+                    return idx == -1 ? oldOffset : (idx + 1);
+                }
+            }
+            int lineStart = getLineStart(txtLine.index);
+            if (x < lineStart) {
+                if (isLeft) {
+                    for (int i = 0; i < txtLine.txt.length(); i++) {
+                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                            continue;
+                        }
+                        return txtLine.charStart + i;
+                    }
+                    return oldOffset;
+                } else {
+                    int idx = getNotWhitespace(line - 1, isLeft);
+                    return idx == -1 ? oldOffset : (idx + 1);
+                }
+            }
+            int lineEnd = getLineEnd(txtLine.index);
+            if (x > lineEnd) {
+                if (isLeft) {
+                    int idx = getNotWhitespace(line + 1, isLeft);
+                    return idx == -1 ? oldOffset : idx;
+                } else {
+                    for (int i = txtLine.txt.length() - 1; i >= 0; i--) {
+                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                            continue;
+                        }
+                        return txtLine.charStart + i + 1;
+                    }
+                    return oldOffset;
+                }
+            }
+
+            Paint paint;
+            if (txtLine.isTitle) {
+                paint = mTitlePaint;
+            } else {
+                paint = mTextPaint;
+            }
+            int word = paint.breakText(txtLine.txt, 0, txtLine.txt.length(), true, x - txtLine.left, null);
+            float width = paint.measureText(txtLine.txt, word, word + 1);
+            float wordWidth = paint.measureText(txtLine.txt, 0, word);
+            if (x - wordWidth > width / 2) {
+                return word + 1 + txtLine.charStart;
+            } else {
+                return word + txtLine.charStart;
+            }
+        }
+
+        public int getNotWhitespace(int line, boolean isLeft) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            if (line < 0 || line >= page.lines.size()) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            if (StringsKt.isBlank(txtLine.txt)) {
+                if (isLeft) {
+                    return getNotWhitespace(line + 1, isLeft);
+                } else {
+                    return getNotWhitespace(line - 1, isLeft);
+                }
+            } else {
+                if (isLeft) {
+                    for (int i = 0; i < txtLine.txt.length(); i++) {
+                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                            continue;
+                        }
+                        return txtLine.charStart + i;
+                    }
+                } else {
+                    for (int i = txtLine.txt.length() - 1; i >= 0; i--) {
+                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
+                            continue;
+                        }
+                        return txtLine.charStart + i;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        @Override
+        public int getHorizontalRight(int offset) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            for (TxtLine line : page.lines) {
+                if (line.charStart <= offset && line.charStart + line.txt.length() > offset) {
+                    int lineOffset = offset - line.charStart;
+                    Paint paint;
+                    if (line.isTitle) {
+                        paint = mTitlePaint;
+                    } else {
+                        paint = mTextPaint;
+                    }
+                    return Math.round(paint.measureText(line.txt, 0, lineOffset + 1) + line.left);
+                }
+            }
+            return -1;
+        }
+
+        @Override
+        public int getHorizontalLeft(int offset) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            for (TxtLine line : page.lines) {
+                if (line.charStart <= offset && line.charStart + line.txt.length() > offset) {
+                    int lineOffset = offset - line.charStart;
+                    if (lineOffset == 0) {
+                        return Math.round(line.left);
+                    }
+
+                    Paint paint;
+                    if (line.isTitle) {
+                        paint = mTitlePaint;
+                    } else {
+                        paint = mTextPaint;
+                    }
+                    return Math.round(paint.measureText(line.txt, 0, lineOffset) + line.left);
+                }
+            }
+            return -1;
+        }
+
+        @Override
+        public int getLineTop(int line) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            return Math.round(txtLine.top);
+        }
+
+        @Override
+        public int getLineBottom(int line) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return -1;
+            }
+            TxtLine txtLine = page.lines.get(line);
+            return Math.round(txtLine.bottom);
+        }
+
+        @Override
+        public String getTxt(int start, int end) {
+            TxtPage page = PageLoader.this.mCurPage;
+            if (page == null) {
+                return "";
+            }
+
+            TxtLine startLine = page.lines.get(getLineForOffset(start));
+            TxtLine endLine = page.lines.get(getLineForOffset(end));
+            if (startLine == endLine) {
+                return startLine.txt.substring(start - startLine.charStart, end - startLine.charStart);
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i = startLine.index; i <= endLine.index; i++) {
+                TxtLine line = page.lines.get(i);
+                if (line == startLine) {
+                    stringBuilder.append(line.txt.substring(start - line.charStart));
+                } else if (line == endLine) {
+                    stringBuilder.append(line.txt.substring(0, end - line.charStart));
+                } else {
+                    stringBuilder.append(line.txt);
+                }
+            }
+            return stringBuilder.toString();
+        }
+    }
+
 
     /*****************************************interface*****************************************/
 

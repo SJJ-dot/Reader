@@ -27,7 +27,7 @@ class BookSourceListViewModel(bookTitle: String, bookAuthor: String) : ViewModel
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            BookMgr.getBookAllSourceFlow(bookTitle, bookAuthor).debounce(300).collectLatest {
+            BookMgr.getBookAllSourceFlow(bookTitle, bookAuthor).debounce(100).collectLatest {
                 val record = ReadingRecordMgr.getReadingRecord(bookTitle, bookAuthor)
                 val readingChapter = if (record != null) {
                     ChapterMgr.getChapterByIndex(
