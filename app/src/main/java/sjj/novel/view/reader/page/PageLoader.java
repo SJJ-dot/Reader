@@ -50,11 +50,6 @@ public abstract class PageLoader implements OnSelectListener {
     public static final int STATUS_PARING = 5;          // 正在解析 (装载本地数据)
     public static final int STATUS_PARSE_ERROR = 6;     // 本地文件解析错误(暂未被使用)
     public static final int STATUS_CATEGORY_EMPTY = 7;  // 获取到的目录为空
-    // 默认的显示参数配置
-    private static final int DEFAULT_MARGIN_HEIGHT = 28;
-    private static final int DEFAULT_MARGIN_WIDTH = 15;
-    private static final int DEFAULT_TIP_SIZE = 12;
-    private static final int EXTRA_TITLE_SIZE = 4;
 
     // 当前章节列表
     protected List<TxtChapter> mChapterList;
@@ -76,14 +71,11 @@ public abstract class PageLoader implements OnSelectListener {
     // 下一章的页面列表缓存
     private List<TxtPage> mNextPageList;
 
-    // 绘制电池的画笔
-    private Paint mBatteryPaint;
     // 绘制提示的画笔
     private Paint mTipPaint;
     // 绘制标题的画笔
     private Paint mTitlePaint;
     // 绘制背景颜色的画笔(用来擦除需要重绘的部分)
-    private Paint mBgPaint;
     private Paint mSelectedPaint;
     // 绘制小说内容的画笔
     private TextPaint mTextPaint;
@@ -108,32 +100,15 @@ public abstract class PageLoader implements OnSelectListener {
     private boolean isClose;
     // 页面的翻页效果模式
     private PageMode mPageMode;
-    // 加载器的颜色主题
-    private PageStyle mPageStyle = PageStyle.BG_def;
     //当前是否是夜间模式
     private boolean isNightMode;
-    //书籍绘制区域的宽高
-    private int mVisibleWidth;
-    private int mVisibleHeight;
-    //应用的宽高
-    private int mDisplayWidth;
-    private int mDisplayHeight;
-    //间距
-    private int mMarginWidth;
-    private int mMarginHeight;
+    private DisplayParams mDisplayParams;
     //字体的颜色
     private int mTextColor;
     //标题的大小
     private int mTitleSize;
     //字体的大小
     private int mTextSize;
-    //行间距
-    private int mTextInterval;
-    //标题的行间距
-    private int mTitleInterval;
-    //段落距离(基于行间距的额外距离)
-    private int mTextPara;
-    private int mTitlePara;
     //电池的百分比
     private int mBatteryLevel;
     //当前页面的背景
@@ -152,6 +127,7 @@ public abstract class PageLoader implements OnSelectListener {
     public PageLoader(PageView pageView) {
         mPageView = pageView;
         mContext = pageView.getContext();
+        mDisplayParams = new DisplayParams(pageView.getContext());
         mChapterList = new ArrayList<>(1);
         screenUtils = new ScreenUtils(mContext);
         mSelectableTextHelper = new SelectableTextHelper.Builder(pageView, mLocation).build();
@@ -162,6 +138,8 @@ public abstract class PageLoader implements OnSelectListener {
         initPaint();
         // 初始化PageView
         initPageView();
+        // 初始化页面样式
+        setPageStyle(mSettingManager.getPageStyle());
     }
 
     private void initData() {
@@ -169,10 +147,6 @@ public abstract class PageLoader implements OnSelectListener {
         mSettingManager = new ReadSettingManager(mContext);
         // 获取配置参数
         mPageMode = mSettingManager.getPageMode();
-        mPageStyle = mSettingManager.getPageStyle();
-        // 初始化参数
-        mMarginWidth = screenUtils.dpToPx(DEFAULT_MARGIN_WIDTH);
-        mMarginHeight = screenUtils.dpToPx(DEFAULT_MARGIN_HEIGHT);
         // 配置文字有关的参数
         setUpTextParams(mSettingManager.getTextSize(), mSettingManager.getLineSpace());
     }
@@ -192,55 +166,37 @@ public abstract class PageLoader implements OnSelectListener {
         // 文字大小
         mTextSize = textSize;
         mTitleSize = mTextSize;
-        // 行间距(大小为字体的一半)
-        mTextInterval = (int) (mTextSize * lineSpace);
-        mTitleInterval = mTitleSize / 2;
-        // 段落间距(大小为字体的高度)
-        mTextPara = mTextSize;
-        mTitlePara = mTitleSize;
+        mDisplayParams.setTextInterval((int) (mTextSize * lineSpace));
+        mDisplayParams.setTitleInterval((int) (mTitleSize * lineSpace));
+        mDisplayParams.setTextPara(mTextSize);
+        mDisplayParams.setTitlePara(mTitleSize);
     }
 
     private void initPaint() {
         // 绘制提示的画笔
         mTipPaint = new Paint();
-        mTipPaint.setColor(mTextColor);
         mTipPaint.setTextAlign(Paint.Align.LEFT); // 绘制的起始点
-        mTipPaint.setTextSize(screenUtils.spToPx(DEFAULT_TIP_SIZE)); // Tip默认的字体大小
+        mTipPaint.setTextSize(screenUtils.spToPx(12)); // Tip默认的字体大小
         mTipPaint.setAntiAlias(true);
         mTipPaint.setSubpixelText(true);
 
         // 绘制页面内容的画笔
         mTextPaint = new TextPaint();
         mTextPaint.setSubpixelText(true);
-        mTextPaint.setColor(mTextColor);
-        mTextPaint.setTextSize(mTextSize);
         mTextPaint.setAntiAlias(true);
 
         // 绘制标题的画笔
         mTitlePaint = new TextPaint();
         mTitlePaint.setSubpixelText(true);
-        mTitlePaint.setColor(mTextColor);
-        mTitlePaint.setTextSize(mTitleSize);
         mTitlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mTitlePaint.setTypeface(Typeface.DEFAULT_BOLD);
         mTitlePaint.setAntiAlias(true);
 
         // 绘制背景的画笔
-        mBgPaint = new Paint();
         mSelectedPaint = new Paint();
         mSelectedPaint.setSubpixelText(true);
-        mSelectedPaint.setColor(Color.parseColor("#ffd54f"));
-        mSelectedPaint.setTextSize(mTextSize);
         mSelectedPaint.setAntiAlias(true);
         mSelectedPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-
-        // 绘制电池的画笔
-        mBatteryPaint = new Paint();
-        mBatteryPaint.setAntiAlias(true);
-        mBatteryPaint.setDither(true);
-
-        // 初始化页面样式
-        setPageStyle(mSettingManager.getPageStyle());
     }
 
     private void initPageView() {
@@ -434,15 +390,11 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pageStyle:页面样式
      */
     public void setPageStyle(PageStyle pageStyle) {
-        mPageStyle = pageStyle;
         mSettingManager.setPageStyle(pageStyle);
-
         // 设置当前颜色样式
-
         mTextColor = pageStyle.getChapterContentColor(mContext);
         mBackground = pageStyle.getBg(mContext);
 
-        mBatteryPaint.setColor(pageStyle.getSpacerColor(mContext));
         mTipPaint.setColor(pageStyle.getLabelColor(mContext));
         mTitlePaint.setColor(pageStyle.getChapterTitleColor(mContext));
         mTextPaint.setColor(mTextColor);
@@ -473,10 +425,9 @@ public abstract class PageLoader implements OnSelectListener {
      * @param marginWidth  :单位为 px
      * @param marginHeight :单位为 px
      */
-    public void setMargin(int marginWidth, int marginHeight) {
-        mMarginWidth = marginWidth;
-        mMarginHeight = marginHeight;
-
+    public void setPadding(int paddingWidth, int marginHeight) {
+        mDisplayParams.setPaddingWidth(paddingWidth);
+        mDisplayParams.setPaddingHeight(marginHeight);
         // 如果是滑动动画，则需要重新创建了
         if (mPageMode == PageMode.SCROLL) {
             mPageView.setPageMode(PageMode.SCROLL);
@@ -567,7 +518,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public int getMarginHeight() {
-        return mMarginHeight;
+        return mDisplayParams.getTipHeight();
     }
 
     /**
@@ -759,23 +710,21 @@ public abstract class PageLoader implements OnSelectListener {
             if (!mChapterList.isEmpty()) {
                 /*****初始化标题的参数********/
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                float tipTop = tipMarginHeight - mTipPaint.getFontMetrics().top;
+                float tipTop = mDisplayParams.getTipHeight() / 2 + (mTipPaint.getFontMetrics().bottom - mTipPaint.getFontMetrics().top) / 2;
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
-                        canvas.drawText(mChapterList.get(mCurChapterPos).title, mMarginWidth, tipTop, mTipPaint);
+                        canvas.drawText(mChapterList.get(mCurChapterPos).title, mDisplayParams.getContentLeft(), tipTop, mTipPaint);
                     }
                 } else {
-                    canvas.drawText(mCurPage.title, mMarginWidth, tipTop, mTipPaint);
+                    canvas.drawText(mCurPage.title, mDisplayParams.getContentLeft(), tipTop, mTipPaint);
                 }
 
                 /******绘制页码********/
-                float y = mDisplayHeight - mTipPaint.getFontMetrics().bottom - tipMarginHeight;
                 // 只有finish的时候采用页码
                 if (mStatus == STATUS_FINISH) {
                     String percent = (mCurPage.position + 1) + "/" + mCurPageList.size();
-                    int visibleRight = mDisplayWidth - mMarginWidth;
-                    canvas.drawText(percent, visibleRight - mTipPaint.measureText(percent), tipTop, mTipPaint);
+                    canvas.drawText(percent, mDisplayParams.getContentRight() - mTipPaint.measureText(percent), tipTop, mTipPaint);
                 }
             }
         } else {
@@ -791,8 +740,14 @@ public abstract class PageLoader implements OnSelectListener {
                 mBackground.draw(canvas);
             }
         }
-        /******绘制内容****/
 
+        canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
+        canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
+
+        canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
+        canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
+
+        /******绘制内容****/
         if (mStatus != STATUS_FINISH) {
             //绘制字体
             String tip = "";
@@ -821,8 +776,8 @@ public abstract class PageLoader implements OnSelectListener {
             Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
             float textHeight = fontMetrics.top - fontMetrics.bottom;
             float textWidth = mTextPaint.measureText(tip);
-            float pivotX = (mDisplayWidth - textWidth) / 2;
-            float pivotY = (mDisplayHeight - textHeight) / 2;
+            float pivotX = (mDisplayParams.getContentWidth() - textWidth) / 2;
+            float pivotY = (mDisplayParams.getContentHeight() - textHeight) / 2;
             canvas.drawText(tip, pivotX, pivotY, mTextPaint);
         } else {
             if (mSelectableTextHelper.mSelectionInfo.select) {
@@ -857,14 +812,14 @@ public abstract class PageLoader implements OnSelectListener {
             if (mPageMode == PageMode.SCROLL) {
                 top = -mTextPaint.getFontMetrics().top;
             } else {
-                top = mMarginHeight - mTextPaint.getFontMetrics().top;
+                top = mDisplayParams.getTipHeight() - mTextPaint.getFontMetrics().top;
             }
 
             //设置总距离
-            int interval = mTextInterval + (int) mTextPaint.getTextSize();
-            int para = mTextPara + (int) mTextPaint.getTextSize();
-            int titleInterval = mTitleInterval + (int) mTitlePaint.getTextSize();
-            int titlePara = mTitlePara + (int) mTextPaint.getTextSize();
+            int interval = mDisplayParams.getTextInterval() + (int) mTextPaint.getTextSize();
+            int para = mDisplayParams.getTextPara() + (int) mTextPaint.getTextSize();
+            int titleInterval = mDisplayParams.getTitleInterval() + (int) mTitlePaint.getTextSize();
+            int titlePara = mDisplayParams.getTitlePara() + (int) mTextPaint.getTextSize();
             TxtLine line = null;
 
             //对标题进行绘制
@@ -873,16 +828,16 @@ public abstract class PageLoader implements OnSelectListener {
                 line = mCurPage.lines.get(i);
                 //设置顶部间距
                 if (i == 0) {
-                    top += mTitlePara;
+                    top += mDisplayParams.getTitlePara();
                 }
 
                 //计算文字显示的起始点
-                int start = (int) (mDisplayWidth - mTitlePaint.measureText(line.txt)) / 2;
+                int start = (int) (mDisplayParams.getWidth() - mTitlePaint.measureText(line.txt)) / 2;
                 //进行绘制
                 canvas.drawText(line.txt, start, top, mTitlePaint);
                 line.left = start;
                 line.top = Math.round(top + metrics.ascent);
-                line.right = mDisplayWidth - line.left;
+                line.right = mDisplayParams.getWidth() - line.left;
                 line.bottom = Math.round(top + metrics.descent);
                 //设置尾部间距
                 if (i == mCurPage.titleLines - 1) {
@@ -897,10 +852,10 @@ public abstract class PageLoader implements OnSelectListener {
             for (int i = mCurPage.titleLines; i < mCurPage.lines.size(); ++i) {
                 line = mCurPage.lines.get(i);
 
-                canvas.drawText(line.txt, mMarginWidth, top, mTextPaint);
-                line.left = mMarginWidth;
+                canvas.drawText(line.txt, mDisplayParams.getPaddingWidth(), top, mTextPaint);
+                line.left = mDisplayParams.getPaddingWidth();
                 line.top = Math.round(top + metrics.ascent);
-                line.right = mDisplayWidth - line.left;
+                line.right = mDisplayParams.getWidth() - line.left;
                 line.bottom = Math.round(top + metrics.descent);
                 if (line.txt.endsWith("\n")) {
                     top += para;
@@ -914,13 +869,9 @@ public abstract class PageLoader implements OnSelectListener {
 
     void prepareDisplay(int w, int h) {
         // 获取PageView的宽高
-        mDisplayWidth = w;
-        mDisplayHeight = h;
-
+        mDisplayParams.setWidth(w);
+        mDisplayParams.setHeight(h);
         // 获取内容显示位置的大小
-        mVisibleWidth = mDisplayWidth - mMarginWidth * 2;
-        mVisibleHeight = mDisplayHeight - mMarginHeight - screenUtils.dpToPx(4);//至减去上边距
-
         // 重置 PageMode
         mPageView.setPageMode(mPageMode);
 
@@ -1258,7 +1209,7 @@ public abstract class PageLoader implements OnSelectListener {
         List<TxtPage> pages = new ArrayList<>();
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
-        int rHeight = mVisibleHeight;
+        int rHeight = mDisplayParams.getContentHeight();
         int titleLinesCount = 0;
         boolean showTitle = true; // 是否展示标题
         String paragraph = chapter.title;//默认展示标题
@@ -1277,7 +1228,7 @@ public abstract class PageLoader implements OnSelectListener {
                 paragraph = StringUtils.halfToFull("  " + paragraph + "\n");
             } else {
                 //设置 title 的顶部间距
-                rHeight -= mTitlePara;
+                rHeight -= mDisplayParams.getTitlePara();
             }
             int wordCount = 0;
             String subStr = null;
@@ -1299,7 +1250,7 @@ public abstract class PageLoader implements OnSelectListener {
                     pages.add(page);
                     // 重置Lines
                     lines.clear();
-                    rHeight = mVisibleHeight;
+                    rHeight = mDisplayParams.getContentHeight();
                     titleLinesCount = 0;
 
                     continue;
@@ -1308,10 +1259,10 @@ public abstract class PageLoader implements OnSelectListener {
                 //测量一行占用的字节数
                 if (showTitle) {
                     wordCount = mTitlePaint.breakText(paragraph,
-                            true, mVisibleWidth, null);
+                            true, mDisplayParams.getContentWidth(), null);
                 } else {
                     wordCount = mTextPaint.breakText(paragraph,
-                            true, mVisibleWidth, null);
+                            true, mDisplayParams.getContentWidth(), null);
                 }
 
                 subStr = paragraph.substring(0, wordCount);
@@ -1322,9 +1273,9 @@ public abstract class PageLoader implements OnSelectListener {
                     //设置段落间距
                     if (showTitle) {
                         titleLinesCount += 1;
-                        rHeight -= mTitleInterval;
+                        rHeight -= mDisplayParams.getTitleInterval();
                     } else {
-                        rHeight -= mTextInterval;
+                        rHeight -= mDisplayParams.getTextInterval();
                     }
                 }
                 //裁剪
@@ -1333,11 +1284,11 @@ public abstract class PageLoader implements OnSelectListener {
 
             //增加段落的间距
             if (!showTitle && lines.size() != 0) {
-                rHeight = rHeight - mTextPara + mTextInterval;
+                rHeight = rHeight - mDisplayParams.getTextPara() + mDisplayParams.getTextInterval();
             }
 
             if (showTitle) {
-                rHeight = rHeight - mTitlePara + mTitleInterval;
+                rHeight = rHeight - mDisplayParams.getTitlePara() + mDisplayParams.getTitleInterval();
                 showTitle = false;
             }
         }
@@ -1447,7 +1398,7 @@ public abstract class PageLoader implements OnSelectListener {
         return true;
     }
 
-    public boolean onClick() {
+    public boolean hideSelectView() {
         if (!mSelectableTextHelper.mSelectionInfo.select) {
             return false;
         }

@@ -233,6 +233,7 @@ public class PageView extends View {
 
                 // 如果滑动了，则进行翻页。
                 if (isMove) {
+                    mPageLoader.hideSelectView();
                     mPageAnim.onTouchEvent(event);
                     removeCallbacks(longClick);
                 }
@@ -248,7 +249,7 @@ public class PageView extends View {
                         mCenterRect = new RectF(mViewWidth / 5, mViewHeight / 3,
                                 mViewWidth * 4 / 5, mViewHeight * 2 / 3);
                     }
-                    if (mPageLoader.onClick()) {
+                    if (mPageLoader.hideSelectView()) {
                         return true;
                     }
 

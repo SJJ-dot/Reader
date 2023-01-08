@@ -208,9 +208,9 @@ public class SelectableTextHelper {
             mSelectionInfo.start = mSelectionInfo.end;
             mSelectionInfo.end = temp;
         }
-        mSelectionInfo.select = true;
         Log.e(mSelectionInfo + mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end));
-        if (oldS != mSelectionInfo.start || oldE != mSelectionInfo.end) {
+        if (oldS != mSelectionInfo.start || oldE != mSelectionInfo.end || !mSelectionInfo.select) {
+            mSelectionInfo.select = true;
             mSelectListener.onTextSelectedChange(mSelectionInfo);
         }
 //        int[] offset = checkOffset(mLocation, mSelectionInfo.start, mSelectionInfo.end);

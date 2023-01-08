@@ -16,7 +16,7 @@ import java.lang.reflect.Method;
  */
 
 public class ScreenUtils {
-    private Context context;
+    private final Context context;
 
     public ScreenUtils(Context context) {
         this.context = context;
