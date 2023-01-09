@@ -3,7 +3,7 @@ package sjj.novel.view.reader.page;
 import java.util.Objects;
 
 public class TxtLine {
-    public String txt;
+    public CharSequence txt;
     public boolean isTitle;
 
 
@@ -18,7 +18,7 @@ public class TxtLine {
     public int index;
     public int charStart;
 
-    public TxtLine(String txt,boolean isTitle) {
+    public TxtLine(CharSequence txt,boolean isTitle) {
         this.txt = txt;
         this.isTitle = isTitle;
     }

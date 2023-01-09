@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 
 import androidx.annotation.NonNull;
@@ -74,7 +75,7 @@ public abstract class PageLoader implements OnSelectListener {
     // 绘制提示的画笔
     private Paint mTipPaint;
     // 绘制标题的画笔
-    private Paint mTitlePaint;
+    private TextPaint mTitlePaint;
     // 绘制背景颜色的画笔(用来擦除需要重绘的部分)
     private Paint mSelectedPaint;
     // 绘制小说内容的画笔
@@ -1209,6 +1210,17 @@ public abstract class PageLoader implements OnSelectListener {
         List<TxtPage> pages = new ArrayList<>();
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
+        String title = StringUtils.halfToFull(chapter.title);
+        StaticLayout titleLayout = StaticLayout.Builder.obtain(title, 0, title.length(), mTitlePaint, mDisplayParams.getContentWidth()).build();
+
+        int top = mDisplayParams.getContentTop();
+        for (int i = 0; i < titleLayout.getLineCount(); i++) {
+            int lineStart = titleLayout.getLineStart(i);
+            int lineEnd = titleLayout.getLineEnd(i);
+            TxtLine line = new TxtLine(titleLayout.getText().subSequence(lineStart, lineEnd), true);
+            line
+        }
+
         int rHeight = mDisplayParams.getContentHeight();
         int titleLinesCount = 0;
         boolean showTitle = true; // 是否展示标题
