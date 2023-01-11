@@ -3,8 +3,10 @@ package sjj.novel.view.reader.page;
 import java.util.Objects;
 
 public class TxtLine {
-    public CharSequence txt;
+    public String txt;
     public boolean isTitle;
+    public int height;
+    public int width;
 
 
     public int top;
@@ -18,9 +20,16 @@ public class TxtLine {
     public int index;
     public int charStart;
 
-    public TxtLine(CharSequence txt,boolean isTitle) {
+    public TxtLine(String txt, boolean isTitle) {
         this.txt = txt;
         this.isTitle = isTitle;
+    }
+
+    public TxtLine(String txt, boolean isTitle, int height,int width) {
+        this.txt = txt;
+        this.isTitle = isTitle;
+        this.height = height;
+        this.width = width;
     }
 
     @Override

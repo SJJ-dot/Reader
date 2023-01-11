@@ -17,6 +17,7 @@ import com.jaeger.library.OnSelectListener;
 import com.jaeger.library.SelectableTextHelper;
 import com.jaeger.library.SelectionInfo;
 import com.jaeger.library.TxtLocation;
+import com.sjianjun.reader.BuildConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -741,12 +742,13 @@ public abstract class PageLoader implements OnSelectListener {
                 mBackground.draw(canvas);
             }
         }
+        if (BuildConfig.DEBUG) {
+            canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
+            canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
 
-        canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
-        canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
-
-        canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
-        canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
+            canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
+            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
+        }
 
         /******绘制内容****/
         if (mStatus != STATUS_FINISH) {
@@ -815,56 +817,20 @@ public abstract class PageLoader implements OnSelectListener {
             } else {
                 top = mDisplayParams.getTipHeight() - mTextPaint.getFontMetrics().top;
             }
+            Paint.FontMetrics titleMetrics = mTitlePaint.getFontMetrics();
+            int titleBase = -Math.round(titleMetrics.ascent);
+            Paint.FontMetrics textMetrics = mTextPaint.getFontMetrics();
+            int textBase = -Math.round(textMetrics.ascent);
+            for (TxtLine line : mCurPage.lines) {
+                float y = line.top + (line.isTitle ? titleBase : textBase);
+                Paint paint = line.isTitle ? mTitlePaint : mTextPaint;
+                canvas.drawText(line.txt, line.left, y, paint);
 
-            //设置总距离
-            int interval = mDisplayParams.getTextInterval() + (int) mTextPaint.getTextSize();
-            int para = mDisplayParams.getTextPara() + (int) mTextPaint.getTextSize();
-            int titleInterval = mDisplayParams.getTitleInterval() + (int) mTitlePaint.getTextSize();
-            int titlePara = mDisplayParams.getTitlePara() + (int) mTextPaint.getTextSize();
-            TxtLine line = null;
-
-            //对标题进行绘制
-            mTitlePaint.getFontMetrics(metrics);
-            for (int i = 0; i < mCurPage.titleLines; ++i) {
-                line = mCurPage.lines.get(i);
-                //设置顶部间距
-                if (i == 0) {
-                    top += mDisplayParams.getTitlePara();
-                }
-
-                //计算文字显示的起始点
-                int start = (int) (mDisplayParams.getWidth() - mTitlePaint.measureText(line.txt)) / 2;
-                //进行绘制
-                canvas.drawText(line.txt, start, top, mTitlePaint);
-                line.left = start;
-                line.top = Math.round(top + metrics.ascent);
-                line.right = mDisplayParams.getWidth() - line.left;
-                line.bottom = Math.round(top + metrics.descent);
-                //设置尾部间距
-                if (i == mCurPage.titleLines - 1) {
-                    top += titlePara;
-                } else {
-                    //行间距
-                    top += titleInterval;
+                if (BuildConfig.DEBUG) {
+                    canvas.drawLine(line.left, line.top, line.right, line.top, mTitlePaint);
+                    canvas.drawLine(line.left, line.bottom, line.right, line.bottom, mTitlePaint);
                 }
             }
-
-            //对内容进行绘制
-            for (int i = mCurPage.titleLines; i < mCurPage.lines.size(); ++i) {
-                line = mCurPage.lines.get(i);
-
-                canvas.drawText(line.txt, mDisplayParams.getPaddingWidth(), top, mTextPaint);
-                line.left = mDisplayParams.getPaddingWidth();
-                line.top = Math.round(top + metrics.ascent);
-                line.right = mDisplayParams.getWidth() - line.left;
-                line.bottom = Math.round(top + metrics.descent);
-                if (line.txt.endsWith("\n")) {
-                    top += para;
-                } else {
-                    top += interval;
-                }
-            }
-
         }
     }
 
@@ -1198,137 +1164,76 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     private List<TxtPage> loadPages(TxtChapter chapter) {
-//        String str = "啊啊啊啊啊啊";
-//        float width = mTextPaint.measureText(str, 0, 1);
-//        Log.e("width3:"+width);
-//        int offset = mTextPaint.breakText(str, 0, str.length(), true, 30, null);
-//        Log.e("offset30："+offset);
-//        offset = mTextPaint.breakText(str, 0, str.length(), true, 80, null);
-//        Log.e("offset80："+offset);
-//        mTextPaint.measureText(str,)
         //生成的页面
         List<TxtPage> pages = new ArrayList<>();
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
-        String title = StringUtils.halfToFull(chapter.title);
-        StaticLayout titleLayout = StaticLayout.Builder.obtain(title, 0, title.length(), mTitlePaint, mDisplayParams.getContentWidth()).build();
 
-        int top = mDisplayParams.getContentTop();
-        for (int i = 0; i < titleLayout.getLineCount(); i++) {
-            int lineStart = titleLayout.getLineStart(i);
-            int lineEnd = titleLayout.getLineEnd(i);
-            TxtLine line = new TxtLine(titleLayout.getText().subSequence(lineStart, lineEnd), true);
-            line
-        }
+        createTxtLine(lines, StringUtils.halfToFull(chapter.title.trim()), mTitlePaint);
+        int titleLines = lines.size();
+        String content = StringUtils.halfToFull(chapter.getContent().replaceAll("[ \\t\\x0B\\f\\r]+", "").replace("\n+", "\n  ").trim());
+        createTxtLine(lines, content, mTextPaint);
+        List<TxtLine> pageLine = new ArrayList<>();
+        for (int i = 0; i < lines.size(); ) {
+            int top = mDisplayParams.getContentTop();
+            int nextCharStart = 0;
+            while (i < lines.size()) {
+                TxtLine line = lines.get(i);
+                Log.e("top:" + top + " " + (mDisplayParams.getContentBottom() - top) + " " + line.height);
+                int remHeight = mDisplayParams.getContentBottom() - top - line.height;
+                if (remHeight < 0) {
+                    break;
+                }
+                line.left = mDisplayParams.getContentLeft();
+                line.top = top;
+                line.right = mDisplayParams.getContentRight();
+                line.bottom = top + line.height;
 
-        int rHeight = mDisplayParams.getContentHeight();
-        int titleLinesCount = 0;
-        boolean showTitle = true; // 是否展示标题
-        String paragraph = chapter.title;//默认展示标题
-        String[] strings = chapter.getContent().split("\n");
-        int i = 0;
-        while (showTitle || strings.length > i) {
-            if (!showTitle) {
-                paragraph = strings[i];
+                line.index = pageLine.size();
+                line.charStart = nextCharStart;
+                nextCharStart += line.txt.length();
+                pageLine.add(line);
+                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
                 i++;
-            }
-            // 重置段落
-            if (!showTitle) {
-                paragraph = paragraph.replaceAll("\\s", "");
-                // 如果只有换行符，那么就不执行
-                if (paragraph.equals("")) continue;
-                paragraph = StringUtils.halfToFull("  " + paragraph + "\n");
-            } else {
-                //设置 title 的顶部间距
-                rHeight -= mDisplayParams.getTitlePara();
-            }
-            int wordCount = 0;
-            String subStr = null;
-            while (paragraph.length() > 0) {
-                //当前空间，是否容得下一行文字
-                if (showTitle) {
-                    rHeight -= mTitlePaint.getTextSize();
-                } else {
-                    rHeight -= mTextPaint.getTextSize();
-                }
-                // 一页已经填充满了，创建 TextPage
-                if (rHeight <= 0) {
-                    // 创建Page
-                    TxtPage page = new TxtPage();
-                    page.position = pages.size();
-                    page.title = chapter.title;
-                    page.lines = new ArrayList<>(lines);
-                    page.titleLines = titleLinesCount;
-                    pages.add(page);
-                    // 重置Lines
-                    lines.clear();
-                    rHeight = mDisplayParams.getContentHeight();
-                    titleLinesCount = 0;
-
-                    continue;
-                }
-
-                //测量一行占用的字节数
-                if (showTitle) {
-                    wordCount = mTitlePaint.breakText(paragraph,
-                            true, mDisplayParams.getContentWidth(), null);
-                } else {
-                    wordCount = mTextPaint.breakText(paragraph,
-                            true, mDisplayParams.getContentWidth(), null);
-                }
-
-                subStr = paragraph.substring(0, wordCount);
-                if (!subStr.equals("\n")) {
-                    //将一行字节，存储到lines中
-                    lines.add(new TxtLine(subStr, showTitle));
-
-                    //设置段落间距
-                    if (showTitle) {
-                        titleLinesCount += 1;
-                        rHeight -= mDisplayParams.getTitleInterval();
+                top += line.height;
+                Log.e("top:" + top + " " + (mDisplayParams.getContentBottom() - top) + " " + line.height);
+                if (line.isTitle) {
+                    if (line.index == titleLines - 1) {
+                        top += mDisplayParams.getTitlePara();
                     } else {
-                        rHeight -= mDisplayParams.getTextInterval();
+                        top += mDisplayParams.getTitleInterval();
+                    }
+                } else {
+                    if (line.txt.endsWith("\n")) {
+                        top += mDisplayParams.getTextPara();
+                    } else {
+                        top += mDisplayParams.getTextInterval();
                     }
                 }
-                //裁剪
-                paragraph = paragraph.substring(wordCount);
             }
-
-            //增加段落的间距
-            if (!showTitle && lines.size() != 0) {
-                rHeight = rHeight - mDisplayParams.getTextPara() + mDisplayParams.getTextInterval();
-            }
-
-            if (showTitle) {
-                rHeight = rHeight - mDisplayParams.getTitlePara() + mDisplayParams.getTitleInterval();
-                showTitle = false;
-            }
-        }
-
-        if (lines.size() != 0) {
-            //创建Page
             TxtPage page = new TxtPage();
             page.position = pages.size();
             page.title = chapter.title;
-            page.lines = new ArrayList<>(lines);
-            page.titleLines = titleLinesCount;
+            page.lines = new ArrayList<>(pageLine);
             pages.add(page);
-            //重置Lines
-            lines.clear();
-        }
-        for (int idx = 0; idx < pages.size(); idx++) {
-            TxtPage page = pages.get(idx);
-            int nextCharStart = 0;
-            for (int line = 0; line < page.lines.size(); line++) {
-                TxtLine txtLine = page.lines.get(line);
-                txtLine.index = line;
-                txtLine.charStart = nextCharStart;
-                nextCharStart = nextCharStart + txtLine.txt.length();
-            }
+            pageLine.clear();
         }
         return pages;
     }
 
+    private void createTxtLine(List<TxtLine> lines, String text, TextPaint paint) {
+        StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, mDisplayParams.getContentWidth()).build();
+        for (int i = 0; i < layout.getLineCount(); i++) {
+            float left = layout.getLineLeft(i);
+            float right = layout.getLineRight(i);
+            int lineStart = layout.getLineStart(i);
+            int lineEnd = layout.getLineEnd(i);
+            int lineHeight = layout.getLineBottom(i) - layout.getLineTop(i);
+            CharSequence lineStr = layout.getText().subSequence(lineStart, lineEnd);
+            TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, Math.round(right - left));
+            lines.add(line);
+        }
+    }
 
     /**
      * @return:获取初始显示的页面
