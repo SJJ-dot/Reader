@@ -28,5 +28,10 @@ public interface TxtLocation {
     int getLineTop(int line);
     int getLineBottom(int line);
 
+    /**
+     *
+     * @param start 开始索引
+     * @param end 结束索引。包含索引字符
+     */
     String getTxt(int start,int end);
 }

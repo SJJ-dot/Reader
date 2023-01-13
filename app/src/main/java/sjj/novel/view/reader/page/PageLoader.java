@@ -27,6 +27,7 @@ import io.reactivex.SingleEmitter;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.disposables.Disposable;
+import kotlin.text.CharsKt;
 import kotlin.text.StringsKt;
 import sjj.alog.Log;
 import sjj.novel.view.reader.bean.BookBean;
@@ -167,11 +168,12 @@ public abstract class PageLoader implements OnSelectListener {
         mSettingManager.setLineSpace(lineSpace);
         // 文字大小
         mTextSize = textSize;
-        mTitleSize = mTextSize;
         mDisplayParams.setTextInterval((int) (mTextSize * lineSpace));
-        mDisplayParams.setTitleInterval((int) (mTitleSize * lineSpace));
-        mDisplayParams.setTextPara(mTextSize);
-        mDisplayParams.setTitlePara(mTitleSize);
+        mDisplayParams.setTextPara((int) Math.round(mTextSize * 1.5));
+
+        mTitleSize = (int) Math.round(mTextSize * 1.1);
+        mDisplayParams.setTitleInterval(mDisplayParams.getTextInterval());
+        mDisplayParams.setTitlePara((int) Math.round(mTitleSize * 1.5));
     }
 
     private void initPaint() {
@@ -249,8 +251,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     public void refreshChapter(TxtChapter chapter) {
-        if (chapter == mChapterList.get(mCurChapterPos))
-            skipToChapter(mCurChapterPos);
+        if (chapter == mChapterList.get(mCurChapterPos)) skipToChapter(mCurChapterPos);
     }
 
     /**
@@ -800,7 +801,7 @@ public abstract class PageLoader implements OnSelectListener {
                         left = mLocation.getLineStart(i);
                     }
                     if (endLine == i) {
-                        right = mLocation.getHorizontalLeft(end);
+                        right = mLocation.getHorizontalRight(end);
                     } else {
                         right = mLocation.getLineEnd(i);
                     }
@@ -824,7 +825,10 @@ public abstract class PageLoader implements OnSelectListener {
             for (TxtLine line : mCurPage.lines) {
                 float y = line.top + (line.isTitle ? titleBase : textBase);
                 Paint paint = line.isTitle ? mTitlePaint : mTextPaint;
-                canvas.drawText(line.txt, line.left, y, paint);
+                for (int i = 0; i < line.txt.length(); i++) {
+                    canvas.drawText(line.txt, i, i + 1, line.charLeft[i], y, paint);
+                }
+//                canvas.drawText(line.txt, line.left, y, paint);
 
                 if (BuildConfig.DEBUG) {
                     canvas.drawLine(line.left, line.top, line.right, line.top, mTitlePaint);
@@ -1058,8 +1062,7 @@ public abstract class PageLoader implements OnSelectListener {
         int nextChapter = mCurChapterPos + 1;
 
         // 如果不存在下一章，且下一章没有数据，则不进行加载。
-        if (!hasNextChapter()
-                || !hasChapterData(mChapterList.get(nextChapter))) {
+        if (!hasNextChapter() || !hasChapterData(mChapterList.get(nextChapter))) {
             return;
         }
 
@@ -1070,27 +1073,26 @@ public abstract class PageLoader implements OnSelectListener {
 
         //调用异步进行预加载加载
         Single.create(new SingleOnSubscribe<List<TxtPage>>() {
-                    @Override
-                    public void subscribe(SingleEmitter<List<TxtPage>> e) throws Exception {
-                        e.onSuccess(loadPageList(nextChapter));
-                    }
-                }).compose(RxUtils::toSimpleSingle)
-                .subscribe(new SingleObserver<List<TxtPage>>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-                        mPreLoadDisp = d;
-                    }
+            @Override
+            public void subscribe(SingleEmitter<List<TxtPage>> e) throws Exception {
+                e.onSuccess(loadPageList(nextChapter));
+            }
+        }).compose(RxUtils::toSimpleSingle).subscribe(new SingleObserver<List<TxtPage>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                mPreLoadDisp = d;
+            }
 
-                    @Override
-                    public void onSuccess(List<TxtPage> pages) {
-                        mNextPageList = pages;
-                    }
+            @Override
+            public void onSuccess(List<TxtPage> pages) {
+                mNextPageList = pages;
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        //无视错误
-                    }
-                });
+            @Override
+            public void onError(Throwable e) {
+                //无视错误
+            }
+        });
     }
 
     // 取消翻页
@@ -1105,9 +1107,7 @@ public abstract class PageLoader implements OnSelectListener {
                     mCurPage = new TxtPage();
                 }
             }
-        } else if (mCurPageList == null
-                || (mCurPage.position == mCurPageList.size() - 1
-                && mCurChapterPos < mLastChapterPos)) {  // 加载上一章取消了
+        } else if (mCurPageList == null || (mCurPage.position == mCurPageList.size() - 1 && mCurChapterPos < mLastChapterPos)) {  // 加载上一章取消了
 
             if (mNextPageList != null) {
                 cancelPreChapter();
@@ -1169,17 +1169,20 @@ public abstract class PageLoader implements OnSelectListener {
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
 
-        createTxtLine(lines, StringUtils.halfToFull(chapter.title.trim()), mTitlePaint);
+        createTxtLine(lines, StringUtils.halfToFull(StringsKt.trim(chapter.title).toString()), mTitlePaint);
         int titleLines = lines.size();
-        String content = StringUtils.halfToFull(chapter.getContent().replaceAll("[ \\t\\x0B\\f\\r]+", "").replace("\n+", "\n  ").trim());
+        String content = chapter.getContent().replaceAll("[ \\t\\x0B\\f\\r]+", "").replace("\n+", "\n  ");
+        content = StringUtils.halfToFull(StringsKt.trimEnd(content).toString());
         createTxtLine(lines, content, mTextPaint);
         List<TxtLine> pageLine = new ArrayList<>();
         for (int i = 0; i < lines.size(); ) {
             int top = mDisplayParams.getContentTop();
+            if (i == 0) {
+                top += mDisplayParams.getTitlePara();
+            }
             int nextCharStart = 0;
             while (i < lines.size()) {
                 TxtLine line = lines.get(i);
-                Log.e("top:" + top + " " + (mDisplayParams.getContentBottom() - top) + " " + line.height);
                 int remHeight = mDisplayParams.getContentBottom() - top - line.height;
                 if (remHeight < 0) {
                     break;
@@ -1193,10 +1196,9 @@ public abstract class PageLoader implements OnSelectListener {
                 line.charStart = nextCharStart;
                 nextCharStart += line.txt.length();
                 pageLine.add(line);
-                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
+//                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
                 i++;
                 top += line.height;
-                Log.e("top:" + top + " " + (mDisplayParams.getContentBottom() - top) + " " + line.height);
                 if (line.isTitle) {
                     if (line.index == titleLines - 1) {
                         top += mDisplayParams.getTitlePara();
@@ -1230,8 +1232,38 @@ public abstract class PageLoader implements OnSelectListener {
             int lineEnd = layout.getLineEnd(i);
             int lineHeight = layout.getLineBottom(i) - layout.getLineTop(i);
             CharSequence lineStr = layout.getText().subSequence(lineStart, lineEnd);
+
             TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, Math.round(right - left));
             lines.add(line);
+
+            int extX = 0;
+            int len = line.txt.length();
+            int st = 0;
+
+            while ((st < len) && (CharsKt.isWhitespace(line.txt.charAt(st)))) {
+                st++;
+            }
+            while ((st < len) && (CharsKt.isWhitespace(line.txt.charAt(len - 1)))) {
+                len--;
+            }
+
+            if (len - st > 1) {
+                int lastCharWidth;
+                if (len == line.txt.length()) {
+                    lastCharWidth = Math.round(right - layout.getPrimaryHorizontal(lineEnd - 1));
+                } else {
+                    lastCharWidth = Math.round(layout.getPrimaryHorizontal(lineEnd - (line.txt.length() - len)) - layout.getPrimaryHorizontal(lineEnd - (line.txt.length() - len) - 1));
+                }
+
+                extX = Math.min(mDisplayParams.getContentWidth() - line.width, lastCharWidth * 2) / (len - st - 1);
+            }
+
+            for (int offset = lineStart; offset < lineEnd; offset++) {
+                int leftOf = Math.round(layout.getPrimaryHorizontal(offset));
+                int rightOf = Math.round(offset == lineEnd - 1 ? right : layout.getPrimaryHorizontal(offset + 1));
+                int offsetX = Math.max((offset - lineStart - st), 0) * extX + mDisplayParams.getContentLeft();
+                line.addLeftOfRight(offset - lineStart, offsetX + leftOf, offsetX + rightOf);
+            }
         }
     }
 
@@ -1306,8 +1338,7 @@ public abstract class PageLoader implements OnSelectListener {
             return false;
         }
 
-        if (mStatus == STATUS_PARSE_ERROR
-                || mStatus == STATUS_PARING) {
+        if (mStatus == STATUS_PARSE_ERROR || mStatus == STATUS_PARING) {
             return false;
         } else if (mStatus == STATUS_ERROR) {
             mStatus = STATUS_LOADING;
@@ -1445,8 +1476,12 @@ public abstract class PageLoader implements OnSelectListener {
             if (x > lineEnd) {
                 return -1;
             }
-            int word = paint.breakText(txtLine.txt, 0, txtLine.txt.length(), true, x - txtLine.left, null);
-            return word + txtLine.charStart;
+            for (int i = 0; i < txtLine.charLeft.length; i++) {
+                if (x >= txtLine.charLeft[i] && x <= txtLine.charRight[i]) {
+                    return i + txtLine.charStart;
+                }
+            }
+            return -1;
         }
 
         @Override
@@ -1455,66 +1490,29 @@ public abstract class PageLoader implements OnSelectListener {
             if (page == null) {
                 return oldOffset;
             }
-            int line = getLine(y);
+
+            int difY = Integer.MAX_VALUE;
+            int line = -1;
+            for (TxtLine txtLine : page.lines) {
+                if (!StringsKt.isBlank(txtLine.txt) && Math.abs((txtLine.top + txtLine.bottom) / 2 - y) < difY) {
+                    line = txtLine.index;
+                    difY = Math.abs((txtLine.top + txtLine.bottom) / 2 - y);
+                }
+            }
             if (line == -1) {
-                line = getLineForOffset(oldOffset);
+                return oldOffset;
             }
             TxtLine txtLine = page.lines.get(line);
-
-            if (StringsKt.isBlank(txtLine.txt)) {
-                if (isLeft) {
-                    int idx = getNotWhitespace(line + 1, isLeft);
-                    return idx == -1 ? oldOffset : idx;
-                } else {
-                    int idx = getNotWhitespace(line - 1, isLeft);
-                    return idx == -1 ? oldOffset : (idx + 1);
+            Log.e(txtLine);
+            int difX = Integer.MAX_VALUE;
+            int lineOffset = -1;
+            for (int i = 0; i < txtLine.txt.length(); i++) {
+                if (!CharsKt.isWhitespace(txtLine.txt.charAt(i)) && Math.abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x) < difX) {
+                    lineOffset = i;
+                    difX = Math.abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x);
                 }
             }
-            int lineStart = getLineStart(txtLine.index);
-            if (x < lineStart) {
-                if (isLeft) {
-                    for (int i = 0; i < txtLine.txt.length(); i++) {
-                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
-                            continue;
-                        }
-                        return txtLine.charStart + i;
-                    }
-                    return oldOffset;
-                } else {
-                    int idx = getNotWhitespace(line - 1, isLeft);
-                    return idx == -1 ? oldOffset : (idx + 1);
-                }
-            }
-            int lineEnd = getLineEnd(txtLine.index);
-            if (x > lineEnd) {
-                if (isLeft) {
-                    int idx = getNotWhitespace(line + 1, isLeft);
-                    return idx == -1 ? oldOffset : idx;
-                } else {
-                    for (int i = txtLine.txt.length() - 1; i >= 0; i--) {
-                        if (Character.isWhitespace(txtLine.txt.charAt(i))) {
-                            continue;
-                        }
-                        return txtLine.charStart + i + 1;
-                    }
-                    return oldOffset;
-                }
-            }
-
-            Paint paint;
-            if (txtLine.isTitle) {
-                paint = mTitlePaint;
-            } else {
-                paint = mTextPaint;
-            }
-            int word = paint.breakText(txtLine.txt, 0, txtLine.txt.length(), true, x - txtLine.left, null);
-            float width = paint.measureText(txtLine.txt, word, word + 1);
-            float wordWidth = paint.measureText(txtLine.txt, 0, word);
-            if (x - wordWidth > width / 2) {
-                return word + 1 + txtLine.charStart;
-            } else {
-                return word + txtLine.charStart;
-            }
+            return lineOffset == -1 ? oldOffset : (lineOffset + txtLine.charStart);
         }
 
         public int getNotWhitespace(int line, boolean isLeft) {
@@ -1561,13 +1559,7 @@ public abstract class PageLoader implements OnSelectListener {
             for (TxtLine line : page.lines) {
                 if (line.charStart <= offset && line.charStart + line.txt.length() > offset) {
                     int lineOffset = offset - line.charStart;
-                    Paint paint;
-                    if (line.isTitle) {
-                        paint = mTitlePaint;
-                    } else {
-                        paint = mTextPaint;
-                    }
-                    return Math.round(paint.measureText(line.txt, 0, lineOffset + 1) + line.left);
+                    return line.charRight[lineOffset];
                 }
             }
             return -1;
@@ -1586,13 +1578,7 @@ public abstract class PageLoader implements OnSelectListener {
                         return Math.round(line.left);
                     }
 
-                    Paint paint;
-                    if (line.isTitle) {
-                        paint = mTitlePaint;
-                    } else {
-                        paint = mTextPaint;
-                    }
-                    return Math.round(paint.measureText(line.txt, 0, lineOffset) + line.left);
+                    return line.charLeft[lineOffset];
                 }
             }
             return -1;
@@ -1628,7 +1614,7 @@ public abstract class PageLoader implements OnSelectListener {
             TxtLine startLine = page.lines.get(getLineForOffset(start));
             TxtLine endLine = page.lines.get(getLineForOffset(end));
             if (startLine == endLine) {
-                return startLine.txt.substring(start - startLine.charStart, end - startLine.charStart);
+                return startLine.txt.substring(start - startLine.charStart, end - startLine.charStart + 1);
             }
             StringBuilder stringBuilder = new StringBuilder();
             for (int i = startLine.index; i <= endLine.index; i++) {
@@ -1636,7 +1622,7 @@ public abstract class PageLoader implements OnSelectListener {
                 if (line == startLine) {
                     stringBuilder.append(line.txt.substring(start - line.charStart));
                 } else if (line == endLine) {
-                    stringBuilder.append(line.txt.substring(0, end - line.charStart));
+                    stringBuilder.append(line.txt.substring(0, end - line.charStart + 1));
                 } else {
                     stringBuilder.append(line.txt);
                 }

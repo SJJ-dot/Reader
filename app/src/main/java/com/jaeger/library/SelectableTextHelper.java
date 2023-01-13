@@ -34,7 +34,6 @@ import sjj.alog.Log;
  */
 public class SelectableTextHelper {
 
-    private final static int DEFAULT_SELECTION_LENGTH = 1;
     private static final int DEFAULT_SHOW_DURATION = 100;
 
     private CursorHandle mStartHandle;
@@ -172,7 +171,7 @@ public class SelectableTextHelper {
         if (startOffset < 0) {
             return;
         }
-        int endOffset = startOffset + DEFAULT_SELECTION_LENGTH;
+        int endOffset = startOffset;
         if (StringsKt.isBlank(mLocation.getTxt(startOffset, endOffset))) {
             return;
         }
@@ -186,11 +185,7 @@ public class SelectableTextHelper {
     private void showCursorHandle(CursorHandle cursorHandle) {
         int offset = cursorHandle.isLeft ? mSelectionInfo.start : mSelectionInfo.end;
         int line = mLocation.getLineForOffset(offset);
-        int x = mLocation.getHorizontalLeft(offset);
-        if (!cursorHandle.isLeft && offset == mLocation.getLineStartOffset(line)) {
-            line -= 1;
-            x = mLocation.getLineEnd(line);
-        }
+        int x = cursorHandle.isLeft ? mLocation.getHorizontalLeft(offset) : mLocation.getHorizontalRight(offset);
         cursorHandle.show(x, mLocation.getLineBottom(line));
     }
 
@@ -208,7 +203,7 @@ public class SelectableTextHelper {
             mSelectionInfo.start = mSelectionInfo.end;
             mSelectionInfo.end = temp;
         }
-        Log.e(mSelectionInfo + mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end));
+//        Log.e(mSelectionInfo + mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end));
         if (oldS != mSelectionInfo.start || oldE != mSelectionInfo.end || !mSelectionInfo.select) {
             mSelectionInfo.select = true;
             mSelectListener.onTextSelectedChange(mSelectionInfo);
@@ -261,7 +256,7 @@ public class SelectableTextHelper {
                         SelectableTextHelper.this.hideSelectView();
                         mSelectListener.onTextSelectedChange(mSelectionInfo);
                     } catch (Exception e) {
-                        Log.e("搜索出错",e);
+                        Log.e("搜索出错", e);
                     }
                 }
             });
@@ -276,7 +271,7 @@ public class SelectableTextHelper {
                         SelectableTextHelper.this.hideSelectView();
                         mSelectListener.onTextSelectedChange(mSelectionInfo);
                     } catch (Exception e) {
-                        Log.e("字典搜索出错",e);
+                        Log.e("字典搜索出错", e);
                     }
                 }
             });
@@ -476,11 +471,7 @@ public class SelectableTextHelper {
                         -1, -1);
             } else {
                 int line = mLocation.getLineForOffset(mSelectionInfo.end);
-                int x = mLocation.getHorizontalLeft(mSelectionInfo.end);
-                if (mLocation.getLineStartOffset(line) == mSelectionInfo.end) {
-                    line -= 1;
-                    x = mLocation.getLineEnd(line);
-                }
+                int x = mLocation.getHorizontalRight(mSelectionInfo.end);
                 mPopupWindow.update(x - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
                         mLocation.getLineBottom(line) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop(),
                         -1, -1);
