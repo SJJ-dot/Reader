@@ -1497,9 +1497,9 @@ public abstract class PageLoader implements OnSelectListener {
             float difY = Integer.MAX_VALUE;
             int line = -1;
             for (TxtLine txtLine : page.lines) {
-                if (!StringsKt.isBlank(txtLine.txt) && Math.abs((txtLine.top + txtLine.bottom) / 2 - y) < difY) {
+                if (!StringsKt.isBlank(txtLine.txt) && Math.abs(txtLine.bottom - y) < difY) {
                     line = txtLine.index;
-                    difY = Math.abs((txtLine.top + txtLine.bottom) / 2 - y);
+                    difY = Math.abs(txtLine.bottom - y);
                 }
             }
             if (line == -1) {
