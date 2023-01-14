@@ -185,7 +185,7 @@ public class SelectableTextHelper {
     private void showCursorHandle(CursorHandle cursorHandle) {
         int offset = cursorHandle.isLeft ? mSelectionInfo.start : mSelectionInfo.end;
         int line = mLocation.getLineForOffset(offset);
-        int x = cursorHandle.isLeft ? mLocation.getHorizontalLeft(offset) : mLocation.getHorizontalRight(offset);
+        float x = cursorHandle.isLeft ? mLocation.getHorizontalLeft(offset) : mLocation.getHorizontalRight(offset);
         cursorHandle.show(x, mLocation.getLineBottom(line));
     }
 
@@ -280,24 +280,8 @@ public class SelectableTextHelper {
         public void show() {
             mView.getLocationInWindow(mTempCoors);
 
-//            if (isLeft) {
-//                mPopupWindow.update((int) mLocation.getHorizontalLeft(mSelectionInfo.start) - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-//                        mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.start)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop(),
-//                        -1, -1);
-//            } else {
-//                int line = mLocation.getLineForOffset(mSelectionInfo.end);
-//                int x = mLocation.getHorizontalLeft(mSelectionInfo.end);
-//                if (mLocation.getLineStartOffset(line) == mSelectionInfo.end) {
-//                    line -= 1;
-//                    x = mLocation.getLineEnd(line);
-//                }
-//                mPopupWindow.update(x - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-//                        mLocation.getLineBottom(line) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop(),
-//                        -1, -1);
-//            }
-
-            int startX = mLocation.getHorizontalLeft(mSelectionInfo.start) + mTempCoors[0] + mView.getPaddingLeft();
-            int posY = mLocation.getLineTop(mLocation.getLineForOffset(mSelectionInfo.start)) + mTempCoors[1] - mHeight - 16;
+            float startX = mLocation.getHorizontalLeft(mSelectionInfo.start) + mTempCoors[0] + mView.getPaddingLeft();
+            float posY = mLocation.getLineTop(mLocation.getLineForOffset(mSelectionInfo.start)) + mTempCoors[1] - mHeight - 16;
 
             mWindow.setElevation(8f);
 
@@ -323,11 +307,11 @@ public class SelectableTextHelper {
                 leftMargin = mWidth - arrowMargin;
             }
 
-            params.leftMargin = (int) (leftMargin + 0.5);
+            params.leftMargin = Math.round(leftMargin);
 
             arrow.setLayoutParams(params);
 
-            mWindow.showAtLocation(mView, Gravity.NO_GRAVITY, (int) (posX + 0.5), Math.max(posY, 16));
+            mWindow.showAtLocation(mView, Gravity.NO_GRAVITY, Math.round(posX), Math.round(Math.max(posY, 16)));
         }
 
         public void dismiss() {
@@ -341,13 +325,12 @@ public class SelectableTextHelper {
 
     private class CursorHandle extends View {
 
-        private PopupWindow mPopupWindow;
-        private Paint mPaint;
+        private final PopupWindow mPopupWindow;
+        private final Paint mPaint;
 
-        private int mCircleRadius = mCursorHandleSize / 2;
-        private int mWidth = mCircleRadius * 2;
-        private int mHeight = mCircleRadius * 2;
-        private int mPadding = 25;
+        private final float mCircleRadius = mCursorHandleSize / 2f;
+        private final float mWidth = mCircleRadius * 2;
+        private final float mPadding = 25f;
         private boolean isLeft;
 
         public CursorHandle(boolean isLeft) {
@@ -358,8 +341,8 @@ public class SelectableTextHelper {
 
             mPopupWindow = new PopupWindow(this);
             mPopupWindow.setClippingEnabled(false);
-            mPopupWindow.setWidth(mWidth + mPadding * 2);
-            mPopupWindow.setHeight(mHeight + mPadding / 2);
+            mPopupWindow.setWidth(Math.round(mWidth + mPadding * 2));
+            mPopupWindow.setHeight(Math.round(mCircleRadius * 2 + mPadding / 2));
             invalidate();
         }
 
@@ -373,8 +356,8 @@ public class SelectableTextHelper {
             }
         }
 
-        private int mAdjustX;
-        private int mAdjustY;
+        private float mAdjustX;
+        private float mAdjustY;
 
         private int mBeforeDragStart;
         private int mBeforeDragEnd;
@@ -385,8 +368,8 @@ public class SelectableTextHelper {
                 case MotionEvent.ACTION_DOWN:
                     mBeforeDragStart = mSelectionInfo.start;
                     mBeforeDragEnd = mSelectionInfo.end;
-                    mAdjustX = (int) event.getX();
-                    mAdjustY = (int) event.getY();
+                    mAdjustX = event.getX();
+                    mAdjustY = event.getY();
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
@@ -394,8 +377,8 @@ public class SelectableTextHelper {
                     break;
                 case MotionEvent.ACTION_MOVE:
                     mOperateWindow.dismiss();
-                    int rawX = (int) event.getRawX();
-                    int rawY = (int) event.getRawY();
+                    float rawX = event.getRawX();
+                    float rawY = event.getRawY();
                     mView.getLocationInWindow(mTempCoors);
 //                    Log.e("rawX:" + rawX + " rawY:" + rawY + " mAdjustX:" + mAdjustX + " mAdjustY:" + mAdjustY + " TempCoors0:" + mTempCoors[0] + " TempCoors1:" + mTempCoors[1]);
                     if (isLeft) {
@@ -420,9 +403,9 @@ public class SelectableTextHelper {
             mPopupWindow.dismiss();
         }
 
-        private int[] mTempCoors = new int[2];
+        private final int[] mTempCoors = new int[2];
 
-        public void update(int x, int y) {
+        public void update(float x, float y) {
             int oldOffset;
             if (isLeft) {
                 oldOffset = mSelectionInfo.start;
@@ -466,33 +449,31 @@ public class SelectableTextHelper {
         private void updateCursorHandle() {
             mView.getLocationInWindow(mTempCoors);
             if (isLeft) {
-                mPopupWindow.update((int) mLocation.getHorizontalLeft(mSelectionInfo.start) - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-                        mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.start)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop(),
+                mPopupWindow.update(Math.round(mLocation.getHorizontalLeft(mSelectionInfo.start) - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
+                        Math.round(mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.start)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()),
                         -1, -1);
             } else {
-                int line = mLocation.getLineForOffset(mSelectionInfo.end);
-                int x = mLocation.getHorizontalRight(mSelectionInfo.end);
-                mPopupWindow.update(x - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-                        mLocation.getLineBottom(line) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop(),
+                mPopupWindow.update(Math.round(mLocation.getHorizontalRight(mSelectionInfo.end) - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
+                        Math.round(mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.end)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()),
                         -1, -1);
             }
         }
 
-        public void show(int x, int y) {
+        public void show(float x, float y) {
             mView.getLocationInWindow(mTempCoors);
             if (isLeft) {
                 mPopupWindow.showAtLocation(mView,
                         Gravity.NO_GRAVITY,
-                        x - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-                        y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop());
+                        Math.round(x - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
+                        Math.round(y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()));
 //                Log.e("show x:" + x + " y:" + y +
 //                        " showAtLocation x:" + (x - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft()) +
 //                        " y:" + (y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()) + " isLeft:" + isLeft);
             } else {
                 mPopupWindow.showAtLocation(mView,
                         Gravity.NO_GRAVITY,
-                        x - mPadding + mTempCoors[0] + mView.getPaddingLeft(),
-                        y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop());
+                        Math.round(x - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
+                        Math.round(y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()));
 //                Log.e("show x:" + x + " y:" + y +
 //                        " showAtLocation x:" + (x - mPadding + mTempCoors[0] + mView.getPaddingLeft()) +
 //                        " y:" + (y - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()) + " isLeft:" + isLeft);

@@ -5,28 +5,28 @@ public interface TxtLocation {
     /**
      * 获取行号
      */
-    int getLine(int y);
+    int getLine(float y);
     /**
      * 获取行号
      */
     int getLineForOffset(int offset);
-    int getLineStart(int line);
+    float getLineStart(int line);
     int getLineStartOffset(int line);
-    int getLineEnd(int line);
+    float getLineEnd(int line);
 
     /**
      * 获取字符索引
      */
-    int getOffset(int x,int y);
-    int getHysteresisOffset(int x,int y,int oldOffset,boolean isLeft);
+    int getOffset(float x,float y);
+    int getHysteresisOffset(float x,float y,int oldOffset,boolean isLeft);
 
 
 
-    int getHorizontalRight(int offset);
-    int getHorizontalLeft(int offset);
+    float getHorizontalRight(int offset);
+    float getHorizontalLeft(int offset);
 
-    int getLineTop(int line);
-    int getLineBottom(int line);
+    float getLineTop(int line);
+    float getLineBottom(int line);
 
     /**
      *

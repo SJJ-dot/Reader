@@ -6,20 +6,20 @@ import java.util.*
 class TxtLine(
     @JvmField var txt: String,
     @JvmField var isTitle: Boolean,
-    @JvmField var height: Int,
-    @JvmField var width: Int
+    @JvmField var height: Float,
+    @JvmField var width: Float
 ) {
     @JvmField
-    var top = 0
+    var top = 0f
 
     @JvmField
-    var bottom = 0
+    var bottom = 0f
 
     @JvmField
-    var left = 0
+    var left = 0f
 
     @JvmField
-    var right = 0
+    var right = 0f
 
     /**
      * 当前行号
@@ -31,11 +31,11 @@ class TxtLine(
     var charStart = 0
 
     @JvmField
-    val charLeft = IntArray(txt.length)
+    val charLeft = FloatArray(txt.length)
 
     @JvmField
-    val charRight = IntArray(txt.length)
-    fun addLeftOfRight(index: Int, leftOf: Int, rightOf: Int) {
+    val charRight = FloatArray(txt.length)
+    fun setLeftOfRight(index: Int, leftOf: Float, rightOf: Float) {
         charLeft[index] = leftOf
         charRight[index] = rightOf
     }

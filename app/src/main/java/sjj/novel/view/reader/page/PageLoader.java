@@ -3,7 +3,6 @@ package sjj.novel.view.reader.page;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -109,9 +108,9 @@ public abstract class PageLoader implements OnSelectListener {
     //字体的颜色
     private int mTextColor;
     //标题的大小
-    private int mTitleSize;
+    private float mTitleSize;
     //字体的大小
-    private int mTextSize;
+    private float mTextSize;
     //电池的百分比
     private int mBatteryLevel;
     //当前页面的背景
@@ -130,7 +129,7 @@ public abstract class PageLoader implements OnSelectListener {
     public PageLoader(PageView pageView) {
         mPageView = pageView;
         mContext = pageView.getContext();
-        mDisplayParams = new DisplayParams(pageView.getContext());
+        mDisplayParams = new DisplayParams();
         mChapterList = new ArrayList<>(1);
         screenUtils = new ScreenUtils(mContext);
         mSelectableTextHelper = new SelectableTextHelper.Builder(pageView, mLocation).build();
@@ -164,16 +163,16 @@ public abstract class PageLoader implements OnSelectListener {
      *
      * @param textSize
      */
-    private void setUpTextParams(int textSize, float lineSpace) {
+    private void setUpTextParams(float textSize, float lineSpace) {
         mSettingManager.setLineSpace(lineSpace);
         // 文字大小
         mTextSize = textSize;
-        mDisplayParams.setTextInterval((int) (mTextSize * lineSpace));
-        mDisplayParams.setTextPara((int) Math.round(mTextSize * 1.5));
+        mDisplayParams.setTextInterval(mTextSize * lineSpace);
+        mDisplayParams.setTextPara(mTextSize * 1.5f);
 
-        mTitleSize = (int) Math.round(mTextSize * 1.1);
+        mTitleSize = mTextSize * 1.1f;
         mDisplayParams.setTitleInterval(mDisplayParams.getTextInterval());
-        mDisplayParams.setTitlePara((int) Math.round(mTitleSize * 1.5));
+        mDisplayParams.setTitlePara(mTitleSize * 1.5f);
     }
 
     private void initPaint() {
@@ -355,7 +354,7 @@ public abstract class PageLoader implements OnSelectListener {
      *
      * @param textSize
      */
-    public void setTextSize(int textSize, float lineSpace) {
+    public void setTextSize(float textSize, float lineSpace) {
         // 设置文字相关参数
         setUpTextParams(textSize, lineSpace);
 
@@ -521,7 +520,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public int getMarginHeight() {
-        return mDisplayParams.getTipHeight();
+        return Math.round(mDisplayParams.getTipHeight());
     }
 
     /**
@@ -793,8 +792,8 @@ public abstract class PageLoader implements OnSelectListener {
 //                Log.e("startLine:" + startLine + " endLine:" + endLine + " start:" + start + " end:" + end);
                 for (int i = startLine; i <= endLine; i++) {
                     TxtLine txtLine = mCurPage.lines.get(i);
-                    int left;
-                    int right;
+                    float left;
+                    float right;
                     if (startLine == i) {
                         left = mLocation.getHorizontalLeft(start);
                     } else {
@@ -819,9 +818,9 @@ public abstract class PageLoader implements OnSelectListener {
                 top = mDisplayParams.getTipHeight() - mTextPaint.getFontMetrics().top;
             }
             Paint.FontMetrics titleMetrics = mTitlePaint.getFontMetrics();
-            int titleBase = -Math.round(titleMetrics.ascent);
+            float titleBase = -titleMetrics.ascent;
             Paint.FontMetrics textMetrics = mTextPaint.getFontMetrics();
-            int textBase = -Math.round(textMetrics.ascent);
+            float textBase = -textMetrics.ascent;
             for (TxtLine line : mCurPage.lines) {
                 float y = line.top + (line.isTitle ? titleBase : textBase);
                 Paint paint = line.isTitle ? mTitlePaint : mTextPaint;
@@ -1040,8 +1039,7 @@ public abstract class PageLoader implements OnSelectListener {
                 mStatus = STATUS_LOADING;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-
+            Log.e("分页加载失败",e);
             mCurPageList = null;
             mStatus = STATUS_ERROR;
         }
@@ -1176,14 +1174,14 @@ public abstract class PageLoader implements OnSelectListener {
         createTxtLine(lines, content, mTextPaint);
         List<TxtLine> pageLine = new ArrayList<>();
         for (int i = 0; i < lines.size(); ) {
-            int top = mDisplayParams.getContentTop();
+            float top = mDisplayParams.getContentTop();
             if (i == 0) {
                 top += mDisplayParams.getTitlePara();
             }
             int nextCharStart = 0;
             while (i < lines.size()) {
                 TxtLine line = lines.get(i);
-                int remHeight = mDisplayParams.getContentBottom() - top - line.height;
+                float remHeight = mDisplayParams.getContentBottom() - top - line.height;
                 if (remHeight < 0) {
                     break;
                 }
@@ -1224,7 +1222,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     private void createTxtLine(List<TxtLine> lines, String text, TextPaint paint) {
-        StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, mDisplayParams.getContentWidth()).build();
+        StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, Math.round(mDisplayParams.getContentWidth())).build();
         for (int i = 0; i < layout.getLineCount(); i++) {
             float left = layout.getLineLeft(i);
             float right = layout.getLineRight(i);
@@ -1233,10 +1231,16 @@ public abstract class PageLoader implements OnSelectListener {
             int lineHeight = layout.getLineBottom(i) - layout.getLineTop(i);
             CharSequence lineStr = layout.getText().subSequence(lineStart, lineEnd);
 
-            TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, Math.round(right - left));
+            TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, right - left);
             lines.add(line);
+            for (int offset = lineStart; offset < lineEnd; offset++) {
+                float leftOf = layout.getPrimaryHorizontal(offset);
+                float rightOf = offset == lineEnd - 1 ? right : layout.getPrimaryHorizontal(offset + 1);
+                line.setLeftOfRight(offset - lineStart, leftOf, rightOf);
+            }
 
-            int extX = 0;
+
+            float extX = 0;
             int len = line.txt.length();
             int st = 0;
 
@@ -1246,23 +1250,22 @@ public abstract class PageLoader implements OnSelectListener {
             while ((st < len) && (CharsKt.isWhitespace(line.txt.charAt(len - 1)))) {
                 len--;
             }
-
-            if (len - st > 1) {
-                int lastCharWidth;
-                if (len == line.txt.length()) {
-                    lastCharWidth = Math.round(right - layout.getPrimaryHorizontal(lineEnd - 1));
-                } else {
-                    lastCharWidth = Math.round(layout.getPrimaryHorizontal(lineEnd - (line.txt.length() - len)) - layout.getPrimaryHorizontal(lineEnd - (line.txt.length() - len) - 1));
-                }
-
-                extX = Math.min(mDisplayParams.getContentWidth() - line.width, lastCharWidth * 2) / (len - st - 1);
+            if (len - st <= 1) {
+                return;
             }
 
-            for (int offset = lineStart; offset < lineEnd; offset++) {
-                int leftOf = Math.round(layout.getPrimaryHorizontal(offset));
-                int rightOf = Math.round(offset == lineEnd - 1 ? right : layout.getPrimaryHorizontal(offset + 1));
-                int offsetX = Math.max((offset - lineStart - st), 0) * extX + mDisplayParams.getContentLeft();
-                line.addLeftOfRight(offset - lineStart, offsetX + leftOf, offsetX + rightOf);
+            float maxCharWidth = 0;
+            for (int idx = 0; idx < line.charLeft.length; idx++) {
+                maxCharWidth = Math.max(line.charRight[idx] - line.charLeft[idx], maxCharWidth);
+            }
+
+            extX = (mDisplayParams.getContentWidth() - line.width) / (len - st - 1);
+
+            extX = Math.min(extX, maxCharWidth / 5f);
+
+            for (int idx = 0; idx < line.charLeft.length; idx++) {
+                float offsetX = Math.max((idx - st), 0) * extX + mDisplayParams.getContentLeft();
+                line.setLeftOfRight(idx, offsetX + line.charLeft[idx], offsetX + line.charRight[idx]);
             }
         }
     }
@@ -1373,7 +1376,7 @@ public abstract class PageLoader implements OnSelectListener {
 
     private class TxtLocationImpl implements TxtLocation {
         @Override
-        public int getLine(int y) {
+        public int getLine(float y) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1401,7 +1404,7 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getLineStart(int line) {
+        public float getLineStart(int line) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1430,7 +1433,7 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getLineEnd(int line) {
+        public float getLineEnd(int line) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1449,7 +1452,7 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getOffset(int x, int y) {
+        public int getOffset(float x, float y) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1468,11 +1471,11 @@ public abstract class PageLoader implements OnSelectListener {
 //            Log.e(txtLine);
 //            Log.e(page.lines.get(line + 1));
 //            Log.e("len:" + txtLine.txt.length() + ">>" + txtLine.txt);
-            int lineStart = getLineStart(txtLine.index);
+            float lineStart = getLineStart(txtLine.index);
             if (x < lineStart) {
                 return -1;
             }
-            int lineEnd = getLineEnd(txtLine.index);
+            float lineEnd = getLineEnd(txtLine.index);
             if (x > lineEnd) {
                 return -1;
             }
@@ -1485,13 +1488,13 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getHysteresisOffset(int x, int y, int oldOffset, boolean isLeft) {
+        public int getHysteresisOffset(float x, float y, int oldOffset, boolean isLeft) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return oldOffset;
             }
 
-            int difY = Integer.MAX_VALUE;
+            float difY = Integer.MAX_VALUE;
             int line = -1;
             for (TxtLine txtLine : page.lines) {
                 if (!StringsKt.isBlank(txtLine.txt) && Math.abs((txtLine.top + txtLine.bottom) / 2 - y) < difY) {
@@ -1503,8 +1506,8 @@ public abstract class PageLoader implements OnSelectListener {
                 return oldOffset;
             }
             TxtLine txtLine = page.lines.get(line);
-            Log.e(txtLine);
-            int difX = Integer.MAX_VALUE;
+//            Log.e(txtLine);
+            float difX = Integer.MAX_VALUE;
             int lineOffset = -1;
             for (int i = 0; i < txtLine.txt.length(); i++) {
                 if (!CharsKt.isWhitespace(txtLine.txt.charAt(i)) && Math.abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x) < difX) {
@@ -1551,7 +1554,7 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getHorizontalRight(int offset) {
+        public float getHorizontalRight(int offset) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1566,7 +1569,7 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getHorizontalLeft(int offset) {
+        public float getHorizontalLeft(int offset) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
@@ -1575,7 +1578,7 @@ public abstract class PageLoader implements OnSelectListener {
                 if (line.charStart <= offset && line.charStart + line.txt.length() > offset) {
                     int lineOffset = offset - line.charStart;
                     if (lineOffset == 0) {
-                        return Math.round(line.left);
+                        return line.left;
                     }
 
                     return line.charLeft[lineOffset];
@@ -1585,23 +1588,23 @@ public abstract class PageLoader implements OnSelectListener {
         }
 
         @Override
-        public int getLineTop(int line) {
+        public float getLineTop(int line) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
             }
             TxtLine txtLine = page.lines.get(line);
-            return Math.round(txtLine.top);
+            return txtLine.top;
         }
 
         @Override
-        public int getLineBottom(int line) {
+        public float getLineBottom(int line) {
             TxtPage page = PageLoader.this.mCurPage;
             if (page == null) {
                 return -1;
             }
             TxtLine txtLine = page.lines.get(line);
-            return Math.round(txtLine.bottom);
+            return txtLine.bottom;
         }
 
         @Override

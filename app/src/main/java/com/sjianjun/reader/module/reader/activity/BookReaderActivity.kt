@@ -159,7 +159,7 @@ class BookReaderActivity : BaseActivity() {
         }
         text.observe(this) {
             Log.i("设置字号:${it.first} 行间距：${it.second}")
-            mPageLoader.setTextSize(it.first.dp2Px, it.second)
+            mPageLoader.setTextSize(it.first.dp2Px.toFloat(), it.second)
         }
 
         globalConfig.readerPageStyle.observe(this) {

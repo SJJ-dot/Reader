@@ -1,35 +1,33 @@
 package sjj.novel.view.reader.page
 
-import android.content.Context
-import sjj.novel.view.reader.utils.ScreenUtils
+import com.sjianjun.reader.utils.dpToPx
 
-class DisplayParams(context: Context) {
-    private val screenUtils = ScreenUtils(context)
+class DisplayParams {
     var width = 0
     var height = 0
 
-    var tipHeight = screenUtils.dpToPx(28)
+    var tipHeight = dpToPx(28f)
 
-    var paddingWidth = screenUtils.dpToPx(8)
-    var paddingHeight = screenUtils.dpToPx(5)
+    var paddingWidth = dpToPx(8f)
+    var paddingHeight = dpToPx(5f)
 
     /**
      * 段落间距
      */
-    var titlePara = 0
-    var textPara = 0
+    var titlePara = 0f
+    var textPara = 0f
 
     /**
      * 行间距
      */
-    var titleInterval = 0
-    var textInterval = 0
+    var titleInterval = 0f
+    var textInterval = 0f
 
-    val contentLeft get() = paddingWidth
-    val contentTop get() = tipHeight + paddingHeight
-    val contentRight get() = width - paddingWidth
-    val contentBottom get() = height - paddingHeight
-    val contentWidth get() = contentRight - contentLeft
-    val contentHeight get() = contentBottom - contentTop
+    val contentLeft: Float get() = paddingWidth
+    val contentTop: Float get() = tipHeight + paddingHeight
+    val contentRight: Float get() = width - paddingWidth
+    val contentBottom: Float get() = height - paddingHeight
+    val contentWidth: Float get() = contentRight - contentLeft
+    val contentHeight: Float get() = contentBottom - contentTop
 
 }
