@@ -1039,7 +1039,7 @@ public abstract class PageLoader implements OnSelectListener {
                 mStatus = STATUS_LOADING;
             }
         } catch (Exception e) {
-            Log.e("分页加载失败",e);
+            Log.e("分页加载失败", e);
             mCurPageList = null;
             mStatus = STATUS_ERROR;
         }
@@ -1230,7 +1230,9 @@ public abstract class PageLoader implements OnSelectListener {
             int lineEnd = layout.getLineEnd(i);
             int lineHeight = layout.getLineBottom(i) - layout.getLineTop(i);
             CharSequence lineStr = layout.getText().subSequence(lineStart, lineEnd);
-
+            if (StringsKt.isBlank(lineStr)) {
+                continue;
+            }
             TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, right - left);
             lines.add(line);
             for (int offset = lineStart; offset < lineEnd; offset++) {
@@ -1251,7 +1253,7 @@ public abstract class PageLoader implements OnSelectListener {
                 len--;
             }
             if (len - st <= 1) {
-                return;
+                continue;
             }
 
             float maxCharWidth = 0;
