@@ -1167,10 +1167,10 @@ public abstract class PageLoader implements OnSelectListener {
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
 
-        createTxtLine(lines, StringUtils.halfToFull(StringsKt.trim(chapter.title).toString()), mTitlePaint);
+        createTxtLine(lines, StringsKt.trim(chapter.title).toString(), mTitlePaint);
         int titleLines = lines.size();
-        String content = chapter.getContent().replaceAll("[ \\t\\x0B\\f\\r]+", "").replace("\n+", "\n  ");
-        content = StringUtils.halfToFull(StringsKt.trimEnd(content).toString());
+        String content = StringsKt.replaceIndent(chapter.getContent(), "　　");
+        content = StringsKt.trimEnd(content).toString();
         createTxtLine(lines, content, mTextPaint);
         List<TxtLine> pageLine = new ArrayList<>();
         for (int i = 0; i < lines.size(); ) {
@@ -1238,7 +1238,7 @@ public abstract class PageLoader implements OnSelectListener {
             for (int offset = lineStart; offset < lineEnd; offset++) {
                 float leftOf = layout.getPrimaryHorizontal(offset);
                 float rightOf = offset == lineEnd - 1 ? right : layout.getPrimaryHorizontal(offset + 1);
-                line.setLeftOfRight(offset - lineStart, leftOf, rightOf);
+                line.setLeftOfRight(offset - lineStart, leftOf + mDisplayParams.getContentLeft(), rightOf + mDisplayParams.getContentLeft());
             }
 
 
@@ -1261,12 +1261,16 @@ public abstract class PageLoader implements OnSelectListener {
                 maxCharWidth = Math.max(line.charRight[idx] - line.charLeft[idx], maxCharWidth);
             }
 
-            extX = (mDisplayParams.getContentWidth() - line.width) / (len - st - 1);
+            float remWidth = mDisplayParams.getContentWidth() - line.width;
+            if (remWidth > maxCharWidth * 2) {
+                remWidth = maxCharWidth;
+            }
 
-            extX = Math.min(extX, maxCharWidth / 5f);
+            extX = remWidth / (len - st - 1);
+            extX = Math.min(extX, maxCharWidth / 8f);
 
             for (int idx = 0; idx < line.charLeft.length; idx++) {
-                float offsetX = Math.max((idx - st), 0) * extX + mDisplayParams.getContentLeft();
+                float offsetX = Math.max((idx - st), 0) * extX;
                 line.setLeftOfRight(idx, offsetX + line.charLeft[idx], offsetX + line.charRight[idx]);
             }
         }
