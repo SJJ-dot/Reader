@@ -263,6 +263,9 @@ public class PageView extends View {
                 }
                 mPageAnim.onTouchEvent(event);
                 break;
+            case MotionEvent.ACTION_CANCEL:
+                removeCallbacks(longClick);
+                break;
         }
         return true;
     }
