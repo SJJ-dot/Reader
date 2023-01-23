@@ -3,6 +3,8 @@ package com.sjianjun.test.http
 import com.sjianjun.test.utils.Log
 import okhttp3.*
 import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 private fun header() = mutableMapOf(
@@ -20,6 +22,7 @@ private fun header() = mutableMapOf(
 )
 
 val okClient = OkHttpClient.Builder()
+//    .proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", 7890)))
     .connectionSpecs(
         listOf(
             ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
