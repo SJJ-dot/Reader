@@ -278,7 +278,7 @@ class BookReaderActivity : BaseActivity() {
                             list.forEach { chapter ->
                                 val txtChapter =
                                     requestChapters.find { it.chapterIndex == chapter.index }
-                                txtChapter?.content = chapter.content?.format().toString()
+                                txtChapter?.content = chapter.content?.format()
                                 if (chapter.content?.contentError == true) {
                                     txtChapter?.title = chapter.title + "(章节内容错误)"
                                 }

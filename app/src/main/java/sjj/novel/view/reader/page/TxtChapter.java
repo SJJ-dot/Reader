@@ -10,7 +10,7 @@ import android.text.TextUtils;
 
 public class TxtChapter {
     //保存10章的章节内容 这里的10个字符串会导致内存泄漏。但不重要
-    private static final LruCache<String, String> contents = new LruCache<>(50);
+    private static final LruCache<String, CharSequence> contents = new LruCache<>(10);
 
     public static void evictAll() {
         contents.evictAll();
@@ -27,11 +27,11 @@ public class TxtChapter {
     /**
      * 章节内容
      */
-    public String getContent() {
+    public CharSequence getContent() {
         return contents.get(link);
     }
 
-    public void setContent(String content) {
+    public void setContent(CharSequence content) {
         if (!TextUtils.isEmpty(content))
             contents.put(link, content);
     }

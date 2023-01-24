@@ -719,15 +719,14 @@ public abstract class PageLoader implements OnSelectListener {
                         canvas.drawText(mChapterList.get(mCurChapterPos).title, mDisplayParams.getContentLeft(), tipTop, mTipPaint);
                     }
                 } else {
-                    canvas.drawText(mCurPage.title, mDisplayParams.getContentLeft(), tipTop, mTipPaint);
-                }
-
-                /******绘制页码********/
-                // 只有finish的时候采用页码
-                if (mStatus == STATUS_FINISH) {
+                    /******绘制页码********/
                     String percent = (mCurPage.position + 1) + "/" + mCurPageList.size();
                     canvas.drawText(percent, mDisplayParams.getContentRight() - mTipPaint.measureText(percent), tipTop, mTipPaint);
+
+                    int count = mTipPaint.breakText(mCurPage.title, true, mDisplayParams.getContentRight() - mTipPaint.measureText(percent) - tipMarginHeight, null);
+                    canvas.drawText(mCurPage.title, 0, count, mDisplayParams.getContentLeft(), tipTop, mTipPaint);
                 }
+
             }
         } else {
             throw new UnsupportedOperationException("不支持绘制时间。后续再改");
@@ -1167,11 +1166,9 @@ public abstract class PageLoader implements OnSelectListener {
         //使用流的方式加载
         List<TxtLine> lines = new ArrayList<>();
 
-        createTxtLine(lines, StringsKt.trim(chapter.title).toString(), mTitlePaint);
+        createTxtLine(lines, chapter.title, mTitlePaint);
         int titleLines = lines.size();
-        String content = StringsKt.replaceIndent(chapter.getContent(), "　　");
-        content = StringsKt.trimEnd(content).toString();
-        createTxtLine(lines, content, mTextPaint);
+        createTxtLine(lines, chapter.getContent(), mTextPaint);
         List<TxtLine> pageLine = new ArrayList<>();
         for (int i = 0; i < lines.size(); ) {
             float top = mDisplayParams.getContentTop();
@@ -1221,7 +1218,16 @@ public abstract class PageLoader implements OnSelectListener {
         return pages;
     }
 
-    private void createTxtLine(List<TxtLine> lines, String text, TextPaint paint) {
+    private void createTxtLine(List<TxtLine> lines, CharSequence text, TextPaint paint) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : StringsKt.lines(text)) {
+            line = StringsKt.trim(line).toString();
+            if (!line.isEmpty()) {
+                sb.append("　　").append(line).append("\n");
+            }
+        }
+        text = StringsKt.trimEnd(sb);
+
         StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, Math.round(mDisplayParams.getContentWidth())).build();
         for (int i = 0; i < layout.getLineCount(); i++) {
             float left = layout.getLineLeft(i);
