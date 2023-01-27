@@ -13,6 +13,7 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.coorchice.library.SuperTextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.R
@@ -64,6 +65,16 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initChapterList() {
+        download.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("缓存章节")
+                .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                    dismiss()
+                }.setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
         chapter_list.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_LIST)
             dismiss()

@@ -3,4 +3,5 @@
     <item name="visibility" type="id" />
     <item name="recyclable" type="id" />
     <item name="web_view" type="id" />
+    <item name="snackbar" type="id" />
 </resources>

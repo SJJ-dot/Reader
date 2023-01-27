@@ -89,6 +89,16 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
+        observe<String>(EventKey.CHAPTER_LIST_CAHE) {
+            launch("CHAPTER_LIST_CAHE"){
+                showSnackbar(page_view, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
+                (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
+                    getChapterContent(listOf(book?.chapterList?.get(it)!!))
+                    showSnackbar(page_view, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
+                }
+                showSnackbar(page_view, "章节缓存：完成")
+            }
+        }
         observe<String>(EventKey.CHAPTER_LIST) {
             drawer_layout.openDrawer(GravityCompat.END)
         }

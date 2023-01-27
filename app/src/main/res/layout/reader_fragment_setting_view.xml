@@ -7,6 +7,19 @@
     android:background="@color/transparent">
 
     <ImageButton
+        android:id="@+id/download"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@color/transparent"
+        android:padding="3dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/ic_download"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/day_night"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/mdr_white" />
+
+    <ImageButton
         android:id="@+id/day_night"
         android:layout_width="36dp"
         android:layout_height="36dp"
@@ -14,7 +27,7 @@
         android:padding="3dp"
         android:scaleType="fitXY"
         android:src="@drawable/ic_theme_dark_24px"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/download"
         app:layout_constraintStart_toEndOf="@+id/chapter_sync"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/mdr_white" />
