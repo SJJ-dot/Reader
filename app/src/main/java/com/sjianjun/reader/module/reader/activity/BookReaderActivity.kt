@@ -53,7 +53,9 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-
+        if (savedInstanceState != null) {
+            intent.removeExtra(CHAPTER_INDEX)
+        }
         reader_root?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
         initData()
