@@ -7,7 +7,8 @@ class TxtLine(
     @JvmField var txt: String,
     @JvmField var isTitle: Boolean,
     @JvmField var height: Float,
-    @JvmField var width: Float
+    @JvmField var width: Float,
+    @JvmField var isParaEnd: Boolean
 ) {
     @JvmField
     var top = 0f

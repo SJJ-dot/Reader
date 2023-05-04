@@ -1202,7 +1202,7 @@ public abstract class PageLoader implements OnSelectListener {
                         top += mDisplayParams.getTitleInterval();
                     }
                 } else {
-                    if (line.txt.endsWith("\n")) {
+                    if (line.isParaEnd) {
                         top += mDisplayParams.getTextPara();
                     } else {
                         top += mDisplayParams.getTextInterval();
@@ -1240,9 +1240,10 @@ public abstract class PageLoader implements OnSelectListener {
             if (StringsKt.isBlank(lineStr)) {
                 continue;
             }
+            boolean isParaEnd = lineStr.charAt(lineStr.length() - 1) == '\n';
             lineStr = StringsKt.trimEnd(lineStr).toString();
             lineEnd = lineStart + lineStr.length();
-            TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, right - left);
+            TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, right - left, isParaEnd);
             lines.add(line);
             for (int offset = lineStart; offset < lineEnd; offset++) {
                 float leftOf = layout.getPrimaryHorizontal(offset);
