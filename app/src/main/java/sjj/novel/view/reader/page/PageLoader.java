@@ -1240,6 +1240,8 @@ public abstract class PageLoader implements OnSelectListener {
             if (StringsKt.isBlank(lineStr)) {
                 continue;
             }
+            lineStr = StringsKt.trimEnd(lineStr).toString();
+            lineEnd = lineStart + lineStr.length();
             TxtLine line = new TxtLine(lineStr.toString(), paint == mTitlePaint, lineHeight, right - left);
             lines.add(line);
             for (int offset = lineStart; offset < lineEnd; offset++) {
