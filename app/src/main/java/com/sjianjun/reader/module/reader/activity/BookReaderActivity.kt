@@ -53,9 +53,6 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_reader)
-        if (savedInstanceState != null) {
-            intent.removeExtra(CHAPTER_INDEX)
-        }
         reader_root?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
         initData()
@@ -69,11 +66,6 @@ class BookReaderActivity : BaseActivity() {
         } else {
             initData()
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        mPageLoader.saveRecord()
     }
 
     override fun onBackPressed() {
@@ -92,7 +84,7 @@ class BookReaderActivity : BaseActivity() {
 
     private fun initSettingMenu() {
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
-            launch("CHAPTER_LIST_CAHE"){
+            launch("CHAPTER_LIST_CAHE") {
                 showSnackbar(page_view, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
                     getChapterContent(listOf(book?.chapterList?.get(it)!!))
@@ -245,6 +237,7 @@ class BookReaderActivity : BaseActivity() {
                 readingRecord.offest = 0
                 readingRecord.isEnd = false
                 DataManager.setReadingRecord(readingRecord)
+                intent.removeExtra(CHAPTER_INDEX)
             }
             Log.i("修正阅读记录 $readingRecord")
             Log.i("加载章节列表")
@@ -275,8 +268,10 @@ class BookReaderActivity : BaseActivity() {
             Log.i("设置阅读器内容")
             mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun onChapterChange(pos: Int) {
-                    Log.i("章节：${pos}")
-                    mPageLoader.saveRecord()
+                    launch {
+                        Log.i("章节：${pos}")
+                        mPageLoader.saveRecord()
+                    }
                 }
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
@@ -318,6 +313,10 @@ class BookReaderActivity : BaseActivity() {
                 }
 
                 override fun onPageChange(pos: Int) {
+                    launch {
+                        Log.i("page：${pos}")
+                        mPageLoader.saveRecord()
+                    }
                 }
 
                 override fun onBookRecordChange(bean: BookRecordBean) {

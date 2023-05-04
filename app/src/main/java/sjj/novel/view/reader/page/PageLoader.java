@@ -548,6 +548,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     public void setBookRecord(BookRecordBean record) {
+        Log.i("设置阅读记录");
         mBookRecord = record;
         mCurChapterPos = record.chapter;
         mLastChapterPos = mCurChapterPos;
@@ -1223,7 +1224,7 @@ public abstract class PageLoader implements OnSelectListener {
         for (String line : StringsKt.lines(text)) {
             line = StringsKt.trim(line).toString();
             if (!line.isEmpty()) {
-                sb.append("　　").append(line).append("\n");
+                sb.append("　　").append(line).append(System.lineSeparator());
             }
         }
         text = StringsKt.trimEnd(sb);
