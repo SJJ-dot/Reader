@@ -1,5 +1,6 @@
 package com.sjianjun.reader.repository
 
+import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.*
@@ -27,11 +28,15 @@ object DataManager {
     suspend fun searchHint(query: String): List<String>? {
         return withIo {
             try {
-                val result = http.post(
-                    "https://book.easou.com/ta/tsAjax.m",
-                    mapOf("k" to URLEncoder.encode(query, "utf-8"))
-                ).body
-                return@withIo gson.fromJson<List<String>>(result)
+                val resp = http.get(
+                    "https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su", mapOf(
+                        "wd" to query,
+                        "cb" to "f1",
+                    ), encoded = false
+                )
+                val respJson  = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
+                val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
+                return@withIo gson.fromJson<List<String>>(jarr.toString())
             } catch (e: Exception) {
                 Log.i("搜索提示加载失败 $e")
                 null
