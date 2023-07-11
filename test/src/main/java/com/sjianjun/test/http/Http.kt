@@ -6,9 +6,13 @@ import com.sjianjun.test.utils.fromJson
 import com.sjianjun.test.utils.gson
 import okhttp3.*
 import java.io.File
-import java.net.InetSocketAddress
-import java.net.Proxy
+import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
 
 private fun header() = mutableMapOf(
     "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -25,34 +29,36 @@ private fun header() = mutableMapOf(
 )
 
 val okClient = OkHttpClient.Builder()
-//    .proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", 7890)))
-    .connectionSpecs(
-        listOf(
-            ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
-                .supportsTlsExtensions(true)
-                .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_1, TlsVersion.TLS_1_0)
-                .cipherSuites(
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
-                    CipherSuite.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
-                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-                    CipherSuite.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
-                    CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA
-                ).build(),
-            ConnectionSpec.MODERN_TLS,
-            ConnectionSpec.CLEARTEXT
-        )
-    )
+    .apply {
+        val trustAllCerts: Array<TrustManager> = arrayOf(object : X509TrustManager {
+
+            override fun checkClientTrusted(
+                chain: Array<out java.security.cert.X509Certificate>?,
+                authType: String?
+            ) {
+            }
+
+            override fun checkServerTrusted(
+                chain: Array<out java.security.cert.X509Certificate>?,
+                authType: String?
+            ) {
+            }
+
+            override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> {
+                return arrayOf()
+            }
+        })
+        // 创建一个 SSLContext，并使用上面创建的 TrustManager
+        val sslContext: SSLContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, trustAllCerts, SecureRandom())
+        // 创建一个 OkHttpClient，并设置 SSL SocketFactory
+        sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+        hostnameVerifier { _, _ -> true }
+    }
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(10, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
-    .retryOnConnectionFailure(true)
+    .retryOnConnectionFailure(false)
     .cookieJar(CookieMgr)
     .addInterceptor(
         HttpLoggingInterceptor { Log.i(it) }.setLevel(
@@ -155,8 +161,8 @@ class Http {
                     "cb" to "f1",
                 ), encoded = false
             )
-            val respJson  = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
-            val jarr = gson.fromJson(respJson,JsonObject::class.java).getAsJsonArray("s")
+            val respJson = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
+            val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
             println(gson.fromJson<List<String>>(jarr.toString()))
         }
     }
