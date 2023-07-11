@@ -81,20 +81,24 @@ suspend fun test(name: String, script: String, query: String): List<SearchResult
 }
 
 suspend fun testAll() = withContext(Dispatchers.IO) {
-    val list = File("BookSource/js").listFiles().map {
+    val list = File("BookSource/js").listFiles()!!.map {
         async {
-            val resultList = test(it.nameWithoutExtension, it.readText(), "我的")
-            if (resultList.isEmpty()) {
-                "书源：${it.nameWithoutExtension}在第一轮搜索时失败"
-            } else {
-                delay(30 * 1000)
-                val result = resultList.sortedBy { it.bookTitle.length }.last()
-                val results = test(it.nameWithoutExtension, it.readText(), result.bookTitle)
-                if (results.isEmpty()) {
-                    "书源：${it.nameWithoutExtension}在第二轮搜索：${result.bookTitle}时失败"
+            try {
+                val resultList = test(it.nameWithoutExtension, it.readText(), "我的")
+                if (resultList.isEmpty()) {
+                    "书源：${it.nameWithoutExtension}在第一轮搜索时失败"
                 } else {
-                    null
+                    delay(30 * 1000)
+                    val result = resultList.sortedBy { it.bookTitle.length }.last()
+                    val results = test(it.nameWithoutExtension, it.readText(), result.bookTitle)
+                    if (results.isEmpty()) {
+                        "书源：${it.nameWithoutExtension}在第二轮搜索：${result.bookTitle}时失败"
+                    } else {
+                        null
+                    }
                 }
+            } catch (e: Exception) {
+                "书源：${it.nameWithoutExtension}：校验出错：${e.message}"
             }
         }
     }.awaitAll().filterNotNull()

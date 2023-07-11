@@ -26,13 +26,10 @@ class App : Application() {
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
         Config.getDefaultConfig().apply {
+            deleteOldLogFile = true
             consolePrintAllLog = true
             writeToFile = true
-            val dir = externalCacheDir
-            if (dir != null) {
-                writeToFileDir = File(dir, "alog")
-            }
-            writeToFileDirName = "reader"
+            writeToFileDir = File(externalCacheDir, "alog")
         }
     }
 
