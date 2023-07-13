@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.shelf
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
@@ -27,15 +28,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
-
-private var needShowWelcome = true
 
 @FlowPreview
 class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private lateinit var adapter: Adapter
     private lateinit var bookshelfUi: BookshelfUi
+    private var welcomeDialog: Boolean = true
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -60,12 +61,8 @@ class BookshelfFragment : BaseFragment() {
     }
 
     private fun welcome() {
-        if (!needShowWelcome) {
-            return
-        }
-        needShowWelcome = false
         MaterialAlertDialogBuilder(requireActivity())
-            .setTitle("欢迎使用本APP")
+            .setTitle("欢迎使用")
             .setMessage("首次使用APP,你可以：\n1、从左侧菜单进入书城选择一本书。\n2、还是从左侧菜单进入搜索页，搜索你想看的书籍。\n3、点击搜索结果即可开始阅读，书籍会被自动加入书架\n4、为防阅读记录丢失建议配置WebDav保存阅读记录")
             .setPositiveButton(android.R.string.ok, null)
             .show()
@@ -74,6 +71,13 @@ class BookshelfFragment : BaseFragment() {
     private fun initData() {
         launch {
             DataManager.getAllReadingBook().collectLatest {
+                if (it.isEmpty()) {
+                    if (welcomeDialog) {
+                        welcome()
+                    }
+                } else {
+                    welcomeDialog = false
+                }
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 bookList.clear()
                 val bookNum = it.size
@@ -112,11 +116,6 @@ class BookshelfFragment : BaseFragment() {
                     bookList[book.key] = book
                     bookList.values.sortedWith(bookComparator)
                 }.flowIo().debounce(300).collect { list ->
-                    if (list.isEmpty()) {
-                        welcome()
-                    } else {
-                        needShowWelcome = false
-                    }
                     adapter.data.clear()
                     adapter.data.addAll(list)
                     adapter.notifyDataSetChanged()
@@ -196,6 +195,7 @@ class BookshelfFragment : BaseFragment() {
                 NavHostFragment.findNavController(this).navigate(R.id.searchFragment)
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
