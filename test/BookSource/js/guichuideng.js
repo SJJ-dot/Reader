@@ -1,5 +1,5 @@
 function search(query){
-    var baseUrl = "http://www.cxbz958.la/";
+    var baseUrl = "http://www.cxbz958.info/";
     var html = http.get(baseUrl + "s.php?ie=utf-8&q=" + URLEncoder.encode(query, "utf-8")).body;
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select(".bookbox");
