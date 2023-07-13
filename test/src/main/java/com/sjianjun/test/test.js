@@ -1,52 +1,50 @@
-function search(query) {
-    var baseUrl = "https://www.qidian.com/";
-    var url = "soushu/" + URLEncoder.encode(query, "utf-8") + ".html";
-    var doc = get({baseUrl: baseUrl, url: url})
-
-    var bookListEl = doc.select(".res-book-item");
+function search(query){
+    var baseUrl = "http://www.shushulou.com/dshugidi9.php";
+    var html = http.get(baseUrl+"?ie=gbk&q=" + URLEncoder.encode(query, "gbk")).body;
+    var parse = Jsoup.parse(html, baseUrl);
+    var bookListEl = parse.select(".bookbox");
     var results = new ArrayList();
-    for (var i = 0; i < bookListEl.size(); i++) {
+    for (var i=0;i<bookListEl.size();i++){
         var bookEl = bookListEl.get(i);
         var result = new SearchResult();
-        result.bookTitle = bookEl.select(".book-info-title").get(0).select("a").get(0).text();
-        result.bookUrl = "https://m.qidian.com/book/" + (bookEl.select("a[data-bid]").attr("data-bid"));
-        result.bookAuthor = bookEl.select(".author").select(".author > :nth-child(2)").get(0).text();
+        result.bookTitle = bookEl.selectFirst(".bookname > a").text();
+        result.bookUrl = bookEl.selectFirst(".bookname > a").absUrl("href");
+        result.bookAuthor = bookEl.selectFirst(".author").text().replace("作者：","");
+        result.latestChapter = bookEl.selectFirst(".update > a").text();
+        result.bookCover = bookEl.selectFirst(".bookimg img").absUrl("src");
         results.add(result);
     }
     return results;
 }
 
-function getDetails(url) {
-    var doc = get({url: url});
+/**
+ * 书籍详情[JavaScript.source]
+ */
+function getDetails(url){
+    var parse = Jsoup.parse(http.get(url).body,url);
     var book = new Book();
     book.url = url;
-    Log.e(">>>>>book.title")
-    book.title = doc.select("meta[property=\"og:novel:book_name\"]").attr("content");
-    Log.e(book.bookTitle)
-    book.author = doc.select("meta[property=\"og:novel:author\"]").attr("content");
-    Log.e(book.author)
-    book.intro = doc.select("meta[property=\"og:description\"]").attr("content");
-    Log.e(book.intro)
-    book.cover = doc.select("meta[property=\"og:image\"]").attr("content");
-    Log.e(book.cover)
-    var chapterListUrl = doc.select("#details-menu").get(0).absUrl("href");
-    var chapterListEl = get({url:chapterListUrl}).select(".y-list__content a");
-    Log.e(chapterListEl.size())
+    book.title = parse.selectFirst("#info > h1").text();
+    book.author = parse.getElementsByTag("head").get(0).getElementsByAttributeValue("property","og:novel:author").attr("content");
+    book.intro = parse.selectFirst("#intro").outerHtml();
+    book.cover = parse.selectFirst("#fmimg > img").absUrl("src");
+    //加载章节列表
     var chapterList = new ArrayList();
-    for (i = 0; i < chapterListEl.size(); i++) {
+    var chapterListEl = parse.select(".listmain a");
+    for(i=chapterListEl.size() - 1; i>= 0;i--){
         var chapterEl = chapterListEl.get(i);
+        var chapterA = chapterEl.selectFirst("a");
         var chapter = new Chapter();
-        chapter.title = chapterEl.text();
-        Log.e(chapter.title)
-        chapter.url = chapterEl.absUrl("href");
-        Log.e(chapter.url)
-        chapterList.add(chapter);
+        chapter.title = chapterA.text();
+        chapter.url = chapterA.absUrl("href");
+        chapterList.add(0,chapter);
     }
+
     book.chapterList = chapterList;
     return book;
 }
 
-function getChapterContent(url) {
-    var doc = get({url: url});
-    return doc.select("main").html()
+function getChapterContent(url){
+    var html = http.get(url).body;
+    return Jsoup.parse(html).selectFirst("#content").outerHtml();
 }

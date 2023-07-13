@@ -1,5 +1,5 @@
 function search(query){
-    var baseUrl = "http://www.shushulou.com/fuighdfiuhgdfoi.php";
+    var baseUrl = "http://www.shushulou.com/dshugidi9.php";
     var html = http.get(baseUrl+"?ie=gbk&q=" + URLEncoder.encode(query, "gbk")).body;
     var parse = Jsoup.parse(html, baseUrl);
     var bookListEl = parse.select(".bookbox");
