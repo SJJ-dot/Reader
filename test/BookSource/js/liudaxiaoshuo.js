@@ -1,6 +1,5 @@
-var hostUrl = "http://liudatxt.com/";
 function search(query){
-    var baseUrl = "http://www.txtshuku.org/";
+    var baseUrl = "http://www.liudatxt.org/";
     var queryMap = new HashMap();
     queryMap.put("searchkey", URLEncoder.encode(query, "utf-8"));
     var html = http.post(baseUrl + "search.php",queryMap).body;
