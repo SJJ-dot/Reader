@@ -405,12 +405,6 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     iv_source_check_res.show()
                     iv_source_check_res.text = "${script.checkResult}"
                 }
-                iv_edit_source.setOnClickListener {
-                    fragment.startActivity<EditJavaScriptActivity>(
-                        BOOK_SOURCE_ID,
-                        script.id
-                    )
-                }
                 sw_source_enable.setOnCheckedChangeListener(null)
                 sw_source_enable.isChecked = script.enable
 
