@@ -108,6 +108,15 @@
       "enable": true,
       "requestDelay": -1,
       "website": ""
+    },
+    {
+      "source": "xinbiquge",
+      "js": "function search(query) {\r\n    var baseUrl = \"https://www.367x.com/modules/article/search.php\";\r\n    var map = new HashMap();\r\n    map.put(\"searchkey\", URLEncoder.encode(query, \"gbk\"))\r\n    var resp = http.post(baseUrl, map);\r\n    var parse = Jsoup.parse(resp.body, resp.url);\r\n    var bookListEl = parse.select(\".txt-list li\");\r\n    Log.e(\">>>>>bookListEl Size \" + bookListEl.size() + \">>>>>>>>>>>>>>>>>>>>\")\r\n    var results = new ArrayList();\r\n    for (var i = 1; i < bookListEl.size(); i++) {\r\n        var bookEl = bookListEl.get(i);\r\n        Log.e(bookEl.tagName() + \">>>>>\" + i + \">>>>>>>>>>>>>>>>>>>>\")\r\n        Log.e(\"bookEl>>>>\")\r\n        Log.e(bookEl)\r\n        var result = new SearchResult();\r\n        Log.e(\"bookTitle>>>>\")\r\n        result.bookTitle = bookEl.select(\"a\").get(0).text();\r\n        Log.e(result.bookTitle)\r\n        Log.e(\"bookUrl>>>>\")\r\n        result.bookUrl = bookEl.select(\"a\").get(0).absUrl(\"href\");\r\n        Log.e(result.bookUrl)\r\n        Log.e(\"bookAuthor>>>>\")\r\n        result.bookAuthor = bookEl.select(\".s4\").get(0).text();\r\n        Log.e(result.bookAuthor)\r\n        results.add(result);\r\n        Log.e(bookEl.tagName() + \"<<<<<\" + i + \"<<<<<<<<<<<<<<<<<<<<\")\r\n    }\r\n    return results;\r\n\r\n}\r\n\r\n/**\r\n * 书籍详情[JavaScript.source]\r\n */\r\nfunction getDetails(url) {\r\n    var parse = Jsoup.parse(http.get(url).body, url);\r\n    var book = new Book();\r\n    book.source = source;\r\n    book.url = url;\r\n    Log.e(\"title>>>>\")\r\n    book.title = parse.selectFirst(\"[property=og:title]\").attr(\"content\");\r\n    Log.e(book.title)\r\n    Log.e(\"author>>>>\")\r\n    book.author = parse.selectFirst(\"[property=og:novel:author]\").attr(\"content\");\r\n    Log.e(book.author)\r\n    Log.e(\"intro>>>>\")\r\n    book.intro = parse.selectFirst(\"[property=og:description]\").attr(\"content\");\r\n    Log.e(book.intro)\r\n    Log.e(\"cover>>>>\")\r\n    book.cover = parse.selectFirst(\"[property=og:image]\").absUrl(\"content\");\r\n    Log.e(book.cover)\r\n    //加载章节列表\r\n    var children = parse.select(\"#section-list a\");\r\n    Log.e(\"章节列表数量：\" + children.size())\r\n    var chapterList = new ArrayList();\r\n    for (i = 0; i < children.size(); i++) {\r\n        var chapterEl = children.get(i);\r\n        var chapter = new Chapter();\r\n        Log.e(\"chapter.title>>>>\")\r\n        chapter.title = chapterEl.text();\r\n        Log.e(chapter.title)\r\n        Log.e(\"chapter.url>>>>\")\r\n        chapter.url = chapterEl.absUrl(\"href\");\r\n        Log.e(chapter.title)\r\n        chapterList.add(chapter);\r\n    }\r\n    book.chapterList = chapterList;\r\n    return book;\r\n}\r\n\r\nfunction getChapterContent(url) {\r\n    var html = http.get(url).body;\r\n    return Jsoup.parse(html).selectFirst(\"#content\").outerHtml();\r\n}",
+      "version": 1,
+      "original": false,
+      "enable": true,
+      "requestDelay": -1,
+      "website": ""
     }
   ]
 }

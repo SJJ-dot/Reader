@@ -17,7 +17,7 @@ import javax.net.ssl.X509TrustManager
 private fun header() = mutableMapOf(
     "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
-    "Connection" to "keep-alive",
+    "Connection" to "close",
     "sec-ch-ua" to """" Not;A Brand";v="99", "Microsoft Edge";v="103", "Chromium";v="103"""",
     "sec-ch-ua-mobile" to "?0",
     "sec-ch-ua-platform" to "\"Windows\"",
@@ -58,13 +58,9 @@ val okClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(10, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
-    .retryOnConnectionFailure(false)
+//    .retryOnConnectionFailure(false)
     .cookieJar(CookieMgr)
-    .addInterceptor(
-        HttpLoggingInterceptor { Log.i(it) }.setLevel(
-            HttpLoggingInterceptor.Level.BODY
-        )
-    )
+
     .cache(Cache(File("./cache/http/"), 100 * 1024 * 1024))
     .addInterceptor {
         val header = header()
@@ -79,7 +75,11 @@ val okClient = OkHttpClient.Builder()
             newBuilder.addHeader(t, u)
         }
         it.proceed(newBuilder.build())
-    }.build()
+    }.addInterceptor(
+        HttpLoggingInterceptor { Log.i(it) }.setLevel(
+            HttpLoggingInterceptor.Level.BODY
+        )
+    ).build()
 
 val stringConverter = StringConverter()
 

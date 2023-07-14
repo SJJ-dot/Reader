@@ -9,6 +9,7 @@ import net.sourceforge.pinyin4j.PinyinHelper
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType
+import kotlin.system.exitProcess
 
 /**
      * 汉字转为拼音
@@ -32,6 +33,8 @@ fun toPinyin(chinese: String): String {
 }
 
 fun main(args: Array<String>) {
+//    println("BookSource/js/${toPinyin("新笔趣阁")}.js")
+//    exitProcess(0)
     val text = File("BookSource/default.json").readText()
     val jsonObject = gson.fromJson<JsonObject>(text)!!
     val jsonArray = jsonObject.getAsJsonArray("bookSource")
@@ -42,8 +45,6 @@ fun main(args: Array<String>) {
         val js = obj.get("js").asString
 
         names[toPinyin(name)] = obj
-        // println("BookSource/js/${toPinyin(name)}.js")
-        // File("BookSource/js/${toPinyin(name)}.js").writeText(js)
     }
 
     File("BookSource/js/").listFiles().forEach {
