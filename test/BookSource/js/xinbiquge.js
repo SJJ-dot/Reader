@@ -4,28 +4,46 @@ function search(query) {
     map.put("searchkey", URLEncoder.encode(query, "gbk"))
     var resp = http.post(baseUrl, map);
     var parse = Jsoup.parse(resp.body, resp.url);
-    var bookListEl = parse.select(".txt-list li");
-    Log.e(">>>>>bookListEl Size " + bookListEl.size() + ">>>>>>>>>>>>>>>>>>>>")
-    var results = new ArrayList();
-    for (var i = 1; i < bookListEl.size(); i++) {
-        var bookEl = bookListEl.get(i);
-        Log.e(bookEl.tagName() + ">>>>>" + i + ">>>>>>>>>>>>>>>>>>>>")
-        Log.e("bookEl>>>>")
-        Log.e(bookEl)
+    if (baseUrl == resp.url) {
+        var bookListEl = parse.select(".txt-list li");
+        Log.e(">>>>>bookListEl Size " + bookListEl.size() + ">>>>>>>>>>>>>>>>>>>>");
+        var results = new ArrayList();
+        for (var i = 1; i < bookListEl.size(); i++) {
+            var bookEl = bookListEl.get(i);
+            Log.e(bookEl.tagName() + ">>>>>" + i + ">>>>>>>>>>>>>>>>>>>>")
+            Log.e("bookEl>>>>")
+            Log.e(bookEl)
+            var result = new SearchResult();
+            Log.e("bookTitle>>>>")
+            result.bookTitle = bookEl.select("a").get(0).text();
+            Log.e(result.bookTitle)
+            Log.e("bookUrl>>>>")
+            result.bookUrl = bookEl.select("a").get(0).absUrl("href");
+            Log.e(result.bookUrl)
+            Log.e("bookAuthor>>>>")
+            result.bookAuthor = bookEl.select(".s4").get(0).text();
+            Log.e(result.bookAuthor)
+            results.add(result);
+            Log.e(bookEl.tagName() + "<<<<<" + i + "<<<<<<<<<<<<<<<<<<<<")
+        }
+        return results;
+    } else {
+        var results = new ArrayList();
         var result = new SearchResult();
         Log.e("bookTitle>>>>")
-        result.bookTitle = bookEl.select("a").get(0).text();
+        result.bookTitle = parse.selectFirst("[property=og:title]").attr("content")
         Log.e(result.bookTitle)
         Log.e("bookUrl>>>>")
-        result.bookUrl = bookEl.select("a").get(0).absUrl("href");
+        result.bookUrl = parse.selectFirst("[property=og:url]").attr("content")
         Log.e(result.bookUrl)
         Log.e("bookAuthor>>>>")
-        result.bookAuthor = bookEl.select(".s4").get(0).text();
+        result.bookAuthor = parse.selectFirst("[property=og:novel:author]").attr("content");
         Log.e(result.bookAuthor)
         results.add(result);
-        Log.e(bookEl.tagName() + "<<<<<" + i + "<<<<<<<<<<<<<<<<<<<<")
+        return results;
     }
-    return results;
+
+
 
 }
 
