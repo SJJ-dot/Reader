@@ -34,6 +34,7 @@
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
 ## 书源相关
+* 推荐使用IntelliJ IDE 来进行书源编写
 * 如果有好用的网站可以在issue提出
 
 ### 书源规则参考 
@@ -43,3 +44,6 @@
 [默认书源格式参考：https://github.com/SJJ-dot/Reader/blob/master/test/BookSource/default.json](test/BookSource/default.json)
 
 [书源模板参考](test/src/main/java/com/sjianjun/test/templete)
+
+## 感谢
+非常感谢 [JetBrains](https://jb.gg/OpenSourceSupport) 提供的工具支持。
