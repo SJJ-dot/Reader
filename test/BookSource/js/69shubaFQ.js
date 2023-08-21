@@ -1,5 +1,5 @@
 function search(query){
-    var baseUrl = "https://www.69shu.com/modules/article/search.php";
+    var baseUrl = "https://www.69shuba.com/modules/article/search.php";
     var map = new HashMap();
     map.put("searchtype", "all")
     map.put("searchkey",URLEncoder.encode(query,"gbk"))
