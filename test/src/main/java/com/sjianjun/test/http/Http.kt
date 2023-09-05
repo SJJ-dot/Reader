@@ -1,15 +1,11 @@
 package com.sjianjun.test.http
 
-import com.google.gson.JsonObject
 import com.sjianjun.test.utils.Log
-import com.sjianjun.test.utils.fromJson
-import com.sjianjun.test.utils.gson
 import okhttp3.*
 import java.io.File
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
@@ -152,18 +148,43 @@ class Http {
         )
     }
 
+    @JvmOverloads
+    fun body(
+        url: String,
+        body: String,
+        contentType: String = "application/json",
+        header: Map<String, String> = emptyMap()
+    ): Resp {
+        val builder = Request.Builder()
+            .url(HttpUrl.get(url))
+            .post(RequestBody.create(MediaType.parse(contentType), body))
+            .cacheControl(CacheControl.Builder().maxAge(1, TimeUnit.HOURS).build())
+        header.forEach {
+            builder.header(it.key, it.value)
+        }
+        val response = okClient.newCall(builder.build()).execute()
+        return Resp(
+            response.request().url().toString(),
+            stringConverter.stringConverter(response.body())
+        )
+    }
+
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            val resp = http.get(
-                "https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su", mapOf(
-                    "wd" to "我在精神病院",
-                    "cb" to "f1",
-                ), encoded = false
+//            val resp = http.get(
+//                "https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su", mapOf(
+//                    "wd" to "我在精神病院",
+//                    "cb" to "f1",
+//                ), encoded = false
+//            )
+//            val respJson = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
+//            val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
+//            println(gson.fromJson<List<String>>(jarr.toString()))
+            http.body(
+                "https://www.baidu.com",
+                "{'wd':'我在精神病院'}",
             )
-            val respJson = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
-            val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
-            println(gson.fromJson<List<String>>(jarr.toString()))
         }
     }
 

@@ -135,4 +135,24 @@ class Http {
         )
     }
 
+    @JvmOverloads
+    fun body(
+        url: String,
+        body: String,
+        contentType: String = "application/json",
+        header: Map<String, String> = emptyMap()
+    ): Resp {
+        val builder = Request.Builder()
+            .url(HttpUrl.get(url))
+            .post(RequestBody.create(MediaType.parse(contentType), body))
+            .cacheControl(CacheControl.Builder().maxAge(1, TimeUnit.HOURS).build())
+        header.forEach {
+            builder.header(it.key, it.value)
+        }
+        val response = okClient.newCall(builder.build()).execute()
+        return Resp(
+            response.request().url().toString(),
+            stringConverter.stringConverter(response.body())
+        )
+    }
 }
