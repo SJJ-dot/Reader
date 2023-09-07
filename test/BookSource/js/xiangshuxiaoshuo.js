@@ -38,7 +38,7 @@ function getDetails(url) {
         Log.e("chapter.url>>>>")
         chapter.url = chapterEl.absUrl("href");
         Log.e(chapter.title)
-        chapterList.add(0, chapter);
+        chapterList.add(chapter);
     }
     book.chapterList = chapterList;
     return book;
