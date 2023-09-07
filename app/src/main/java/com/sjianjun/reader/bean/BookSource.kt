@@ -9,7 +9,7 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.rhino.ContextWrap
 import com.sjianjun.reader.rhino.importClassCode
 import com.sjianjun.reader.rhino.js
-import com.sjianjun.reader.utils.md5
+import com.sjianjun.reader.utils.AesUtil
 import okhttp3.HttpUrl
 import org.jsoup.Jsoup
 import org.jsoup.internal.StringUtil
@@ -179,6 +179,7 @@ val headerScript = """
         ${importClassCode<Book>()}
         ${importClassCode<StringUtil>()}
         ${importClassCode<HttpUrl>()}
+        ${importClassCode<AesUtil>()}
 
         importClass(Packages.java.util.ArrayList)
         importClass(Packages.java.util.HashMap)
