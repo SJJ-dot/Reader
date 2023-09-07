@@ -63,10 +63,7 @@ val okClient = OkHttpClient.Builder()
         it.request().headers().names().forEach { name ->
             header.remove(name)
         }
-        val host = it.request().url().host()
         val newBuilder = it.request().newBuilder()
-        newBuilder.addHeader("Host", host)
-        newBuilder.addHeader("Referer", it.request().url().toString())
         header.forEach { (t, u) ->
             newBuilder.addHeader(t, u)
         }

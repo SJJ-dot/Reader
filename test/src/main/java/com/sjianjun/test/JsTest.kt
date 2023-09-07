@@ -112,13 +112,16 @@ suspend fun testAll() = withContext(Dispatchers.IO) {
 }
 
 fun main(args: Array<String>) {
-    runBlocking {
-        val test = File("./src/main/java/com/sjianjun/test/test.js").readText()
-        test("测试脚本", test, "我的")
+    try {
+        runBlocking {
+            val test = File("./src/main/java/com/sjianjun/test/test.js").readText()
+            test("测试脚本", test, "我的")
 
-//    testAll()
+    //    testAll()
+        }
+    } finally {
+        exitProcess(0)
     }
-    exitProcess(0)
 }
 
 
