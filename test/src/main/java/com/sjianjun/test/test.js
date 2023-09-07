@@ -72,5 +72,5 @@ function getDetails(url) {
 
 function getChapterContent(url) {
     var parse = eval("(" + http.get(url).body + ")")["data"]["chapterInfo"];
-    return AesUtil.decrypt(parse["content"], "6CE93717FBEA3E4F", "AES/CBC/NoPadding", "6CE93717FBEA3E4F").trim().replace("###$$$", "");
+    return AesUtil.decrypt(parse["content"], "6CE93717FBEA3E4F", "AES/CBC/NoPadding", "6CE93717FBEA3E4F").trim().replace("###$$$", "\n");
 }
