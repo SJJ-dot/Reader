@@ -3,7 +3,6 @@ package com.sjianjun.reader.repository
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 
 object ChapterMgr {
@@ -27,14 +26,14 @@ object ChapterMgr {
         if (content.isNullOrBlank()) {
             chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败", true)
         } else {
-            var contentError = false
+            var error = false
             if (chapter.content?.contentError == true && chapter.content?.content == content) {
-                contentError = true
+                error = true
             }
-            chapter.content = ChapterContent(chapter.bookId, chapter.index, content, contentError)
-            chapter.isLoaded = true
-            dao.insertChapter(chapter, chapter.content!!)
+            chapter.content = ChapterContent(chapter.bookId, chapter.index, content, error)
         }
+        chapter.isLoaded = true
+        dao.insertChapter(chapter, chapter.content!!)
     }
 
 

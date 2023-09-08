@@ -8,7 +8,6 @@ import com.sjianjun.reader.http.http
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
-import java.net.URLEncoder
 import kotlin.math.abs
 
 /**
@@ -274,16 +273,14 @@ object DataManager {
             if (content.isNullOrBlank()) {
                 chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败", true)
             } else {
-                var contentError = false
+                var error = false
                 if (chapter.content?.contentError == true && chapter.content?.content == content) {
-                    contentError = true
+                    error = true
                 }
-
-                chapter.content =
-                    ChapterContent(chapter.bookId, chapter.index, content, contentError)
-                chapter.isLoaded = true
-                dao.insertChapter(chapter, chapter.content!!)
+                chapter.content = ChapterContent(chapter.bookId, chapter.index, content, error)
             }
+            chapter.isLoaded = true
+            dao.insertChapter(chapter, chapter.content!!)
         }
         return chapter
     }
