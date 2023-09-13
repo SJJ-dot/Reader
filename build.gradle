@@ -4,10 +4,10 @@ buildscript {
     ext.kotlin_version = '1.7.10'
     repositories {
 
-        maven {url 'https://maven.aliyun.com/repository/public/'}
-        maven {url 'https://maven.aliyun.com/repository/google/'}
-        maven {url 'https://maven.aliyun.com/repository/central/'}
-        maven {url 'https://maven.aliyun.com/repository/gradle-plugin/'}
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        maven { url 'https://maven.aliyun.com/repository/google/' }
+        maven { url 'https://maven.aliyun.com/repository/central/' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin/' }
         maven { url 'https://repo1.maven.org/maven2/' }
         google()
         mavenCentral()
@@ -20,6 +20,9 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
+}
+plugins {
+    id 'com.chaquo.python' version '13.0.0' apply false
 }
 String localRepo() {
     if (hasProperty("LOCAL_REPO")) {
@@ -36,10 +39,10 @@ ext.localRepo = localRepo()
 allprojects {
     repositories {
 
-        maven {url 'https://maven.aliyun.com/repository/public/'}
-        maven {url 'https://maven.aliyun.com/repository/google/'}
-        maven {url 'https://maven.aliyun.com/repository/central/'}
-        maven {url 'https://maven.aliyun.com/repository/gradle-plugin/'}
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        maven { url 'https://maven.aliyun.com/repository/google/' }
+        maven { url 'https://maven.aliyun.com/repository/central/' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin/' }
         maven { url 'https://repo1.maven.org/maven2/' }
         maven { url "https://frontjs-static.pgyer.com/dist/sdk/pgyersdk" }
         google()
@@ -56,3 +59,4 @@ task clean(type: Delete) {
 ext.COMPILE_SDK_VERSION = 31
 ext.MIN_SDK_VERSION = 25
 ext.TARGET_SDK_VERSION = 31
+

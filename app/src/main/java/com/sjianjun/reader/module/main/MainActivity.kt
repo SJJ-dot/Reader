@@ -2,13 +2,16 @@ package com.sjianjun.reader.module.main
 
 import android.os.Bundle
 import android.view.MenuItem
-import androidx.appcompat.app.AppCompatDelegate.*
+import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.chaquo.python.Python
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -18,8 +21,14 @@ import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.umeng.commonsdk.UMConfigure
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.main_menu_nav_header.view.*
+import kotlinx.android.synthetic.main.activity_main.drawer_content
+import kotlinx.android.synthetic.main.activity_main.drawer_layout
+import kotlinx.android.synthetic.main.activity_main.host_fragment_view_stub
+import kotlinx.android.synthetic.main.activity_main.nav_ui
+import kotlinx.android.synthetic.main.activity_main.toolbar
+import kotlinx.android.synthetic.main.main_menu_nav_header.view.day_night
+import sjj.alog.Log
+
 
 class MainActivity : BaseActivity() {
 
@@ -31,6 +40,12 @@ class MainActivity : BaseActivity() {
         } else {
             setTheme(R.style.Splash_noBack)
         }
+        launchIo {
+            val pyObject =
+                Python.getInstance().getModule("HelloJava").callAttr("get_java_bean", "sjj")
+            Log.e(pyObject.toString())
+        }
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,9 +88,11 @@ class MainActivity : BaseActivity() {
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                     supportActionBar?.show()
                 }
+
                 R.id.browserBookCityFragment -> {
                     supportActionBar?.hide()
                 }
+
                 else -> {
                     supportActionBar?.show()
                     drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
@@ -103,6 +120,7 @@ class MainActivity : BaseActivity() {
                         //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                         globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
                     }
+
                     else -> {
                         day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_NO
@@ -122,6 +140,7 @@ class MainActivity : BaseActivity() {
             android.R.id.home -> {
                 false
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }

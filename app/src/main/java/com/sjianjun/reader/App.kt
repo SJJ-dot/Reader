@@ -3,18 +3,18 @@ package com.sjianjun.reader
 import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.mmkv.MMKV
 import com.umeng.commonsdk.UMConfigure
-import me.weishu.reflection.Reflection
 import sjj.alog.Config
 import java.io.File
 
 class App : Application() {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        Reflection.unseal(base);
     }
     override fun onCreate() {
         super.onCreate()
@@ -31,6 +31,7 @@ class App : Application() {
             writeToFile = true
             writeToFileDir = File(externalCacheDir, "alog")
         }
+        Python.start(AndroidPlatform(this))
     }
 
     companion object {
