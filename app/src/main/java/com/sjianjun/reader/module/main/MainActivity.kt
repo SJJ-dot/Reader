@@ -41,31 +41,9 @@ class MainActivity : BaseActivity() {
             setTheme(R.style.Splash_noBack)
         }
         launchIo {
-//            val pyObject =
-//                Python.getInstance().getModule("HelloJava").callAttr("get_java_bean", "sjj")
-//            Log.e(pyObject.toString())
-//            // Define the Python code as a string
-            Log.e("AAA==>>>>>>>>>")
-            val code = """
-                from Log import log
-
-                # python调用Java类
-                def get_java_bean(args):
-                    log(f"in py:{args}")
-                    return f"py return java:{args}"
-            """.trimIndent();
-
-            // Load the Python code
-            val py = Python.getInstance()
-//            load module
-            val imp = py.getModule("imp")
-            val my_module = imp.callAttr("new_module", "my_module")
-            py.builtins.callAttr("exec", code, my_module["__dict__"])
-//            call fun
-            val result = my_module.callAttr("get_java_bean", "加载字符串模块，调用模块中的方法")
-
-            Log.e(result)
-            Log.e("AAA==<<<<<<<<")
+            val pyObject =
+                Python.getInstance().getModule("HelloJava").callAttr("get_java_bean", "sjj")
+            Log.e(pyObject.toString())
         }
 
     }
