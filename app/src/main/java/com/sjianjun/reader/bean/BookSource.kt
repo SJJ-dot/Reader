@@ -4,16 +4,8 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.http.CookieMgr
-import com.sjianjun.reader.http.http
-import com.sjianjun.reader.rhino.ContextWrap
-import com.sjianjun.reader.rhino.execute
-import com.sjianjun.reader.rhino.importClassCode
+import com.sjianjun.reader.python.py
 import com.sjianjun.reader.rhino.js
-import com.sjianjun.reader.utils.AesUtil
-import okhttp3.HttpUrl
-import org.jsoup.Jsoup
-import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
 @Entity
@@ -54,9 +46,6 @@ class BookSource {
 
     var checkErrorMsg: String? = null
 
-    @Ignore
-    val jsProps = mutableListOf<Pair<String, Any>>()
-
     /**
      * 书源管理页面是否被选中
      */
@@ -64,14 +53,26 @@ class BookSource {
     var selected = false
 
     /**
-     * 脚本引擎语言
+     * 脚本引擎语言 js py
      */
     var lauanage: String = "js"
 
 
     inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
-        return execute(func.name, *params)
+        when (lauanage) {
+            "js" -> return js(func.name, *params)
+            "py" -> {
+                Log.e("python")
+
+                return py(func.name, *params)
+            }
+
+            else -> {
+                Log.e("未知的脚本引擎：${lauanage}")
+                return null
+            }
+        }
     }
 
 

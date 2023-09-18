@@ -13,33 +13,29 @@ import org.jsoup.internal.StringUtil
 import sjj.alog.Log
 
 
-
-inline fun <reified T> BookSource.execute(functionName: String, vararg params: String?): T? {
-    return execute {
+inline fun <reified T> BookSource.js(functionName: String, vararg params: String?): T? {
+    return js {
         val paramList = params.filter { it?.isNotEmpty() == true }
         val result = if (paramList.isEmpty()) {
-            eval("${functionName}()","call_func0")
+            eval("${functionName}()", "call_func0")
         } else {
             val param = paramList.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-            eval("${functionName}(${param})","call_func0")
+            eval("${functionName}(${param})", "call_func0")
         }
         jsToJava<T>(result)
     }
 }
 
 
-inline fun <reified T> BookSource.execute(runner: ContextWrap.() -> T?): T? {
-    return js {
+inline fun <reified T> BookSource.js(runner: ContextWrap.() -> T?): T? {
+    return jsCtx {
         //以前的脚本使用了这个值。以后应该删除这个属性
         putProperty("source", javaToJS(name))
         putProperty("http", javaToJS(http))
-        jsProps.forEach {
-            putProperty(it.first, javaToJS(it.second))
-        }
 //            putProperty("context", this)
 
-        eval(headerScript,"headerScript")
-        eval(js,"BookSource_${name}")
+        eval(headerScript, "headerScript")
+        eval(js, "BookSource_${name}")
         runner()
     }
 }

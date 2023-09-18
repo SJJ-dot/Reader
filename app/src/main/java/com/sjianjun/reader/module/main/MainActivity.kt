@@ -40,11 +40,6 @@ class MainActivity : BaseActivity() {
         } else {
             setTheme(R.style.Splash_noBack)
         }
-        launchIo {
-            val pyObject =
-                Python.getInstance().getModule("HelloJava").callAttr("get_java_bean", "sjj")
-            Log.e(pyObject.toString())
-        }
 
     }
 

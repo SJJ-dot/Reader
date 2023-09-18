@@ -2,7 +2,7 @@ package com.sjianjun.reader.rhino
 
 import org.mozilla.javascript.Context
 
-inline fun <reified T> js(runner: ContextWrap.() -> T): T? {
+inline fun <reified T> jsCtx(runner: ContextWrap.() -> T): T? {
     val context = Context.enter()
     return try {
         context.optimizationLevel = -1
@@ -11,10 +11,6 @@ inline fun <reified T> js(runner: ContextWrap.() -> T): T? {
     } finally {
         Context.exit()
     }
-}
-
-fun <T> runJs(runner: ContextWrap.() -> T): T? {
-    return js<Any?>(runner) as T?
 }
 
 
