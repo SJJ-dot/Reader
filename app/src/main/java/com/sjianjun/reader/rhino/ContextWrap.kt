@@ -1,8 +1,18 @@
 package com.sjianjun.reader.rhino
 
+import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.http.CookieMgr
+import com.sjianjun.reader.http.http
+import com.sjianjun.reader.utils.AesUtil
+import okhttp3.HttpUrl
+import org.jsoup.Jsoup
+import org.jsoup.internal.StringUtil
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.ImporterTopLevel
 import org.mozilla.javascript.ScriptableObject
+import sjj.alog.Log
 
 class ContextWrap(val context: Context) {
     val scriptable = ImporterTopLevel(context)
@@ -32,3 +42,4 @@ class ContextWrap(val context: Context) {
         ScriptableObject.putProperty(scriptable, name, value)
     }
 }
+
