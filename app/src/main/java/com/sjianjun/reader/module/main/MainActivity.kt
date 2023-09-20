@@ -11,10 +11,10 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.chaquo.python.Python
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
@@ -27,6 +27,7 @@ import kotlinx.android.synthetic.main.activity_main.host_fragment_view_stub
 import kotlinx.android.synthetic.main.activity_main.nav_ui
 import kotlinx.android.synthetic.main.activity_main.toolbar
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.day_night
+import kotlinx.coroutines.delay
 import sjj.alog.Log
 
 
@@ -52,6 +53,24 @@ class MainActivity : BaseActivity() {
                 BookSourceMgr.autoImport()
             }
             UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
+            delay(5)
+            Log.e("start test")
+            val source = BookSource()
+            source.lauanage = "py"
+            source.js = """
+                def search(query):
+                    return "py search"
+
+
+                def getDetails(bookUrl):
+                    return "py getDetails"
+
+
+                def getChapterContent(chapterUrl):
+                    return "py getChapterContent"
+
+            """.trimIndent()
+            source.search("test search")
         }
         init()
     }

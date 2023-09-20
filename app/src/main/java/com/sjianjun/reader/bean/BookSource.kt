@@ -58,21 +58,14 @@ class BookSource {
     var lauanage: String = "js"
 
 
-    inline fun <reified T> execute(func: Func, vararg params: String?): T? {
+    private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         when (lauanage) {
             "js" -> return js(func.name, *params)
-            "py" -> {
-                Log.e("python")
-
-                return py(func.name, *params)
-            }
-
-            else -> {
-                Log.e("未知的脚本引擎：${lauanage}")
-                return null
-            }
+            "py" -> return py(func.name, *params)
         }
+        Log.e("未知的脚本引擎")
+        return null
     }
 
 

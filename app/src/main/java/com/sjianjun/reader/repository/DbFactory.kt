@@ -13,7 +13,7 @@ import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -30,6 +30,11 @@ object DbFactory {
             .addMigrations(object : Migration(12, 13) {
                 override fun migrate(database: SupportSQLiteDatabase) {
                     database.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(13, 14) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("ALTER TABLE 'BookSource' ADD COLUMN `lauanage` TEXT NOT NULL default 'js'")
                 }
             })
             .build()
