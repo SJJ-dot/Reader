@@ -1,6 +1,8 @@
+from urllib.parse import urljoin
+
 import requests
 from bs4 import BeautifulSoup
-
+from log import log
 
 # {
 #   "bookSourceComment": "",
@@ -79,7 +81,8 @@ def search(query):
 
     # 打印所有链接的文本和URL
     for link in links:
-        print(link.text, link['href'])
+        full_url = urljoin(url, link.get('href'))
+        log(f"{link.text} {full_url}")
 
 
 def getDetails(book_url):

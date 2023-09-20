@@ -119,9 +119,12 @@ object BookSourceMgr {
                         ).reader().readText()
                     }
                     val source = JSONObject(body)
-                    val bookSourceArray = source.getJSONArray("bookSource")
+
+                    val bookSourceList = mutableListOf<BookSource>()
                     val groupName = source.optString("group")
-                    (0 until bookSourceArray.length()).map {
+
+                    val bookSourceArray = source.getJSONArray("bookSource")
+                    (0 until bookSourceArray.length()).mapTo(bookSourceList) {
                         val obj = bookSourceArray.getJSONObject(it)
                         BookSource().apply {
                             name = obj.getString("source")
@@ -132,6 +135,21 @@ object BookSourceMgr {
                             requestDelay = obj.optLong("requestDelay", -1)
                         }
                     }
+
+                    source.optJSONArray("pySource")?.also { pySourceArr ->
+                        (0 until pySourceArr.length()).mapTo(bookSourceList) {
+                            val obj = pySourceArr.getJSONObject(it)
+                            BookSource().apply {
+                                name = obj.getString("source")
+                                group = obj.optString("group", groupName)
+                                js = obj.getString("js")
+                                version = obj.optInt("version", -1)
+                                enable = obj.optBoolean("enable", true)
+                                requestDelay = obj.optLong("requestDelay", -1)
+                            }
+                        }
+                    }
+                    bookSourceList
                 } catch (e: Exception) {
                     Log.i("书源导入失败:${url}", e)
                     emptyList()
@@ -155,7 +173,10 @@ object BookSourceMgr {
         }
         saveJs(*updates.toTypedArray(), *newSource.toTypedArray())
 
-        toast("${sources.first().group}：新增${newSource.size}、更新${updates.size}", Toast.LENGTH_LONG)
+        toast(
+            "${sources.first().group}：新增${newSource.size}、更新${updates.size}",
+            Toast.LENGTH_LONG
+        )
         Log.i("${sources.first().group}：新增${newSource.size}、更新${updates.size}")
     }
 

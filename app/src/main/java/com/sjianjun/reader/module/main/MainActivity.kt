@@ -53,24 +53,6 @@ class MainActivity : BaseActivity() {
                 BookSourceMgr.autoImport()
             }
             UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
-            delay(5)
-            Log.e("start test")
-            val source = BookSource()
-            source.lauanage = "py"
-            source.js = """
-                def search(query):
-                    return "py search"
-
-
-                def getDetails(bookUrl):
-                    return "py getDetails"
-
-
-                def getChapterContent(chapterUrl):
-                    return "py getChapterContent"
-
-            """.trimIndent()
-            source.search("test search")
         }
         init()
     }
