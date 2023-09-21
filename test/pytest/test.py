@@ -99,3 +99,8 @@ def getChapterContent(chapter_url):
     # 章节内容 html
     content = soup.select("#zjny")[0].prettify()
     return content
+
+
+if __name__ == '__main__':
+    result = getChapterContent("https://www.shoujixs.net/shoujixs_188182_45086582.html")
+    log(result)
