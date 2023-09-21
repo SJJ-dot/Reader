@@ -56,7 +56,7 @@ object BookMgr {
 
             dao.updateBookDetails(bookDetails)
         } catch (e: Throwable) {
-            Log.i("加载书籍详情：$book", e)
+            Log.e("加载书籍详情：$book", e)
             book.isLoading = false
             book.error = android.util.Log.getStackTraceString(e)
             dao.updateBook(book)

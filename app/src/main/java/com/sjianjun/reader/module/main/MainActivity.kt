@@ -14,11 +14,11 @@ import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.test.SourceTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.umeng.commonsdk.UMConfigure
 import kotlinx.android.synthetic.main.activity_main.drawer_content
@@ -27,8 +27,6 @@ import kotlinx.android.synthetic.main.activity_main.host_fragment_view_stub
 import kotlinx.android.synthetic.main.activity_main.nav_ui
 import kotlinx.android.synthetic.main.activity_main.toolbar
 import kotlinx.android.synthetic.main.main_menu_nav_header.view.day_night
-import kotlinx.coroutines.delay
-import sjj.alog.Log
 
 
 class MainActivity : BaseActivity() {

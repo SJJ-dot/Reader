@@ -37,7 +37,7 @@ object DataManager {
                 val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
                 return@withIo gson.fromJson<List<String>>(jarr.toString())
             } catch (e: Exception) {
-                Log.i("搜索提示加载失败 $e")
+                Log.e("搜索提示加载失败 $e")
                 null
             }
         }
@@ -67,7 +67,7 @@ object DataManager {
                             Log.i("search ${it.id} resultNum:${search.size}")
                         }
                     } catch (e: Exception) {
-                        Log.i("search error ${it.id}", e)
+                        Log.e("search error ${it.id}", e)
                     }
                 }
             }.map {
@@ -139,7 +139,7 @@ object DataManager {
 
             dao.updateBookDetails(bookDetails)
         } catch (e: Throwable) {
-            Log.i("${script?.id}加载书籍详情：$book", e)
+            Log.e("${script?.id}加载书籍详情：$book", e)
             book.isLoading = false
             book.error = android.util.Log.getStackTraceString(e)
             dao.updateBook(book)

@@ -18,6 +18,7 @@ def search(query):
     # 发送POST请求
     response = requests.post(url, data=data)
     response.encoding = 'gbk'
+    log(response.text)
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
@@ -48,6 +49,7 @@ def getDetails(book_url):
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
+    info["url"] = soup.select("meta[property='og:url']")[0].get("content")
     # 书名
     info["title"] = soup.select("meta[property='og:novel:book_name']")[0].get("content")
     # 作者
@@ -102,5 +104,5 @@ def getChapterContent(chapter_url):
 
 
 if __name__ == '__main__':
-    result = getChapterContent("https://www.shoujixs.net/shoujixs_188182_45086582.html")
+    result = getDetails("https://www.shoujixs.net/shoujixs_13952/")
     log(result)

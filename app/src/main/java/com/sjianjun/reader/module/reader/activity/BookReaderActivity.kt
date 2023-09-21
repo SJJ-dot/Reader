@@ -8,7 +8,6 @@ import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
@@ -276,7 +275,7 @@ class BookReaderActivity : BaseActivity() {
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
-                    launchIo {
+                    launch {
                         val list = requestChapters.mapNotNull {
                             book.chapterList?.getOrNull(it.chapterIndex)
                         }
@@ -320,7 +319,7 @@ class BookReaderActivity : BaseActivity() {
                 }
 
                 override fun onBookRecordChange(bean: BookRecordBean) {
-                    launchIo {
+                    launch {
                         Log.i("保存阅读记录 ${bean}")
                         readingRecord.chapterIndex = bean.chapter
                         readingRecord.offest = bean.pagePos

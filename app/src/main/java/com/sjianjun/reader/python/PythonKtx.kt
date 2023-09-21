@@ -11,8 +11,11 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     val py = Python.getInstance()
     synchronized(py) {
         val exec = py.getModule("exec_script")
-        val param = params.map { "\"$it\"" }.reduce { acc, s -> "$acc,$s" }
-        val result = exec.callAttr("exec_script", js, func, param)
+        val param = params.map { "$it" }.reduce { acc, s -> "$acc,$s" }
+        val result = exec.callAttr("exec_script", js, func, param).toString()
+        if(T::class.java == String::class.java){
+            return result as T
+        }
         return gson.fromJson<T>(result.toString())
     }
 }
