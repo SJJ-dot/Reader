@@ -133,6 +133,7 @@ object BookSourceMgr {
                             version = obj.optInt("version", -1)
                             enable = obj.optBoolean("enable", true)
                             requestDelay = obj.optLong("requestDelay", -1)
+                            lauanage = BookSource.Language.js
                         }
                     }
 
@@ -146,6 +147,7 @@ object BookSourceMgr {
                                 version = obj.optInt("version", -1)
                                 enable = obj.optBoolean("enable", true)
                                 requestDelay = obj.optLong("requestDelay", -1)
+                                lauanage = BookSource.Language.py
                             }
                         }
                     }

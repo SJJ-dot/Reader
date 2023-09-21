@@ -55,14 +55,14 @@ class BookSource {
     /**
      * 脚本引擎语言 js py
      */
-    var lauanage: String = "js"
+    var lauanage: Language = Language.js
 
 
     private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         when (lauanage) {
-            "js" -> return js(func.name, *params)
-            "py" -> return py(func.name, *params)
+            Language.js -> return js(func.name, *params)
+            Language.py -> return py(func.name, *params)
         }
         Log.e("未知的脚本引擎")
         return null
@@ -137,6 +137,10 @@ class BookSource {
 
     enum class Func {
         search, getDetails, getChapterContent
+    }
+
+    enum class Language {
+        js, py
     }
 
 }
