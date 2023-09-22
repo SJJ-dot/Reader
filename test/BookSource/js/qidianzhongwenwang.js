@@ -36,7 +36,7 @@ function getDetails(url) {
     for (i = 0; i < chapterListEl.size(); i++) {
         var chapterEl = chapterListEl.get(i);
         var chapter = new Chapter();
-        chapter.title = chapterEl.text();
+        chapter.title = chapterEl.select("h2").get(0).text();
         Log.e(chapter.title)
         chapter.url = chapterEl.absUrl("href");
         Log.e(chapter.url)
