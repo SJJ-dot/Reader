@@ -108,6 +108,7 @@ class BookReaderActivity : BaseActivity() {
                 toast("正在加载中，请稍候……")
                 val chapter = DataManager.getChapterContent(txtChapter, 1)
                 curChapter.content = chapter.content?.format().toString()
+                curChapter.title = chapter.title
                 mPageLoader.refreshChapter(curChapter)
                 toast("加载完成")
             }
