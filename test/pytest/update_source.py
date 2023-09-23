@@ -88,7 +88,7 @@ def search(query):
         books.append({
             "bookTitle": bookEl.select(".novelname")[0].text,
             "bookUrl": urljoin(url, bookEl.select(".novelname")[0].get("href")),
-            "bookAuthor": bookEl.select(".info span")[1].text,
+            "bookAuthor": bookEl.select(".info span")[1].text.replace("作者：",""),
         })
 
     return books
