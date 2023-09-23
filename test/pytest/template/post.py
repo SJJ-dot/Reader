@@ -12,21 +12,21 @@ def search(query):
     :return [{"bookTitle":"书名", "bookUrl": "书籍链接", "bookAuthor": "作者"}, ...] 搜索结果列表
     """
     # POST请求的URL
-    url = 'http://www.shengxuxu.net/search.html?searchtype=novelname&searchkey='
+    url = 'https://www.shoujixs.net/modules/article/search.php'
     # POST请求的数据
-    data = {'searchkey': query.encode('utf-8'), "searchtype": 'novelname'}
-    # 发送get请求
-    response = requests.get(url, params=data)
-    response.encoding = 'utf-8'
+    data = {'searchkey': query.encode('gbk')}
+    # 发送POST请求
+    response = requests.post(url, data=data)
+    response.encoding = 'gbk'
     log(response.text)
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
-    for bookEl in soup.select(".librarylist > li"):
+    for c_row in soup.select(".c_row"):
         books.append({
-            "bookTitle": bookEl.select(".novelname")[0].text,
-            "bookUrl": urljoin(url, bookEl.select(".novelname")[0].get("href")),
-            "bookAuthor": bookEl.select(".info span")[1].text,
+            "bookTitle": c_row.select(".c_subject")[0].select("a")[0].text,
+            "bookUrl": urljoin(url, c_row.select(".c_subject")[0].select("a")[0].get("href")),
+            "bookAuthor": c_row.select(".c_value")[0].text,
         })
 
     return books
@@ -45,7 +45,7 @@ def getDetails(book_url):
     # url book_url
     # 发送get请求
     response = requests.get(book_url)
-    response.encoding = "utf-8"
+    response.encoding = "gbk"
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -60,14 +60,32 @@ def getDetails(book_url):
     info["cover"] = soup.select("meta[property='og:image']")[0].get("content")
     # 章节列表
     info["chapterList"] = []
-    # document.querySelectorAll(".dirlist")[1].querySelectorAll("a")[1664]
-    for el in soup.select(".dirlist")[1].select("a"):
-        info["chapterList"].append({
-            "title": el.text,
-            "url": urljoin(book_url, el.get("href"))
-        })
+    parseChapterList(book_url, soup, info["chapterList"])
 
     return info
+
+
+def parseChapterList(book_url, soup, chapterList):
+    # 递归加载章节列表
+    dt = 0
+    for el in soup.select("#lbks dl")[0].children:
+        if el.name == "dt":
+            dt = dt + 1
+
+        elif el.name == "dd":
+            if dt < 2:
+                continue
+            chapterList.append({
+                "title": el.select("a")[0].text,
+                "url": urljoin(book_url, el.select("a")[0].get("href"))
+            })
+
+    if soup.select(".right a")[0].has_attr("href"):
+        next_url = urljoin(book_url, soup.select(".right a")[0].get("href"))
+        response = requests.get(next_url)
+        response.encoding = "gbk"
+        soup = BeautifulSoup(response.text, 'html.parser')
+        parseChapterList(book_url, soup, chapterList)
 
 
 def getChapterContent(chapter_url):
@@ -78,18 +96,14 @@ def getChapterContent(chapter_url):
     """
     # 发送get请求
     response = requests.get(chapter_url)
-    response.encoding = "utf-8"
+    response.encoding = "gbk"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select("#chaptercontent")[0].prettify()
+    content = soup.select("#zjny")[0].prettify()
     return content
 
 
 if __name__ == '__main__':
-    # result = search("我的")
-    # log(result)
-    # result = getDetails("http://www.shengxuxu.net/42618/")
-    # log(result)
-    result = getChapterContent("http://www.shengxuxu.net/42618/read_699.html")
+    result = getDetails("https://www.shoujixs.net/shoujixs_13952/")
     log(result)
