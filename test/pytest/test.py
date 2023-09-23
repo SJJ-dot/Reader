@@ -49,7 +49,7 @@ def getDetails(book_url):
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
-    info["url"] = soup.select("meta[property='og:url']")[0].get("content")
+    info["url"] = book_url
     # 书名
     info["title"] = soup.select("meta[property='og:novel:book_name']")[0].get("content")
     # 作者
@@ -89,7 +89,7 @@ def getChapterContent(chapter_url):
 if __name__ == '__main__':
     # result = search("我的")
     # log(result)
-    # result = getDetails("http://www.shengxuxu.net/42618/")
-    # log(result)
-    result = getChapterContent("http://www.shengxuxu.net/42618/read_699.html")
+    result = getDetails("http://www.shengxuxu.net/42618/")
     log(result)
+    # result = getChapterContent("http://www.shengxuxu.net/42618/read_699.html")
+    # log(result)
