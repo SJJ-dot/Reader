@@ -1,3 +1,8 @@
+
+from urllib.parse import urljoin
+import requests
+from bs4 import BeautifulSoup
+from log import log
 def search(query):
     """
     书源搜索函数

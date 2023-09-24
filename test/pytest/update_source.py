@@ -60,7 +60,12 @@ def update_json():
 
 
 if __name__ == '__main__':
-    write_source("天天看小说", '''def search(query):
+    write_source("天天看小说", '''
+from urllib.parse import urljoin
+import requests
+from bs4 import BeautifulSoup
+from log import log
+def search(query):
     """
     书源搜索函数
     :param query: 搜索关键词
