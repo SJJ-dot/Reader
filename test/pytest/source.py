@@ -82,7 +82,7 @@ def search(query):
     #     "kind": "",
     #     "lastChapter": "",
     #     "name": "tag.h3.0@text"
-    #   },
+    #   }
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
