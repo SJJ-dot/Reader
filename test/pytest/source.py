@@ -94,4 +94,5 @@ def getChapterContent(chapter_url):
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
     content = soup.select("#content")[0].prettify()
+    content = content.replace("最近转码严重，让我们更有动力，更新更快，麻烦你动动小手退出阅读模式。谢谢", "")
     return content
