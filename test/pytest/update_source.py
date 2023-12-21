@@ -21,7 +21,7 @@ def write_source(name, script):
         f.write(script)
 
 
-def update_json():
+def update_json(name):
     # 读取json文件
     with open("../BookSource/default.json", "r", encoding="utf-8") as f:
         json1 = f.read()
@@ -36,7 +36,7 @@ def update_json():
             py = f.read()
         if item.replace(".py", "") not in pySourceDict:
             json_dict["pySource"].append({
-                "source": item.replace(".py", ""),
+                "source": name,
                 "js": py,
                 "version": 1,
                 "original": False,
@@ -62,5 +62,5 @@ def update_json():
 if __name__ == '__main__':
     with open("source.py", "r", encoding="utf-8") as f:
         source = f.read()
-    write_source("天天看小说", source)
-    update_json()
+    write_source("博仕书屋", source)
+    update_json("博仕书屋")
