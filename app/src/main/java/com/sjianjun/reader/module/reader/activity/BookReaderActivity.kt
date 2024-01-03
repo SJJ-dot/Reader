@@ -13,6 +13,7 @@ import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.event.observe
 import com.sjianjun.reader.module.main.ChapterListFragment
@@ -39,14 +40,10 @@ class BookReaderActivity : BaseActivity() {
     private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX) ?: "-1").toInt()
     private lateinit var readingRecord: ReadingRecord
 
-    //    private val adapter by lazy { ContentAdapter(this) }
-//    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
+    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     private val mPageLoader by lazy { page_view.pageLoader }
     override fun immersionBar() {
-//        val dark = globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_YES
         ImmersionBar.with(this).init()
-//            .hideBar(BarHide.FLAG_HIDE_STATUS_BAR)
-//            .init()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,9 +69,11 @@ class BookReaderActivity : BaseActivity() {
             drawer_layout.isDrawerOpen(GravityCompat.END) -> {
                 drawer_layout.closeDrawer(GravityCompat.END)
             }
+
             drawer_layout.isDrawerOpen(GravityCompat.START) -> {
                 drawer_layout.closeDrawer(GravityCompat.START)
             }
+
             else -> {
                 super.onBackPressed()
             }
@@ -82,6 +81,49 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
+        ttsUtil.progressChangeCallback = { paragraph ->
+            launch {
+                val page = mPageLoader.curPageList?.find { page ->
+                    page.lines.find { paragraph.first() == it } != null
+                }
+                if (page != null) {
+                    mPageLoader.skipToPage(page.position)
+                }
+            }
+        }
+        ttsUtil.onCompleted = {
+//            播放下一个段落
+            if (mPageLoader.skipNextChapter()) {
+                EventBus.post(EventKey.CHAPTER_SPEAK)
+            }
+        }
+        observe<String>(EventKey.CHAPTER_SPEAK) {
+            launch {
+                if (ttsUtil.isSpeaking) {
+                    ttsUtil.stop()
+                    return@launch
+                }
+                if (mPageLoader.pageStatus == STATUS_LOADING) {
+                    toast("书籍正在加载中")
+                    return@launch
+                }
+                val chapter = book?.chapterList?.getOrNull(mPageLoader.chapterPos)
+                if (chapter == null) {
+                    toast("当前章节获取失败")
+                    return@launch
+                }
+                if (!chapter.isLoaded || chapter.content == null) {
+                    toast("章节未加载成功 $chapter")
+                    return@launch
+                }
+                if (chapter.content?.contentError == true) {
+                    toast("章节内容错误 $chapter")
+                    return@launch
+                }
+                ttsUtil.start(mPageLoader.curPageList,mPageLoader.pagePos)
+            }
+        }
+
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
             launch("CHAPTER_LIST_CAHE") {
                 showSnackbar(page_view, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")

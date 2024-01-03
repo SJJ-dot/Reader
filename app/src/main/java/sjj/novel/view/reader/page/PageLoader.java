@@ -452,6 +452,10 @@ public abstract class PageLoader implements OnSelectListener {
         }
     }
 
+    public List<TxtPage> getCurPageList() {
+        return mCurPageList;
+    }
+
     /**
      * 获取当前页的状态
      *

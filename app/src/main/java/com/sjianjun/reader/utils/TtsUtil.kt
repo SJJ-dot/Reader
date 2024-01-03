@@ -4,42 +4,36 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
+import sjj.novel.view.reader.page.TxtLine
+import sjj.novel.view.reader.page.TxtPage
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.coroutines.resumeWithException
-import kotlin.math.roundToInt
 
-class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserver,
-    CoroutineScope by CoroutineScope(SupervisorJob() + Dispatchers.Main) {
+class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserver {
     init {
-        lifecycle.addObserver(this)
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                textToSpeech?.shutdown()
+                textToSpeech = null
+            }
+        })
     }
 
-    val isSpeaking: Boolean
-        get() = textToSpeech?.isSpeaking == true
-    val isSpeakEnd: Boolean
-        get() = contentParagraph.isEmpty()
+    private val paragraphs = ConcurrentLinkedDeque<List<TxtLine>>()
 
-    var progressChangeCallback: ((chapterIndex: Int, progress: Int, content: CharSequence?) -> Unit)? =
-        null
+    lateinit var progressChangeCallback: (List<TxtLine>) -> Unit
+
+    lateinit var onCompleted: () -> Unit
 
     private var textToSpeech: TextToSpeech? = null
+    val isSpeaking: Boolean get() = textToSpeech?.isSpeaking == true || paragraphs.isNotEmpty()
 
-    fun stop() {
-        contentParagraph.clear()
-        textToSpeech?.stop()
-    }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun onDestroy() {
-        textToSpeech?.shutdown()
-        textToSpeech = null
-    }
-
-    @Synchronized
     private suspend fun initTts(): TextToSpeech? {
         val tts = textToSpeech
         if (tts != null) {
@@ -71,111 +65,101 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
                 result = it
                 callback(result, newTts)
             }
+
             callback(result, newTts)
 
         }
     }
 
 
-    private val contentParagraph = ConcurrentLinkedDeque<ContentParagraphBean>()
-    suspend fun speak(chapterIndex: Int, content: CharSequence, start: Int) {
-        if (content.isBlank()) {
+    suspend fun start(pages: List<TxtPage>, pagePos: Int) {
+        if (pages.isEmpty() || pagePos < 0 || pagePos >= pages.size) {
             return
         }
-        initTts()
-        contentParagraph.clear()
-        contentParagraph.addAll(splitContentParagraph(chapterIndex, content))
-        speak(start)
-    }
-
-    private fun speak(start: Int) {
         if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
             return
         }
-        val index = contentParagraph.indexOfFirst { it.start >= start }
-        repeat(index) {
-            contentParagraph.poll()
-        }
-        textToSpeech?.stop()
-        contentParagraph.forEach {
+        initTts()
 
-            textToSpeech?.speak(
-                it.paragraph,
-                QUEUE_ADD,
-                null,
-                it.utteranceId
-            )
-        }
-    }
+        this.paragraphs.clear()
+        var paragraphLines = mutableListOf<TxtLine>()
+        var isTitle = false
+        for (pos in pagePos until pages.size) {
+            val page = pages[pos]
+            page.lines.forEach { line ->
+                if (line.isTitle) {
+                    isTitle = true
+                    paragraphLines.add(line)
+                } else {
+                    if (isTitle) {
+                        isTitle = false
+                        if (paragraphLines.isNotEmpty()) {
+                            this.paragraphs.add(paragraphLines)
+                            paragraphLines = mutableListOf()
+                        }
+                    }
 
-    private fun splitContentParagraph(
-        chapterIndex: Int,
-        content: CharSequence
-    ): List<ContentParagraphBean> {
-        var count = 0
-        val contentId = content.md5
-        val list = content.split("\n").mapNotNull { paragraph ->
-            count += paragraph.length
-            if (paragraph.isBlank()) {
-                null
-            } else {
-                val bean = ContentParagraphBean(
-                    chapterIndex,
-                    paragraph,
-                    contentId + "_" + paragraph.md5,
-                    count - paragraph.length,
-                    count
-                )
-                bean
+                    paragraphLines.add(line)
+                    if (line.isParaEnd) {
+                        if (paragraphLines.isNotEmpty()) {
+                            this.paragraphs.add(paragraphLines)
+                            paragraphLines = mutableListOf()
+                        }
+                    }
+                }
             }
-
-
         }
-        list.forEach {
-            it.contentLength = count
+        if (paragraphLines.isNotEmpty()) {
+            this.paragraphs.add(paragraphLines)
         }
-        return list
+
+        textToSpeech?.stop()
+        speakNext()
     }
 
-    class ContentParagraphBean(
-        val chapterIndex: Int,
-        val paragraph: CharSequence,
-        val utteranceId: String,
-        val start: Int,
-        val end: Int,
-        var contentLength: Int = 0
-    ) {
-        val progress: Int
-            get() = ((start + end).toFloat() * 50 / contentLength).roundToInt()
+    fun stop() {
+        textToSpeech?.stop()
+        paragraphs.clear()
+    }
 
-        val progressEnd: Int
-            get() = (end.toFloat() * 100 / contentLength).roundToInt()
+
+    private fun speakNext() {
+        if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
+            return
+        }
+        GlobalScope.launch(Dispatchers.Main) {
+            delay(100)
+            val txtLines = paragraphs.peek()?.also {
+                val txt = it.joinToString(separator = "") { line -> line.txt }
+                textToSpeech?.speak(
+                    txt,
+                    QUEUE_ADD,
+                    null,
+                    txt.md5
+                )
+            }
+            if (txtLines == null) {
+                onCompleted.invoke()
+            }
+        }
     }
 
     private val listener: UtteranceProgressListener by lazy {
         object : UtteranceProgressListener() {
-            private var current: ContentParagraphBean? = null
             override fun onDone(utteranceId: String?) {
-                current?.also {
-                    contentParagraph.remove(it)
-                    progressChangeCallback?.invoke(it.chapterIndex, it.progressEnd, it.paragraph)
+                paragraphs.poll()?.also {
+                    progressChangeCallback.invoke(it)
                 }
+                speakNext()
             }
 
             override fun onError(utteranceId: String?) {
-                current.also {
-                    contentParagraph.remove(it)
-                }
-                launch {
-                    toast("speak error")
-                }
+                paragraphs.poll()
+                toast("speak error")
             }
 
             override fun onStart(utteranceId: String?) {
-                current = contentParagraph.find { it.utteranceId == utteranceId }
-                current?.also {
-                    progressChangeCallback?.invoke(it.chapterIndex, it.progress, it.paragraph)
-                }
+                paragraphs.peek()?.let { progressChangeCallback.invoke(it) }
             }
         }
     }

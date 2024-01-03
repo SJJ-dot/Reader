@@ -47,6 +47,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
+        initSpeak()
         initChapterList()
         initChapterError()
         initChapterSync()
@@ -77,6 +78,13 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         }
         chapter_list.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_LIST)
+            dismiss()
+        }
+    }
+
+    private fun initSpeak() {
+        speak.setOnClickListener {
+            EventBus.post(EventKey.CHAPTER_SPEAK)
             dismiss()
         }
     }
