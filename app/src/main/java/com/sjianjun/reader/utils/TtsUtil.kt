@@ -9,9 +9,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.*
+import sjj.alog.Log
 import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage
 import java.util.concurrent.ConcurrentLinkedDeque
+import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserver {
@@ -40,33 +42,23 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
             return tts
         }
 
-        return suspendCancellableCoroutine { con ->
-
-            val callback: (result: Int?, tts: TextToSpeech?) -> Unit = { result, tts ->
-                if (result != null && tts != null) {
-                    tts.setOnUtteranceProgressListener(listener)
-                    if (result == TextToSpeech.SUCCESS && lifecycle.currentState >= Lifecycle.State.INITIALIZED) {
-                        textToSpeech = tts
-                        con.resume(tts) {
-                            tts.shutdown()
-                            textToSpeech = null
-                        }
-                    } else {
-                        tts.shutdown()
-                        con.resumeWithException(MessageException("Tts Init Failed"))
-                    }
+        return suspendCancellableCoroutine {continuation ->
+            Log.e("initTts")
+            textToSpeech = TextToSpeech(context) {result->
+                Log.e("initTts: $result success:${result == TextToSpeech.SUCCESS}")
+                if (result != TextToSpeech.SUCCESS) {
+                    continuation.resume(null)
+                    return@TextToSpeech
                 }
-
+                if (lifecycle.currentState >= Lifecycle.State.INITIALIZED) {
+                    textToSpeech?.setOnUtteranceProgressListener(listener)
+                    continuation.resume(textToSpeech)
+                } else {
+                    textToSpeech?.shutdown()
+                    continuation.resume(null)
+                }
             }
 
-            var newTts: TextToSpeech? = null
-            var result: Int? = null
-            newTts = TextToSpeech(context) {
-                result = it
-                callback(result, newTts)
-            }
-
-            callback(result, newTts)
 
         }
     }
@@ -79,7 +71,11 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
         if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
             return
         }
-        initTts()
+        if (initTts() == null) {
+            toast("语音引擎初始化失败")
+            return
+        }
+
 
         this.paragraphs.clear()
         var paragraphLines = mutableListOf<TxtLine>()
