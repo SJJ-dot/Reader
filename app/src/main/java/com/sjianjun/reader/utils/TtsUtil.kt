@@ -1,6 +1,10 @@
 package com.sjianjun.reader.utils
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
@@ -8,13 +12,17 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.sjianjun.reader.App
+import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.event.observe
 import kotlinx.coroutines.*
 import sjj.alog.Log
 import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserver {
     init {
@@ -24,6 +32,12 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
                 textToSpeech = null
             }
         })
+
+//        监听耳机断开链接时间
+        (context as BaseActivity).observe<String>(EventKey.ACTION_AUDIO_BECOMING_NOISY) {
+            stop()
+        }
+
     }
 
     private val paragraphs = ConcurrentLinkedDeque<List<TxtLine>>()
@@ -42,9 +56,9 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
             return tts
         }
 
-        return suspendCancellableCoroutine {continuation ->
+        return suspendCancellableCoroutine { continuation ->
             Log.e("initTts")
-            textToSpeech = TextToSpeech(context) {result->
+            textToSpeech = TextToSpeech(context) { result ->
                 Log.e("initTts: $result success:${result == TextToSpeech.SUCCESS}")
                 if (result != TextToSpeech.SUCCESS) {
                     continuation.resume(null)
@@ -157,6 +171,20 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
             override fun onStart(utteranceId: String?) {
                 paragraphs.peek()?.let { progressChangeCallback.invoke(it) }
             }
+        }
+    }
+
+    companion object {
+        init {
+            App.app.registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                        Log.e("ACTION_AUDIO_BECOMING_NOISY")
+                        EventBus.post(EventKey.ACTION_AUDIO_BECOMING_NOISY)
+                    }
+                }
+
+            }, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
         }
     }
 

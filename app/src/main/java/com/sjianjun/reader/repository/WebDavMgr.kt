@@ -22,6 +22,7 @@ object WebDavMgr {
     const val READING_RECORD_LIST = "readingRecordList.json"
     private val dao get() = DbFactory.db.dao()
     private var job: Job? = null
+    private var lastToastTime = 0L
 
     private fun webDav(relativePath: String) = globalConfig.let {
         val auth = Authorization(it.webdavUsername ?: "", it.webdavPassword ?: "")
@@ -102,7 +103,10 @@ object WebDavMgr {
         val upload =
             webDav(BOOK_INFO_LIST).upload(gson.toJson(bookList).toByteArray())
         if (upload.isFailure) {
-            toast("书籍信息上传失败")
+            if (System.currentTimeMillis() - lastToastTime > 1 * 60 * 60 * 1000) {
+                lastToastTime = System.currentTimeMillis()
+                toast("书籍信息上传失败")
+            }
         }
         Log.i("上传阅读书籍信息:${upload}")
         return@withIo upload
@@ -114,7 +118,10 @@ object WebDavMgr {
         }
         val upload = webDav(READING_RECORD_LIST).upload(gson.toJson(record).toByteArray())
         if (upload.isFailure) {
-            toast("阅读记录上传失败")
+            if (System.currentTimeMillis() - lastToastTime > 1 * 60 * 60 * 1000) {
+                lastToastTime = System.currentTimeMillis()
+                toast("阅读记录上传失败")
+            }
         }
         Log.i("上传阅读记录:${upload}")
         return@withIo upload
