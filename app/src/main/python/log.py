@@ -6,4 +6,4 @@ HTTPConnection.debuglevel=1
 
 
 def log(msg):
-    PyLog.i(msg)
+    PyLog.i(str(msg))
