@@ -49,7 +49,7 @@ def update_json():
             if source["js"] != py:
                 source["js"] = py
                 source["version"] = source["version"] + 1
-        pySourceDict.pop(item.replace(".py", ""))
+            pySourceDict.pop(item.replace(".py", ""))
 
     for item in pySourceDict:
         json_dict["pySource"].remove(pySourceDict[item])
@@ -64,7 +64,7 @@ def update_json():
 
 
 if __name__ == '__main__':
-    # with open("source.py", "r", encoding="utf-8") as f:
-    #     source = f.read()
-    # write_source("博仕书屋", source)
+    with open("source.py", "r", encoding="utf-8") as f:
+        source = f.read()
+    write_source("文趣阁", source)
     update_json()
