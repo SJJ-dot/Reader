@@ -50,7 +50,7 @@ fun main(args: Array<String>) {
     File("BookSource/js/").listFiles().forEach {
         val content = it.readText()
         val source = it.nameWithoutExtension
-        val obj = names[toPinyin(source)]
+        val obj = names.remove(toPinyin(source))
         if (obj != null) {
             if (obj.get("js").asString.replace("\r\n","\n") != content.replace("\r\n","\n")) {
                 obj.addProperty("js", content)
@@ -65,10 +65,13 @@ fun main(args: Array<String>) {
             nObj.addProperty("enable",true)
             nObj.addProperty("requestDelay",-1)
             nObj.addProperty("website","")
-            names[source] = nObj
             jsonArray.add(nObj)
         }
     }
+    names.forEach { (k, v) ->
+        jsonArray.remove(v)
+    }
+
     val json = gson.toJson(jsonObject)
     val gz = Base64.getEncoder().encodeToString(json.zip())
     File("BookSource/default.json").writeText(json)
