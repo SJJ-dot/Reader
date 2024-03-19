@@ -32,6 +32,8 @@ def update_json():
         pySourceDict[to_pinyin(item["source"])] = item
 
     for item in os.listdir("../BookSource/py"):
+        if not os.path.isfile(f"../BookSource/py/{item}"):
+            continue
         with open(f"../BookSource/py/{item}", "r", encoding="utf-8") as f:
             py = f.read()
         if item.replace(".py", "") not in pySourceDict:
@@ -66,5 +68,5 @@ def update_json():
 if __name__ == '__main__':
     with open("source.py", "r", encoding="utf-8") as f:
         source = f.read()
-    write_source("文趣阁", source)
+    write_source("顶点", source)
     update_json()
