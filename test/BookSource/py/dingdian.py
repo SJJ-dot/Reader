@@ -13,7 +13,7 @@ def search(query):
     """
     # POST请求的URL
     query = query.encode('utf-8')
-    url = 'http://www.idingdian.com/search/?searchkey=%E6%88%91%E7%9A%84'
+    url = 'http://www.idingdian.com/search/'
     # 发送get请求
     data = {'searchkey': query}
     response = requests.get(url, params=data)
