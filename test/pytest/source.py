@@ -103,5 +103,5 @@ def getChapterContent(chapter_url):
     log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select(".content")[0].prettify()
+    content = soup.select(".read-article")[0].prettify()
     return content
