@@ -75,7 +75,7 @@ def parseChapterList(book_url, chapterUrl, chapterList):
     soup = BeautifulSoup(response.text, 'html.parser')
     # 递归加载章节列表
     dt = 0
-    for el in soup.select(".gclearfix a"):
+    for el in soup.select(".content a"):
         chapterList.append({
             "title": el.text,
             "url": urljoin(chapterUrl, el.get("href"))
