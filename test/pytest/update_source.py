@@ -66,7 +66,7 @@ def update_json():
 
 
 if __name__ == '__main__':
-    # with open("source.py", "r", encoding="utf-8") as f:
-    #     source = f.read()
-    # write_source("明智屋", source)
+    with open("source.py", "r", encoding="utf-8") as f:
+        source = f.read()
+    write_source("书趣阁", source)
     update_json()
