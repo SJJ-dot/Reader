@@ -103,21 +103,7 @@ def getChapterContent(chapter_url):
     log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select(".read-article")[0]
-    #
-    content.select(".dl-book-wrapper")[0].decompose()
-    delete = content.select(".read-author-say")[0]
-    # 删除这个节点之后的所有节点
-    for sibling in delete.find_next_siblings():
-        sibling.decompose()
-    delete.decompose()
+    content = soup.select(".jsChapterWrapper > div")[0].prettify()
     return content
 
 
-if __name__ == '__main__':
-    res = search("我的")
-    print(res)
-    res = getDetails(res[0]["bookUrl"])
-    print(res)
-    res = getChapterContent(res["chapterList"][0]["url"])
-    print(res)
