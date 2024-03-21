@@ -5,7 +5,7 @@ from requests import PreparedRequest
 
 def log(arg):
     if isinstance(arg, PreparedRequest):
-        print(arg.url)
+        print("url:", arg.url)
         for key, value in arg.headers.items():
             print(f"{key}: {value}")
         print("")
