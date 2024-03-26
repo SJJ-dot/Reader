@@ -24,10 +24,11 @@
             android:layout_marginEnd="5dp"
             android:src="@mipmap/ic_sync_error"
             android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@+id/iv_source_check_res"
-            app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/iv_edit_source"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/mdr_red_100" />
+            app:tint="@color/mdr_red_100"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/tv_source_name"
@@ -50,10 +51,11 @@
             android:maxLines="1"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
+            app:layout_constraintEnd_toStartOf="@+id/iv_error_hint"
             app:layout_constraintStart_toEndOf="@id/cb_book_source"
             app:layout_constraintTop_toBottomOf="@+id/tv_source_name"
-            tools:text="校验失败：搜索出错" />
+            tools:text="校验失败：搜索出错"
+            tools:visibility="visible" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/sw_source_enable"
@@ -63,6 +65,17 @@
             android:layout_marginEnd="8dp"
             app:layout_constraintEnd_toEndOf="parent" />
 
-
+        <ImageView
+            android:id="@+id/iv_edit_source"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_ib_pre_round"
+            android:contentDescription="编辑"
+            android:padding="8dp"
+            android:src="@mipmap/ic_edit"
+            app:layout_constraintEnd_toStartOf="@+id/sw_source_enable"
+            app:tint="@color/dn_icon_tint_color" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

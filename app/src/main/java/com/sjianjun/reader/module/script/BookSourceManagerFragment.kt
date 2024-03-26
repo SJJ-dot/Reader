@@ -426,6 +426,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         popup.showPopupWindow(it)
                     }
                 }
+                iv_edit_source.setOnClickListener {
+                    fragment.startActivity<EditJavaScriptActivity>(
+                        BOOK_SOURCE_ID,
+                        script.id
+                    )
+                }
             }
         }
 
