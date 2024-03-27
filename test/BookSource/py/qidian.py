@@ -80,7 +80,7 @@ def getDetails(book_url):
     soup = BeautifulSoup(response.text, 'html.parser')
     for el in soup.select(".y-list__content .y-list__item a"):
         info["chapterList"].append({
-            "title": el.select("h2")[0].text,
+            "title": el.select("h2")[0].text.replace("\xa0", " "),
             "url": "https://m.qidian.com" + el.attrs["href"]
         })
     return info
