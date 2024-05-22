@@ -114,7 +114,7 @@ def getChapterContent(chapter_url):
     # 章节内容 html
     content = soup.select(".content")[0].prettify()
     # document.querySelectorAll('#next_url')[0]
-    if soup.select("#next_url")[0].text == "下一页":
+    if soup.select("#next_url")[0].text.strip() == "下一页":
         next_url = urljoin(chapter_url, soup.select("#next_url")[0].get("href"))
         content += getChapterContent(next_url)
 
