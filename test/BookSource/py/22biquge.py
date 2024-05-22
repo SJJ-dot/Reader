@@ -116,10 +116,3 @@ def getChapterContent(chapter_url):
     return content
 
 
-if __name__ == '__main__':
-    res = search("万古神帝")
-    print(res)
-    res = getDetails(res[0]["bookUrl"])
-    print(res)
-    res = getChapterContent(res["chapterList"][0]["url"])
-    print(res)
