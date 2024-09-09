@@ -148,6 +148,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                     globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
                 }
+
                 else -> {
                     day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
@@ -245,9 +246,9 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     notifyDataSetChanged()
                     globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
                     //记录浅色 深色样式 和深色样式
-                    if (pageStyle.isDark && globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_NO) {
+                    if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
                         globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
-                    } else if (!pageStyle.isDark && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
+                    } else {
                         globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
                     }
                 }
