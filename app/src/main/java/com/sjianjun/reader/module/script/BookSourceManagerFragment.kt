@@ -422,8 +422,8 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     iv_error_hint.setOnClickListener {
                         val popup = ErrorMsgPopup(fragment.context)
                             .init("${script.checkErrorMsg}")
-                            .setPopupGravity(Gravity.TOP or Gravity.START)
-                        popup.showPopupWindow(it)
+                            .setPopupGravity(Gravity.BOTTOM)
+                        popup.showPopupWindow()
                     }
                 }
                 iv_edit_source.setOnClickListener {
