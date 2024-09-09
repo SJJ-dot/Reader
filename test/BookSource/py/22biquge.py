@@ -15,24 +15,29 @@ def search(query):
     # utf8编码
     # query = query.encode('utf-8')
     # url encode
-    query = quote(query)
-    url = f"https://m.qidian.com/soushu/{query}.html"
+    url = f"https://www.22biqu.com/search/"
+    # POST请求的数据
+    data = f'searchkey={quote(query)}&Submit={quote("搜索")}'
     headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Content-Type": "application/x-www-form-urlencoded",
     }
-    response = requests.get(url, headers=headers)
+    # 发送POST请求Content-Type:
+    response = requests.post(url, data=data, headers=headers)
     response.encoding = 'utf-8'
     log(response.request)
     log(response.text)
-    # 创建BeautifulSoup对象 .querySelectorAll("div")[2].querySelectorAll("p")[0]
+    # 创建BeautifulSoup对象 .querySelectorAll("div")[2].querySelectorAll("p")[0] document.querySelectorAll(".txt-list > li")
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
-    for bookEl in soup.select(".y-list__item"):
-        bid = bookEl.select("a")[0].attrs["data-bid"]
+
+    for i, bookEl in enumerate(soup.select(".txt-list > li")):
+        if i == 0:
+            continue
         books.append({
-            "bookTitle": bookEl.select("a")[0].attrs["title"].replace("在线阅读", ""),
-            "bookUrl": f"https://m.qidian.com/book/{bid}/",
-            "bookAuthor": bookEl.select("div")[2].select("p")[0].text,
+            "bookTitle": bookEl.select("a")[0].text,
+            "bookUrl": urljoin(url, bookEl.select("a")[0].attrs["href"]),
+            "bookAuthor": bookEl.select(".s4")[0].text,
         })
 
     return books
@@ -71,19 +76,23 @@ def getDetails(book_url):
     info["cover"] = soup.select("meta[property='og:image']")[0].get("content")
     # 章节列表
     info["chapterList"] = []
-    log("加载章节目录")
-    chapterUrl = urljoin(book_url, soup.select("#details-menu")[0].attrs["href"])
-    response = requests.get(chapterUrl, headers=headers)
-    log(response.request)
-    response.encoding = "utf-8"
-    log(response.text)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    for el in soup.select(".y-list__content .y-list__item a"):
-        info["chapterList"].append({
-            "title": el.select("h2")[0].text.replace("\xa0", " "),
-            "url": "https://m.qidian.com" + el.attrs["href"]
-        })
+    loadChapterList(book_url, soup, info["chapterList"])
     return info
+
+
+def loadChapterList(book_url, soup, chapterList):
+    log("加载章节目录")
+    for el in soup.select(".section-list")[1].select("a"):
+        chapterList.append({
+            "title": el.text,
+            "url": urljoin(book_url, el.get("href"))
+        })
+    if soup.select(".index-container-btn")[1].text == "下一页":
+        next_url = urljoin(book_url, soup.select(".index-container-btn")[1].get("href"))
+        response = requests.get(next_url)
+        response.encoding = "utf-8"
+        soup = BeautifulSoup(response.text, 'html.parser')
+        loadChapterList(book_url, soup, chapterList)
 
 
 def getChapterContent(chapter_url):
@@ -103,7 +112,12 @@ def getChapterContent(chapter_url):
     log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select(".jsChapterWrapper > div")[0].prettify()
+    content = soup.select(".content")[0].prettify()
+    # document.querySelectorAll('#next_url')[0]
+    if soup.select("#next_url")[0].text.strip() == "下一页":
+        next_url = urljoin(chapter_url, soup.select("#next_url")[0].get("href"))
+        content += getChapterContent(next_url)
+
     return content
 
 
