@@ -34,7 +34,6 @@ import sjj.novel.view.reader.bean.BookRecordBean;
 import sjj.novel.view.reader.record.ReadSettingManager;
 import sjj.novel.view.reader.utils.RxUtils;
 import sjj.novel.view.reader.utils.ScreenUtils;
-import sjj.novel.view.reader.utils.StringUtils;
 
 /**
  * Created by newbiechen on 17-7-1.
@@ -173,6 +172,13 @@ public abstract class PageLoader implements OnSelectListener {
         mTitleSize = mTextSize * 1.1f;
         mDisplayParams.setTitleInterval(mDisplayParams.getTextInterval());
         mDisplayParams.setTitlePara(mTitleSize * 1.5f);
+    }
+
+    public void setTypeface(Typeface typeface) {
+        mTipPaint.setTypeface(typeface);
+        mTextPaint.setTypeface(typeface);
+        mTitlePaint.setTypeface(typeface);
+        mPageView.drawCurPage(false);
     }
 
     private void initPaint() {

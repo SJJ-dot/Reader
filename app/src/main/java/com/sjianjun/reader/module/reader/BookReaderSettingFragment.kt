@@ -1,8 +1,12 @@
 package com.sjianjun.reader.module.reader
 
+import android.app.Activity
 import android.app.Dialog
+import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,20 +22,28 @@ import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.toast
+import kotlinx.android.synthetic.main.item_font.view.font_text
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
 import kotlinx.android.synthetic.main.reader_item_page_style.view.*
+import sjj.alog.Log
 import sjj.novel.view.reader.page.PageStyle
+import java.io.File
+import java.io.FileOutputStream
 import java.text.DecimalFormat
 
 /*
  * Created by shen jian jun on 2020-07-13
  */
 class BookReaderSettingFragment : BottomSheetDialogFragment() {
-
+    // 启动系统文件浏览器的请求码
+    val adapter = FontAdapter()
+    private val REQUEST_CODE_PICK_FONT = 1
     override fun getTheme(): Int {
         return R.style.reader_setting_dialog
     }
@@ -57,6 +69,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         initLineSpacing()
         initPageStyle()
         initPageModel()
+        initFontList()
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -148,6 +161,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                     globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
                 }
+
                 else -> {
                     day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
@@ -227,6 +241,94 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         }
     }
 
+    private fun initFontList() {
+        initFontListData()
+        font_list.adapter = adapter
+        font_import.setOnClickListener {
+            //导入字体
+            pickFontFile()
+        }
+    }
+
+    private fun initFontListData() {
+        adapter.data = mutableListOf(
+            FontInfo.DEFAULT,
+            FontInfo("方正楷体", resId = R.font.fangzhengkaiti, isAsset = true)
+        )
+        val fontFiles = File(requireContext().filesDir, "font").listFiles()
+        fontFiles?.forEach {
+            if (it.isFile) {
+                adapter.data.add(FontInfo(it.name, it.path))
+            }
+        }
+        adapter.notifyDataSetChanged()
+    }
+
+    private fun pickFontFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+//            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/x-font-ttf", "application/x-font-otf"))
+        }
+        startActivityForResult(intent, REQUEST_CODE_PICK_FONT)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_FONT && resultCode == Activity.RESULT_OK) {
+            val uri = data?.data
+            if (uri != null) {
+                importFont(uri)
+            }
+        }
+    }
+
+    // 导入字体文件
+    private fun importFont(uri: Uri) {
+        try {
+            Log.e("uri:$uri  uri.lastPathSegment:${uri.lastPathSegment}")
+            val contentResolver = activity?.getContentResolver()!!
+            val inputStream = contentResolver.openInputStream(uri)
+            val fileName = uri.lastPathSegment!!.split("/").last().split(".").first()
+            val fontFile = File(requireContext().filesDir, "font/${fileName}")
+            fontFile.deleteOnExit()
+            fontFile.parentFile?.mkdirs()
+            inputStream?.use { input ->
+                FileOutputStream(fontFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            val typeface = Typeface.createFromFile(fontFile)
+            // 现在你可以使用这个Typeface对象了
+            initFontListData()
+            toast("导入字体成功:${fileName}")
+        } catch (e: Exception) {
+            Log.e("导入字体失败:${e.message}", e)
+            toast("导入字体失败:${e.message}")
+        }
+    }
+
+    class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            holder.itemView.apply {
+                val fontInfo = data[position]
+                font_text.text = fontInfo.name
+                setOnClickListener {
+                    globalConfig.readerFontFamily.postValue(fontInfo)
+                    notifyDataSetChanged()
+                }
+
+                if (globalConfig.readerFontFamily.value == fontInfo) {
+                    font_text.solid = R.color.dn_color_primary.color(context)
+                    font_text.setTextColor(R.color.mdr_grey_100.color(context))
+                } else {
+                    font_text.solid = R.color.dn_background.color(context)
+                    font_text.setTextColor(R.color.dn_text_color_black.color(context))
+                }
+            }
+        }
+    }
+
     class Adapter(val fragment: BookReaderSettingFragment) :
         BaseAdapter<PageStyle>(R.layout.reader_item_page_style) {
 
@@ -245,9 +347,9 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     notifyDataSetChanged()
                     globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
                     //记录浅色 深色样式 和深色样式
-                    if (pageStyle.isDark && globalConfig.appDayNightMode != AppCompatDelegate.MODE_NIGHT_NO) {
+                    if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
                         globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
-                    } else if (!pageStyle.isDark && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
+                    } else {
                         globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
                     }
                 }

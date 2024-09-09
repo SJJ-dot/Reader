@@ -1,9 +1,11 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
 import com.gyf.immersionbar.ImmersionBar
@@ -30,6 +32,7 @@ import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.*
 import sjj.novel.view.reader.page.PageLoader.STATUS_LOADING
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
@@ -120,7 +123,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节内容错误 $chapter")
                     return@launch
                 }
-                ttsUtil.start(mPageLoader.curPageList,mPageLoader.pagePos)
+                ttsUtil.start(mPageLoader.curPageList, mPageLoader.pagePos)
             }
         }
 
@@ -220,6 +223,20 @@ class BookReaderActivity : BaseActivity() {
             }
             Log.i("pageStyle:${pageStyle}")
             mPageLoader.setPageStyle(pageStyle)
+        }
+
+        globalConfig.readerFontFamily.observe(this) {
+            if (it.isAsset) {
+                if (it.resId == 0) {
+                    mPageLoader.setTypeface(null)
+                } else {
+                    val typeface = ResourcesCompat.getFont(this, it.resId)
+                    mPageLoader.setTypeface(typeface)
+                }
+            } else {
+                val typeface = Typeface.createFromFile(File(it.path!!))
+                mPageLoader.setTypeface(typeface)
+            }
         }
 
         page_view.setTouchListener(object : PageView.TouchListener {

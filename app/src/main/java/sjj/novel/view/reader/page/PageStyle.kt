@@ -26,10 +26,6 @@ enum class PageStyle {
             return ColorDrawable(R.color.dn_reader_content_background.color(context))
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return "#55424242".color
-        }
-
         override fun getLabelColor(context: Context): Int {
             return R.color.dn_reader_chapter_caption_text_color.color(context)
         }
@@ -46,10 +42,6 @@ enum class PageStyle {
 
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style1_bg)
-        }
-
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -71,10 +63,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style2_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#BDBDBD".color
         }
@@ -91,10 +79,6 @@ enum class PageStyle {
 
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style3_bg)
-        }
-
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -115,10 +99,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style4_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#88422D10".color
         }
@@ -137,10 +117,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style5_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#883C1B12".color
         }
@@ -157,10 +133,6 @@ enum class PageStyle {
 
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style6_bg)
-        }
-
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -182,10 +154,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style7_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#88A4A2A5".color
         }
@@ -204,10 +172,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style8_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#8829251A".color
         }
@@ -223,10 +187,6 @@ enum class PageStyle {
     STYLE_9 {
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style9_bg)
-        }
-
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -247,10 +207,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style10_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#883B3221".color
         }
@@ -269,10 +225,6 @@ enum class PageStyle {
             return createBackground(context, R.drawable.ic_reader_style11_bg)
         }
 
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
-        }
-
         override fun getLabelColor(context: Context): Int {
             return "#88202020".color
         }
@@ -289,10 +241,6 @@ enum class PageStyle {
 
         override fun getBackground(context: Context): Drawable {
             return createBackground(context, R.drawable.ic_reader_style12_bg)
-        }
-
-        override fun getSpacerColor(context: Context): Int {
-            return getLabelColor(context)
         }
 
         override fun getLabelColor(context: Context): Int {
@@ -329,10 +277,6 @@ enum class PageStyle {
     }
 
     open val isDark = false
-
-    //分割线颜色
-    @ColorInt
-    abstract fun getSpacerColor(context: Context): Int
 
     @ColorInt
     abstract fun getLabelColor(context: Context): Int

@@ -106,13 +106,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
             sync_error.show()
             sync_error.setOnClickListener {
                 ErrorMsgPopup(context)
-                    .init(
-                        "${error}\n" +
-                                "StackTrace:\n" +
-                                error
-                    )
-                    .setPopupGravity(Gravity.BOTTOM or Gravity.START)
-                    .showPopupWindow(it)
+                    .init("$error")
+                    .setPopupGravity(Gravity.BOTTOM)
+                    .showPopupWindow()
             }
         }
     }

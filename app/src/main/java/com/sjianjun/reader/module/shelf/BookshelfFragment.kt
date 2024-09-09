@@ -239,11 +239,9 @@ class BookshelfFragment : BaseFragment() {
                     syncError.setOnClickListener {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
-                                .init(
-                                    "${error}"
-                                )
-                                .setPopupGravity(Gravity.TOP or Gravity.START)
-                            popup.showPopupWindow(it)
+                                .init("$error")
+                                .setPopupGravity(Gravity.BOTTOM)
+                            popup.showPopupWindow()
                         }
                     }
                 }
