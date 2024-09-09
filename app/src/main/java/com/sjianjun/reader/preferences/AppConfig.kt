@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
+import com.sjianjun.reader.bean.FontInfo
 import com.tencent.mmkv.MMKV
 import java.util.*
 
@@ -45,6 +46,8 @@ class AppConfig(val name: String) :
      * 阅读器 页面样式 位置索引
      */
     val readerPageStyle = intLivedata("readerPageStyle", 1)
+
+    val readerFontFamily = dataLivedata<FontInfo>("readerFontInfo", FontInfo.DEFAULT)
 
     /**
      * 阅读器 页面样式 位置索引

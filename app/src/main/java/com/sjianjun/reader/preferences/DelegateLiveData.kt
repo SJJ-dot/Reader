@@ -2,6 +2,27 @@ package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
 import androidx.lifecycle.MutableLiveData
+import com.sjianjun.reader.utils.gson
+
+inline fun <reified T> SharedPreferences.dataLivedata(
+    key: String,
+    def: T
+): DataLivedata<T> {
+    val jsonStr = getString(key, null)
+    if (jsonStr != null) {
+        return DataLivedata(this, key, gson.fromJson(jsonStr, T::class.java))
+    }
+    return DataLivedata<T>(this, key, def)
+}
+
+class DataLivedata<T>(private val pref: SharedPreferences, private val key: String, def: T) :
+    MutableLiveData<T>(def) {
+
+    override fun setValue(value: T) {
+        super.setValue(value)
+        pref.edit().putString(key, gson.toJson(value)).apply()
+    }
+}
 
 fun SharedPreferences.strLivedata(
     key: String,
