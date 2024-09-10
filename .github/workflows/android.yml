@@ -10,18 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: set up JDK 17
-      uses: actions/setup-java@v1
-      with:
-        java-version: 17
-        
-    - name: Build and sign APK
-      run: chmod +x gradlew && ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.KEY_ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.STORE_PASSWORD }}
+      - name: set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v2
-      with:
-        name: app
-        path: app/build/outputs/apk/release/app-release.apk
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Create local.properties
+        run: |
+          echo "sign.storePassword=${{ secrets.STORE_PASSWORD }}" >> local.properties
+          echo "sign.keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
+          echo "sign.keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
+          echo "python=$(which python)" >> local.properties
+
+      - name: Build and sign APK
+        run: chmod +x gradlew && ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.KEY_ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.STORE_PASSWORD }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: app
+          path: app/build/outputs/apk/release/app-release.apk
