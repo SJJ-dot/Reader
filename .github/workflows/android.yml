@@ -30,7 +30,10 @@ jobs:
           echo "python=$(which python)" >> local.properties
 
       - name: Build and sign APK
-        run: chmod +x gradlew && ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+        run: |
+          chmod +x gradlew 
+          ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          ls app/build/outputs/apk/release/
 
       - name: Upload APK
         uses: actions/upload-artifact@v2
