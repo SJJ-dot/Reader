@@ -18,7 +18,7 @@ jobs:
         java-version: 1.8
         
     - name: Build and sign APK
-      run: ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.KEY_ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.STORE_PASSWORD }}
+      run: chmod +x gradlew && ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.KEY_ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.STORE_PASSWORD }}
 
     - name: Upload APK
       uses: actions/upload-artifact@v2
