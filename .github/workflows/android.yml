@@ -51,6 +51,8 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+
+      - name: Set tag name
         run: |
           tag_name=${{ github.ref }}
           tag_name=${tag_name#refs/heads/} # Remove 'refs/heads/' prefix
