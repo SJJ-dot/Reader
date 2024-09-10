@@ -1,0 +1,91 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Create local.properties
+        run: |
+          echo "sign.storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
+          echo "sign.keyAlias=${{ secrets.ALIAS }}" >> local.properties
+          echo "sign.keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
+          echo "python=$(which python)" >> local.properties
+
+      - name: Build and sign APK
+        run: |
+          chmod +x gradlew 
+          ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          ls app/build/outputs/apk/release/
+
+      - name: Get APK name
+        run: |
+          apk_file_path=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
+          apk_name=$(basename $apk_file_path)
+          echo "APK_NAME=$apk_name"
+          echo "APK_NAME=$apk_name" >> $GITHUB_ENV
+
+      - name: Get APK version info
+        id: version_info
+        env:
+          AAPT: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/aapt
+        run: |
+          ls ${{ env.ANDROID_HOME }}/build-tools/
+          apk_file=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
+          version_code=$($AAPT dump badging $apk_file | awk '/versionCode/ {print $3}' | cut -d"'" -f2)
+          version_name=$($AAPT dump badging $apk_file | awk '/versionName/ {print $4}' | cut -d"'" -f2)
+          echo "APK_FILE=$apk_file" >> $GITHUB_ENV
+          echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
+          echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
+          echo "TAG_NAME=$version_name-$version_code" >> $GITHUB_ENV
+          
+          echo "VERSION_CODE=$version_code"
+          echo "VERSION_NAME=$version_name"
+          echo "TAG_NAME=$version_name-$version_code"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: Release ${{ env.TAG_NAME }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ${{ env.APK_FILE }}
+          asset_name: ${{ env.APK_NAME }}
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload to Pgyer
+        run: |
+          chmod +x ./pgyer_upload.sh
+          bash ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} "${{ env.APK_FILE }}"
