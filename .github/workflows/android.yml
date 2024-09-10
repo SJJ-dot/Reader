@@ -57,7 +57,11 @@ jobs:
           version_name=$($AAPT dump badging $apk_file | awk '/versionName/ {print $6}' | cut -d"'" -f2)
           echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
           echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
-          echo "TAG_NAME=$VERSION_NAME-$VERSION_CODE" >> $GITHUB_ENV
+          echo "TAG_NAME=$version_name-$version_code" >> $GITHUB_ENV
+          
+          echo "VERSION_CODE=$version_code"
+          echo "VERSION_NAME=$version_name"
+          echo "TAG_NAME=$version_name-$version_code"
 
       - name: Create Release
         id: create_release
