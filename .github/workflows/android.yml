@@ -24,8 +24,8 @@ jobs:
 
       - name: Create local.properties
         run: |
-          echo "sign.storePassword=${{ secrets.STORE_PASSWORD }}" >> local.properties
-          echo "sign.keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
+          echo "sign.storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
+          echo "sign.keyAlias=${{ secrets.ALIAS }}" >> local.properties
           echo "sign.keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
           echo "python=$(which python)" >> local.properties
 
