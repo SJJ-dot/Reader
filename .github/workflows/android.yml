@@ -88,4 +88,4 @@ jobs:
       - name: Upload to Pgyer
         run: |
           chmod +x ./pgyer_upload.sh
-          ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} ${{ env.APK_FILE }}
+          bash ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} ${{ env.APK_FILE }}
