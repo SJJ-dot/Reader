@@ -51,6 +51,10 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+        run: |
+          tag_name=${{ github.ref }}
+          tag_name=${tag_name#refs/heads/} # Remove 'refs/heads/' prefix
+          echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
