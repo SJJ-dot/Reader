@@ -18,6 +18,9 @@ jobs:
         with:
           java-version: 17
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
