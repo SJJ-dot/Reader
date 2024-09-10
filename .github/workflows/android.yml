@@ -41,22 +41,26 @@ jobs:
           apk_name=$(ls app/build/outputs/apk/release | tail -n 1)
           echo "APK_NAME=$apk_name" >> $GITHUB_ENV
 
+      - name: Get APK version info
+        id: version_info
+        run: |
+          apk_file=$(ls app/build/outputs/apk/release | tail -n 1)
+          version_code=$(aapt dump badging app/build/outputs/apk/release/$apk_file | awk '/versionCode/ {print $4}' | cut -d"'" -f2)
+          version_name=$(aapt dump badging app/build/outputs/apk/release/$apk_file | awk '/versionName/ {print $6}' | cut -d"'" -f2)
+          echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
+          echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
+          echo "TAG_NAME=$VERSION_NAME-$VERSION_CODE" >> $GITHUB_ENV
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: Release ${{ env.TAG_NAME }}
           draft: false
           prerelease: false
-
-      - name: Set tag name
-        run: |
-          tag_name=${{ github.ref }}
-          tag_name=${tag_name#refs/heads/} # Remove 'refs/heads/' prefix
-          echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
