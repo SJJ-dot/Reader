@@ -47,7 +47,7 @@ jobs:
       - name: Get APK version info
         id: version_info
         env:
-          AAPT: ${{ env.ANDROID_HOME }}/build-tools/30.0.2/aapt
+          AAPT: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/aapt
         run: |
           ls ${{ env.ANDROID_HOME }}/build-tools/
           apk_file=$(ls app/build/outputs/apk/release | tail -n 1)
