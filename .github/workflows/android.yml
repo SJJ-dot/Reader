@@ -84,3 +84,8 @@ jobs:
           asset_path: ${{ env.APK_FILE }}
           asset_name: ${{ env.APK_NAME }}
           asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload to Pgyer
+        run: |
+          chmod +x ./pgyer_upload.sh
+          ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} ${{ env.APK_FILE }}
