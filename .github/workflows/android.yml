@@ -46,10 +46,13 @@ jobs:
 
       - name: Get APK version info
         id: version_info
+        env:
+          AAPT: ${{ env.ANDROID_HOME }}/build-tools/30.0.2/aapt
         run: |
+          ls ${{ env.ANDROID_HOME }}/build-tools/
           apk_file=$(ls app/build/outputs/apk/release | tail -n 1)
-          version_code=$(aapt dump badging app/build/outputs/apk/release/$apk_file | awk '/versionCode/ {print $4}' | cut -d"'" -f2)
-          version_name=$(aapt dump badging app/build/outputs/apk/release/$apk_file | awk '/versionName/ {print $6}' | cut -d"'" -f2)
+          version_code=$(AAPT dump badging app/build/outputs/apk/release/$apk_file | awk '/versionCode/ {print $4}' | cut -d"'" -f2)
+          version_name=$(AAPT dump badging app/build/outputs/apk/release/$apk_file | awk '/versionName/ {print $6}' | cut -d"'" -f2)
           echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
           echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
           echo "TAG_NAME=$VERSION_NAME-$VERSION_CODE" >> $GITHUB_ENV
