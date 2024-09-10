@@ -60,7 +60,7 @@ android {
 
     android.applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "${variant.applicationId}-${currentBranch}-${variant.buildType.name}(${variant.versionCode})-${variant.versionName}.apk"
+            outputFileName = "${variant.buildType.name}(${variant.versionCode})-${variant.versionName}.apk"
         }
     }
     buildTypes {
