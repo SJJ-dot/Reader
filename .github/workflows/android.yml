@@ -41,7 +41,7 @@ jobs:
 
       - name: Get APK name
         run: |
-          apk_name=$(ls app/build/outputs/apk/release | tail -n 1)
+          apk_name=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
           echo "APK_NAME=$apk_name" >> $GITHUB_ENV
 
       - name: Get APK version info
@@ -50,7 +50,7 @@ jobs:
           AAPT: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/aapt
         run: |
           ls ${{ env.ANDROID_HOME }}/build-tools/
-          apk_file=$(ls app/build/outputs/apk/release | tail -n 1)
+          apk_file=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
           version_code=$($AAPT dump badging app/build/outputs/apk/release/$apk_file | awk '/versionCode/ {print $4}' | cut -d"'" -f2)
           version_name=$($AAPT dump badging app/build/outputs/apk/release/$apk_file | awk '/versionName/ {print $6}' | cut -d"'" -f2)
           echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
