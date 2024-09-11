@@ -1,43 +1,22 @@
-# 🚀😄android 小说阅读器(自用)，欢迎下载APK体验，持续更新中，支持自定义书源
+# 📖📖android 小说阅读器(自用)，欢迎下载APK体验，支持自定义书源，持续更新中
 # 如果喜欢就动动小手点个star吧😁😁😁😁
-## kotlin 协程、rhino、Javascript、room
 
 | <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |  <img src="img/Screenshot_1.jpg" width = "180" height = "360"/>  |
 | - | - |- |
 
-# 部分版本更新说明
-## 1.5.0
-新增python书源，方便更新书源
-
-## 1.4.1
-阅读页两端对齐，优化文字选择性能
-
-## 1.4.0
-阅读页增加文字选择功能
-
-## 1.3.2
-书源切换体验优化
-
-## 1.2.9
-章节错误标记功能（追书的时候很有用）
-
-## 1.2.5
-增加仿真翻页等常规翻页模式
-
-## 1.0.0
-完善书源管理功能，支持导入自定义的网络书源
-
 # APP下载 如果喜欢就动动小手点个star吧😁😁😁😁
 
-[Releases版本可能不是最新的](https://github.com/SJJ-dot/Reader/releases)
+[历史版本更新说明](CHANGELOG.md)
 
-[蒲公英扫码下载（最新）](https://www.pgyer.com/SJJ-dot-reader)
+[Releases](https://github.com/SJJ-dot/Reader/releases)
+
+[蒲公英扫码下载](https://www.pgyer.com/SJJ-dot-reader)
 
 <img src="img/SJJ-dot-reader.png" width = "240" height = "240"/>
 
 ## 书源相关
-* 推荐使用IntelliJ IDE 来进行书源编写
-* 如果有好用的网站可以在issue提出
+* 书源语言支持：JavaScript、Python
+* 推荐使用IntelliJ IDE、PyCharm 来进行书源编写
 
 ### 书源规则参考 
 
