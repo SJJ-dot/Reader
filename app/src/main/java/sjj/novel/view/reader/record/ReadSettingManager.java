@@ -15,7 +15,7 @@ import sjj.novel.view.reader.utils.SharedPreUtils;
 
 public class ReadSettingManager {
 
-    public static final String SHARED_READ_BG = "shared_read_bg_name";
+    public static final String SHARED_READ_BG = "shared_read_bg_idx";
     public static final String SHARED_READ_BRIGHTNESS = "shared_read_brightness";
     public static final String SHARED_READ_IS_BRIGHTNESS_AUTO = "shared_read_is_brightness_auto";
     public static final String SHARED_READ_TEXT_SIZE = "shared_read_text_size1";
@@ -36,7 +36,7 @@ public class ReadSettingManager {
     }
 
     public void setPageStyle(PageStyle pageStyle) {
-        sharedPreUtils.edit().putString(SHARED_READ_BG, pageStyle.name()).apply();
+        sharedPreUtils.edit().putInt(SHARED_READ_BG, pageStyle.getOrdinal()).apply();
     }
 
     public void setBrightness(int progress) {
@@ -95,8 +95,8 @@ public class ReadSettingManager {
     }
 
     public PageStyle getPageStyle() {
-        String style = sharedPreUtils.getString(SHARED_READ_BG, PageStyle.BG_def.name());
-        return PageStyle.valueOf(style);
+        int style = sharedPreUtils.getInt(SHARED_READ_BG, PageStyle.styles.get(0).getOrdinal());
+        return PageStyle.getStyle(style);
     }
 
     public boolean isNightMode() {

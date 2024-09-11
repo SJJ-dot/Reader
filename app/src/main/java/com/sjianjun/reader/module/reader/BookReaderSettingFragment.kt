@@ -14,12 +14,12 @@ import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.coorchice.library.SuperTextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.sjianjun.coroutine.launchIo
-import com.sjianjun.coroutine.withMain
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
@@ -29,8 +29,30 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.item_font.view.font_text
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.*
-import kotlinx.android.synthetic.main.reader_item_page_style.view.*
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.brightness_seek_bar
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_error
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_list
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_sync
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.day_night
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.download
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_decrease
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_import
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_increase
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_list
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_text
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_decrease
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_increase
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_text
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_cover
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_none
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_scroll
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_simulation
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_slide
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_style_list
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.speak
+import kotlinx.android.synthetic.main.reader_item_page_style.view.image
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
@@ -155,7 +177,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         day_night.setOnClickListener {
             when (globalConfig.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
-                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
+//                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
                     //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                     globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value!!)
@@ -163,7 +185,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 }
 
                 else -> {
-                    day_night.setImageResource(R.drawable.ic_theme_dark_24px)
+//                    day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
                     //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
                     globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value!!)
@@ -226,19 +248,9 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initPageStyle() {
         val adapter = Adapter(this)
+        adapter.data.addAll(PageStyle.styles)
         page_style_list.adapter = adapter
-        launchIo {
-            PageStyle.values().forEach {
-                it.getBackground(requireContext())
-                withMain {
-                    adapter.data.add(it)
-                    adapter.notifyItemInserted(adapter.data.size - 1)
-                }
-            }
-            withMain {
-                page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
-            }
-        }
+        page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
     }
 
     private fun initFontList() {
@@ -335,8 +347,21 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             holder.itemView.apply {
                 val pageStyle = data[position]
-                val background = pageStyle.getBackground(context)
-                image.setImageDrawable(background)
+                (image.tag as? Job)?.cancel()
+                val drawable = pageStyle.getBackgroundSync(fragment.requireContext())
+                if (drawable != null) {
+                    image.setImageDrawable(drawable)
+                } else {
+                    val job = fragment.lifecycleScope.launch {
+                        val background = withIo {
+                            pageStyle.getBackground(context)
+                        }
+                        image.setImageDrawable(background)
+                        Log.e("pageStyle:$pageStyle")
+                    }
+                    image.tag = job
+                }
+
 
                 if (globalConfig.readerPageStyle.value != position) {
                     image.borderColor = R.color.dn_text_color_black_disable.color(context)
@@ -347,7 +372,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     notifyDataSetChanged()
                     globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
                     //记录浅色 深色样式 和深色样式
-                    if (pageStyle.isDark || pageStyle == PageStyle.STYLE_0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                    if (pageStyle.isDark || pageStyle.ordinal == 0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
                         globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
                     } else {
                         globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
