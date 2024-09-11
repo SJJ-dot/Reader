@@ -752,13 +752,13 @@ public abstract class PageLoader implements OnSelectListener {
                 mBackground.draw(canvas);
             }
         }
-        if (BuildConfig.DEBUG) {
-            canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
-            canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
-
-            canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
-            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
-        }
+//        if (BuildConfig.DEBUG) {
+//            canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
+//            canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
+//
+//            canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
+//            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
+//        }
 
         /******绘制内容****/
         if (mStatus != STATUS_FINISH) {
@@ -839,10 +839,10 @@ public abstract class PageLoader implements OnSelectListener {
                 }
 //                canvas.drawText(line.txt, line.left, y, paint);
 
-                if (BuildConfig.DEBUG) {
-                    canvas.drawLine(line.left, line.top, line.right, line.top, mTitlePaint);
-                    canvas.drawLine(line.left, line.bottom, line.right, line.bottom, mTitlePaint);
-                }
+//                if (BuildConfig.DEBUG) {
+//                    canvas.drawLine(line.left, line.top, line.right, line.top, mTitlePaint);
+//                    canvas.drawLine(line.left, line.bottom, line.right, line.bottom, mTitlePaint);
+//                }
             }
         }
     }

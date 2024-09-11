@@ -157,17 +157,17 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
                     day_night.setImageResource(R.drawable.ic_theme_light_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                     //切换成深色模式。阅读器样式自动调整为上一次的深色样式
-                    globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
+                    globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value!!)
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 }
 
                 else -> {
                     day_night.setImageResource(R.drawable.ic_theme_dark_24px)
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                     //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
-                    globalConfig.readerPageStyle.postValue(globalConfig.lastLightTheme.value)
+                    globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value!!)
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 }
             }
 
