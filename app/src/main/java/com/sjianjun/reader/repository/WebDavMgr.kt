@@ -41,14 +41,12 @@ object WebDavMgr {
         }
         val auth = Authorization(username, password)
         val makeDir = WebDav("${server}${subDir}/", auth).makeAsDir()
-        if (makeDir.isSuccess) {
-            globalConfig.apply {
-                webdavUrl = server
-                webdavUsername = username
-                webdavPassword = password
-                webdavSubdir = subDir
-                globalConfig.webdavHasCfg = true
-            }
+        globalConfig.apply {
+            webdavUrl = server
+            webdavUsername = username
+            webdavPassword = password
+            webdavSubdir = subDir
+            globalConfig.webdavHasCfg = makeDir.isSuccess
         }
         return makeDir
     }
