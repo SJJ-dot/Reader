@@ -55,6 +55,7 @@ import kotlinx.android.synthetic.main.reader_item_page_style.view.image
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
+import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
@@ -249,9 +250,18 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initPageStyle() {
         val adapter = Adapter(this)
-        adapter.data.addAll(PageStyle.styles)
         page_style_list.adapter = adapter
-        page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
+        var first = true
+        globalConfig.customPageStyleInfoList.observe(viewLifecycleOwner, Observer {
+            adapter.data.clear()
+            adapter.data.addAll(PageStyle.styles)
+            adapter.data.addAll(it.map { CustomPageStyle(it) })
+            adapter.notifyDataSetChanged()
+            if (first) {
+                page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
+                first = false
+            }
+        })
     }
 
     private fun initFontList() {

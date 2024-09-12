@@ -1,13 +1,15 @@
 package sjj.novel.view.reader.page
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.annotation.ColorInt
-import com.bumptech.glide.Glide
 import com.sjianjun.reader.R
 import com.sjianjun.reader.utils.color
 import java.lang.ref.WeakReference
@@ -16,9 +18,10 @@ import java.lang.ref.WeakReference
  * Created by shen jian jun on 2020-07-13
  */
 abstract class PageStyle(val ordinal: Int) {
+    protected val cache get() = lruCache
 
     open fun getBackgroundSync(context: Context, width: Int, height: Int): Drawable? {
-        val bitmap = lruCache.get("$ordinal,$width,$height")?.get()
+        val bitmap = cache.get("$ordinal,$width,$height")?.get()
         if (bitmap != null) {
             val drawable = BitmapDrawable(context.resources, bitmap)
             drawable.tileModeY = Shader.TileMode.MIRROR
@@ -29,7 +32,7 @@ abstract class PageStyle(val ordinal: Int) {
     }
 
 
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+    protected fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
         // 图片的原始宽高
         val (height: Int, width: Int) = options.run { outHeight to outWidth }
         var inSampleSize = 1
@@ -48,7 +51,7 @@ abstract class PageStyle(val ordinal: Int) {
     }
 
     fun createBackground(context: Context, resId: Int, width: Int, height: Int): Drawable {
-        var bitmap = lruCache.get("$ordinal,$width,$height")?.get()
+        var bitmap = cache.get("$ordinal,$width,$height")?.get()
         if (bitmap == null) {
             val options = BitmapFactory.Options()
             options.inJustDecodeBounds = true
@@ -56,7 +59,7 @@ abstract class PageStyle(val ordinal: Int) {
             options.inJustDecodeBounds = false
             options.inSampleSize = calculateInSampleSize(options, width, height)
             bitmap = BitmapFactory.decodeResource(context.resources, resId, options)
-            lruCache.put("$ordinal,$width,$height", WeakReference(bitmap))
+            cache.put("$ordinal,$width,$height", WeakReference(bitmap))
         }
         val drawable = BitmapDrawable(context.resources, bitmap)
         drawable.tileModeY = Shader.TileMode.MIRROR

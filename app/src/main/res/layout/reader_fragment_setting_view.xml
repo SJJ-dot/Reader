@@ -288,10 +288,29 @@
             android:layout_marginEnd="16dp"
             android:orientation="horizontal"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/page_style_import"
             app:layout_constraintStart_toEndOf="@id/barrier"
             app:layout_constraintTop_toBottomOf="@+id/line_spacing_decrease"
             tools:listitem="@layout/reader_item_page_style" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/page_style_import"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="导入"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/page_style_list"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/dn_background"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
 
         <TextView
             android:id="@+id/page_model"

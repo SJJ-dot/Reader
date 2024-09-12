@@ -8,6 +8,7 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
 import com.tencent.mmkv.MMKV
+import sjj.novel.view.reader.page.CustomPageStyleInfo
 import java.util.*
 
 val globalConfig by lazy { AppConfig("default") }
@@ -88,5 +89,7 @@ class AppConfig(val name: String) :
             }
             return getString("webDavId", null)!!
         }
+
+    val customPageStyleInfoList = dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfos", emptyList())
 }
 
