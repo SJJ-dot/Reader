@@ -27,6 +27,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
 import kotlinx.android.synthetic.main.item_font.view.font_text
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.brightness_seek_bar
@@ -348,20 +349,19 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.apply {
                 val pageStyle = data[position]
                 (image.tag as? Job)?.cancel()
-                val drawable = pageStyle.getBackgroundSync(fragment.requireContext())
+                val drawable = pageStyle.getBackgroundSync(fragment.requireContext(), 42.dp2Px, 32.dp2Px)
                 if (drawable != null) {
                     image.setImageDrawable(drawable)
                 } else {
                     val job = fragment.lifecycleScope.launch {
                         val background = withIo {
-                            pageStyle.getBackground(context)
+                            pageStyle.getBackground(context, 42.dp2Px, 32.dp2Px)
                         }
                         image.setImageDrawable(background)
                         Log.e("pageStyle:$pageStyle")
                     }
                     image.tag = job
                 }
-
 
                 if (globalConfig.readerPageStyle.value != position) {
                     image.borderColor = R.color.dn_text_color_black_disable.color(context)

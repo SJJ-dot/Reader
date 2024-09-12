@@ -113,7 +113,7 @@ public abstract class PageLoader implements OnSelectListener {
     //电池的百分比
     private int mBatteryLevel;
     //当前页面的背景
-    private Drawable mBackground;
+    private BgDrawable mBackground;
 
     // 当前章
     protected int mCurChapterPos = 0;
@@ -401,7 +401,7 @@ public abstract class PageLoader implements OnSelectListener {
         mSettingManager.setPageStyle(pageStyle);
         // 设置当前颜色样式
         mTextColor = pageStyle.getChapterContentColor(mContext);
-        mBackground = pageStyle.getBg(mContext);
+        mBackground = new BgDrawable(pageStyle.getBackground(mContext,0,0));
 
         mTipPaint.setColor(pageStyle.getLabelColor(mContext));
         mTitlePaint.setColor(pageStyle.getChapterTitleColor(mContext));
