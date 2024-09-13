@@ -2,6 +2,7 @@ package sjj.novel.view.reader.page
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
@@ -9,11 +10,11 @@ import android.graphics.drawable.Drawable
 import java.lang.ref.WeakReference
 
 class CustomPageStyleInfo {
-    var ordinal: Int = 0//自定义样式的序号从0开始
-    var labelColor: Int = 0
-    var chapterTitleColor: Int = 0
-    var chapterContentColor: Int = 0
-    var backgroundColor: Int = 0
+    var ordinal: Int = -1//自定义样式的序号从0开始
+    var labelColor: Int = Color.BLACK
+    var chapterTitleColor: Int = Color.BLACK
+    var chapterContentColor: Int = Color.BLACK
+    var backgroundColor: Int = Color.WHITE
     var backgroundImage: String = ""
 }
 

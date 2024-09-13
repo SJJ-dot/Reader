@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="42dp"
+    android:layout_height="42dp">
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="5dp"
+        android:src="@color/colorPrimaryDark"
+        app:civ_border_color="@color/dn_color_primary"
+        app:civ_border_width="2dp" />
+
+    <com.coorchice.library.SuperTextView
+        android:id="@+id/edit_flag"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        app:stv_stroke_color="@color/dn_color_primary"
+        app:stv_stroke_width="2dp" />
+</FrameLayout>

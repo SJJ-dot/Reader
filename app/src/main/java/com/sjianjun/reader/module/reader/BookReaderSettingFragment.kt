@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -29,6 +30,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
+import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.item_font.view.font_text
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.brightness_seek_bar
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_error
@@ -49,6 +51,7 @@ import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_no
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_scroll
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_simulation
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_slide
+import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_style_import
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_style_list
 import kotlinx.android.synthetic.main.reader_fragment_setting_view.speak
 import kotlinx.android.synthetic.main.reader_item_page_style.view.image
@@ -56,6 +59,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
+import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
@@ -249,10 +253,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initPageStyle() {
+        page_style_import.setOnClickListener {
+            dismissAllowingStateLoss()
+            CustomPageStyleFragment.newInstance(CustomPageStyleInfo()).show(parentFragmentManager, "CustomPageStyleFragment")
+        }
         val adapter = Adapter(this)
         page_style_list.adapter = adapter
         var first = true
-        globalConfig.customPageStyleInfoList.observe(viewLifecycleOwner, Observer {
+        globalConfig.customPageStyleInfoList.observe(viewLifecycleOwner) {
             adapter.data.clear()
             adapter.data.addAll(PageStyle.styles)
             adapter.data.addAll(it.map { CustomPageStyle(it) })
@@ -261,7 +269,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
                 first = false
             }
-        })
+        }
     }
 
     private fun initFontList() {
@@ -332,7 +340,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             holder.itemView.apply {
                 val fontInfo = data[position]
                 font_text.text = fontInfo.name
@@ -352,43 +360,74 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         }
     }
 
-    class Adapter(val fragment: BookReaderSettingFragment) :
-        BaseAdapter<PageStyle>(R.layout.reader_item_page_style) {
+    class Adapter(val fragment: BookReaderSettingFragment) : RecyclerView.Adapter<ViewHolder>() {
+        private val VIEW_TYPE_CUSTOM = 1
+        private val VIEW_TYPE_SYS = 0
 
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            holder.itemView.apply {
-                val pageStyle = data[position]
-                (image.tag as? Job)?.cancel()
-                val drawable = pageStyle.getBackgroundSync(fragment.requireContext(), 42.dp2Px, 32.dp2Px)
-                if (drawable != null) {
-                    image.setImageDrawable(drawable)
-                } else {
-                    val job = fragment.lifecycleScope.launch {
-                        val background = withIo {
-                            pageStyle.getBackground(context, 42.dp2Px, 32.dp2Px)
-                        }
-                        image.setImageDrawable(background)
-                        Log.e("pageStyle:$pageStyle")
-                    }
-                    image.tag = job
-                }
 
-                if (globalConfig.readerPageStyle.value != position) {
-                    image.borderColor = R.color.dn_text_color_black_disable.color(context)
-                } else {
-                    image.borderColor = R.color.dn_color_primary.color(context)
-                }
-                setOnClickListener {
-                    notifyDataSetChanged()
-                    globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
-                    //记录浅色 深色样式 和深色样式
-                    if (pageStyle.isDark || pageStyle.ordinal == 0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
-                        globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
-                    } else {
-                        globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
+        val data = mutableListOf<PageStyle>()
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val image = holder.itemView.findViewById<CircleImageView>(R.id.image)
+            val pageStyle = data[position]
+            (image.tag as? Job)?.cancel()
+            val drawable = pageStyle.getBackgroundSync(fragment.requireContext(), 42.dp2Px, 32.dp2Px)
+            if (drawable != null) {
+                image.setImageDrawable(drawable)
+            } else {
+                val job = fragment.lifecycleScope.launch {
+                    val background = withIo {
+                        pageStyle.getBackground(image.context, 42.dp2Px, 32.dp2Px)
                     }
+                    image.setImageDrawable(background)
+                    Log.e("pageStyle:$pageStyle")
+                }
+                image.tag = job
+            }
+
+            if (globalConfig.readerPageStyle.value != position) {
+                image.borderColor = R.color.dn_text_color_black_disable.color(image.context)
+            } else {
+                image.borderColor = R.color.dn_color_primary.color(image.context)
+            }
+            holder.itemView.setOnClickListener {
+                notifyDataSetChanged()
+                globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
+                //记录浅色 深色样式 和深色样式
+                if (pageStyle.isDark || pageStyle.ordinal == 0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                    globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
+                } else {
+                    globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
                 }
             }
+            holder.itemView.setOnLongClickListener {
+                if (pageStyle is CustomPageStyle) {
+                    fragment.dismissAllowingStateLoss()
+                    CustomPageStyleFragment.newInstance(pageStyle.info).show(fragment.parentFragmentManager, "CustomPageStyleFragment")
+                }
+                true
+            }
+        }
+
+        override fun getItemViewType(position: Int): Int {
+            return if (data[position] is CustomPageStyle) {
+                VIEW_TYPE_CUSTOM
+            } else {
+                VIEW_TYPE_SYS
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val res = if (viewType == VIEW_TYPE_CUSTOM) {
+                R.layout.reader_item_custom_page_style
+            } else {
+                R.layout.reader_item_page_style
+            }
+            return object : ViewHolder(LayoutInflater.from(parent.context).inflate(res, parent, false)) {}
+        }
+
+        override fun getItemCount(): Int {
+            return data.size
         }
     }
 
