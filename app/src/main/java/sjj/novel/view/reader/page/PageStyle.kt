@@ -11,6 +11,9 @@ import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.annotation.ColorInt
 import com.sjianjun.reader.R
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import java.lang.ref.WeakReference
 
@@ -20,8 +23,10 @@ import java.lang.ref.WeakReference
 abstract class PageStyle(val ordinal: Int) {
     protected val cache get() = lruCache
 
+    protected fun key(width: Int, height: Int) = "$ordinal,$width,$height"
+
     open fun getBackgroundSync(context: Context, width: Int, height: Int): Drawable? {
-        val bitmap = cache.get("$ordinal,$width,$height")?.get()
+        val bitmap = cache.get(key(width, height))?.get()
         if (bitmap != null) {
             val drawable = BitmapDrawable(context.resources, bitmap)
             drawable.tileModeY = Shader.TileMode.MIRROR
@@ -32,7 +37,11 @@ abstract class PageStyle(val ordinal: Int) {
     }
 
 
-    protected fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+    protected fun calculateInSampleSize(
+        options: BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int
+    ): Int {
         // 图片的原始宽高
         val (height: Int, width: Int) = options.run { outHeight to outWidth }
         var inSampleSize = 1
@@ -51,7 +60,7 @@ abstract class PageStyle(val ordinal: Int) {
     }
 
     fun createBackground(context: Context, resId: Int, width: Int, height: Int): Drawable {
-        var bitmap = cache.get("$ordinal,$width,$height")?.get()
+        var bitmap = cache.get(key(width, height))?.get()
         if (bitmap == null) {
             val options = BitmapFactory.Options()
             options.inJustDecodeBounds = true
@@ -59,7 +68,7 @@ abstract class PageStyle(val ordinal: Int) {
             options.inJustDecodeBounds = false
             options.inSampleSize = calculateInSampleSize(options, width, height)
             bitmap = BitmapFactory.decodeResource(context.resources, resId, options)
-            cache.put("$ordinal,$width,$height", WeakReference(bitmap))
+            cache.put(key(width, height), WeakReference(bitmap))
         }
         val drawable = BitmapDrawable(context.resources, bitmap)
         drawable.tileModeY = Shader.TileMode.MIRROR
@@ -84,15 +93,54 @@ abstract class PageStyle(val ordinal: Int) {
         return Color.parseColor("#ffd54f")
     }
 
+
     companion object {
         private val lruCache = LruCache<String, WeakReference<Bitmap>>(8)
 
         @JvmField
-        val styles: List<PageStyle> = listOf(Style0(), Style1(), Style2(), Style3(), Style4(), Style5(), Style6(), Style7(), Style8(), Style9(), Style10(), Style11(), Style12())
+        val DEFAULT: PageStyle = Style0()
+
+
+        val defStyles: List<PageStyle> = listOf(
+            DEFAULT,
+            Style1(),
+            Style2(),
+            Style3(),
+            Style4(),
+            Style5(),
+            Style6(),
+            Style7(),
+            Style8(),
+            Style9(),
+            Style10(),
+            Style11(),
+            Style12()
+        )
+        val customStyles = mutableListOf<CustomPageStyle>()
+
+        init {
+            globalConfig.customPageStyleInfoList.value?.forEach {
+                customStyles.add(CustomPageStyle(it))
+            }
+            EventBus.observeForever<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) { style ->
+                val find = customStyles.indexOfFirst { it.ordinal == style.ordinal }
+                if (find == -1) {
+                    customStyles.add(style)
+                } else {
+                    customStyles[find] = style
+                }
+            }
+            EventBus.observeForever<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE_CANCEL) { style ->
+                if (globalConfig.customPageStyleInfoList.value?.find { it.ordinal == style.ordinal } == null) {
+                    customStyles.removeAll { it.ordinal == style.ordinal }
+                }
+            }
+        }
 
         @JvmStatic
         fun getStyle(ordinal: Int): PageStyle {
-            return styles.getOrNull(ordinal) ?: styles[0]
+            defStyles.find { it.ordinal == ordinal }?.let { return it }
+            return customStyles.find { it.ordinal == ordinal } ?: DEFAULT
         }
     }
 }

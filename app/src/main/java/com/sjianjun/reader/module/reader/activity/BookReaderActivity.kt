@@ -210,7 +210,10 @@ class BookReaderActivity : BaseActivity() {
             Log.i("设置字号:${it.first} 行间距：${it.second}")
             mPageLoader.setTextSize(it.first.dp2Px.toFloat(), it.second)
         }
-
+        observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
+            mPageLoader.setPageStyle(it)
+            reader_root.background = it.getBackground(this)
+        }
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
             reader_root.background = pageStyle.getBackground(this)

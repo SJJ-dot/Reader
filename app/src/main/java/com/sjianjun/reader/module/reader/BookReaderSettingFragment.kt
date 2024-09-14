@@ -71,7 +71,7 @@ import java.text.DecimalFormat
 class BookReaderSettingFragment : BottomSheetDialogFragment() {
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
-    private val REQUEST_CODE_PICK_FONT = 1
+    private val REQUEST_CODE_PICK_FONT = 1111
     override fun getTheme(): Int {
         return R.style.reader_setting_dialog
     }
@@ -255,15 +255,17 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     private fun initPageStyle() {
         page_style_import.setOnClickListener {
             dismissAllowingStateLoss()
-            CustomPageStyleFragment.newInstance(CustomPageStyleInfo()).show(parentFragmentManager, "CustomPageStyleFragment")
+            CustomPageStyleFragment.newInstance(CustomPageStyleInfo().apply {
+                ordinal = PageStyle.defStyles.size + PageStyle.customStyles.size
+            }).show(parentFragmentManager, "CustomPageStyleFragment")
         }
         val adapter = Adapter(this)
         page_style_list.adapter = adapter
         var first = true
         globalConfig.customPageStyleInfoList.observe(viewLifecycleOwner) {
             adapter.data.clear()
-            adapter.data.addAll(PageStyle.styles)
-            adapter.data.addAll(it.map { CustomPageStyle(it) })
+            adapter.data.addAll(PageStyle.customStyles)
+            adapter.data.addAll(PageStyle.defStyles)
             adapter.notifyDataSetChanged()
             if (first) {
                 page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
@@ -371,7 +373,8 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             val image = holder.itemView.findViewById<CircleImageView>(R.id.image)
             val pageStyle = data[position]
             (image.tag as? Job)?.cancel()
-            val drawable = pageStyle.getBackgroundSync(fragment.requireContext(), 42.dp2Px, 32.dp2Px)
+            val drawable =
+                pageStyle.getBackgroundSync(fragment.requireContext(), 42.dp2Px, 32.dp2Px)
             if (drawable != null) {
                 image.setImageDrawable(drawable)
             } else {
@@ -385,7 +388,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 image.tag = job
             }
 
-            if (globalConfig.readerPageStyle.value != position) {
+            if (globalConfig.readerPageStyle.value != pageStyle.ordinal) {
                 image.borderColor = R.color.dn_text_color_black_disable.color(image.context)
             } else {
                 image.borderColor = R.color.dn_color_primary.color(image.context)
@@ -403,7 +406,8 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.setOnLongClickListener {
                 if (pageStyle is CustomPageStyle) {
                     fragment.dismissAllowingStateLoss()
-                    CustomPageStyleFragment.newInstance(pageStyle.info).show(fragment.parentFragmentManager, "CustomPageStyleFragment")
+                    CustomPageStyleFragment.newInstance(pageStyle.info)
+                        .show(fragment.parentFragmentManager, "CustomPageStyleFragment")
                 }
                 true
             }
@@ -423,7 +427,8 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             } else {
                 R.layout.reader_item_page_style
             }
-            return object : ViewHolder(LayoutInflater.from(parent.context).inflate(res, parent, false)) {}
+            return object :
+                ViewHolder(LayoutInflater.from(parent.context).inflate(res, parent, false)) {}
         }
 
         override fun getItemCount(): Int {

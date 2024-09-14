@@ -32,6 +32,11 @@ object EventBus {
     fun <T> observe(key: String, owner: LifecycleOwner, observer: Observer<T>) {
         LiveEventBus.get<T>(key).observe(owner, observer)
     }
+
+    @JvmStatic
+    fun <T> observeForever(key: String, observer: Observer<T>) {
+        LiveEventBus.get<T>(key).observeForever(observer)
+    }
 }
 
 fun <T> BaseActivity.observe(key: String, observer: Observer<T>) {

@@ -95,7 +95,7 @@ public class ReadSettingManager {
     }
 
     public PageStyle getPageStyle() {
-        int style = sharedPreUtils.getInt(SHARED_READ_BG, PageStyle.styles.get(0).getOrdinal());
+        int style = sharedPreUtils.getInt(SHARED_READ_BG, PageStyle.DEFAULT.getOrdinal());
         return PageStyle.getStyle(style);
     }
 

@@ -2,6 +2,7 @@ package com.sjianjun.reader.preferences
 
 import android.content.SharedPreferences
 import androidx.lifecycle.MutableLiveData
+import com.google.gson.reflect.TypeToken
 import com.sjianjun.reader.utils.gson
 
 inline fun <reified T> SharedPreferences.dataLivedata(
@@ -10,7 +11,8 @@ inline fun <reified T> SharedPreferences.dataLivedata(
 ): DataLivedata<T> {
     val jsonStr = getString(key, null)
     if (jsonStr != null) {
-        return DataLivedata(this, key, gson.fromJson(jsonStr, T::class.java))
+        val type = object : TypeToken<T>() {}.type
+        return DataLivedata(this, key, gson.fromJson(jsonStr, type))
     }
     return DataLivedata<T>(this, key, def)
 }
