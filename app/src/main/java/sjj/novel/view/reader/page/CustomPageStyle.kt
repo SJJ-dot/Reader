@@ -24,7 +24,7 @@ class CustomPageStyleInfo {
 
 }
 
-class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.ordinal + maxOrdinal) {
+class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.ordinal) {
     fun clearCache() {
         cache.snapshot().keys.forEach {
             if (it.startsWith("$ordinal,")) {

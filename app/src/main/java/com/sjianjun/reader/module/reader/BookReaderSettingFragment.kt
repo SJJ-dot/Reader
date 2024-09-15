@@ -256,7 +256,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         page_style_import.setOnClickListener {
             dismissAllowingStateLoss()
             CustomPageStyleFragment.newInstance(CustomPageStyleInfo().apply {
-                ordinal = (PageStyle.customStyles.lastOrNull()?.ordinal ?: 0) + 1
+                ordinal = (PageStyle.customStyles.lastOrNull()?.ordinal ?: PageStyle.maxOrdinal) + 1
             }).show(parentFragmentManager, "CustomPageStyleFragment")
         }
         val adapter = Adapter(this)
