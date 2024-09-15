@@ -9,6 +9,7 @@ import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
 import com.tencent.mmkv.MMKV
 import sjj.novel.view.reader.page.CustomPageStyleInfo
+import sjj.novel.view.reader.page.PageStyle
 import java.util.*
 
 val globalConfig by lazy { AppConfig("default") }
@@ -31,39 +32,39 @@ class AppConfig(val name: String) :
     /**
      * 阅读器亮度蒙层的颜色
      */
-    val readerBrightnessMaskColor = intLivedata("readerBrightnessMaskColor")
+    val readerBrightnessMaskColor by lazy { intLivedata("readerBrightnessMaskColor") }
 
     /**
      * 阅读器 内容字体大小 、章节名称+4
      */
-    val readerFontSize = intLivedata("readerFontSize", 22)
+    val readerFontSize by lazy { intLivedata("readerFontSize", 22) }
 
     /**
      * 阅读器 内容字体行间距
      */
-    val readerLineSpacing = floatLivedata("readerLineSpacing2", 0.5f)
+    val readerLineSpacing by lazy { floatLivedata("readerLineSpacing2", 0.5f) }
 
     /**
      * 阅读器 页面样式 位置索引
      */
-    val readerPageStyle = intLivedata("readerPageStyle", 1)
+    val readerPageStyle by lazy { intLivedata("readerPageStyle", PageStyle.DEFAULT.ordinal) }
 
-    val readerFontFamily = dataLivedata<FontInfo>("readerFontInfo", FontInfo.DEFAULT)
+    val readerFontFamily by lazy { dataLivedata<FontInfo>("readerFontInfo", FontInfo.DEFAULT) }
 
     /**
      * 阅读器 页面样式 位置索引
      */
-    val readerPageMode = intLivedata("readerPageMode", 0)
+    val readerPageMode by lazy { intLivedata("readerPageMode", 0) }
 
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
-    val lastDarkTheme = intLivedata("lastDarkTheme")
+    val lastDarkTheme by lazy { intLivedata("lastDarkTheme", PageStyle.DEFAULT.ordinal) }
 
     /**
      * 上一次使用的浅色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
-    val lastLightTheme = intLivedata("lastLightTheme")
+    val lastLightTheme by lazy { intLivedata("lastLightTheme", PageStyle.DEFAULT.ordinal) }
 
     var bookSourceImportUrlsNet by dataPref(
         "bookSourceImportUrlsNet",
@@ -90,6 +91,8 @@ class AppConfig(val name: String) :
             return getString("webDavId", null)!!
         }
 
-    val customPageStyleInfoList = dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfos", emptyList())
+    val customPageStyleInfoList by lazy {
+        dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfos", emptyList())
+    }
 }
 

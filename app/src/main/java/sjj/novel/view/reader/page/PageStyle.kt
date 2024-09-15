@@ -116,23 +116,14 @@ abstract class PageStyle(val ordinal: Int) {
             Style11(),
             Style12()
         )
+        val maxOrdinal = defStyles.maxOf { it.ordinal }
         val customStyles = mutableListOf<CustomPageStyle>()
 
         init {
-            globalConfig.customPageStyleInfoList.value?.forEach {
-                customStyles.add(CustomPageStyle(it))
-            }
-            EventBus.observeForever<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) { style ->
-                val find = customStyles.indexOfFirst { it.ordinal == style.ordinal }
-                if (find == -1) {
-                    customStyles.add(style)
-                } else {
-                    customStyles[find] = style
-                }
-            }
-            EventBus.observeForever<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE_CANCEL) { style ->
-                if (globalConfig.customPageStyleInfoList.value?.find { it.ordinal == style.ordinal } == null) {
-                    customStyles.removeAll { it.ordinal == style.ordinal }
+            globalConfig.customPageStyleInfoList.observeForever {
+                customStyles.clear()
+                it.forEach { info ->
+                    customStyles.add(CustomPageStyle(info))
                 }
             }
         }

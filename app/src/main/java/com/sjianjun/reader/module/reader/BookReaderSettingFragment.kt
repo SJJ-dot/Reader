@@ -256,7 +256,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         page_style_import.setOnClickListener {
             dismissAllowingStateLoss()
             CustomPageStyleFragment.newInstance(CustomPageStyleInfo().apply {
-                ordinal = PageStyle.defStyles.size + PageStyle.customStyles.size
+                ordinal = (PageStyle.customStyles.lastOrNull()?.ordinal ?: 0) + 1
             }).show(parentFragmentManager, "CustomPageStyleFragment")
         }
         val adapter = Adapter(this)
@@ -383,7 +383,6 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                         pageStyle.getBackground(image.context, 42.dp2Px, 32.dp2Px)
                     }
                     image.setImageDrawable(background)
-                    Log.e("pageStyle:$pageStyle")
                 }
                 image.tag = job
             }

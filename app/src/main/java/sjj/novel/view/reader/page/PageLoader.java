@@ -31,7 +31,6 @@ import kotlin.text.StringsKt;
 import sjj.alog.Log;
 import sjj.novel.view.reader.bean.BookBean;
 import sjj.novel.view.reader.bean.BookRecordBean;
-import sjj.novel.view.reader.record.ReadSettingManager;
 import sjj.novel.view.reader.utils.RxUtils;
 import sjj.novel.view.reader.utils.ScreenUtils;
 
@@ -80,8 +79,6 @@ public abstract class PageLoader implements OnSelectListener {
     private Paint mSelectedPaint;
     // 绘制小说内容的画笔
     private TextPaint mTextPaint;
-    // 阅读器的配置选项
-    private ReadSettingManager mSettingManager;
     // 被遮盖的页，或者认为被取消显示的页
     private TxtPage mCancelPage;
     // 存储阅读记录类
@@ -133,23 +130,10 @@ public abstract class PageLoader implements OnSelectListener {
         screenUtils = new ScreenUtils(mContext);
         mSelectableTextHelper = new SelectableTextHelper.Builder(pageView, mLocation).build();
         mSelectableTextHelper.setSelectListener(this);
-        // 初始化数据
-        initData();
         // 初始化画笔
         initPaint();
         // 初始化PageView
         initPageView();
-        // 初始化页面样式
-        setPageStyle(mSettingManager.getPageStyle());
-    }
-
-    private void initData() {
-        // 获取配置管理器
-        mSettingManager = new ReadSettingManager(mContext);
-        // 获取配置参数
-        mPageMode = mSettingManager.getPageMode();
-        // 配置文字有关的参数
-        setUpTextParams(mSettingManager.getTextSize(), mSettingManager.getLineSpace());
     }
 
     public void setBook(BookBean book) {
@@ -163,7 +147,6 @@ public abstract class PageLoader implements OnSelectListener {
      * @param textSize
      */
     private void setUpTextParams(float textSize, float lineSpace) {
-        mSettingManager.setLineSpace(lineSpace);
         // 文字大小
         mTextSize = textSize;
         mDisplayParams.setTextInterval(mTextSize * lineSpace);
@@ -347,14 +330,6 @@ public abstract class PageLoader implements OnSelectListener {
         mPageView.drawCurPage(false);
     }
 
-    public void setTextSizeIncrease(boolean increase) {
-        if (increase) {
-            setTextSize(mTextSize + screenUtils.spToPx(1), mSettingManager.getLineSpace());
-        } else {
-            setTextSize(mTextSize - screenUtils.spToPx(1), mSettingManager.getLineSpace());
-        }
-    }
-
     /**
      * 设置文字相关参数
      *
@@ -368,8 +343,6 @@ public abstract class PageLoader implements OnSelectListener {
         mTextPaint.setTextSize(mTextSize);
         // 设置标题的字体大小
         mTitlePaint.setTextSize(mTitleSize);
-        // 存储文字大小
-        mSettingManager.setTextSize(mTextSize);
         Log.e("字体大小：" + mTextSize + " 标题大小:" + mTitleSize);
         // 取消缓存
         mPrePageList = null;
@@ -398,7 +371,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pageStyle:页面样式
      */
     public void setPageStyle(PageStyle pageStyle) {
-        mSettingManager.setPageStyle(pageStyle);
+        Log.e("设置页面样式:"+pageStyle.getOrdinal());
         // 设置当前颜色样式
         mTextColor = pageStyle.getChapterContentColor(mContext);
         mBackground = new BgDrawable(pageStyle.getBackground(mContext,0,0));
@@ -421,7 +394,6 @@ public abstract class PageLoader implements OnSelectListener {
         mPageMode = pageMode;
 
         mPageView.setPageMode(mPageMode);
-        mSettingManager.setPageMode(mPageMode);
 
         // 重新绘制当前页
         mPageView.drawCurPage(false);

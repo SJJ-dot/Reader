@@ -25,6 +25,7 @@ import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_cancel
+import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_delete
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_save
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color_preview
@@ -67,7 +68,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
-        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
         return dialog
     }
 
@@ -213,19 +214,28 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 list[index] = info
             }
             globalConfig.customPageStyleInfoList.setValue(list)
-            globalConfig.readerPageStyle.setValue(pageStyle.ordinal)
+            globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
             dismiss()
         }
         btn_cancel.setOnClickListener {
-            EventBus.post(EventKey.CUSTOM_PAGE_STYLE_CANCEL, pageStyle)
-            globalConfig.readerPageStyle.setValue(globalConfig.readerPageStyle.value!!)
+            globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
+            dismiss()
+        }
+        btn_delete.setOnClickListener {
+            val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
+            list.removeAll { it.ordinal == info.ordinal }
+            globalConfig.customPageStyleInfoList.setValue(list)
+            if (customPageStyleInfo.ordinal == globalConfig.readerPageStyle.value!!) {
+                globalConfig.readerPageStyle.postValue(PageStyle.DEFAULT.ordinal)
+            } else {
+                globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
+            }
             dismiss()
         }
     }
 
     private fun setColor(textView: SuperTextView, imageView: CircleImageView, color: Int) {
         textView.text = "#" + Integer.toHexString(color)
-        textView.setTextColor(color)
         imageView.setImageDrawable(ColorDrawable(color))
     }
 

@@ -1,8 +1,15 @@
 package com.sjianjun.reader.http
 
-import com.sjianjun.reader.BuildConfig
-import okhttp3.*
+import okhttp3.CacheControl
+import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.dnsoverhttps.DnsOverHttps
 import sjj.alog.Log
+import java.net.InetAddress
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -49,6 +56,18 @@ val okClient = OkHttpClient.Builder()
         // 创建一个 OkHttpClient，并设置 SSL SocketFactory
         sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
         hostnameVerifier { _, _ -> true }
+        val bootstrapClient = OkHttpClient.Builder()
+            .addInterceptor( HttpLoggingInterceptor { Log.i(it) }.setLevel(
+                HttpLoggingInterceptor.Level.BODY
+            ))
+            .build()
+
+        val dns = DnsOverHttps.Builder().client(bootstrapClient)
+            .url(HttpUrl.get("https://dns.alidns.com/dns-query"))
+            .includeIPv6(false)
+            .bootstrapDnsHosts(InetAddress.getByName("223.5.5.5"), InetAddress.getByName("223.6.6.6"))
+            .build()
+        dns(dns)
     }
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(10, TimeUnit.SECONDS)

@@ -130,6 +130,7 @@ dependencies {
     implementation 'com.github.SJJ-dot:ALOG:1.2.14'
 //    implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
     implementation 'com.squareup.okhttp3:okhttp:3.14.9'
+    implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:3.14.9'
     implementation 'com.github.SJJ-dot:CoroutineKtx:0.0.5'
     /**
      * 沉浸式
