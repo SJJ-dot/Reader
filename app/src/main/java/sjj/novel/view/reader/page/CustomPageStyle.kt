@@ -18,6 +18,7 @@ class CustomPageStyleInfo {
     var chapterContentColor: Int = Color.BLACK
     var backgroundColor: Int = Color.WHITE
     var backgroundImage: String = ""
+    var isDark: Boolean = false
     override fun toString(): String {
         return "CustomPageStyleInfo(ordinal=$ordinal, labelColor=${labelColor.hex}, chapterTitleColor=${chapterTitleColor.hex}, chapterContentColor=${chapterContentColor.hex}, backgroundColor=${backgroundColor.hex}, backgroundImage='$backgroundImage')"
     }
@@ -25,6 +26,9 @@ class CustomPageStyleInfo {
 }
 
 class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.ordinal) {
+    override val isDark: Boolean
+        get() = info.isDark
+
     fun clearCache() {
         cache.snapshot().keys.forEach {
             if (it.startsWith("$ordinal,")) {

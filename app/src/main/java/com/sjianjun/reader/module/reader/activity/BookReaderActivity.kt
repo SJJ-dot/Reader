@@ -213,18 +213,20 @@ class BookReaderActivity : BaseActivity() {
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader.setPageStyle(it)
             reader_root.background = it.getBackground(this)
-        }
-        globalConfig.readerPageStyle.observe(this) {
-            val pageStyle = PageStyle.getStyle(it)
-            reader_root.background = pageStyle.getBackground(this)
-//            line.setBackgroundColor(pageStyle.getSpacerColor(this))
-//            chapter_title.setTextColor(pageStyle.getLabelColor(this))
-            if (pageStyle.isDark || pageStyle.ordinal == 0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+            if (it.isDark || it.ordinal == PageStyle.DEFAULT.ordinal && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
                 ImmersionBar.with(this).statusBarDarkFont(true).init()
             }
-            Log.i("pageStyle:${pageStyle}")
+        }
+        globalConfig.readerPageStyle.observe(this) {
+            val pageStyle = PageStyle.getStyle(it)
+            reader_root.background = pageStyle.getBackground(this)
+            if (pageStyle.isDark || pageStyle.ordinal == PageStyle.DEFAULT.ordinal && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                ImmersionBar.with(this).statusBarDarkFont(false).init()
+            } else {
+                ImmersionBar.with(this).statusBarDarkFont(true).init()
+            }
             mPageLoader.setPageStyle(pageStyle)
         }
 

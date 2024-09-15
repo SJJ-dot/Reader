@@ -223,6 +223,43 @@
         app:layout_constraintStart_toEndOf="@+id/chapter_background_img_label"
         app:layout_constraintTop_toTopOf="@+id/chapter_background_img_label" />
 
+
+    <TextView
+        android:id="@+id/status_bar_color_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="状态栏颜色："
+        android:textColor="@color/dn_text_color_black"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/chapter_background_img_label" />
+
+    <RadioGroup
+        android:id="@+id/rg_status_bar_color"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@+id/status_bar_color_label"
+        app:layout_constraintStart_toEndOf="@+id/status_bar_color_label"
+        app:layout_constraintTop_toTopOf="@+id/status_bar_color_label">
+
+        <RadioButton
+            android:id="@+id/rb_status_bar_color_black"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="黑色" />
+
+        <RadioButton
+            android:id="@+id/rb_status_bar_color_white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="白色" />
+
+
+    </RadioGroup>
+
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_delete"
         android:layout_width="0dp"
@@ -237,7 +274,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chapter_background_img_label" />
+        app:layout_constraintTop_toBottomOf="@+id/status_bar_color_label" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_cancel"
@@ -252,7 +289,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_save"
         app:layout_constraintStart_toEndOf="@+id/btn_delete"
-        app:layout_constraintTop_toBottomOf="@+id/chapter_background_img_label" />
+        app:layout_constraintTop_toBottomOf="@+id/status_bar_color_label" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_save"
@@ -267,6 +304,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_cancel"
-        app:layout_constraintTop_toBottomOf="@+id/chapter_background_img_label" />
+        app:layout_constraintTop_toBottomOf="@+id/status_bar_color_label" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

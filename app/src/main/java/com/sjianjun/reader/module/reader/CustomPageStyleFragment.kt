@@ -11,11 +11,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.net.toUri
 import com.coorchice.library.SuperTextView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.R
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -36,6 +38,7 @@ import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_label_color_preview
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_title_color
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_title_color_preview
+import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.rg_status_bar_color
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.CustomPageStyleInfo
@@ -205,6 +208,19 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             // 启动图片选择器，并等待结果
             startActivityForResult(intent, PICK_IMAGE_REQUEST)
         }
+
+        rg_status_bar_color.setOnCheckedChangeListener { group, checkedId ->
+            info.isDark = checkedId == R.id.rb_status_bar_color_white
+            if (pageStyle.isDark || pageStyle.ordinal == PageStyle.DEFAULT.ordinal && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                ImmersionBar.with(this).statusBarDarkFont(false).init()
+            } else {
+                ImmersionBar.with(this).statusBarDarkFont(true).init()
+            }
+
+            EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
+        }
+        rg_status_bar_color.check(if (info.isDark) R.id.rb_status_bar_color_white else R.id.rb_status_bar_color_black)
+
         btn_save.setOnClickListener {
             val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
             val index = list.indexOfFirst { it.ordinal == info.ordinal }
