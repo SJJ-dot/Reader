@@ -38,7 +38,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.8.0"
+        versionName "1.8.${commitCont}"
         resConfigs("zh")
         ndk {
             abiFilters 'armeabi-v7a','arm64-v8a'//,'armeabi', 'arm64-v8a' // 'x86', 'x86_64'
