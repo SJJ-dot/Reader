@@ -9,10 +9,12 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.postDelayed
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -255,20 +257,26 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     private fun initPageStyle() {
         page_style_import.setOnClickListener {
             dismissAllowingStateLoss()
-            CustomPageStyleFragment.newInstance(CustomPageStyleInfo().apply {
-                ordinal = (PageStyle.customStyles.lastOrNull()?.ordinal ?: PageStyle.maxOrdinal) + 1
-            }).show(parentFragmentManager, "CustomPageStyleFragment")
+            CustomPageStyleFragment.newInstance(CustomPageStyleInfo())
+                .show(parentFragmentManager, "CustomPageStyleFragment")
         }
         val adapter = Adapter(this)
+        adapter.itemLongClickListener = {
+            val pageStyle = adapter.data[it]
+            if (pageStyle is CustomPageStyle && page_style_list.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                dismissAllowingStateLoss()
+                CustomPageStyleFragment.newInstance(pageStyle.info)
+                    .show(parentFragmentManager, "CustomPageStyleFragment")
+            }
+        }
         page_style_list.adapter = adapter
         var first = true
-        globalConfig.customPageStyleInfoList.observe(viewLifecycleOwner) {
+        PageStyle.styles.observe(viewLifecycleOwner) {
             adapter.data.clear()
-            adapter.data.addAll(PageStyle.customStyles)
-            adapter.data.addAll(PageStyle.defStyles)
+            adapter.data.addAll(it)
             adapter.notifyDataSetChanged()
             if (first) {
-                page_style_list.scrollToPosition(globalConfig.readerPageStyle.value!!)
+                page_style_list.scrollToPosition(it.indexOfFirst { globalConfig.readerPageStyle.value!! == it.id })
                 first = false
             }
         }
@@ -363,11 +371,9 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     class Adapter(val fragment: BookReaderSettingFragment) : RecyclerView.Adapter<ViewHolder>() {
-        private val VIEW_TYPE_CUSTOM = 1
-        private val VIEW_TYPE_SYS = 0
-
 
         val data = mutableListOf<PageStyle>()
+        var itemLongClickListener: ((Int) -> Unit)? = null
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val image = holder.itemView.findViewById<CircleImageView>(R.id.image)
@@ -387,47 +393,32 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 image.tag = job
             }
 
-            if (globalConfig.readerPageStyle.value != pageStyle.ordinal) {
+            if (globalConfig.readerPageStyle.value != pageStyle.id) {
                 image.borderColor = R.color.dn_text_color_black_disable.color(image.context)
             } else {
                 image.borderColor = R.color.dn_color_primary.color(image.context)
             }
             holder.itemView.setOnClickListener {
                 notifyDataSetChanged()
-                globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
+                globalConfig.readerPageStyle.postValue(pageStyle.id)
                 //记录浅色 深色样式 和深色样式
-                if (pageStyle.isDark || pageStyle.ordinal == 0 && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
-                    globalConfig.lastDarkTheme.postValue(pageStyle.ordinal)
+                if (pageStyle.isDark) {
+                    globalConfig.lastDarkTheme.postValue(pageStyle.id)
                 } else {
-                    globalConfig.lastLightTheme.postValue(pageStyle.ordinal)
+                    globalConfig.lastLightTheme.postValue(pageStyle.id)
                 }
             }
             holder.itemView.setOnLongClickListener {
-                if (pageStyle is CustomPageStyle) {
-                    fragment.dismissAllowingStateLoss()
-                    CustomPageStyleFragment.newInstance(pageStyle.info)
-                        .show(fragment.parentFragmentManager, "CustomPageStyleFragment")
-                }
+                itemLongClickListener?.invoke(position)
                 true
             }
         }
 
-        override fun getItemViewType(position: Int): Int {
-            return if (data[position] is CustomPageStyle) {
-                VIEW_TYPE_CUSTOM
-            } else {
-                VIEW_TYPE_SYS
-            }
-        }
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val res = if (viewType == VIEW_TYPE_CUSTOM) {
-                R.layout.reader_item_custom_page_style
-            } else {
-                R.layout.reader_item_page_style
-            }
-            return object :
-                ViewHolder(LayoutInflater.from(parent.context).inflate(res, parent, false)) {}
+            return object : ViewHolder(
+                LayoutInflater.from(parent.context)
+                    .inflate(R.layout.reader_item_page_style, parent, false)
+            ) {}
         }
 
         override fun getItemCount(): Int {

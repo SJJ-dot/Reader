@@ -47,7 +47,7 @@ class AppConfig(val name: String) :
     /**
      * 阅读器 页面样式 位置索引
      */
-    val readerPageStyle by lazy { intLivedata("readerPageStyle", PageStyle.DEFAULT.ordinal) }
+    val readerPageStyle by lazy { strLivedata("readerPageStyleStr", PageStyle.defDay.id) }
 
     val readerFontFamily by lazy { dataLivedata<FontInfo>("readerFontInfo", FontInfo.DEFAULT) }
 
@@ -59,12 +59,12 @@ class AppConfig(val name: String) :
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
-    val lastDarkTheme by lazy { intLivedata("lastDarkTheme", PageStyle.DEFAULT.ordinal) }
+    val lastDarkTheme by lazy { strLivedata("lastDarkThemeStr", PageStyle.defNight.id) }
 
     /**
      * 上一次使用的浅色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
-    val lastLightTheme by lazy { intLivedata("lastLightTheme", PageStyle.DEFAULT.ordinal) }
+    val lastLightTheme by lazy { strLivedata("lastLightThemeStr", PageStyle.defDay.id) }
 
     var bookSourceImportUrlsNet by dataPref(
         "bookSourceImportUrlsNet",
@@ -92,7 +92,7 @@ class AppConfig(val name: String) :
         }
 
     val customPageStyleInfoList by lazy {
-        dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfos", emptyList())
+        dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr", emptyList())
     }
 }
 

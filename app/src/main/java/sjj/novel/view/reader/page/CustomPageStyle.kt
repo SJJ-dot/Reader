@@ -10,31 +10,46 @@ import android.graphics.drawable.Drawable
 import com.sjianjun.reader.utils.hex
 import sjj.alog.Log
 import java.lang.ref.WeakReference
+import java.util.UUID
 
 class CustomPageStyleInfo {
-    var ordinal: Int = -1//自定义样式的序号从0开始
+    var id: String = UUID.randomUUID().toString().replace("-", "")
     var labelColor: Int = Color.BLACK
     var chapterTitleColor: Int = Color.BLACK
     var chapterContentColor: Int = Color.BLACK
     var backgroundColor: Int = Color.WHITE
     var backgroundImage: String = ""
+    var backgroundRes: Int = 0 // 资源id
     var isDark: Boolean = false
+    var isDeleteable: Boolean = true
+    var isBuiltin = false
     override fun toString(): String {
-        return "CustomPageStyleInfo(ordinal=$ordinal, labelColor=${labelColor.hex}, chapterTitleColor=${chapterTitleColor.hex}, chapterContentColor=${chapterContentColor.hex}, backgroundColor=${backgroundColor.hex}, backgroundImage='$backgroundImage')"
+        return "CustomPageStyleInfo(id=$id, labelColor=${labelColor.hex}, chapterTitleColor=${chapterTitleColor.hex}, chapterContentColor=${chapterContentColor.hex}, backgroundColor=${backgroundColor.hex}, backgroundImage='$backgroundImage')"
     }
 
 }
 
-class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.ordinal) {
+class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.id) {
     override val isDark: Boolean
         get() = info.isDark
 
     fun clearCache() {
         cache.snapshot().keys.forEach {
-            if (it.startsWith("$ordinal,")) {
+            if (it.startsWith("$id,")) {
                 cache.remove(it)
             }
         }
+    }
+
+    override fun getBackgroundSync(context: Context, width: Int, height: Int): Drawable? {
+        val drawable = super.getBackgroundSync(context, width, height)
+        if (drawable != null) {
+            return drawable
+        }
+        if (info.backgroundImage.isEmpty() && info.backgroundRes == 0) {
+            return getBackground(context, width, height)
+        }
+        return null
     }
 
     override fun getBackground(context: Context, width: Int, height: Int): Drawable {
@@ -55,6 +70,8 @@ class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.ordinal) {
             drawable.tileModeY = Shader.TileMode.MIRROR
             drawable.tileModeX = Shader.TileMode.MIRROR
             return drawable
+        } else if (info.backgroundRes != 0) {
+            return createBackground(context, info.backgroundRes, width, height)
         } else {
             return ColorDrawable(info.backgroundColor)
         }

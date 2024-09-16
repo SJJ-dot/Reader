@@ -371,7 +371,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pageStyle:页面样式
      */
     public void setPageStyle(PageStyle pageStyle) {
-        Log.e("设置页面样式:"+pageStyle.getOrdinal());
+        Log.e("设置页面样式:"+pageStyle);
         // 设置当前颜色样式
         mTextColor = pageStyle.getChapterContentColor(mContext);
         mBackground = new BgDrawable(pageStyle.getBackground(mContext,0,0));

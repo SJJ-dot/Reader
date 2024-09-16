@@ -6,13 +6,11 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
 import androidx.annotation.ColorInt
+import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.R
-import com.sjianjun.reader.event.EventBus
-import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import java.lang.ref.WeakReference
@@ -20,10 +18,10 @@ import java.lang.ref.WeakReference
 /*
  * Created by shen jian jun on 2020-07-13
  */
-abstract class PageStyle(val ordinal: Int) {
+abstract class PageStyle(val id: String) {
     protected val cache get() = lruCache
 
-    protected fun key(width: Int, height: Int) = "$ordinal,$width,$height"
+    protected fun key(width: Int, height: Int) = "$id,$width,$height"
 
     open fun getBackgroundSync(context: Context, width: Int, height: Int): Drawable? {
         val bitmap = cache.get(key(width, height))?.get()
@@ -97,285 +95,177 @@ abstract class PageStyle(val ordinal: Int) {
     companion object {
         private val lruCache = LruCache<String, WeakReference<Bitmap>>(8)
 
+
         @JvmField
-        val DEFAULT: PageStyle = Style0()
+        val styles = MutableLiveData<List<PageStyle>>()
 
+        @JvmStatic
+        val defDay: PageStyle get() = styles.value!!.first { !it.isDark }
 
-        val defStyles: List<PageStyle> = listOf(
-            DEFAULT,
-            Style1(),
-            Style2(),
-            Style3(),
-            Style4(),
-            Style5(),
-            Style6(),
-            Style7(),
-            Style8(),
-            Style9(),
-            Style10(),
-            Style11(),
-            Style12()
-        )
-        val maxOrdinal = defStyles.maxOf { it.ordinal }
-        val customStyles = mutableListOf<CustomPageStyle>()
+        @JvmStatic
+        val defNight: PageStyle get() = styles.value!!.first { it.isDark }
+
+        private fun builtin(): List<CustomPageStyleInfo> {
+            val infos = mutableListOf<CustomPageStyleInfo>()
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#66000000".color
+                chapterTitleColor = "#d9000000".color
+                chapterContentColor = chapterTitleColor
+                backgroundColor = "#ffffff".color
+                isDark = false
+                isDeleteable = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#80ffffff".color
+                chapterTitleColor = "#80ffffff".color
+                chapterContentColor = chapterTitleColor
+                backgroundColor = "#1a1a1a".color
+                isDark = true
+                isDeleteable = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#666666".color
+                chapterTitleColor = "#886A66".color
+                chapterContentColor = "#3E3C38".color
+                backgroundRes = R.drawable.ic_reader_style1_bg
+                isDark = false
+                isBuiltin = true
+            })
+
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#BDBDBD".color
+                chapterTitleColor = "#BDBDBD".color
+                chapterContentColor = "#999999".color
+                backgroundRes = R.drawable.ic_reader_style2_bg
+                isDark = true
+                isBuiltin = true
+
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#883B2405".color
+                chapterTitleColor = "#3B2405".color
+                chapterContentColor = "#3B2405".color
+                backgroundRes = R.drawable.ic_reader_style3_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#88422D10".color
+                chapterTitleColor = "#422D10".color
+                chapterContentColor = "#422D10".color
+                backgroundRes = R.drawable.ic_reader_style4_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#883C1B12".color
+                chapterTitleColor = "#3C1B12".color
+                chapterContentColor = "#3C1B12".color
+                backgroundRes = R.drawable.ic_reader_style5_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#881D321F".color
+                chapterTitleColor = "#1D321F".color
+                chapterContentColor = "#1D321F".color
+                backgroundRes = R.drawable.ic_reader_style6_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#88A4A2A5".color
+                chapterTitleColor = "#A4A2A5".color
+                chapterContentColor = "#A4A2A5".color
+                backgroundRes = R.drawable.ic_reader_style7_bg
+                isDark = true
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#8829251A".color
+                chapterTitleColor = "#29251A".color
+                chapterContentColor = "#29251A".color
+                backgroundRes = R.drawable.ic_reader_style8_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#88222421".color
+                chapterTitleColor = "#222421".color
+                chapterContentColor = "#222421".color
+                backgroundRes = R.drawable.ic_reader_style9_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#883B3221".color
+                chapterTitleColor = "#3B3221".color
+                chapterContentColor = "#3B3221".color
+                backgroundRes = R.drawable.ic_reader_style10_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#88202020".color
+                chapterTitleColor = "#202020".color
+                chapterContentColor = "#202020".color
+                backgroundRes = R.drawable.ic_reader_style11_bg
+                isDark = false
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#88292019".color
+                chapterTitleColor = "#292019".color
+                chapterContentColor = "#292019".color
+                backgroundRes = R.drawable.ic_reader_style12_bg
+                isDark = false
+                isBuiltin = true
+            })
+            return infos
+        }
+
+        fun restoreBuiltinStyles() {
+            val newStyles = mutableListOf<CustomPageStyleInfo>()
+            newStyles.addAll(builtin())
+            val infos = globalConfig.customPageStyleInfoList.value
+            newStyles.addAll(infos!!.filter { !it.isBuiltin })
+            globalConfig.customPageStyleInfoList.setValue(newStyles)
+            val info = newStyles.firstOrNull { it.id == globalConfig.readerPageStyle.value }
+            if (info == null) {
+                globalConfig.readerPageStyle.setValue(defDay.id)
+            }
+        }
 
         init {
             globalConfig.customPageStyleInfoList.observeForever {
-                customStyles.clear()
+                val newStyles = mutableListOf<PageStyle>()
                 it.forEach { info ->
-                    customStyles.add(CustomPageStyle(info))
+                    newStyles.add(CustomPageStyle(info))
                 }
+                styles.value = newStyles
+            }
+            if (globalConfig.customPageStyleInfoList.value.isNullOrEmpty()) {
+                restoreBuiltinStyles()
             }
         }
 
         @JvmStatic
-        fun getStyle(ordinal: Int): PageStyle {
-            defStyles.find { it.ordinal == ordinal }?.let { return it }
-            return customStyles.find { it.ordinal == ordinal } ?: DEFAULT
+        fun getStyle(id: String): PageStyle {
+            return styles.value!!.firstOrNull { it.id == id } ?: defDay
         }
     }
 }
 
 
-private class Style0 : PageStyle(0) {
-    override fun getBackgroundSync(context: Context, width: Int, height: Int): Drawable {
-        return getBackground(context, width, height)
-    }
 
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return ColorDrawable(R.color.dn_reader_content_background.color(context))
-    }
 
-    override fun getLabelColor(context: Context): Int {
-        return R.color.dn_reader_chapter_caption_text_color.color(context)
-    }
 
-    override fun getChapterTitleColor(context: Context): Int {
-        return R.color.dn_reader_chapter_title_text_color.color(context)
-    }
 
-    override fun getChapterContentColor(context: Context): Int {
-        return R.color.dn_reader_chapter_content_text_color.color(context)
-    }
-}
 
-private class Style1 : PageStyle(1) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style1_bg, width, height)
-    }
 
-    override fun getLabelColor(context: Context): Int {
-        return "#666666".color
-    }
 
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#886A66".color
-    }
 
-    override fun getChapterContentColor(context: Context): Int {
-        return "#3E3C38".color
-    }
-}
 
-private class Style2 : PageStyle(2) {
-    override val isDark: Boolean = true
 
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style2_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#BDBDBD".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#BDBDBD".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#999999".color
-    }
-}
-
-private class Style3 : PageStyle(3) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style3_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#883B2405".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#3B2405".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#3B2405".color
-    }
-}
-
-private class Style4 : PageStyle(4) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style4_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#88422D10".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#422D10".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#422D10".color
-    }
-}
-
-private class Style5 : PageStyle(5) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style5_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#883C1B12".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#3C1B12".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#3C1B12".color
-    }
-}
-
-private class Style6 : PageStyle(6) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style6_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#881D321F".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#1D321F".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#1D321F".color
-    }
-}
-
-private class Style7 : PageStyle(7) {
-    override val isDark: Boolean = true
-
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style7_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#88A4A2A5".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#A4A2A5".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#A4A2A5".color
-    }
-}
-
-private class Style8 : PageStyle(8) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style8_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#8829251A".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#29251A".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#29251A".color
-    }
-}
-
-private class Style9 : PageStyle(9) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style9_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#88222421".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#222421".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#222421".color
-    }
-}
-
-private class Style10 : PageStyle(10) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style10_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#883B3221".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#3B3221".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#3B3221".color
-    }
-}
-
-private class Style11 : PageStyle(11) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style11_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#88202020".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#202020".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#202020".color
-    }
-}
-
-private class Style12 : PageStyle(12) {
-    override fun getBackground(context: Context, width: Int, height: Int): Drawable {
-        return createBackground(context, R.drawable.ic_reader_style12_bg, width, height)
-    }
-
-    override fun getLabelColor(context: Context): Int {
-        return "#88292019".color
-    }
-
-    override fun getChapterTitleColor(context: Context): Int {
-        return "#292019".color
-    }
-
-    override fun getChapterContentColor(context: Context): Int {
-        return "#292019".color
-    }
-
-}

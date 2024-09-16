@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.reader
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.Dialog
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -11,12 +10,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.net.toUri
+import androidx.appcompat.app.AlertDialog
 import com.coorchice.library.SuperTextView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.R
 import com.sjianjun.reader.event.EventBus
@@ -24,10 +23,10 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.gson
-import com.sjianjun.reader.utils.toast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_cancel
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_delete
+import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_restore
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_save
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color_preview
@@ -211,7 +210,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
         rg_status_bar_color.setOnCheckedChangeListener { group, checkedId ->
             info.isDark = checkedId == R.id.rb_status_bar_color_white
-            if (pageStyle.isDark || pageStyle.ordinal == PageStyle.DEFAULT.ordinal && globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+            if (pageStyle.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
                 ImmersionBar.with(this).statusBarDarkFont(true).init()
@@ -223,14 +222,14 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
         btn_save.setOnClickListener {
             val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
-            val index = list.indexOfFirst { it.ordinal == info.ordinal }
+            val index = list.indexOfFirst { it.id == info.id }
             if (index == -1) {
                 list.add(info)
             } else {
                 list[index] = info
             }
             globalConfig.customPageStyleInfoList.setValue(list)
-            globalConfig.readerPageStyle.postValue(pageStyle.ordinal)
+            globalConfig.readerPageStyle.postValue(pageStyle.id)
             dismiss()
         }
         btn_cancel.setOnClickListener {
@@ -238,15 +237,48 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             dismiss()
         }
         btn_delete.setOnClickListener {
-            val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
-            list.removeAll { it.ordinal == info.ordinal }
-            globalConfig.customPageStyleInfoList.setValue(list)
-            if (customPageStyleInfo.ordinal == globalConfig.readerPageStyle.value!!) {
-                globalConfig.readerPageStyle.postValue(PageStyle.DEFAULT.ordinal)
-            } else {
-                globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
-            }
-            dismiss()
+            //弹窗
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("删除")
+                .setMessage("是否删除该自定义样式？")
+                .setPositiveButton("确定") { dialog, which ->
+                    dialog.dismiss()
+
+                    val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
+                    list.removeAll { it.id == info.id }
+                    globalConfig.customPageStyleInfoList.setValue(list)
+                    if (customPageStyleInfo.id == globalConfig.readerPageStyle.value!!) {
+                        globalConfig.readerPageStyle.postValue(PageStyle.defDay.id)
+                    } else {
+                        globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
+                    }
+                    dismiss()
+                }
+                .setNegativeButton("取消") { dialog, which ->
+                    dialog.dismiss()
+                }
+                .show()
+
+
+        }
+        if (info.isDeleteable) {
+            btn_delete.visibility = View.VISIBLE
+        } else {
+            btn_delete.visibility = View.GONE
+        }
+        btn_restore.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("是否恢复所有默认样式列表？")
+                .setMessage("确定，除自定义添加的样式以外的样式将被全部初始化")
+                .setPositiveButton("确定") { dialog, which ->
+                    dialog.dismiss()
+                    PageStyle.restoreBuiltinStyles()
+                    dismiss()
+                }
+                .setNegativeButton("取消") { dialog, which ->
+                    dialog.dismiss()
+                }
+                .show()
         }
     }
 
@@ -264,7 +296,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             //复制到本地
             imageUri?.let { context?.contentResolver?.openInputStream(it) }?.use { inputStream ->
                 val localPath =
-                    context?.filesDir?.absolutePath + "/styles/custom_page_style_${customPageStyleInfo.ordinal}.png"
+                    context?.filesDir?.absolutePath + "/styles/custom_${customPageStyleInfo.id}.png"
                 val file = java.io.File(localPath)
                 if (file.exists()) {
                     file.delete()

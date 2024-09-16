@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="20dp"
         android:gravity="center"
         android:text="自定义样式"
         android:textColor="@color/dn_text_color_black"
@@ -22,13 +22,50 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.coorchice.library.SuperTextView
+        android:id="@+id/btn_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:gravity="center"
+        android:paddingStart="8dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="5dp"
+        android:text="删除"
+        android:textColor="@color/mdr_white"
+        android:textSize="12dp"
+        app:layout_constraintBottom_toBottomOf="@+id/custom_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/custom_title"
+        app:stv_corner="5dp"
+        app:stv_solid="@color/mdr_red_300" />
+
+    <com.coorchice.library.SuperTextView
+        android:id="@+id/btn_restore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:gravity="center"
+        android:paddingStart="8dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="5dp"
+        android:text="恢复默认样式列表"
+        android:textColor="@color/mdr_white"
+        android:textSize="12dp"
+        app:layout_constraintBottom_toBottomOf="@+id/chapter_title_color_label"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/chapter_title_color_label"
+        app:stv_corner="5dp"
+        app:stv_solid="@color/dn_color_primary" />
 
     <TextView
         android:id="@+id/chapter_title_color_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:gravity="center"
         android:text="标题颜色："
         android:textColor="@color/dn_text_color_black"
@@ -249,52 +286,40 @@
             android:id="@+id/rb_status_bar_color_black"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="黑色" />
+            android:text="黑色"
+            android:textColor="@color/dn_text_color_black" />
 
         <RadioButton
             android:id="@+id/rb_status_bar_color_white"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="白色" />
+            android:text="白色"
+            android:textColor="@color/dn_text_color_black" />
 
 
     </RadioGroup>
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_delete"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="24dp"
-        android:backgroundTint="@color/mdr_grey_400"
-        android:text="删除"
-        android:textColor="@color/mdr_red_900"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_cancel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/status_bar_color_label" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_cancel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginBottom="24dp"
         android:backgroundTint="@color/mdr_grey_400"
         android:text="取消"
         android:textColor="@color/mdr_white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_save"
-        app:layout_constraintStart_toEndOf="@+id/btn_delete"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/status_bar_color_label" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_save"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="24dp"
