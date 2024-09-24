@@ -105,26 +105,8 @@ abstract class PageStyle(val id: String) {
         @JvmStatic
         val defNight: PageStyle get() = styles.value!!.first { it.isDark }
 
-        private fun builtin(): List<CustomPageStyleInfo> {
+        fun builtin(): List<CustomPageStyleInfo> {
             val infos = mutableListOf<CustomPageStyleInfo>()
-            infos.add(CustomPageStyleInfo().apply {
-                labelColor = "#66000000".color
-                chapterTitleColor = "#d9000000".color
-                chapterContentColor = chapterTitleColor
-                backgroundColor = "#ffffff".color
-                isDark = false
-                isDeleteable = false
-                isBuiltin = true
-            })
-            infos.add(CustomPageStyleInfo().apply {
-                labelColor = "#80ffffff".color
-                chapterTitleColor = "#80ffffff".color
-                chapterContentColor = chapterTitleColor
-                backgroundColor = "#1a1a1a".color
-                isDark = true
-                isDeleteable = false
-                isBuiltin = true
-            })
             infos.add(CustomPageStyleInfo().apply {
                 labelColor = "#666666".color
                 chapterTitleColor = "#886A66".color
@@ -133,7 +115,22 @@ abstract class PageStyle(val id: String) {
                 isDark = false
                 isBuiltin = true
             })
-
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#80ffffff".color
+                chapterTitleColor = "#80ffffff".color
+                chapterContentColor = chapterTitleColor
+                backgroundColor = "#1a1a1a".color
+                isDark = true
+                isBuiltin = true
+            })
+            infos.add(CustomPageStyleInfo().apply {
+                labelColor = "#66000000".color
+                chapterTitleColor = "#d9000000".color
+                chapterContentColor = chapterTitleColor
+                backgroundColor = "#ffffff".color
+                isDark = false
+                isBuiltin = true
+            })
             infos.add(CustomPageStyleInfo().apply {
                 labelColor = "#BDBDBD".color
                 chapterTitleColor = "#BDBDBD".color
@@ -226,9 +223,9 @@ abstract class PageStyle(val id: String) {
             return infos
         }
 
-        fun restoreBuiltinStyles() {
+        private fun restoreBuiltinStyles() {
             val newStyles = mutableListOf<CustomPageStyleInfo>()
-            newStyles.addAll(builtin())
+            newStyles.addAll(builtin().subList(0, 2))
             val infos = globalConfig.customPageStyleInfoList.value
             newStyles.addAll(infos!!.filter { !it.isBuiltin })
             globalConfig.customPageStyleInfoList.setValue(newStyles)

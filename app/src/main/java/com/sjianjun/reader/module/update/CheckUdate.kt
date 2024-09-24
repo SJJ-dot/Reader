@@ -35,23 +35,6 @@ enum class Channels {
             return releasesInfo
         }
     },
-    OSS {
-        override suspend fun getReleaseInfo(): ReleasesInfo {
-            val oss = OssUtil.getOSSClient()
-            val request = GetObjectRequest("reader-repo", "releases/checkUpdate.json")
-            val body = oss.getObject(request).objectContent.reader().readText()
-            val releasesInfo = gson.fromJson<ReleasesInfo>(body)!!
-            releasesInfo.channel = name
-            val url =
-                oss.presignConstrainedObjectURL(
-                    "reader-repo",
-                    "releases/${releasesInfo.lastVersion}/app.apk",
-                    24 * 60 * 60
-                )
-            releasesInfo.downloadApkUrl = url
-            return releasesInfo
-        }
-    },
     Github {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             try {

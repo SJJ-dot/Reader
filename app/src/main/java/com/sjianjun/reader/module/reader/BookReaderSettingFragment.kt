@@ -257,14 +257,15 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     private fun initPageStyle() {
         page_style_import.setOnClickListener {
             dismissAllowingStateLoss()
-            CustomPageStyleFragment.newInstance(CustomPageStyleInfo())
-                .show(parentFragmentManager, "CustomPageStyleFragment")
+            DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
         }
         val adapter = Adapter(this)
         adapter.itemLongClickListener = {
             val pageStyle = adapter.data[it]
             if (pageStyle is CustomPageStyle && page_style_list.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
                 dismissAllowingStateLoss()
+                val isDeleteable = adapter.data.filter { it.isDark == pageStyle.isDark }.size > 1
+                pageStyle.info.isDeleteable = isDeleteable
                 CustomPageStyleFragment.newInstance(pageStyle.info)
                     .show(parentFragmentManager, "CustomPageStyleFragment")
             }

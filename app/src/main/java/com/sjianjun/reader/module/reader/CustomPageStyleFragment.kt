@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import com.coorchice.library.SuperTextView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
@@ -26,7 +25,6 @@ import com.sjianjun.reader.utils.gson
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_cancel
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_delete
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_restore
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_save
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color
 import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color_preview
@@ -265,20 +263,6 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             btn_delete.visibility = View.VISIBLE
         } else {
             btn_delete.visibility = View.GONE
-        }
-        btn_restore.setOnClickListener {
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("是否恢复所有默认样式列表？")
-                .setMessage("确定，除自定义添加的样式以外的样式将被全部初始化")
-                .setPositiveButton("确定") { dialog, which ->
-                    dialog.dismiss()
-                    PageStyle.restoreBuiltinStyles()
-                    dismiss()
-                }
-                .setNegativeButton("取消") { dialog, which ->
-                    dialog.dismiss()
-                }
-                .show()
         }
     }
 
