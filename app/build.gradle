@@ -68,7 +68,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false 
-            shrinkResources true
+            shrinkResources false 
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             manifestPlaceholders["app_name"] = "学习"
