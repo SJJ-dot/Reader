@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.sjianjun.reader">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -11,6 +10,7 @@
     <uses-permission
         android:name="android.permission.READ_LOGS"
         tools:ignore="ProtectedPermissions" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
@@ -29,15 +29,14 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
+            android:name=".module.bookcity.BookCityPageActivity"
+            android:exported="false" />
+        <activity
             android:name=".module.reader.activity.BookReaderActivity"
-            android:launchMode="singleTask" />
-
-        <!-- 适配华为（huawei）刘海屏 沉浸式 -->
+            android:launchMode="singleTask" /> <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
             android:name="android.notch_support"
-            android:value="true" />
-
-        <!-- 适配小米（xiaomi）刘海屏 沉浸式 -->
+            android:value="true" /> <!-- 适配小米（xiaomi）刘海屏 沉浸式 -->
         <meta-data
             android:name="notch.config"
             android:value="portrait|landscape" />
@@ -62,6 +61,7 @@
                     android:host="ssl.ptlogin2.qq.com"
                     android:path="/jump"
                     android:scheme="https" />
+
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.BROWSABLE" />

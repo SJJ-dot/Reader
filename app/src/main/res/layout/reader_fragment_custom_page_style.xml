@@ -173,7 +173,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="24dp"
         android:gravity="center"
-        android:text="阅读器背景颜色："
+        android:text="阅读器背景："
         android:textColor="@color/dn_text_color_black"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/chapter_label_color_label" />
@@ -194,31 +194,6 @@
         app:stv_stroke_color="@color/dn_color_primary"
         app:stv_stroke_width="2dp" />
 
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/chapter_background_color_preview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:src="@color/colorAccent"
-        app:civ_border_color="@color/dn_color_primary"
-        app:civ_border_width="2dp"
-        app:layout_constraintBottom_toBottomOf="@+id/chapter_background_color"
-        app:layout_constraintDimensionRatio="W,1:1"
-        app:layout_constraintStart_toEndOf="@+id/chapter_background_color"
-        app:layout_constraintTop_toTopOf="@+id/chapter_background_color" />
-
-
-    <TextView
-        android:id="@+id/chapter_background_img_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:text="阅读器背景图片："
-        android:textColor="@color/dn_text_color_black"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chapter_background_color" />
 
     <View
         android:id="@+id/chapter_background_img_selector_bg"
@@ -237,9 +212,9 @@
         android:layout_marginStart="8dp"
         android:scaleType="centerCrop"
         android:src="@mipmap/ic_img"
-        app:layout_constraintBottom_toBottomOf="@+id/chapter_background_img_label"
-        app:layout_constraintStart_toEndOf="@+id/chapter_background_img_label"
-        app:layout_constraintTop_toTopOf="@+id/chapter_background_img_label" />
+        app:layout_constraintBottom_toBottomOf="@+id/chapter_background_color"
+        app:layout_constraintStart_toEndOf="@+id/chapter_background_color"
+        app:layout_constraintTop_toTopOf="@+id/chapter_background_color" />
 
 
     <TextView
@@ -252,7 +227,7 @@
         android:text="状态栏颜色："
         android:textColor="@color/dn_text_color_black"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chapter_background_img_label" />
+        app:layout_constraintTop_toBottomOf="@+id/chapter_background_color_label" />
 
     <RadioGroup
         android:id="@+id/rg_status_bar_color"

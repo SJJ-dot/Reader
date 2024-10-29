@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.search
 
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
@@ -16,13 +17,13 @@ import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.*
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.databinding.MainItemFragmentSearchHistoryBinding
+import com.sjianjun.reader.databinding.MainItemFragmentSearchResultBinding
+import com.sjianjun.reader.databinding.SearchFragmentSearchBinding
+import com.sjianjun.reader.databinding.SearchItemFragmentSearchHintBinding
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.main_item_fragment_search_history.view.*
-import kotlinx.android.synthetic.main.main_item_fragment_search_result.view.*
-import kotlinx.android.synthetic.main.search_fragment_search.*
-import kotlinx.android.synthetic.main.search_item_fragment_search_hint.view.*
 import kotlinx.coroutines.flow.collectLatest
 import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicInteger
@@ -31,13 +32,15 @@ class SearchFragment : BaseAsyncFragment() {
     private val searchKey by lazy { arguments?.getString(SEARCH_KEY) }
     private val searchResult = MutableLiveData<List<List<SearchResult>>>()
     private val searchHint = SearchHintAdapter()
+    var binding: SearchFragmentSearchBinding? = null
 
     override fun getLayoutRes() = R.layout.search_fragment_search
 
 
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
-        recycle_view_hint.adapter = searchHint
+        binding = SearchFragmentSearchBinding.bind(it)
+        binding!!.recycleViewHint.adapter = searchHint
         initData()
     }
 
@@ -49,7 +52,7 @@ class SearchFragment : BaseAsyncFragment() {
     private fun initData() {
         launchIo {
             val javaScriptList = BookSourceMgr.getAllEnableBookSource()
-            search_refresh.max = javaScriptList.size
+            binding!!.searchRefresh.max = javaScriptList.size
         }
     }
 
@@ -81,29 +84,25 @@ class SearchFragment : BaseAsyncFragment() {
 
     private fun initSearchHistory(searchView: SearchView) =
         launch(singleCoroutineKey = "initSearchHistory") {
-            Log.i("view is null ${tfl_search_history == null}")
-            tfl_search_history ?: return@launch
+            Log.i("view is null")
+            binding?.tflSearchHistory ?: return@launch
             DataManager.getAllSearchHistory().collectLatest {
-                tfl_search_history.removeAllViews()
+                binding?.tflSearchHistory?.removeAllViews()
                 it?.forEach { history ->
-                    val tagView = layoutInflater.inflate(
-                        R.layout.main_item_fragment_search_history,
-                        tfl_search_history,
-                        false
-                    )
-                    tfl_search_history.addView(tagView, 0)
-                    tagView.search_history_text.text = history.query
-                    tagView.search_history_text.setOnClickListener { _ ->
+                    val tagViewBinding = MainItemFragmentSearchHistoryBinding.inflate(layoutInflater, binding?.tflSearchHistory, false)
+                    binding?.tflSearchHistory?.addView(tagViewBinding.root, 0)
+                    tagViewBinding.searchHistoryText.text = history.query
+                    tagViewBinding.searchHistoryText.setOnClickListener { _ ->
                         searchView.setQuery(history.query, true)
                     }
-                    tagView.search_history_text.setOnLongClickListener { _ ->
+                    tagViewBinding.searchHistoryText.setOnLongClickListener { _ ->
                         launchIo(singleCoroutineKey = "delete_history") {
                             DataManager.deleteSearchHistory(listOf(history))
                         }
                         true
                     }
                 }
-                tv_search_history_clean.setOnClickListener { _ ->
+                binding?.tvSearchHistoryClean?.setOnClickListener { _ ->
                     launchIo(singleCoroutineKey = "delete_history") {
                         DataManager.deleteSearchHistory(it)
                     }
@@ -144,14 +143,14 @@ class SearchFragment : BaseAsyncFragment() {
         searchView.setOnQueryTextFocusChangeListener { v, hasFocus ->
             if (hasFocus) {
                 hideProgress()
-                searchRecyclerView?.hide()
-                ll_search_history?.show()
+                binding?.searchRecyclerView?.hide()
+                binding?.llSearchHistory?.show()
                 v.showKeyboard()
             } else {
-                searchRecyclerView?.show()
-                ll_search_history?.hide()
+                binding?.searchRecyclerView?.show()
+                binding?.llSearchHistory?.hide()
                 v.hideKeyboard()
-                search_refresh?.run {
+                binding?.searchRefresh?.run {
                     if (progress in 1 until max) {
                         showProgress()
                     }
@@ -161,11 +160,11 @@ class SearchFragment : BaseAsyncFragment() {
     }
 
     private fun initSearchResultList(searchView: SearchView) {
-        searchRecyclerView?.apply {
-            searchRecyclerView?.layoutManager = LinearLayoutManager(context)
+        binding?.searchRecyclerView?.apply {
+            binding?.searchRecyclerView?.layoutManager = LinearLayoutManager(context)
             val resultBookAdapter = SearchResultBookAdapter(this@SearchFragment)
             resultBookAdapter.setHasStableIds(true)
-            searchRecyclerView.adapter = resultBookAdapter
+            binding?.searchRecyclerView?.adapter = resultBookAdapter
             searchResult.observe(viewLifecycleOwner, Observer {
                 if (!(resultBookAdapter.data.isEmpty() && it.isEmpty())) {
                     resultBookAdapter.data.clear()
@@ -179,22 +178,22 @@ class SearchFragment : BaseAsyncFragment() {
 
     private suspend fun search(searchKeyWord: String) = withMain {
         showProgress()
-        search_refresh?.progress = 0
+        binding?.searchRefresh?.progress = 0
         val count = AtomicInteger()
         DataManager.search(searchKeyWord).debounce(300).collect {
-            search_refresh?.progress = count.incrementAndGet()
+            binding?.searchRefresh?.progress = count.incrementAndGet()
             searchResult.postValue(it)
         }
-        search_refresh?.progress = search_refresh?.max ?: 0
+        binding?.searchRefresh?.progress = binding?.searchRefresh?.max ?: 0
         hideProgress()
     }
 
     private fun showProgress() {
-        search_refresh?.animFadeIn()
+        binding?.searchRefresh?.animFadeIn()
     }
 
     private fun hideProgress() {
-        search_refresh?.animFadeOut()
+        binding?.searchRefresh?.animFadeOut()
     }
 
     private class SearchHintAdapter :
@@ -202,8 +201,9 @@ class SearchFragment : BaseAsyncFragment() {
         var itemClick: ((String) -> Unit)? = null
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = SearchItemFragmentSearchHintBinding.bind(holder.itemView)
             val hint = data[position]
-            holder.itemView.hint.text = hint
+            binding.hint.text = hint
             holder.itemView.setOnClickListener {
                 itemClick?.invoke(hint)
             }
@@ -218,12 +218,13 @@ class SearchFragment : BaseAsyncFragment() {
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = MainItemFragmentSearchResultBinding.bind(holder.itemView)
             val searchResult = data[position].first()
-            holder.itemView.bookCover.glide(fragment, searchResult.bookCover)
-            holder.itemView.bookName.text = searchResult.bookTitle
-            holder.itemView.author.text = "作者：${searchResult.bookAuthor}"
-            holder.itemView.lastChapter.text = "最新章节：${searchResult.latestChapter}"
-            holder.itemView.haveRead.text = "来源：${searchResult.bookSource?.group}-${searchResult.bookSource?.name} 共${data[position].size}个源"
+            binding.bookCover.glide(fragment, searchResult.bookCover)
+            binding.bookName.text = searchResult.bookTitle
+            binding.author.text = "作者：${searchResult.bookAuthor}"
+            binding.lastChapter.text = "最新章节：${searchResult.latestChapter}"
+            binding.haveRead.text = "来源：${searchResult.bookSource?.group}-${searchResult.bookSource?.name} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
                 fragment.launch {

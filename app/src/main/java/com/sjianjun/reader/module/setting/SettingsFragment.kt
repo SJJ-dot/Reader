@@ -7,12 +7,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.widget.addTextChangedListener
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.DialogEditTextBinding
+import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
-import kotlinx.android.synthetic.main.fragment_settings.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 /**
@@ -30,45 +37,75 @@ class SettingsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        FragmentSettingsBinding.bind(view).apply {
 
+            webdavServerUrlInput.setText(globalConfig.webdavUrl)
 
-        val checkWebDavSettingListener: (text: Editable?) -> Unit = {
-            val props = listOf(
-                webdav_server_url_input.text.toString(), webdav_username_input.text.toString(),
-                webdav_password_input.text.toString(), webdav_dir_input.text.toString()
-            )
-            webdav_save.isEnabled = props.indexOfFirst { it.isBlank() } == -1
-        }
+            webdavUsernameInput.setText(globalConfig.webdavUsername)
 
-        webdav_server_url_input.setText(globalConfig.webdavUrl)
-        webdav_server_url_input.addTextChangedListener(afterTextChanged = checkWebDavSettingListener)
+            webdavPasswordInput.setText(globalConfig.webdavPassword)
 
-        webdav_username_input.setText(globalConfig.webdavUsername)
-        webdav_username_input.addTextChangedListener(afterTextChanged = checkWebDavSettingListener)
+            webdavDirInput.setText(globalConfig.webdavSubdir)
 
-        webdav_password_input.setText(globalConfig.webdavPassword)
-        webdav_password_input.addTextChangedListener(afterTextChanged = checkWebDavSettingListener)
+            webdavSave.setOnClickListener {
+                launch {
+                    globalConfig.apply {
+                        webdavUrl = webdavServerUrlInput.text.toString().trim()
+                        webdavUsername = webdavUsernameInput.text.toString().trim()
+                        webdavPassword = webdavPasswordInput.text.toString().trim()
+                        webdavSubdir = webdavDirInput.text.toString().trim()
+                        webdavHasCfg = false
+                    }
 
-        webdav_dir_input.setText(globalConfig.webdavSubdir)
-        webdav_dir_input.addTextChangedListener(afterTextChanged = checkWebDavSettingListener)
-
-        webdav_save.setOnClickListener {
-            launch {
-                val init = WebDavMgr.setAccount(
-                    webdav_server_url_input.text.toString().trim(),
-                    webdav_username_input.text.toString().trim(),
-                    webdav_password_input.text.toString().trim(),
-                    webdav_dir_input.text.toString().trim()
-                )
-                toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
-                Log.i(init)
-                if (init.isSuccess) {
-                    WebDavMgr.init()
-                    webdav_save.isEnabled = false
+                    val init = WebDavMgr.setAccount(
+                        webdavServerUrlInput.text.toString().trim(),
+                        webdavUsernameInput.text.toString().trim(),
+                        webdavPasswordInput.text.toString().trim(),
+                        webdavDirInput.text.toString().trim()
+                    )
+                    globalConfig.webdavHasCfg = init.isSuccess
+                    toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
+                    Log.i(init)
+                    if (init.isSuccess) {
+                        WebDavMgr.init()
+                    }
                 }
             }
+
+            bookCityUrlInput.text = globalConfig.bookCityUrl
+            bookCityUrlInput.setOnClickListener {
+                val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
+                bindingDialog.editView.apply {
+                    val historyList = globalConfig.bookCityUrlHistoryList
+                    setFilterValues(historyList)
+                    delCallBack = {
+                        if (historyList.remove(it)) {
+                            globalConfig.bookCityUrlHistoryList = historyList
+                        }
+                    }
+                }
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("书城地址")
+                    .setView(bindingDialog.root)
+                    .setPositiveButton(android.R.string.ok) { dialog, _ ->
+                        val url = bindingDialog.editView.text.toString().trim()
+                        if (url.toHttpUrlOrNull() != null) {
+                            val historyList = globalConfig.bookCityUrlHistoryList
+                            historyList.remove(url)
+                            historyList.add(0, url)
+                            globalConfig.bookCityUrlHistoryList = historyList
+                            globalConfig.bookCityUrl = url
+                            bookCityUrlInput.text = url
+                            toast("设置成功")
+                        } else {
+                            toast("请输入正确的网址")
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+
         }
-        webdav_save.isEnabled = false
     }
 
 }

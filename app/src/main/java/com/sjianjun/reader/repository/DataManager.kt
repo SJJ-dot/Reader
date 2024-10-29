@@ -61,6 +61,7 @@ object DataManager {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
                 flow {
                     try {
+                        Log.i("search ${it.id} start")
                         val search = it.search(query)
                         if (search != null) {
                             emit(search)

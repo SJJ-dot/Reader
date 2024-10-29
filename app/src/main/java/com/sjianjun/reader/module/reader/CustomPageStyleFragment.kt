@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import com.coorchice.library.SuperTextView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
@@ -17,25 +18,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.ReaderFragmentCustomPageStyleBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.dp2Px
+import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.gson
+import com.sjianjun.reader.utils.show
 import de.hdodenhof.circleimageview.CircleImageView
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_cancel
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_delete
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.btn_save
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_color_preview
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_background_img_selector
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_content_color
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_content_color_preview
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_label_color
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_label_color_preview
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_title_color
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.chapter_title_color_preview
-import kotlinx.android.synthetic.main.reader_fragment_custom_page_style.rg_status_bar_color
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.CustomPageStyleInfo
@@ -43,6 +34,7 @@ import sjj.novel.view.reader.page.PageStyle
 
 
 class CustomPageStyleFragment : BottomSheetDialogFragment() {
+    var binding: ReaderFragmentCustomPageStyleBinding? = null
     private val PICK_IMAGE_REQUEST = 1234
     private val customPageStyleInfo: CustomPageStyleInfo by lazy {
         gson.fromJson(
@@ -75,6 +67,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
+        binding = ReaderFragmentCustomPageStyleBinding.bind(view)
         initView()
     }
 
@@ -82,8 +75,8 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
     private fun initView() {
         val info = customPageStyleInfo
         EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
-        setColor(chapter_title_color, chapter_title_color_preview, info.chapterTitleColor)
-        chapter_title_color.setOnClickListener {
+        setColor(binding?.chapterTitleColor!!, binding?.chapterTitleColorPreview!!, info.chapterTitleColor)
+        binding?.chapterTitleColor!!.setOnClickListener {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -93,7 +86,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
-                    setColor(chapter_title_color, chapter_title_color_preview, selectedColor)
+                    setColor(binding?.chapterTitleColor!!, binding?.chapterTitleColorPreview!!, selectedColor)
                     info.chapterTitleColor = selectedColor
                     EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
                     dialog.dismiss()
@@ -104,12 +97,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        chapter_title_color_preview.setOnClickListener {
-            chapter_title_color.performClick()
+        binding?.chapterTitleColorPreview!!.setOnClickListener {
+            binding?.chapterTitleColor!!.performClick()
         }
 
-        setColor(chapter_content_color, chapter_content_color_preview, info.chapterContentColor)
-        chapter_content_color.setOnClickListener {
+        setColor(binding?.chapterContentColor!!, binding?.chapterContentColorPreview!!, info.chapterContentColor)
+        binding?.chapterContentColor!!.setOnClickListener {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -119,7 +112,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
-                    setColor(chapter_content_color, chapter_content_color_preview, selectedColor)
+                    setColor(binding?.chapterContentColor!!, binding?.chapterContentColorPreview!!, selectedColor)
                     info.chapterContentColor = selectedColor
                     dialog.dismiss()
                     EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
@@ -130,12 +123,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        chapter_content_color_preview.setOnClickListener {
-            chapter_content_color.performClick()
+        binding?.chapterContentColorPreview!!.setOnClickListener {
+            binding?.chapterContentColor!!.performClick()
         }
 
-        setColor(chapter_label_color, chapter_label_color_preview, info.labelColor)
-        chapter_label_color.setOnClickListener {
+        setColor(binding?.chapterLabelColor!!, binding?.chapterLabelColorPreview!!, info.labelColor)
+        binding!!.chapterLabelColor.setOnClickListener {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -145,7 +138,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
-                    setColor(chapter_label_color, chapter_label_color_preview, selectedColor)
+                    setColor(binding?.chapterLabelColor!!, binding?.chapterLabelColorPreview!!, selectedColor)
                     info.labelColor = selectedColor
                     dialog.dismiss()
                     EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
@@ -156,12 +149,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        chapter_label_color_preview.setOnClickListener {
-            chapter_label_color.performClick()
+        binding?.chapterLabelColorPreview!!.setOnClickListener {
+            binding?.chapterLabelColor!!.performClick()
         }
 
-        setColor(chapter_background_color, chapter_background_color_preview, info.backgroundColor)
-        chapter_background_color.setOnClickListener {
+
+        binding?.chapterBackgroundColor!!.setOnClickListener {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -172,15 +165,14 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
                     setColor(
-                        chapter_background_color,
-                        chapter_background_color_preview,
+                        binding?.chapterBackgroundColor!!,
+                        binding?.chapterBackgroundImgSelector!!,
                         selectedColor
                     )
                     info.backgroundColor = selectedColor
                     info.backgroundImage = ""
-                    chapter_background_img_selector.setImageDrawable(
-                        pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px)
-                    )
+                    info.backgroundRes = 0
+                    pageStyle.clearCache()
                     dialog.dismiss()
                     EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
                 }
@@ -190,13 +182,14 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        chapter_background_color_preview.setOnClickListener {
-            chapter_background_color.performClick()
+        setColor(binding?.chapterBackgroundColor!!, binding?.chapterBackgroundImgSelector!!, info.backgroundColor)
+        if (info.backgroundImage.isNotEmpty() || info.backgroundRes != 0) {
+            binding?.chapterBackgroundImgSelector!!.setImageDrawable(
+                pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px)
+            )
         }
-        chapter_background_img_selector.setImageDrawable(
-            pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px)
-        )
-        chapter_background_img_selector.setOnClickListener {
+
+        binding?.chapterBackgroundImgSelector!!.setOnClickListener {
             //打开图片选择器
             // 创建一个意图，用于选择图片
             val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -206,7 +199,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             startActivityForResult(intent, PICK_IMAGE_REQUEST)
         }
 
-        rg_status_bar_color.setOnCheckedChangeListener { group, checkedId ->
+        binding?.rgStatusBarColor!!.setOnCheckedChangeListener { group, checkedId ->
             info.isDark = checkedId == R.id.rb_status_bar_color_white
             if (pageStyle.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
@@ -216,9 +209,9 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
             EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
         }
-        rg_status_bar_color.check(if (info.isDark) R.id.rb_status_bar_color_white else R.id.rb_status_bar_color_black)
+        binding?.rgStatusBarColor!!.check(if (info.isDark) R.id.rb_status_bar_color_white else R.id.rb_status_bar_color_black)
 
-        btn_save.setOnClickListener {
+        binding?.btnSave!!.setOnClickListener {
             val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
             val index = list.indexOfFirst { it.id == info.id }
             if (index == -1) {
@@ -230,11 +223,11 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             globalConfig.readerPageStyle.postValue(pageStyle.id)
             dismiss()
         }
-        btn_cancel.setOnClickListener {
+        binding?.btnCancel!!.setOnClickListener {
             globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
             dismiss()
         }
-        btn_delete.setOnClickListener {
+        binding?.btnDelete!!.setOnClickListener {
             //弹窗
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("删除")
@@ -260,13 +253,13 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
         }
         if (info.isDeleteable) {
-            btn_delete.visibility = View.VISIBLE
+            binding?.btnDelete!!.show()
         } else {
-            btn_delete.visibility = View.GONE
+            binding?.btnDelete!!.gone()
         }
     }
 
-    private fun setColor(textView: SuperTextView, imageView: CircleImageView, color: Int) {
+    private fun setColor(textView: SuperTextView, imageView: ImageView, color: Int) {
         textView.text = "#" + Integer.toHexString(color)
         imageView.setImageDrawable(ColorDrawable(color))
     }
@@ -291,16 +284,10 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                     inputStream.close()
                     outputStream.close()
                     customPageStyleInfo.backgroundImage = localPath
-                    customPageStyleInfo.backgroundColor = Color.WHITE
+                    customPageStyleInfo.backgroundRes = 0
                     pageStyle.clearCache()
                 }
-                chapter_background_img_selector.setImageDrawable(
-                    pageStyle.getBackground(
-                        requireContext(),
-                        36.dp2Px,
-                        36.dp2Px
-                    )
-                )
+                binding?.chapterBackgroundImgSelector!!.setImageDrawable(pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px))
                 EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
             }
 

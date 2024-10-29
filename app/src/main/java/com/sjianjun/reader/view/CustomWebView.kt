@@ -1,11 +1,8 @@
 package com.sjianjun.reader.view
 
-import android.app.DownloadManager
+import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
-import android.os.Environment
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -13,26 +10,35 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.webkit.*
+import android.webkit.CookieManager
+import android.webkit.URLUtil
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.OnLifecycleEvent
-import com.sjianjun.reader.R
+import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.WEB_VIEW_UA_DESKTOP
+import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.http.CookieMgr
-import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.custom_web_view.view.*
+import com.sjianjun.reader.module.bookcity.BookCityPageActivity
+import com.sjianjun.reader.utils.animFadeIn
+import com.sjianjun.reader.utils.animFadeOut
+import com.sjianjun.reader.utils.hide
+import com.sjianjun.reader.utils.hideKeyboard
+import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.showKeyboard
+import com.sjianjun.reader.utils.toast
 import okhttp3.Cookie
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.util.*
 
 /*
  * Created by shen jian jun on 2020-07-10
@@ -40,20 +46,14 @@ import java.util.*
 class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-
+    val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     private val lifecycleObserver by lazy { LifecycleObserver(this) }
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
-    private lateinit var onSelectBook: (String) -> Unit
 
-    init {
-        LayoutInflater.from(context).inflate(R.layout.custom_web_view, this)
-    }
-
-    fun init(lifecycle: Lifecycle, onSelectBook: (String) -> Unit) {
-        this.onSelectBook = onSelectBook
-        webView = web_view
+    fun init(lifecycle: Lifecycle) {
+        webView = binding.webView
         initWebViewSetting(webView)
         initWebView(webView)
         initNavigation()
@@ -69,54 +69,47 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun initWebView(webView: WebView?) {
 
-        webView?.setOnLongClickListener {
-            webView.evaluateJavascript(
-                """
-                document.querySelector(".book-cell h2.book-title").innerText
-            """.trimIndent()
-            ) {
-                var str = it?.toString()
-                if (str.isNullOrBlank() || str == "null") {
-                    return@evaluateJavascript
-                }
-                str = str.substring(1, str.length - 1)
-                onSelectBook(str)
-            }
-            true
-        }
-
-        var allow = true
         webView?.webViewClient = object : WebViewClient() {
+
+            fun getTopDomain(url: HttpUrl): String? {
+                val hostParts = url.host.split(".")
+                return if (hostParts.size >= 2) {
+                    hostParts.takeLast(2).joinToString(".") // 获取最后两个部分，例如 "example.com"
+                } else {
+                    null // 如果 URL 不包含有效的主域名部分
+                }
+            }
+
+            fun isSameDomain(url1: HttpUrl?, url2: HttpUrl?): Boolean {
+                if (url1 == null || url2 == null) return false
+                return getTopDomain(url1) == getTopDomain(url2)
+            }
+
+
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest
             ): Boolean {
                 val url = request.url.toString()
                 Log.i("$url ")
-                if (!url.startsWith("http")) {
-                    try {
-                        if (allow) {
-                            allow = false
-                            startActivity(context, Intent(Intent.ACTION_VIEW, request.url), null)
-                        }
-                    } catch (e: Exception) {
-                    }
-                    return true
+                val httpUrl = url.toHttpUrlOrNull()
+                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
+                if (isSameDomain(httpUrl, origin)) {
+                    // 启动新 Activity
+                    BookCityPageActivity.startActivity(context, url)
                 }
+                return true  // 返回 true 表示我们自己处理这个 URL
 
-                return false
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 Log.i(url)
 
-                if (!edit_text.hasFocus()) {
-                    edit_text.setText(url)
+                if (!binding.editText.hasFocus()) {
+                    binding.editText.setText(url)
                 }
-
-                progress_bar.animFadeIn()
-
-                refresh.isSelected = true
+                binding.progressBar.animFadeIn()
+                binding.refresh.isSelected = true
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
@@ -124,14 +117,13 @@ class CustomWebView @JvmOverloads constructor(
                 if (!url.startsWith("http")) {
                     return
                 }
-                allow = true
-                forward.isEnabled = webView?.canGoForward() == true
-                backward.isEnabled = webView?.canGoBack() == true
-                refresh.isSelected = false
+                binding.forward.isEnabled = webView?.canGoForward() == true
+                binding.backward.isEnabled = webView?.canGoBack() == true
+                binding.refresh.isSelected = false
 //                CookieMgr.saveFromResponse()
                 val cookieManager = CookieManager.getInstance()
                 val cookieStr = cookieManager.getCookie(url) ?: return
-                val httpUrl = HttpUrl.get(url ?: "")
+                val httpUrl = url.toHttpUrl()
                 val cookie = Cookie.parse(httpUrl, cookieStr)
                 cookie?.let { CookieMgr.saveFromResponse(httpUrl, mutableListOf(it)) }
 
@@ -172,136 +164,113 @@ class CustomWebView @JvmOverloads constructor(
         webView?.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 Log.i("progress:${newProgress} ")
-                progress_bar.progress = newProgress
+                binding.progressBar.progress = newProgress
                 if (newProgress == 100) {
-                    progress_bar.animFadeOut()
+                    binding.progressBar.animFadeOut()
                 }
             }
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun initWebViewSetting(webView: WebView?) {
         this.webView = webView ?: return
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
-        val webSettings = webView.settings;
+        val webSettings = webView.settings
         webSettings.userAgentString = WEB_VIEW_UA_ANDROID
         webSettings.javaScriptEnabled = true
-        webSettings.domStorageEnabled = true;
+        webSettings.domStorageEnabled = true
 //设置自适应屏幕，两者合用
-        webSettings.setUseWideViewPort(true); //将图片调整到适合webview的大小
-        webSettings.setLoadWithOverviewMode(true); // 缩放至屏幕的大小
+        webSettings.useWideViewPort = true //将图片调整到适合webview的大小
+        webSettings.loadWithOverviewMode = true // 缩放至屏幕的大小
 
 //缩放操作
-        webSettings.setSupportZoom(true); //支持缩放，默认为true。是下面那个的前提。
-        webSettings.builtInZoomControls = true; //设置内置的缩放控件。若为false，则该WebView不可缩放
-        webSettings.displayZoomControls = false; //隐藏原生的缩放控件
+        webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
+        webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
+        webSettings.displayZoomControls = false //隐藏原生的缩放控件
         webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
         webView.isScrollbarFadingEnabled = false
-        webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
-            val uri = Uri.parse(url)
-            act?.also {
-                AlertDialog.Builder(it)
-                    .setTitle("是否允许下载文件 ${contentDisposition ?: uri.lastPathSegment ?: ""}？")
-                    .setMessage("文件大小：${DecimalFormat("0.##").format(contentLength.toFloat() / (1024 * 1024))}M")
-                    .setPositiveButton("下载") { dialog, which ->
-                        val fileName = uri.lastPathSegment ?: SimpleDateFormat(
-                            "yyyy-MM-dd_HH-mm-ss",
-                            Locale.getDefault()
-                        )
-                        val service =
-                            ContextCompat.getSystemService(it, DownloadManager::class.java);
-                        service?.enqueue(
-                            DownloadManager.Request(uri)
-                                .setMimeType(mimetype)
-                                .setDestinationInExternalPublicDir(
-                                    Environment.DIRECTORY_DOWNLOADS,
-                                    "${it.packageName}/${fileName}"
-                                )
-                                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        )
-                    }
-                    .setNegativeButton("取消", null)
-                    .show()
-            }
-        }
     }
 
     /**
      * 底部导航按钮设置
      */
     private fun initNavigation() {
-        home.setOnClickListener {
-            loadUrl(url ?: return@setOnClickListener)
-        }
-        refresh.setOnClickListener {
-            if (it.isSelected) {
-                webView?.stopLoading()
-            } else {
-                webView?.reload()
+        binding.apply {
+            home.setOnClickListener {
+                loadUrl(url ?: return@setOnClickListener)
             }
-        }
-        forward.isEnabled = false
-        forward.setOnClickListener {
-            webView?.goForward()
-        }
-        backward.isEnabled = false
-        backward.setOnClickListener {
-            webView?.goBack()
-        }
-        //切换移动版 桌面版本
-        mobile.setOnClickListener {
-            mobile.isSelected = !mobile.isSelected
-            if (mobile.isSelected) {
-                webView?.settings?.userAgentString = WEB_VIEW_UA_DESKTOP
-            } else {
-                webView?.settings?.userAgentString = WEB_VIEW_UA_ANDROID
+            refresh.setOnClickListener {
+                if (it.isSelected) {
+                    webView.stopLoading()
+                } else {
+                    webView.reload()
+                }
             }
-            webView?.reload()
+            forward.isEnabled = false
+            forward.setOnClickListener {
+                webView.goForward()
+            }
+            backward.isEnabled = false
+            backward.setOnClickListener {
+                webView.goBack()
+            }
+            //切换移动版 桌面版本
+            mobile.isSelected = true
+            mobile.setOnClickListener {
+                mobile.isSelected = !mobile.isSelected
+                if (mobile.isSelected) {
+                    webView.settings.userAgentString = WEB_VIEW_UA_ANDROID
+                } else {
+                    webView.settings.userAgentString = WEB_VIEW_UA_DESKTOP
+                }
+                webView.reload()
+            }
         }
     }
 
     private fun initInputView() {
-        input_mask.setOnClickListener {
-            edit_text.clearFocus()
+        binding.inputMask.setOnClickListener {
+            binding.editText.clearFocus()
             webView?.requestFocus()
         }
-        input_clear.setOnClickListener {
-            edit_text.setText("")
+        binding.inputClear.setOnClickListener {
+            binding.editText.setText("")
         }
 
-        edit_text.doAfterTextChanged {
-            if (edit_text.hasFocus()) {
+        binding.editText.doAfterTextChanged {
+            if (binding.editText.hasFocus()) {
                 if (it.toString().isEmpty()) {
-                    input_clear.hide()
+                    binding.inputClear.hide()
                 } else {
-                    input_clear.show()
+                    binding.inputClear.show()
                 }
             } else {
-                input_clear.hide()
+                binding.inputClear.hide()
             }
         }
 
-        edit_text.setOnFocusChangeListener { v, hasFocus ->
+        binding.editText.setOnFocusChangeListener { v, hasFocus ->
             if (hasFocus) {
-                if (!edit_text.text?.toString().isNullOrBlank()) {
-                    input_clear.show()
+                if (!binding.editText.text?.toString().isNullOrBlank()) {
+                    binding.inputClear.show()
                 } else {
-                    input_clear.hide()
+                    binding.inputClear.hide()
                 }
-                input_mask.show()
+                binding.inputMask.show()
                 v.showKeyboard()
             } else {
-                input_clear.hide()
-                input_mask.hide()
+                binding.inputClear.hide()
+                binding.inputMask.hide()
                 v.hideKeyboard()
-                edit_text.setText(webView?.url)
+                binding.editText.setText(webView?.url)
             }
         }
 
-        edit_text.setOnEditorActionListener { v, actionId, event ->
+        binding.editText.setOnEditorActionListener { _, actionId, _ ->
             if (EditorInfo.IME_ACTION_GO == actionId) {
-                var url = edit_text.text.toString()
+                var url = binding.editText.text.toString()
                 if (url.isBlank()) {
                     toast("请输入正确的URL地址")
                     return@setOnEditorActionListener true
@@ -314,9 +283,9 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
 
-                edit_text.setText("")
+                binding.editText.setText("")
                 webView?.loadUrl(url)
-                edit_text.clearFocus()
+                binding.editText.clearFocus()
                 webView?.requestFocus()
             }
             return@setOnEditorActionListener EditorInfo.IME_ACTION_GO == actionId
@@ -376,41 +345,28 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
-    class LifecycleObserver(val customWebView: CustomWebView) :
-        androidx.lifecycle.LifecycleObserver {
+    class LifecycleObserver(private val customWebView: CustomWebView) :
+        DefaultLifecycleObserver {
 
         private val webView
             get() = customWebView.webView
 
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_START)
-        fun onStart() {
-            webView?.resumeTimers()
-        }
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        fun onResume() {
-            webView?.onResume()
-        }
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        fun onPause() {
+        override fun onPause(owner: LifecycleOwner) {
+            webView?.pauseTimers()
             webView?.onPause()
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-        fun onStop() {
-            webView?.pauseTimers()
+        override fun onResume(owner: LifecycleOwner) {
+            webView?.resumeTimers()
+            webView?.onResume()
         }
 
-        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        fun onDestroy() {
+
+        override fun onDestroy(owner: LifecycleOwner) {
             val parent = webView?.parent as? ViewGroup
             parent?.removeView(webView)
             webView?.destroy()
         }
-
-
     }
 
 

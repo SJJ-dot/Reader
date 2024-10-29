@@ -14,13 +14,13 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.databinding.DialogEditTextBinding
+import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
+import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.dialog_edit_text.view.*
-import kotlinx.android.synthetic.main.main_fragment_book_script_manager.*
-import kotlinx.android.synthetic.main.script_item_fragment_manager_java_script.view.*
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -29,6 +29,7 @@ import splitties.views.inflate
 import java.util.concurrent.Executors
 
 class BookSourceManagerFragment : BaseAsyncFragment() {
+    var binding: MainFragmentBookScriptManagerBinding? = null
     private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
     private val adapter = Adapter(this@BookSourceManagerFragment)
     private lateinit var searchView: SearchView
@@ -36,12 +37,13 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
-        recycle_view.adapter = adapter
+        binding = MainFragmentBookScriptManagerBinding.bind(it)
+        binding!!.recycleView.adapter = adapter
         adapter.onSelectSource = {
             refreshSelectAll()
         }
-        source_menu.setOnClickListener(this::showPopupMenu)
-        cb_select_all.setOnCheckedChangeListener { _, b ->
+        binding!!.sourceMenu.setOnClickListener(this::showPopupMenu)
+        binding!!.cbSelectAll.setOnCheckedChangeListener { _, b ->
             var isChange = false
             if (b || adapter.data.find { !it.selected } == null) {
                 adapter.data.forEach {
@@ -54,14 +56,14 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             if (isChange) adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
-        source_reverse.setOnClickListener {
+        binding!!.sourceReverse.setOnClickListener {
             adapter.data.forEach {
                 it.selected = !it.selected
             }
             adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
-        source_delete.setOnClickListener {
+        binding!!.sourceDelete.setOnClickListener {
             val list = adapter.data.filter { it.selected }
             if (list.isEmpty()) {
                 toast("请选择要删除的书源")
@@ -128,9 +130,8 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.source_import -> {
-                val view =
-                    LayoutInflater.from(requireContext()).inflate<View>(R.layout.dialog_edit_text)
-                view.edit_view.apply {
+                val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
+                bindingDialog.editView.apply {
                     val allSource = mutableListOf<String>()
                     globalConfig.bookSourceImportUrlsNet.forEach { allSource.add(it) }
                     val urlsLoc = globalConfig.bookSourceImportUrlsLoc
@@ -145,9 +146,9 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 }
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("书源导入")
-                    .setView(view)
+                    .setView(bindingDialog.root)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        val url = view.edit_view.text.toString().trim()
+                        val url = bindingDialog.editView.text.toString().trim()
                         val urlsLoc = globalConfig.bookSourceImportUrlsLoc
                         val urlsNet = globalConfig.bookSourceImportUrlsNet
                         if (!urlsNet.contains(url)) {
@@ -156,16 +157,16 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                             globalConfig.bookSourceImportUrlsLoc = urlsLoc
                         }
 
-                        view.edit_view.hideKeyboard()
+                        bindingDialog.editView.hideKeyboard()
                         launch {
                             try {
-                                showSnackbar(recycle_view, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
+                                showSnackbar(binding!!.recycleView, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
                                 BookSourceMgr.import(listOf(url))
                                 initData()
-                                showSnackbar(recycle_view, "书源导入成功")
+                                showSnackbar(binding!!.recycleView, "书源导入成功")
                             } catch (e: Exception) {
                                 Log.e("书源导入失败", e)
-                                showSnackbar(recycle_view, "书源导入失败：${e.message}")
+                                showSnackbar(binding!!.recycleView, "书源导入失败：${e.message}")
                             }
                         }
                     }
@@ -173,21 +174,25 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     .show()
                 true
             }
+
             R.id.source_enable -> {
                 searchView.setQuery("已启用", false)
                 query()
                 true
             }
+
             R.id.source_disable -> {
                 searchView.setQuery("已禁用", false)
                 query()
                 true
             }
+
             R.id.source_all -> {
                 searchView.setQuery("", false)
                 query()
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -247,13 +252,13 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     private fun refreshSelectAll() {
         val selected = adapter.data.count { it.selected }
         if (selected == adapter.data.size) {
-            cb_select_all.text = "取消（${selected}/${selected}）"
+            binding!!.cbSelectAll.text = "取消（${selected}/${selected}）"
         } else {
-            cb_select_all.text = "全选（${selected}/${adapter.data.size}）"
+            binding!!.cbSelectAll.text = "全选（${selected}/${adapter.data.size}）"
         }
         val selectedAll = adapter.data.find { !it.selected } == null
-        if (selectedAll != cb_select_all.isChecked) {
-            cb_select_all.isChecked = selectedAll
+        if (selectedAll != binding!!.cbSelectAll.isChecked) {
+            binding!!.cbSelectAll.isChecked = selectedAll
         }
     }
 
@@ -279,6 +284,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         }
                     }
                 }
+
                 R.id.source_disable_select -> {
                     val list = adapter.data.filter { it.selected }
                     if (list.isEmpty()) {
@@ -291,29 +297,25 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         }
                     }
                 }
+
                 R.id.source_check_select -> {
                     val list = adapter.data.filter { it.selected }
                     if (list.isEmpty()) {
                         toast("请选择书源")
                     } else {
-                        val view = LayoutInflater.from(requireContext())
-                            .inflate<View>(R.layout.dialog_edit_text)
-                        view.edit_view.setText("我的")
+                        val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
+                        bindingDialog.editView.setText("我的")
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle("测试搜索书名、作者")
-                            .setView(view)
+                            .setView(bindingDialog.root)
                             .setPositiveButton(android.R.string.ok) { _, _ ->
-                                val key = view.edit_view.text.toString().trim()
+                                val key = bindingDialog.editView.text.toString().trim()
                                 if (key.isBlank()) {
                                     toast("请输入测试搜索书名、作者")
                                 } else {
                                     launch {
                                         var count = 0
-                                        showSnackbar(
-                                            recycle_view,
-                                            "书源校验中，请稍后……(0/${list.size})",
-                                            Snackbar.LENGTH_INDEFINITE
-                                        )
+                                        showSnackbar(binding!!.recycleView, "书源校验中，请稍后……(0/${list.size})", Snackbar.LENGTH_INDEFINITE)
                                         val deferreds = list.map { js ->
                                             async(dispatcher) {
                                                 BookSourceMgr.check(
@@ -327,17 +329,9 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                                 launch {
                                                     val source = deferred.await()
                                                     if (++count == list.size) {
-                                                        showSnackbar(
-                                                            recycle_view,
-                                                            "书源校验完成(${count}/${list.size})",
-                                                            Snackbar.LENGTH_INDEFINITE
-                                                        )
+                                                        showSnackbar(binding!!.recycleView, "书源校验完成(${count}/${list.size})", Snackbar.LENGTH_INDEFINITE)
                                                     } else {
-                                                        showSnackbar(
-                                                            recycle_view,
-                                                            "书源校验中，请稍后……(${count}/${list.size})",
-                                                            Snackbar.LENGTH_INDEFINITE
-                                                        )
+                                                        showSnackbar(binding!!.recycleView, "书源校验中，请稍后……(${count}/${list.size})", Snackbar.LENGTH_INDEFINITE)
                                                     }
                                                     val index = adapter.data.indexOf(source)
                                                     if (index != -1) adapter.notifyItemChanged(index)
@@ -390,43 +384,44 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
             p1: Int
         ) {
+            val binding = ScriptItemFragmentManagerJavaScriptBinding.bind(holder.itemView)
             holder.itemView.apply {
                 val script = data[p1]
-                tv_source_name.text = "${script.group}-${script.name}"
-                cb_book_source.setOnCheckedChangeListener(null)
-                cb_book_source.isChecked = script.selected
-                cb_book_source.setOnCheckedChangeListener { _, b ->
+                binding.tvSourceName.text = "${script.group}-${script.name}"
+                binding.cbBookSource.setOnCheckedChangeListener(null)
+                binding.cbBookSource.isChecked = script.selected
+                binding.cbBookSource.setOnCheckedChangeListener { _, b ->
                     script.selected = b
                     onSelectSource()
                 }
                 if (script.checkResult.isNullOrBlank()) {
-                    iv_source_check_res.gone()
+                    binding.ivSourceCheckRes.gone()
                 } else {
-                    iv_source_check_res.show()
-                    iv_source_check_res.text = "${script.checkResult}"
+                    binding.ivSourceCheckRes.show()
+                    binding.ivSourceCheckRes.text = "${script.checkResult}"
                 }
-                sw_source_enable.setOnCheckedChangeListener(null)
-                sw_source_enable.isChecked = script.enable
+                binding.swSourceEnable.setOnCheckedChangeListener(null)
+                binding.swSourceEnable.isChecked = script.enable
 
-                sw_source_enable.setOnCheckedChangeListener { view, isChecked ->
+                binding.swSourceEnable.setOnCheckedChangeListener { view, isChecked ->
                     fragment.launch {
                         script.enable = isChecked
                         BookSourceMgr.saveJs(script)
                     }
                 }
                 if (script.checkErrorMsg.isNullOrBlank()) {
-                    iv_error_hint.gone()
-                    iv_error_hint.setOnClickListener(null)
+                    binding.ivErrorHint.gone()
+                    binding.ivErrorHint.setOnClickListener(null)
                 } else {
-                    iv_error_hint.show()
-                    iv_error_hint.setOnClickListener {
+                    binding.ivErrorHint.show()
+                    binding.ivErrorHint.setOnClickListener {
                         val popup = ErrorMsgPopup(fragment.context)
                             .init("${script.checkErrorMsg}")
                             .setPopupGravity(Gravity.BOTTOM)
                         popup.showPopupWindow()
                     }
                 }
-                iv_edit_source.setOnClickListener {
+                binding.ivEditSource.setOnClickListener {
                     fragment.startActivity<EditJavaScriptActivity>(
                         BOOK_SOURCE_ID,
                         script.id

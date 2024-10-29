@@ -14,23 +14,18 @@ import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.ActivityMainBinding
+import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
-import com.sjianjun.reader.test.SourceTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.umeng.commonsdk.UMConfigure
-import kotlinx.android.synthetic.main.activity_main.drawer_content
-import kotlinx.android.synthetic.main.activity_main.drawer_layout
-import kotlinx.android.synthetic.main.activity_main.host_fragment_view_stub
-import kotlinx.android.synthetic.main.activity_main.nav_ui
-import kotlinx.android.synthetic.main.activity_main.toolbar
-import kotlinx.android.synthetic.main.main_menu_nav_header.view.day_night
 
 
 class MainActivity : BaseActivity() {
-
+    var binding: ActivityMainBinding? = null
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
     override fun initTheme(isNight: Boolean) {
@@ -57,17 +52,17 @@ class MainActivity : BaseActivity() {
 
 
     private fun init() {
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding?.root)
 
-        setContentView(R.layout.activity_main)
+        binding?.hostFragmentViewStub?.inflate()
+        binding?.drawerContent?.requestApplyInsets()
 
-        host_fragment_view_stub.inflate()
-        drawer_content.requestApplyInsets()
-
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding?.toolbar)
 
         navController = findNavController(R.id.nav_host_fragment_main)
         appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
-            .setOpenableLayout(drawer_layout)
+            .setOpenableLayout(binding?.drawerLayout)
             .build()
 
         NavigationUI.setupActionBarWithNavController(
@@ -75,11 +70,11 @@ class MainActivity : BaseActivity() {
             navController!!,
             appBarConfiguration!!
         )
-        NavigationUI.setupWithNavController(nav_ui, navController!!)
+        NavigationUI.setupWithNavController(binding?.navUi!!, navController!!)
         navController!!.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.bookDetailsFragment -> {
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    binding?.drawerLayout?.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                     supportActionBar?.show()
                 }
 
@@ -89,7 +84,7 @@ class MainActivity : BaseActivity() {
 
                 else -> {
                     supportActionBar?.show()
-                    drawer_layout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                    binding?.drawerLayout?.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
                 }
             }
         }
@@ -99,16 +94,17 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initDrawerMenuWidget() {
-        nav_ui.getHeaderView(0)?.apply {
+        val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
+        binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
-                day_night.setImageResource(R.drawable.ic_theme_dark_24px)
+                headerBinding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
             } else {
-                day_night.setImageResource(R.drawable.ic_theme_light_24px)
+                headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
             }
-            day_night.setOnClickListener {
+            headerBinding.dayNight.setOnClickListener {
                 when (globalConfig.appDayNightMode) {
                     MODE_NIGHT_NO -> {
-                        day_night.setImageResource(R.drawable.ic_theme_light_24px)
+                        headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_YES
                         setDefaultNightMode(MODE_NIGHT_YES)
                         //切换成深色模式。阅读器样式自动调整为上一次的深色样式
@@ -116,7 +112,7 @@ class MainActivity : BaseActivity() {
                     }
 
                     else -> {
-                        day_night.setImageResource(R.drawable.ic_theme_dark_24px)
+                        headerBinding.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
                         globalConfig.appDayNightMode = MODE_NIGHT_NO
                         setDefaultNightMode(MODE_NIGHT_NO)
                         //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
@@ -149,8 +145,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onBackPressed() {
-        if (drawer_layout?.isDrawerOpen(GravityCompat.START) == true) {
-            drawer_layout.closeDrawer(GravityCompat.START)
+        if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {
+            binding?.drawerLayout?.closeDrawer(GravityCompat.START)
         } else {
             if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
                 finishAfterTransition()

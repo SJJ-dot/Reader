@@ -3,7 +3,9 @@ package com.sjianjun.reader.http
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -62,12 +64,12 @@ val okClient = OkHttpClient.Builder()
             ))
             .build()
 
-        val dns = DnsOverHttps.Builder().client(bootstrapClient)
-            .url(HttpUrl.get("https://dns.alidns.com/dns-query"))
-            .includeIPv6(false)
-            .bootstrapDnsHosts(InetAddress.getByName("223.5.5.5"), InetAddress.getByName("223.6.6.6"))
-            .build()
-        dns(dns)
+//        val dns = DnsOverHttps.Builder().client(bootstrapClient)
+//            .url("https://dns.alidns.com/dns-query".toHttpUrl())
+//            .includeIPv6(false)
+//            .bootstrapDnsHosts(InetAddress.getByName("223.5.5.5"), InetAddress.getByName("223.6.6.6"))
+//            .build()
+//        dns(dns)
     }
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(10, TimeUnit.SECONDS)
@@ -76,7 +78,7 @@ val okClient = OkHttpClient.Builder()
     .cookieJar(CookieMgr)
     .addInterceptor {
         val header = header()
-        it.request().headers().names().forEach { name ->
+        it.request().headers.names().forEach { name ->
             header.remove(name)
         }
         val newBuilder = it.request().newBuilder()
@@ -105,7 +107,7 @@ class Http {
         header: Map<String, String> = emptyMap(),
         encoded: Boolean = true
     ): Resp {
-        val urlBuilder = HttpUrl.get(url).newBuilder()
+        val urlBuilder = url.toHttpUrl().newBuilder()
         queryMap.forEach {
             if (encoded) {
                 urlBuilder.addEncodedQueryParameter(it.key, it.value)
@@ -119,8 +121,8 @@ class Http {
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
-            response.request().url().toString(),
-            stringConverter.stringConverter(response.body())
+            response.request.url.toString(),
+            stringConverter.stringConverter(response.body)
         )
     }
 
@@ -140,14 +142,14 @@ class Http {
             }
 
         }
-        val builder = Request.Builder().url(HttpUrl.get(url)).post(formBody.build())
+        val builder = Request.Builder().url(url.toHttpUrl()).post(formBody.build())
         header.forEach {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
-            response.request().url().toString(),
-            stringConverter.stringConverter(response.body())
+            response.request.url.toString(),
+            stringConverter.stringConverter(response.body)
         )
     }
 
@@ -159,16 +161,16 @@ class Http {
         header: Map<String, String> = emptyMap()
     ): Resp {
         val builder = Request.Builder()
-            .url(HttpUrl.get(url))
-            .post(RequestBody.create(MediaType.parse(contentType), body))
+            .url(url.toHttpUrl())
+            .post(RequestBody.create(contentType.toMediaTypeOrNull(), body))
             .cacheControl(CacheControl.Builder().maxAge(1, TimeUnit.HOURS).build())
         header.forEach {
             builder.header(it.key, it.value)
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
-            response.request().url().toString(),
-            stringConverter.stringConverter(response.body())
+            response.request.url.toString(),
+            stringConverter.stringConverter(response.body)
         )
     }
 }

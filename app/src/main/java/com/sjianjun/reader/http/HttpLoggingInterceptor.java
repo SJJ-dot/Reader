@@ -104,7 +104,7 @@ public final class HttpLoggingInterceptor implements Interceptor {
         /**
          * A ok3 Logger defaults output appropriate for the current platform.
          */
-        Logger DEFAULT = message -> Platform.get().log(INFO, message, null);
+        Logger DEFAULT = message -> Platform.get().log(message, INFO, null);
     }
 
     public HttpLoggingInterceptor() {

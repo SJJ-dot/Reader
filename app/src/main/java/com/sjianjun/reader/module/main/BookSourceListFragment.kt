@@ -14,16 +14,17 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
+import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.isLoading
-import kotlinx.android.synthetic.main.main_fragment_book_source_list.*
-import kotlinx.android.synthetic.main.main_item_fragment_book_source_list.view.*
 import kotlinx.coroutines.launch
 
 
 @Suppress("UNCHECKED_CAST")
 class BookSourceListFragment : BaseFragment() {
+    var binding: MainFragmentBookSourceListBinding? = null
     private val vm by lazy {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -42,7 +43,8 @@ class BookSourceListFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        recycle_view.adapter = adapter
+        binding = MainFragmentBookSourceListBinding.bind(view)
+        binding?.recycleView?.adapter = adapter
         vm.bookList.observe(this) {
             adapter.data.clear()
             adapter.data.addAll(it)
@@ -53,12 +55,12 @@ class BookSourceListFragment : BaseFragment() {
 
     private fun initRefresh() {
 
-        swipe_refresh.setOnRefreshListener {
+        binding?.swipeRefresh?.setOnRefreshListener {
             vm.viewModelScope.launch {
-                swipe_refresh.isRefreshing = false
-                swipe_refresh.isEnabled = false
+                binding?.swipeRefresh?.isRefreshing = false
+                binding?.swipeRefresh?.isEnabled = false
                 vm.reloadAllBookFromNet()
-                swipe_refresh.isEnabled = true
+                binding?.swipeRefresh?.isEnabled = true
             }
         }
     }
@@ -73,26 +75,27 @@ class BookSourceListFragment : BaseFragment() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val book = data[position]
 //            holder.setRecyclable(!book.isLoading)
+            val binding = MainItemFragmentBookSourceListBinding.bind(holder.itemView)
             holder.itemView.apply {
-                bookCover.glide(fragment, book.cover)
-                bookName.text = book.title
-                author.text = "作者：${book.author}"
-                lastChapter.text = "最新：${book.lastChapter?.title}"
+                binding.bookCover.glide(fragment, book.cover)
+                binding.bookName.text = book.title
+                binding.author.text = "作者：${book.author}"
+                binding.lastChapter.text = "最新：${book.lastChapter?.title}"
 
-                haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
-                loading.isLoading = book.isLoading
+                binding.haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
+                binding.loading.isLoading = book.isLoading
 
                 if (book.readChapter?.content?.contentError == true) {
-                    bv_unread.setHighlight(false)
+                    binding.bvUnread.setHighlight(false)
                 } else {
-                    bv_unread.setHighlight(true)
+                    binding.bvUnread.setHighlight(true)
                 }
                 if ((book.isLoading)) {
-                    bv_unread.hide()
+                    binding.bvUnread.hide()
                 } else {
-                    bv_unread.show()
+                    binding.bvUnread.show()
                 }
-                bv_unread.badgeCount = book.unreadChapterCount
+                binding.bvUnread.badgeCount = book.unreadChapterCount
 
                 setOnClickListener {
                     fragment.launch {

@@ -7,6 +7,7 @@ import com.sjianjun.reader.http.stringConverter
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.utils.NetworkUtils
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.intellij.lang.annotations.Language
 import org.jsoup.Jsoup
 import sjj.alog.Log
@@ -67,7 +68,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
     private val webDavClient by lazy {
         val authInterceptor = Interceptor { chain ->
             var request = chain.request()
-            if (request.url().host().equals(host, true)) {
+            if (request.url.host.equals(host, true)) {
                 request = request
                     .newBuilder()
                     .header(authorization.name, authorization.data)
@@ -134,12 +135,12 @@ open class WebDav(val path: String, val authorization: Authorization) {
                     .addHeader("Depth", depth.toString())
                     .method(
                         "PROPFIND",
-                        RequestBody.create(MediaType.parse("text/plain"), requestPropsStr)
+                        RequestBody.create("text/plain".toMediaTypeOrNull(), requestPropsStr)
                     )
                     .build()
             ).execute().let {
                 checkResult(it)
-                stringConverter.stringConverter(it.body())
+                stringConverter.stringConverter(it.body)
             }
         }
     }
@@ -215,7 +216,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
                         .addHeader("Depth", "0")
                         .method(
                             "PROPFIND",
-                            RequestBody.create(MediaType.parse("application/xml"), EXISTS)
+                            RequestBody.create("application/xml".toMediaTypeOrNull(), EXISTS)
                         )
                         .build()
                 ).execute().isSuccessful
@@ -292,7 +293,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
             val file = File(localPath)
             if (!file.exists()) throw WebDavException("文件不存在")
             // 务必注意RequestBody不要嵌套，不然上传时内容可能会被追加多余的文件信息
-            val fileBody = RequestBody.create(MediaType.parse(contentType), file)
+            val fileBody = RequestBody.create(contentType.toMediaTypeOrNull(), file)
             val url = httpUrl ?: throw WebDavException("url不能为空")
             withIo {
                 webDavClient.newCall(
@@ -313,7 +314,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
     suspend fun upload(byteArray: ByteArray, contentType: String = "application/octet-stream"): Result<Unit> {
         // 务必注意RequestBody不要嵌套，不然上传时内容可能会被追加多余的文件信息
        return kotlin.runCatching {
-            val fileBody = RequestBody.create(MediaType.parse(contentType), byteArray)
+            val fileBody = RequestBody.create(contentType.toMediaTypeOrNull(), byteArray)
             val url = httpUrl ?: throw NoStackTraceException("url不能为空")
             withIo {
                 webDavClient.newCall(
@@ -338,7 +339,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
                     .build()
             ).execute().let {
                 checkResult(it)
-                it.body()?.byteStream()
+                it.body?.byteStream()
             }
         } ?: throw WebDavException("WebDav下载出错\nNull Exception")
     }
@@ -359,7 +360,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
                         .build()
                 ).execute().let {
                     checkResult(it)
-                    it.body()?.byteStream()
+                    it.body?.byteStream()
                 }
             }
         }.onFailure {
@@ -372,7 +373,7 @@ open class WebDav(val path: String, val authorization: Authorization) {
      */
     private fun checkResult(response: Response) {
         if (!response.isSuccessful) {
-            throw WebDavException("${url}\n${response.code()}:${response.message()}")
+            throw WebDavException("${url}\n${response.code}:${response.message}")
         }
     }
 

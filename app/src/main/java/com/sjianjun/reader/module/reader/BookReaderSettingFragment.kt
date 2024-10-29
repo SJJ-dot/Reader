@@ -26,6 +26,8 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
+import com.sjianjun.reader.databinding.ItemFontBinding
+import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
@@ -33,35 +35,10 @@ import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
 import de.hdodenhof.circleimageview.CircleImageView
-import kotlinx.android.synthetic.main.item_font.view.font_text
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.brightness_seek_bar
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_error
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_list
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.chapter_sync
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.day_night
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.download
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_decrease
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_import
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_increase
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_list
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.font_text
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_decrease
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_increase
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.line_spacing_text
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_cover
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_none
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_scroll
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_simulation
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_model_slide
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_style_import
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.page_style_list
-import kotlinx.android.synthetic.main.reader_fragment_setting_view.speak
-import kotlinx.android.synthetic.main.reader_item_page_style.view.image
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
-import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
@@ -71,6 +48,8 @@ import java.text.DecimalFormat
  * Created by shen jian jun on 2020-07-13
  */
 class BookReaderSettingFragment : BottomSheetDialogFragment() {
+    var binding: ReaderFragmentSettingViewBinding? = null
+
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
     private val REQUEST_CODE_PICK_FONT = 1111
@@ -89,6 +68,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
+        binding = ReaderFragmentSettingViewBinding.bind(view)
         initSpeak()
         initChapterList()
         initChapterError()
@@ -109,7 +89,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initChapterList() {
-        download.setOnClickListener {
+        binding?.download?.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("缓存章节")
                 .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
@@ -119,38 +99,38 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
-        chapter_list.setOnClickListener {
+        binding?.chapterList?.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_LIST)
             dismiss()
         }
     }
 
     private fun initSpeak() {
-        speak.setOnClickListener {
+        binding?.speak?.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_SPEAK)
             dismiss()
         }
     }
 
     private fun initChapterError() {
-        chapter_error.setOnClickListener {
+        binding?.chapterError?.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_CONTENT_ERROR)
         }
     }
 
     private fun initChapterSync() {
-        chapter_sync.setOnClickListener {
+        binding?.chapterSync?.setOnClickListener {
             EventBus.post(EventKey.CHAPTER_SYNC_FORCE)
         }
     }
 
     private fun initPageModel() {
         val views = listOf(
-            page_model_simulation,
-            page_model_cover,
-            page_model_slide,
-            page_model_none,
-            page_model_scroll
+            binding!!.pageModelSimulation,
+            binding!!.pageModelCover,
+            binding!!.pageModelSlide,
+            binding!!.pageModelNone,
+            binding!!.pageModelScroll
         )
         val view = views[globalConfig.readerPageMode.value!!]
         setSelected(view, true)
@@ -178,11 +158,11 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initDayNight() {
         if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
-            day_night.setImageResource(R.drawable.ic_theme_dark_24px)
+            binding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
         } else {
-            day_night.setImageResource(R.drawable.ic_theme_light_24px)
+            binding?.dayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
-        day_night.setOnClickListener {
+        binding?.dayNight?.setOnClickListener {
             when (globalConfig.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
@@ -205,8 +185,8 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initBrightness() {
-        brightness_seek_bar.progress = Color.alpha(globalConfig.readerBrightnessMaskColor.value!!)
-        brightness_seek_bar.setOnSeekBarChangeListener(object :
+        binding?.brightnessSeekBar?.progress = Color.alpha(globalConfig.readerBrightnessMaskColor.value!!)
+        binding?.brightnessSeekBar?.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
                 seekBar: SeekBar?,
@@ -227,12 +207,12 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initFontSize() {
         globalConfig.readerFontSize.observe(viewLifecycleOwner, Observer {
-            font_text.text = it.toString()
+            binding?.fontText?.text = it.toString()
         })
-        font_decrease.setOnClickListener {
+        binding?.fontDecrease?.setOnClickListener {
             globalConfig.readerFontSize.postValue(globalConfig.readerFontSize.value!! - 1)
         }
-        font_increase.setOnClickListener {
+        binding?.fontIncrease?.setOnClickListener {
             globalConfig.readerFontSize.postValue(globalConfig.readerFontSize.value!! + 1)
         }
     }
@@ -240,14 +220,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     private fun initLineSpacing() {
         val decimalFormat = DecimalFormat("0.#")
         globalConfig.readerLineSpacing.observe(viewLifecycleOwner, Observer {
-            line_spacing_text.text = decimalFormat.format(it)
+            binding?.lineSpacingText?.text = decimalFormat.format(it)
         })
-        line_spacing_decrease.setOnClickListener {
+        binding?.lineSpacingDecrease?.setOnClickListener {
             globalConfig.readerLineSpacing.postValue(
                 decimalFormat.format(globalConfig.readerLineSpacing.value!! - 0.1f).toFloat()
             )
         }
-        line_spacing_increase.setOnClickListener {
+        binding?.lineSpacingIncrease?.setOnClickListener {
             globalConfig.readerLineSpacing.postValue(
                 decimalFormat.format(globalConfig.readerLineSpacing.value!! + 0.1f).toFloat()
             )
@@ -255,14 +235,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initPageStyle() {
-        page_style_import.setOnClickListener {
+        binding?.pageStyleImport?.setOnClickListener {
             dismissAllowingStateLoss()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
         }
         val adapter = Adapter(this)
         adapter.itemLongClickListener = {
             val pageStyle = adapter.data[it]
-            if (pageStyle is CustomPageStyle && page_style_list.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+            if (pageStyle is CustomPageStyle && binding?.pageStyleList?.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
                 dismissAllowingStateLoss()
                 val isDeleteable = adapter.data.filter { it.isDark == pageStyle.isDark }.size > 1
                 pageStyle.info.isDeleteable = isDeleteable
@@ -270,14 +250,14 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                     .show(parentFragmentManager, "CustomPageStyleFragment")
             }
         }
-        page_style_list.adapter = adapter
+        binding?.pageStyleList?.adapter = adapter
         var first = true
         PageStyle.styles.observe(viewLifecycleOwner) {
             adapter.data.clear()
             adapter.data.addAll(it)
             adapter.notifyDataSetChanged()
             if (first) {
-                page_style_list.scrollToPosition(it.indexOfFirst { globalConfig.readerPageStyle.value!! == it.id })
+                binding?.pageStyleList?.scrollToPosition(it.indexOfFirst { globalConfig.readerPageStyle.value!! == it.id })
                 first = false
             }
         }
@@ -285,8 +265,8 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     private fun initFontList() {
         initFontListData()
-        font_list.adapter = adapter
-        font_import.setOnClickListener {
+        binding?.fontList?.adapter = adapter
+        binding?.fontImport?.setOnClickListener {
             //导入字体
             pickFontFile()
         }
@@ -352,20 +332,21 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val binding = ItemFontBinding.bind(holder.itemView)
             holder.itemView.apply {
                 val fontInfo = data[position]
-                font_text.text = fontInfo.name
+                binding.fontText.text = fontInfo.name
                 setOnClickListener {
                     globalConfig.readerFontFamily.postValue(fontInfo)
                     notifyDataSetChanged()
                 }
 
                 if (globalConfig.readerFontFamily.value == fontInfo) {
-                    font_text.solid = R.color.dn_color_primary.color(context)
-                    font_text.setTextColor(R.color.mdr_grey_100.color(context))
+                    binding.fontText.solid = R.color.dn_color_primary.color(context)
+                    binding.fontText.setTextColor(R.color.mdr_grey_100.color(context))
                 } else {
-                    font_text.solid = R.color.dn_background.color(context)
-                    font_text.setTextColor(R.color.dn_text_color_black.color(context))
+                    binding.fontText.solid = R.color.dn_background.color(context)
+                    binding.fontText.setTextColor(R.color.dn_text_color_black.color(context))
                 }
             }
         }

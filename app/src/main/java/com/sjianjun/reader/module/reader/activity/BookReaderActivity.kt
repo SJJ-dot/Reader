@@ -15,6 +15,7 @@ import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.event.observe
@@ -23,7 +24,6 @@ import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.activity_book_reader.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
@@ -37,6 +37,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class BookReaderActivity : BaseActivity() {
+    var binding: ActivityBookReaderBinding? = null
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
     private var book: Book? = null
@@ -44,15 +45,16 @@ class BookReaderActivity : BaseActivity() {
     private lateinit var readingRecord: ReadingRecord
 
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
-    private val mPageLoader by lazy { page_view.pageLoader }
+    private val mPageLoader by lazy { binding?.pageView!!.pageLoader }
     override fun immersionBar() {
         ImmersionBar.with(this).init()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_book_reader)
-        reader_root?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
+        binding = ActivityBookReaderBinding.inflate(layoutInflater)
+        setContentView(binding!!.root)
+        binding?.readerRoot?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
         initData()
     }
@@ -69,12 +71,12 @@ class BookReaderActivity : BaseActivity() {
 
     override fun onBackPressed() {
         when {
-            drawer_layout.isDrawerOpen(GravityCompat.END) -> {
-                drawer_layout.closeDrawer(GravityCompat.END)
+            binding?.drawerLayout!!.isDrawerOpen(GravityCompat.END) -> {
+                binding?.drawerLayout!!.closeDrawer(GravityCompat.END)
             }
 
-            drawer_layout.isDrawerOpen(GravityCompat.START) -> {
-                drawer_layout.closeDrawer(GravityCompat.START)
+            binding?.drawerLayout!!.isDrawerOpen(GravityCompat.START) -> {
+                binding?.drawerLayout!!.closeDrawer(GravityCompat.START)
             }
 
             else -> {
@@ -129,16 +131,16 @@ class BookReaderActivity : BaseActivity() {
 
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
             launch("CHAPTER_LIST_CAHE") {
-                showSnackbar(page_view, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
+                showSnackbar(binding!!.pageView, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
                     getChapterContent(listOf(book?.chapterList?.get(it)!!))
-                    showSnackbar(page_view, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
+                    showSnackbar(binding!!.pageView, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
                 }
-                showSnackbar(page_view, "章节缓存：完成")
+                showSnackbar(binding!!.pageView, "章节缓存：完成")
             }
         }
         observe<String>(EventKey.CHAPTER_LIST) {
-            drawer_layout.openDrawer(GravityCompat.END)
+            binding?.drawerLayout!!.openDrawer(GravityCompat.END)
         }
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {
@@ -195,7 +197,7 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader.setPageMode(PageMode.values()[it])
         }
         globalConfig.readerBrightnessMaskColor.observe(this) {
-            brightness_mask.setBackgroundColor(it)
+            binding!!.brightnessMask.setBackgroundColor(it)
         }
         val text = MediatorLiveData<Pair<Int, Float>>()
         text.addSource(globalConfig.readerLineSpacing) {
@@ -212,7 +214,7 @@ class BookReaderActivity : BaseActivity() {
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader.setPageStyle(it)
-            reader_root.background = it.getBackground(this)
+            binding!!.readerRoot.background = it.getBackground(this)
             if (it.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
@@ -221,7 +223,7 @@ class BookReaderActivity : BaseActivity() {
         }
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
-            reader_root.background = pageStyle.getBackground(this)
+            binding!!.readerRoot.background = pageStyle.getBackground(this)
             if (pageStyle.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
@@ -244,7 +246,7 @@ class BookReaderActivity : BaseActivity() {
             }
         }
 
-        page_view.setTouchListener(object : PageView.TouchListener {
+        binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
                 val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
                 settingDialog as BookReaderSettingFragment?
@@ -308,9 +310,9 @@ class BookReaderActivity : BaseActivity() {
             var chapterList = DataManager.getChapterList(bookId).first()
             book.chapterList = chapterList
             if (chapterList.isEmpty()) {
-                showSnackbar(page_view, "正在加载书籍信息,请稍后……")
+                showSnackbar(binding!!.pageView, "正在加载书籍信息,请稍后……")
                 DataManager.reloadBookFromNet(book)
-                showSnackbar(page_view, "加载完成")
+                showSnackbar(binding!!.pageView, "加载完成")
                 chapterList = DataManager.getChapterList(bookId).first()
                 book.chapterList = chapterList
                 if (chapterList.isEmpty()) {

@@ -37,7 +37,7 @@ abstract class BaseActivity : AppCompatActivity() {
         backPressedListeners.clear()
     }
 
-    override fun startActivityForResult(intent: Intent?, requestCode: Int, options: Bundle?) {
+    override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
         super.startActivityForResult(intent, requestCode, options)
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }

@@ -9,16 +9,13 @@ import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
-import kotlinx.android.synthetic.main.item_default_style.view.imageView
-import kotlinx.android.synthetic.main.item_default_style.view.textView_content
-import kotlinx.android.synthetic.main.item_default_style.view.textView_title
-import kotlinx.android.synthetic.main.reader_fragment_default_page_style.btn_cancel
-import kotlinx.android.synthetic.main.reader_fragment_default_page_style.btn_save
-import kotlinx.android.synthetic.main.reader_fragment_default_page_style.recycler_view
+import com.sjianjun.reader.databinding.ItemDefaultStyleBinding
+import com.sjianjun.reader.databinding.ReaderFragmentDefaultPageStyleBinding
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageStyle
 
 class DefaultPageStyleListFragment : DialogFragment() {
+    var binding: ReaderFragmentDefaultPageStyleBinding? = null
     private val adapter = Adapter()
     override fun getTheme(): Int {
         return R.style.reader_setting_dialog
@@ -36,19 +33,20 @@ class DefaultPageStyleListFragment : DialogFragment() {
         dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
             ?.setBackgroundColor(Color.TRANSPARENT)
         isCancelable = false
+        binding = ReaderFragmentDefaultPageStyleBinding.bind(view)
         val params = dialog?.window?.attributes
         params?.width = ViewGroup.LayoutParams.MATCH_PARENT
         params?.height = ViewGroup.LayoutParams.MATCH_PARENT
         dialog?.window?.attributes = params
 
-        recycler_view.adapter = adapter
+        binding?.recyclerView!!.adapter = adapter
         adapter.data.addAll(PageStyle.builtin().map { CustomPageStyle(it) })
 
-        btn_cancel.setOnClickListener {
+        binding?.btnCancel!!.setOnClickListener {
             dismiss()
         }
-        btn_save.setOnClickListener {
-            val item = adapter.data[recycler_view.currentItem]
+        binding?.btnSave!!.setOnClickListener {
+            val item = adapter.data[binding?.recyclerView!!.currentItem]
             CustomPageStyleFragment.newInstance(item.info).show(parentFragmentManager, "CustomPageStyleFragment")
             dismiss()
         }
@@ -57,10 +55,11 @@ class DefaultPageStyleListFragment : DialogFragment() {
 
     class Adapter : BaseAdapter<CustomPageStyle>(R.layout.item_default_style) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = ItemDefaultStyleBinding.bind(holder.itemView)
             val style = data[position]
-            holder.itemView.imageView.setImageDrawable(style.getBackground(holder.itemView.context))
-            holder.itemView.textView_title.setTextColor(style.info.chapterTitleColor)
-            holder.itemView.textView_content.setTextColor(style.info.chapterContentColor)
+            binding.imageView.setImageDrawable(style.getBackground(holder.itemView.context))
+            binding.textViewTitle.setTextColor(style.info.chapterTitleColor)
+            binding.textViewContent.setTextColor(style.info.chapterContentColor)
         }
     }
 }

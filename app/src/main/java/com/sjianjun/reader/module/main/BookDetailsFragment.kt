@@ -5,17 +5,18 @@ import androidx.core.view.GravityCompat
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
-import kotlinx.android.synthetic.main.main_fragment_book_details.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 
 @Suppress("EXPERIMENTAL_API_USAGE")
 class BookDetailsFragment : BaseAsyncFragment() {
+    private var binding: MainFragmentBookDetailsBinding? = null
     private val bookTitle: String
         get() = requireArguments().getString(BOOK_TITLE)!!
 
@@ -25,17 +26,17 @@ class BookDetailsFragment : BaseAsyncFragment() {
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
     override val onLoadedView: (View) -> Unit = {
-
+        binding = MainFragmentBookDetailsBinding.bind(it)
         setOnBackPressed {
-            if (drawer_layout?.isDrawerOpen(GravityCompat.END) == true) {
-                drawer_layout?.closeDrawer(GravityCompat.END)
+            if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.END) == true) {
+                binding?.drawerLayout?.closeDrawer(GravityCompat.END)
                 true
             } else {
                 false
             }
         }
 
-        originWebsite.setOnClickListener { _ ->
+        binding?.originWebsite?.setOnClickListener { _ ->
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to bookTitle,
                 BOOK_AUTHOR to bookAuthor
@@ -53,9 +54,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
     private fun refresh(book: Book?) {
         book ?: return
         launch(singleCoroutineKey = "refreshBookDetails") {
-            detailsRefreshLayout?.isRefreshing = true
+            binding?.detailsRefreshLayout?.isRefreshing = true
             DataManager.reloadBookFromNet(book)
-            detailsRefreshLayout?.isRefreshing = false
+            binding?.detailsRefreshLayout?.isRefreshing = false
         }
     }
 
@@ -88,23 +89,23 @@ class BookDetailsFragment : BaseAsyncFragment() {
     }
 
     private suspend fun fillView(book: Book?) {
-        bookCover?.glide(this@BookDetailsFragment, book?.cover)
-        bookName?.text = book?.title
-        author?.text = book?.author
+        binding?.bookCover?.glide(this@BookDetailsFragment, book?.cover)
+        binding?.bookName?.text = book?.title
+        binding?.author?.text = book?.author
 
-        intro?.text = book?.intro.html()
+        binding?.intro?.text = book?.intro.html()
 
         val count = DataManager.getBookBookSourceNum(bookTitle, bookAuthor)
         val source = book?.bookSourceId?.let {
             BookSourceMgr.getBookSourceById(it).firstOrNull()
         }
-        originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个源"
+        binding?.originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个源"
         val error = book?.error
         if (error == null) {
-            sync_error.hide()
+            binding?.syncError?.hide()
         } else {
-            sync_error.show()
-            sync_error.setOnClickListener {
+            binding?.syncError?.show()
+            binding?.syncError?.setOnClickListener {
                 ErrorMsgPopup(context)
                     .init("$error")
                     .setPopupGravity(Gravity.BOTTOM)
@@ -114,10 +115,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
     }
 
     private fun initListener(book: Book?) {
-        detailsRefreshLayout.setOnRefreshListener {
+        binding?.detailsRefreshLayout?.setOnRefreshListener {
             refresh(book)
         }
-        reading.setOnClickListener {
+        binding?.reading?.setOnClickListener {
             book ?: return@setOnClickListener
             startActivity<BookReaderActivity>(BOOK_ID, book.id)
         }
@@ -126,8 +127,8 @@ class BookDetailsFragment : BaseAsyncFragment() {
     private suspend fun initLatestChapter(book: Book?) {
         DataManager.getLastChapterByBookId(book?.id ?: "")
             .collectLatest { lastChapter ->
-                latestChapter?.text = lastChapter?.title
-                latestChapter.setOnClickListener { _ ->
+                binding?.latestChapter?.text = lastChapter?.title
+                binding?.latestChapter?.setOnClickListener { _ ->
                     book ?: return@setOnClickListener
                     startActivity<BookReaderActivity>(
                         BOOK_ID to book.id,
@@ -145,9 +146,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.chapter_list -> {
-                drawer_layout.openDrawer(GravityCompat.END)
+                binding?.drawerLayout?.openDrawer(GravityCompat.END)
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }

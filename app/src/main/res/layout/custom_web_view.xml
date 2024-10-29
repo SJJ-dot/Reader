@@ -41,6 +41,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/dn_background"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.card.MaterialCardView
@@ -98,6 +99,7 @@
         android:layout_height="?attr/actionBarSize"
         android:layout_gravity="bottom"
         android:background="@color/dn_background"
+        android:visibility="gone"
         app:layout_behavior="com.sjianjun.reader.view.HideBottomViewOnScrollBehavior2"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_scrollFlags="scroll|enterAlways"
