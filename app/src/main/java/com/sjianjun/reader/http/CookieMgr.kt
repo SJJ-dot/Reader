@@ -1,5 +1,6 @@
 package com.sjianjun.reader.http
 
+import android.webkit.CookieManager
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
@@ -9,26 +10,21 @@ import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
-object CookieMgr : CookieJar {
-    private val actualCookieJar =
-        PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(App.app))
+class CookieMgr {
 
-    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        actualCookieJar.saveFromResponse(url, cookies)
+
+    companion object {
+        private val cookieManager: CookieManager = CookieManager.getInstance()
+
+        @JvmStatic
+        fun getCookie(url: String): String {
+            return cookieManager.getCookie(url) ?: ""
+        }
+
+        @JvmStatic
+        fun getCookie(url: String, name: String): String {
+            return cookieManager.getCookie(url)?.split(";")?.find { it.contains(name) } ?: ""
+        }
     }
 
-    override fun loadForRequest(url: HttpUrl): MutableList<Cookie> {
-
-        return actualCookieJar.loadForRequest(url).toMutableList()
-    }
-
-    @JvmStatic
-    fun getCookie(url: String): MutableList<Cookie> {
-        return loadForRequest(url.toHttpUrl())
-    }
-
-    @JvmStatic
-    fun getCookie(url: String, name: String): String {
-        return loadForRequest(url.toHttpUrl()).find { it.name == name }?.value ?: ""
-    }
 }

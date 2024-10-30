@@ -1,42 +1,29 @@
 package com.sjianjun.reader.view
 
-import android.annotation.SuppressLint
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Parcel
-import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
-import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
-import com.sjianjun.reader.WEB_VIEW_UA_DESKTOP
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.module.bookcity.BookCityPageActivity
 import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.animFadeOut
-import com.sjianjun.reader.utils.hide
-import com.sjianjun.reader.utils.hideKeyboard
-import com.sjianjun.reader.utils.show
-import com.sjianjun.reader.utils.showKeyboard
 import com.sjianjun.reader.utils.toast
-import okhttp3.Cookie
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -51,30 +38,86 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
+    private val whitelist = setOf("yuewen.com")
 
     fun init(lifecycle: Lifecycle) {
         webView = binding.webView
-        initWebViewSetting(webView)
-        initWebView(webView)
-        initNavigation()
-        initInputView()
+        initWebView(binding.webView)
         lifecycle.addObserver(lifecycleObserver)
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
         this.url = url
         this.clearHistory = clearHistory
+        Log.i("loadUrl:${url} ")
         webView?.loadUrl(url)
     }
 
-    private fun initWebView(webView: WebView?) {
+    private fun initWebView(webView: WebView) {
+        webView?.setOnLongClickListener {
+            webView.evaluateJavascript(
+                """
+// 尝试获取 og:title 的内容
+let ogTitle = document.querySelector('meta[property="og:title"]');
 
-        webView?.webViewClient = object : WebViewClient() {
+// 如果 og:title 存在，获取其 content 属性
+if (ogTitle) {
+    ogTitle.getAttribute('content')
+} else {
+    // 如果 og:title 不存在，获取 keywords 的内容
+    let keywords = document.querySelector('meta[name="keywords"]');
+    if (keywords) {
+        keywords.getAttribute('content')
+    } else {
+        ""
+    }
+}
+
+
+            """.trimIndent()
+            ) {
+                val str = it?.toString()?.replace("\"", "")?.split(",")?.first()
+                if (str.isNullOrBlank() || str == "null") {
+                    return@evaluateJavascript
+                }
+                Log.i("复制到剪贴板:$str")
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                val clipData = android.content.ClipData.newPlainText("text", str)
+                clipboard?.setPrimaryClip(clipData)
+                toast("书名复制到剪贴板：$str")
+            }
+            true
+        }
+
+        val cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
+        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
+
+        WebView.setWebContentsDebuggingEnabled(true)
+//声明WebSettings子类
+        val webSettings = webView.settings
+        webSettings.userAgentString = WEB_VIEW_UA_ANDROID
+        webSettings.javaScriptEnabled = true
+        webSettings.domStorageEnabled = true
+//设置自适应屏幕，两者合用
+        webSettings.useWideViewPort = true //将图片调整到适合webview的大小
+        webSettings.loadWithOverviewMode = true // 缩放至屏幕的大小
+
+//缩放操作
+        webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
+        webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
+        webSettings.displayZoomControls = false //隐藏原生的缩放控件
+        webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+        webView.isScrollbarFadingEnabled = false
+
+        webView.webViewClient = object : WebViewClient() {
 
             fun getTopDomain(url: HttpUrl): String? {
                 val hostParts = url.host.split(".")
-                return if (hostParts.size >= 2) {
-                    hostParts.takeLast(2).joinToString(".") // 获取最后两个部分，例如 "example.com"
+                Log.i("host:${url.host}")
+                val n = if (url.host.endsWith(".net.cn") || url.host.endsWith(".org.cn") || url.host.endsWith(".com.cn")) 3 else 2
+                return if (hostParts.size >= n) {
+                    hostParts.takeLast(n).joinToString(".") // 获取最后两个部分，例如 "example.com"
                 } else {
                     null // 如果 URL 不包含有效的主域名部分
                 }
@@ -91,25 +134,23 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): Boolean {
                 val url = request.url.toString()
-                Log.i("$url ")
+                Log.i("shouldOverrideUrlLoading:$url ")
+                if (url.endsWith(".apk")) {
+                    return true
+                }
                 val httpUrl = url.toHttpUrlOrNull()
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
-                if (isSameDomain(httpUrl, origin)) {
+                if (whitelist.contains(httpUrl?.topPrivateDomain()) || httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
                     BookCityPageActivity.startActivity(context, url)
                 }
-                return true  // 返回 true 表示我们自己处理这个 URL
+                return true
 
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 Log.i(url)
-
-                if (!binding.editText.hasFocus()) {
-                    binding.editText.setText(url)
-                }
                 binding.progressBar.animFadeIn()
-                binding.refresh.isSelected = true
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
@@ -117,17 +158,6 @@ class CustomWebView @JvmOverloads constructor(
                 if (!url.startsWith("http")) {
                     return
                 }
-                binding.forward.isEnabled = webView?.canGoForward() == true
-                binding.backward.isEnabled = webView?.canGoBack() == true
-                binding.refresh.isSelected = false
-//                CookieMgr.saveFromResponse()
-                val cookieManager = CookieManager.getInstance()
-                val cookieStr = cookieManager.getCookie(url) ?: return
-                val httpUrl = url.toHttpUrl()
-                val cookie = Cookie.parse(httpUrl, cookieStr)
-                cookie?.let { CookieMgr.saveFromResponse(httpUrl, mutableListOf(it)) }
-
-                Log.e(cookieStr)
             }
 
             override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
@@ -172,125 +202,9 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun initWebViewSetting(webView: WebView?) {
-        this.webView = webView ?: return
-        WebView.setWebContentsDebuggingEnabled(true)
-//声明WebSettings子类
-        val webSettings = webView.settings
-        webSettings.userAgentString = WEB_VIEW_UA_ANDROID
-        webSettings.javaScriptEnabled = true
-        webSettings.domStorageEnabled = true
-//设置自适应屏幕，两者合用
-        webSettings.useWideViewPort = true //将图片调整到适合webview的大小
-        webSettings.loadWithOverviewMode = true // 缩放至屏幕的大小
-
-//缩放操作
-        webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
-        webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
-        webSettings.displayZoomControls = false //隐藏原生的缩放控件
-        webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        webView.isScrollbarFadingEnabled = false
-    }
-
     /**
      * 底部导航按钮设置
      */
-    private fun initNavigation() {
-        binding.apply {
-            home.setOnClickListener {
-                loadUrl(url ?: return@setOnClickListener)
-            }
-            refresh.setOnClickListener {
-                if (it.isSelected) {
-                    webView.stopLoading()
-                } else {
-                    webView.reload()
-                }
-            }
-            forward.isEnabled = false
-            forward.setOnClickListener {
-                webView.goForward()
-            }
-            backward.isEnabled = false
-            backward.setOnClickListener {
-                webView.goBack()
-            }
-            //切换移动版 桌面版本
-            mobile.isSelected = true
-            mobile.setOnClickListener {
-                mobile.isSelected = !mobile.isSelected
-                if (mobile.isSelected) {
-                    webView.settings.userAgentString = WEB_VIEW_UA_ANDROID
-                } else {
-                    webView.settings.userAgentString = WEB_VIEW_UA_DESKTOP
-                }
-                webView.reload()
-            }
-        }
-    }
-
-    private fun initInputView() {
-        binding.inputMask.setOnClickListener {
-            binding.editText.clearFocus()
-            webView?.requestFocus()
-        }
-        binding.inputClear.setOnClickListener {
-            binding.editText.setText("")
-        }
-
-        binding.editText.doAfterTextChanged {
-            if (binding.editText.hasFocus()) {
-                if (it.toString().isEmpty()) {
-                    binding.inputClear.hide()
-                } else {
-                    binding.inputClear.show()
-                }
-            } else {
-                binding.inputClear.hide()
-            }
-        }
-
-        binding.editText.setOnFocusChangeListener { v, hasFocus ->
-            if (hasFocus) {
-                if (!binding.editText.text?.toString().isNullOrBlank()) {
-                    binding.inputClear.show()
-                } else {
-                    binding.inputClear.hide()
-                }
-                binding.inputMask.show()
-                v.showKeyboard()
-            } else {
-                binding.inputClear.hide()
-                binding.inputMask.hide()
-                v.hideKeyboard()
-                binding.editText.setText(webView?.url)
-            }
-        }
-
-        binding.editText.setOnEditorActionListener { _, actionId, _ ->
-            if (EditorInfo.IME_ACTION_GO == actionId) {
-                var url = binding.editText.text.toString()
-                if (url.isBlank()) {
-                    toast("请输入正确的URL地址")
-                    return@setOnEditorActionListener true
-                }
-                if (!URLUtil.isValidUrl(url)) {
-                    url = "http://$url"
-                    if (!URLUtil.isValidUrl(url)) {
-                        toast("请输入正确的URL地址")
-                        return@setOnEditorActionListener true
-                    }
-                }
-
-                binding.editText.setText("")
-                webView?.loadUrl(url)
-                binding.editText.clearFocus()
-                webView?.requestFocus()
-            }
-            return@setOnEditorActionListener EditorInfo.IME_ACTION_GO == actionId
-        }
-    }
 
     fun onBackPressed(): Boolean {
         if (webView?.canGoBack() == true) {
@@ -298,51 +212,6 @@ class CustomWebView @JvmOverloads constructor(
             return true
         }
         return false
-    }
-
-    override fun onRestoreInstanceState(state: Parcelable?) {
-        if (state is State) {
-            super.onRestoreInstanceState(state.superState)
-            state.url?.let { webView?.loadUrl(it) }
-        } else {
-            super.onRestoreInstanceState(state)
-        }
-    }
-
-    override fun onSaveInstanceState(): Parcelable {
-        val state = State(super.onSaveInstanceState())
-        state.url = webView?.url
-        return state
-    }
-
-    class State : BaseSavedState {
-        var url: String? = null
-
-        constructor(superState: Parcelable?) : super(superState)
-
-        constructor(parcel: Parcel) : super(parcel) {
-            url = parcel.readString()
-        }
-
-        override fun writeToParcel(parcel: Parcel, flags: Int) {
-            super.writeToParcel(parcel, flags)
-            parcel.writeString(url)
-        }
-
-        override fun describeContents(): Int {
-            return 0
-        }
-
-        companion object CREATOR : Parcelable.Creator<State> {
-            override fun createFromParcel(parcel: Parcel): State {
-                return State(parcel)
-            }
-
-            override fun newArray(size: Int): Array<State?> {
-                return arrayOfNulls(size)
-            }
-        }
-
     }
 
     class LifecycleObserver(private val customWebView: CustomWebView) :
