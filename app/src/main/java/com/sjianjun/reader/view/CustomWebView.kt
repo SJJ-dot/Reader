@@ -3,6 +3,7 @@ package com.sjianjun.reader.view
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Build
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -23,7 +24,6 @@ import com.sjianjun.reader.module.bookcity.BookCityPageActivity
 import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.animFadeOut
 import com.sjianjun.reader.utils.toast
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -42,6 +42,16 @@ class CustomWebView @JvmOverloads constructor(
 
     fun init(lifecycle: Lifecycle) {
         webView = binding.webView
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            Log.i("refresh")
+            webView?.reload()
+        }
+        // 设置 WebView 的滚动监听器
+        webView?.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            // 如果 WebView 滚动到顶部，则允许 SwipeRefreshLayout 下拉刷新
+            binding.swipeRefreshLayout.isEnabled = scrollY == 0
+        }
+
         initWebView(binding.webView)
         lifecycle.addObserver(lifecycleObserver)
     }
@@ -112,22 +122,6 @@ if (ogTitle) {
 
         webView.webViewClient = object : WebViewClient() {
 
-            fun getTopDomain(url: HttpUrl): String? {
-                val hostParts = url.host.split(".")
-                Log.i("host:${url.host}")
-                val n = if (url.host.endsWith(".net.cn") || url.host.endsWith(".org.cn") || url.host.endsWith(".com.cn")) 3 else 2
-                return if (hostParts.size >= n) {
-                    hostParts.takeLast(n).joinToString(".") // 获取最后两个部分，例如 "example.com"
-                } else {
-                    null // 如果 URL 不包含有效的主域名部分
-                }
-            }
-
-            fun isSameDomain(url1: HttpUrl?, url2: HttpUrl?): Boolean {
-                if (url1 == null || url2 == null) return false
-                return getTopDomain(url1) == getTopDomain(url2)
-            }
-
 
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
@@ -150,11 +144,12 @@ if (ogTitle) {
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 Log.i(url)
-                binding.progressBar.animFadeIn()
+                binding.swipeRefreshLayout.isRefreshing = true
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
                 Log.i(url ?: return)
+                binding.swipeRefreshLayout.isRefreshing = false
                 if (!url.startsWith("http")) {
                     return
                 }
@@ -190,16 +185,14 @@ if (ogTitle) {
                 }
                 return super.shouldInterceptRequest(view, request)
             }
+
         }
-        webView?.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                Log.i("progress:${newProgress} ")
-                binding.progressBar.progress = newProgress
-                if (newProgress == 100) {
-                    binding.progressBar.animFadeOut()
+        webView?.webChromeClient =
+            object : WebChromeClient() {
+                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                    Log.i("progress:${newProgress} ")
                 }
             }
-        }
     }
 
     /**

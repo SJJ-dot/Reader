@@ -24,6 +24,7 @@
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_xue_xi"
         android:label="${app_name}"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:requestLegacyExternalStorage="true"
         android:theme="@style/AppTheme.DayNight"
         android:usesCleartextTraffic="true"
