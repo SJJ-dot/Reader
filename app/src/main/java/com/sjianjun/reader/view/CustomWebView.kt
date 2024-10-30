@@ -3,7 +3,6 @@ package com.sjianjun.reader.view
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -21,11 +20,10 @@ import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.bookcity.BookCityPageActivity
-import com.sjianjun.reader.utils.animFadeIn
-import com.sjianjun.reader.utils.animFadeOut
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+
 
 /*
  * Created by shen jian jun on 2020-07-10
@@ -136,7 +134,8 @@ if (ogTitle) {
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
                 if (whitelist.contains(httpUrl?.topPrivateDomain()) || httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
-                    BookCityPageActivity.startActivity(context, url)
+//                    BookCityPageActivity.startActivity(context, url)
+                    return false
                 }
                 return true
 
