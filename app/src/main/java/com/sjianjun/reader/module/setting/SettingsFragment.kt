@@ -71,7 +71,7 @@ class SettingsFragment : Fragment() {
                     }
                 }
             }
-
+            Log.i("bookCityUrl:" + globalConfig.bookCityUrl)
             bookCityUrlInput.text = globalConfig.bookCityUrl
             bookCityUrlInput.setOnClickListener {
                 val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
@@ -88,7 +88,10 @@ class SettingsFragment : Fragment() {
                     .setTitle("书城地址")
                     .setView(bindingDialog.root)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        val url = bindingDialog.editView.text.toString().trim()
+                        var url = bindingDialog.editView.text.toString().trim().lowercase()
+                        if (!url.startsWith("http")) {
+                            url = "https://$url"
+                        }
                         if (url.toHttpUrlOrNull() != null) {
                             val historyList = globalConfig.bookCityUrlHistoryList
                             historyList.remove(url)

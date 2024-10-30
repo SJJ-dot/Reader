@@ -67,15 +67,15 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false 
-            shrinkResources false 
+            minifyEnabled true
+            shrinkResources true
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             manifestPlaceholders["app_name"] = "学习"
         }
         debug {
-//            minifyEnabled true
-//            shrinkResources true
+            minifyEnabled true
+            shrinkResources true
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
             manifestPlaceholders["app_name"] = "DEBUG"
@@ -125,7 +125,7 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    implementation "org.mozilla:rhino:1.7.12"
+    implementation "org.mozilla:rhino-runtime:1.7.15"
     implementation "org.jsoup:jsoup:1.13.1"
 
     implementation "com.github.SJJ-dot.retrofit-ext:charset-detector:1.0.1"
