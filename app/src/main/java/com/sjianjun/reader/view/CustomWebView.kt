@@ -132,9 +132,11 @@ if (ogTitle) {
                 }
                 val httpUrl = url.toHttpUrlOrNull()
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
-                if (whitelist.contains(httpUrl?.topPrivateDomain()) || httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
+                if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
-//                    BookCityPageActivity.startActivity(context, url)
+                    BookCityPageActivity.startActivity(context, url)
+                    return true
+                } else if (whitelist.contains(httpUrl?.topPrivateDomain())) {
                     return false
                 }
                 return true
