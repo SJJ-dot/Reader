@@ -19,7 +19,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.module.bookcity.BookCityPageActivity
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -134,7 +135,7 @@ if (ogTitle) {
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
                 if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
-                    BookCityPageActivity.startActivity(context, url)
+                    EventBus.post(WEB_NEW_URL, url)
                     return true
                 } else if (whitelist.contains(httpUrl?.topPrivateDomain())) {
                     return false

@@ -49,22 +49,25 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     fun setOnBackPressed(lifecycle: Lifecycle, onBackPressed: () -> Boolean) {
-        backPressedListeners.add(OnBackPressedListener(lifecycle, onBackPressed))
-
+        OnBackPressedListener(backPressedListeners,lifecycle, onBackPressed)
     }
 
-    private  inner class OnBackPressedListener(val lifecycle: Lifecycle,val listener: () -> Boolean
+    private class OnBackPressedListener(
+        val onBackPressedListener: MutableList<OnBackPressedListener>,
+        val lifecycle: Lifecycle,
+        val listener: () -> Boolean
     ) : LifecycleEventObserver {
         init {
-            backPressedListeners.add(this)
+            onBackPressedListener.add(this)
             lifecycle.addObserver(this)
         }
 
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
             if (event == Lifecycle.Event.ON_DESTROY) {
-                backPressedListeners.remove(this)
+                onBackPressedListener.remove(this)
             }
         }
+
         fun onBackPressed(): Boolean {
             if (lifecycle.currentState == Lifecycle.State.RESUMED) {
                 return listener()

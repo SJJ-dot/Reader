@@ -2,12 +2,11 @@ package com.sjianjun.reader.module.bookcity
 
 import android.os.Bundle
 import android.view.View
-import androidx.lifecycle.Observer
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.databinding.BookcityFragmentBrowserBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.view.CustomWebView
 
 
 class BrowserBookCityFragment : BaseFragment() {
@@ -17,22 +16,15 @@ class BrowserBookCityFragment : BaseFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        BookcityFragmentBrowserBinding.bind(view).apply {
-            customWebView.init(viewLifecycleOwner.lifecycle)
-            setOnBackPressed { customWebView.onBackPressed() }
+        childFragmentManager.beginTransaction()
+            .replace(R.id.web_view_container, BookCityPageFragment.newInstance(globalConfig.bookCityUrl))
+            .commit()
 
-            //QQ登录
-            globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
-                val url = it?.toString() ?: return@Observer
-                customWebView.loadUrl(url, true)
-            })
-            initData(customWebView)
+        EventBus.observe<String>(WEB_NEW_URL, viewLifecycleOwner) {
+            childFragmentManager.beginTransaction()
+                .add(R.id.web_view_container, BookCityPageFragment.newInstance(it))
+                .addToBackStack(null)
+                .commit()
         }
-
     }
-
-    private fun initData(customWebView: CustomWebView) {
-        customWebView.loadUrl(globalConfig.bookCityUrl, true)
-    }
-
 }
