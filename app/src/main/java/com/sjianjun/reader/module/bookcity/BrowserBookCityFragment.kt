@@ -18,13 +18,14 @@ class BrowserBookCityFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         childFragmentManager.beginTransaction()
             .replace(R.id.web_view_container, BookCityPageFragment.newInstance(globalConfig.bookCityUrl))
-            .commit()
+            .commitAllowingStateLoss()
 
         EventBus.observe<String>(WEB_NEW_URL, viewLifecycleOwner) {
             childFragmentManager.beginTransaction()
+                .hide(childFragmentManager.fragments.last())
                 .add(R.id.web_view_container, BookCityPageFragment.newInstance(it))
                 .addToBackStack(null)
-                .commit()
+                .commitAllowingStateLoss()
         }
     }
 }
