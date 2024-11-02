@@ -19,8 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.event.EventBus
-import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
+import com.sjianjun.reader.module.bookcity.BookCityPageActivity
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -32,7 +31,8 @@ import sjj.alog.Log
 class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-    val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
+    val binding: CustomWebViewBinding =
+        CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     private val lifecycleObserver by lazy { LifecycleObserver(this) }
     private var webView: WebView? = null
     private var url: String? = null
@@ -66,34 +66,36 @@ class CustomWebView @JvmOverloads constructor(
         webView?.setOnLongClickListener {
             webView.evaluateJavascript(
                 """
-// 尝试获取 og:title 的内容
-let ogTitle = document.querySelector('meta[property="og:title"]');
+                javascript:(function() {
+                    // 尝试获取 og:title 的内容
+                    let ogTitle = document.querySelector('meta[property="og:title"]');
 
-// 如果 og:title 存在，获取其 content 属性
-if (ogTitle) {
-    ogTitle.getAttribute('content')
-} else {
-    // 如果 og:title 不存在，获取 keywords 的内容
-    let keywords = document.querySelector('meta[name="keywords"]');
-    if (keywords) {
-        keywords.getAttribute('content')
-    } else {
-        ""
-    }
-}
-
-
+                    // 如果 og:title 存在，获取其 content 属性
+                    if (ogTitle) {
+                        return ogTitle.getAttribute('content')
+                    } else {
+                        // 如果 og:title 不存在，获取 keywords 的内容
+                        let keywords = document.querySelector('meta[name="keywords"]');
+                        if (keywords) {
+                            return keywords.getAttribute('content')
+                        } else {
+                            return ""
+                        }
+                    }
+                })()
             """.trimIndent()
             ) {
+                Log.i("title:$it")
                 val str = it?.toString()?.replace("\"", "")?.split(",")?.first()
                 if (str.isNullOrBlank() || str == "null") {
                     return@evaluateJavascript
                 }
                 Log.i("复制到剪贴板:$str")
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                 val clipData = android.content.ClipData.newPlainText("text", str)
                 clipboard?.setPrimaryClip(clipData)
-                toast("书名复制到剪贴板：$str")
+                toast("已复制标题：${str}")
             }
             true
         }
@@ -135,7 +137,8 @@ if (ogTitle) {
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
                 if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
-                    EventBus.post(WEB_NEW_URL, url)
+//                    EventBus.post(WEB_NEW_URL, url)
+                    BookCityPageActivity.startActivity(context, url)
                     return true
                 } else if (whitelist.contains(httpUrl?.topPrivateDomain())) {
                     return false

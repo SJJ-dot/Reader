@@ -22,7 +22,7 @@ class BrowserBookCityFragment : BaseFragment() {
 
         EventBus.observe<String>(WEB_NEW_URL, viewLifecycleOwner) {
             childFragmentManager.beginTransaction()
-                .hide(childFragmentManager.fragments.last())
+//                .hide(childFragmentManager.fragments.last())
                 .add(R.id.web_view_container, BookCityPageFragment.newInstance(it))
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
