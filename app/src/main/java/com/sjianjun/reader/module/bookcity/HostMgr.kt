@@ -73,11 +73,11 @@ class HostMgr(owner: LifecycleOwner) {
 
     fun addUrl(url: String) {
         val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        if (topHost.isBlank() || blacklist.value?.contains(topHost) == true) {
+        if (topHost.isBlank() || blacklist.value?.contains(topHost) == true || whitelist.value?.contains(topHost) == true) {
             return
         }
         val host = url.toHttpUrlOrNull()?.host ?: return
-        if (host.isBlank() || hostList.value?.contains(host) == true || blacklist.value?.contains(host) == true) {
+        if (host.isBlank() || hostList.value?.contains(host) == true || blacklist.value?.contains(host) == true || whitelist.value?.contains(host) == true) {
             return
         }
         if (hostList.value?.contains(topHost) == false) {
