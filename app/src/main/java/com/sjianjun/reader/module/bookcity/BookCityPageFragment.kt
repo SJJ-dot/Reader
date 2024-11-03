@@ -33,7 +33,7 @@ class BookCityPageFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentBookCityPageBinding.bind(view).apply {
-            customWebView.init(viewLifecycleOwner.lifecycle)
+            customWebView.init(viewLifecycleOwner)
             //QQ登录
             globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
                 val url = it?.toString() ?: return@Observer
@@ -78,18 +78,18 @@ class BookCityPageFragment : BaseFragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {
             }
         })
-        HostMgr.hostList.observe(viewLifecycleOwner, Observer {
+        binding.customWebView.hostMgr?.hostList?.observe(viewLifecycleOwner) {
             hostListAdapter.data = it
             hostListAdapter.notifyDataSetChanged()
-        })
-        HostMgr.blacklist.observe(viewLifecycleOwner, Observer {
+        }
+        HostMgr.blacklist.observe(viewLifecycleOwner) {
             blackListAdapter.data = it
             blackListAdapter.notifyDataSetChanged()
-        })
-        HostMgr.whitelist.observe(viewLifecycleOwner, Observer {
+        }
+        HostMgr.whitelist.observe(viewLifecycleOwner) {
             whiteListAdapter.data = it
             whiteListAdapter.notifyDataSetChanged()
-        })
+        }
     }
 
     class HostListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {

@@ -17,6 +17,7 @@ import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.event.EventBus
@@ -39,8 +40,9 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
-
-    fun init(lifecycle: Lifecycle) {
+    var hostMgr: HostMgr? = null
+    fun init(owner: LifecycleOwner) {
+        hostMgr = HostMgr(owner)
         webView = binding.webView
         binding.swipeRefreshLayout.setOnRefreshListener {
             Log.i("refresh")
@@ -53,7 +55,7 @@ class CustomWebView @JvmOverloads constructor(
         }
 
         initWebView(binding.webView)
-        lifecycle.addObserver(lifecycleObserver)
+        owner.lifecycle.addObserver(lifecycleObserver)
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
@@ -178,7 +180,7 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                HostMgr.addUrl(request.url.toString())
+                hostMgr?.addUrl(request.url.toString())
                 if (HostMgr.blacklist.value?.contains(request.url.host) == true) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(null, null, null)
