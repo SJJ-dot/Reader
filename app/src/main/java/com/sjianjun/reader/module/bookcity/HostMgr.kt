@@ -14,6 +14,12 @@ class HostMgr(owner: LifecycleOwner) {
         init {
             blacklist.postValue(globalConfig.hostBlacklist)
             whitelist.postValue(globalConfig.hostWhitelist)
+            blacklist.observeForever {
+                globalConfig.hostBlacklist = it
+            }
+            whitelist.observeForever {
+                globalConfig.hostWhitelist = it
+            }
         }
 
         fun addBlackHost(host: String) {
@@ -25,8 +31,9 @@ class HostMgr(owner: LifecycleOwner) {
         }
 
         fun removeBlackHost(host: String) {
-            blacklist.value?.remove(host)
-            blacklist.postValue(blacklist.value)
+            val list = blacklist.value!!.toMutableList()
+            list.remove(host)
+            blacklist.postValue(list)
         }
 
         fun addWhiteHost(host: String) {
@@ -38,8 +45,9 @@ class HostMgr(owner: LifecycleOwner) {
         }
 
         fun removeWhiteHost(host: String) {
-            whitelist.value?.remove(host)
-            whitelist.postValue(whitelist.value)
+            val list = whitelist.value!!.toMutableList()
+            list.remove(host)
+            whitelist.postValue(list)
         }
     }
 
@@ -48,29 +56,31 @@ class HostMgr(owner: LifecycleOwner) {
 
     init {
         blacklist.observe(owner) { list ->
+            val mutableList = hostList.value!!.toMutableList()
             list.forEach { blackHost ->
-                hostList.value?.removeAll { it.endsWith(blackHost) }
+                mutableList.removeAll { it.endsWith(blackHost) }
             }
-            globalConfig.hostBlacklist = list
+            hostList.postValue(mutableList)
         }
         whitelist.observe(owner) { list ->
+            val mutableList = hostList.value!!.toMutableList()
             list.forEach { whiteHost ->
-                hostList.value?.removeAll { it.endsWith(whiteHost) }
+                mutableList.removeAll { it.endsWith(whiteHost) }
             }
-            globalConfig.hostWhitelist = list
+            hostList.postValue(mutableList)
         }
     }
 
     fun addUrl(url: String) {
         val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        if (topHost.isBlank() || hostList.value?.contains(topHost) == true || blacklist.value?.contains(topHost) == true) {
+        if (topHost.isBlank() || blacklist.value?.contains(topHost) == true) {
             return
         }
         val host = url.toHttpUrlOrNull()?.host ?: return
         if (host.isBlank() || hostList.value?.contains(host) == true || blacklist.value?.contains(host) == true) {
             return
         }
-        if (topHost != host) {
+        if (hostList.value?.contains(topHost) == false) {
             hostList.value?.add(topHost)
         }
         hostList.value?.add(host)

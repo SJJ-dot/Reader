@@ -181,7 +181,9 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): WebResourceResponse? {
                 hostMgr?.addUrl(request.url.toString())
-                if (HostMgr.blacklist.value?.contains(request.url.host) == true) {
+                if (HostMgr.blacklist.value?.contains(request.url.host) == true ||
+                    HostMgr.blacklist.value?.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()) == true
+                ) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(null, null, null)
                 }
