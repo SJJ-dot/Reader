@@ -21,6 +21,7 @@ import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
+import com.sjianjun.reader.module.bookcity.HostMgr
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -38,7 +39,6 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
-    private val whitelist = setOf("yuewen.com")
 
     fun init(lifecycle: Lifecycle) {
         webView = binding.webView
@@ -136,14 +136,15 @@ class CustomWebView @JvmOverloads constructor(
                 }
                 val httpUrl = url.toHttpUrlOrNull()
                 val origin = this@CustomWebView.url?.toHttpUrlOrNull()
+                if (HostMgr.blacklist.value?.contains(httpUrl?.host) == true) {
+                    return true
+                }
                 if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
                     // 启动新 Activity
                     EventBus.post(WEB_NEW_URL, url)
                     return true
-                } else if (whitelist.contains(httpUrl?.topPrivateDomain())) {
-                    return false
                 }
-                return true
+                return false
 
             }
 
@@ -177,16 +178,10 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                val path = request.url.path
-                val url = request.url.toString()
-
-                if (path?.endsWith(".gif") == true ||
-                    path?.endsWith(".js") == true ||
-                    url.contains("sdk", true)
-                ) {
-                    Log.w("${request.method} ${request.url} ")
-                } else {
-                    Log.i("${request.method} ${request.url} ")
+                HostMgr.addUrl(request.url.toString())
+                if (HostMgr.blacklist.value?.contains(request.url.host) == true) {
+                    Log.i("拦截请求：${request.url}")
+                    return WebResourceResponse(null, null, null)
                 }
                 return super.shouldInterceptRequest(view, request)
             }

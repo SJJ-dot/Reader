@@ -97,5 +97,9 @@ class AppConfig(val name: String) :
 
     var bookCityUrlHistoryList by dataPref("bookCityUrlHistoryList", mutableListOf("https://m.qidian.com"))
     var bookCityUrl by dataPref("bookCityUrl", "https://m.qidian.com")
+
+    //本次启动之后书城访问的所有的URL
+    var hostBlacklist by dataPref("hostBlacklist", mutableListOf<String>())
+    var hostWhitelist by dataPref("hostWhitelist", mutableListOf<String>())
 }
 

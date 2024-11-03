@@ -4,11 +4,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
+import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.gone
+import sjj.alog.Log
 
 private const val ARG_URL = "ARG_URL"
 
@@ -32,6 +40,95 @@ class BookCityPageFragment : BaseFragment() {
                 customWebView.loadUrl(url, true)
             })
             customWebView.loadUrl(url!!, true)
+
+            drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+                var first = true
+                override fun onDrawerOpened(drawerView: View) {
+                    if (first) {
+                        first = false
+                        initDrawer(this@apply)
+                    }
+                }
+            })
+
+        }
+    }
+
+    private fun initDrawer(binding: FragmentBookCityPageBinding) {
+        val hostListAdapter = HostListAdapter()
+        val whiteListAdapter = WhiteListAdapter()
+        val blackListAdapter = BlackListAdapter()
+
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        binding.recyclerView.adapter = hostListAdapter
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                Log.i("tab:${tab?.position}")
+                binding.recyclerView.adapter = when (tab?.position) {
+                    0 -> hostListAdapter
+                    1 -> whiteListAdapter
+                    2 -> blackListAdapter
+                    else -> hostListAdapter
+                }
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab?) {
+            }
+
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+            }
+        })
+        HostMgr.hostList.observe(viewLifecycleOwner, Observer {
+            hostListAdapter.data = it
+            hostListAdapter.notifyDataSetChanged()
+        })
+        HostMgr.blacklist.observe(viewLifecycleOwner, Observer {
+            blackListAdapter.data = it
+            blackListAdapter.notifyDataSetChanged()
+        })
+        HostMgr.whitelist.observe(viewLifecycleOwner, Observer {
+            whiteListAdapter.data = it
+            whiteListAdapter.notifyDataSetChanged()
+        })
+    }
+
+    class HostListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
+            binding.tvHost.text = data[position]
+            binding.btnMarkWhite.text = "+白名单"
+            binding.btnMarkWhite.setOnClickListener {
+                HostMgr.addWhiteHost(data[position])
+            }
+            binding.btnMarkBlack.text = "+黑名单"
+            binding.btnMarkBlack.setOnClickListener {
+                HostMgr.addBlackHost(data[position])
+            }
+        }
+    }
+
+    class WhiteListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
+            binding.tvHost.text = data[position]
+            binding.btnMarkBlack.gone()
+            binding.btnMarkWhite.text = "移除白名单"
+            binding.btnMarkWhite.setOnClickListener {
+                HostMgr.removeWhiteHost(data[position])
+            }
+        }
+
+    }
+
+    class BlackListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
+            binding.tvHost.text = data[position]
+            binding.btnMarkWhite.gone()
+            binding.btnMarkBlack.text = "移除黑名单"
+            binding.btnMarkBlack.setOnClickListener {
+                HostMgr.removeBlackHost(data[position])
+            }
         }
     }
 
