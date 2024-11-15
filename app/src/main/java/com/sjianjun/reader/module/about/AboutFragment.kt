@@ -1,19 +1,29 @@
 package com.sjianjun.reader.module.about
 
+import android.content.Context
 import android.content.Intent
+import android.os.Environment
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import com.sjianjun.coroutine.launch
+import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL_REPO
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.module.update.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.*
+import sjj.alog.Log
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.channels.FileChannel
 
 class AboutFragment : BaseAsyncFragment() {
 
@@ -32,6 +42,19 @@ class AboutFragment : BaseAsyncFragment() {
 
             setVersionInfo(versionCode)
             versionCode.performClick()
+        }
+    }
+
+    fun exportDb() {
+        val exportedDbFile = File(requireContext().externalCacheDir, "database/app_database_exported")
+
+        try {
+            exportedDbFile.parentFile?.mkdirs()
+            File(DbFactory.dbFile).copyTo(exportedDbFile, true)
+            Log.i("数据库已导出到${exportedDbFile.absolutePath}")
+            toast("数据库已导出到${exportedDbFile.absolutePath}", Toast.LENGTH_LONG)
+        } catch (e: Exception) {
+            Log.e(e,e)
         }
     }
 

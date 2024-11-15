@@ -208,7 +208,7 @@ object DataManager {
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
-        return dao.getReadingRecordFlow(book.title, book.author)
+        return dao.getReadingRecordFlow(book.title, book.author).flowIo()
     }
 
     /**

@@ -1,19 +1,27 @@
 package com.sjianjun.reader.module.shelf
 
 import android.annotation.SuppressLint
-import android.app.Dialog
 import android.content.res.ColorStateList
 import android.os.Bundle
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.*
+import com.sjianjun.reader.BOOK_AUTHOR
+import com.sjianjun.reader.BOOK_ID
+import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.BaseFragment
+import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseViewAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.module.main.BookSourceListFragment
@@ -21,13 +29,25 @@ import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.animFadeIn
+import com.sjianjun.reader.utils.animFadeOut
+import com.sjianjun.reader.utils.bookComparator
+import com.sjianjun.reader.utils.bundle
+import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.id
+import com.sjianjun.reader.utils.key
+import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.visibleSet
 import com.sjianjun.reader.view.isLoading
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
@@ -82,11 +102,11 @@ class BookshelfFragment : BaseFragment() {
                 bookList.clear()
                 val bookNum = it.size
                 bookshelfUi.loading.max = bookNum
-                it.asFlow().flatMapMerge { book ->
-                    combine(
-                        DataManager.getReadingRecord(book),
-                        DataManager.getLastChapterByBookId(book.id)
-                    ) { record, lastChapter ->
+                it.map { book ->
+                    bookList[book.key] = book
+                    async(Dispatchers.IO) {
+                        val record = DataManager.getReadingRecord(book).firstOrNull()
+                        val lastChapter = DataManager.getLastChapterByBookId(book.id).firstOrNull()
                         book.record = record
                         val chapter = DataManager.getChapterByIndex(
                             record?.bookId ?: "",
@@ -109,15 +129,11 @@ class BookshelfFragment : BaseFragment() {
                         } else {
                             lastChapterIndex - readChapterIndex + 1
                         }
-
                         book
                     }
-                }.mapNotNull { book ->
-                    bookList[book.key] = book
-                    bookList.values.sortedWith(bookComparator)
-                }.flowIo().debounce(300).collect { list ->
+                }.awaitAll().apply {
                     adapter.data.clear()
-                    adapter.data.addAll(list)
+                    adapter.data.addAll(bookList.values.sortedWith(bookComparator))
                     adapter.notifyDataSetChanged()
                 }
             }
