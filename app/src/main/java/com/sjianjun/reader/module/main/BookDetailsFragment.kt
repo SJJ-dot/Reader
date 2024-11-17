@@ -20,9 +20,6 @@ class BookDetailsFragment : BaseAsyncFragment() {
     private val bookTitle: String
         get() = requireArguments().getString(BOOK_TITLE)!!
 
-    private val bookAuthor: String
-        get() = requireArguments().getString(BOOK_AUTHOR)!!
-
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
     override val onLoadedView: (View) -> Unit = {
@@ -38,8 +35,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         binding?.originWebsite?.setOnClickListener { _ ->
             fragmentCreate<BookSourceListFragment>(
-                BOOK_TITLE to bookTitle,
-                BOOK_AUTHOR to bookAuthor
+                BOOK_TITLE to bookTitle
             ).show(childFragmentManager, "BookSourceListFragment")
         }
         setHasOptionsMenu(true)
@@ -66,15 +62,14 @@ class BookDetailsFragment : BaseAsyncFragment() {
             .replace(
                 R.id.chapter_list,
                 fragmentCreate<ChapterListFragment>(
-                    BOOK_TITLE to bookTitle,
-                    BOOK_AUTHOR to bookAuthor
+                    BOOK_TITLE to bookTitle
                 )
             )
             .commitNowAllowingStateLoss()
 
         launch(singleCoroutineKey = "initBookDetailsData") {
             var first = true
-            DataManager.getReadingBook(bookTitle, bookAuthor).collectLatest {
+            DataManager.getReadingBook(bookTitle).collectLatest {
                 fillView(it)
 
                 initListener(it)
@@ -95,7 +90,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         binding?.intro?.text = book?.intro.html()
 
-        val count = DataManager.getBookBookSourceNum(bookTitle, bookAuthor)
+        val count = DataManager.getBookBookSourceNum(bookTitle)
         val source = book?.bookSourceId?.let {
             BookSourceMgr.getBookSourceById(it).firstOrNull()
         }

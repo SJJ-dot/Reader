@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.BOOK_AUTHOR
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -29,10 +28,7 @@ class BookSourceListFragment : BaseFragment() {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val bookTitle = requireArguments().getString(BOOK_TITLE)!!
-                val bookAuthor = requireArguments().getString(BOOK_AUTHOR)!!
-                return BookSourceListViewModel(bookTitle, bookAuthor) as T
-//                return modelClass.getConstructor(String::class.java, String::class.java)
-//                    .newInstance(bookAuthor, bookTitle)
+                return BookSourceListViewModel(bookTitle) as T
             }
         }).get(BookSourceListViewModel::class.java)
     }

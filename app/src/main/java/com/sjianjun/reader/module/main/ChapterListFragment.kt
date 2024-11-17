@@ -27,8 +27,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 class ChapterListFragment : BaseFragment() {
     val bookTitle: String get() = requireArguments().getString(BOOK_TITLE)!!
 
-    val bookAuthor: String get() = requireArguments().getString(BOOK_AUTHOR)!!
-
     private val adapter = ChapterListAdapter(this)
     var binding: MainFragmentBookChapterListBinding? = null
 
@@ -49,7 +47,7 @@ class ChapterListFragment : BaseFragment() {
 
     private fun initData() {
         launch {
-            DataManager.getReadingBook(bookTitle, bookAuthor).flatMapLatest {
+            DataManager.getReadingBook(bookTitle).flatMapLatest {
                 if (it == null) {
                     emptyFlow<Pair<List<Chapter>, ReadingRecord>>()
                 } else {

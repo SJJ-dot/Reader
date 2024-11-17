@@ -13,7 +13,7 @@ import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -35,6 +35,25 @@ object DbFactory {
             .addMigrations(object : Migration(13, 14) {
                 override fun migrate(database: SupportSQLiteDatabase) {
                     database.execSQL("ALTER TABLE 'BookSource' ADD COLUMN `lauanage` TEXT NOT NULL default 'js'")
+                }
+            })
+            .addMigrations(object : Migration(14, 15) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    //ReadingRecord 删除 bookAuthor字段
+                    database.execSQL(
+                        "CREATE TABLE `ReadingRecord_new` (`bookTitle` TEXT NOT NULL," +
+                                " `bookId` TEXT NOT NULL," +
+                                " `chapterIndex` INTEGER NOT NULL," +
+                                " `offest` INTEGER NOT NULL," +
+                                " `isEnd` INTEGER NOT NULL," +
+                                " PRIMARY KEY(`bookTitle`))"
+                    )
+                    database.execSQL(
+                        "INSERT INTO ReadingRecord_new (bookTitle,bookId,chapterIndex,offest,isEnd) " +
+                                "SELECT bookTitle,bookId,chapterIndex,offest,isEnd FROM ReadingRecord"
+                    )
+                    database.execSQL("DROP TABLE ReadingRecord")
+                    database.execSQL("ALTER TABLE ReadingRecord_new RENAME TO ReadingRecord")
                 }
             })
             .build()

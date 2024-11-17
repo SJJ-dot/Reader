@@ -2,10 +2,9 @@ package com.sjianjun.reader.bean
 
 import androidx.room.Entity
 
-@Entity(primaryKeys = ["bookTitle", "bookAuthor"])
+@Entity(primaryKeys = ["bookTitle"])
 class ReadingRecord(
     var bookTitle: String,
-    var bookAuthor: String,
     var bookId: String = ""
 ) {
     var chapterIndex = 0
@@ -20,7 +19,7 @@ class ReadingRecord(
 
 
     override fun toString(): String {
-        return "ReadingRecord(bookTitle='$bookTitle', bookAuthor='$bookAuthor', chapterIndex=$chapterIndex, isEnd=$isEnd)"
+        return "ReadingRecord(bookTitle='$bookTitle', chapterIndex=$chapterIndex, isEnd=$isEnd)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -30,7 +29,6 @@ class ReadingRecord(
         other as ReadingRecord
 
         if (bookTitle != other.bookTitle) return false
-        if (bookAuthor != other.bookAuthor) return false
         if (bookId != other.bookId) return false
         if (chapterIndex != other.chapterIndex) return false
         if (offest != other.offest) return false
@@ -41,7 +39,6 @@ class ReadingRecord(
 
     override fun hashCode(): Int {
         var result = bookTitle.hashCode()
-        result = 31 * result + bookAuthor.hashCode()
         result = 31 * result + bookId.hashCode()
         result = 31 * result + chapterIndex
         result = 31 * result + offest

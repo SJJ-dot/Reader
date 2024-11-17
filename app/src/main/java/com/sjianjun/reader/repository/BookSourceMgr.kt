@@ -33,8 +33,8 @@ object BookSourceMgr {
         dao.getBookSourceById(sourceId)
     }
 
-    suspend fun getBookBookSource(bookTitle: String, bookAuthor: String) = withIo {
-        dao.getBookBookSource(bookTitle, bookAuthor)
+    suspend fun getBookBookSource(bookTitle: String) = withIo {
+        dao.getBookBookSource(bookTitle)
     }
 
     suspend fun saveJs(vararg js: BookSource) = withIo {
@@ -65,10 +65,9 @@ object BookSourceMgr {
             return@withIo
         }
 
-        val ta = "${search.bookTitle}_${search.bookAuthor}"
-        if (ta != "${details.title}_${details.author}") {
+        if (search.bookTitle != details.title) {
             js.checkResult = "校验失败：书名、作者发生变化"
-            js.checkErrorMsg = "搜索结果书名与详情页不同：${ta}==>${details.title}_${details.author}"
+            js.checkErrorMsg = "搜索结果书名与详情页不同：${search.bookTitle}==>${details.title}_${details.author}"
             return@withIo
         }
 

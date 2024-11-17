@@ -11,8 +11,8 @@ import kotlin.math.abs
 object BookMgr {
     private val dao = DbFactory.db.dao()
 
-    suspend fun getBookAllSourceFlow(title: String, author: String) = withIo {
-        return@withIo dao.getBookAllSourceFlow(title, author)
+    suspend fun getBookAllSourceFlow(title: String) = withIo {
+        return@withIo dao.getBookAllSourceFlow(title)
     }
 
     suspend fun reloadBookFromNet(book: Book?) = withIo {
@@ -32,7 +32,7 @@ object BookMgr {
             book.isLoading = false
             book.error = null
             //先检查章节内容是否有错
-            val record = dao.getReadingRecord(book.title, book.author)
+            val record = dao.getReadingRecord(book.title)
 
             val readingChapter = if (record != null) {
                 ChapterMgr.getChapterByIndex(
