@@ -87,7 +87,7 @@ def loadChapterList(book_url, soup, chapterList):
             "title": el.text,
             "url": urljoin(book_url, el.get("href"))
         })
-    if soup.select(".index-container-btn")[1].text == "下一页":
+    if soup.select(".index-container-btn")[1].text.strip() == "下一页":
         next_url = urljoin(book_url, soup.select(".index-container-btn")[1].get("href"))
         response = requests.get(next_url)
         response.encoding = "utf-8"

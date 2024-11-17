@@ -16,23 +16,28 @@ def search(query):
     # query = query.encode('utf-8')
     # url encode
     # query = quote(query)
-    url = f'https://www.2shuquge.net/search/'
+    url = f'https://www.22shuqu.com/search/'
     # searchkey=%E6%88%91%E7%9A%84&Submit=
-    data = {"searchkey": query, "Submit": ""}
+    # data = {"searchkey": query, "Submit": ""}
+    data = f'searchkey={quote(query)}&Submit={quote("搜索")}'
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
     # 发送get请求
-    log(data)
-    response = requests.post(url, data=data)
+    response = requests.post(url, data=data, headers=headers)
     response.encoding = 'utf-8'
-    log(response.request)
-    log(response.text)
+    # log(response.request)
+    # log(response.text)
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
-    for bookEl in soup.select(".category-div"):
+    for i,bookEl in enumerate(soup.select(".txt-list > li ")):
+        if i == 0:
+            continue
         books.append({
-            "bookTitle": bookEl.select("a")[1].text,
-            "bookUrl": urljoin(url, bookEl.select("a")[0].get("href")),
-            "bookAuthor": bookEl.select("span")[0].text,
+            "bookTitle": bookEl.select(".s2 > a")[0].text,
+            "bookUrl": urljoin(url, bookEl.select(".s2 > a")[0].get("href"))
         })
 
     return books
@@ -67,11 +72,17 @@ def getDetails(book_url):
     # 章节列表
     info["chapterList"] = []
 
-    for el in soup.select(".info-chapters")[1].select("a"):
-        info["chapterList"].append({
-            "title": el.text,
-            "url": urljoin(book_url, el.get("href"))
-        })
+    while True:
+
+        for el in soup.select(".section-list")[1].select("a"):
+            info["chapterList"].append({
+                "title": el.text,
+                "url": urljoin(book_url, el.get("href"))
+            })
+        if soup.select(".index-container-btn")[1].text.strip() == "下一页":
+            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href"))).text, 'html.parser')
+        else:
+            break
     return info
 
 
@@ -87,8 +98,10 @@ def getChapterContent(chapter_url):
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select("#article")[0].prettify()
+    content = soup.select("#content")[0].prettify()
 
-    if soup.select("#next_url")[0].text == "下一页":
+    if soup.select("#next_url")[0].text.strip() == "下一页":
         content += getChapterContent(urljoin(chapter_url, soup.select("#next_url")[0].get("href")))
     return content
+
+
