@@ -1,3 +1,4 @@
 requests
 beautifulsoup4
 pycryptodome
+urllib3==1.25.11
