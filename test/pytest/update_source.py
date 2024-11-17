@@ -3,21 +3,11 @@ import gzip
 import json
 import os
 
-from pypinyin import pinyin, Style
-
-
-def to_pinyin(name):
-    pinyin_list = pinyin(name, style=Style.NORMAL)
-    pinyin_list = ''.join([item[0] for item in pinyin_list])
-    return pinyin_list
-
 
 def write_source(name, script):
     # 将汉字转换为拼音
-    pinyin_list = to_pinyin(name)
-    print(f"{name} -> {pinyin_list}")
     # 将脚本写入文件
-    with open(f"../BookSource/py/{pinyin_list}.py", "w", encoding="utf-8") as f:
+    with open(f"./py/{name}.py", "w", encoding="utf-8") as f:
         f.write(script)
 
 
@@ -29,12 +19,12 @@ def update_json():
     json_dict = json.loads(json1)
     pySourceDict = {}
     for item in json_dict["pySource"]:
-        pySourceDict[to_pinyin(item["source"])] = item
+        pySourceDict[item["source"]] = item
 
-    for item in os.listdir("../BookSource/py"):
-        if not os.path.isfile(f"../BookSource/py/{item}"):
+    for item in os.listdir("./py"):
+        if not os.path.isfile(f"./py/{item}"):
             continue
-        with open(f"../BookSource/py/{item}", "r", encoding="utf-8") as f:
+        with open(f"./py/{item}", "r", encoding="utf-8") as f:
             py = f.read()
         if item.replace(".py", "") not in pySourceDict:
             json_dict["pySource"].append({
@@ -69,5 +59,5 @@ if __name__ == '__main__':
     with open("source.py", "r", encoding="utf-8") as f:
         source = f.read()
     source = source.split("if __name__ ==")[0]
-    write_source("22笔趣阁", source)
+    write_source("笔仙阁", source)
     update_json()
