@@ -33,7 +33,7 @@ def test_source():
 def test_all():
     err_list = []
     # 指定.py文件所在的目录
-    directory = "../BookSource/py"
+    directory = "./py"
     # 遍历目录下的所有.py文件
     for filename in os.listdir(directory):
         if filename.endswith(".py"):
@@ -48,4 +48,5 @@ def test_all():
 
 
 if __name__ == '__main__':
-    test_source()
+    # test_source()
+    test_all()

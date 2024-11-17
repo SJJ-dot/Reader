@@ -12,26 +12,24 @@ def search(query):
     :param query: 搜索关键词
     :return [{"bookTitle":"书名", "bookUrl": "书籍链接", "bookAuthor": "作者"}, ...] 搜索结果列表
     """
-    url = f"https://m.bixiange.me/e/search/indexpage.php"
-    # POST请求的数据
-    data = f'keyboard={quote(query, encoding="gb2312")}&show=title&classid=0'
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    # 发送POST请求Content-Type:
-    response = requests.post(url, data=data, headers=headers)
-    response.encoding = 'gb2312'
-    # log(response.request)
-    # log(response.text)
-    # 创建BeautifulSoup对象 .querySelectorAll("div")[2].querySelectorAll("p")[0] document.querySelectorAll(".txt-list > li")
+    # utf8编码
+    query = query.encode('utf-8')
+    # url encode
+    query = quote(query)
+    url = f'https://www.mingzw.net/mzwlist/{query}.html'
+    # 发送get请求
+    response = requests.get(url)
+    response.encoding = 'utf-8'
+    log(response.request.url)
+    log(response.text)
+    # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
-
-    for i, bookEl in enumerate(soup.select(".list > .clearfix > li")):
+    for bookEl in soup.select(".figure-horizontal"):
         books.append({
-            "bookTitle": bookEl.select("strong > a")[0].text,
-            "bookUrl": urljoin(url, bookEl.select("strong > a")[0].attrs["href"])
+            "bookTitle": bookEl.select("a")[0].attrs["title"],
+            "bookUrl": urljoin(url, bookEl.select("a")[0].get("href")),
+            "bookAuthor": bookEl.select("dd")[0].text,
         })
 
     return books
@@ -49,38 +47,43 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
-    }
-    response = requests.get(book_url, headers=headers)
-    response.encoding = "gb2312"
-    # log(response.request)
-    # log(response.text)
+    response = requests.get(book_url)
+    response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
     info["url"] = book_url
     # 书名
-    info["title"] = soup.select(".desc > h1")[0].text.split("(")[0]
+    info["title"] = soup.select(".novel-name")[0].text.replace("《", "").replace("》", "")
     # 作者
-    info["author"] = soup.select(".descTip > p")[1].text.replace("作者：", "")
+    info["author"] = soup.select(".picinfo a")[0].text
     # 简介
-    info["intro"] = soup.select(".descInfo")[0].text
+    info["intro"] = soup.select(".content")[0].text
     # 封面
-    info["cover"] = urljoin(book_url, soup.select(".cover > img")[0].attrs["src"])
+    info["cover"] = urljoin(book_url, soup.select(".pic img")[0].get("src"))
     # 章节列表
     info["chapterList"] = []
-    loadChapterList(book_url, soup, info["chapterList"])
+    chapterUrl = soup.select(".view-all-btn")[0].get("href")
+    parseChapterList(book_url, urljoin(book_url, chapterUrl), info["chapterList"])
+
     return info
 
 
-def loadChapterList(book_url, soup, chapterList):
-    log("加载章节目录")
-    for el in soup.select(".clearfix > li > a"):
+def parseChapterList(book_url, chapterUrl, chapterList):
+    response = requests.get(chapterUrl)
+    response.encoding = "utf-8"
+    soup = BeautifulSoup(response.text, 'html.parser')
+    # 递归加载章节列表
+    dt = 0
+    for el in soup.select(".content a"):
         chapterList.append({
             "title": el.text,
-            "url": urljoin(book_url, el.get("href"))
+            "url": urljoin(chapterUrl, el.get("href"))
         })
+
+    chapterList.pop(-1)
+    chapterList.pop(-1)
+    chapterList.pop(-1)
 
 
 def getChapterContent(chapter_url):
@@ -90,18 +93,13 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
-    }
-    response = requests.get(chapter_url, headers=headers)
-    response.encoding = "gb2312"
+    response = requests.get(chapter_url)
+    response.encoding = "utf-8"
     # 创建BeautifulSoup对象
-    # log(response.request)
-    # log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select(".content")[0].prettify()
-
+    content = soup.select(".contents")[0].prettify()
+    content = content[:content.rindex("推荐小说:")]
     return content
 
 
