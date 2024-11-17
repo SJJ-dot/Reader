@@ -15,7 +15,7 @@ def search(query):
     # utf8编码
     # query = query.encode('utf-8')
     # url encode
-    url = f"https://www.22biqu.com/search/"
+    url = f"https://www.22biqu.com/ss/"
     # POST请求的数据
     data = f'searchkey={quote(query)}&Submit={quote("搜索")}'
     headers = {
