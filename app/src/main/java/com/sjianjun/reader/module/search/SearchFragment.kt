@@ -231,10 +231,7 @@ class SearchFragment : BaseAsyncFragment() {
                     DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(
-                            BOOK_TITLE to searchResult.bookTitle,
-                            BOOK_AUTHOR to searchResult.bookAuthor
-                        )
+                        bundle(BOOK_TITLE to searchResult.bookTitle)
                     )
                 }
             }

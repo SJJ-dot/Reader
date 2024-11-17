@@ -131,7 +131,7 @@ object DataManager {
             book.isLoading = false
             book.error = null
             //先检查章节内容是否有错
-            val record = dao.getReadingRecord(book.title, book.author)
+            val record = dao.getReadingRecord(book.title)
             val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1)
             if (content?.contentError == true) {
                 chapterList[content.chapterIndex].content = content
@@ -158,9 +158,9 @@ object DataManager {
 
     suspend fun deleteBookById(book: Book): Boolean {
         return withIo {
-            val readingRecord = dao.getReadingRecord(book.title, book.author)
+            val readingRecord = dao.getReadingRecord(book.title)
             if (readingRecord?.bookId == book.id) {
-                val otherBook = dao.getBookByTitleAndAuthor(book.title, book.author).first()
+                val otherBook = dao.getBookByTitleAndAuthor(book.title).first()
                     .find { it.id != book.id } ?: return@withIo false
                 changeReadingRecordBookSource(otherBook)
             }
@@ -173,25 +173,18 @@ object DataManager {
         dao.getBookById(id)
     }
 
-    suspend fun getBookBookSourceNum(title: String?, author: String?): Int = withIo {
-        if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
+    suspend fun getBookBookSourceNum(title: String?): Int = withIo {
+        if (title.isNullOrEmpty()) {
             return@withIo 0
         }
-        return@withIo dao.getBookBookSourceNum(title, author)
+        return@withIo dao.getBookBookSourceNum(title)
     }
 
-    fun getBookByTitleAndAuthor(title: String?, author: String?): Flow<List<Book>> {
-        if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
-            return emptyFlow()
+    fun getReadingBook(title: String?): Flow<Book?> {
+        if (title.isNullOrEmpty()) {
+            return flowOf(null)
         }
-        return dao.getBookByTitleAndAuthor(title, author)
-    }
-
-    fun getReadingBook(title: String?, author: String?): Flow<Book?> {
-        if (title.isNullOrEmpty() || author.isNullOrEmpty()) {
-            return emptyFlow()
-        }
-        return dao.getReadingBook(title, author)
+        return dao.getReadingBook(title)
     }
 
 
@@ -208,7 +201,7 @@ object DataManager {
     }
 
     fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
-        return dao.getReadingRecordFlow(book.title, book.author).flowIo()
+        return dao.getReadingRecordFlow(book.title).flowIo()
     }
 
     /**
@@ -216,7 +209,7 @@ object DataManager {
      */
     suspend fun changeReadingRecordBookSource(book: Book) = withIo {
         val readingRecord = getReadingRecord(book).first()
-            ?: ReadingRecord(book.title, book.author)
+            ?: ReadingRecord(book.title)
         if (readingRecord.bookId == book.id) {
             return@withIo
         }

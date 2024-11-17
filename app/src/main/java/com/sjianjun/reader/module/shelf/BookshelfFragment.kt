@@ -17,7 +17,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
-import com.sjianjun.reader.BOOK_AUTHOR
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
@@ -48,7 +47,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
-import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 
 @FlowPreview
@@ -118,7 +116,7 @@ class BookshelfFragment : BaseFragment() {
                         }
 
                         book.lastChapter = lastChapter
-                        val js = BookSourceMgr.getBookBookSource(book.title, book.author)
+                        val js = BookSourceMgr.getBookBookSource(book.title)
                         book.javaScriptList = js
                         book.bookSource =
                             BookSourceMgr.getBookSourceById(book.bookSourceId).firstOrNull()
@@ -278,8 +276,7 @@ class BookshelfFragment : BaseFragment() {
                     "来源：${book.bookSource?.group}-${book.bookSource?.name}共${book.javaScriptList?.size}个源"
                 origin.setOnClickListener {
                     fragmentCreate<BookSourceListFragment>(
-                        BOOK_TITLE to book.title,
-                        BOOK_AUTHOR to book.author
+                        BOOK_TITLE to book.title
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
                 }
 
@@ -287,7 +284,7 @@ class BookshelfFragment : BaseFragment() {
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,
-                            bundle(BOOK_TITLE to book.title, BOOK_AUTHOR to book.author)
+                            bundle(BOOK_TITLE to book.title)
                         )
                 }
 

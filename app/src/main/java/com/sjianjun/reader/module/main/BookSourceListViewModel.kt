@@ -21,14 +21,14 @@ import kotlin.math.abs
 /**
  * 书籍书源列表页
  */
-class BookSourceListViewModel(bookTitle: String, bookAuthor: String) : ViewModel() {
+class BookSourceListViewModel(bookTitle: String) : ViewModel() {
 
     val bookList = MutableLiveData<List<Book>>()
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            BookMgr.getBookAllSourceFlow(bookTitle, bookAuthor).debounce(100).collectLatest {
-                val record = ReadingRecordMgr.getReadingRecord(bookTitle, bookAuthor)
+            BookMgr.getBookAllSourceFlow(bookTitle).debounce(100).collectLatest {
+                val record = ReadingRecordMgr.getReadingRecord(bookTitle)
                 val readingChapter = if (record != null) {
                     ChapterMgr.getChapterByIndex(
                         record?.bookId ?: "", record?.chapterIndex ?: -1

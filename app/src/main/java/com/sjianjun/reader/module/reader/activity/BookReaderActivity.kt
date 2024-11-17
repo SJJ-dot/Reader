@@ -286,16 +286,10 @@ class BookReaderActivity : BaseActivity() {
             this@BookReaderActivity.book = book
             Log.i("设置章节列表 ChapterListFragment")
             supportFragmentManager.beginTransaction()
-                .replace(
-                    R.id.drawer_chapter_list,
-                    fragmentCreate<ChapterListFragment>(
-                        BOOK_TITLE to book.title,
-                        BOOK_AUTHOR to book.author
-                    )
-                )
+                .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title))
                 .commitAllowingStateLoss()
             readingRecord = DataManager.getReadingRecord(book).first()
-                ?: ReadingRecord(book.title, book.author)
+                ?: ReadingRecord(book.title)
             Log.i("修正阅读记录 $readingRecord")
             readingRecord.bookId = bookId
             if (chapterIndex != -1) {
