@@ -133,7 +133,8 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
                 bindingDialog.editView.apply {
                     val allSource = mutableListOf<String>()
-                    globalConfig.bookSourceImportUrlsNet.forEach { allSource.add(it) }
+                    val urlsNet = globalConfig.bookSourceImportUrlsNet
+                    urlsNet.forEach { allSource.add(it) }
                     val urlsLoc = globalConfig.bookSourceImportUrlsLoc
                     urlsLoc.forEach { allSource.add(it) }
 
@@ -141,6 +142,9 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     delCallBack = {
                         if (urlsLoc.remove(it)) {
                             globalConfig.bookSourceImportUrlsLoc = urlsLoc
+                        }
+                        if (urlsNet.remove(it)) {
+                            globalConfig.bookSourceImportUrlsNet = urlsNet
                         }
                     }
                 }

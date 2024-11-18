@@ -68,7 +68,7 @@ class AppConfig(val name: String) :
 
     var bookSourceImportUrlsNet by dataPref(
         "bookSourceImportUrlsNet",
-        listOf(URL_BOOK_SOURCE_DEF)
+        mutableListOf(URL_BOOK_SOURCE_DEF)
     )
 
     var bookSourceImportUrlsLoc by dataPref(
