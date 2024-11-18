@@ -6,6 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.util.TypedValue
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.sjianjun.reader.App
 import kotlin.math.roundToInt
@@ -26,11 +27,7 @@ inline val Int.dp2Px: Int
 
 fun Int.color(context: Context?): Int {
     val ctx = context ?: App.app
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        ctx.resources.getColor(this, App.app.theme)
-    } else {
-        ctx.resources.getColor(this)
-    }
+    return ContextCompat.getColor(ctx, this)
 }
 
 val String.color

@@ -25,7 +25,6 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import sjj.alog.Log
-import splitties.views.inflate
 import java.util.concurrent.Executors
 
 class BookSourceManagerFragment : BaseAsyncFragment() {

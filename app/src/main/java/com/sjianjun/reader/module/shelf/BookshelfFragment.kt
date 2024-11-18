@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
@@ -21,8 +22,10 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.adapter.BaseViewAdapter
+import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.databinding.ItemBookListBinding
+import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
@@ -53,22 +56,22 @@ import java.util.concurrent.ConcurrentHashMap
 class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private lateinit var adapter: Adapter
-    private lateinit var bookshelfUi: BookshelfUi
+    private lateinit var bookShelfBinding: MainFragmentBookShelfBinding
     private var welcomeDialog: Boolean = true
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        bookshelfUi = BookshelfUi(requireContext())
-        return bookshelfUi.root
+        bookShelfBinding = MainFragmentBookShelfBinding.inflate(inflater, container, false)
+        return bookShelfBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
         adapter = Adapter(this@BookshelfFragment)
-        bookshelfUi.recyclerViw.adapter = adapter
+        bookShelfBinding.recycleView.adapter = adapter
         initRefresh()
         initData()
     }
@@ -99,7 +102,7 @@ class BookshelfFragment : BaseFragment() {
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 bookList.clear()
                 val bookNum = it.size
-                bookshelfUi.loading.max = bookNum
+                bookShelfBinding.loading.max = bookNum
                 it.map { book ->
                     bookList[book.key] = book
                     async(Dispatchers.IO) {
@@ -140,7 +143,7 @@ class BookshelfFragment : BaseFragment() {
 
 
     private fun initRefresh() {
-        bookshelfUi.rootRefresh.setOnRefreshListener {
+        bookShelfBinding.rootRefresh.setOnRefreshListener {
             launchIo {
                 val sourceMap = mutableMapOf<String, MutableList<Book>>()
 
@@ -150,7 +153,7 @@ class BookshelfFragment : BaseFragment() {
                 }
 
                 showProgressBar(SHOW_FLAG_REFRESH)
-                bookshelfUi.loading.progress = 0
+                bookShelfBinding.loading.progress = 0
                 sourceMap.map {
                     async {
                         val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
@@ -161,13 +164,13 @@ class BookshelfFragment : BaseFragment() {
                             it.value.map {
                                 async {
                                     DataManager.reloadBookFromNet(it)
-                                    bookshelfUi.loading.progress = bookshelfUi.loading.progress + 1
+                                    bookShelfBinding.loading.progress += 1
                                 }
                             }.awaitAll()
                         } else {
                             it.value.apply { it.value.sortWith(bookComparator) }.forEach {
                                 DataManager.reloadBookFromNet(it)
-                                bookshelfUi.loading.progress = bookshelfUi.loading.progress + 1
+                                bookShelfBinding.loading.progress += 1
                                 delay(delay)
                             }
                         }
@@ -175,7 +178,7 @@ class BookshelfFragment : BaseFragment() {
                 }.awaitAll()
                 withMain {
                     hideProgressBar(SHOW_FLAG_REFRESH)
-                    bookshelfUi.rootRefresh.isRefreshing = false
+                    bookShelfBinding.rootRefresh.isRefreshing = false
                     adapter.notifyDataSetChanged()
                 }
             }
@@ -186,7 +189,7 @@ class BookshelfFragment : BaseFragment() {
     private val SHOW_FLAG_REFRESH = 1
     private suspend fun showProgressBar(flag: Int) = withMain {
         if (showState == 0) {
-            bookshelfUi.loading.animFadeIn()
+            bookShelfBinding.loading.animFadeIn()
         }
         showState = flag or SHOW_FLAG_REFRESH
     }
@@ -194,7 +197,7 @@ class BookshelfFragment : BaseFragment() {
     private suspend fun hideProgressBar(flag: Int) = withMain {
         showState = showState and flag.inv()
         if (showState == 0) {
-            bookshelfUi.loading.animFadeOut()
+            bookShelfBinding.loading.animFadeOut()
         }
     }
 
@@ -214,7 +217,7 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
-    private class Adapter(val fragment: BookshelfFragment) : BaseViewAdapter<Book, BookListItem>() {
+    private class Adapter(val fragment: BookshelfFragment) : BaseAdapter<Book>(R.layout.item_book_list) {
         init {
             setHasStableIds(true)
         }
@@ -223,17 +226,17 @@ class BookshelfFragment : BaseFragment() {
             return data[position].id.id
         }
 
-        override fun createView(parent: ViewGroup, viewType: Int): BookListItem {
-            return BookListItem(parent.context)
-        }
+
+
 
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: VH<BookListItem>, position: Int) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+
             val book = data[position]
-//            holder.setRecyclable(!book.isLoading)
-            holder.itemV.apply {
+            val binding = ItemBookListBinding.bind(holder.itemView)
+            binding.apply {
                 val visibleSet = constraintLayout.visibleSet()
-                bookCover.glide(fragment, book.cover)
+                bookCover.glide(book.cover)
                 bookName.text = book.title
                 author.text = "作者：${book.author}"
                 lastChapter.text = "最新：${book.lastChapter?.title}"
@@ -245,9 +248,9 @@ class BookshelfFragment : BaseFragment() {
                     syncError.isClickable = false
                 } else {
                     syncError.imageTintList = if (error != null) {
-                        ColorStateList.valueOf(R.color.mdr_red_100.color(context))
+                        ColorStateList.valueOf(R.color.mdr_red_100.color(root.context))
                     } else {
-                        ColorStateList.valueOf(R.color.mdr_grey_700.color(context))
+                        ColorStateList.valueOf(R.color.mdr_grey_700.color(root.context))
                     }
                     visibleSet.visible(syncError)
                     syncError.setOnClickListener {
@@ -288,16 +291,14 @@ class BookshelfFragment : BaseFragment() {
                         )
                 }
 
-                setOnClickListener {
+                root.setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
                 }
 
-                visibleSet.invisible(startingStation)
-
                 visibleSet.apply()
 
-                setOnLongClickListener {
-                    AlertDialog.Builder(context!!)
+                root.setOnLongClickListener {
+                    AlertDialog.Builder(root.context)
                         .setTitle("确认删除")
                         .setMessage("确定要删除《${book.title}》吗?")
                         .setPositiveButton("删除") { _, _ ->

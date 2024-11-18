@@ -73,7 +73,7 @@ class BookSourceListFragment : BaseFragment() {
 //            holder.setRecyclable(!book.isLoading)
             val binding = MainItemFragmentBookSourceListBinding.bind(holder.itemView)
             holder.itemView.apply {
-                binding.bookCover.glide(fragment, book.cover)
+                binding.bookCover.glide(book.cover)
                 binding.bookName.text = book.title
                 binding.author.text = "作者：${book.author}"
                 binding.lastChapter.text = "最新：${book.lastChapter?.title}"

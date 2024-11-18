@@ -3,10 +3,10 @@ package io.legado.app.utils
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
+import com.sjianjun.reader.App
 import io.legado.app.constant.AppPattern
 import okhttp3.internal.publicsuffix.PublicSuffixDatabase
 import sjj.alog.Log
-import splitties.systemservices.connectivityManager
 
 import java.net.InetAddress
 import java.net.NetworkInterface
@@ -24,6 +24,7 @@ object NetworkUtils {
      */
     @Suppress("DEPRECATION")
     fun isAvailable(): Boolean {
+        val connectivityManager = App.app.getSystemService(ConnectivityManager::class.java) ?: return false
         if (Build.VERSION.SDK_INT < 23) {
             val mWiFiNetworkInfo = connectivityManager.activeNetworkInfo
             if (mWiFiNetworkInfo != null) {

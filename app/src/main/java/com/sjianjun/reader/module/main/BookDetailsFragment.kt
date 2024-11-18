@@ -84,7 +84,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
     }
 
     private suspend fun fillView(book: Book?) {
-        binding?.bookCover?.glide(this@BookDetailsFragment, book?.cover)
+        binding?.bookCover?.glide(book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = book?.author
 

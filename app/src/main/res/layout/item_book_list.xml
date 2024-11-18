@@ -13,31 +13,12 @@
 
         <ImageView
             android:id="@+id/bookCover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_width="64dp"
+            android:layout_height="match_parent"
             android:layout_margin="5dp"
-            android:minWidth="65dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintDimensionRatio="65:90"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/dn_dark_tint" />
-
-        <TextView
-            android:id="@+id/starting_station"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="3dp"
-            android:background="@drawable/shape_sou_fa"
-            android:fontFamily="monospace"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:text="起"
-            android:textColor="@color/mdr_white"
-            android:textSize="10dp"
-            app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintEnd_toEndOf="@+id/bookCover"
-            app:layout_constraintTop_toTopOf="@+id/bookCover" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/bookName"

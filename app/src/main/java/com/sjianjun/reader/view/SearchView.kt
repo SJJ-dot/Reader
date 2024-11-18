@@ -2,7 +2,7 @@ package com.sjianjun.reader.view
 
 import android.content.Context
 import android.util.AttributeSet
-import splitties.dimensions.dip
+import com.sjianjun.reader.utils.dp2Px
 
 class SearchView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
@@ -15,7 +15,7 @@ class SearchView @JvmOverloads constructor(
             val widthMode = MeasureSpec.getMode(widthMeasureSpec)
             val width = MeasureSpec.getSize(widthMeasureSpec)
             super.onMeasure(
-                MeasureSpec.makeMeasureSpec(width - context.dip(48), widthMode),
+                MeasureSpec.makeMeasureSpec(width -48.dp2Px, widthMode),
                 heightMeasureSpec
             )
         }

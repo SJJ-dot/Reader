@@ -1,6 +1,5 @@
 package com.sjianjun.reader.module.search
 
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
@@ -220,10 +219,9 @@ class SearchFragment : BaseAsyncFragment() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = MainItemFragmentSearchResultBinding.bind(holder.itemView)
             val searchResult = data[position].first()
-            binding.bookCover.glide(fragment, searchResult.bookCover)
+            binding.bookCover.glide(searchResult.bookCover)
             binding.bookName.text = searchResult.bookTitle
             binding.author.text = "作者：${searchResult.bookAuthor}"
-            binding.lastChapter.text = "最新章节：${searchResult.latestChapter}"
             binding.haveRead.text = "来源：${searchResult.bookSource?.group}-${searchResult.bookSource?.name} 共${data[position].size}个源"
 
             holder.itemView.setOnClickListener { _ ->
