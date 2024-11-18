@@ -1,5 +1,5 @@
 function search(query){
-    var baseUrl = "https://www.mayiwxw.com/";
+    var baseUrl = "https://www.mayiwsk.com/";
     var map = new HashMap();
     map.put("searchtype", "articlename")
     map.put("searchkey",URLEncoder.encode(query,"utf-8"))
