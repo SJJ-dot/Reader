@@ -65,18 +65,3 @@ def getChapterContent(url):
     return content
 
 
-if __name__ == '__main__':
-    res = search("我的")
-    print(res)
-
-    print("================================")
-    print("================================")
-    print("================================")
-    res = getDetails(res[0]["bookUrl"])
-    print(res)
-
-    print("================================")
-    print("================================")
-    print("================================")
-    res = getChapterContent(res["chapterList"][0]["url"])
-    print(res)
