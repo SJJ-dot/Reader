@@ -16,7 +16,7 @@ def search(query):
     # POST请求的数据
     data = {'searchkey': query.encode('utf-8'), "searchtype": 'novelname'}
     # 发送get请求
-    response = requests.get(url, params=data)
+    response = requests.get(url, params=data, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.text)
     # 创建BeautifulSoup对象
@@ -44,7 +44,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url)
+    response = requests.get(book_url, timeout=(5, 10))
     response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
@@ -77,7 +77,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')

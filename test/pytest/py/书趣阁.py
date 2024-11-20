@@ -25,7 +25,7 @@ def search(query):
         "Content-Type": "application/x-www-form-urlencoded",
     }
     # 发送get请求
-    response = requests.post(url, data=data, headers=headers)
+    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     # log(response.request)
     # log(response.text)
@@ -55,7 +55,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url)
+    response = requests.get(book_url, timeout=(5, 10))
     response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
@@ -80,7 +80,7 @@ def getDetails(book_url):
                 "url": urljoin(book_url, el.get("href"))
             })
         if soup.select(".index-container-btn")[1].text.strip() == "下一页":
-            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href"))).text, 'html.parser')
+            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href")), timeout=(5, 10)).text, 'html.parser')
         else:
             break
     return info
@@ -93,7 +93,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')

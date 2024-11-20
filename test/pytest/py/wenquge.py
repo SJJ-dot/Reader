@@ -105,7 +105,7 @@ def search(query):
     data = {'kw': query.encode('utf-8'), "is_author": 0, "pn": 1}
     headers = {"Version-Code": "10000", "Channel": "mz", "appid": "wengqugexs", "Version-Name": "1.0.0"}
     # 发送POST请求
-    response = requests.post(url, data=data, headers=headers)
+    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.text)
     data = decrypt(json.loads(response.text)["data"])
@@ -137,7 +137,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url)
+    response = requests.get(book_url, timeout=(5, 10))
     response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
@@ -156,7 +156,7 @@ def getDetails(book_url):
     info["chapterList"] = []
     chapter_url = f"http://s.nshkedu.com/api/book/chapter/" + str(int(soup["book_id"] / 1000)) + "/" + str(
         soup["book_id"]) + "/list.json"
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     data = json.loads(decrypt(json.loads(response.text)["data"]))["result"]
     log(data)
@@ -177,7 +177,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = json.loads(decrypt(json.loads(response.text)["data"]))

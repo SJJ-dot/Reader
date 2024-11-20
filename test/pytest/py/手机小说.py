@@ -44,7 +44,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url)
+    response = requests.get(book_url, timeout=(5, 10))
     response.encoding = "gbk"
     info = {}
     # 创建BeautifulSoup对象
@@ -81,7 +81,7 @@ def parseChapterList(book_url, soup, chapterList):
 
     if soup.select(".right a")[0].has_attr("href"):
         next_url = urljoin(book_url, soup.select(".right a")[0].get("href"))
-        response = requests.get(next_url)
+        response = requests.get(next_url, timeout=(5, 10))
         response.encoding = "gbk"
         soup = BeautifulSoup(response.text, 'html.parser')
         parseChapterList(book_url, soup, chapterList)
@@ -94,7 +94,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "gbk"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')

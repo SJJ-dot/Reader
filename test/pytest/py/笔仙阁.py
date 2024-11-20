@@ -20,7 +20,7 @@ def search(query):
         "Content-Type": "application/x-www-form-urlencoded",
     }
     # 发送POST请求Content-Type:
-    response = requests.post(url, data=data, headers=headers)
+    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'gbk'
     # log(response.request)
     # log(response.text)
@@ -52,7 +52,7 @@ def getDetails(book_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
     }
-    response = requests.get(book_url, headers=headers)
+    response = requests.get(book_url, headers=headers, timeout=(5, 10))
     response.encoding = "gbk"
     # log(response.request)
     # log(response.text)
@@ -93,7 +93,7 @@ def getChapterContent(chapter_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
     }
-    response = requests.get(chapter_url, headers=headers)
+    response = requests.get(chapter_url, headers=headers, timeout=(5, 10))
     response.encoding = "gbk"
     # 创建BeautifulSoup对象
     # log(response.request)

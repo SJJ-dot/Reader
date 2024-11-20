@@ -70,7 +70,7 @@ def search(query):
     # 请求的数据
     data = {'q': query.encode('utf-8')}
     # 发送get请求
-    response = requests.get(url, params=data)
+    response = requests.get(url, params=data, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.text)
     #   "ruleSearch": {
@@ -108,7 +108,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url)
+    response = requests.get(book_url, timeout=(5, 10))
     response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
@@ -162,7 +162,7 @@ def getChapterContent(chapter_url):
     #     "replaceRegex": ""
     #   },
     # 发送get请求
-    response = requests.get(chapter_url)
+    response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     log(response.text)
     # 创建BeautifulSoup对象

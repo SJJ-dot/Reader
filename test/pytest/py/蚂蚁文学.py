@@ -11,7 +11,7 @@ def search(query):
         "searchtype": "articlename",
         "searchkey": query
     }
-    response = requests.post(url, data=data)
+    response = requests.post(url, data=data, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.request)
     html = response.text
@@ -31,7 +31,7 @@ def search(query):
 
 
 def getDetails(url):
-    response = requests.get(url)
+    response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -57,7 +57,7 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    response = requests.get(url)
+    response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
