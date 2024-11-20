@@ -74,9 +74,7 @@ def getChapterContent(url):
     soup = BeautifulSoup(html, 'html.parser')
     content = soup.select_one("#booktxt").prettify()
     next_url_el = soup.select(".next_url")[0]
-    # https://20241120.ukaxs.com/28503/1705302_2.html http://20241120.ukaxs.com/28503/1705302_2.html
     if next_url_el and next_url_el.text == "下一页":
-        # const next_page = 'http://20241120.ukaxs.com/28503/1705302_2.html';
         next_url = re.search(r"const\snext_page\s=\s'(.+)';", html).group(1)
         return content + "\n" + getChapterContent(next_url)
 
