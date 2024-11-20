@@ -25,8 +25,8 @@ def search(query):
     # 发送POST请求Content-Type:
     response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
-    log(response.request)
-    log(response.text)
+    # log(response.request)
+    # log(response.text)
     # 创建BeautifulSoup对象 .querySelectorAll("div")[2].querySelectorAll("p")[0] document.querySelectorAll(".txt-list > li")
     soup = BeautifulSoup(response.text, 'html.parser')
     books = []
@@ -60,8 +60,8 @@ def getDetails(book_url):
     }
     response = requests.get(book_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
-    log(response.request)
-    log(response.text)
+    # log(response.request)
+    # log(response.text)
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -108,8 +108,8 @@ def getChapterContent(chapter_url):
     response = requests.get(chapter_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
-    log(response.request)
-    log(response.text)
+    # log(response.request)
+    # log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
     content = soup.select(".content")[0].prettify()

@@ -1,6 +1,6 @@
 # from http.client import HTTPConnection
 # HTTPConnection.debuglevel=1
-from requests import PreparedRequest
+from requests import PreparedRequest, Response
 
 
 def log(arg):
@@ -10,6 +10,13 @@ def log(arg):
             print(f"{key}: {value}")
         print("")
         print(arg.body)
+        print("")
+    elif isinstance(arg, Response):
+        # 打印响应头
+        for key, value in arg.headers.items():
+            print(f"{key}: {value}")
+        print("")
+        print(arg.text)
         print("")
     else:
         print(arg)
