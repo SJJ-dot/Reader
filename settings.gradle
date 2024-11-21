@@ -1,2 +1,0 @@
-rootProject.name = 'Reader'
-include ':app', ':fastscroller', ':pagerindicator'
