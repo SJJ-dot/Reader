@@ -4,72 +4,6 @@ import requests
 
 from log import log
 
-"""
-{
-  "bookSourceComment": "",
-  "bookSourceGroup": "API",
-  "bookSourceName": "文趣阁",
-  "bookSourceType": 0,
-  "bookSourceUrl": "http://m.nshkedu.com/",
-  "bookUrlPattern": "",
-  "customOrder": 8,
-  "enabled": true,
-  "enabledCookieJar": false,
-  "enabledExplore": false,
-  "exploreUrl": "",
-  "header": "{\"Version-Code\":\"10000\",\"Channel\":\"mz\",\"appid\":\"wengqugexs\",\"Version-Name\":\"1.0.0\"}",
-  "lastUpdateTime": 1685098328694,
-  "loginUrl": "",
-  "respondTime": 181938,
-  "ruleBookInfo": {
-    "author": "author_name",
-    "coverUrl": "book_cover",
-    "init": "<js>\nvar javaImport = new JavaImporter();\njavaImport.importPackage(\n    Packages.java.lang,\n    Packages.javax.crypto.spec,\n    Packages.javax.crypto,\n    Packages.android.util\n);\n\nwith(javaImport){\n    function decrypt(str){\n        var key=SecretKeySpec(String(\"ZKYm5vSUhvcG9IbXNZTG1pb2\").getBytes(),\"DESede\");\n        var iv=IvParameterSpec(String(\"01234567\").getBytes());\n        var bytes=Base64.decode(String(str).getBytes(),2);\n        var chipher=Cipher.getInstance(\"DESede/CBC/PKCS5Padding\");\n        chipher.init(2,key,iv);\n        return String(chipher.doFinal(bytes));\n    }\n}\ndecrypt(JSON.parse(result).data.replace(/(\\r\\n)|(\\n)|(\\r)/g,''))\n</js>result",
-    "intro": "book_brief",
-    "kind": "{{String(java.timeFormat(java.getString('$.update_time')*1000))}},{{$.category_name}},{{$.book_tags}}",
-    "lastChapter": "$.chapter_new_name",
-    "name": "book_name",
-    "tocUrl": "@js:\nlet bid=parseInt(java.getString('$.book_id'))\nlet subPath=parseInt(bid/1000)\n\"http://s.nshkedu.com/api/book/chapter/\"+subPath+\"/\"+bid+\"/list.json\"",
-    "wordCount": "book_word_num"
-  },
-  "ruleContent": {
-    "content": "<js>\nvar javaImport = new JavaImporter();\njavaImport.importPackage(\n    Packages.java.lang,\n    Packages.javax.crypto.spec,\n    Packages.javax.crypto,\n    Packages.android.util\n);\n\nwith(javaImport){\n    function decrypt(str){\n        var key=SecretKeySpec(String(\"ZKYm5vSUhvcG9IbXNZTG1pb2\").getBytes(),\"DESede\");\n        var iv=IvParameterSpec(String(\"01234567\").getBytes());\n        var bytes=Base64.decode(String(str).getBytes(),2);\n        var chipher=Cipher.getInstance(\"DESede/CBC/PKCS5Padding\");\n        chipher.init(2,key,iv);\n        return String(chipher.doFinal(bytes));\n    }\n}\ndecrypt(JSON.parse(result).data.replace(/(\\r\\n)|(\\n)|(\\r)/g,''))\n</js>content##【.*咪咪阅读.*】"
-  },
-  "ruleExplore": {
-    "author": "",
-    "bookList": "",
-    "bookUrl": "",
-    "coverUrl": "",
-    "intro": "",
-    "kind": "",
-    "lastChapter": "",
-    "name": "",
-    "wordCount": ""
-  },
-  "ruleReview": {},
-  "ruleSearch": {
-    "author": "author_name",
-    "bookList": "<js>\nvar javaImport = new JavaImporter();\njavaImport.importPackage(\n    Packages.java.lang,\n    Packages.javax.crypto,\n    Packages.javax.crypto.spec,\n    Packages.android.util\n);\n\nwith(javaImport){\n    function decrypt(str){\n        var key=SecretKeySpec(String(\"ZKYm5vSUhvcG9IbXNZTG1pb2\").getBytes(),\"DESede\");\n        var iv=IvParameterSpec(String(\"01234567\").getBytes());\n        var bytes=Base64.decode(String(str).getBytes(),2);\n        var chipher=Cipher.getInstance(\"DESede/CBC/PKCS5Padding\");\n        chipher.init(2,key,iv);\n        return String(chipher.doFinal(bytes));\n    }\n}\ndecrypt(JSON.parse(result).data.replace(/(\\r\\n)|(\\n)|(\\r)/g,''))\n</js>result",
-    "bookUrl": "@js:\nlet bid=parseInt(java.getString('$.book_id'))\nlet subPath=parseInt(bid/1000)\n\"http://s.nshkedu.com/api/book/detail/\"+subPath+\"/\"+bid+\".json\"",
-    "coverUrl": "book_cover",
-    "intro": "book_brief",
-    "kind": "{{String(java.timeFormat(java.getString('$.chapter_time')*1000))}},{{$.category_name}},{{$.book_tags}},{{$.book_level}}分",
-    "lastChapter": "$.chapter_new_name",
-    "name": "book_name@put:{bid:$.book_id}",
-    "wordCount": "book_word_num"
-  },
-  "ruleToc": {
-    "chapterList": "<js>\nvar javaImport = new JavaImporter();\njavaImport.importPackage(\n    Packages.java.lang,\n    Packages.javax.crypto.spec,\n    Packages.javax.crypto,\n    Packages.android.util\n);\n\nwith(javaImport){\n    function decrypt(str){\n        var key=SecretKeySpec(String(\"ZKYm5vSUhvcG9IbXNZTG1pb2\").getBytes(),\"DESede\");\n        var iv=IvParameterSpec(String(\"01234567\").getBytes());\n        var bytes=Base64.decode(String(str).getBytes(),2);\n        var chipher=Cipher.getInstance(\"DESede/CBC/PKCS5Padding\");\n        chipher.init(2,key,iv);\n        return String(chipher.doFinal(bytes));\n    }\n}\ndecrypt(JSON.parse(result).data.replace(/(\\r\\n)|(\\n)|(\\r)/g,''))\n</js>result",
-    "chapterName": "chapter_name",
-    "chapterUrl": "@js:baseUrl.replace('/list','/{{$._id}}')",
-    "isVip": "",
-    "updateTime": "{{$.words_count}} 字"
-  },
-  "searchUrl": "http://m.nshkedu.com/search/book/result,{\"method\":\"POST\",\"body\":\"kw={{key}}&pn={{page}}&is_author=0\"}",
-  "weight": 50
-}
-"""
-
 from Crypto.Cipher import DES3
 from Crypto.Util.Padding import unpad
 import base64
@@ -107,9 +41,9 @@ def search(query):
     # 发送POST请求
     response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
-    log(response.text)
+    # log(response.text)
     data = decrypt(json.loads(response.text)["data"])
-    log(data)
+    # log(data)
     # 创建BeautifulSoup对象
     # "bookUrl": "@js:\nlet bid=parseInt(java.getString('$.book_id'))\nlet subPath=parseInt(bid/1000)\n\"http://s.nshkedu.com/api/book/detail/\"+subPath+\"/\"+bid+\".json\"",
     data = json.loads(data)["result"]
@@ -142,7 +76,7 @@ def getDetails(book_url):
     info = {}
     # 创建BeautifulSoup对象
     soup = json.loads(decrypt(json.loads(response.text)["data"]))["result"]
-    log(soup)
+    # log(soup)
     info["url"] = book_url
     # 书名
     info["title"] = soup["book_name"]
@@ -159,7 +93,7 @@ def getDetails(book_url):
     response = requests.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     data = json.loads(decrypt(json.loads(response.text)["data"]))["result"]
-    log(data)
+    # log(data)
     for chapter in data:
         info["chapterList"].append({
             "title": chapter["chapter_name"],
@@ -181,7 +115,7 @@ def getChapterContent(chapter_url):
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = json.loads(decrypt(json.loads(response.text)["data"]))
-    log(soup)
+    # log(soup)
     # 章节内容 html
     content = soup["content"]
     return content.replace("\n", "<br>")
