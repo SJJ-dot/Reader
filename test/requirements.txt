@@ -1,5 +1,4 @@
-urllib3==1.25.11
+urllib3
 requests
 beautifulsoup4
-pypinyin
 pycryptodome
