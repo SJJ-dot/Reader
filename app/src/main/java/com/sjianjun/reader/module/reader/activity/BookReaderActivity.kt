@@ -296,6 +296,7 @@ class BookReaderActivity : BaseActivity() {
                 readingRecord.chapterIndex = chapterIndex
                 readingRecord.offest = 0
                 readingRecord.isEnd = false
+                readingRecord.updateTime = System.currentTimeMillis()
                 DataManager.setReadingRecord(readingRecord)
                 intent.removeExtra(CHAPTER_INDEX)
             }
@@ -385,6 +386,7 @@ class BookReaderActivity : BaseActivity() {
                         readingRecord.chapterIndex = bean.chapter
                         readingRecord.offest = bean.pagePos
                         readingRecord.isEnd = bean.isEnd
+                        readingRecord.updateTime = System.currentTimeMillis()
                         DataManager.setReadingRecord(readingRecord)
                     }
                 }

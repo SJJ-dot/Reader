@@ -16,6 +16,11 @@ class ReadingRecord(
 
     var isEnd = false
 
+    /**
+     * 更新时间
+     */
+    var updateTime = System.currentTimeMillis()
+
 
 
     override fun toString(): String {

@@ -6,6 +6,12 @@ val bookComparator = BookComparator()
 
 class BookComparator : Comparator<Book> {
     override fun compare(o1: Book, o2: Book): Int {
+        val updateTime = o2.record?.updateTime?.let {
+            o1.record?.updateTime?.compareTo(it)
+        }
+        if (updateTime != null && updateTime != 0) {
+            return -updateTime
+        }
         val compareTo = o1.unreadChapterCount.compareTo(o2.unreadChapterCount)
         if (compareTo != 0) {
             return -compareTo

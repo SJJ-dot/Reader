@@ -1,6 +1,5 @@
 package com.sjianjun.reader.preferences
 
-import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.sjianjun.reader.utils.gson
 import java.lang.reflect.ParameterizedType

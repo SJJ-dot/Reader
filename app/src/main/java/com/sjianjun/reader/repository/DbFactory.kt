@@ -13,7 +13,7 @@ import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -28,19 +28,19 @@ object DbFactory {
         val room = Room.databaseBuilder(App.app, Db::class.java, dbFile)
             .fallbackToDestructiveMigration()
             .addMigrations(object : Migration(12, 13) {
-                override fun migrate(database: SupportSQLiteDatabase) {
-                    database.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
                 }
             })
             .addMigrations(object : Migration(13, 14) {
-                override fun migrate(database: SupportSQLiteDatabase) {
-                    database.execSQL("ALTER TABLE 'BookSource' ADD COLUMN `lauanage` TEXT NOT NULL default 'js'")
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE 'BookSource' ADD COLUMN `lauanage` TEXT NOT NULL default 'js'")
                 }
             })
             .addMigrations(object : Migration(14, 15) {
-                override fun migrate(database: SupportSQLiteDatabase) {
+                override fun migrate(db: SupportSQLiteDatabase) {
                     //ReadingRecord 删除 bookAuthor字段
-                    database.execSQL(
+                    db.execSQL(
                         "CREATE TABLE `ReadingRecord_new` (`bookTitle` TEXT NOT NULL," +
                                 " `bookId` TEXT NOT NULL," +
                                 " `chapterIndex` INTEGER NOT NULL," +
@@ -48,12 +48,17 @@ object DbFactory {
                                 " `isEnd` INTEGER NOT NULL," +
                                 " PRIMARY KEY(`bookTitle`))"
                     )
-                    database.execSQL(
+                    db.execSQL(
                         "INSERT INTO ReadingRecord_new (bookTitle,bookId,chapterIndex,offest,isEnd) " +
                                 "SELECT bookTitle,bookId,chapterIndex,offest,isEnd FROM ReadingRecord"
                     )
-                    database.execSQL("DROP TABLE ReadingRecord")
-                    database.execSQL("ALTER TABLE ReadingRecord_new RENAME TO ReadingRecord")
+                    db.execSQL("DROP TABLE ReadingRecord")
+                    db.execSQL("ALTER TABLE ReadingRecord_new RENAME TO ReadingRecord")
+                }
+            })
+            .addMigrations(object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `updateTime` INTEGER NOT NULL default 0")
                 }
             })
             .build()
