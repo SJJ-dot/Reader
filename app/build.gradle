@@ -103,7 +103,7 @@ android {
     }
 }
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0'
 
@@ -174,5 +174,5 @@ dependencies {
 //    implementation 'com.umeng.umsdk:abtest:1.0.1'//使用U-App中ABTest能力，可选
     implementation "io.reactivex.rxjava2:rxjava:2.2.6"
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'com.github.QuadFlask:colorpicker:0.0.15'
+//    implementation 'com.github.QuadFlask:colorpicker:0.0.15'
 }
