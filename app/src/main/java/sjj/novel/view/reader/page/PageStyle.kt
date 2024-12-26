@@ -95,6 +95,22 @@ abstract class PageStyle(val id: String) {
     companion object {
         private val lruCache = LruCache<String, WeakReference<Bitmap>>(8)
 
+        @JvmField
+        val resNameMap = mapOf(
+            "ic_reader_style1_bg" to R.drawable.ic_reader_style1_bg,
+            "ic_reader_style2_bg" to R.drawable.ic_reader_style2_bg,
+            "ic_reader_style3_bg" to R.drawable.ic_reader_style3_bg,
+            "ic_reader_style4_bg" to R.drawable.ic_reader_style4_bg,
+            "ic_reader_style5_bg" to R.drawable.ic_reader_style5_bg,
+            "ic_reader_style6_bg" to R.drawable.ic_reader_style6_bg,
+            "ic_reader_style7_bg" to R.drawable.ic_reader_style7_bg,
+            "ic_reader_style8_bg" to R.drawable.ic_reader_style8_bg,
+            "ic_reader_style9_bg" to R.drawable.ic_reader_style9_bg,
+            "ic_reader_style10_bg" to R.drawable.ic_reader_style10_bg,
+            "ic_reader_style11_bg" to R.drawable.ic_reader_style11_bg,
+            "ic_reader_style12_bg" to R.drawable.ic_reader_style12_bg
+        )
+
 
         @JvmField
         val styles = MutableLiveData<List<PageStyle>>()
@@ -106,12 +122,15 @@ abstract class PageStyle(val id: String) {
         val defNight: PageStyle get() = styles.value!!.first { it.isDark }
 
         fun builtin(): List<CustomPageStyleInfo> {
+            val resName: (Int) -> String = { res ->
+                resNameMap.entries.find { it.value == res }!!.key
+            }
             val infos = mutableListOf<CustomPageStyleInfo>()
             infos.add(CustomPageStyleInfo().apply {
                 labelColor = "#666666".color
                 chapterTitleColor = "#886A66".color
                 chapterContentColor = "#3E3C38".color
-                backgroundRes = R.drawable.ic_reader_style1_bg
+                backgroundResName = resName(R.drawable.ic_reader_style1_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -135,7 +154,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#BDBDBD".color
                 chapterTitleColor = "#BDBDBD".color
                 chapterContentColor = "#999999".color
-                backgroundRes = R.drawable.ic_reader_style2_bg
+                backgroundResName = resName(R.drawable.ic_reader_style2_bg)
                 isDark = true
                 isBuiltin = true
 
@@ -144,7 +163,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#883B2405".color
                 chapterTitleColor = "#3B2405".color
                 chapterContentColor = "#3B2405".color
-                backgroundRes = R.drawable.ic_reader_style3_bg
+                backgroundResName = resName(R.drawable.ic_reader_style3_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -152,7 +171,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#88422D10".color
                 chapterTitleColor = "#422D10".color
                 chapterContentColor = "#422D10".color
-                backgroundRes = R.drawable.ic_reader_style4_bg
+                backgroundResName = resName(R.drawable.ic_reader_style4_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -160,7 +179,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#883C1B12".color
                 chapterTitleColor = "#3C1B12".color
                 chapterContentColor = "#3C1B12".color
-                backgroundRes = R.drawable.ic_reader_style5_bg
+                backgroundResName = resName(R.drawable.ic_reader_style5_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -168,7 +187,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#881D321F".color
                 chapterTitleColor = "#1D321F".color
                 chapterContentColor = "#1D321F".color
-                backgroundRes = R.drawable.ic_reader_style6_bg
+                backgroundResName = resName(R.drawable.ic_reader_style6_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -176,7 +195,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#88A4A2A5".color
                 chapterTitleColor = "#A4A2A5".color
                 chapterContentColor = "#A4A2A5".color
-                backgroundRes = R.drawable.ic_reader_style7_bg
+                backgroundResName = resName(R.drawable.ic_reader_style7_bg)
                 isDark = true
                 isBuiltin = true
             })
@@ -184,7 +203,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#8829251A".color
                 chapterTitleColor = "#29251A".color
                 chapterContentColor = "#29251A".color
-                backgroundRes = R.drawable.ic_reader_style8_bg
+                backgroundResName = resName(R.drawable.ic_reader_style8_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -192,7 +211,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#88222421".color
                 chapterTitleColor = "#222421".color
                 chapterContentColor = "#222421".color
-                backgroundRes = R.drawable.ic_reader_style9_bg
+                backgroundResName = resName(R.drawable.ic_reader_style9_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -200,7 +219,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#883B3221".color
                 chapterTitleColor = "#3B3221".color
                 chapterContentColor = "#3B3221".color
-                backgroundRes = R.drawable.ic_reader_style10_bg
+                backgroundResName = resName(R.drawable.ic_reader_style10_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -208,7 +227,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#88202020".color
                 chapterTitleColor = "#202020".color
                 chapterContentColor = "#202020".color
-                backgroundRes = R.drawable.ic_reader_style11_bg
+                backgroundResName = resName(R.drawable.ic_reader_style11_bg)
                 isDark = false
                 isBuiltin = true
             })
@@ -216,7 +235,7 @@ abstract class PageStyle(val id: String) {
                 labelColor = "#88292019".color
                 chapterTitleColor = "#292019".color
                 chapterContentColor = "#292019".color
-                backgroundRes = R.drawable.ic_reader_style12_bg
+                backgroundResName = resName(R.drawable.ic_reader_style12_bg)
                 isDark = false
                 isBuiltin = true
             })

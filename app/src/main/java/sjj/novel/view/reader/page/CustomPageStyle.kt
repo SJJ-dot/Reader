@@ -19,7 +19,7 @@ class CustomPageStyleInfo {
     var chapterContentColor: Int = Color.BLACK
     var backgroundColor: Int = Color.WHITE
     var backgroundImage: String = ""
-    var backgroundRes: Int = 0 // 资源id
+    var backgroundResName: String = "" // 资源id 名称
     var isDark: Boolean = false
     var isDeleteable: Boolean = true
     var isBuiltin = false
@@ -46,7 +46,7 @@ class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.id) {
         if (drawable != null) {
             return drawable
         }
-        if (info.backgroundImage.isEmpty() && info.backgroundRes == 0) {
+        if (info.backgroundImage.isEmpty() && info.backgroundResName.isBlank()) {
             return getBackground(context, width, height)
         }
         return null
@@ -70,8 +70,13 @@ class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.id) {
             drawable.tileModeY = Shader.TileMode.MIRROR
             drawable.tileModeX = Shader.TileMode.MIRROR
             return drawable
-        } else if (info.backgroundRes != 0) {
-            return createBackground(context, info.backgroundRes, width, height)
+        } else if (info.backgroundResName.isNotBlank()) {
+            return createBackground(
+                context,
+                resNameMap[info.backgroundResName]!!,
+                width,
+                height
+            )
         } else {
             return ColorDrawable(info.backgroundColor)
         }

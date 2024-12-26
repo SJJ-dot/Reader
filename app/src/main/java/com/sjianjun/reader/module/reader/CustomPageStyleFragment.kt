@@ -171,7 +171,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                     )
                     info.backgroundColor = selectedColor
                     info.backgroundImage = ""
-                    info.backgroundRes = 0
+                    info.backgroundResName = ""
                     pageStyle.clearCache()
                     dialog.dismiss()
                     EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
@@ -183,7 +183,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .show()
         }
         setColor(binding?.chapterBackgroundColor!!, binding?.chapterBackgroundImgSelector!!, info.backgroundColor)
-        if (info.backgroundImage.isNotEmpty() || info.backgroundRes != 0) {
+        if (info.backgroundImage.isNotEmpty() || info.backgroundResName.isNotBlank()) {
             binding?.chapterBackgroundImgSelector!!.setImageDrawable(
                 pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px)
             )
@@ -284,7 +284,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                     inputStream.close()
                     outputStream.close()
                     customPageStyleInfo.backgroundImage = localPath
-                    customPageStyleInfo.backgroundRes = 0
+                    customPageStyleInfo.backgroundResName = ""
                     pageStyle.clearCache()
                 }
                 binding?.chapterBackgroundImgSelector!!.setImageDrawable(pageStyle.getBackground(requireContext(), 36.dp2Px, 36.dp2Px))

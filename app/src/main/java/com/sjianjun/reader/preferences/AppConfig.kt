@@ -92,7 +92,7 @@ class AppConfig(val name: String) :
         }
 
     val customPageStyleInfoList by lazy {
-        dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr", emptyList())
+        dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr2", emptyList())
     }
 
     var bookCityUrlHistoryList by dataPref("bookCityUrlHistoryList", mutableListOf("https://m.qidian.com"))
