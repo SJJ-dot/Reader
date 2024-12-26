@@ -1,8 +1,7 @@
-package com.sjianjun.reader.module.update
+package com.sjianjun.reader.utils
 
 import android.app.Activity
 import android.widget.Toast
-import com.alibaba.sdk.android.oss.model.GetObjectRequest
 import com.azhon.appupdate.listener.OnDownloadListener
 import com.azhon.appupdate.manager.DownloadManager
 import com.sjianjun.coroutine.withIo
@@ -10,7 +9,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import org.json.JSONObject
@@ -22,9 +20,9 @@ enum class Channels {
     PGY {
         override suspend fun getReleaseInfo(): ReleasesInfo {
             val _api_key = "fbdcc7e3fea0c654fed879db614f9031"
-            val token = "32c53fd779044ade5f832f8cb57d37f7"
+            val appKey = "80fa89dd88b73aff5f8c1dfbacc0ae6a"
             val url =
-                "https://www.pgyer.com/apiv2/app/check?_api_key=${_api_key}&token=${token}&buildVersion=${AppInfoUtil.versionCode()}"
+                "https://www.pgyer.com/apiv2/app/check?_api_key=${_api_key}&appKey=${appKey}"
             val info = JSONObject(http.get(url).body).getJSONObject("data")
 
             val releasesInfo = ReleasesInfo()
@@ -61,7 +59,7 @@ enum class Channels {
 }
 
 suspend fun getReleaseInfo(): ReleasesInfo? = withIo {
-    val awaitAll = Channels.values().map {
+    val awaitAll = Channels.entries.map {
         async {
             try {
                 it to it.getReleaseInfo()

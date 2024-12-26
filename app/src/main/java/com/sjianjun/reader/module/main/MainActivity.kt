@@ -16,7 +16,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
-import com.sjianjun.reader.module.update.checkUpdate
+import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr

@@ -12,9 +12,8 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL_REPO
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
-import com.sjianjun.reader.module.update.checkUpdate
+import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.*
 import sjj.alog.Log
 import java.io.File
