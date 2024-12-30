@@ -56,6 +56,9 @@ class BookReaderActivity : BaseActivity() {
         setContentView(binding!!.root)
         binding?.readerRoot?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
+        if (savedInstanceState != null) {
+            intent.removeExtra(CHAPTER_INDEX)
+        }
         initData()
     }
 
@@ -67,6 +70,11 @@ class BookReaderActivity : BaseActivity() {
         } else {
             initData()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(BOOK_ID, bookId)
     }
 
     override fun onBackPressed() {
