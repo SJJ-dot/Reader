@@ -132,9 +132,16 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
             launch("CHAPTER_LIST_CAHE") {
                 showSnackbar(binding!!.pageView, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
+                var first = 3
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
                     getChapterContent(listOf(book?.chapterList?.get(it)!!))
-                    showSnackbar(binding!!.pageView, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
+                    if (first > 0) {
+                        first--
+                        showSnackbar(
+                            binding!!.pageView,
+                            "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}"
+                        )
+                    }
                 }
                 showSnackbar(binding!!.pageView, "章节缓存：完成")
             }
