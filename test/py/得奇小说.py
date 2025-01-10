@@ -19,7 +19,7 @@ def search(query):
 
     for book_element in book_list:
         result = {
-            "bookTitle": book_element.select_one("a").text,
+            "bookTitle": book_element.select("a")[1].text,
             "bookUrl": urljoin(url, book_element.select_one("a").get("href")),
             "bookAuthor": book_element.select("a")[2].text.replace("作者：", "")
         }
@@ -79,3 +79,5 @@ def getChapterContent(url):
         return content + "\n" + getChapterContent(next_url)
 
     return content
+
+
