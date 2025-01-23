@@ -7,6 +7,43 @@ import com.sjianjun.reader.preferences.globalConfig
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class HostMgr(owner: LifecycleOwner) {
+    // 记录所有的url
+    val hostList = MutableLiveData<MutableList<String>>(mutableListOf())
+
+    init {
+        blacklist.observe(owner) { list ->
+            val mutableList = hostList.value!!.toMutableList()
+            list.forEach { blackHost ->
+                mutableList.removeAll { it.endsWith(blackHost) }
+            }
+            hostList.postValue(mutableList)
+        }
+        whitelist.observe(owner) { list ->
+            val mutableList = hostList.value!!.toMutableList()
+            list.forEach { whiteHost ->
+                mutableList.removeAll { it.endsWith(whiteHost) }
+            }
+            hostList.postValue(mutableList)
+        }
+    }
+
+    fun addUrl(url: String) {
+        val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
+        if (topHost.isBlank() || blacklist.value?.contains(topHost) == true || whitelist.value?.contains(topHost) == true) {
+            return
+        }
+        val host = url.toHttpUrlOrNull()?.host ?: return
+        if (host.isBlank() || hostList.value?.contains(host) == true || blacklist.value?.contains(host) == true || whitelist.value?.contains(host) == true) {
+            return
+        }
+        if (hostList.value?.contains(topHost) == false) {
+            hostList.value?.add(topHost)
+        }
+        hostList.value?.add(host)
+        hostList.postValue(hostList.value)
+    }
+
+
     companion object {
         val blacklist = MutableLiveData<MutableList<String>>(mutableListOf())
         val whitelist = MutableLiveData<MutableList<String>>(mutableListOf())
@@ -50,42 +87,4 @@ class HostMgr(owner: LifecycleOwner) {
             whitelist.postValue(list)
         }
     }
-
-    // 记录所有的url
-    val hostList = MutableLiveData<MutableList<String>>(mutableListOf())
-
-    init {
-        blacklist.observe(owner) { list ->
-            val mutableList = hostList.value!!.toMutableList()
-            list.forEach { blackHost ->
-                mutableList.removeAll { it.endsWith(blackHost) }
-            }
-            hostList.postValue(mutableList)
-        }
-        whitelist.observe(owner) { list ->
-            val mutableList = hostList.value!!.toMutableList()
-            list.forEach { whiteHost ->
-                mutableList.removeAll { it.endsWith(whiteHost) }
-            }
-            hostList.postValue(mutableList)
-        }
-    }
-
-    fun addUrl(url: String) {
-        val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        if (topHost.isBlank() || blacklist.value?.contains(topHost) == true || whitelist.value?.contains(topHost) == true) {
-            return
-        }
-        val host = url.toHttpUrlOrNull()?.host ?: return
-        if (host.isBlank() || hostList.value?.contains(host) == true || blacklist.value?.contains(host) == true || whitelist.value?.contains(host) == true) {
-            return
-        }
-        if (hostList.value?.contains(topHost) == false) {
-            hostList.value?.add(topHost)
-        }
-        hostList.value?.add(host)
-        hostList.postValue(hostList.value)
-    }
-
-
 }

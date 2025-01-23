@@ -141,12 +141,12 @@ class CustomWebView @JvmOverloads constructor(
                     HostMgr.blacklist.value?.contains(httpUrl?.topPrivateDomain()) == true) {
                     return true
                 }
-                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
-                if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
-                    // 启动新 Activity
-                    EventBus.post(WEB_NEW_URL, url)
-                    return true
-                }
+//                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
+//                if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
+//                    // 启动新 Activity
+//                    EventBus.post(WEB_NEW_URL, url)
+//                    return true
+//                }
                 return false
 
             }
