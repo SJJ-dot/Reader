@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -50,6 +51,17 @@ class BookCityPageFragment : BaseFragment() {
                     }
                 }
             })
+
+            setOnBackPressed {
+                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                    drawerLayout.closeDrawer(GravityCompat.END)
+                    true
+                } else if (customWebView.onBackPressed()) {
+                    true
+                } else {
+                    false
+                }
+            }
 
         }
     }
