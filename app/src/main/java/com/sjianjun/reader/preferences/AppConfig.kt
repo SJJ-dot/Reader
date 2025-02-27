@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
+import com.sjianjun.reader.module.bookcity.HostStr
 import com.tencent.mmkv.MMKV
 import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
@@ -99,7 +100,7 @@ class AppConfig(val name: String) :
     var bookCityUrl by dataPref("bookCityUrl", "https://m.qidian.com")
 
     //本次启动之后书城访问的所有的URL
-    var hostBlacklist by dataPref("hostBlacklist", mutableListOf<String>())
-    var hostWhitelist by dataPref("hostWhitelist", mutableListOf<String>())
+    var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
+    var hostWhitelist by dataPref("hostWhitelistHostStr", mutableListOf<HostStr>())
 }
 

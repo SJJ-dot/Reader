@@ -104,10 +104,11 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class HostListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+    class HostListAdapter : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position]
+            binding.tvHost.text = data[position].host
+            binding.tvTime.text = data[position].time
             binding.btnMarkWhite.text = "+白名单"
             binding.btnMarkWhite.setOnClickListener {
                 HostMgr.addWhiteHost(data[position])
@@ -119,10 +120,11 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class WhiteListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+    class WhiteListAdapter : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position]
+            binding.tvHost.text = data[position].host
+            binding.tvTime.text = data[position].time
             binding.btnMarkBlack.gone()
             binding.btnMarkWhite.text = "移除白名单"
             binding.btnMarkWhite.setOnClickListener {
@@ -132,10 +134,11 @@ class BookCityPageFragment : BaseFragment() {
 
     }
 
-    class BlackListAdapter : BaseAdapter<String>(R.layout.fragment_book_city_page_host_item) {
+    class BlackListAdapter : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position]
+            binding.tvHost.text = data[position].host
+            binding.tvTime.text = data[position].time
             binding.btnMarkWhite.gone()
             binding.btnMarkBlack.text = "移除黑名单"
             binding.btnMarkBlack.setOnClickListener {

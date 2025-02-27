@@ -23,6 +23,7 @@ import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
 import com.sjianjun.reader.module.bookcity.HostMgr
+import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -133,12 +134,12 @@ class CustomWebView @JvmOverloads constructor(
             ): Boolean {
                 val url = request.url.toString()
                 Log.i("shouldOverrideUrlLoading:$url ")
+                hostMgr?.addUrl(request.url.toString())
                 if (url.endsWith(".apk")) {
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (HostMgr.blacklist.value?.contains(httpUrl?.host) == true ||
-                    HostMgr.blacklist.value?.contains(httpUrl?.topPrivateDomain()) == true) {
+                if (HostMgr.blacklist.contains(httpUrl?.host) || HostMgr.blacklist.contains(httpUrl?.topPrivateDomain())) {
                     return true
                 }
 //                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
@@ -175,20 +176,6 @@ class CustomWebView @JvmOverloads constructor(
 
             override fun onLoadResource(view: WebView?, url: String?) {
                 Log.i("$url")
-            }
-
-            override fun shouldInterceptRequest(
-                view: WebView?,
-                request: WebResourceRequest
-            ): WebResourceResponse? {
-                hostMgr?.addUrl(request.url.toString())
-                if (HostMgr.blacklist.value?.contains(request.url.host) == true ||
-                    HostMgr.blacklist.value?.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()) == true
-                ) {
-                    Log.i("拦截请求：${request.url}")
-                    return WebResourceResponse(null, null, null)
-                }
-                return super.shouldInterceptRequest(view, request)
             }
 
         }
