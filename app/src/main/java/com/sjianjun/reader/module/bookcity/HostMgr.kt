@@ -1,40 +1,96 @@
 package com.sjianjun.reader.module.bookcity
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.preferences.AppConfig
+import com.sjianjun.reader.utils.md5
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 
 class HostStr(val host: String) {
     val time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HostStr
+
+        return host == other.host
+    }
+
+    override fun hashCode(): Int {
+        return host.hashCode()
+    }
+
 }
 
-fun MutableLiveData<MutableList<HostStr>>?.contains(host: String?): Boolean {
+fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boolean {
     return this?.value?.any { it.host == host } == true
 }
 
-class HostMgr(owner: LifecycleOwner) {
+class HostMgr(private val key: String) {
+    private val  config = AppConfig(key.md5)
+
+    val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
+    val whitelist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
+
     // 记录所有的url
-    val hostList = MutableLiveData<MutableList<HostStr>>(mutableListOf())
+    val hostList = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
     init {
-        blacklist.observe(owner) { list ->
-            val mutableList = hostList.value!!.toMutableList()
-            list.forEach { blackHost ->
-                mutableList.removeAll { it.host.endsWith(blackHost.host) }
-            }
-            hostList.postValue(mutableList)
+        blacklist.postValue(CopyOnWriteArrayList(config.hostBlacklist))
+        whitelist.postValue(CopyOnWriteArrayList(config.hostWhitelist))
+    }
+
+    fun addBlackHost(host: HostStr) {
+        if (blacklist.value?.contains(host) == true) {
+            return
         }
-        whitelist.observe(owner) { list ->
-            val mutableList = hostList.value!!.toMutableList()
-            list.forEach { whiteHost ->
-                mutableList.removeAll { it.host.endsWith(whiteHost.host) }
-            }
-            hostList.postValue(mutableList)
+        blacklist.value?.add(host)
+        blacklist.postValue(blacklist.value)
+        config.hostBlacklist = blacklist.value ?: mutableListOf()
+
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.removeAll { it.host.endsWith(host.host) }
+        hostList.postValue(mutableList)
+    }
+
+    fun removeBlackHost(host: HostStr) {
+        val list = blacklist.value as CopyOnWriteArrayList
+        list.remove(host)
+        blacklist.postValue(list)
+        config.hostBlacklist = blacklist.value ?: mutableListOf()
+
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.add(host)
+        mutableList.sortBy { it.time }
+        hostList.postValue(mutableList)
+    }
+
+    fun addWhiteHost(host: HostStr) {
+        if (whitelist.value?.contains(host) == true) {
+            return
         }
+        whitelist.value?.add(host)
+        whitelist.postValue(whitelist.value)
+        config.hostWhitelist = whitelist.value ?: mutableListOf()
+
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.removeAll { it.host.endsWith(host.host) }
+        hostList.postValue(mutableList)
+    }
+
+    fun removeWhiteHost(host: HostStr) {
+        val list = whitelist.value as CopyOnWriteArrayList
+        list.remove(host)
+        whitelist.postValue(list)
+        config.hostWhitelist = whitelist.value ?: mutableListOf()
+
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.add(host)
+        mutableList.sortBy { it.time }
+        hostList.postValue(mutableList)
     }
 
     fun addUrl(url: String) {
@@ -51,50 +107,5 @@ class HostMgr(owner: LifecycleOwner) {
         }
         hostList.value?.add(HostStr(host))
         hostList.postValue(hostList.value)
-    }
-
-
-    companion object {
-        val blacklist = MutableLiveData<MutableList<HostStr>>(mutableListOf())
-        val whitelist = MutableLiveData<MutableList<HostStr>>(mutableListOf())
-
-        init {
-            blacklist.postValue(globalConfig.hostBlacklist)
-            whitelist.postValue(globalConfig.hostWhitelist)
-            blacklist.observeForever {
-                globalConfig.hostBlacklist = it
-            }
-            whitelist.observeForever {
-                globalConfig.hostWhitelist = it
-            }
-        }
-
-        fun addBlackHost(host: HostStr) {
-            if (blacklist.value?.contains(host) == true) {
-                return
-            }
-            blacklist.value?.add(host)
-            blacklist.postValue(blacklist.value)
-        }
-
-        fun removeBlackHost(host: HostStr) {
-            val list = blacklist.value!!.toMutableList()
-            list.remove(host)
-            blacklist.postValue(list)
-        }
-
-        fun addWhiteHost(host: HostStr) {
-            if (whitelist.value?.contains(host) == true) {
-                return
-            }
-            whitelist.value?.add(host)
-            whitelist.postValue(whitelist.value)
-        }
-
-        fun removeWhiteHost(host: HostStr) {
-            val list = whitelist.value!!.toMutableList()
-            list.remove(host)
-            whitelist.postValue(list)
-        }
     }
 }

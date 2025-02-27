@@ -15,18 +15,15 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.event.EventBus
-import com.sjianjun.reader.event.EventKey.WEB_NEW_URL
 import com.sjianjun.reader.module.bookcity.HostMgr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import java.io.ByteArrayInputStream
 
 
 /*
@@ -41,9 +38,9 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var url: String? = null
     private var clearHistory: Boolean = false
-    var hostMgr: HostMgr? = null
-    fun init(owner: LifecycleOwner) {
-        hostMgr = HostMgr(owner)
+    private var hostMgr: HostMgr? = null
+    fun init(owner: LifecycleOwner, hostMgr: HostMgr) {
+        this.hostMgr = hostMgr
         webView = binding.webView
         binding.swipeRefreshLayout.setOnRefreshListener {
             Log.i("refresh")
@@ -134,12 +131,11 @@ class CustomWebView @JvmOverloads constructor(
             ): Boolean {
                 val url = request.url.toString()
                 Log.i("shouldOverrideUrlLoading:$url ")
-                hostMgr?.addUrl(request.url.toString())
                 if (url.endsWith(".apk")) {
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (HostMgr.blacklist.contains(httpUrl?.host) || HostMgr.blacklist.contains(httpUrl?.topPrivateDomain())) {
+                if (hostMgr?.blacklist.contains(httpUrl?.host) || hostMgr?.blacklist.contains(httpUrl?.topPrivateDomain())) {
                     return true
                 }
 //                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
@@ -176,6 +172,18 @@ class CustomWebView @JvmOverloads constructor(
 
             override fun onLoadResource(view: WebView?, url: String?) {
                 Log.i("$url")
+            }
+
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                hostMgr?.addUrl(request.url.toString())
+                if (hostMgr?.blacklist.contains(request.url.host) || hostMgr?.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
+                    Log.i("拦截请求：${request.url}")
+                    return WebResourceResponse("text/plain", "UTF-8", ByteArrayInputStream("".toByteArray()))
+                }
+                return super.shouldInterceptRequest(view, request)
             }
 
         }

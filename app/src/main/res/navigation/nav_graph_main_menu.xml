@@ -37,7 +37,7 @@
 
     <fragment
         android:id="@+id/browserBookCityFragment"
-        android:name="com.sjianjun.reader.module.bookcity.BrowserBookCityFragment"
+        android:name="com.sjianjun.reader.module.bookcity.BookCityPageFragment"
         android:label="书城"
         tools:layout="@layout/bookcity_fragment_browser" />
 
