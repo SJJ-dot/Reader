@@ -38,7 +38,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.9.14"
+        versionName "1.9.15"
         resConfigs("zh")
         ndk {
             //noinspection ChromeOsAbiSupport
@@ -47,7 +47,7 @@ android {
         python {
 //          python.exe
             buildPython properties.getProperty("python")
-            version "3.8"
+            version "3.12"
             pip {
                 install "-r", "requirements.txt"
             }

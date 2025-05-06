@@ -13,18 +13,22 @@ import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.view.CustomWebView
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 private const val ARG_URL = "ARG_URL"
 
 class BookCityPageFragment : BaseFragment() {
+    private val hostMgrMap = mutableMapOf<String, HostMgr>()
     private val url: String get() = globalConfig.bookCityUrl
-    private val hostMgr by lazy { HostMgr("BookCity-" + url.toHttpUrlOrNull()?.topPrivateDomain()) }
+    private val hostMgrKey: String get() = "BookCity-" + url.toHttpUrlOrNull()?.topPrivateDomain()
+    private val hostMgr: HostMgr get() = hostMgrMap.getOrPut(hostMgrKey) { HostMgr(hostMgrKey) }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,7 +39,7 @@ class BookCityPageFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentBookCityPageBinding.bind(view).apply {
-            customWebView.init(viewLifecycleOwner,hostMgr)
+            customWebView.init(viewLifecycleOwner, hostMgr)
             //QQ登录
             globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
                 val url = it?.toString() ?: return@Observer
@@ -48,7 +52,7 @@ class BookCityPageFragment : BaseFragment() {
                 override fun onDrawerOpened(drawerView: View) {
                     if (first) {
                         first = false
-                        initDrawer(this@apply)
+                        initDrawer(customWebView,this@apply)
                     }
                 }
             })
@@ -67,20 +71,25 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    private fun initDrawer(binding: FragmentBookCityPageBinding) {
+    private fun initDrawer(view: CustomWebView, binding: FragmentBookCityPageBinding) {
+        val homeAdapter = HomeListAdapter {
+            globalConfig.bookCityUrl = it
+            view.loadUrl(url!!, true)
+        }
         val hostListAdapter = HostListAdapter(hostMgr)
         val whiteListAdapter = WhiteListAdapter(hostMgr)
         val blackListAdapter = BlackListAdapter(hostMgr)
-
+        homeAdapter.data.addAll(globalConfig.bookCityUrlHistoryList)
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.adapter = hostListAdapter
+        binding.recyclerView.adapter = homeAdapter
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 Log.i("tab:${tab?.position}")
                 binding.recyclerView.adapter = when (tab?.position) {
-                    0 -> hostListAdapter
-                    1 -> whiteListAdapter
-                    2 -> blackListAdapter
+                    0 -> homeAdapter
+                    1 -> hostListAdapter
+                    2 -> whiteListAdapter
+                    3 -> blackListAdapter
                     else -> hostListAdapter
                 }
             }
@@ -102,6 +111,17 @@ class BookCityPageFragment : BaseFragment() {
         hostMgr.whitelist.observe(viewLifecycleOwner) {
             whiteListAdapter.data = it
             whiteListAdapter.notifyDataSetChanged()
+        }
+    }
+
+    class HomeListAdapter(val onClick: (url: String) -> Unit) : BaseAdapter<String>(R.layout.fragment_book_city_home_item) {
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
+            binding.tvHost.text = data[position]
+            binding.root.setOnClickListener {
+                onClick(data[position])
+            }
         }
     }
 
