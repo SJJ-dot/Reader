@@ -61,6 +61,7 @@ class CustomWebView @JvmOverloads constructor(
         this.clearHistory = clearHistory
         Log.i("loadUrl:${url} ")
         webView?.loadUrl(url)
+        binding.swipeRefreshLayout.isRefreshing = true
     }
 
     private fun initWebView(webView: WebView) {

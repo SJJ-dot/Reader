@@ -52,7 +52,7 @@ class BookCityPageFragment : BaseFragment() {
                 override fun onDrawerOpened(drawerView: View) {
                     if (first) {
                         first = false
-                        initDrawer(customWebView,this@apply)
+                        initDrawer(drawerLayout, customWebView, this@apply)
                     }
                 }
             })
@@ -71,10 +71,11 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    private fun initDrawer(view: CustomWebView, binding: FragmentBookCityPageBinding) {
+    private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
         val homeAdapter = HomeListAdapter {
             globalConfig.bookCityUrl = it
             view.loadUrl(url!!, true)
+            drawer.closeDrawer(GravityCompat.END)
         }
         val hostListAdapter = HostListAdapter(hostMgr)
         val whiteListAdapter = WhiteListAdapter(hostMgr)
