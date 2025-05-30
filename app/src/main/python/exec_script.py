@@ -4,5 +4,6 @@ namespace = {}
 
 
 def exec_script(script, func, arg):
+    namespace.clear()  # 清理之前的脚本定义
     exec(script, namespace)
     return namespace[func](arg)

@@ -38,7 +38,7 @@ android {
         minSdkVersion MIN_SDK_VERSION
         targetSdkVersion TARGET_SDK_VERSION
         versionCode commitCont
-        versionName "1.9.17"
+        versionName "1.9.18"
         resConfigs("zh")
         ndk {
             //noinspection ChromeOsAbiSupport

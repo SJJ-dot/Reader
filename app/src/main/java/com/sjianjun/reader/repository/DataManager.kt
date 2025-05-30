@@ -53,7 +53,8 @@ object DataManager {
             toast("无可用书源，请导入书源")
             return@withIo emptyFlow<List<List<SearchResult>>>()
         }
-        val supportSources = allJavaScript.filter { it.isSupported(url) }
+        val supportSources = allJavaScript.filter {  it.isSupported(url) }
+        Log.i("支持的书源数量：${supportSources.size}，url:$url")
         if (supportSources.isEmpty()) {
             toast("不支持该网站")
             return@withIo emptyFlow<List<List<SearchResult>>>()
