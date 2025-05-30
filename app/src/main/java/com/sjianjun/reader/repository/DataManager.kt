@@ -6,8 +6,11 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.utils.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import sjj.alog.Log
+import kotlin.collections.first
 import kotlin.math.abs
 
 /**
@@ -33,7 +36,7 @@ object DataManager {
                         "cb" to "f1",
                     ), encoded = false
                 )
-                val respJson  = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
+                val respJson = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
                 val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
                 return@withIo gson.fromJson<List<String>>(jarr.toString())
             } catch (e: Exception) {
@@ -44,10 +47,51 @@ object DataManager {
 
     }
 
+    suspend fun searchUrl(url: String): Flow<List<List<SearchResult>>> = withIo {
+        val allJavaScript = dao.getAllBookSource().first().filter { it.enable }
+        if (allJavaScript.isEmpty()) {
+            toast("无可用书源，请导入书源")
+            return@withIo emptyFlow<List<List<SearchResult>>>()
+        }
+        val supportSources = allJavaScript.filter { it.isSupported(url) }
+        if (supportSources.isEmpty()) {
+            toast("不支持该网站")
+            return@withIo emptyFlow<List<List<SearchResult>>>()
+        }
+
+        val books = supportSources.map {
+            async<SearchResult?> {
+                val book = it.getDetails(url)
+                if (book != null) {
+                    val searchResult = SearchResult()
+                    searchResult.bookSource = it
+                    searchResult.bookTitle = book.title
+                    searchResult.bookAuthor = book.author
+                    searchResult.bookCover = book.cover
+                    searchResult.bookUrl = book.url
+                    searchResult
+                } else {
+                    null
+                }
+            }
+        }
+        val results = books.awaitAll().filterNotNull()
+        val group = mutableMapOf<String, MutableList<SearchResult>>()
+        results.forEach { result ->
+            val list = group.getOrPut(result.key) { mutableListOf() }
+            list.add(result)
+        }
+        return@withIo flowOf(group.values.toList())
+    }
+
     /**
      * 搜索书籍。搜索结果插入数据库。由数据库更新。
      */
     suspend fun search(query: String): Flow<List<List<SearchResult>>> {
+        //是否是URL
+        if (query.startsWith("http://") || query.startsWith("https://")) {
+            return searchUrl(query)
+        }
         return withIo {
             dao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
