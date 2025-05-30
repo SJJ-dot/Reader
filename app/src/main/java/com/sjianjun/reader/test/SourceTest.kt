@@ -18,8 +18,6 @@ object SourceTest {
 
             def search(query):
                 log(query)
-//                sm = SessionManager("测试书源")
-//                sm.get("https://m.qidian.com")
 
                 return []
 

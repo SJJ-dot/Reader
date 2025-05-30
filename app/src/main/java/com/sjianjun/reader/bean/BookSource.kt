@@ -68,6 +68,16 @@ class BookSource {
         return null
     }
 
+    suspend fun isSupported(url: String): Boolean {
+        return withIo {
+            try {
+                execute<Boolean>(Func.isSupported, url) == true
+            } catch (t: Throwable) {
+                Log.e("$name 检查是否支持出错：$url", t)
+                false
+            }
+        }
+    }
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
@@ -136,7 +146,7 @@ class BookSource {
 
 
     enum class Func {
-        search, getDetails, getChapterContent
+        search, getDetails, getChapterContent, isSupported
     }
 
     enum class Language {
