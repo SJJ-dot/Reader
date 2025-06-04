@@ -5,6 +5,7 @@ import androidx.core.view.GravityCompat
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.*
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
@@ -12,6 +13,7 @@ import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 
 @Suppress("EXPERIMENTAL_API_USAGE")
@@ -125,10 +127,19 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 binding?.latestChapter?.text = lastChapter?.title
                 binding?.latestChapter?.setOnClickListener { _ ->
                     book ?: return@setOnClickListener
-                    startActivity<BookReaderActivity>(
-                        BOOK_ID to book.id,
-                        CHAPTER_INDEX to lastChapter?.index
-                    )
+                    launch {
+                        val readingRecord = DataManager.getReadingRecord(book).first() ?: ReadingRecord(book.title, book.id)
+                        if (readingRecord.chapterIndex != lastChapter?.index) {
+                            readingRecord.chapterIndex = lastChapter?.index ?: 0
+                            readingRecord.offest = 0
+                            readingRecord.isEnd = false
+                            readingRecord.updateTime = System.currentTimeMillis()
+                            DataManager.setReadingRecord(readingRecord)
+                        }
+                        startActivity<BookReaderActivity>(BOOK_ID to book.id)
+                    }
+
+
                 }
             }
 

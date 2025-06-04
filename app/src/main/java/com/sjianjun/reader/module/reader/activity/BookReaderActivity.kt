@@ -41,7 +41,6 @@ class BookReaderActivity : BaseActivity() {
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
     private var book: Book? = null
-    private val chapterIndex get() = (intent.getStringExtra(CHAPTER_INDEX) ?: "-1").toInt()
     private lateinit var readingRecord: ReadingRecord
 
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
@@ -56,25 +55,12 @@ class BookReaderActivity : BaseActivity() {
         setContentView(binding!!.root)
         binding?.readerRoot?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
-        if (savedInstanceState != null) {
-            intent.removeExtra(CHAPTER_INDEX)
-        }
         initData()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        setIntent(intent)
-        if (this::readingRecord.isInitialized && readingRecord.bookId == bookId) {
-            mPageLoader.skipToChapter(chapterIndex)
-        } else {
-            initData()
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putString(BOOK_ID, bookId)
+        initData()
     }
 
     override fun onBackPressed() {
@@ -307,14 +293,6 @@ class BookReaderActivity : BaseActivity() {
                 ?: ReadingRecord(book.title)
             Log.i("修正阅读记录 $readingRecord")
             readingRecord.bookId = bookId
-            if (chapterIndex != -1) {
-                readingRecord.chapterIndex = chapterIndex
-                readingRecord.offest = 0
-                readingRecord.isEnd = false
-                readingRecord.updateTime = System.currentTimeMillis()
-                DataManager.setReadingRecord(readingRecord)
-                intent.removeExtra(CHAPTER_INDEX)
-            }
             Log.i("修正阅读记录 $readingRecord")
             Log.i("加载章节列表")
             var chapterList = DataManager.getChapterList(bookId).first()

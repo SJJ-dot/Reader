@@ -57,6 +57,7 @@ class ChapterListFragment : BaseFragment() {
                         }
                 }
             }.debounce(300).collectLatest { (chapterList, readingRecord) ->
+                adapter.readingRecord = readingRecord
                 var change = adapter.readingChapterIndex != readingRecord?.chapterIndex
                 change = change || (adapter.data.size != chapterList.size)
                 adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
@@ -79,6 +80,7 @@ class ChapterListFragment : BaseFragment() {
         }
 
         var readingChapterIndex = 0
+        var readingRecord: ReadingRecord? = null
 
 
         override fun itemLayoutRes(viewType: Int): Int {
@@ -101,10 +103,22 @@ class ChapterListFragment : BaseFragment() {
                     binding.mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
                 }
                 setOnClickListener {
-                    fragment.startActivity<BookReaderActivity>(
-                        BOOK_ID to c.bookId,
-                        CHAPTER_INDEX to c.index
-                    )
+                    if (readingChapterIndex == c.index) {
+                        //如果是当前章节，直接返回
+                        return@setOnClickListener
+                    }
+                    fragment.launch {
+                        //如果不是当前章节，更新阅读记录
+                        readingRecord?.let {
+                            it.chapterIndex = c.index
+                            it.offest = 0
+                            it.isEnd = false
+                            it.updateTime = System.currentTimeMillis()
+                            DataManager.setReadingRecord(it)
+                        }
+                        fragment.startActivity<BookReaderActivity>(BOOK_ID to c.bookId)
+
+                    }
                 }
             }
 
