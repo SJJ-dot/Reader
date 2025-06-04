@@ -4,16 +4,16 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
-class DiffCallback<T>(val oldData: List<T>, val newData: List<T>, val id: (o: T, n: T) -> Boolean) : androidx.recyclerview.widget.DiffUtil.Callback() {
+class DiffCallback<T>(val oldData: List<T>, val newData: List<T>, val areItemsTheSame: (o: T, n: T) -> Boolean, val areContentsTheSame: (o: T, n: T) -> Boolean = { o, n -> o == n }) : androidx.recyclerview.widget.DiffUtil.Callback() {
     override fun getOldListSize() = oldData.size
     override fun getNewListSize() = newData.size
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return id(oldData[oldItemPosition], newData[newItemPosition])
+        return areItemsTheSame(oldData[oldItemPosition], newData[newItemPosition])
     }
 
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldData[oldItemPosition] == newData[newItemPosition]
+        return areContentsTheSame(oldData[oldItemPosition], newData[newItemPosition])
     }
 }
 
@@ -38,8 +38,8 @@ abstract class BaseAdapter<T>(val itemRes: Int = 0) : RecyclerView.Adapter<Recyc
         return itemRes
     }
 
-    fun notifyDataSetDiff(newData: List<T>, id: (o: T, n: T) -> Boolean) {
-        val diffCallback = DiffCallback<T>(data, newData, id)
+    fun notifyDataSetDiff(newData: List<T>, areItemsTheSame: (o: T, n: T) -> Boolean, areContentsTheSame: (o: T, n: T) -> Boolean = { o, n -> o == n }) {
+        val diffCallback = DiffCallback<T>(data, newData, areItemsTheSame, areContentsTheSame)
         // 计算差异
         val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(diffCallback)
         // 更新数据
