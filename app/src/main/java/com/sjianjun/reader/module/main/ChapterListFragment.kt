@@ -61,9 +61,9 @@ class ChapterListFragment : BaseFragment() {
                 var change = adapter.readingChapterIndex != readingRecord?.chapterIndex
                 change = change || (adapter.data.size != chapterList.size)
                 adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
-                adapter.data.clear()
-                adapter.data.addAll(chapterList)
-                adapter.notifyDataSetChanged()
+                adapter.notifyDataSetDiff(chapterList) { o, n ->
+                    o.index == n.index && o.bookId == n.bookId
+                }
                 if (change) {
                     val index = adapter.data.indexOfFirst {
                         it.index == adapter.readingChapterIndex
