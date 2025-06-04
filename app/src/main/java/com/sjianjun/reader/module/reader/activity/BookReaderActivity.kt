@@ -286,9 +286,15 @@ class BookReaderActivity : BaseActivity() {
             }
             this@BookReaderActivity.book = book
             Log.i("设置章节列表 ChapterListFragment")
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title))
-                .commitAllowingStateLoss()
+            val fragment = supportFragmentManager.findFragmentByTag(book.title)
+            if (fragment != null && fragment is ChapterListFragment) {
+                Log.i("章节列表已存在，直接使用")
+            } else {
+                Log.i("章节列表不存在，创建新的")
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title),book.title)
+                    .commitAllowingStateLoss()
+            }
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title)
             Log.i("修正阅读记录 $readingRecord")
