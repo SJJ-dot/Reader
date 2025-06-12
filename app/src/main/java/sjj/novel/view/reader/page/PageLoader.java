@@ -204,6 +204,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public boolean skipPreChapter() {
+        Log.i("skipPreChapter");
         if (!hasPrevChapter()) {
             return false;
         }
@@ -224,6 +225,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public boolean skipNextChapter() {
+        Log.i("skipNextChapter");
         if (!hasNextChapter()) {
             return false;
         }
@@ -239,6 +241,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     public void refreshChapter(TxtChapter chapter) {
+        Log.i("refreshChapter");
         if (chapter == mChapterList.get(mCurChapterPos)) skipToChapter(mCurChapterPos);
     }
 
@@ -248,6 +251,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pos:从 0 开始。
      */
     public void skipToChapter(int pos) {
+        Log.i("skipToChapter pos:" + pos);
         // 设置参数
         mCurChapterPos = pos;
 
@@ -270,6 +274,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pos
      */
     public boolean skipToPage(int pos) {
+        Log.i("skipToPage pos:" + pos);
         if (!isChapterListPrepare) {
             return false;
         }
@@ -284,6 +289,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public boolean skipToPrePage() {
+        Log.i("skipToPrePage");
         return mPageView.autoPrevPage();
     }
 
@@ -293,6 +299,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @return
      */
     public boolean skipToNextPage() {
+        Log.i("skipToNextPage");
         return mPageView.autoNextPage();
     }
 
@@ -300,6 +307,7 @@ public abstract class PageLoader implements OnSelectListener {
      * 更新时间
      */
     public void updateTime() {
+        Log.i("updateTime");
         if (!mPageView.isRunning()) {
             mPageView.drawCurPage(true);
         }
@@ -311,6 +319,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param level
      */
     public void updateBattery(int level) {
+        Log.i("updateBattery level:" + level);
         mBatteryLevel = level;
 
         if (!mPageView.isRunning()) {
@@ -324,6 +333,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param textSize:单位为 px。
      */
     public void setTipTextSize(int textSize) {
+        Log.i("setTipTextSize");
         mTipPaint.setTextSize(textSize);
 
         // 如果屏幕大小加载完成
@@ -336,6 +346,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param textSize
      */
     public void setTextSize(float textSize, float lineSpace) {
+        Log.i("setTextSize textSize:" + textSize + " lineSpace:" + lineSpace);
         // 设置文字相关参数
         setUpTextParams(textSize, lineSpace);
 
@@ -371,10 +382,10 @@ public abstract class PageLoader implements OnSelectListener {
      * @param pageStyle:页面样式
      */
     public void setPageStyle(PageStyle pageStyle) {
-        Log.e("设置页面样式:"+pageStyle);
+        Log.e("设置页面样式:" + pageStyle);
         // 设置当前颜色样式
         mTextColor = pageStyle.getChapterContentColor(mContext);
-        mBackground = new BgDrawable(pageStyle.getBackground(mContext,0,0));
+        mBackground = new BgDrawable(pageStyle.getBackground(mContext, 0, 0));
 
         mTipPaint.setColor(pageStyle.getLabelColor(mContext));
         mTitlePaint.setColor(pageStyle.getChapterTitleColor(mContext));
@@ -391,6 +402,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @see PageMode
      */
     public void setPageMode(PageMode pageMode) {
+        Log.i("setPageMode pageMode:" + pageMode);
         mPageMode = pageMode;
 
         mPageView.setPageMode(mPageMode);
@@ -406,6 +418,7 @@ public abstract class PageLoader implements OnSelectListener {
      * @param marginHeight :单位为 px
      */
     public void setPadding(int paddingWidth, int marginHeight) {
+        Log.i("setPadding paddingWidth:" + paddingWidth + " marginHeight:" + marginHeight);
         mDisplayParams.setPaddingWidth(paddingWidth);
         mDisplayParams.setPaddingHeight(marginHeight);
         // 如果是滑动动画，则需要重新创建了
@@ -444,6 +457,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     public void setPageStatus(int status) {
+        Log.i("setPageStatus status:" + status);
         mStatus = status;
         mPageView.drawCurPage(false);
     }
@@ -490,6 +504,7 @@ public abstract class PageLoader implements OnSelectListener {
     }
 
     public TxtChapter getCurChapter() {
+        Log.i("getCurChapter mCurChapterPos:" + mCurChapterPos);
         if (mChapterList == null) {
             return null;
         }
@@ -1273,12 +1288,17 @@ public abstract class PageLoader implements OnSelectListener {
      */
     private TxtPage getCurPage(int pos) {
         Log.e("获取书页：" + pos);
-        pos = Math.min(pos, mCurPageList.size() - 1);
+        List<TxtPage> list = mCurPageList;
+        if (list == null || list.isEmpty()) {
+            Log.e("当前页列表为空");
+            return new TxtPage();
+        }
+        pos = Math.min(pos, list.size() - 1);
         pos = Math.max(0, pos);
         if (mPageChangeListener != null) {
             mPageChangeListener.onPageChange(pos);
         }
-        return mCurPageList.get(pos);
+        return list.get(pos);
     }
 
     /**

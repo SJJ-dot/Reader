@@ -55,11 +55,13 @@ class BookReaderActivity : BaseActivity() {
         setContentView(binding!!.root)
         binding?.readerRoot?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
         initSettingMenu()
+        Log.i("BookReaderActivity onCreate savedInstanceState: $savedInstanceState")
         initData()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        Log.i("onNewIntent: ${intent?.getStringExtra(BOOK_ID)}")
         initData()
     }
 
@@ -292,7 +294,7 @@ class BookReaderActivity : BaseActivity() {
             } else {
                 Log.i("章节列表不存在，创建新的")
                 supportFragmentManager.beginTransaction()
-                    .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title),book.title)
+                    .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title), book.title)
                     .commitAllowingStateLoss()
             }
             readingRecord = DataManager.getReadingRecord(book).first()
