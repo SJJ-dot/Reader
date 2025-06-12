@@ -96,7 +96,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = true) = withIo {
     if (releasesInfo.isUpgradeable()) {
         val manager = DownloadManager.Builder(ativity).run {
             apkUrl(releasesInfo.downloadApkUrl!!)
-            apkName("reader-${releasesInfo.lastVersion}.apk")
+            apkName("appupdate.apk")
             smallIcon(R.mipmap.ic_xue_xi)
             //设置了此参数，那么内部会自动判断是否需要显示更新对话框，否则需要自己判断是否需要更新
             apkVersionCode((AppInfoUtil.versionCode() + 100).toInt())
