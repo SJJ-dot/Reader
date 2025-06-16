@@ -530,7 +530,7 @@ public abstract class PageLoader implements OnSelectListener {
         BookRecordBean bookRecord = this.mBookRecord;
         int curChapterPos = this.mCurChapterPos;
         List<TxtPage> curPageList = this.mCurPageList;
-        if (!isChapterOpen || chapterList.isEmpty() || collBook == null || curPage == null || curPageList == null) {
+        if (!isChapterOpen || chapterList.isEmpty() || collBook == null || curPage == null || curPageList == null || mStatus != STATUS_FINISH) {
             return;
         }
 //        if (curChapterPos == bookRecord.chapter && bookRecord.pagePos == curPage.position) {
