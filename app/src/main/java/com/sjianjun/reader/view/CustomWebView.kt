@@ -21,6 +21,7 @@ import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.bookcity.HostMgr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
