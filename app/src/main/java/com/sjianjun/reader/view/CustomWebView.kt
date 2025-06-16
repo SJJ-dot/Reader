@@ -20,7 +20,7 @@ import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.bookcity.HostMgr
 import com.sjianjun.reader.module.bookcity.contains
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.utils.setDarkening
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
@@ -109,6 +109,7 @@ class CustomWebView @JvmOverloads constructor(
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
         val webSettings = webView.settings
+        webSettings.setDarkening()
         webSettings.userAgentString = WEB_VIEW_UA_ANDROID
         webSettings.javaScriptEnabled = true
         webSettings.domStorageEnabled = true
