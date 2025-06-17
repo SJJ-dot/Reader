@@ -105,7 +105,7 @@ class CustomWebView @JvmOverloads constructor(
 
         val cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
-        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
+//        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
 
         WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
