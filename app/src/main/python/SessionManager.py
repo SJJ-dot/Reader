@@ -1,42 +1,20 @@
-import os
-from os.path import join
-
-import requests
-import pickle
-
+from java.util import HashMap
 from com.sjianjun.reader.http import CookieMgr
-
-class SessionManager:
-    def __init__(self, source='session_file'):
-        filename = join(os.environ["HOME"], f"chaquopy/sessions/{source}")
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        self.session_file = filename
-        self.session = requests.Session()
-        self.load_session()
-
-    def load_session(self):
-        try:
-            with open(self.session_file, 'rb') as f:
-                self.session.cookies.update(pickle.load(f))
-        except FileNotFoundError:
-            pass
-
-    def save_session(self):
-        with open(self.session_file, 'wb') as f:
-            pickle.dump(self.session.cookies, f)
-
-    def get(self, url, **kwargs):
-        response = self.session.get(url, **kwargs)
-        self.save_session()
-        return response
-
-    def post(self, url, data=None, json=None, **kwargs):
-        response = self.session.post(url, data=data, json=json, **kwargs)
-        self.save_session()
-        return response
+from com.sjianjun.reader.module.verification import WebViewVerificationActivity
 
 def get_cookie(url):
     return CookieMgr.getCookie(url)
 
 def set_cookie(url, cookie):
     CookieMgr.setCookie(url, cookie)
+
+def start_verification_activity(url,headers=None, html=None):
+    if headers is None:
+        headers = {}
+    if html is None:
+        html = ""
+    # 将 Python 的 dict 转换为 Java 的 HashMap
+    java_headers = HashMap()
+    for key, value in headers.items():
+        java_headers.put(key, value)
+    WebViewVerificationActivity.startAndWaitResult(url, java_headers, html)

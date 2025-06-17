@@ -16,11 +16,12 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
-import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.test.SourceTest
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.checkUpdate
 import com.umeng.commonsdk.UMConfigure
 
 
@@ -46,6 +47,7 @@ class MainActivity : BaseActivity() {
                 BookSourceMgr.autoImport()
             }
             UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
+//            SourceTest.test()
         }
         init()
     }

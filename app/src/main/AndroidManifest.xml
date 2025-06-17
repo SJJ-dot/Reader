@@ -30,6 +30,9 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
+            android:name=".module.verification.WebViewVerificationActivity"
+            android:exported="false" />
+        <activity
             android:name=".module.reader.activity.BookReaderActivity"
             android:launchMode="singleTask" /> <!-- 适配华为（huawei）刘海屏 沉浸式 -->
         <meta-data
