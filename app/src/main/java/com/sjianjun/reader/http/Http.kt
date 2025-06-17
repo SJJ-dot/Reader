@@ -58,11 +58,11 @@ val okClient = OkHttpClient.Builder()
         // 创建一个 OkHttpClient，并设置 SSL SocketFactory
         sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
         hostnameVerifier { _, _ -> true }
-        val bootstrapClient = OkHttpClient.Builder()
-            .addInterceptor( HttpLoggingInterceptor { Log.i(it) }.setLevel(
-                HttpLoggingInterceptor.Level.BODY
-            ))
-            .build()
+//        val bootstrapClient = OkHttpClient.Builder()
+//            .addInterceptor( HttpLoggingInterceptor { Log.i(it) }.setLevel(
+//                HttpLoggingInterceptor.Level.BODY
+//            ))
+//            .build()
 
 //        val dns = DnsOverHttps.Builder().client(bootstrapClient)
 //            .url("https://dns.alidns.com/dns-query".toHttpUrl())
@@ -75,7 +75,7 @@ val okClient = OkHttpClient.Builder()
     .writeTimeout(10, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
 //    .retryOnConnectionFailure(false)
-    .cookieJar(WebViewCookieJar())
+    .cookieJar(CookieMgr())
     .addInterceptor {
         val header = header()
         it.request().headers.names().forEach { name ->

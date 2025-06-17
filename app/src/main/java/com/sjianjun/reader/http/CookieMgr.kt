@@ -1,17 +1,26 @@
 package com.sjianjun.reader.http
 
 import android.webkit.CookieManager
-import com.franmontiel.persistentcookiejar.PersistentCookieJar
-import com.franmontiel.persistentcookiejar.cache.SetCookieCache
-import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
-import com.sjianjun.reader.App
 import okhttp3.Cookie
 import okhttp3.CookieJar
+import okhttp3.Headers.Companion.headersOf
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 
-class CookieMgr {
+class CookieMgr : CookieJar{
+    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+        for (cookie in cookies) {
+            cookieManager.setCookie(url.toString(), cookie.toString())
+        }
+    }
 
+    override fun loadForRequest(url: HttpUrl): List<Cookie> {
+        val cookiesString = cookieManager.getCookie(url.toString())
+        return if (cookiesString != null) {
+            Cookie.parseAll(url, headersOf("Set-Cookie", cookiesString))
+        } else {
+            emptyList()
+        }
+    }
 
     companion object {
         private val cookieManager: CookieManager = CookieManager.getInstance()
