@@ -22,7 +22,6 @@ import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.test.SourceTest
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
-import com.umeng.commonsdk.UMConfigure
 
 
 class MainActivity : BaseActivity() {
@@ -46,7 +45,6 @@ class MainActivity : BaseActivity() {
             launchIo {
                 BookSourceMgr.autoImport()
             }
-            UMConfigure.init(application, UMConfigure.DEVICE_TYPE_PHONE, "")
 //            SourceTest.test()
         }
         init()

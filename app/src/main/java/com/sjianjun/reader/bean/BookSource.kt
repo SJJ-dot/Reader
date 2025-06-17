@@ -5,7 +5,6 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
-import com.sjianjun.reader.rhino.js
 import sjj.alog.Log
 
 @Entity
@@ -61,7 +60,7 @@ class BookSource {
     private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         when (lauanage) {
-            Language.js -> return js(func.name, *params)
+            Language.js -> return null
             Language.py -> return py(func.name, *params)
         }
         Log.e("未知的脚本引擎")
