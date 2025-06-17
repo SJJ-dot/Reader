@@ -135,7 +135,7 @@ class WebViewVerificationActivity : BaseActivity() {
             override fun onPageFinished(view: WebView?, url: String) {
                 super.onPageFinished(view, url)
                 val cookie = cookieManager.getCookie(url)
-                if (cookie.contains("cf_clearance")) {
+                if (cookie?.contains("cf_clearance") == true) {
                     Log.i("Cloudflare Page finished loading2: $url, cookies: $cookie")
                     CookieMgr.setCookie(url, cookie)
                     finish()

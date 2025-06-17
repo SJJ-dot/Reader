@@ -36,50 +36,64 @@ class CookieMgr {
 
         @JvmStatic
         fun getCookie(url: String): String {
-            val httpUrl = url.toHttpUrl()
-            val cookies = cookieJar.loadForRequest(httpUrl)
-            return cookies.joinToString("; ") { "${it.name}=${it.value}" }
+            try {
+                val httpUrl = url.toHttpUrl()
+                val cookies = cookieJar.loadForRequest(httpUrl)
+                return cookies.joinToString("; ") { "${it.name}=${it.value}" }
+            } catch (_: Exception) {
+                return ""
+            }
         }
 
         @JvmStatic
         fun getCookie(url: String, name: String): String {
-            val httpUrl = url.toHttpUrl()
-            val cookies = cookieJar.loadForRequest(httpUrl)
-            return cookies.find { it.name == name }?.value ?: ""
+            try {
+                val httpUrl = url.toHttpUrl()
+                val cookies = cookieJar.loadForRequest(httpUrl)
+                return cookies.find { it.name == name }?.value ?: ""
+            } catch (_: Exception) {
+                return ""
+            }
         }
 
         @JvmStatic
         fun setCookie(url: String, cookies: String) {
-            val httpUrl = url.toHttpUrl()
-            val cookies1 = cookies.split(";").mapNotNull {
-                val cookieParts = it.split("=")
-                if (cookieParts.size == 2) {
-                    Cookie.Builder()
-                        .name(cookieParts[0].trim())
-                        .value(cookieParts[1].trim())
-                        .domain(httpUrl.host)
-                        .path(httpUrl.encodedPath)
-                        .build()
-                } else {
-                    null
+            try {
+                val httpUrl = url.toHttpUrl()
+                val cookies1 = cookies.split(";").mapNotNull {
+                    val cookieParts = it.split("=")
+                    if (cookieParts.size == 2) {
+                        Cookie.Builder()
+                            .name(cookieParts[0].trim())
+                            .value(cookieParts[1].trim())
+                            .domain(httpUrl.host)
+                            .path(httpUrl.encodedPath)
+                            .build()
+                    } else {
+                        null
+                    }
                 }
+                cookieJar.saveFromResponse(httpUrl, cookies1)
+            } catch (_: Exception) {
             }
-            cookieJar.saveFromResponse(httpUrl, cookies1)
         }
 
         fun applyToWebView(url: String) {
-            val cookieManager = CookieManager.getInstance()
-            cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
-            cookieManager.removeSessionCookies(null)
-            cookieManager.removeAllCookies(null) // 清除所有 Cookie
-            val cookies = getCookie(url).split(";")
-            cookies.forEach {
-                if (it.isNotBlank()) {
-                    cookieManager.setCookie(url, it.trim())
+            try {
+                val cookieManager = CookieManager.getInstance()
+                cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
+                cookieManager.removeSessionCookies(null)
+                cookieManager.removeAllCookies(null) // 清除所有 Cookie
+                val cookies = getCookie(url).split(";")
+                cookies.forEach {
+                    if (it.isNotBlank()) {
+                        cookieManager.setCookie(url, it.trim())
+                    }
                 }
+                cookieManager.flush()
+                Log.i("Cookies applied to WebView for URL: $url")
+            } catch (_: Exception) {
             }
-            cookieManager.flush()
-            Log.i("Cookies applied to WebView for URL: $url")
         }
     }
 

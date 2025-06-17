@@ -19,8 +19,8 @@ import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
-import com.sjianjun.reader.test.SourceTest
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.HttpServiceHelper
 import com.sjianjun.reader.utils.checkUpdate
 
 

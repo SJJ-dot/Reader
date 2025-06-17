@@ -16,6 +16,7 @@ import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.utils.HttpServiceHelper
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -106,6 +107,18 @@ class SettingsFragment : Fragment() {
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
+            }
+            HttpServiceHelper.isRunning.observe(viewLifecycleOwner) {
+                debugServiceSwitch.isChecked = it
+            }
+            debugServiceSwitch.setOnCheckedChangeListener { btn, isChecked ->
+                if (isChecked){
+                    if (HttpServiceHelper.isRunning.value != true){
+                        HttpServiceHelper.startHttpServer()
+                    }
+                }else{
+                    HttpServiceHelper.stopHttpServer()
+                }
             }
 
         }
