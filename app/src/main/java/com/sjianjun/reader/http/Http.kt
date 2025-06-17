@@ -75,7 +75,7 @@ val okClient = OkHttpClient.Builder()
     .writeTimeout(10, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
 //    .retryOnConnectionFailure(false)
-    .cookieJar(CookieMgr())
+    .cookieJar(CookieMgr.cookieJar)
     .addInterceptor {
         val header = header()
         it.request().headers.names().forEach { name ->

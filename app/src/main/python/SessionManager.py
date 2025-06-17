@@ -4,6 +4,8 @@ from os.path import join
 import requests
 import pickle
 
+from com.sjianjun.reader.http import CookieMgr
+
 class SessionManager:
     def __init__(self, source='session_file'):
         filename = join(os.environ["HOME"], f"chaquopy/sessions/{source}")
@@ -32,3 +34,9 @@ class SessionManager:
         response = self.session.post(url, data=data, json=json, **kwargs)
         self.save_session()
         return response
+
+def get_cookie(url):
+    return CookieMgr.getCookie(url)
+
+def set_cookie(url, cookie):
+    CookieMgr.setCookie(url, cookie)
