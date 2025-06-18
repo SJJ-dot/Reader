@@ -103,7 +103,6 @@ class WebViewVerificationActivity : BaseActivity() {
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
         CookieMgr.clearCookiesForUrl(url)
-        CookieMgr.applyToWebView(url)
         val cookie2 = CookieManager.getInstance().getCookie(url)
         Log.i("cookie2: $cookie2")
 
@@ -144,10 +143,6 @@ class WebViewVerificationActivity : BaseActivity() {
 
             override fun onPageFinished(view: WebView?, url: String) {
                 super.onPageFinished(view, url)
-                val cookie = cookieManager.getCookie(url)
-                if (cookie != null) {
-                    CookieMgr.setCookie(url, cookie)
-                }
                 binding.swipeRefreshLayout.isRefreshing = false
             }
 
