@@ -6,6 +6,8 @@ import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.Bundle
 import android.os.Looper
+import android.view.Menu
+import android.view.MenuItem
 import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
@@ -18,6 +20,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.setDarkening
@@ -29,7 +32,6 @@ import java.util.UUID
 
 class WebViewVerificationActivity : BaseActivity() {
     private lateinit var binding: ActivityVerificationBinding
-    private var isCloudflareChallenge = false
     private val url: String by lazy { intent.getStringExtra(KEY_URL) ?: "" }
     private val headerMap: Map<String, String> by lazy {
         intent.getSerializableExtra(KEY_HEADER_MAP) as? Map<String, String> ?: mapOf()
@@ -42,7 +44,7 @@ class WebViewVerificationActivity : BaseActivity() {
         enableEdgeToEdge()
         binding = ActivityVerificationBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.swipeRefreshLayout) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -54,7 +56,6 @@ class WebViewVerificationActivity : BaseActivity() {
         if (html.isNotEmpty()) {
             binding.webView.loadDataWithBaseURL(url, html, "text/html", "UTF-8", url)
             Log.i("WebViewVerificationActivity loading HTML content")
-            binding.loadingProgressBar.hide()
         } else if (url.isNotEmpty()) {
             binding.webView.loadUrl(url, headerMap)
         } else {
@@ -68,16 +69,34 @@ class WebViewVerificationActivity : BaseActivity() {
         waitResultSet.remove(resultKey)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.verification_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_done -> {
+                // 处理完成按钮点击事件
+                finish() // 例如：关闭当前 Activity
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun initView() {
         binding.swipeRefreshLayout.setOnRefreshListener {
             Log.i("refresh")
             binding.webView.reload()
         }
         // 设置 WebView 的滚动监听器
-        binding. webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+        binding.webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             // 如果 WebView 滚动到顶部，则允许 SwipeRefreshLayout 下拉刷新
             binding.swipeRefreshLayout.isEnabled = scrollY == 0
         }
+        setSupportActionBar(binding.toolbar)
     }
 
     private fun initWebView(url: String, headerMap: Map<String, String>) {
@@ -106,15 +125,6 @@ class WebViewVerificationActivity : BaseActivity() {
         }
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                if (newProgress != 100) {
-                    binding.loadingProgressBar.show()
-                }
-                binding.loadingProgressBar.setProgress(newProgress, true)
-                if (newProgress == 100) {
-                    binding.loadingProgressBar.hide()
-                }
-            }
         }
 
         binding.webView.webViewClient = object : WebViewClient() {
@@ -135,12 +145,8 @@ class WebViewVerificationActivity : BaseActivity() {
             override fun onPageFinished(view: WebView?, url: String) {
                 super.onPageFinished(view, url)
                 val cookie = cookieManager.getCookie(url)
-                if (cookie?.contains("cf_clearance") == true) {
-                    Log.i("Cloudflare Page finished loading2: $url, cookies: $cookie")
+                if (cookie != null) {
                     CookieMgr.setCookie(url, cookie)
-                    finish()
-                } else {
-                    Log.i("Cloudflare Page not finished loading3: $url, cookies: $cookie")
                 }
                 binding.swipeRefreshLayout.isRefreshing = false
             }
