@@ -1,11 +1,37 @@
 package com.sjianjun.reader.http
 
 import android.webkit.CookieManager
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.Headers.Companion.headersOf
+import okhttp3.HttpUrl
 import sjj.alog.Log
 
-object CookieMgr {
+object CookieMgr : CookieJar {
 
     private val cookieManager: CookieManager by lazy { CookieManager.getInstance() }
+
+    @Synchronized
+    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+        try {
+            for (cookie in cookies) {
+                cookieManager.setCookie(url.toString(), cookie.toString())
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    @Synchronized
+    override fun loadForRequest(url: HttpUrl): List<Cookie> {
+        val cookiesString = cookieManager.getCookie(url.toString())
+        try {
+            if (cookiesString != null) {
+                return Cookie.parseAll(url, headersOf("Set-Cookie", cookiesString))
+            }
+        } catch (_: Exception) {
+        }
+        return emptyList()
+    }
 
     // 新增方法：删除指定 URL 的 Cookie
     @Synchronized

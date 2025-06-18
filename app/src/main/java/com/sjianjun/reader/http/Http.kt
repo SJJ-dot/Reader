@@ -1,8 +1,5 @@
 package com.sjianjun.reader.http
 
-import com.franmontiel.persistentcookiejar.PersistentCookieJar
-import com.franmontiel.persistentcookiejar.cache.SetCookieCache
-import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -61,7 +58,7 @@ val okClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(10, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
-    .cookieJar(PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(com.sjianjun.reader.App.app)))
+    .cookieJar(CookieMgr)
     .addInterceptor {
         val header = header()
         it.request().headers.names().forEach { name ->
