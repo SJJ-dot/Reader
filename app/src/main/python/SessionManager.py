@@ -18,3 +18,4 @@ def start_verification_activity(url,headers=None, html=None):
     for key, value in headers.items():
         java_headers.put(key, value)
     WebViewVerificationActivity.startAndWaitResult(url, java_headers, html)
+    return get_cookie(url)
