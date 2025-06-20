@@ -3,11 +3,13 @@ package com.sjianjun.reader.view
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.http.SslError
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -108,17 +110,18 @@ class CustomWebView @JvmOverloads constructor(
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
 //        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
 
-        WebView.setWebContentsDebuggingEnabled(true)
+//        WebView.setWebContentsDebuggingEnabled(true)
 //声明WebSettings子类
         val webSettings = webView.settings
         webSettings.setDarkening()
         webSettings.userAgentString = WEB_VIEW_UA_ANDROID
         webSettings.javaScriptEnabled = true
         webSettings.domStorageEnabled = true
+        webSettings.loadsImagesAutomatically = true //支持自动加载图片
 //设置自适应屏幕，两者合用
         webSettings.useWideViewPort = true //将图片调整到适合webview的大小
         webSettings.loadWithOverviewMode = true // 缩放至屏幕的大小
-
+        webSettings.blockNetworkImage = false //设置图片加载方式，默认true，表示不加载图片
 //缩放操作
         webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
         webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
@@ -198,6 +201,18 @@ class CustomWebView @JvmOverloads constructor(
                 }
                 return super.shouldInterceptRequest(view, request)
             }
+
+            override fun onReceivedSslError(
+                view: WebView?,
+                handler: SslErrorHandler?,
+                error: SslError?
+            ) {
+                Log.e("SSL Error: ${error?.toString()}")
+                // 忽略 SSL 错误
+                handler?.proceed()
+            }
+
+
 
         }
         webView?.webChromeClient =
