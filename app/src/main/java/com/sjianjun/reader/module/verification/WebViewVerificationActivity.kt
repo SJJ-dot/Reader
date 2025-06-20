@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
@@ -151,6 +153,17 @@ class WebViewVerificationActivity : BaseActivity() {
                 binding.swipeRefreshLayout.isRefreshing = true
             }
 
+        }
+        binding.webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                Log.i("progress:${newProgress} ")
+                binding.searchRefresh.progress = newProgress
+                if (newProgress == 100) {
+                    binding.searchRefresh.visibility = GONE
+                } else {
+                    binding.searchRefresh.visibility = VISIBLE
+                }
+            }
         }
 
     }

@@ -61,6 +61,7 @@ class CustomWebView @JvmOverloads constructor(
         this.url = url
         this.clearHistory = clearHistory
         Log.i("loadUrl:${url} ")
+        webView?.stopLoading()
         webView?.loadUrl(url)
         binding.swipeRefreshLayout.isRefreshing = true
     }
@@ -138,7 +139,9 @@ class CustomWebView @JvmOverloads constructor(
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (hostMgr?.blacklist.contains(httpUrl?.host) || hostMgr?.blacklist.contains(httpUrl?.topPrivateDomain())) {
+                if (hostMgr?.blacklist.contains(httpUrl?.host) ||
+                    hostMgr?.blacklist.contains(httpUrl?.topPrivateDomain())
+                ) {
                     return true
                 }
 //                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
@@ -182,9 +185,16 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): WebResourceResponse? {
                 hostMgr?.addUrl(request.url.toString())
-                if (hostMgr?.blacklist.contains(request.url.host) || hostMgr?.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
+                if (hostMgr?.blacklist.contains(request.url.host) || hostMgr?.blacklist.contains(
+                        request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
+                    )
+                ) {
                     Log.i("拦截请求：${request.url}")
-                    return WebResourceResponse("text/plain", "UTF-8", ByteArrayInputStream("".toByteArray()))
+                    return WebResourceResponse(
+                        "text/plain",
+                        "UTF-8",
+                        ByteArrayInputStream("".toByteArray())
+                    )
                 }
                 return super.shouldInterceptRequest(view, request)
             }
@@ -194,6 +204,12 @@ class CustomWebView @JvmOverloads constructor(
             object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                     Log.i("progress:${newProgress} ")
+                    binding.searchRefresh.progress = newProgress
+                    if (newProgress == 100) {
+                        binding.searchRefresh.visibility = GONE
+                    } else {
+                        binding.searchRefresh.visibility = VISIBLE
+                    }
                 }
             }
     }
