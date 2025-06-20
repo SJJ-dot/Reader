@@ -32,26 +32,6 @@ enum class Channels {
             releasesInfo.downloadApkUrl = info.getString("downloadURL")
             return releasesInfo
         }
-    },
-    Github {
-        override suspend fun getReleaseInfo(): ReleasesInfo {
-            try {
-                val url = "https://api.github.com/repos/SJJ-dot/Reader/releases/latest"
-                val info = JSONObject(http.get(url).body)
-
-                val releasesInfo = ReleasesInfo()
-                releasesInfo.channel = name
-                releasesInfo.lastVersion = info.getString("tag_name")
-                releasesInfo.updateContent = info.getString("body")
-                releasesInfo.downloadApkUrl =
-                    info.getJSONArray("assets").getJSONObject(0).getString("browser_download_url")
-                globalConfig.releasesInfoGithub = releasesInfo
-                return releasesInfo
-            } catch (e: Exception) {
-                Log.e("GitHub 版本信息加载失败")
-                return globalConfig.releasesInfoGithub!!
-            }
-        }
     };
 
     abstract suspend fun getReleaseInfo(): ReleasesInfo
