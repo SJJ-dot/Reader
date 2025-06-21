@@ -40,6 +40,9 @@ class BookCityPageFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentBookCityPageBinding.bind(view).apply {
             customWebView.init(viewLifecycleOwner, hostMgr)
+            customWebView.openMenu = {
+                drawerLayout.openDrawer(GravityCompat.END)
+            }
             //QQ登录
             globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
                 val url = it?.toString() ?: return@Observer

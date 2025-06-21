@@ -40,32 +40,63 @@ class CustomWebView @JvmOverloads constructor(
     private val lifecycleObserver by lazy { LifecycleObserver(this) }
     private var webView: WebView? = null
     private var url: String? = null
-    private var clearHistory: Boolean = false
     private var hostMgr: HostMgr? = null
+    var openMenu:()-> Unit = {}
     fun init(owner: LifecycleOwner, hostMgr: HostMgr) {
         this.hostMgr = hostMgr
         webView = binding.webView
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            Log.i("refresh")
-            webView?.reload()
-        }
-        // 设置 WebView 的滚动监听器
-        webView?.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            // 如果 WebView 滚动到顶部，则允许 SwipeRefreshLayout 下拉刷新
-            binding.swipeRefreshLayout.isEnabled = scrollY == 0
-        }
 
         initWebView(binding.webView)
+        initView()
         owner.lifecycle.addObserver(lifecycleObserver)
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
         this.url = url
-        this.clearHistory = clearHistory
         Log.i("loadUrl:${url} ")
         webView?.stopLoading()
+        if (clearHistory) {
+            Log.i("清除历史记录")
+            webView?.clearHistory()
+        }
         webView?.loadUrl(url)
-        binding.swipeRefreshLayout.isRefreshing = true
+    }
+
+    private fun initView() {
+        binding.refresh.setOnClickListener {
+
+            if (binding.refresh.isSelected) {
+                webView?.stopLoading()
+            }else{
+                webView?.stopLoading()
+                webView?.reload()
+            }
+        }
+        binding.backward.setOnClickListener {
+            Log.i("后退")
+            if (webView?.canGoBack() == true) {
+                webView?.goBack()
+            } else {
+                Log.w("没有后退页面")
+            }
+        }
+        binding.forward.setOnClickListener {
+            Log.i("前进")
+            if (webView?.canGoForward() == true) {
+                webView?.goForward()
+            } else {
+                Log.w("没有前进页面")
+            }
+        }
+        binding.menu.setOnClickListener {
+            Log.i("打开菜单")
+            openMenu()
+        }
+        binding.home.setOnClickListener {
+            Log.i("回到首页")
+            webView?.stopLoading()
+            webView?.loadUrl(this.url ?: "https://www.baidu.com")
+        }
     }
 
     private fun initWebView(webView: WebView) {
@@ -158,29 +189,13 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                Log.i(url)
-                binding.swipeRefreshLayout.isRefreshing = true
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                Log.i(url ?: return)
-                binding.swipeRefreshLayout.isRefreshing = false
-                if (!url.startsWith("http")) {
-                    return
-                }
-            }
 
-            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
-                super.doUpdateVisitedHistory(view, url, isReload)
-
-                if (clearHistory) {
-                    clearHistory = false
-                    webView?.clearHistory()
-                }
             }
 
             override fun onLoadResource(view: WebView?, url: String?) {
-                Log.i("$url")
             }
 
             override fun shouldInterceptRequest(
@@ -213,16 +228,19 @@ class CustomWebView @JvmOverloads constructor(
             }
 
 
-
         }
         webView?.webChromeClient =
             object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                     Log.i("progress:${newProgress} ")
                     binding.searchRefresh.progress = newProgress
+                    binding.backward.isEnabled = webView.canGoBack()
+                    binding.forward.isEnabled = webView.canGoForward()
                     if (newProgress == 100) {
+                        binding.refresh.isSelected = false
                         binding.searchRefresh.visibility = GONE
                     } else {
+                        binding.refresh.isSelected = true
                         binding.searchRefresh.visibility = VISIBLE
                     }
                 }

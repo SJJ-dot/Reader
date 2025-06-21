@@ -5,6 +5,7 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Headers.Companion.headersOf
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import sjj.alog.Log
 
 object CookieMgr : CookieJar {
@@ -38,10 +39,16 @@ object CookieMgr : CookieJar {
     fun clearCookiesForUrl(url: String) {
         try {
             cookieManager.setAcceptCookie(true)
-            val cookies = cookieManager.getCookie(url)
-            cookies?.split(";")?.forEach { cookie ->
-                val cookieName = cookie.substringBefore("=")
-                cookieManager.setCookie(url, "$cookieName=; Expires=Thu, 01 Jan 1970 00:00:00 GMT") // 设置过期时间为过去的时间
+            val cookies = cookieManager.getCookie(url) ?: return
+            val paths = url.toHttpUrl().encodedPathSegments.scan("/") { prefix, segment -> "$prefix$segment/" }
+            val keys = cookies.split(";")
+                .map { it.substringBefore("=", missingDelimiterValue = "").trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+            keys.forEach { key ->
+                paths.forEach { path ->
+                    cookieManager.setCookie(url, "$key=; Path=$path; Max-Age=-1")
+                }
             }
             cookieManager.flush()
             Log.d("Removed cookies for URL: $url")

@@ -89,14 +89,33 @@ class WebViewVerificationActivity : BaseActivity() {
     }
 
     private fun initView() {
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            Log.i("refresh")
-            binding.webView.reload()
+        binding.refresh.setOnClickListener {
+
+            if (binding.refresh.isSelected) {
+                binding.webView.stopLoading()
+            } else {
+                binding.webView.stopLoading()
+                binding.webView.reload()
+            }
         }
-        // 设置 WebView 的滚动监听器
-        binding.webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            // 如果 WebView 滚动到顶部，则允许 SwipeRefreshLayout 下拉刷新
-            binding.swipeRefreshLayout.isEnabled = scrollY == 0
+        binding.backward.setOnClickListener {
+            Log.i("后退")
+            if (binding.webView.canGoBack()) {
+                binding.webView.goBack()
+            } else {
+                Log.w("没有后退页面")
+            }
+        }
+        binding.forward.setOnClickListener {
+            Log.i("前进")
+            if (binding.webView.canGoForward()) {
+                binding.webView.goForward()
+            } else {
+                Log.w("没有前进页面")
+            }
+        }
+        binding.complete.setOnClickListener {
+            finish() // 例如：关闭当前 Activity
         }
         setSupportActionBar(binding.toolbar)
     }
@@ -105,8 +124,6 @@ class WebViewVerificationActivity : BaseActivity() {
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
         CookieMgr.clearCookiesForUrl(url)
-        val cookie2 = CookieManager.getInstance().getCookie(url)
-        Log.i("cookie2: $cookie2")
 
         binding.webView.settings.apply {
             setDarkening()
@@ -121,8 +138,6 @@ class WebViewVerificationActivity : BaseActivity() {
             headerMap["User-Agent"]?.let {
                 userAgentString = it
             }
-            cacheMode = WebSettings.LOAD_NO_CACHE // 禁用缓存
-            domStorageEnabled = false // 禁用 DOM 存储
         }
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {
@@ -145,22 +160,23 @@ class WebViewVerificationActivity : BaseActivity() {
 
             override fun onPageFinished(view: WebView?, url: String) {
                 super.onPageFinished(view, url)
-                binding.swipeRefreshLayout.isRefreshing = false
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                Log.i(url)
-                binding.swipeRefreshLayout.isRefreshing = true
             }
 
         }
         binding.webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+            override fun onProgressChanged(view: WebView, newProgress: Int) {
                 Log.i("progress:${newProgress} ")
                 binding.searchRefresh.progress = newProgress
+                binding.backward.isEnabled = view.canGoBack()
+                binding.forward.isEnabled = view.canGoForward()
                 if (newProgress == 100) {
+                    binding.refresh.isSelected = false
                     binding.searchRefresh.visibility = GONE
                 } else {
+                    binding.refresh.isSelected = true
                     binding.searchRefresh.visibility = VISIBLE
                 }
             }
