@@ -145,8 +145,11 @@ class WebViewVerificationActivity : BaseActivity() {
 
         binding.webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                Log.i("shouldOverrideUrlLoading:${request?.url}")
+                if (url.endsWith(".apk")) {
+                    return true
+                }
                 if (request?.url?.scheme == "http" || request?.url?.scheme == "https") {
-                    Log.i("shouldOverrideUrlLoading:${request.url}")
                     // 处理 http 和 https 的链接
                     return false // 返回 false 以让 WebView 加载该链接
                 }

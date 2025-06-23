@@ -178,13 +178,11 @@ class CustomWebView @JvmOverloads constructor(
                 ) {
                     return true
                 }
-//                val origin = this@CustomWebView.url?.toHttpUrlOrNull()
-//                if (httpUrl?.topPrivateDomain() == origin?.topPrivateDomain()) {
-//                    // 启动新 Activity
-//                    EventBus.post(WEB_NEW_URL, url)
-//                    return true
-//                }
-                return false
+                if (request.url?.scheme == "http" || request.url?.scheme == "https") {
+                    // 处理 http 和 https 的链接
+                    return false // 返回 false 以让 WebView 加载该链接
+                }
+                return true
 
             }
 
