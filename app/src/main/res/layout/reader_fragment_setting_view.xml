@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/transparent">
+    android:background="@color/dn_background"
+    android:paddingTop="8dp">
 
     <ImageButton
         android:id="@+id/speak"
@@ -17,7 +18,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/download"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/mdr_white" />
+        app:tint="@color/dn_color_primary" />
 
     <ImageButton
         android:id="@+id/download"
@@ -87,7 +88,6 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background"
         android:clickable="true"
         android:focusable="true"
         android:paddingBottom="16dp"
