@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -235,6 +236,11 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initPageStyle() {
+        if (PageStyle.getStyle(globalConfig.readerPageStyle.value).isDark) {
+            ImmersionBar.with(this).statusBarDarkFont(false).init()
+        } else {
+            ImmersionBar.with(this).statusBarDarkFont(true).init()
+        }
         binding?.pageStyleImport?.setOnClickListener {
             dismissAllowingStateLoss()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
@@ -383,6 +389,11 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.setOnClickListener {
                 notifyDataSetChanged()
                 globalConfig.readerPageStyle.postValue(pageStyle.id)
+                if (pageStyle.isDark) {
+                    ImmersionBar.with(fragment).statusBarDarkFont(false).init()
+                } else {
+                    ImmersionBar.with(fragment).statusBarDarkFont(true).init()
+                }
                 //记录浅色 深色样式 和深色样式
                 if (pageStyle.isDark) {
                     globalConfig.lastDarkTheme.postValue(pageStyle.id)

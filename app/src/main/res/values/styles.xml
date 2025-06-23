@@ -24,7 +24,7 @@
     </style>
 
     <style name="reader_setting_dialog" parent="Theme.Design.BottomSheetDialog">
-        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
     </style>
 
     <style name="reader_page_style" parent="Theme.Design.BottomSheetDialog">

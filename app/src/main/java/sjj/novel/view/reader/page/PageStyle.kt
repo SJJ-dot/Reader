@@ -268,7 +268,7 @@ abstract class PageStyle(val id: String) {
         }
 
         @JvmStatic
-        fun getStyle(id: String): PageStyle {
+        fun getStyle(id: String?): PageStyle {
             return styles.value!!.firstOrNull { it.id == id } ?: defDay
         }
     }
