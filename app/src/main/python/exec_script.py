@@ -1,9 +1,8 @@
-from log import log
-# 创建一个空的命名空间
-namespace = {}
-
+import copy
 
 def exec_script(script, func, arg):
-    namespace.clear()  # 清理之前的脚本定义
+    # 1. 准备安全环境
+    safe_builtins = copy.copy(__builtins__.__dict__) if hasattr(__builtins__, '__dict__') else copy.copy(__builtins__)
+    namespace = {'__builtins__': safe_builtins}
     exec(script, namespace)
     return namespace[func](arg)
