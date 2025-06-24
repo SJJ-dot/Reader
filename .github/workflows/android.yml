@@ -27,7 +27,7 @@ jobs:
         id: changelog
         run: |
           sudo apt-get install jq
-          changelog=$(awk '/##/{if (found) exit; found=1} found' CHANGELOG.md | sed '1d')
+          changelog=$(awk '!/##/{print} /##/{exit}' CHANGELOG.md && awk '/##/{if (found) exit; found=1} found' CHANGELOG.md | sed '1d')
           echo "$changelog" >> changelog.txt
           changelog=$(printf '%s' "$changelog" | jq -Rs .)
           echo "CHANGELOG=$changelog" >> $GITHUB_ENV
