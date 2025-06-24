@@ -9,7 +9,7 @@ import fi.iki.elonen.NanoHTTPD
 import sjj.alog.Log
 
 object HttpServiceHelper {
-    var port = 58888 // 可以根据需要修改端口号
+    var port = if (BuildConfig.DEBUG) 58888 else 38888 // 可以根据需要修改端口号
         private set
     private var server: LocalHttpServer? = null
 
@@ -19,7 +19,7 @@ object HttpServiceHelper {
         stopHttpServer()
         Log.i("Starting HTTP server on port $port")
         try {
-            server = LocalHttpServer(if (BuildConfig.DEBUG) port else (port - 10000))
+            server = LocalHttpServer(port)
             server?.start()
             Log.i("HTTP 服务已启动，端口：$port")
         } catch (e: Exception) {
