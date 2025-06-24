@@ -26,9 +26,6 @@ def test(filename):
     result.replace("", "")
 
 
-def test_source():
-    test("./source.py")
-
 
 def test_all():
     err_list = []
@@ -48,5 +45,5 @@ def test_all():
 
 
 if __name__ == '__main__':
-    # test_source()
-    test_all()
+    # test_all()
+    test("./py/香书小说.py")
