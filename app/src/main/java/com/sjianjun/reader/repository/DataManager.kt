@@ -28,19 +28,43 @@ object DataManager {
     }
 
     suspend fun searchHint(query: String): List<String>? {
+        if (query.isBlank()){
+            return emptyList()
+        }
         return withIo {
             try {
                 val resp = http.get(
-                    "https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su", mapOf(
-                        "wd" to query,
-                        "cb" to "f1",
+                    "https://suggestion.baidu.com/su", mapOf(
+                        "wd" to "小说 $query",
                     ), encoded = false
                 )
-                val respJson = Regex("f1\\((.*)\\);").find(resp.body)?.groupValues?.getOrNull(1)
+                //window.baidu.sug({q:"阵",p:false,s:["阵的拼音","阵问长生","阵组词","阵的笔顺","阵风战斗机","阵雨","阵痛","阵风","阵雨的拼音","阵发性室上性心动过速"]});
+                val respJson = Regex("""\((.*)\)""").find(resp.body)?.groupValues?.getOrNull(1)
                 val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
-                return@withIo gson.fromJson<List<String>>(jarr.toString())
+                val additional = listOf("笔趣阁", "小说", "TXT下载", "百度百科", "好看吗", "精校版", "无错版", "下载", "txt", "电视剧", "起点", "全本", "免费阅读", "全文阅读", "最新", "完结", "小说阅读网", "小说阅读器", "小说下载", "小说排行榜", "小说推荐", "小说大全")
+                val strings = jarr.map {
+                    var text = it.asString.removePrefix("小说").trim().split(" ")[0]
+                    while (true) {
+                        val string = additional.find { text.contains(it) }
+                        if (string == null) {
+                            text = text.trim()
+                            break
+                        } else {
+                            text = text.split(string)[0]
+                        }
+                    }
+                    text
+                }
+                //去重，包括空字符串，包含
+                val result = mutableListOf<String>()
+                strings.forEach {
+                    if (it.isNotBlank() && it !in result) {
+                        result.add(it)
+                    }
+                }
+                return@withIo result
             } catch (e: Exception) {
-                Log.e("搜索提示加载失败 $e")
+                Log.e("搜索提示加载失败 $e", e)
                 null
             }
         }
@@ -53,7 +77,7 @@ object DataManager {
             toast("无可用书源，请导入书源")
             return@withIo emptyFlow<List<List<SearchResult>>>()
         }
-        val supportSources = allJavaScript.filter {  it.isSupported(url) }
+        val supportSources = allJavaScript.filter { it.isSupported(url) }
         Log.i("支持的书源数量：${supportSources.size}，url:$url")
         if (supportSources.isEmpty()) {
             toast("不支持该网站")
