@@ -108,11 +108,10 @@ object BookSourceMgr {
     suspend fun autoImport() = withIo {
         fetchSourceUrl()
         import(globalConfig.bookSourceImportUrlsNet)
-        import(globalConfig.bookSourceImportUrlsLoc)
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun import(urls: List<String>) = withIo {
+    suspend fun import(urls: List<String>): Int = withIo {
 
         val sources = urls.map { url ->
             async {
@@ -176,7 +175,7 @@ object BookSourceMgr {
         }
         if (updates.isEmpty() && newSource.isEmpty()) {
             Log.i("书源无变化")
-            return@withIo
+            return@withIo sources.size
         }
         saveJs(*updates.toTypedArray(), *newSource.toTypedArray())
 
@@ -185,6 +184,7 @@ object BookSourceMgr {
             Toast.LENGTH_LONG
         )
         Log.i("${sources.first().group}：新增${newSource.size}、更新${updates.size}")
+        return@withIo sources.size
     }
 
 }

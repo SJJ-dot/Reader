@@ -12,6 +12,7 @@ import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_SOURCE_ID
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.databinding.DialogEditTextBinding
@@ -131,17 +132,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             R.id.source_import -> {
                 val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
                 bindingDialog.editView.apply {
-                    val allSource = mutableListOf<String>()
                     val urlsNet = globalConfig.bookSourceImportUrlsNet
-                    urlsNet.forEach { allSource.add(it) }
-                    val urlsLoc = globalConfig.bookSourceImportUrlsLoc
-                    urlsLoc.forEach { allSource.add(it) }
-
-                    setFilterValues(allSource)
+                    if (urlsNet.isEmpty()) {
+                        urlsNet.add(URL_BOOK_SOURCE_DEF)
+                    }
+                    setFilterValues(urlsNet)
                     delCallBack = {
-                        if (urlsLoc.remove(it)) {
-                            globalConfig.bookSourceImportUrlsLoc = urlsLoc
-                        }
                         if (urlsNet.remove(it)) {
                             globalConfig.bookSourceImportUrlsNet = urlsNet
                         }
@@ -151,22 +147,27 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     .setTitle("书源导入")
                     .setView(bindingDialog.root)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        val url = bindingDialog.editView.text.toString().trim()
-                        val urlsLoc = globalConfig.bookSourceImportUrlsLoc
-                        val urlsNet = globalConfig.bookSourceImportUrlsNet
-                        if (!urlsNet.contains(url)) {
-                            urlsLoc.remove(url)
-                            urlsLoc.add(url)
-                            globalConfig.bookSourceImportUrlsLoc = urlsLoc
-                        }
-
                         bindingDialog.editView.hideKeyboard()
+                        val url = bindingDialog.editView.text.toString().trim()
+                        if (url.isBlank()) {
+                            toast("请输入书源地址")
+                            return@setPositiveButton
+                        }
                         launch {
                             try {
                                 showSnackbar(binding!!.recycleView, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
-                                BookSourceMgr.import(listOf(url))
-                                initData()
-                                showSnackbar(binding!!.recycleView, "书源导入成功")
+                                val import = BookSourceMgr.import(listOf(url))
+                                if (import > 0) {
+                                    initData()
+                                    showSnackbar(binding!!.recycleView, "书源导入成功")
+                                    val urlsNet = globalConfig.bookSourceImportUrlsNet
+                                    urlsNet.remove(url)
+                                    urlsNet.add(0, url)
+                                    globalConfig.bookSourceImportUrlsNet = urlsNet
+                                } else {
+                                    showSnackbar(binding!!.recycleView, "书源导入失败")
+                                }
+
                             } catch (e: Exception) {
                                 Log.e("书源导入失败", e)
                                 showSnackbar(binding!!.recycleView, "书源导入失败：${e.message}")

@@ -72,11 +72,6 @@ class AppConfig(val name: String) :
         mutableListOf(URL_BOOK_SOURCE_DEF)
     )
 
-    var bookSourceImportUrlsLoc by dataPref(
-        "bookSourceImportUrlsLoc",
-        mutableListOf<String>()
-    )
-
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)
     var webdavPassword by strPref("webdavPassword", null)
