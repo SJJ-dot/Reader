@@ -93,4 +93,9 @@ class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.id) {
     override fun getChapterContentColor(context: Context): Int {
         return info.chapterContentColor
     }
+
+    override fun toString(): String {
+        return "CustomPageStyle(info=$info, isDark=$isDark)"
+    }
+
 }

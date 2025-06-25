@@ -78,8 +78,8 @@ class TtsUtil(val context: Context, val lifecycle: Lifecycle) : LifecycleObserve
     }
 
 
-    suspend fun start(pages: List<TxtPage>, pagePos: Int) {
-        if (pages.isEmpty() || pagePos < 0 || pagePos >= pages.size) {
+    suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
+        if (pages ==null || pages.isEmpty() || pagePos < 0 || pagePos >= pages.size) {
             return
         }
         if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {

@@ -4,14 +4,17 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.distinctUntilChanged
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.*
+import com.sjianjun.reader.BOOK_ID
+import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
@@ -23,15 +26,24 @@ import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.TtsUtil
+import com.sjianjun.reader.utils.dp2Px
+import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.showSnackbar
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
-import sjj.novel.view.reader.page.*
-import sjj.novel.view.reader.page.PageLoader.STATUS_LOADING
+import sjj.novel.view.reader.page.CustomPageStyle
+import sjj.novel.view.reader.page.PageLoader
+import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
+import sjj.novel.view.reader.page.PageMode
+import sjj.novel.view.reader.page.PageStyle
+import sjj.novel.view.reader.page.PageView
+import sjj.novel.view.reader.page.TxtChapter
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
@@ -152,15 +164,16 @@ class BookReaderActivity : BaseActivity() {
                 }
                 mPageLoader.pageStatus = STATUS_LOADING
 
-                val curChapter = mPageLoader.curChapter
-                val txtChapter =
-                    book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
-                toast("正在加载中，请稍候……")
-                val chapter = DataManager.getChapterContent(txtChapter, 1)
-                curChapter.content = chapter.content?.format().toString()
-                curChapter.title = chapter.title
-                mPageLoader.refreshChapter(curChapter)
-                toast("加载完成")
+                mPageLoader.curChapter?.let { curChapter ->
+                    val txtChapter =
+                        book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
+                    toast("正在加载中，请稍候……")
+                    val chapter = DataManager.getChapterContent(txtChapter, 1)
+                    curChapter.content = chapter.content?.format().toString()
+                    curChapter.title = chapter.title
+                    mPageLoader.refreshChapter(curChapter)
+                    toast("加载完成")
+                }
             }
         }
         observe<String>(EventKey.CHAPTER_CONTENT_ERROR) {
@@ -211,7 +224,7 @@ class BookReaderActivity : BaseActivity() {
             text.value =
                 globalConfig.readerFontSize.value!! to globalConfig.readerLineSpacing.value!!
         }
-        text.observe(this) {
+        text.distinctUntilChanged().observe(this) {
             Log.i("设置字号:${it.first} 行间距：${it.second}")
             mPageLoader.setTextSize(it.first.dp2Px.toFloat(), it.second)
         }
@@ -299,9 +312,8 @@ class BookReaderActivity : BaseActivity() {
             }
             readingRecord = DataManager.getReadingRecord(book).first()
                 ?: ReadingRecord(book.title)
-            Log.i("修正阅读记录 $readingRecord")
             readingRecord.bookId = bookId
-            Log.i("修正阅读记录 $readingRecord")
+            Log.i("阅读记录 $readingRecord")
             Log.i("加载章节列表")
             var chapterList = DataManager.getChapterList(bookId).first()
             book.chapterList = chapterList
@@ -331,7 +343,6 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun onChapterChange(pos: Int) {
                     launch {
-                        Log.i("章节：${pos}")
                         mPageLoader.saveRecord()
                     }
                 }
@@ -376,20 +387,26 @@ class BookReaderActivity : BaseActivity() {
 
                 override fun onPageChange(pos: Int) {
                     launch {
-                        Log.i("page：${pos}")
                         mPageLoader.saveRecord()
                     }
                 }
 
                 override fun onBookRecordChange(bean: BookRecordBean) {
-                    launch {
-                        Log.i("保存阅读记录 ${bean}")
-                        readingRecord.chapterIndex = bean.chapter
-                        readingRecord.offest = bean.pagePos
-                        readingRecord.isEnd = bean.isEnd
-                        readingRecord.updateTime = System.currentTimeMillis()
-                        DataManager.setReadingRecord(readingRecord)
+
+                    if (bean.chapter != readingRecord.chapterIndex ||
+                        bean.pagePos != readingRecord.offest ||
+                        bean.isEnd != readingRecord.isEnd
+                    ) {
+                        Log.i("保存阅读记录 $bean")
+                        launch("saveReadingRecord") {
+                            readingRecord.chapterIndex = bean.chapter
+                            readingRecord.offest = bean.pagePos
+                            readingRecord.isEnd = bean.isEnd
+                            readingRecord.updateTime = System.currentTimeMillis()
+                            DataManager.setReadingRecord(readingRecord)
+                        }
                     }
+
                 }
             })
             initBookData(book)
@@ -398,6 +415,7 @@ class BookReaderActivity : BaseActivity() {
 
     private fun initBookData(book: Book) {
         Log.i("设置书籍信息")
+        mPageLoader.closeBook()
         mPageLoader.book = BookBean().apply {
             id = book.url
             title = book.title
