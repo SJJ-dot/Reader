@@ -76,8 +76,7 @@ class BookCityPageFragment : BaseFragment() {
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
         val homeAdapter = HomeListAdapter {
-            globalConfig.bookCityUrl = it
-            view.loadUrl(url!!, true)
+            view.loadUrl(it, true)
             drawer.closeDrawer(GravityCompat.END)
         }
         val hostListAdapter = HostListAdapter(hostMgr)
