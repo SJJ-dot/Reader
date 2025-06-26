@@ -77,11 +77,11 @@ jobs:
           echo "APK_FILE=$apk_file" >> $GITHUB_ENV
           echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
           echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
-          echo "TAG_NAME=$version_name-$version_code" >> $GITHUB_ENV
+          echo "TAG_NAME=$version_name" >> $GITHUB_ENV
 
           echo "VERSION_CODE=$version_code"
           echo "VERSION_NAME=$version_name"
-          echo "TAG_NAME=$version_name-$version_code"
+          echo "TAG_NAME=$version_name"
 
       - name: Create Release
         id: create_release
