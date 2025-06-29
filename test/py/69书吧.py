@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from SessionManager import start_verification_activity
+from SessionManager import start_verification_activity, get_cookie
 from log import log
 
 
@@ -15,17 +15,32 @@ def isSupported(url):
 
 def search(query):
     url = f"https://www.69shuba.com/modules/article/search.php"
-    cookies = start_verification_activity(url)
+    data = {"searchkey": query.encode('gbk'), "searchtype": "all"}
     headers = {
-        "Cookie": cookies,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
-    data = {"searchkey": query.encode('gbk'), "searchtype": "all"}
-    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
-    response.encoding = 'gbk'
-    log(response.request)
-    log(response)
-    soup = BeautifulSoup(response.text, 'html.parser')
+
+    html_text = ""
+    cookies = get_cookie(url)
+    if "cf_clearance" in cookies:
+        headers["Cookie"] = cookies
+
+        response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
+        response.encoding = 'gbk'
+        log(response.request)
+        log(response)
+        html_text = response.text
+
+    if "cf_clearance" not in cookies or "newbox" not in html_text:
+        cookies = start_verification_activity(url)
+        headers["Cookie"] = cookies
+        response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
+        response.encoding = 'gbk'
+        log(response.request)
+        log(response)
+        html_text = response.text
+
+    soup = BeautifulSoup(html_text, 'html.parser')
     book_list = soup.select(".newbox li")
     results = []
 
