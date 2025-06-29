@@ -19,6 +19,11 @@
     <style name="dialog_button" parent="TextAppearance.MaterialComponents.Headline5" />
 
     <style name="dialog_style" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="materialButtonStyle">@style/dialog_button</item>
+    </style>
+
+    <style name="dialog_style1" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="android:windowBackground">@color/transparent</item>
         <item name="materialButtonStyle">@style/dialog_button</item>
     </style>

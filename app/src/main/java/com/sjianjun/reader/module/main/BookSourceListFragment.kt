@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.main
 
+import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
@@ -36,6 +37,10 @@ class BookSourceListFragment : BaseFragment() {
     private val adapter by lazy { BookListAdapter(this) }
 
     override fun getLayoutRes() = R.layout.main_fragment_book_source_list
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return Dialog(requireContext(), R.style.dialog_style1)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
