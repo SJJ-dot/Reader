@@ -6,6 +6,12 @@ from bs4 import BeautifulSoup
 from log import log
 
 
+def isSupported(url):
+    if "xbiqugu.la" in url:
+        return True
+    return False
+
+
 def search(query):
     url = f"http://www.xbiqugu.la/modules/article/waps.php"
     headers = {

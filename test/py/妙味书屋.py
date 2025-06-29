@@ -34,6 +34,7 @@ def getDetails(url):
         "intro": "",
         "chapterList": []
     }
+    title = book["title"]
     title_p1 = book["title"].split("(")[0].strip()
     if title_p1:
         book["title"] = title_p1
@@ -41,7 +42,7 @@ def getDetails(url):
     chapter_list_el = soup.select(".row")[4].select(".col-md-4 a")
     for i, chapter_el in enumerate(chapter_list_el):
         chapter = {
-            "title": chapter_el.text.strip(),
+            "title": chapter_el.text.replace(title, "").replace(title_p1, "").replace("(完整版)", "").strip(),
             "url": urljoin(url, chapter_el.get("href"))
         }
         book["chapterList"].append(chapter)

@@ -4,6 +4,10 @@ import requests
 from bs4 import BeautifulSoup
 from log import log
 
+def isSupported(url):
+    if "shengxuxu.net" in url:
+        return True
+    return False
 
 def search(query):
     """

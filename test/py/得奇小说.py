@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 
 from log import log
 
+def isSupported(url):
+    if "deqixs.com" in url:
+        return True
+    return False
 
 def search(query):
     # https://www.deqixs.com/tag/?key=%E8%B5%A4%E5%BF%83%E5%B7%A1%E5%A4%A9

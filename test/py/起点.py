@@ -5,6 +5,11 @@ from bs4 import BeautifulSoup
 from log import log
 from urllib.parse import quote
 
+def isSupported(url):
+    if "qidian.com" in url:
+        return True
+    return False
+
 
 def search(query):
     """
