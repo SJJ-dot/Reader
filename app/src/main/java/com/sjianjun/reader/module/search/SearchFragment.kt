@@ -58,7 +58,7 @@ class SearchFragment : BaseAsyncFragment() {
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_menu_fragment_search, menu)
         val searchView = menu.findItem(R.id.search_view)?.actionView as SearchView
-        searchView.queryHint = "请输入书名或者作者"
+        searchView.queryHint = "请输入书名或者详情页地址"
         searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
         init(searchView)
         searchView.isIconified = false
