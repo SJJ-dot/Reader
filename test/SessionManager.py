@@ -5,11 +5,14 @@ from log import log
 
 _server_ip = None
 _server_port = None
-if _server_ip is None or _server_port is None:
-    _server_ip, _server_port = discover_services()
 
+def init():
+    global _server_ip, _server_port
+    _server_ip, _server_port = discover_services()
+    log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
 
 def get_cookie(url):
+    init()
     server_url = f'http://{_server_ip}:{_server_port}/getCookie'
     # POST请求的数据
     data = {'url': url}
@@ -21,6 +24,7 @@ def get_cookie(url):
 
 
 def set_cookie(url, cookies):
+    init()
     server_url = f'http://{_server_ip}:{_server_port}/setCookie'
     # POST请求的数据
     data = {'url': url, 'cookies': cookies}
@@ -31,6 +35,7 @@ def set_cookie(url, cookies):
 
 
 def start_verification_activity(url, headers=None, html=None):
+    init()
     server_url = f'http://{_server_ip}:{_server_port}/start_verification_activity'
     # POST请求的数据
     data = {'url': url, 'headers': headers, 'html': html}
