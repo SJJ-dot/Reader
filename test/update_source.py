@@ -59,5 +59,5 @@ if __name__ == '__main__':
     with open("source.py", "r", encoding="utf-8") as f:
         source = f.read()
     source = source.split("if __name__ ==")[0]
-    write_source("妙味书屋", source)
+    write_source("飘天🪜", source)
     update_json()
