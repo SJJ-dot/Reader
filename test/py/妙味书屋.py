@@ -34,6 +34,9 @@ def getDetails(url):
         "intro": "",
         "chapterList": []
     }
+    title_p1 = book["title"].split("(")[0].strip()
+    if title_p1:
+        book["title"] = title_p1
 
     chapter_list_el = soup.select(".row")[4].select(".col-md-4 a")
     for i, chapter_el in enumerate(chapter_list_el):
