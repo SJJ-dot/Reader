@@ -67,18 +67,3 @@ def getChapterContent(url):
     return text
 
 
-if __name__ == '__main__':
-    # res = search("阵问长生")
-    # print(res)
-
-    # print("================================")
-    # print("================================")
-    # print("================================")
-    res = getDetails("https://www.twinfoo.com/daoye")
-    print(res)
-
-    print("================================")
-    print("================================")
-    print("================================")
-    res = getChapterContent(res["chapterList"][0]["url"])
-    print(res)
