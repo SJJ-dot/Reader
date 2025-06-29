@@ -96,12 +96,8 @@ def getChapterContent(url):
     log(response)
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
-    br_elements = soup.find_all('br')
-    content = ""
-    for br in br_elements:
-        sibling_text = br.find_next_sibling(string=True)
-        if sibling_text:
-            content += sibling_text.strip() + "<br>"
+    content = soup.find_all('br')[1].prettify()
+    content = content.split("<!--")[0]
     return content
 
 
