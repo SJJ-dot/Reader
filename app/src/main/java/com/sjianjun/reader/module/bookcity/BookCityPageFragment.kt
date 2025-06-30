@@ -27,8 +27,7 @@ private const val ARG_URL = "ARG_URL"
 class BookCityPageFragment : BaseFragment() {
     private val adBlockMap = mutableMapOf<String, AdBlock>()
     private var url: String? = null
-    private val hostMgrKey: String get() = "BookCity-" + url?.toHttpUrlOrNull()?.topPrivateDomain()
-    private val adBlock: AdBlock get() = adBlockMap.getOrPut(hostMgrKey) { AdBlock(hostMgrKey) }
+    private val adBlock: AdBlock get() = adBlockMap.getOrPut(url?.toHttpUrlOrNull()?.topPrivateDomain()?:"") { AdBlock(url) }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

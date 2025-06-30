@@ -30,6 +30,9 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
+            android:name=".module.reader.activity.BrowserReaderActivity"
+            android:exported="false" />
+        <activity
             android:name=".module.verification.WebViewVerificationActivity"
             android:exported="false" />
         <activity

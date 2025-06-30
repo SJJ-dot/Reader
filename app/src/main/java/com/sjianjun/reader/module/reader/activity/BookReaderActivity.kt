@@ -157,6 +157,16 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.CHAPTER_LIST) {
             binding?.drawerLayout!!.openDrawer(GravityCompat.END)
         }
+        observe<String>(EventKey.BROWSER_OPEN) {
+            //使用浏览器打开书籍链接
+            val chapterIdx = mPageLoader.curChapter?.chapterIndex ?: -1
+            val txtChapter = book?.chapterList?.getOrNull(chapterIdx)
+            if (txtChapter == null) {
+                toast("当前章节获取失败")
+                return@observe
+            }
+            BrowserReaderActivity.startActivity(this, txtChapter.url)
+        }
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {
                 if (mPageLoader.pageStatus == STATUS_LOADING) {

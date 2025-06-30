@@ -24,6 +24,6 @@ object EventKey {
     /** 阅读页 页面样式修改 */
     val CUSTOM_PAGE_STYLE = "CUSTOM_PAGE_STYLE"
 
-    /** 书城网页 打开新页面 */
-    val WEB_NEW_URL = "WEB_NEW_URL"
+    /** 使用webview打开链接 */
+    val BROWSER_OPEN = "BROWSER_OPEN"
 }

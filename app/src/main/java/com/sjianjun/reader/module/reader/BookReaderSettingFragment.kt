@@ -81,6 +81,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         initPageStyle()
         initPageModel()
         initFontList()
+        initBrowser()
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -89,6 +90,12 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         return dialog
     }
 
+    private fun initBrowser(){
+        binding?.browser?.setOnClickListener {
+            EventBus.post(EventKey.BROWSER_OPEN)
+            dismiss()
+        }
+    }
     private fun initChapterList() {
         binding?.download?.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext())

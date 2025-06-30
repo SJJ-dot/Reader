@@ -49,7 +49,11 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     fun setOnBackPressed(lifecycle: Lifecycle, onBackPressed: () -> Boolean) {
-        OnBackPressedListener(backPressedListeners,lifecycle, onBackPressed)
+        OnBackPressedListener(backPressedListeners, lifecycle, onBackPressed)
+    }
+
+    fun setOnBackPressed(onBackPressed: () -> Boolean) {
+        OnBackPressedListener(backPressedListeners, lifecycle, onBackPressed)
     }
 
     private class OnBackPressedListener(
