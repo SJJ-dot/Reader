@@ -348,11 +348,6 @@ class BookReaderActivity : BaseActivity() {
             }
             Log.i("设置阅读器内容")
             mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
-                override fun onChapterChange(pos: Int) {
-                    launch {
-                        mPageLoader.saveRecord()
-                    }
-                }
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
@@ -373,18 +368,6 @@ class BookReaderActivity : BaseActivity() {
                                 }
                             }
                         }
-                    }
-                }
-
-                override fun onCategoryFinish(chapters: MutableList<TxtChapter>?) {
-                }
-
-                override fun onPageCountChange(count: Int) {
-                }
-
-                override fun onPageChange(pos: Int) {
-                    launch {
-                        mPageLoader.saveRecord()
                     }
                 }
 

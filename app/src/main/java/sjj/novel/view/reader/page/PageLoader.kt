@@ -453,11 +453,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      */
     fun setOnPageChangeListener(listener: OnPageChangeListener?) {
         mPageChangeListener = listener
-
-        // 如果目录加载完之后才设置监听器，那么会默认回调
-        if (isChapterListPrepare) {
-            mPageChangeListener!!.onCategoryFinish(this.chapterCategory)
-        }
     }
 
     var pageStatus: Int
@@ -468,7 +463,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
          */
         get() = mStatus
         set(status) {
-            Log.i("setPageStatus status:" + status)
+            Log.i("setPageStatus status:$status")
             mStatus = status
             mPageView!!.drawCurPage(false)
         }
@@ -1022,10 +1017,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     }
 
     private fun chapterChangeCallback() {
-        if (mPageChangeListener != null) {
-            mPageChangeListener!!.onChapterChange(this.chapterPos)
-            mPageChangeListener!!.onPageCountChange(if (this.curPageList != null) curPageList!!.size else 0)
-        }
+        saveRecord()
     }
 
     // 预加载下一章
@@ -1274,9 +1266,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
         pos = min(pos, list.size - 1)
         pos = max(0, pos)
-        if (mPageChangeListener != null) {
-            mPageChangeListener!!.onPageChange(pos)
-        }
+        saveRecord()
         return list.get(pos)
     }
 
@@ -1292,9 +1282,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (pos < 0) {
                 return null
             }
-            if (mPageChangeListener != null) {
-                mPageChangeListener!!.onPageChange(pos)
-            }
+            saveRecord()
             return curPageList!!.get(pos)
         }
 
@@ -1310,9 +1298,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (pos >= curPageList!!.size) {
                 return null
             }
-            if (mPageChangeListener != null) {
-                mPageChangeListener!!.onPageChange(pos)
-            }
+            saveRecord()
             return curPageList!!.get(pos)
         }
 
@@ -1323,9 +1309,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         get() {
             val pos = curPageList!!.size - 1
 
-            if (mPageChangeListener != null) {
-                mPageChangeListener!!.onPageChange(pos)
-            }
+            saveRecord()
 
             return curPageList!!.get(pos)
         }
@@ -1623,39 +1607,11 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     /*****************************************interface */
     interface OnPageChangeListener {
         /**
-         * 作用：章节切换的时候进行回调
-         *
-         * @param pos:切换章节的序号
-         */
-        fun onChapterChange(pos: Int)
-
-        /**
          * 作用：请求加载章节内容
          *
          * @param requestChapters:需要下载的章节列表
          */
         fun requestChapters(requestChapters: MutableList<TxtChapter>)
-
-        /**
-         * 作用：章节目录加载完成时候回调
-         *
-         * @param chapters：返回章节目录
-         */
-        fun onCategoryFinish(chapters: MutableList<TxtChapter>?)
-
-        /**
-         * 作用：章节页码数量改变之后的回调。==> 字体大小的调整，或者是否关闭虚拟按钮功能都会改变页面的数量。
-         *
-         * @param count:页面的数量
-         */
-        fun onPageCountChange(count: Int)
-
-        /**
-         * 作用：当页面改变的时候回调
-         *
-         * @param pos:当前的页面的序号
-         */
-        fun onPageChange(pos: Int)
 
         /**
          * 书籍阅读记录发生改变
