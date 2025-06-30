@@ -33,6 +33,7 @@ import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
@@ -142,13 +143,9 @@ class BookReaderActivity : BaseActivity() {
                 showSnackbar(binding!!.pageView, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
                 var first = 3
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
-                    getChapterContent(listOf(book?.chapterList?.get(it)!!))
-                    if (first > 0) {
-                        first--
-                        showSnackbar(
-                            binding!!.pageView,
-                            "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}"
-                        )
+                    getChapterContent(book?.chapterList?.get(it))
+                    if (first-- > 0) {
+                        showSnackbar(binding!!.pageView, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
                     }
                 }
                 showSnackbar(binding!!.pageView, "章节缓存：完成")
@@ -359,34 +356,24 @@ class BookReaderActivity : BaseActivity() {
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
-                    launch {
-                        val list = requestChapters.mapNotNull {
-                            book.chapterList?.getOrNull(it.chapterIndex)
-                        }
-//                        assert(list.size != requestChapters.size)
-                        if (getChapterContent(list)) {
-                            list.forEach { chapter ->
-                                val txtChapter =
-                                    requestChapters.find { it.chapterIndex == chapter.index }
-                                txtChapter?.content = chapter.content?.format()
+                    requestChapters.forEach { requestChapter ->
+                        launch {
+                            val chapter = book.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
+                            if (getChapterContent(chapter)) {
+                                requestChapter.content = chapter.content?.format()
                                 if (chapter.content?.contentError == true) {
-                                    txtChapter?.title = chapter.title + "(章节内容错误)"
+                                    requestChapter.title = chapter.title + "(章节内容错误)"
+                                }
+                                if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
+                                    mPageLoader.openChapter()
+                                }
+                            } else {
+                                if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
+                                    mPageLoader.chapterError()
                                 }
                             }
-                            Log.i("章节内容加载结束 Status:${mPageLoader.pageStatus}")
-                            if (mPageLoader.pageStatus == STATUS_LOADING) {
-                                mPageLoader.openChapter()
-                            }
-                        } else {
-                            Log.i("章节内容加载失败")
-                            //这里应该来不了
-                            if (mPageLoader.pageStatus == STATUS_LOADING) {
-                                mPageLoader.chapterError()
-                            }
                         }
-
                     }
-
                 }
 
                 override fun onCategoryFinish(chapters: MutableList<TxtChapter>?) {
@@ -450,30 +437,28 @@ class BookReaderActivity : BaseActivity() {
      * 加载 上一章 当前章 下一章
      */
     private suspend fun getChapterContent(
-        chapters: List<Chapter>
+        chapter: Chapter?
     ) = withIo {
-        if (chapters.isEmpty()) {
+        chapter ?: return@withIo false
+
+        while (chapter.isLoading.get()) {
+            delay(100)
+        }
+
+        if (chapter.isLoaded && chapter.content != null) {
             return@withIo false
         }
-        val list = chapters.map { chapter ->
-            async {
-                if (chapter.isLoaded && chapter.content != null) {
-                    return@async false
-                }
 
-                if (!chapter.isLoading.compareAndSet(false, true)) {
-                    return@async false
-                }
+        if (!chapter.isLoading.compareAndSet(false, true)) {
+            return@withIo false
+        }
 
-                try {
-                    //force
-                    DataManager.getChapterContent(chapter)
-                } finally {
-                    chapter.isLoading.lazySet(false)
-                }
-            }
-        }.awaitAll()
-
+        try {
+            //force
+            DataManager.getChapterContent(chapter)
+        } finally {
+            chapter.isLoading.set(false)
+        }
 
         return@withIo true
     }

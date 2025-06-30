@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.collection.LruCache;
 import android.text.TextUtils;
 
+import java.util.Objects;
+
 /**
  * Created by newbiechen on 17-7-1.
  */
@@ -46,5 +48,17 @@ public class TxtChapter {
                 ", link='" + link + '\'' +
                 ", title='" + title + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        TxtChapter that = (TxtChapter) o;
+        return chapterIndex == that.chapterIndex && Objects.equals(bookId, that.bookId) && Objects.equals(link, that.link) && Objects.equals(title, that.title);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(chapterIndex, bookId, link, title);
     }
 }
