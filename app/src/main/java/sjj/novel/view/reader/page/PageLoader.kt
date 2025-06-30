@@ -1021,11 +1021,11 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     }
 
     // 预加载下一章
-    private fun preLoadNextChapter() {
+    fun preLoadNextChapter() {
         val nextChapter = this.chapterPos + 1
 
         // 如果不存在下一章，且下一章没有数据，则不进行加载。
-        if (!hasNextChapter() || !hasChapterData(chapterCategory!!.get(nextChapter))) {
+        if (!hasNextChapter() || !hasChapterData(chapterCategory!![nextChapter])) {
             return
         }
 

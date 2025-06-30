@@ -40,6 +40,7 @@ import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageLoader
+import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_FINISH
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
 import sjj.novel.view.reader.page.PageMode
 import sjj.novel.view.reader.page.PageStyle
@@ -365,6 +366,8 @@ class BookReaderActivity : BaseActivity() {
                                 }
                                 if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
                                     mPageLoader.openChapter()
+                                } else if (mPageLoader.pageStatus == STATUS_FINISH && mPageLoader.chapterPos == requestChapter.chapterIndex - 1) {
+                                    mPageLoader.preLoadNextChapter()
                                 }
                             } else {
                                 if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
