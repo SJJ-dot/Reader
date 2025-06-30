@@ -75,6 +75,12 @@ def getChapterContent(url):
     if con and con.h1:
         con.h1.decompose()
     content = con.prettify() if con else ""
+
+    next_page = soup.select(".prenext a")[-1]
+    if next_page and next_page.text == "下一页":
+        content += "<br>"
+        content += getChapterContent(urljoin(url, next_page.get("href")))
+
     return content
 
 
