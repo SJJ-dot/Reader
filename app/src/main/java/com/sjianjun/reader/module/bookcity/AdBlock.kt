@@ -29,7 +29,7 @@ fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boo
     return this?.value?.any { it.host == host } == true
 }
 
-class HostMgr(private val key: String) {
+class AdBlock(private val key: String) {
     private val  config = AppConfig(key.md5)
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())

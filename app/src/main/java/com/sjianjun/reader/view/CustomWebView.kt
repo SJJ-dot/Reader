@@ -20,7 +20,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.module.bookcity.HostMgr
+import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.setDarkening
 import com.sjianjun.reader.utils.toast
@@ -40,10 +40,10 @@ class CustomWebView @JvmOverloads constructor(
     private val lifecycleObserver by lazy { LifecycleObserver(this) }
     private var webView: WebView? = null
     private var url: String? = null
-    private var hostMgr: HostMgr? = null
-    var openMenu:()-> Unit = {}
-    fun init(owner: LifecycleOwner, hostMgr: HostMgr) {
-        this.hostMgr = hostMgr
+    var adBlock: AdBlock? = null
+    var openMenu: () -> Unit = {}
+    fun init(owner: LifecycleOwner, adBlock: AdBlock) {
+        this.adBlock = adBlock
         webView = binding.webView
 
         initWebView(binding.webView)
@@ -67,7 +67,7 @@ class CustomWebView @JvmOverloads constructor(
 
             if (binding.refresh.isSelected) {
                 webView?.stopLoading()
-            }else{
+            } else {
                 webView?.stopLoading()
                 webView?.reload()
             }
@@ -173,8 +173,8 @@ class CustomWebView @JvmOverloads constructor(
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (hostMgr?.blacklist.contains(httpUrl?.host) ||
-                    hostMgr?.blacklist.contains(httpUrl?.topPrivateDomain())
+                if (adBlock?.blacklist.contains(httpUrl?.host) ||
+                    adBlock?.blacklist.contains(httpUrl?.topPrivateDomain())
                 ) {
                     return true
                 }
@@ -200,8 +200,8 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                hostMgr?.addUrl(request.url.toString())
-                if (hostMgr?.blacklist.contains(request.url.host) || hostMgr?.blacklist.contains(
+                adBlock?.addUrl(request.url.toString())
+                if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
                         request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
                     )
                 ) {

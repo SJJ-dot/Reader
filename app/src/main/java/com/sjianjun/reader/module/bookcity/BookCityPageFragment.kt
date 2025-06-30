@@ -25,10 +25,10 @@ import sjj.alog.Log
 private const val ARG_URL = "ARG_URL"
 
 class BookCityPageFragment : BaseFragment() {
-    private val hostMgrMap = mutableMapOf<String, HostMgr>()
-    private val url: String get() = globalConfig.bookCityUrl
-    private val hostMgrKey: String get() = "BookCity-" + url.toHttpUrlOrNull()?.topPrivateDomain()
-    private val hostMgr: HostMgr get() = hostMgrMap.getOrPut(hostMgrKey) { HostMgr(hostMgrKey) }
+    private val adBlockMap = mutableMapOf<String, AdBlock>()
+    private var url: String? = null
+    private val hostMgrKey: String get() = "BookCity-" + url?.toHttpUrlOrNull()?.topPrivateDomain()
+    private val adBlock: AdBlock get() = adBlockMap.getOrPut(hostMgrKey) { AdBlock(hostMgrKey) }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,7 +39,8 @@ class BookCityPageFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentBookCityPageBinding.bind(view).apply {
-            customWebView.init(viewLifecycleOwner, hostMgr)
+            url = globalConfig.bookCityUrl
+            customWebView.init(viewLifecycleOwner, adBlock)
             customWebView.openMenu = {
                 drawerLayout.openDrawer(GravityCompat.END)
             }
@@ -75,13 +76,16 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
+        val hostListAdapter = HostListAdapter(adBlock)
+        val whiteListAdapter = WhiteListAdapter(adBlock)
+        val blackListAdapter = BlackListAdapter(adBlock)
         val homeAdapter = HomeListAdapter {
+            url = it
             view.loadUrl(it, true)
             drawer.closeDrawer(GravityCompat.END)
+            view.adBlock = adBlock
+            initAdBlockList( hostListAdapter, whiteListAdapter, blackListAdapter)
         }
-        val hostListAdapter = HostListAdapter(hostMgr)
-        val whiteListAdapter = WhiteListAdapter(hostMgr)
-        val blackListAdapter = BlackListAdapter(hostMgr)
         homeAdapter.data.addAll(globalConfig.bookCityUrlHistoryList)
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = homeAdapter
@@ -103,15 +107,28 @@ class BookCityPageFragment : BaseFragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {
             }
         })
-        hostMgr.hostList.observe(viewLifecycleOwner) {
+        initAdBlockList(hostListAdapter, whiteListAdapter, blackListAdapter)
+    }
+
+    private fun initAdBlockList(hostListAdapter: HostListAdapter,
+                                whiteListAdapter: WhiteListAdapter,
+                                blackListAdapter: BlackListAdapter) {
+        hostListAdapter.adBlock.hostList.removeObservers(viewLifecycleOwner)
+        hostListAdapter.adBlock.whitelist.removeObservers(viewLifecycleOwner)
+        hostListAdapter.adBlock.blacklist.removeObservers(viewLifecycleOwner)
+
+        hostListAdapter.adBlock = adBlock
+        whiteListAdapter.adBlock = adBlock
+        blackListAdapter.adBlock = adBlock
+        adBlock.hostList.observe(viewLifecycleOwner) {
             hostListAdapter.data = it
             hostListAdapter.notifyDataSetChanged()
         }
-        hostMgr.blacklist.observe(viewLifecycleOwner) {
+        adBlock.blacklist.observe(viewLifecycleOwner) {
             blackListAdapter.data = it
             blackListAdapter.notifyDataSetChanged()
         }
-        hostMgr.whitelist.observe(viewLifecycleOwner) {
+        adBlock.whitelist.observe(viewLifecycleOwner) {
             whiteListAdapter.data = it
             whiteListAdapter.notifyDataSetChanged()
         }
@@ -128,23 +145,23 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class HostListAdapter(private val hostMgr: HostMgr) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+    class HostListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position].host
             binding.tvTime.text = data[position].time
             binding.btnMarkWhite.text = "+白名单"
             binding.btnMarkWhite.setOnClickListener {
-                hostMgr.addWhiteHost(data[position])
+                adBlock.addWhiteHost(data[position])
             }
             binding.btnMarkBlack.text = "+黑名单"
             binding.btnMarkBlack.setOnClickListener {
-                hostMgr.addBlackHost(data[position])
+                adBlock.addBlackHost(data[position])
             }
         }
     }
 
-    class WhiteListAdapter(private val hostMgr: HostMgr) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+    class WhiteListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position].host
@@ -152,13 +169,13 @@ class BookCityPageFragment : BaseFragment() {
             binding.btnMarkBlack.gone()
             binding.btnMarkWhite.text = "移除白名单"
             binding.btnMarkWhite.setOnClickListener {
-                hostMgr.removeWhiteHost(data[position])
+                adBlock.removeWhiteHost(data[position])
             }
         }
 
     }
 
-    class BlackListAdapter(private val hostMgr: HostMgr) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+    class BlackListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position].host
@@ -166,7 +183,7 @@ class BookCityPageFragment : BaseFragment() {
             binding.btnMarkWhite.gone()
             binding.btnMarkBlack.text = "移除黑名单"
             binding.btnMarkBlack.setOnClickListener {
-                hostMgr.removeBlackHost(data[position])
+                adBlock.removeBlackHost(data[position])
             }
         }
     }
