@@ -349,6 +349,10 @@ class BookReaderActivity : BaseActivity() {
             Log.i("设置阅读器内容")
             mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
 
+                override fun requestChapterPage(chapter: TxtChapter) {
+
+                }
+
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
                     requestChapters.forEach { requestChapter ->

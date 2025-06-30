@@ -26,6 +26,8 @@ public class TxtChapter {
     //章节名(共用)
     public String title;
 
+    //分页章节内容，下一页的链接
+    public TxtChapter nextPage;
     /**
      * 章节内容
      */

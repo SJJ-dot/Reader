@@ -549,7 +549,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     fun openChapter() {
         isFirstOpen = false
 
-        if (!mPageView!!.isPrepare()) {
+        if (!mPageView!!.isPrepare) {
             Log.e("阅读页没准备好")
             return
         }
@@ -1299,7 +1299,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
                 return null
             }
             saveRecord()
-            return curPageList!!.get(pos)
+            return curPageList!![pos]
         }
 
     private val prevLastPage: TxtPage?
@@ -1613,6 +1613,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
          */
         fun requestChapters(requestChapters: MutableList<TxtChapter>)
 
+        /**
+         * 加载章节分页，分页加载完成后修改章节内容然后通知重新加载
+         */
+        fun requestChapterPage(chapter: TxtChapter)
         /**
          * 书籍阅读记录发生改变
          *

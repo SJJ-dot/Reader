@@ -17,11 +17,6 @@ class NetPageLoader(pageView: PageView) : PageLoader(pageView) {
         chapterCategory = mCollBook!!.bookChapterList
         isChapterListPrepare = true
 
-        // 目录加载完成，执行回调操作。
-        if (mPageChangeListener != null) {
-            mPageChangeListener!!.onCategoryFinish(chapterCategory)
-        }
-
         // 如果章节未打开
         if (!isChapterOpen) {
             // 打开章节
