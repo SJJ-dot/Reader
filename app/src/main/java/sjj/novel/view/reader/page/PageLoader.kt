@@ -1126,6 +1126,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * @return
      */
     private fun loadPages(chapter: TxtChapter): MutableList<TxtPage> {
+        Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
         //生成的页面
         val pages: MutableList<TxtPage> = ArrayList()
         //使用流的方式加载
