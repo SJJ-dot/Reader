@@ -356,8 +356,9 @@ class BookReaderActivity : BaseActivity() {
 
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
-                    requestChapters.forEach { requestChapter ->
-                        launch {
+
+                    launch {
+                        requestChapters.forEach { requestChapter ->
                             val chapter = book.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
                             if (getChapterContent(chapter)) {
                                 requestChapter.content = chapter.content?.format()
