@@ -12,9 +12,7 @@ import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
 import io.reactivex.Single
-import io.reactivex.SingleEmitter
 import io.reactivex.SingleObserver
-import io.reactivex.SingleOnSubscribe
 import io.reactivex.SingleTransformer
 import io.reactivex.disposables.Disposable
 import sjj.alog.Log
@@ -47,21 +45,27 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     @JvmField
     protected var mPageChangeListener: OnPageChangeListener? = null
 
-    private val mContext: Context
+    private val mContext: Context = pageView.context
 
     // 页面显示类
-    private var mPageView: PageView?
+    private var mPageView: PageView? = pageView
 
     // 当前显示的页
     private var mCurPage: TxtPage? = null
-    private val metrics = Paint.FontMetrics()
+        set(value) {
+            field = value
+            saveRecord()
+        }
 
     // 上一章的页面列表缓存
     private var mPrePageList: MutableList<TxtPage>? = null
 
     // 当前章节的页面列表
     var curPageList: MutableList<TxtPage>? = null
-        private set
+        private set(value) {
+            field = value
+            saveRecord()
+        }
 
     // 下一章的页面列表缓存
     private var mNextPageList: MutableList<TxtPage>? = null
@@ -145,8 +149,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
     /*****************************init params */
     init {
-        mPageView = pageView
-        mContext = pageView.getContext()
         mDisplayParams = DisplayParams()
         this.chapterCategory = ArrayList<TxtChapter>(1)
         screenUtils = ScreenUtils(mContext)
@@ -889,8 +891,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             this.curPageList = mPrePageList
             mPrePageList = null
 
-            // 回调
-            chapterChangeCallback()
         } else {
             dealLoadPageList(prevChapter)
         }
@@ -978,8 +978,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         if (mNextPageList != null) {
             this.curPageList = mNextPageList
             mNextPageList = null
-            // 回调
-            chapterChangeCallback()
         } else {
             // 处理页面解析
             dealLoadPageList(nextChapter)
@@ -1012,12 +1010,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             mStatus = STATUS_ERROR
         }
 
-        // 回调
-        chapterChangeCallback()
-    }
-
-    private fun chapterChangeCallback() {
-        saveRecord()
     }
 
     // 预加载下一章
@@ -1095,8 +1087,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         this.curPageList = mPrePageList
         mPrePageList = null
 
-        chapterChangeCallback()
-
         mCurPage = this.prevLastPage
         mCancelPage = null
     }
@@ -1110,8 +1100,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         mPrePageList = this.curPageList
         this.curPageList = mNextPageList
         mNextPageList = null
-
-        chapterChangeCallback()
 
         mCurPage = getCurPage(0)
         mCancelPage = null
@@ -1267,7 +1255,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
         pos = min(pos, list.size - 1)
         pos = max(0, pos)
-        saveRecord()
         return list.get(pos)
     }
 
@@ -1283,8 +1270,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (pos < 0) {
                 return null
             }
-            saveRecord()
-            return curPageList!!.get(pos)
+            return curPageList!![pos]
         }
 
     private val nextPage: TxtPage?
@@ -1299,7 +1285,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (pos >= curPageList!!.size) {
                 return null
             }
-            saveRecord()
             return curPageList!![pos]
         }
 
@@ -1309,10 +1294,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
          */
         get() {
             val pos = curPageList!!.size - 1
-
-            saveRecord()
-
-            return curPageList!!.get(pos)
+            return curPageList!![pos]
         }
 
     /**
