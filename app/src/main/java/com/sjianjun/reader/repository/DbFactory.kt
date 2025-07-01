@@ -13,7 +13,7 @@ import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -59,6 +59,26 @@ object DbFactory {
             .addMigrations(object : Migration(15, 16) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `updateTime` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(16, 17) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    //ChapterContent 添加 pageIndex 字段，添加 nextPageUrl 字段，修改联合主键
+                    db.execSQL(
+                        "CREATE TABLE `ChapterContent_new` (`chapterIndex` INTEGER NOT NULL," +
+                                " `bookId` TEXT NOT NULL," +
+                                " `content` TEXT," +
+                                " `contentError` INTEGER NOT NULL DEFAULT 0," +
+                                " `pageIndex` INTEGER NOT NULL DEFAULT 0," +
+                                " `nextPageUrl` TEXT," +
+                                " PRIMARY KEY(`chapterIndex`, `bookId`, `pageIndex`))"
+                    )
+                    db.execSQL(
+                        "INSERT INTO ChapterContent_new (chapterIndex, bookId, content, contentError, pageIndex, nextPageUrl) " +
+                                "SELECT chapterIndex, bookId, content, contentError, 0, NULL FROM ChapterContent"
+                    )
+                    db.execSQL("DROP TABLE ChapterContent")
+                    db.execSQL("ALTER TABLE ChapterContent_new RENAME TO ChapterContent")
                 }
             })
             .build()

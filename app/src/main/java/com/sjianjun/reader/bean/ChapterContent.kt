@@ -1,18 +1,22 @@
 package com.sjianjun.reader.bean
 
 import android.text.SpannableStringBuilder
-import androidx.collection.LruCache
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import com.sjianjun.reader.utils.html
 
-@Entity(primaryKeys = ["chapterIndex", "bookId"])
+@Entity(primaryKeys = ["chapterIndex", "bookId", "pageIndex"])
 class ChapterContent {
     var chapterIndex: Int = 0
     var bookId: String = ""
     var content: String? = null
 
     var contentError: Boolean = false
+
+    //当前分页索引，默认为0
+    var pageIndex: Int = 0
+
+    //下一页地址,没有分页为null
+    var nextPageUrl: String? = null
 
     fun format(): SpannableStringBuilder {
         val content = content ?: return SpannableStringBuilder()
