@@ -59,12 +59,10 @@ class BookSource {
 
     private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
-        when (lauanage) {
-            Language.js -> return null
-            Language.py -> return py(func.name, *params)
+        return when (lauanage) {
+            Language.js -> null
+            Language.py -> py(func.name, *params)
         }
-        Log.e("未知的脚本引擎")
-        return null
     }
 
     suspend fun isSupported(url: String): Boolean {

@@ -95,7 +95,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     protected var mStatus: Int = STATUS_LOADING
         set(value) {
             field = value
-            Log.i("setPageStatus status:$value", Exception())
+            Log.i("setPageStatus status:$value")
         }
 
     // 判断章节列表是否加载完成
@@ -1247,7 +1247,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      */
     private fun getCurPage(pos: Int): TxtPage? {
         var pos = pos
-        Log.i("获取书页：$pos", Exception())
+        Log.i("获取书页：$pos")
         val list = this.curPageList
         if (list == null || list.isEmpty()) {
             Log.e("当前页列表为空")

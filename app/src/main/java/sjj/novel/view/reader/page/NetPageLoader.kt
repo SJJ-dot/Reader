@@ -63,7 +63,7 @@ class NetPageLoader(pageView: PageView) : PageLoader(pageView) {
     }
 
     private fun requestChapters(start: Int, end: Int, first: Int) {
-        Log.i("requestChapters: start = $start, end = $end", Exception())
+        Log.i("requestChapters: start = $start, end = $end")
         val listener = mPageChangeListener ?: return
         val chapterCategory = chapterCategory ?: return
 
