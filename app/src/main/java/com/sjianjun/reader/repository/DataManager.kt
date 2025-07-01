@@ -320,7 +320,7 @@ object DataManager {
     ): Chapter {
         withIo {
             if (chapter.isLoaded) {
-                val chapterContent = dao.getChapterContentFlow(chapter.bookId, chapter.index).first()
+                val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index)
                 chapter.content = chapterContent
                 if (force != 1 && chapter.content != null && chapter.content?.contentError != true) {
                     return@withIo

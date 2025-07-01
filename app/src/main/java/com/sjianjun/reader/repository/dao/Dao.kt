@@ -164,9 +164,6 @@ interface Dao {
     fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
 
     @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex")
-    fun getChapterContentFlow(bookId: String, chapterIndex: Int): Flow<ChapterContent?>
-
-    @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex")
     fun getChapterContent(bookId: String, chapterIndex: Int): ChapterContent?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
