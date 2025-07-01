@@ -30,6 +30,16 @@ def search(query):
         log(response.request)
         log(response)
         html_text = response.text
+        if response.status_code == 403:
+            log("403 Forbidden")
+            return []
+    else:
+        # 测试是否可以连通
+        response = requests.get(url, headers=headers, timeout=(5, 10))
+        response.encoding = 'gbk'
+        if response.status_code == 403:
+            log("403 Forbidden")
+            return []
 
     if "cf_clearance" not in cookies or "newbox" not in html_text:
         cookies = start_verification_activity(url)
