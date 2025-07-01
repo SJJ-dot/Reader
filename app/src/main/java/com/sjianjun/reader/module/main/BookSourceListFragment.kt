@@ -86,7 +86,7 @@ class BookSourceListFragment : BaseFragment() {
                 binding.haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
                 binding.loading.isLoading = book.isLoading
 
-                if (book.readChapter?.content?.contentError == true) {
+                if (book.readChapter?.content?.firstOrNull()?.contentError == true) {
                     binding.bvUnread.setHighlight(false)
                 } else {
                     binding.bvUnread.setHighlight(true)

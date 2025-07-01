@@ -29,7 +29,7 @@ class Chapter {
      */
     @JvmField
     @Ignore
-    var content: ChapterContent? = null
+    var content: MutableList<ChapterContent>? = null
 
     /**
      * 章节索引

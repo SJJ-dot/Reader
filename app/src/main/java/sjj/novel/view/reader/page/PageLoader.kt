@@ -259,18 +259,13 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         return true
     }
 
-    fun refreshChapter(chapter: TxtChapter?) {
-        Log.i("refreshChapter")
-        if (chapter === chapterCategory!!.get(this.chapterPos)) skipToChapter(this.chapterPos)
-    }
-
     /**
      * 跳转到指定章节
      *
      * @param pos:从 0 开始。
      */
     fun skipToChapter(pos: Int) {
-        Log.i("skipToChapter pos:" + pos)
+        Log.i("skipToChapter pos:$pos")
         // 设置参数
         this.chapterPos = pos
 
@@ -514,7 +509,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * 保存阅读记录
      */
     fun saveRecord() {
-        val chapterList = this.chapterCategory?:return
+        val chapterList = this.chapterCategory ?: return
         val collBook = this.mCollBook
         val curPage = this.mCurPage
         val bookRecord = this.mBookRecord
@@ -644,7 +639,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     @Throws(Exception::class)
     private fun loadPageList(chapterPos: Int): MutableList<TxtPage>? {
         // 获取章节
-        val chapter = chapterCategory!![chapterPos]
+        val chapter = chapterCategory?.getOrNull(chapterPos) ?: return null
         // 判断章节是否存在
         if (!hasChapterData(chapter)) {
             Log.e("章节数据不存在 chapterPos:" + chapterPos + " title:" + chapter.title)
@@ -666,8 +661,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      *
      * @return
      */
-    protected fun hasChapterData(chapter: TxtChapter): Boolean {
-        return chapter.content != null
+    protected fun hasChapterData(chapter: TxtChapter?): Boolean {
+        return chapter?.content != null
     }
 
     /***********************************default method */
@@ -944,10 +939,14 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
     private fun hasNextChapter(): Boolean {
         // 判断是否到达目录最后一章
-        if (this.chapterPos + 1 >= chapterCategory!!.size) {
-            return false
-        }
-        return true
+        val category = chapterCategory ?: return false
+        return this.chapterPos + 1 < category.size
+    }
+
+    fun reloadPages() {
+        dealLoadPageList(this.chapterPos)
+        preLoadNextChapter()
+        mPageView!!.drawCurPage(false)
     }
 
     open fun parseCurChapter(): Boolean {
@@ -1017,7 +1016,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         val nextChapter = this.chapterPos + 1
 
         // 如果不存在下一章，且下一章没有数据，则不进行加载。
-        if (!hasNextChapter() || !hasChapterData(chapterCategory!![nextChapter])) {
+        if (!hasNextChapter() || !hasChapterData(chapterCategory?.getOrNull(nextChapter))) {
             return
         }
 

@@ -163,8 +163,8 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapter(chapter: Chapter, chapterContent: ChapterContent)
 
-    @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex")
-    fun getChapterContent(bookId: String, chapterIndex: Int): ChapterContent?
+    @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex order by pageIndex")
+    fun getChapterContent(bookId: String, chapterIndex: Int): List<ChapterContent>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapterContent(chapterContent: ChapterContent): Long

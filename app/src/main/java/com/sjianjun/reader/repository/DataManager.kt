@@ -3,14 +3,33 @@ package com.sjianjun.reader.repository
 import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.bean.*
+import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ChapterContent
+import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.bean.SearchHistory
+import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.MessageException
+import com.sjianjun.reader.utils.gson
+import com.sjianjun.reader.utils.key
+import com.sjianjun.reader.utils.name
+import com.sjianjun.reader.utils.toBookList
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
-import kotlin.collections.first
 import kotlin.math.abs
 
 /**
@@ -28,7 +47,7 @@ object DataManager {
     }
 
     suspend fun searchHint(query: String): List<String>? {
-        if (query.isBlank()){
+        if (query.isBlank()) {
             return emptyList()
         }
         return withIo {
@@ -202,9 +221,9 @@ object DataManager {
             //先检查章节内容是否有错
             val record = dao.getReadingRecord(book.title)
             val content = dao.getChapterContent(book.id, record?.chapterIndex ?: -1)
-            if (content?.contentError == true) {
-                chapterList[content.chapterIndex].content = content
-                getChapterContent(chapterList[content.chapterIndex], 1)
+            if (content.firstOrNull()?.contentError == true) {
+                chapterList[content.firstOrNull()!!.chapterIndex].content = content.toMutableList()
+                getChapterContent(chapterList[content.firstOrNull()!!.chapterIndex], 1)
             }
 
             dao.updateBookDetails(bookDetails)
@@ -321,8 +340,8 @@ object DataManager {
         withIo {
             if (chapter.isLoaded) {
                 val chapterContent = dao.getChapterContent(chapter.bookId, chapter.index)
-                chapter.content = chapterContent
-                if (force != 1 && chapter.content != null && chapter.content?.contentError != true) {
+                chapter.content = chapterContent.toMutableList()
+                if (force != 1 && chapter.content?.firstOrNull()?.contentError == false) {
                     return@withIo
                 }
             }
@@ -332,24 +351,53 @@ object DataManager {
             }
 
             val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo
+
             val content = js.getChapterContent(chapter.url)
-            if (content.isNullOrBlank()) {
-                chapter.content = ChapterContent(chapter.bookId, chapter.index, "章节内容加载失败", true)
-            } else {
-                var error = false
-                if (chapter.content?.contentError == true && chapter.content?.content == content) {
-                    error = true
+            content.bookId = chapter.bookId
+            content.chapterIndex = chapter.index
+            if (!content.contentError) {
+                if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
+                    content.contentError = true
                 }
-                chapter.content = ChapterContent(chapter.bookId, chapter.index, content, error)
             }
+            chapter.content = mutableListOf(content)
             chapter.isLoaded = true
-            dao.insertChapter(chapter, chapter.content!!)
+            dao.insertChapter(chapter, content)
+
         }
         return chapter
     }
 
-    suspend fun insertChapterContent(chapterContent: ChapterContent) = withIo {
-        dao.insertChapterContent(chapterContent)
+    suspend fun getChapterContentPage(
+        chapter: Chapter
+    ): Boolean = withIo {
+        if (chapter.content?.lastOrNull()?.nextPageUrl.isNullOrBlank()) {
+            return@withIo false
+        }
+
+        val lastContent = chapter.content?.lastOrNull()
+        val nextUrl = lastContent?.nextPageUrl ?: return@withIo false
+        if (nextUrl.toHttpUrlOrNull() == null) {
+            Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
+            return@withIo false
+        }
+        Log.i("${chapter.title} 加载下一页 url：$nextUrl")
+        val js = dao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
+        val content = js.getChapterContent(nextUrl)
+        content.bookId = chapter.bookId
+        content.chapterIndex = chapter.index
+        content.pageIndex = lastContent.pageIndex + 1
+        chapter.content?.add(content)
+        if (content.contentError) {
+            Log.i( "${chapter.title} 加载下一页失败 url：$nextUrl")
+            return@withIo false
+        }
+        dao.insertChapterContent(content)
+        return@withIo true
+    }
+
+    suspend fun insertChapterContent(chapterContent: ChapterContent?) = withIo {
+        chapterContent?.let { dao.insertChapterContent(it) }
     }
 
 

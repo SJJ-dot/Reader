@@ -5,6 +5,8 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import sjj.alog.Log
 
 @Entity
@@ -94,13 +96,28 @@ class BookSource {
         }
     }
 
-    suspend fun getChapterContent(chapterUrl: String): String? {
+    suspend fun getChapterContent(chapterUrl: String): ChapterContent {
         return withIo {
             try {
-                execute<String>(Func.getChapterContent, chapterUrl)
+                val text = execute<String>(Func.getChapterContent, chapterUrl) ?: ""
+                val content = if (text.startsWith("{") && text.endsWith("}")) {
+                    gson.fromJson<ChapterContent>(text)!!
+                } else {
+                    ChapterContent().apply {
+                        this.content = text
+                    }
+                }
+                if (content.content.isNullOrBlank()){
+                    content.content = "章节内容加载失败"
+                    content.contentError = true
+                }
+                content
             } catch (t: Throwable) {
                 Log.e("$name 加载章节内容出错：$chapterUrl", t)
-                null
+                ChapterContent().apply {
+                    this.content = "章节内容加载失败"
+                    this.contentError = true
+                }
             }
         }
     }

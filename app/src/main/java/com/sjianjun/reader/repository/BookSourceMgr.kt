@@ -74,7 +74,7 @@ object BookSourceMgr {
         try {
             val chapter = details.chapterList?.firstOrNull()!!
             val content = js.getChapterContent(chapter.url)
-            assert(content!!.isNotBlank())
+            assert(!content.contentError)
         } catch (e: Exception) {
             js.checkResult = "校验失败：章节内容加载失败"
             js.checkErrorMsg = e.stackTraceToString()

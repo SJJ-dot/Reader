@@ -48,9 +48,9 @@ object BookMgr {
                 null
             }
 
-            val content = dao.getChapterContent(book.id, chapterLikeName?.index ?: -1)
+            val content = dao.getChapterContent(book.id, chapterLikeName?.index ?: -1).firstOrNull()
             if (content?.contentError == true) {
-                chapterList[content.chapterIndex].content = content
+                chapterList[content.chapterIndex].content = mutableListOf(content)
                 ChapterMgr.getChapterContentByNet(chapterList[content.chapterIndex])
             }
 

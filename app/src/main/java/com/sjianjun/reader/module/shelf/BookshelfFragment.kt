@@ -263,7 +263,7 @@ class BookshelfFragment : BaseFragment() {
                     }
                 }
 
-                if (book.readChapter?.content?.contentError == true) {
+                if (book.readChapter?.content?.firstOrNull()?.contentError == true) {
                     bvUnread.setHighlight(false)
                 } else {
                     bvUnread.setHighlight(true)

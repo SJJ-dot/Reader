@@ -6,16 +6,14 @@ import com.sjianjun.reader.utils.html
 
 @Entity(primaryKeys = ["chapterIndex", "bookId", "pageIndex"])
 class ChapterContent {
-    var chapterIndex: Int = 0
     var bookId: String = ""
-    var content: String? = null
-
+    var chapterIndex: Int = 0
     var contentError: Boolean = false
-
-    //当前分页索引，默认为0
+    //当前分页索引，默认为0。由客户端维护
     var pageIndex: Int = 0
-
-    //下一页地址,没有分页为null
+    //章节内容
+    var content: String? = null
+    //下一页地址,没有分页为null，由脚本维护
     var nextPageUrl: String? = null
 
     fun format(): SpannableStringBuilder {

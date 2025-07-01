@@ -11,6 +11,7 @@ import androidx.lifecycle.distinctUntilChanged
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseActivity
@@ -31,9 +32,8 @@ import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
@@ -131,7 +131,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节未加载成功 $chapter")
                     return@launch
                 }
-                if (chapter.content?.contentError == true) {
+                if (chapter.content?.firstOrNull()?.contentError == true) {
                     toast("章节内容错误 $chapter")
                     return@launch
                 }
@@ -145,6 +145,7 @@ class BookReaderActivity : BaseActivity() {
                 var first = 3
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
                     getChapterContent(book?.chapterList?.get(it))
+                    ensureActive()
                     if (first-- > 0) {
                         showSnackbar(binding!!.pageView, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
                     }
@@ -177,10 +178,11 @@ class BookReaderActivity : BaseActivity() {
                         book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
                     toast("正在加载中，请稍候……")
                     val chapter = DataManager.getChapterContent(txtChapter, 1)
-                    curChapter.content = chapter.content?.format().toString()
+                    curChapter.content = chapter.content?.firstOrNull()?.format().toString()
                     curChapter.title = chapter.title
-                    mPageLoader.refreshChapter(curChapter)
+                    mPageLoader.reloadPages()
                     toast("加载完成")
+                    getChapterContentPage(curChapter, chapter)
                 }
             }
         }
@@ -197,23 +199,23 @@ class BookReaderActivity : BaseActivity() {
                     toast("当前章节获取失败")
                     return@launch
                 }
-                if (!chapter.isLoaded || chapter.content == null) {
+                if (!chapter.isLoaded || chapter.content?.isEmpty() != false) {
                     toast("章节未加载成功 $chapter")
                     return@launch
                 }
-                if (chapter.content?.contentError != false) {
-                    chapter.content?.contentError = false
+                if (chapter.content?.firstOrNull()?.contentError != false) {
+                    chapter.content?.firstOrNull()?.contentError = false
                     txtChapter?.title = chapter.title
                     toast("已取消标记章节内容错误")
                 } else {
-                    chapter.content?.contentError = true
+                    chapter.content?.firstOrNull()?.contentError = true
                     txtChapter?.title = chapter.title + "(章节内容错误)"
                     toast("已标记章节内容错误")
                 }
                 val pagePos = mPageLoader.pagePos
                 mPageLoader.skipToChapter(curChapter)
                 mPageLoader.skipToPage(pagePos)
-                DataManager.insertChapterContent(chapter.content!!)
+                DataManager.insertChapterContent(chapter.content?.firstOrNull())
             }
         }
 
@@ -353,12 +355,12 @@ class BookReaderActivity : BaseActivity() {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     Log.i("加载章节内容 $requestChapters")
 
-                    launch {
+                    launch("requestChapters") {
                         requestChapters.forEach { requestChapter ->
                             val chapter = book.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
                             if (getChapterContent(chapter)) {
-                                requestChapter.content = chapter.content?.format()
-                                if (chapter.content?.contentError == true) {
+                                requestChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                                if (chapter.content?.firstOrNull()?.contentError == true) {
                                     requestChapter.title = chapter.title + "(章节内容错误)"
                                 }
                                 if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
@@ -366,6 +368,8 @@ class BookReaderActivity : BaseActivity() {
                                 } else if (mPageLoader.pageStatus == STATUS_FINISH && mPageLoader.chapterPos == requestChapter.chapterIndex - 1) {
                                     mPageLoader.preLoadNextChapter()
                                 }
+                                getChapterContentPage(requestChapter, chapter)
+
                             } else {
                                 if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
                                     mPageLoader.chapterError()
@@ -395,6 +399,26 @@ class BookReaderActivity : BaseActivity() {
             })
             initBookData(book)
         }
+    }
+
+    private suspend fun getChapterContentPage(txtChapter: TxtChapter, chapter: Chapter) = withMain {
+        val launch = launch("getChapterContentPage") {
+            while (true) {
+                ensureActive()
+                if (DataManager.getChapterContentPage(chapter)) {
+                    if (mPageLoader.chapterPos in txtChapter.chapterIndex - 3..txtChapter.chapterIndex + 3) {
+                        txtChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                    }
+                    if (mPageLoader.chapterPos in txtChapter.chapterIndex..txtChapter.chapterIndex + 1 && mPageLoader.pageStatus == STATUS_FINISH) {
+                        mPageLoader.reloadPages()
+                    }
+                } else {
+                    break
+                }
+            }
+        }
+        launch.join()
+
     }
 
     private fun initBookData(book: Book) {
