@@ -58,16 +58,19 @@ def getChapterContent(url):
     response.encoding = 'utf8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
-    page_a = soup.select("#page-links a")
+    page_a = soup.select("#page-links > *")
     text = soup.select_one(".blurstxt").prettify()
+    next_page_url = None
+    find_span = False
     for a in page_a:
-        response = requests.get(urljoin(url, a.get("href")), headers=headers, timeout=(5, 10))
-        response.encoding = 'utf8'
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        text += "<p></p>"
-        text += soup.select_one(".blurstxt").prettify()
+        if a.name == "span":
+            find_span = True
+            continue
+        if find_span:
+            next_page_url = urljoin(url, a.get("href"))
+            break
 
-    return text
-
-
+    return {
+        "content": text,
+        "nextPageUrl": next_page_url
+    }
