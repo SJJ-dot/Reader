@@ -514,13 +514,13 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * 保存阅读记录
      */
     fun saveRecord() {
-        val chapterList = this.chapterCategory
+        val chapterList = this.chapterCategory?:return
         val collBook = this.mCollBook
         val curPage = this.mCurPage
         val bookRecord = this.mBookRecord
         val curChapterPos = this.chapterPos
         val curPageList = this.curPageList
-        if (!isChapterOpen || chapterList!!.isEmpty() || collBook == null || curPage == null || curPageList == null || mStatus != STATUS_FINISH) {
+        if (!isChapterOpen || chapterList.isEmpty() || collBook == null || curPage == null || curPageList == null || mStatus != STATUS_FINISH) {
             return
         }
         //        if (curChapterPos == bookRecord.chapter && bookRecord.pagePos == curPage.position) {
@@ -693,7 +693,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
                 Log.e("没设置背景？")
             }
 
-            if (!chapterCategory!!.isEmpty()) {
+            if (chapterCategory?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
                 val tipTop = mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
