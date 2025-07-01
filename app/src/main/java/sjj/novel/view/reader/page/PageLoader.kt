@@ -1615,10 +1615,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         fun requestChapters(requestChapters: MutableList<TxtChapter>)
 
         /**
-         * 加载章节分页，分页加载完成后修改章节内容然后通知重新加载
-         */
-        fun requestChapterPage(chapter: TxtChapter)
-        /**
          * 书籍阅读记录发生改变
          *
          * @param bean
