@@ -83,7 +83,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         binding?.bookName?.text = book?.title
         binding?.author?.text = book?.author
 
-        binding?.intro?.text = book?.intro.html()
+        binding?.intro?.text = book?.intro.format(true)
 
         val count = DataManager.getBookBookSourceNum(bookTitle)
         val source = book?.bookSourceId?.let {

@@ -1,8 +1,7 @@
 package com.sjianjun.reader.bean
 
-import android.text.SpannableStringBuilder
 import androidx.room.Entity
-import com.sjianjun.reader.utils.html
+import com.sjianjun.reader.utils.format
 
 @Entity(primaryKeys = ["chapterIndex", "bookId", "pageIndex"])
 class ChapterContent {
@@ -16,19 +15,8 @@ class ChapterContent {
     //下一页地址,没有分页为null，由脚本维护
     var nextPageUrl: String? = null
 
-    fun format(): SpannableStringBuilder {
-        val content = content ?: return SpannableStringBuilder()
-        val locContent = SpannableStringBuilder(content.html())
-        Regex("\\A\\s*").find(locContent)?.apply {
-            locContent.replace(range.first, range.last + 1, "")
-        }
-        locContent.insert(0, "\u3000\u3000")
-        var result = Regex("\n+\\s*").find(locContent)
-        while (result != null) {
-            locContent.replace(result.range.first, result.range.last + 1, "\n\u3000\u3000")
-            result = result.next()
-        }
-        return locContent
+    fun format(): CharSequence {
+        return content.format()
     }
 
     override fun equals(other: Any?): Boolean {
