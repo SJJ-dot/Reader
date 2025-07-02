@@ -80,18 +80,28 @@ class BookSource {
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
-            execute<List<SearchResult>>(Func.search, query)?.also {
-                it.forEach {
-                    it.bookSource = this@BookSource
+            try {
+                execute<List<SearchResult>>(Func.search, query)?.also {
+                    it.forEach {
+                        it.bookSource = this@BookSource
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e("$name 搜索出错：$query", e)
+                null
             }
         }
     }
 
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
-            execute<Book>(Func.getDetails, bookUrl)?.also {
-                it.bookSourceId = id
+            try {
+                execute<Book>(Func.getDetails, bookUrl)?.also {
+                    it.bookSourceId = id
+                }
+            } catch (e: Exception) {
+                Log.e("$name 获取书籍详情出错：$bookUrl", e)
+                null
             }
         }
     }
@@ -107,7 +117,7 @@ class BookSource {
                         this.content = text
                     }
                 }
-                if (content.content.isNullOrBlank()){
+                if (content.content.isNullOrBlank()) {
                     content.content = "章节内容加载失败"
                     content.contentError = true
                 }

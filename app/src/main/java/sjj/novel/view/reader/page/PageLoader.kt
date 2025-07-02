@@ -1177,7 +1177,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         val sb = StringBuilder()
         for (line in text.lines()) {
             var line = line
-            line = line.trim().toString()
+            line = line.trim()
             if (!line.isEmpty()) {
                 sb.append("　　").append(line).append(System.lineSeparator())
             }

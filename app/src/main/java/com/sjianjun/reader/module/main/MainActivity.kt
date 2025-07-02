@@ -44,7 +44,7 @@ class MainActivity : BaseActivity() {
             launchIo {
                 BookSourceMgr.autoImport()
             }
-//            SourceTest.test()
+//            com.sjianjun.reader.test.SourceTest.test()
         }
         init()
     }

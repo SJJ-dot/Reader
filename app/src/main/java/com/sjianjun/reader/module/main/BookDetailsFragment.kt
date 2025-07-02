@@ -70,16 +70,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
             .commitNowAllowingStateLoss()
 
         launch(singleCoroutineKey = "initBookDetailsData") {
-            var first = true
             DataManager.getReadingBook(bookTitle).collectLatest {
                 fillView(it)
-
                 initListener(it)
-
-                if (first) {
-                    first = false
-                    refresh(it)
-                }
                 initLatestChapter(it)
             }
         }
@@ -96,7 +89,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         val source = book?.bookSourceId?.let {
             BookSourceMgr.getBookSourceById(it).firstOrNull()
         }
-        binding?.originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个源"
+        binding?.originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个"
         val error = book?.error
         if (error == null) {
             binding?.syncError?.hide()
