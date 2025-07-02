@@ -10,6 +10,7 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.databinding.ActivityEditJavaScriptBinding
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.flow.firstOrNull
 
 class EditJavaScriptActivity : BaseActivity() {
@@ -33,7 +34,7 @@ class EditJavaScriptActivity : BaseActivity() {
 
         }
 
-        binding!!.test.setOnClickListener {
+        binding!!.test.click {
             launch {
                 bookSource?.let { it1 -> BookSourceMgr.saveJs(it1) }
                 toast("书源保存成功")

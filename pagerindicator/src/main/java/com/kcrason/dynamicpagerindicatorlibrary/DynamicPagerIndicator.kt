@@ -740,9 +740,14 @@ open class DynamicPagerIndicator @JvmOverloads constructor(
         layoutParams.gravity = Gravity.CENTER
         basePagerTabView.layoutParams = layoutParams
         basePagerTabView.setPadding(mTabPadding, mTabPaddingTop, mTabPadding, mTabPaddingBottom)
+        var lastClickTime = 0L
         basePagerTabView.setOnClickListener {
-            mOnItemTabClickListener?.onItemTabClick(position)
-            viewPager?.currentItem = position
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastClickTime > 500) {
+                lastClickTime = currentTime
+                mOnItemTabClickListener?.onItemTabClick(position)
+                viewPager?.currentItem = position
+            }
         }
         //如果沒有被添加过，则添加
         if (basePagerTabView.parent == null) {

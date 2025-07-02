@@ -11,6 +11,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.ItemDefaultStyleBinding
 import com.sjianjun.reader.databinding.ReaderFragmentDefaultPageStyleBinding
+import com.sjianjun.reader.view.click
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageStyle
 
@@ -42,10 +43,10 @@ class DefaultPageStyleListFragment : DialogFragment() {
         binding?.recyclerView!!.adapter = adapter
         adapter.data.addAll(PageStyle.builtin().map { CustomPageStyle(it) })
 
-        binding?.btnCancel!!.setOnClickListener {
+        binding?.btnCancel!!.click {
             dismiss()
         }
-        binding?.btnSave!!.setOnClickListener {
+        binding?.btnSave!!.click {
             val item = adapter.data[binding?.recyclerView!!.currentItem]
             CustomPageStyleFragment.newInstance(item.info).show(parentFragmentManager, "CustomPageStyleFragment")
             dismiss()

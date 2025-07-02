@@ -22,6 +22,7 @@ import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -42,7 +43,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         adapter.onSelectSource = {
             refreshSelectAll()
         }
-        binding!!.sourceMenu.setOnClickListener(this::showPopupMenu)
+        binding!!.sourceMenu.click(block = this::showPopupMenu)
         binding!!.cbSelectAll.setOnCheckedChangeListener { _, b ->
             var isChange = false
             if (b || adapter.data.find { !it.selected } == null) {
@@ -56,18 +57,18 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             if (isChange) adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
-        binding!!.sourceReverse.setOnClickListener {
+        binding!!.sourceReverse.click {
             adapter.data.forEach {
                 it.selected = !it.selected
             }
             adapter.notifyDataSetChanged()
             refreshSelectAll()
         }
-        binding!!.sourceDelete.setOnClickListener {
+        binding!!.sourceDelete.click {
             val list = adapter.data.filter { it.selected }
             if (list.isEmpty()) {
                 toast("请选择要删除的书源")
-                return@setOnClickListener
+                return@click
             }
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("确认删除")
@@ -418,14 +419,14 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     binding.ivErrorHint.setOnClickListener(null)
                 } else {
                     binding.ivErrorHint.show()
-                    binding.ivErrorHint.setOnClickListener {
+                    binding.ivErrorHint.click {
                         val popup = ErrorMsgPopup(fragment.context)
                             .init("${script.checkErrorMsg}")
                             .setPopupGravity(Gravity.BOTTOM)
                         popup.showPopupWindow()
                     }
                 }
-                binding.ivEditSource.setOnClickListener {
+                binding.ivEditSource.click {
                     fragment.startActivity<EditJavaScriptActivity>(
                         BOOK_SOURCE_ID,
                         script.id

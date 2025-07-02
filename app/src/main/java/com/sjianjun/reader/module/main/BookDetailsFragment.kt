@@ -13,6 +13,7 @@ import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -36,7 +37,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             }
         }
 
-        binding?.originWebsite?.setOnClickListener { _ ->
+        binding?.originWebsite?.click { _ ->
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to bookTitle
             ).show(childFragmentManager, "BookSourceListFragment")
@@ -97,7 +98,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             binding?.syncError?.hide()
         } else {
             binding?.syncError?.show()
-            binding?.syncError?.setOnClickListener {
+            binding?.syncError?.click {
                 ErrorMsgPopup(context)
                     .init(error)
                     .setPopupGravity(Gravity.BOTTOM)
@@ -110,8 +111,8 @@ class BookDetailsFragment : BaseAsyncFragment() {
         binding?.detailsRefreshLayout?.setOnRefreshListener {
             refresh(book)
         }
-        binding?.reading?.setOnClickListener {
-            book ?: return@setOnClickListener
+        binding?.reading?.click {
+            book ?: return@click
             startActivity<BookReaderActivity>(BOOK_ID, book.id)
         }
     }
@@ -121,8 +122,8 @@ class BookDetailsFragment : BaseAsyncFragment() {
         DataManager.getLastChapterByBookId(book?.id ?: "")
             .collectLatest { lastChapter ->
                 binding?.latestChapter?.text = "最新：${lastChapter?.title ?: "无"}"
-                binding?.latestChapter?.setOnClickListener { _ ->
-                    book ?: return@setOnClickListener
+                binding?.latestChapter?.click { _ ->
+                    book ?: return@click
                     launch {
                         val readingRecord = DataManager.getReadingRecord(book).first() ?: ReadingRecord(book.title, book.id)
                         if (readingRecord.chapterIndex != lastChapter?.index) {

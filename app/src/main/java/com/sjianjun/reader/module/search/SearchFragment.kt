@@ -23,6 +23,7 @@ import com.sjianjun.reader.databinding.SearchItemFragmentSearchHintBinding
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.flow.collectLatest
 import sjj.alog.Log
 import java.util.concurrent.atomic.AtomicInteger
@@ -91,7 +92,7 @@ class SearchFragment : BaseAsyncFragment() {
                     val tagViewBinding = MainItemFragmentSearchHistoryBinding.inflate(layoutInflater, binding?.tflSearchHistory, false)
                     binding?.tflSearchHistory?.addView(tagViewBinding.root, 0)
                     tagViewBinding.searchHistoryText.text = history.query
-                    tagViewBinding.searchHistoryText.setOnClickListener { _ ->
+                    tagViewBinding.searchHistoryText.click { _ ->
                         searchView.setQuery(history.query, true)
                     }
                     tagViewBinding.searchHistoryText.setOnLongClickListener { _ ->
@@ -101,7 +102,7 @@ class SearchFragment : BaseAsyncFragment() {
                         true
                     }
                 }
-                binding?.tvSearchHistoryClean?.setOnClickListener { _ ->
+                binding?.tvSearchHistoryClean?.click { _ ->
                     launchIo(singleCoroutineKey = "delete_history") {
                         DataManager.deleteSearchHistory(it)
                     }
@@ -203,7 +204,7 @@ class SearchFragment : BaseAsyncFragment() {
             val binding = SearchItemFragmentSearchHintBinding.bind(holder.itemView)
             val hint = data[position]
             binding.hint.text = hint
-            holder.itemView.setOnClickListener {
+            holder.itemView.click {
                 itemClick?.invoke(hint)
             }
         }
@@ -224,7 +225,7 @@ class SearchFragment : BaseAsyncFragment() {
             binding.author.text = "作者：${searchResult.bookAuthor}"
             binding.haveRead.text = "${searchResult.bookSource?.group}：${searchResult.bookSource?.name} 共${data[position].size}个"
 
-            holder.itemView.setOnClickListener { _ ->
+            holder.itemView.click { _ ->
                 fragment.launch {
                     DataManager.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(

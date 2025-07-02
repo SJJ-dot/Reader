@@ -35,6 +35,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.view.click
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -91,13 +92,13 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initBrowser(){
-        binding?.browser?.setOnClickListener {
+        binding?.browser?.click {
             EventBus.post(EventKey.BROWSER_OPEN)
             dismiss()
         }
     }
     private fun initChapterList() {
-        binding?.download?.setOnClickListener {
+        binding?.download?.click {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("缓存章节")
                 .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
@@ -107,27 +108,27 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
-        binding?.chapterList?.setOnClickListener {
+        binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
             dismiss()
         }
     }
 
     private fun initSpeak() {
-        binding?.speak?.setOnClickListener {
+        binding?.speak?.click {
             EventBus.post(EventKey.CHAPTER_SPEAK)
             dismiss()
         }
     }
 
     private fun initChapterError() {
-        binding?.chapterError?.setOnClickListener {
+        binding?.chapterError?.click {
             EventBus.post(EventKey.CHAPTER_CONTENT_ERROR)
         }
     }
 
     private fun initChapterSync() {
-        binding?.chapterSync?.setOnClickListener {
+        binding?.chapterSync?.click {
             EventBus.post(EventKey.CHAPTER_SYNC_FORCE)
         }
     }
@@ -143,7 +144,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         val view = views[globalConfig.readerPageMode.value!!]
         setSelected(view, true)
         views.forEachIndexed { index, view ->
-            view.setOnClickListener {
+            view.click {
                 if (index != globalConfig.readerPageMode.value!!) {
                     setSelected(views[globalConfig.readerPageMode.value!!], false)
                     setSelected(view, true)
@@ -170,7 +171,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         } else {
             binding?.dayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
-        binding?.dayNight?.setOnClickListener {
+        binding?.dayNight?.click {
             when (globalConfig.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
@@ -217,10 +218,10 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         globalConfig.readerFontSize.observe(viewLifecycleOwner, Observer {
             binding?.fontText?.text = it.toString()
         })
-        binding?.fontDecrease?.setOnClickListener {
+        binding?.fontDecrease?.click(10) {
             globalConfig.readerFontSize.postValue(globalConfig.readerFontSize.value!! - 1)
         }
-        binding?.fontIncrease?.setOnClickListener {
+        binding?.fontIncrease?.click(10) {
             globalConfig.readerFontSize.postValue(globalConfig.readerFontSize.value!! + 1)
         }
     }
@@ -230,12 +231,12 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         globalConfig.readerLineSpacing.observe(viewLifecycleOwner, Observer {
             binding?.lineSpacingText?.text = decimalFormat.format(it)
         })
-        binding?.lineSpacingDecrease?.setOnClickListener {
+        binding?.lineSpacingDecrease?.click(10) {
             globalConfig.readerLineSpacing.postValue(
                 decimalFormat.format(globalConfig.readerLineSpacing.value!! - 0.1f).toFloat()
             )
         }
-        binding?.lineSpacingIncrease?.setOnClickListener {
+        binding?.lineSpacingIncrease?.click(10) {
             globalConfig.readerLineSpacing.postValue(
                 decimalFormat.format(globalConfig.readerLineSpacing.value!! + 0.1f).toFloat()
             )
@@ -248,7 +249,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         } else {
             ImmersionBar.with(this).statusBarDarkFont(true).init()
         }
-        binding?.pageStyleImport?.setOnClickListener {
+        binding?.pageStyleImport?.click {
             dismissAllowingStateLoss()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
         }
@@ -279,7 +280,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     private fun initFontList() {
         initFontListData()
         binding?.fontList?.adapter = adapter
-        binding?.fontImport?.setOnClickListener {
+        binding?.fontImport?.click {
             //导入字体
             pickFontFile()
         }
@@ -349,7 +350,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.apply {
                 val fontInfo = data[position]
                 binding.fontText.text = fontInfo.name
-                setOnClickListener {
+                click {
                     globalConfig.readerFontFamily.postValue(fontInfo)
                     notifyDataSetChanged()
                 }
@@ -393,7 +394,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             } else {
                 image.borderColor = R.color.dn_color_primary.color(image.context)
             }
-            holder.itemView.setOnClickListener {
+            holder.itemView.click {
                 notifyDataSetChanged()
                 globalConfig.readerPageStyle.postValue(pageStyle.id)
                 if (pageStyle.isDark) {

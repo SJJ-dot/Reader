@@ -26,6 +26,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -89,7 +90,7 @@ class WebViewVerificationActivity : BaseActivity() {
     }
 
     private fun initView() {
-        binding.refresh.setOnClickListener {
+        binding.refresh.click {
 
             if (binding.refresh.isSelected) {
                 binding.webView.stopLoading()
@@ -98,7 +99,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 binding.webView.reload()
             }
         }
-        binding.backward.setOnClickListener {
+        binding.backward.click {
             Log.i("后退")
             if (binding.webView.canGoBack()) {
                 binding.webView.goBack()
@@ -106,7 +107,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 Log.w("没有后退页面")
             }
         }
-        binding.forward.setOnClickListener {
+        binding.forward.click {
             Log.i("前进")
             if (binding.webView.canGoForward()) {
                 binding.webView.goForward()
@@ -114,7 +115,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 Log.w("没有前进页面")
             }
         }
-        binding.complete.setOnClickListener {
+        binding.complete.click {
             finish() // 例如：关闭当前 Activity
         }
         setSupportActionBar(binding.toolbar)

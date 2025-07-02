@@ -18,6 +18,7 @@ import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.launch
 
@@ -98,7 +99,7 @@ class BookSourceListFragment : BaseFragment() {
                 }
                 binding.bvUnread.badgeCount = book.unreadChapterCount
 
-                setOnClickListener {
+                click {
                     fragment.launch {
                         DataManager.changeReadingRecordBookSource(book)
                         fragment.dismissAllowingStateLoss()

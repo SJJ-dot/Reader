@@ -34,7 +34,7 @@ import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.setDarkening
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
@@ -83,7 +83,7 @@ class BrowserReaderActivity : BaseActivity() {
     }
 
     private fun initCtrlBtn() {
-        binding.refresh.setOnClickListener {
+        binding.refresh.click {
 
             if (binding.refresh.isSelected) {
                 binding.webView.stopLoading()
@@ -92,7 +92,7 @@ class BrowserReaderActivity : BaseActivity() {
                 binding.webView.reload()
             }
         }
-        binding.backward.setOnClickListener {
+        binding.backward.click {
             Log.i("后退")
             if (binding.webView.canGoBack()) {
                 binding.webView.goBack()
@@ -100,7 +100,7 @@ class BrowserReaderActivity : BaseActivity() {
                 Log.w("没有后退页面")
             }
         }
-        binding.forward.setOnClickListener {
+        binding.forward.click {
             Log.i("前进")
             if (binding.webView.canGoForward()) {
                 binding.webView.goForward()
@@ -108,11 +108,11 @@ class BrowserReaderActivity : BaseActivity() {
                 Log.w("没有前进页面")
             }
         }
-        binding.menu.setOnClickListener {
+        binding.menu.click {
             Log.i("打开菜单")
             binding.drawerLayout.openDrawer(GravityCompat.END)
         }
-        binding.home.setOnClickListener {
+        binding.home.click {
             finish()
         }
     }
@@ -199,11 +199,11 @@ class BrowserReaderActivity : BaseActivity() {
             binding.tvHost.text = data[position].host
             binding.tvTime.text = data[position].time
             binding.btnMarkWhite.text = "+白名单"
-            binding.btnMarkWhite.setOnClickListener {
+            binding.btnMarkWhite.click {
                 adBlock.addWhiteHost(data[position])
             }
             binding.btnMarkBlack.text = "+黑名单"
-            binding.btnMarkBlack.setOnClickListener {
+            binding.btnMarkBlack.click {
                 adBlock.addBlackHost(data[position])
             }
         }
@@ -216,7 +216,7 @@ class BrowserReaderActivity : BaseActivity() {
             binding.tvTime.text = data[position].time
             binding.btnMarkBlack.gone()
             binding.btnMarkWhite.text = "移除白名单"
-            binding.btnMarkWhite.setOnClickListener {
+            binding.btnMarkWhite.click {
                 adBlock.removeWhiteHost(data[position])
             }
         }
@@ -230,7 +230,7 @@ class BrowserReaderActivity : BaseActivity() {
             binding.tvTime.text = data[position].time
             binding.btnMarkWhite.gone()
             binding.btnMarkBlack.text = "移除黑名单"
-            binding.btnMarkBlack.setOnClickListener {
+            binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])
             }
         }

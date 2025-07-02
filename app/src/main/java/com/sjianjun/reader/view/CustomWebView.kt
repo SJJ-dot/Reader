@@ -63,7 +63,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initView() {
-        binding.refresh.setOnClickListener {
+        binding.refresh.click {
 
             if (binding.refresh.isSelected) {
                 webView?.stopLoading()
@@ -72,7 +72,7 @@ class CustomWebView @JvmOverloads constructor(
                 webView?.reload()
             }
         }
-        binding.backward.setOnClickListener {
+        binding.backward.click {
             Log.i("后退")
             if (webView?.canGoBack() == true) {
                 webView?.goBack()
@@ -80,7 +80,7 @@ class CustomWebView @JvmOverloads constructor(
                 Log.w("没有后退页面")
             }
         }
-        binding.forward.setOnClickListener {
+        binding.forward.click {
             Log.i("前进")
             if (webView?.canGoForward() == true) {
                 webView?.goForward()
@@ -88,11 +88,11 @@ class CustomWebView @JvmOverloads constructor(
                 Log.w("没有前进页面")
             }
         }
-        binding.menu.setOnClickListener {
+        binding.menu.click {
             Log.i("打开菜单")
             openMenu()
         }
-        binding.home.setOnClickListener {
+        binding.home.click {
             Log.i("回到首页")
             webView?.stopLoading()
             webView?.loadUrl(this.url ?: "https://www.baidu.com")

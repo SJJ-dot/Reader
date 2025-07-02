@@ -19,6 +19,7 @@ import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.view.CustomWebView
+import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -138,7 +139,7 @@ class BookCityPageFragment : BaseFragment() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position]
-            binding.root.setOnClickListener {
+            binding.root.click {
                 onClick(data[position])
             }
         }
@@ -150,11 +151,11 @@ class BookCityPageFragment : BaseFragment() {
             binding.tvHost.text = data[position].host
             binding.tvTime.text = data[position].time
             binding.btnMarkWhite.text = "+白名单"
-            binding.btnMarkWhite.setOnClickListener {
+            binding.btnMarkWhite.click {
                 adBlock.addWhiteHost(data[position])
             }
             binding.btnMarkBlack.text = "+黑名单"
-            binding.btnMarkBlack.setOnClickListener {
+            binding.btnMarkBlack.click {
                 adBlock.addBlackHost(data[position])
             }
         }
@@ -167,7 +168,7 @@ class BookCityPageFragment : BaseFragment() {
             binding.tvTime.text = data[position].time
             binding.btnMarkBlack.gone()
             binding.btnMarkWhite.text = "移除白名单"
-            binding.btnMarkWhite.setOnClickListener {
+            binding.btnMarkWhite.click {
                 adBlock.removeWhiteHost(data[position])
             }
         }
@@ -181,7 +182,7 @@ class BookCityPageFragment : BaseFragment() {
             binding.tvTime.text = data[position].time
             binding.btnMarkWhite.gone()
             binding.btnMarkBlack.text = "移除黑名单"
-            binding.btnMarkBlack.setOnClickListener {
+            binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])
             }
         }

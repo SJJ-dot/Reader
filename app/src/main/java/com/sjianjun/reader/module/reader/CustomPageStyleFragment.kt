@@ -26,7 +26,7 @@ import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.show
-import de.hdodenhof.circleimageview.CircleImageView
+import com.sjianjun.reader.view.click
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.CustomPageStyleInfo
@@ -76,7 +76,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
         val info = customPageStyleInfo
         EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
         setColor(binding?.chapterTitleColor!!, binding?.chapterTitleColorPreview!!, info.chapterTitleColor)
-        binding?.chapterTitleColor!!.setOnClickListener {
+        binding?.chapterTitleColor!!.click {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -97,12 +97,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        binding?.chapterTitleColorPreview!!.setOnClickListener {
+        binding?.chapterTitleColorPreview!!.click {
             binding?.chapterTitleColor!!.performClick()
         }
 
         setColor(binding?.chapterContentColor!!, binding?.chapterContentColorPreview!!, info.chapterContentColor)
-        binding?.chapterContentColor!!.setOnClickListener {
+        binding?.chapterContentColor!!.click {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -123,12 +123,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        binding?.chapterContentColorPreview!!.setOnClickListener {
+        binding?.chapterContentColorPreview!!.click {
             binding?.chapterContentColor!!.performClick()
         }
 
         setColor(binding?.chapterLabelColor!!, binding?.chapterLabelColorPreview!!, info.labelColor)
-        binding!!.chapterLabelColor.setOnClickListener {
+        binding!!.chapterLabelColor.click {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -149,12 +149,12 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
                 .build()
                 .show()
         }
-        binding?.chapterLabelColorPreview!!.setOnClickListener {
+        binding?.chapterLabelColorPreview!!.click {
             binding?.chapterLabelColor!!.performClick()
         }
 
 
-        binding?.chapterBackgroundColor!!.setOnClickListener {
+        binding?.chapterBackgroundColor!!.click {
             Log.i("info: $info")
             ColorPickerDialogBuilder
                 .with(context)
@@ -189,7 +189,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             )
         }
 
-        binding?.chapterBackgroundImgSelector!!.setOnClickListener {
+        binding?.chapterBackgroundImgSelector!!.click {
             //打开图片选择器
             // 创建一个意图，用于选择图片
             val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -211,7 +211,7 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
         }
         binding?.rgStatusBarColor!!.check(if (info.isDark) R.id.rb_status_bar_color_white else R.id.rb_status_bar_color_black)
 
-        binding?.btnSave!!.setOnClickListener {
+        binding?.btnSave!!.click {
             val list = globalConfig.customPageStyleInfoList.value!!.toMutableList()
             val index = list.indexOfFirst { it.id == info.id }
             if (index == -1) {
@@ -223,11 +223,11 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             globalConfig.readerPageStyle.postValue(pageStyle.id)
             dismiss()
         }
-        binding?.btnCancel!!.setOnClickListener {
+        binding?.btnCancel!!.click {
             globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
             dismiss()
         }
-        binding?.btnDelete!!.setOnClickListener {
+        binding?.btnDelete!!.click {
             //弹窗
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("删除")

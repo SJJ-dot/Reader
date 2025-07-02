@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.annotation.IdRes
 import androidx.annotation.Nullable
 import com.sjianjun.reader.R
+import com.sjianjun.reader.view.click
 
 fun dialog(activity: Activity, show: Boolean = true, apply: Dialog.() -> Unit = {}): Dialog {
     val dialog = Dialog(activity, R.style.dialog_style).apply(apply)
@@ -28,19 +29,19 @@ fun Dialog.setText(@IdRes id: Int, text: CharSequence?): Dialog {
 
 
 fun Dialog.onClick(
-    @Nullable l: (view: View, dialog: Dialog) -> Unit,
+    l: (view: View, dialog: Dialog) -> Unit,
     @IdRes vararg ids: Int
 ): Dialog {
     return onClick(l, true, *ids)
 }
 
 fun Dialog.onClick(
-    @Nullable l: (view: View, dialog: Dialog) -> Unit,
+    l: (view: View, dialog: Dialog) -> Unit,
     dismiss: Boolean,
     @IdRes vararg ids: Int
 ): Dialog {
     ids.forEach {
-        view<View>(it)?.setOnClickListener { view ->
+        view<View>(it)?.click { view ->
             if (dismiss) {
                 dismiss()
             }

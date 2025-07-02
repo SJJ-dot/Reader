@@ -21,6 +21,7 @@ import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
+import com.sjianjun.reader.view.click
 
 
 class MainActivity : BaseActivity() {
@@ -100,7 +101,7 @@ class MainActivity : BaseActivity() {
             } else {
                 headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
             }
-            headerBinding.dayNight.setOnClickListener {
+            headerBinding.dayNight.click {
                 when (globalConfig.appDayNightMode) {
                     MODE_NIGHT_NO -> {
                         headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)

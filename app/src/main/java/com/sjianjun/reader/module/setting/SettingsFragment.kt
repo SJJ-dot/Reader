@@ -1,25 +1,20 @@
 package com.sjianjun.reader.module.setting
 
 import android.os.Bundle
-import android.text.Editable
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.widget.addTextChangedListener
+import androidx.fragment.app.Fragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.HttpServiceHelper
-import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -48,7 +43,7 @@ class SettingsFragment : Fragment() {
 
             webdavDirInput.setText(globalConfig.webdavSubdir)
 
-            webdavSave.setOnClickListener {
+            webdavSave.click {
                 launch {
                     globalConfig.apply {
                         webdavUrl = webdavServerUrlInput.text.toString().trim()
@@ -74,7 +69,7 @@ class SettingsFragment : Fragment() {
             }
             Log.i("bookCityUrl:" + globalConfig.bookCityUrl)
             bookCityUrlInput.text = globalConfig.bookCityUrl
-            bookCityUrlInput.setOnClickListener {
+            bookCityUrlInput.click {
                 val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
                 bindingDialog.editView.apply {
                     val historyList = globalConfig.bookCityUrlHistoryList

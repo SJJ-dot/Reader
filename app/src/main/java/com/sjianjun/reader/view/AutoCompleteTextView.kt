@@ -56,7 +56,7 @@ class AutoCompleteTextView @JvmOverloads constructor(
             textView.text = getItem(position)
             val ivDelete = view.findViewById<ImageView>(R.id.iv_delete)
             if (delCallBack != null) ivDelete.show() else ivDelete.gone()
-            ivDelete.setOnClickListener {
+            ivDelete.click {
                 getItem(position)?.let {
                     remove(it)
                     delCallBack?.invoke(it)

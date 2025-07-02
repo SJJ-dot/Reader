@@ -15,6 +15,7 @@ import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import sjj.alog.Log
 import java.io.File
 
@@ -26,7 +27,7 @@ class AboutFragment : BaseAsyncFragment() {
         setHasOptionsMenu(true)
         MainFragmentAboutBinding.bind(it).apply {
             declare.text = getString(R.string.about_app, URL_REPO)
-            versionCode.setOnClickListener {
+            versionCode.click {
                 launch(singleCoroutineKey = "checkUpdate") {
                     checkUpdate(requireActivity())
                     setVersionInfo(versionCode)

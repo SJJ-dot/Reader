@@ -43,6 +43,7 @@ import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.key
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.visibleSet
+import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -258,7 +259,7 @@ class BookshelfFragment : BaseFragment() {
                         ColorStateList.valueOf(R.color.mdr_grey_700.color(root.context))
                     }
                     visibleSet.visible(syncError)
-                    syncError.setOnClickListener {
+                    syncError.click {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
                                 .init("$error")
@@ -287,27 +288,27 @@ class BookshelfFragment : BaseFragment() {
                 }
                 origin.text =
                     "${book.bookSource?.group}：${book.bookSource?.name}共${book.javaScriptList?.size}个"
-                originClickableArea.setOnClickListener {
+                originClickableArea.click {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
                 }
 
-                detailClickableArea.setOnClickListener {
+                detailClickableArea.click {
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,
                             bundle(BOOK_TITLE to book.title)
                         )
                 }
-                refreshClickableArea.setOnClickListener {
+                refreshClickableArea.click {
                     if (!book.isLoading) {
                         fragment.launch {
                             DataManager.reloadBookFromNet(book)
                         }
                     }
                 }
-                root.setOnClickListener {
+                root.click {
                     fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
                 }
 

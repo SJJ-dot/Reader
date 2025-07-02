@@ -15,6 +15,7 @@ import com.sjianjun.reader.databinding.MainFragmentBookChapterListBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
@@ -102,10 +103,10 @@ class ChapterListFragment : BaseFragment() {
                 } else {
                     binding.mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
                 }
-                setOnClickListener {
+                click {
                     if (readingChapterIndex == c.index) {
                         //如果是当前章节，直接返回
-                        return@setOnClickListener
+                        return@click
                     }
                     fragment.launch {
                         //如果不是当前章节，更新阅读记录
