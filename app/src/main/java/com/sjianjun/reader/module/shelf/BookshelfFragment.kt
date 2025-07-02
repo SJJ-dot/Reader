@@ -237,7 +237,7 @@ class BookshelfFragment : BaseFragment() {
                 val visibleSet = constraintLayout.visibleSet()
                 bookCover.glide(book.cover)
                 bookName.text = book.title
-                if (author.tag == null){
+                if (author.tag == null) {
                     author.post {
                         author.maxWidth = bookName.measuredWidth - 85.dp2Px
                         author.tag = author
@@ -300,7 +300,13 @@ class BookshelfFragment : BaseFragment() {
                             bundle(BOOK_TITLE to book.title)
                         )
                 }
-
+                refreshClickableArea.setOnClickListener {
+                    if (!book.isLoading) {
+                        fragment.launch {
+                            DataManager.reloadBookFromNet(book)
+                        }
+                    }
+                }
                 root.setOnClickListener {
                     fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
                 }
