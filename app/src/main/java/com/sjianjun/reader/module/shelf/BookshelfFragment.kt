@@ -36,6 +36,7 @@ import com.sjianjun.reader.utils.animFadeOut
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.bundle
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.id
@@ -227,8 +228,6 @@ class BookshelfFragment : BaseFragment() {
         }
 
 
-
-
         @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
 
@@ -274,10 +273,15 @@ class BookshelfFragment : BaseFragment() {
                     visibleSet.visible(bvUnread)
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
-
+                if (origin.tag == null) {
+                    origin.post {
+                        origin.maxWidth = originClickableArea.measuredWidth - 20.dp2Px
+                        origin.tag = origin
+                    }
+                }
                 origin.text =
                     "${book.bookSource?.group}：${book.bookSource?.name}共${book.javaScriptList?.size}个"
-                origin.setOnClickListener {
+                originClickableArea.setOnClickListener {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
