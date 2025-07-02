@@ -18,5 +18,11 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     if (T::class.java == Boolean::class.java) {
         return result.toBoolean() as T
     }
-    return gson.fromJson<T>(result)
+
+    return try {
+        gson.fromJson<T>(result)
+    } catch (e: Exception) {
+        Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
+        throw e
+    }
 }

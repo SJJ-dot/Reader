@@ -105,8 +105,8 @@ object DataManager {
 
         val books = supportSources.map {
             async<SearchResult?> {
-                val book = it.getDetails(url)
-                if (book != null) {
+                try {
+                    val book = it.getDetails(url)!!
                     val searchResult = SearchResult()
                     searchResult.bookSource = it
                     searchResult.bookTitle = book.title
@@ -114,7 +114,8 @@ object DataManager {
                     searchResult.bookCover = book.cover
                     searchResult.bookUrl = book.url
                     searchResult
-                } else {
+                } catch (e: Exception) {
+                    Log.e("获取书籍详情失败 ${it.name} url:$url", e)
                     null
                 }
             }
