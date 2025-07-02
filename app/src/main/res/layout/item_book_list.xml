@@ -13,14 +13,13 @@
 
         <ImageView
             android:id="@+id/bookCover"
-            android:layout_width="64dp"
+            android:layout_width="70dp"
             android:layout_height="match_parent"
-            android:layout_margin="5dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
+        <com.sjianjun.reader.view.AutofitTextView
             android:id="@+id/bookName"
             style="@style/text_body1"
             android:layout_width="0dp"

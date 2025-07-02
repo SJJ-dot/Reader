@@ -34,7 +34,6 @@
                         android:id="@+id/bookCover"
                         android:layout_width="100dp"
                         android:layout_height="150dp"
-                        android:layout_margin="5dp"
                         android:tint="@color/dn_dark_tint" />
                 </com.google.android.material.card.MaterialCardView>
 
