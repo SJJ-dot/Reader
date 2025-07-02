@@ -237,6 +237,12 @@ class BookshelfFragment : BaseFragment() {
                 val visibleSet = constraintLayout.visibleSet()
                 bookCover.glide(book.cover)
                 bookName.text = book.title
+                if (author.tag == null){
+                    author.post {
+                        author.maxWidth = bookName.measuredWidth - 85.dp2Px
+                        author.tag = author
+                    }
+                }
                 author.text = "作者：${book.author}"
                 lastChapter.text = "最新：${book.lastChapter?.title}"
                 haveRead.text = "已读：${book.readChapter?.title ?: "未开始阅读"}"
@@ -275,7 +281,7 @@ class BookshelfFragment : BaseFragment() {
                 bvUnread.badgeCount = book.unreadChapterCount
                 if (origin.tag == null) {
                     origin.post {
-                        origin.maxWidth = originClickableArea.measuredWidth - 20.dp2Px
+                        origin.maxWidth = bookName.measuredWidth - 20.dp2Px
                         origin.tag = origin
                     }
                 }
@@ -287,7 +293,7 @@ class BookshelfFragment : BaseFragment() {
                     ).show(fragment.childFragmentManager, "BookSourceListFragment")
                 }
 
-                bookCover.setOnClickListener {
+                detailClickableArea.setOnClickListener {
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,

@@ -39,16 +39,36 @@
         <TextView
             android:id="@+id/author"
             style="@style/text_body2"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:gravity="center_vertical"
             android:lines="1"
             app:layout_constraintBottom_toTopOf="@+id/lastChapter"
-            app:layout_constraintEnd_toEndOf="@id/bookName"
             app:layout_constraintStart_toStartOf="@+id/bookName"
             app:layout_constraintTop_toBottomOf="@+id/bookName"
             tools:text="标题" />
+
+        <TextView
+            android:id="@+id/tv_detail_label"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:text=" • 书籍详情 >"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/author"
+            app:layout_constraintStart_toEndOf="@+id/author"
+            app:layout_constraintTop_toTopOf="@+id/author" />
+
+        <View
+            android:id="@+id/detail_clickable_area"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            app:layout_constraintBottom_toBottomOf="@+id/tv_detail_label"
+            app:layout_constraintEnd_toEndOf="@+id/tv_detail_label"
+            app:layout_constraintStart_toStartOf="@+id/tv_detail_label"
+            app:layout_constraintTop_toTopOf="@+id/tv_detail_label" />
 
         <TextView
             android:id="@+id/lastChapter"
