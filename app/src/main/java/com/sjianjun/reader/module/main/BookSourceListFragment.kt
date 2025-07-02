@@ -83,7 +83,7 @@ class BookSourceListFragment : BaseFragment() {
                 binding.author.text = "作者：${book.author}"
                 binding.lastChapter.text = "最新：${book.lastChapter?.title}"
 
-                binding.haveRead.text = "来源：${book.bookSource?.group}-${book.bookSource?.name}"
+                binding.haveRead.text = "${book.bookSource?.group}：${book.bookSource?.name}"
                 binding.loading.isLoading = book.isLoading
 
                 if (book.readChapter?.content?.firstOrNull()?.contentError == true) {

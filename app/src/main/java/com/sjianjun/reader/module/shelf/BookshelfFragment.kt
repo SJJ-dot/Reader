@@ -276,7 +276,7 @@ class BookshelfFragment : BaseFragment() {
                 bvUnread.badgeCount = book.unreadChapterCount
 
                 origin.text =
-                    "来源：${book.bookSource?.group}-${book.bookSource?.name}共${book.javaScriptList?.size}个"
+                    "${book.bookSource?.group}：${book.bookSource?.name}共${book.javaScriptList?.size}个"
                 origin.setOnClickListener {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title

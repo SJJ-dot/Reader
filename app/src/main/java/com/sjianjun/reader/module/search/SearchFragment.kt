@@ -222,7 +222,7 @@ class SearchFragment : BaseAsyncFragment() {
             binding.bookCover.glide(searchResult.bookCover)
             binding.bookName.text = searchResult.bookTitle
             binding.author.text = "作者：${searchResult.bookAuthor}"
-            binding.haveRead.text = "来源：${searchResult.bookSource?.group}-${searchResult.bookSource?.name} 共${data[position].size}个"
+            binding.haveRead.text = "${searchResult.bookSource?.group}：${searchResult.bookSource?.name} 共${data[position].size}个"
 
             holder.itemView.setOnClickListener { _ ->
                 fragment.launch {

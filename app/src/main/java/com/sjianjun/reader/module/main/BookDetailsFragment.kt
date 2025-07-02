@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.main
 
+import android.annotation.SuppressLint
 import android.view.*
 import androidx.core.view.GravityCompat
 import com.sjianjun.coroutine.launch
@@ -78,10 +79,11 @@ class BookDetailsFragment : BaseAsyncFragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private suspend fun fillView(book: Book?) {
         binding?.bookCover?.glide(book?.cover)
         binding?.bookName?.text = book?.title
-        binding?.author?.text = book?.author
+        binding?.author?.text = "作者：${book?.author}"
 
         binding?.intro?.text = book?.intro.format(true)
 
@@ -89,7 +91,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         val source = book?.bookSourceId?.let {
             BookSourceMgr.getBookSourceById(it).firstOrNull()
         }
-        binding?.originWebsite?.text = "来源：${source?.group}-${source?.name}共${count}个"
+        binding?.originWebsite?.text = "${source?.group}：${source?.name}共${count}个"
         val error = book?.error
         if (error == null) {
             binding?.syncError?.hide()
@@ -97,7 +99,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             binding?.syncError?.show()
             binding?.syncError?.setOnClickListener {
                 ErrorMsgPopup(context)
-                    .init("$error")
+                    .init(error)
                     .setPopupGravity(Gravity.BOTTOM)
                     .showPopupWindow()
             }
@@ -114,10 +116,11 @@ class BookDetailsFragment : BaseAsyncFragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private suspend fun initLatestChapter(book: Book?) {
         DataManager.getLastChapterByBookId(book?.id ?: "")
             .collectLatest { lastChapter ->
-                binding?.latestChapter?.text = lastChapter?.title
+                binding?.latestChapter?.text = "最新：${lastChapter?.title ?: "无"}"
                 binding?.latestChapter?.setOnClickListener { _ ->
                     book ?: return@setOnClickListener
                     launch {
