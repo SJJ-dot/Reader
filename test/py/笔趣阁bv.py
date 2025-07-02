@@ -54,7 +54,7 @@ def getDetails(url):
     chapter_list_el = soup.select("#list a")
     for chapter_el in chapter_list_el:
         chapter = {
-            "title": chapter_el.text.strip(),
+            "title": chapter_el.text.replace("\u00A0", " ").strip(),
             "url": urljoin(url, chapter_el.get("href"))
         }
         book["chapterList"].append(chapter)
