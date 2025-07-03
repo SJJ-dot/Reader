@@ -62,7 +62,7 @@ class BookSource {
     private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         return when (lauanage) {
-            Language.js -> null
+            Language.js -> throw IllegalStateException("不再支持js脚本")
             Language.py -> py(func.name, *params)
         }
     }

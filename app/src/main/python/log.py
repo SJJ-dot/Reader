@@ -16,9 +16,9 @@ def log(arg):
     elif isinstance(arg, Response):
         # 打印响应头
         for key, value in arg.headers.items():
-            print(f"{key}: {value}")
-        print("")
-        print(f"{arg.text}")
-        print("")
+            PyLog.i(f"{key}: {value}")
+        PyLog.i("")
+#         PyLog.i(f"{arg.text}")
+#         PyLog.i("")
     else:
         PyLog.i(f"{arg}")
