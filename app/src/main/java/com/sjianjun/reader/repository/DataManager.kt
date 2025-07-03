@@ -60,7 +60,7 @@ object DataManager {
                 //window.baidu.sug({q:"阵",p:false,s:["阵的拼音","阵问长生","阵组词","阵的笔顺","阵风战斗机","阵雨","阵痛","阵风","阵雨的拼音","阵发性室上性心动过速"]});
                 val respJson = Regex("""\((.*)\)""").find(resp.body)?.groupValues?.getOrNull(1)
                 val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
-                val additional = listOf("笔趣阁", "小说", "TXT下载", "百度百科", "好看吗", "精校版", "无错版", "下载", "txt", "电视剧", "起点", "全本", "免费阅读", "全文阅读", "最新", "完结", "小说阅读网", "小说阅读器", "小说下载", "小说排行榜", "小说推荐", "小说大全")
+                val additional = listOf("笔趣阁", "小说", "TXT下载", "在线阅读", "百度百科", "好看吗", "精校版", "无错版", "下载", "txt", "电视剧", "起点", "全本", "免费阅读", "全文阅读", "最新", "完结", "小说阅读网", "小说阅读器", "小说下载", "小说排行榜", "小说推荐", "小说大全")
                 val strings = jarr.map {
                     var text = it.asString.removePrefix("小说").trim().split(" ")[0]
                     while (true) {
