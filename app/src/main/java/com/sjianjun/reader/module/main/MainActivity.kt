@@ -11,17 +11,20 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
+import com.sjianjun.reader.http.WebViewClient
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.view.click
+import sjj.alog.Log
 
 
 class MainActivity : BaseActivity() {
@@ -48,6 +51,12 @@ class MainActivity : BaseActivity() {
 //            com.sjianjun.reader.test.SourceTest.test()
         }
         init()
+//        BrowserReaderActivity.startActivity(this,"https://www.69shuba.com/book/74691.htm")
+//        launch {
+//            val text1 = WebViewClient.getResponse(this@MainActivity,"https://www.69shuba.com/txt/89532/40458157")
+//            Log.e("WebViewClient==>:${text1}")
+//        }
+
     }
 
 
