@@ -79,7 +79,7 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
             when (uri) {
                 "/start_verification_activity" -> {
                     val data = gson.fromJson<RobotVerify>(requestBody)!!
-                    WebViewVerificationActivity.startAndWaitResult(data.url!!, data.headers ?: emptyMap(), data.html ?: "")
+                    WebViewVerificationActivity.startAndWaitResult(data.url!!, data.headers ?: emptyMap(), data.html ?: "", data.encoding ?: "UTF-8")
                     newFixedLengthResponse(CookieMgr.getCookie(data.url ?: ""))
                 }
                 "/getCookie" ->{

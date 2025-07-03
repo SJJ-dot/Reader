@@ -8,7 +8,7 @@ def get_cookie(url):
 def set_cookie(url, cookie):
     CookieMgr.setCookie(url, cookie)
 
-def start_verification_activity(url,headers=None, html=None):
+def start_verification_activity(url,headers=None, html=None, encoding="utf-8"):
     if headers is None:
         headers = {}
     if html is None:
@@ -17,5 +17,5 @@ def start_verification_activity(url,headers=None, html=None):
     java_headers = HashMap()
     for key, value in headers.items():
         java_headers.put(key, value)
-    WebViewVerificationActivity.startAndWaitResult(url, java_headers, html)
+    WebViewVerificationActivity.startAndWaitResult(url, java_headers, html,encoding)
     return get_cookie(url)

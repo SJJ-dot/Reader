@@ -43,6 +43,8 @@ class WebViewVerificationActivity : BaseActivity() {
     private val html: String by lazy { intent.getStringExtra(KEY_HTML) ?: "" }
     private val resultKey: String by lazy { intent.getStringExtra(KEY_RESULT) ?: "" }
 
+    private val encoding: String by lazy { intent.getStringExtra(KEY_ENCODING) ?: "UTF-8" }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -58,7 +60,7 @@ class WebViewVerificationActivity : BaseActivity() {
         initView()
 
         if (html.isNotEmpty()) {
-            binding.webView.loadDataWithBaseURL(url, html, "text/html", "UTF-8", url)
+            binding.webView.loadDataWithBaseURL(url, html, "text/html", encoding, url)
             Log.i("WebViewVerificationActivity loading HTML content")
         } else if (url.isNotEmpty()) {
             binding.webView.loadUrl(url, headerMap)
@@ -195,10 +197,11 @@ class WebViewVerificationActivity : BaseActivity() {
         private val KEY_HEADER_MAP = "header_map"
         private val KEY_HTML = "html"
         private val KEY_RESULT = "result"
+        private val KEY_ENCODING = "encoding"
         private val waitResultSet = mutableSetOf<String>()
 
         @JvmStatic
-        fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), html: String = "") {
+        fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), html: String = "", encoding: String = "UTF-8") {
             Log.i("WebViewVerificationActivity startAndWaitResult URL: $url, headerMap: $headerMap, html: $html")
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 throw IllegalStateException("startAndWaitResult 必须在子线程中调用")
@@ -209,6 +212,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 putExtra(KEY_HEADER_MAP, HashMap(headerMap))
                 putExtra(KEY_HTML, html)
                 putExtra(KEY_RESULT, key)
+                putExtra(KEY_ENCODING, encoding)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             waitResultSet.add(key)
