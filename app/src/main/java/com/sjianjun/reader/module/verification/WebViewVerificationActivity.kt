@@ -25,6 +25,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.CookieMgr
+import com.sjianjun.reader.utils.setBackForwardCacheEnabled
 import com.sjianjun.reader.utils.setDarkening
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +140,7 @@ class WebViewVerificationActivity : BaseActivity() {
             headerMap["User-Agent"]?.let {
                 userAgentString = it
             }
+            setBackForwardCacheEnabled()
         }
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {

@@ -3,6 +3,7 @@ package com.sjianjun.reader.utils
 import android.annotation.SuppressLint
 import android.os.Build
 import android.webkit.WebSettings
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -39,5 +40,12 @@ fun WebSettings.setDarkening() {
                 WebSettingsCompat.FORCE_DARK_ON
             )
         }
+    }
+}
+
+@OptIn(WebSettingsCompat.ExperimentalBackForwardCache::class)
+fun WebSettings.setBackForwardCacheEnabled() {
+    if (WebViewFeature.isFeatureSupported(WebViewFeature.BACK_FORWARD_CACHE)) {
+        WebSettingsCompat.setBackForwardCacheEnabled(this, true);
     }
 }

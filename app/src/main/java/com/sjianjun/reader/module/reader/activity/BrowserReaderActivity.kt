@@ -33,6 +33,7 @@ import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.utils.setBackForwardCacheEnabled
 import com.sjianjun.reader.utils.setDarkening
 import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -257,6 +258,7 @@ class BrowserReaderActivity : BaseActivity() {
         webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
         webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
         webSettings.displayZoomControls = false //隐藏原生的缩放控件
+        webSettings.setBackForwardCacheEnabled()
         binding.webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
         binding.webView.isScrollbarFadingEnabled = false
 
