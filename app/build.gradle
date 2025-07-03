@@ -177,4 +177,5 @@ dependencies {
 //    implementation 'com.github.QuadFlask:colorpicker:0.0.15'
     implementation 'androidx.webkit:webkit:1.13.0'
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    implementation "org.apache.commons:commons-text:1.13.1"
 }

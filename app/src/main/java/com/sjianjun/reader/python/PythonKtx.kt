@@ -4,6 +4,7 @@ import com.chaquo.python.Python
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
+import org.apache.commons.text.StringEscapeUtils
 import sjj.alog.Log
 
 
@@ -20,7 +21,7 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     }
 
     return try {
-        gson.fromJson<T>(result)
+        gson.fromJson<T>(StringEscapeUtils.escapeJson(result))
     } catch (e: Exception) {
         Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
         throw e
