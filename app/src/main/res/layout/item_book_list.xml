@@ -64,7 +64,8 @@
         <View
             android:id="@+id/detail_clickable_area"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="30dp"
+            android:background="?android:attr/selectableItemBackground"
             app:layout_constraintBottom_toBottomOf="@+id/tv_detail_label"
             app:layout_constraintEnd_toEndOf="@+id/tv_detail_label"
             app:layout_constraintStart_toStartOf="@+id/tv_detail_label"
@@ -127,6 +128,7 @@
             android:id="@+id/origin_clickable_area"
             android:layout_width="0dp"
             android:layout_height="24dp"
+            android:background="?android:attr/selectableItemBackground"
             app:layout_constraintBottom_toBottomOf="@+id/origin"
             app:layout_constraintEnd_toEndOf="@+id/bookName"
             app:layout_constraintStart_toStartOf="@+id/origin" />
@@ -155,6 +157,7 @@
             android:id="@+id/refresh_clickable_area"
             android:layout_width="45dp"
             android:layout_height="30dp"
+            android:background="?android:attr/selectableItemBackground"
             app:layout_constraintEnd_toEndOf="@+id/bv_unread"
             app:layout_constraintStart_toStartOf="@+id/bv_unread"
             app:layout_constraintTop_toTopOf="parent" />

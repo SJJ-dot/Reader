@@ -9,6 +9,7 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
@@ -37,7 +38,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             }
         }
 
-        binding?.originWebsite?.click { _ ->
+        binding?.originClickableArea?.click { _ ->
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to bookTitle
             ).show(childFragmentManager, "BookSourceListFragment")
@@ -73,6 +74,16 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
         launch(singleCoroutineKey = "initBookDetailsData") {
             DataManager.getReadingBook(bookTitle).collectLatest {
+                it?.also {
+                    val record = DataManager.getReadingRecord(it).firstOrNull()
+                    val chapter = DataManager.getChapterByIndex(
+                        record?.bookId ?: "",
+                        record?.chapterIndex ?: -1
+                    )
+                    it.readChapter = chapter
+                }
+
+
                 fillView(it)
                 initListener(it)
                 initLatestChapter(it)
@@ -85,8 +96,21 @@ class BookDetailsFragment : BaseAsyncFragment() {
         binding?.bookCover?.glide(book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = "作者：${book?.author}"
-
-        binding?.intro?.text = book?.intro.format(true)
+        val intro = book?.intro.format(true)
+        binding?.intro?.text = intro.ifBlank { "暂无简介" }
+        binding?.bookClickableArea?.click {
+            //使用浏览器打开书籍链接
+            val url = book?.readChapter?.url
+            if (url != null){
+                BrowserReaderActivity.startActivity(requireActivity(), url)
+                return@click
+            }
+            if (book?.url.isNullOrBlank()) {
+                toast("书籍链接为空")
+                return@click
+            }
+            BrowserReaderActivity.startActivity(requireActivity(), book.url)
+        }
 
         val count = DataManager.getBookBookSourceNum(bookTitle)
         val source = book?.bookSourceId?.let {
@@ -104,6 +128,12 @@ class BookDetailsFragment : BaseAsyncFragment() {
                     .setPopupGravity(Gravity.BOTTOM)
                     .showPopupWindow()
             }
+        }
+        binding?.readingChapter?.text = "已读：${book?.readChapter?.title ?: "无"}"
+
+        binding?.originWebsite?.post {
+            binding?.bookName?.maxWidth = (binding?.bookClickableArea?.measuredWidth ?: 0) - 30.dp2Px
+            binding?.originWebsite?.maxWidth = (binding?.originClickableArea?.measuredWidth ?: 0) - 25.dp2Px
         }
     }
 

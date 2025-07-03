@@ -285,11 +285,11 @@ object DataManager {
         return dao.getLastChapterByBookId(bookId).flowIo()
     }
 
-    fun getChapterByIndex(bookId: String, index: Int): Chapter? {
-        return dao.getChapterByIndex(bookId, index)
+    suspend fun getChapterByIndex(bookId: String, index: Int): Chapter? = withIo {
+        return@withIo dao.getChapterByIndex(bookId, index)
     }
 
-    fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
+    suspend fun getReadingRecord(book: Book): Flow<ReadingRecord?> {
         return dao.getReadingRecordFlow(book.title).flowIo()
     }
 

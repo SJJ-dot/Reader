@@ -55,28 +55,51 @@
                         <com.sjianjun.reader.view.AutofitTextView
                             android:id="@+id/bookName"
                             style="@style/text_body1"
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:layout_marginTop="5dp"
                             android:layout_marginEnd="5dp"
                             android:textSize="20sp"
                             app:layout_constraintBottom_toTopOf="@+id/author"
-                            app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent"
                             app:layout_constraintVertical_chainStyle="spread_inside"
                             tools:text="极道天魔" />
+
+                        <ImageView
+                            android:id="@+id/browser_icon"
+                            android:layout_width="30dp"
+                            android:layout_height="0dp"
+                            android:src="@mipmap/ic_browser"
+                            app:layout_constraintBottom_toBottomOf="@+id/bookName"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/bookName"
+                            app:layout_constraintTop_toTopOf="@+id/bookName"
+                            app:tint="@color/colorPrimary" />
+
+                        <View
+                            android:id="@+id/book_clickable_area"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_marginEnd="5dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            app:layout_constraintBottom_toBottomOf="@+id/bookName"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="@+id/bookName"
+                            app:layout_constraintTop_toTopOf="@+id/bookName" />
 
                         <com.sjianjun.reader.view.AutofitTextView
                             android:id="@+id/author"
                             style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="5dp"
+                            android:lines="1"
                             android:text="作者：滚开"
                             android:textSize="16sp"
                             app:layout_constraintBottom_toTopOf="@+id/latestChapter"
-                            app:layout_constraintEnd_toEndOf="@+id/bookName"
+                            app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="@+id/bookName"
                             app:layout_constraintTop_toBottomOf="@+id/bookName" />
 
@@ -86,25 +109,66 @@
                             style="@style/text_body1"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="5dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:lines="1"
                             android:text="最新：最新章节"
                             android:textSize="16sp"
-                            app:layout_constraintBottom_toTopOf="@id/originWebsite"
-                            app:layout_constraintEnd_toEndOf="@+id/bookName"
+                            app:layout_constraintBottom_toTopOf="@id/readingChapter"
+                            app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="@+id/bookName"
                             app:layout_constraintTop_toBottomOf="@+id/author" />
+
+
+                        <com.sjianjun.reader.view.AutofitTextView
+                            android:id="@+id/readingChapter"
+                            style="@style/text_body1"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="5dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:lines="1"
+                            android:text="已读：最新章节"
+                            android:textSize="16sp"
+                            app:layout_constraintBottom_toTopOf="@id/originWebsite"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="@+id/bookName"
+                            app:layout_constraintTop_toBottomOf="@+id/latestChapter" />
 
                         <com.sjianjun.reader.view.AutofitTextView
                             android:id="@+id/originWebsite"
                             style="@style/text_body1"
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="5dp"
                             android:textSize="16sp"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="@+id/bookName"
                             app:layout_constraintStart_toStartOf="@+id/bookName"
-                            app:layout_constraintTop_toBottomOf="@+id/latestChapter"
+                            app:layout_constraintTop_toBottomOf="@+id/readingChapter"
                             tools:text="默认书源：起点-共7个" />
+
+                        <ImageView
+                            android:id="@+id/origin_icon"
+                            android:layout_width="25dp"
+                            android:layout_height="0dp"
+                            android:src="@mipmap/ic_change"
+                            app:layout_constraintBottom_toBottomOf="@+id/originWebsite"
+                            app:layout_constraintDimensionRatio="1:1"
+                            app:layout_constraintStart_toEndOf="@+id/originWebsite"
+                            app:layout_constraintTop_toTopOf="@+id/originWebsite"
+                            app:tint="@color/colorPrimary" />
+
+                        <View
+                            android:id="@+id/origin_clickable_area"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_marginEnd="5dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            app:layout_constraintBottom_toBottomOf="@+id/originWebsite"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="@+id/originWebsite"
+                            app:layout_constraintTop_toTopOf="@+id/originWebsite" />
+
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
