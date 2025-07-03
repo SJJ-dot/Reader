@@ -43,6 +43,7 @@ object HttpServiceHelper {
 
     fun stopHttpServer() {
         try {
+            MdnsHelper.stopService()
             Log.i("Stopping HTTP server on port $port")
             server?.stop()
             server = null
