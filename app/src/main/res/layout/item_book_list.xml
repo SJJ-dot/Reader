@@ -130,7 +130,7 @@
             android:layout_height="24dp"
             android:background="?android:attr/selectableItemBackground"
             app:layout_constraintBottom_toBottomOf="@+id/origin"
-            app:layout_constraintEnd_toEndOf="@+id/bookName"
+            app:layout_constraintEnd_toEndOf="@+id/origin_icon"
             app:layout_constraintStart_toStartOf="@+id/origin" />
 
         <com.sjianjun.reader.view.BadgeView
