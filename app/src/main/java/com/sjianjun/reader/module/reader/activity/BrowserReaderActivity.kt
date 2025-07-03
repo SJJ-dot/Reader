@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -242,7 +243,10 @@ class BrowserReaderActivity : BaseActivity() {
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
 //        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
 
-//        WebView.setWebContentsDebuggingEnabled(true)
+//chrome://inspect   edge://inspect
+        if (BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true)
+        }
 //声明WebSettings子类
         val webSettings = binding.webView.settings
         webSettings.setDarkening()
@@ -292,7 +296,9 @@ class BrowserReaderActivity : BaseActivity() {
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-
+                webView?.evaluateJavascript("document.documentElement.outerHTML") {
+                    Log.e(it)
+                }
             }
 
             override fun onLoadResource(view: WebView?, url: String?) {
