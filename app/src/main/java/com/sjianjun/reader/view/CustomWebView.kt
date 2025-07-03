@@ -18,6 +18,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.bookcity.AdBlock
@@ -141,8 +142,10 @@ class CustomWebView @JvmOverloads constructor(
         val cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
 //        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
-
-//        WebView.setWebContentsDebuggingEnabled(true)
+//chrome://inspect   edge://inspect
+        if (BuildConfig.DEBUG){
+            WebView.setWebContentsDebuggingEnabled(true)
+        }
 //声明WebSettings子类
         val webSettings = webView.settings
         webSettings.setDarkening()
