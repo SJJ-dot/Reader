@@ -84,11 +84,13 @@ class BookshelfFragment : BaseFragment() {
     }
 
     private fun welcome() {
-        MaterialAlertDialogBuilder(requireActivity())
-            .setTitle("欢迎使用")
-            .setMessage("首次使用APP,你可以：\n1、从左侧菜单进入书城选择一本书。\n2、还是从左侧菜单进入搜索页，搜索你想看的书籍。\n3、点击搜索结果即可开始阅读，书籍会被自动加入书架\n4、为防阅读记录丢失建议配置WebDav保存阅读记录")
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
+        lifecycle.launch {
+            MaterialAlertDialogBuilder(requireActivity())
+                .setTitle("欢迎使用")
+                .setMessage("首次使用APP,你可以：\n1、从左侧菜单进入书城选择一本书。\n2、还是从左侧菜单进入搜索页，搜索你想看的书籍。\n3、点击搜索结果即可开始阅读，书籍会被自动加入书架\n4、为防阅读记录丢失建议配置WebDav保存阅读记录")
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
     }
 
     private fun initData() {
