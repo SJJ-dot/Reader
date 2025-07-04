@@ -20,7 +20,7 @@ object WebViewClient {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             throw IllegalStateException("WebViewClient 必须在子线程中调用")
         }
-        Log.i("web_get url: $url, headerMap: $headers, javaScript: $javaScript, timeout: $timeout")
+        Log.i("WebViewClient url: $url, headerMap: $headers, javaScript: $javaScript, timeout: $timeout")
         var result: String? = null
         GlobalScope.launch {
             try {

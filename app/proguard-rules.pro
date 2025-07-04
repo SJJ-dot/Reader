@@ -99,4 +99,5 @@ public static final int *;
 -keep class com.google.gson.** { *; }
 -keep class sun.misc.Unsafe { *; }
 -keep class com.sjianjun.reader.** { *; }
+-keep class io.legado.app.** { *; }
 -keepattributes Signature
