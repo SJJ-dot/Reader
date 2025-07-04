@@ -6,10 +6,12 @@ from log import log
 _server_ip = None
 _server_port = None
 
+
 def init():
     global _server_ip, _server_port
     _server_ip, _server_port = discover_services()
     log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
+
 
 def get_cookie(url):
     init()
@@ -34,11 +36,11 @@ def set_cookie(url, cookies):
     log(f'Set cookies for {url}: {response.text} (cookies: {cookies})')
 
 
-def start_verification_activity(url, headers=None, html=None):
+def start_verification_activity(url, headers=None, html=None, encoding='utf-8'):
     init()
     server_url = f'http://{_server_ip}:{_server_port}/start_verification_activity'
     # POST请求的数据
-    data = {'url': url, 'headers': headers, 'html': html}
+    data = {'url': url, 'headers': headers, 'html': html, 'encoding': encoding}
     # 发送POST请求
     response = requests.post(server_url, json=data)
     response.encoding = 'utf-8'
