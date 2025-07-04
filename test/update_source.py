@@ -25,7 +25,7 @@ def update_json():
         if not os.path.isfile(f"./py/{item}"):
             continue
         with open(f"./py/{item}", "r", encoding="utf-8") as f:
-            py = f.read()
+            py = f.read().split("if __name__ ==")[0]
         if item.replace(".py", "") not in pySourceDict:
             json_dict["pySource"].append({
                 "source": item.replace(".py", ""),
