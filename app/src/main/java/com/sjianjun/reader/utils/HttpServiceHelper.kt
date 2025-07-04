@@ -2,8 +2,8 @@ package com.sjianjun.reader.utils
 
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.bean.RobotVerify
 import com.sjianjun.reader.http.CookieMgr
+import com.sjianjun.reader.http.WebViewClient
 import com.sjianjun.reader.module.verification.WebViewVerificationActivity
 import fi.iki.elonen.NanoHTTPD
 import sjj.alog.Log
@@ -75,18 +75,26 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         return newFixedLengthResponse("Hello, World!")
     }
 
-    private fun handleRequest(uri: String, requestBody: String,): Response? {
+    private fun handleRequest(uri: String, requestBody: String): Response? {
         return try {
             when (uri) {
+                "/web_get" -> {
+                    val data = gson.fromJson<WebGet>(requestBody)!!
+                    val res = WebViewClient.get(data.url!!, data.headers ?: emptyMap(), data.javaScript, data.timeout)
+                    newFixedLengthResponse(res)
+                }
+
                 "/start_verification_activity" -> {
                     val data = gson.fromJson<RobotVerify>(requestBody)!!
                     WebViewVerificationActivity.startAndWaitResult(data.url!!, data.headers ?: emptyMap(), data.html ?: "", data.encoding ?: "UTF-8")
                     newFixedLengthResponse(CookieMgr.getCookie(data.url ?: ""))
                 }
-                "/getCookie" ->{
+
+                "/getCookie" -> {
                     val data = gson.fromJson<Map<String, String>>(requestBody)!!
                     newFixedLengthResponse(CookieMgr.getCookie(data["url"] ?: ""))
                 }
+
                 "/setCookie" -> {
                     val data = gson.fromJson<Map<String, String>>(requestBody)!!
                     CookieMgr.setCookie(data["url"] ?: "", data["cookies"] ?: "")
@@ -98,6 +106,20 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         } catch (e: Exception) {
             newFixedLengthResponse(Response.Status.BAD_REQUEST, MIME_PLAINTEXT, "请求数据格式错误: ${e.message}")
         }
+    }
+
+    class RobotVerify {
+        var url: String? = null
+        var headers: Map<String, String>? = null
+        var html: String? = null
+        var encoding: String? = null
+    }
+
+    class WebGet {
+        var url: String? = null
+        var headers: Map<String, String>? = null
+        var javaScript: String = "document.documentElement.outerHTML"
+        var timeout = 20000L
     }
 
 }

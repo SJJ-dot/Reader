@@ -51,12 +51,6 @@ class MainActivity : BaseActivity() {
 //            com.sjianjun.reader.test.SourceTest.test()
         }
         init()
-//        BrowserReaderActivity.startActivity(this,"https://www.69shuba.com/book/74691.htm")
-//        launch {
-//            val text1 = WebViewClient.getResponse(this@MainActivity,"https://www.69shuba.com/txt/89532/40458157")
-//            Log.e("WebViewClient==>:${text1}")
-//        }
-
     }
 
 

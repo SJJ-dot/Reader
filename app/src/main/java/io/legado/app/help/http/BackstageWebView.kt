@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import org.apache.commons.text.StringEscapeUtils
-import sjj.alog.Log
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -114,13 +113,11 @@ class BackstageWebView(
             view: WebView,
             request: WebResourceRequest
         ): Boolean {
-            Log.e("==========>: shouldOverrideUrlLoading" + request.url)
             isRedirect = isRedirect || request.isRedirect
             return super.shouldOverrideUrlLoading(view, request)
         }
 
         override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-            Log.e("==========>: shouldInterceptRequest" + request?.url)
             return super.shouldInterceptRequest(view, request)
         }
 
@@ -192,5 +189,5 @@ class BackstageWebView(
         abstract fun onError(error: Throwable)
     }
 
-    class WebViewResponse(url: String, val html: String)
+    class WebViewResponse(val url: String, val html: String)
 }
