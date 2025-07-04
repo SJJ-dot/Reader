@@ -9,6 +9,7 @@
         android:id="@+id/rootRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -19,12 +20,5 @@
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <androidx.core.widget.ContentLoadingProgressBar
-        android:id="@+id/loading"
-        style="@style/ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:progress="50"
-        tools:secondaryProgress="50" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

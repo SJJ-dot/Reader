@@ -6,25 +6,21 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
-import com.sjianjun.reader.http.WebViewClient
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.WebDavMgr
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.view.click
-import sjj.alog.Log
 
 
 class MainActivity : BaseActivity() {
@@ -75,20 +71,10 @@ class MainActivity : BaseActivity() {
         )
         NavigationUI.setupWithNavController(binding?.navUi!!, navController!!)
         navController!!.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.bookDetailsFragment -> {
-                    binding?.drawerLayout?.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                    supportActionBar?.show()
-                }
-
-                R.id.browserBookCityFragment -> {
-                    supportActionBar?.hide()
-                }
-
-                else -> {
-                    supportActionBar?.show()
-                    binding?.drawerLayout?.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                }
+            if (destination.id == R.id.browserBookCityFragment) {
+                supportActionBar?.hide()
+            } else {
+                supportActionBar?.show()
             }
         }
 
@@ -153,13 +139,11 @@ class MainActivity : BaseActivity() {
         } else {
             if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
                 finishAfterTransition()
-//                val intent = Intent()
-//                intent.action = Intent.ACTION_MAIN
-//                intent.addCategory(Intent.CATEGORY_HOME)
-//                startActivity(intent)
             } else {
                 super.onBackPressed()
             }
         }
     }
+
+
 }

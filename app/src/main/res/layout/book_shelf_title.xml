@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    tools:background="@color/colorPrimary"
+    tools:layout_height="match_parent"
+    tools:layout_width="match_parent">
+
+    <com.coorchice.library.SuperTextView
+        android:id="@+id/tv_shelf_source"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="书源"
+        android:textColor="@color/colorPrimary"
+        app:layout_constraintEnd_toStartOf="@+id/tv_shelf_web"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:stv_corner="5dp"
+        app:stv_left_bottom_corner="true"
+        app:stv_left_top_corner="true"
+        app:stv_solid="@color/mdr_white"
+        tools:layout_marginTop="100dp" />
+
+    <com.coorchice.library.SuperTextView
+        android:id="@+id/tv_shelf_web"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="网页"
+        android:textColor="@color/mdr_white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tv_shelf_source"
+        app:layout_constraintTop_toTopOf="@+id/tv_shelf_source"
+        app:stv_corner="5dp"
+        app:stv_right_bottom_corner="true"
+        app:stv_right_top_corner="true"
+        app:stv_solid="@color/colorPrimaryDark" />
+</androidx.constraintlayout.widget.ConstraintLayout>

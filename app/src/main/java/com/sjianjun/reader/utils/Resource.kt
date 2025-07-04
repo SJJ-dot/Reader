@@ -25,7 +25,7 @@ fun dpToPx(dp: Float): Float {
 inline val Int.dp2Px: Int
     get() = dpToPx(this.toFloat()).roundToInt()
 
-fun Int.color(context: Context?): Int {
+fun Int.color(context: Context? = App.app): Int {
     val ctx = context ?: App.app
     return ContextCompat.getColor(ctx, this)
 }

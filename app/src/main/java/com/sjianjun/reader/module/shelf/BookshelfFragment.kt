@@ -11,6 +11,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +25,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.databinding.BookShelfTitleBinding
 import com.sjianjun.reader.databinding.ItemBookListBinding
 import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment
@@ -31,8 +33,6 @@ import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.animFadeIn
-import com.sjianjun.reader.utils.animFadeOut
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.bundle
 import com.sjianjun.reader.utils.color
@@ -59,6 +59,7 @@ class BookshelfFragment : BaseFragment() {
     private val bookList = ConcurrentHashMap<String, Book>()
     private lateinit var adapter: Adapter
     private lateinit var bookShelfBinding: MainFragmentBookShelfBinding
+    private val bookShelfTitle = BookShelfTitle()
     private var welcomeDialog: Boolean = true
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -72,15 +73,54 @@ class BookshelfFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-        adapter = Adapter(this@BookshelfFragment)
-        bookShelfBinding.recycleView.adapter = adapter
-        initRefresh()
+        initView()
         initData()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
+        bookShelfTitle.destroyTileView()
+    }
+
+    private fun initView() {
+        adapter = Adapter(this@BookshelfFragment)
+        bookShelfBinding.recycleView.adapter = adapter
+        bookShelfBinding.rootRefresh.setOnRefreshListener {
+            launchIo {
+                val sourceMap = mutableMapOf<String, MutableList<Book>>()
+
+                bookList.values.forEach {
+                    val list = sourceMap.getOrPut(it.bookSourceId) { mutableListOf() }
+                    list.add(it)
+                }
+
+                sourceMap.map {
+                    async {
+                        val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
+                            js.id == it.key
+                        }
+                        val delay = script?.requestDelay ?: 1000L
+                        if (delay < 0) {
+                            it.value.map {
+                                async {
+                                    DataManager.reloadBookFromNet(it)
+                                }
+                            }.awaitAll()
+                        } else {
+                            it.value.apply { it.value.sortWith(bookComparator) }.forEach {
+                                DataManager.reloadBookFromNet(it)
+                                delay(delay)
+                            }
+                        }
+                    }
+                }.awaitAll()
+                withMain {
+                    bookShelfBinding.rootRefresh.isRefreshing = false
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
     }
 
     private fun welcome() {
@@ -105,8 +145,6 @@ class BookshelfFragment : BaseFragment() {
                 }
                 //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
                 bookList.clear()
-                val bookNum = it.size
-                bookShelfBinding.loading.max = bookNum
                 it.map { book ->
                     bookList[book.key] = book
                     async(Dispatchers.IO) {
@@ -145,69 +183,11 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
-
-    private fun initRefresh() {
-        bookShelfBinding.rootRefresh.setOnRefreshListener {
-            launchIo {
-                val sourceMap = mutableMapOf<String, MutableList<Book>>()
-
-                bookList.values.forEach {
-                    val list = sourceMap.getOrPut(it.bookSourceId) { mutableListOf() }
-                    list.add(it)
-                }
-
-                showProgressBar(SHOW_FLAG_REFRESH)
-                bookShelfBinding.loading.progress = 0
-                sourceMap.map {
-                    async {
-                        val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
-                            js.id == it.key
-                        }
-                        val delay = script?.requestDelay ?: 1000L
-                        if (delay < 0) {
-                            it.value.map {
-                                async {
-                                    DataManager.reloadBookFromNet(it)
-                                    bookShelfBinding.loading.progress += 1
-                                }
-                            }.awaitAll()
-                        } else {
-                            it.value.apply { it.value.sortWith(bookComparator) }.forEach {
-                                DataManager.reloadBookFromNet(it)
-                                bookShelfBinding.loading.progress += 1
-                                delay(delay)
-                            }
-                        }
-                    }
-                }.awaitAll()
-                withMain {
-                    hideProgressBar(SHOW_FLAG_REFRESH)
-                    bookShelfBinding.rootRefresh.isRefreshing = false
-                    adapter.notifyDataSetChanged()
-                }
-            }
-        }
-    }
-
-    private var showState = 0
-    private val SHOW_FLAG_REFRESH = 1
-    private suspend fun showProgressBar(flag: Int) = withMain {
-        if (showState == 0) {
-            bookShelfBinding.loading.animFadeIn()
-        }
-        showState = flag or SHOW_FLAG_REFRESH
-    }
-
-    private suspend fun hideProgressBar(flag: Int) = withMain {
-        showState = showState and flag.inv()
-        if (showState == 0) {
-            bookShelfBinding.loading.animFadeOut()
-        }
-    }
-
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_fragment_book_shelf_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
+        bookShelfTitle.initTileView(this)
+        bookShelfTitle.showSourceData(true)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

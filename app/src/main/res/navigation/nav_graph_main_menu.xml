@@ -41,4 +41,10 @@
         android:label="书城"
         tools:layout="@layout/fragment_book_city_page" />
 
+    <fragment
+        android:id="@+id/webShelfFragment"
+        android:name="com.sjianjun.reader.module.shelf.WebShelfFragment"
+        android:label="网页"
+        tools:layout="@layout/fragment_web_shelf" />
+
 </navigation>
