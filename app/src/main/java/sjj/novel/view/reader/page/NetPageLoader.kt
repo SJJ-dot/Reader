@@ -44,7 +44,7 @@ class NetPageLoader(pageView: PageView) : PageLoader(pageView) {
 
         if (mStatus == STATUS_LOADING) {
             // 如果当前章加载失败，加载当前章的内容
-            requestChapters(chapterPos, chapterPos + 1, chapterPos)
+            requestChapters(chapterPos, chapterPos + 2, chapterPos)
         }
         return isRight
     }
