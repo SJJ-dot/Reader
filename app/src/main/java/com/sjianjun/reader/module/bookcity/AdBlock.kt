@@ -98,14 +98,9 @@ class AdBlock(url: String?) {
         if (topHost.isBlank() || blacklist.contains(topHost) || whitelist.contains(topHost)) {
             return
         }
-        val host = url.toHttpUrlOrNull()?.host ?: return
-        if (host.isBlank() || hostList.contains(host) || blacklist.contains(host) || whitelist.contains(host)) {
-            return
-        }
         if (!hostList.contains(topHost)) {
             hostList.value?.add(HostStr(topHost))
         }
-        hostList.value?.add(HostStr(host))
         hostList.postValue(hostList.value)
     }
 }
