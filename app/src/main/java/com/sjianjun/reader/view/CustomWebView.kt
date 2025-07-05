@@ -44,6 +44,7 @@ class CustomWebView @JvmOverloads constructor(
     private var url: String? = null
     var adBlock: AdBlock? = null
     var openMenu: () -> Unit = {}
+    private var needClearHistory = false
     fun init(owner: LifecycleOwner, adBlock: AdBlock) {
         this.adBlock = adBlock
         webView = binding.webView
@@ -57,11 +58,8 @@ class CustomWebView @JvmOverloads constructor(
         this.url = url
         Log.i("loadUrl:${url} ")
         webView?.stopLoading()
-        if (clearHistory) {
-            Log.i("清除历史记录")
-            webView?.clearHistory()
-        }
         webView?.loadUrl(url)
+        needClearHistory = clearHistory
     }
 
     private fun initView() {
@@ -194,6 +192,15 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
+                if (needClearHistory) {
+                    needClearHistory = false
+                    webView?.post {
+                        Log.i("清除历史记录完成")
+                        webView.clearHistory()
+                        binding.backward.isEnabled = webView.canGoBack()
+                        binding.forward.isEnabled = webView.canGoForward()
+                    }
+                }
 
             }
 
