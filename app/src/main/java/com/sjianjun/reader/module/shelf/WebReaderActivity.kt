@@ -96,7 +96,7 @@ class WebReaderActivity : BaseActivity() {
             initCtrlBtn()
             initAdBlock()
             initWebView()
-            binding.webView.loadUrl(book.url)
+            binding.webView.loadUrl(book.lastUrl ?: book.url)
         }
     }
 
@@ -135,7 +135,7 @@ class WebReaderActivity : BaseActivity() {
             binding.drawerLayout.openDrawer(GravityCompat.END)
         }
         binding.home.click {
-            finish()
+            binding.webView.loadUrl(book.url)
         }
     }
 
@@ -285,7 +285,6 @@ class WebReaderActivity : BaseActivity() {
         webSettings.setBackForwardCacheEnabled()
         binding.webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
         binding.webView.isScrollbarFadingEnabled = false
-
         binding.webView.webViewClient = object : WebViewClient() {
 
 
@@ -314,7 +313,7 @@ class WebReaderActivity : BaseActivity() {
 
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                book.url = url ?: ""
+                book.lastUrl = url ?: ""
                 book.lastTitle = webView?.title ?: ""
                 book.updateTime = System.currentTimeMillis()
                 Log.i("onPageFinished: $url, title: ${webView?.title}")

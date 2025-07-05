@@ -49,7 +49,7 @@
                         android:background="?android:attr/selectableItemBackground"
                         android:padding="12dp"
                         android:scaleType="centerInside"
-                        android:src="@mipmap/ic_xue_xi"
+                        android:src="@drawable/browser_navigation_home"
                         app:layout_constraintEnd_toStartOf="@+id/backward"
                         app:layout_constraintStart_toStartOf="parent" />
 

@@ -19,6 +19,7 @@ class WebBook {
 
     //最近阅读页的地址
     var url: String = ""
+    var lastUrl: String? = null
 
     //手动输入的标题
     var title: String = ""
@@ -35,8 +36,9 @@ class WebBook {
         other as WebBook
 
         if (updateTime != other.updateTime) return false
-        if (id != other.id) return false
+        if (cover != other.cover) return false
         if (url != other.url) return false
+        if (lastUrl != other.lastUrl) return false
         if (title != other.title) return false
         if (lastTitle != other.lastTitle) return false
 
@@ -45,12 +47,12 @@ class WebBook {
 
     override fun hashCode(): Int {
         var result = updateTime.hashCode()
-        result = 31 * result + id.hashCode()
+        result = 31 * result + (cover?.hashCode() ?: 0)
         result = 31 * result + url.hashCode()
+        result = 31 * result + (lastUrl?.hashCode() ?: 0)
         result = 31 * result + title.hashCode()
         result = 31 * result + lastTitle.hashCode()
         return result
     }
-
 
 }
