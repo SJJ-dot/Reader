@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.shelf
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.Bundle
 import android.view.View
@@ -102,6 +101,10 @@ class WebReaderActivity : BaseActivity() {
     }
 
     private fun initCtrlBtn() {
+        setOnBackPressed {
+            finish()
+            true
+        }
         binding.refresh.click {
 
             if (binding.refresh.isSelected) {
