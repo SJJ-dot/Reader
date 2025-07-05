@@ -14,7 +14,7 @@ import java.io.File
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -93,6 +93,12 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     //添加字段WebBook lastTitle
                     db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `lastTitle` TEXT NOT NULL default ''")
+                }
+            })
+            .addMigrations(object : Migration(19, 20) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    //添加字段WebBook lastTitle
+                    db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `cover` TEXT")
                 }
             })
             .build()

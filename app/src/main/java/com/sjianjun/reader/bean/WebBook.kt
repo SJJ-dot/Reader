@@ -15,6 +15,8 @@ class WebBook {
             return field
         }
 
+    var cover: String? = null
+
     //最近阅读页的地址
     var url: String = ""
 

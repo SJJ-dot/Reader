@@ -14,6 +14,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -114,17 +115,20 @@ class WebShelfFragment : BaseFragment() {
                         this.title = title
                         this.url = url
                     }
-                    if (adapter.data.contains(webBook) == true) {
+                    if (adapter.data.contains(webBook)) {
                         toast("书籍已存在")
                         return@setPositiveButton
                     }
                     launch {
                         try {
-                            viewModel.insertWebBook(webBook)
-                            toast("书籍已添加")
+                            showSnackbar(binding!!.root, "正在导入...", Snackbar.LENGTH_INDEFINITE)
+                            viewModel.importWebBook(webBook)
+                            toast("导入成功")
                         } catch (e: Exception) {
-                            Log.e("添加书籍失败", e)
-                            toast("添加书籍失败: ${e.message ?: "未知错误"}")
+                            Log.e("导入书籍失败", e)
+                            toast("导入失败: ${e.message ?: "未知错误"}")
+                        } finally {
+                            dismissSnackbar()
                         }
                     }
                 }
@@ -164,12 +168,7 @@ class WebShelfFragment : BaseFragment() {
                 "最近阅读: 未阅读"
             }
             binding.lastUpdateTime.text = "更新时间: ${sdf.format(webBook.updateTime)}"
-            // 加载网站图标
-            // 获取网站图标 URL
-            val iconUrl = webBook.url.toHttpUrlOrNull()?.let { httpUrl ->
-                "${httpUrl.scheme}://${httpUrl.host}/favicon.ico"
-            }
-            binding.ivWebSite.glide(iconUrl)
+            binding.ivWebSite.glide(webBook.cover)
             binding.root.click {
                 onClickListener?.invoke(webBook)
             }

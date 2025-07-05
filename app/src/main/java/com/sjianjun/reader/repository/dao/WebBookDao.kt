@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WebBookDao {
-    @Query("SELECT * FROM WebBook")
+    @Query("SELECT * FROM WebBook ORDER BY updateTime DESC")
     fun getWebBook(): Flow<List<WebBook>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

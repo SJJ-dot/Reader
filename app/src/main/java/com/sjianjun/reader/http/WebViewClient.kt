@@ -41,6 +41,6 @@ object WebViewClient {
         }
         // 处理返回结果
 
-        return result
+        return result ?: ""
     }
 }
