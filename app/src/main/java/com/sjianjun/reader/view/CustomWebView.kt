@@ -188,9 +188,6 @@ class CustomWebView @JvmOverloads constructor(
 
             }
 
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            }
-
             override fun onPageFinished(webView: WebView?, url: String?) {
                 if (needClearHistory) {
                     needClearHistory = false
@@ -202,9 +199,6 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
 
-            }
-
-            override fun onLoadResource(view: WebView?, url: String?) {
             }
 
             override fun shouldInterceptRequest(

@@ -1,4 +1,5 @@
-package com.sjianjun.reader.module.reader.activity
+package com.sjianjun.reader.module.shelf
+
 
 import android.content.Context
 import android.content.Intent
@@ -16,6 +17,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,12 +25,14 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.adapter.BaseAdapter
-import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
+import com.sjianjun.reader.bean.WebBook
+import com.sjianjun.reader.databinding.ActivityWebReaderBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
@@ -36,24 +40,22 @@ import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.setBackForwardCacheEnabled
 import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.flow.firstOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
 
-class BrowserReaderActivity : BaseActivity() {
-    private val url by lazy { intent.getStringExtra(URL) ?: "" }
-    private val binding by lazy { ActivityBrowserReaderBinding.inflate(layoutInflater) }
-    private val adBlock by lazy { AdBlock(url) }
-
+class WebReaderActivity : BaseActivity() {
+    private val id by lazy { intent.getStringExtra(ID) ?: "" }
+    private val binding by lazy { ActivityWebReaderBinding.inflate(layoutInflater) }
+    private lateinit var adBlock: AdBlock
+    private lateinit var book: WebBook
+    private val viewModel: WebShelfViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (url.isEmpty()) {
-            Log.e("URL is empty, finish activity")
-            finish()
-            return
-        }
         enableEdgeToEdge()
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
@@ -61,10 +63,7 @@ class BrowserReaderActivity : BaseActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        initCtrlBtn()
-        initAdBlock()
-        initWebView()
-        binding.webView.loadUrl(url)
+        initData()
     }
 
     override fun onPause() {
@@ -82,6 +81,24 @@ class BrowserReaderActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         binding.webView.destroy()
+    }
+
+    private fun initData() {
+        launch {
+            val book = viewModel.getWebBookById(id).firstOrNull()
+            if (book == null) {
+                Log.w("WebBook not found for id: $id")
+                toast("书籍不存在")
+                return@launch
+            }
+            this@WebReaderActivity.book = book
+            adBlock = AdBlock(book.id)
+
+            initCtrlBtn()
+            initAdBlock()
+            initWebView()
+            binding.webView.loadUrl(book.url)
+        }
     }
 
     private fun initCtrlBtn() {
@@ -292,10 +309,15 @@ class BrowserReaderActivity : BaseActivity() {
 
             }
 
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            }
 
-            override fun onLoadResource(view: WebView?, url: String?) {
+            override fun onPageFinished(webView: WebView?, url: String?) {
+                book.url = url ?: ""
+                book.lastTitle = webView?.title ?: ""
+                book.updateTime = System.currentTimeMillis()
+                Log.i("onPageFinished: $url, title: ${webView?.title}")
+                launch {
+                    viewModel.insertWebBook(book)
+                }
             }
 
             override fun shouldInterceptRequest(
@@ -348,15 +370,11 @@ class BrowserReaderActivity : BaseActivity() {
     }
 
     companion object {
-        private const val URL = "url"
-        fun startActivity(ctx: Context, url: String) {
-            if (url.isEmpty()) {
-                Log.e("URL is empty, cannot start BrowserReaderActivity")
-                return
-            }
+        private const val ID = "ID"
+        fun startActivity(ctx: Context, id: String) {
             ctx.startActivity(
-                Intent(ctx, BrowserReaderActivity::class.java).apply {
-                    putExtra(URL, url)
+                Intent(ctx, WebReaderActivity::class.java).apply {
+                    putExtra(ID, id)
                 }
             )
         }

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <WebView
+                android:id="@+id/web_view"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toTopOf="@+id/browser_book_city_toolbar"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.core.widget.ContentLoadingProgressBar
+                android:id="@+id/search_refresh"
+                style="@style/ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:progress="50"
+                tools:visibility="visible" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/browser_book_city_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_gravity="bottom"
+                    android:clickable="true">
+
+                    <ImageView
+                        android:id="@+id/home"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@mipmap/ic_xue_xi"
+                        app:layout_constraintEnd_toStartOf="@+id/backward"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                    <ImageView
+                        android:id="@+id/backward"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:rotation="180"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/browser_navigation_forward"
+                        app:layout_constraintEnd_toStartOf="@+id/refresh"
+                        app:layout_constraintStart_toEndOf="@+id/home" />
+
+
+                    <ImageView
+                        android:id="@+id/refresh"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/browser_navigation_refresh"
+                        app:layout_constraintEnd_toStartOf="@+id/forward"
+                        app:layout_constraintStart_toEndOf="@+id/backward" />
+
+                    <ImageView
+                        android:id="@+id/forward"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/browser_navigation_forward"
+                        app:layout_constraintEnd_toStartOf="@+id/menu"
+                        app:layout_constraintStart_toEndOf="@+id/refresh" />
+
+                    <ImageView
+                        android:id="@+id/menu"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/browser_navigation_menu"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/forward" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.cardview.widget.CardView>
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 主内容视图 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/content_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@color/dn_background">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tab_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="未标记" />
+
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="白名单" />
+
+                <com.google.android.material.tabs.TabItem
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="黑名单" />
+            </com.google.android.material.tabs.TabLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:paddingBottom="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tab_layout" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.drawerlayout.widget.DrawerLayout>
+</FrameLayout>

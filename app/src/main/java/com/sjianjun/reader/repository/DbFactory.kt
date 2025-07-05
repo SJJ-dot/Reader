@@ -9,15 +9,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.*
 import com.sjianjun.reader.repository.dao.Dao
+import com.sjianjun.reader.repository.dao.WebBookDao
 import java.io.File
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class],
-    version = 17,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class],
+    version = 19,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
     abstract fun dao(): Dao
+    abstract fun webBookDao(): WebBookDao
 }
 
 object DbFactory {
@@ -79,6 +81,18 @@ object DbFactory {
                     )
                     db.execSQL("DROP TABLE ChapterContent")
                     db.execSQL("ALTER TABLE ChapterContent_new RENAME TO ChapterContent")
+                }
+            })
+            .addMigrations(object : Migration(17, 18) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    //添加表
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `WebBook` (`id` TEXT NOT NULL, `url` TEXT NOT NULL, `title` TEXT NOT NULL, `updateTime` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                }
+            })
+            .addMigrations(object : Migration(18, 19) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    //添加字段WebBook lastTitle
+                    db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `lastTitle` TEXT NOT NULL default ''")
                 }
             })
             .build()
