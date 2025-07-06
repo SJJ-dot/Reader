@@ -133,14 +133,22 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             R.id.source_import -> {
                 val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
                 bindingDialog.editView.apply {
-                    val urlsNet = globalConfig.bookSourceImportUrlsNet
-                    if (urlsNet.isEmpty()) {
-                        urlsNet.add(URL_BOOK_SOURCE_DEF)
+                    val urls = mutableListOf<String>()
+
+                    val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
+                    urls.addAll(bookSourceListUser)
+
+                    val urlDef = globalConfig.bookSourceDef
+                    if (urlDef.isNotBlank() || urls.isEmpty()) {
+                        urls.add(URL_BOOK_SOURCE_DEF)
                     }
-                    setFilterValues(urlsNet)
+                    setFilterValues(urls)
                     delCallBack = {
-                        if (urlsNet.remove(it)) {
-                            globalConfig.bookSourceImportUrlsNet = urlsNet
+                        if (it == urlDef) {
+                            globalConfig.bookSourceDef = ""
+                        }
+                        if (bookSourceListUser.remove(it)) {
+                            globalConfig.bookSourceListUser = bookSourceListUser
                         }
                     }
                 }
@@ -161,10 +169,15 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                 if (import > 0) {
                                     initData()
                                     showSnackbar(binding!!.recycleView, "书源导入成功")
-                                    val urlsNet = globalConfig.bookSourceImportUrlsNet
-                                    urlsNet.remove(url)
-                                    urlsNet.add(0, url)
-                                    globalConfig.bookSourceImportUrlsNet = urlsNet
+                                    if (url == URL_BOOK_SOURCE_DEF) {
+                                        globalConfig.bookSourceDef = url
+                                    } else {
+                                        val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
+                                        if (!bookSourceListUser.contains(url)) {
+                                            bookSourceListUser.add(0, url)
+                                            globalConfig.bookSourceListUser = bookSourceListUser
+                                        }
+                                    }
                                 } else {
                                     showSnackbar(binding!!.recycleView, "书源导入失败")
                                 }

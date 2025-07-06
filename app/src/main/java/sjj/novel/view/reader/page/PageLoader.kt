@@ -946,6 +946,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     fun reloadPages() {
         dealLoadPageList(this.chapterPos)
         preLoadNextChapter()
+        // 重新设置文章指针的位置
+        mCurPage = getCurPage(mCurPage?.position ?: 0)
         mPageView!!.drawCurPage(false)
     }
 
@@ -1248,7 +1250,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         var pos = pos
         Log.i("获取书页：$pos")
         val list = this.curPageList
-        if (list == null || list.isEmpty()) {
+        if (list.isNullOrEmpty()) {
             Log.e("当前页列表为空")
             return TxtPage()
         }

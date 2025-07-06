@@ -174,12 +174,14 @@ class BookReaderActivity : BaseActivity() {
                 mPageLoader.pageStatus = STATUS_LOADING
 
                 mPageLoader.curChapter?.let { curChapter ->
-                    val txtChapter =
-                        book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
+                    val chapter = book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
                     toast("正在加载中，请稍候……")
-                    val chapter = DataManager.getChapterContent(txtChapter, 1)
-                    curChapter.content = chapter.content?.firstOrNull()?.format().toString()
-                    curChapter.title = chapter.title
+                    getChapterContent(chapter, 1)
+                    curChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                    if (chapter.content?.firstOrNull()?.contentError == true) {
+                        curChapter.title = chapter.title + "(章节内容错误)"
+                    }
+                    Log.e("加载完成 ${curChapter.chapterIndex} ${curChapter.title}")
                     mPageLoader.reloadPages()
                     toast("加载完成")
                     getChapterContentPage(curChapter, chapter)
@@ -448,7 +450,7 @@ class BookReaderActivity : BaseActivity() {
      * 加载 上一章 当前章 下一章
      */
     private suspend fun getChapterContent(
-        chapter: Chapter?
+        chapter: Chapter?, force: Int = 0
     ) = withIo {
         chapter ?: return@withIo false
 
@@ -456,7 +458,7 @@ class BookReaderActivity : BaseActivity() {
             delay(100)
         }
 
-        if (chapter.isLoaded && chapter.content != null) {
+        if (chapter.isLoaded && chapter.content != null && force != 1) {
             return@withIo false
         }
 
@@ -466,7 +468,7 @@ class BookReaderActivity : BaseActivity() {
 
         try {
             //force
-            DataManager.getChapterContent(chapter)
+            DataManager.getChapterContent(chapter, force)
         } finally {
             chapter.isLoading.set(false)
         }

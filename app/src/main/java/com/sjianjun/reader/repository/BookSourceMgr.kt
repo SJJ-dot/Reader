@@ -3,13 +3,12 @@ package com.sjianjun.reader.repository
 import android.util.Base64
 import android.widget.Toast
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -87,7 +86,12 @@ object BookSourceMgr {
     }
 
     suspend fun autoImport() = withIo {
-        import(globalConfig.bookSourceImportUrlsNet)
+        val list = globalConfig.bookSourceListUser.toMutableList()
+        val def = globalConfig.bookSourceDef
+        if (def.isNotBlank() || list.isEmpty()){
+            list.add(URL_BOOK_SOURCE_DEF)
+        }
+        import(list)
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")

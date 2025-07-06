@@ -67,10 +67,9 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme by lazy { strLivedata("lastLightThemeStr", PageStyle.defDay.id) }
 
-    var bookSourceImportUrlsNet by dataPref(
-        "bookSourceImportUrlsNet",
-        mutableListOf(URL_BOOK_SOURCE_DEF)
-    )
+    var bookSourceListUser by dataPref("bookSourceListUser", listOf<String>())
+
+    var bookSourceDef by dataPref("bookSourceDef", URL_BOOK_SOURCE_DEF)
 
     var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
     var webdavUsername by strPref("webdavUsername", null)
