@@ -1,8 +1,12 @@
 ## 📖📖自用网络小说阅读器
 ## 如果喜欢就动动小手点个star吧😁😁😁😁
 
-| <img src="img/1.jpg" width = "180" height = "360"/>        | <img src="img/2.jpg" width = "180" height = "360"/>   |
-| - | - |
+| <img src="img/01.jpg" width = "180" height = "360"/> | <img src="img/02.jpg" width = "180" height = "360"/> |
+|------------------------------------------------------|------------------------------------------------------|
+| <img src="img/3.jpg" width = "180" height = "360"/>  | <img src="img/4.jpg" width = "180" height = "360"/>  |
+| <img src="img/5.jpg" width = "180" height = "360"/>  | <img src="img/6.jpg" width = "180" height = "360"/>  |
+| <img src="img/7.jpg" width = "180" height = "360"/>  | <img src="img/8.jpg" width = "180" height = "360"/>  |
+| <img src="img/9.jpg" width = "180" height = "360"/>  | <img src="img/10.jpg" width = "180" height = "360"/> |
 
 [历史版本更新说明](CHANGELOG.md)
 
