@@ -11,7 +11,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -25,7 +24,6 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.databinding.BookShelfTitleBinding
 import com.sjianjun.reader.databinding.ItemBookListBinding
 import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment

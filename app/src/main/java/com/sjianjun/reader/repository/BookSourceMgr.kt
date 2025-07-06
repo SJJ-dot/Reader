@@ -8,7 +8,6 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.URL_BOOK_SOURCE_URL_LIST
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
@@ -87,26 +86,7 @@ object BookSourceMgr {
         dao.insertBookSource(listOf(js))
     }
 
-    private suspend fun fetchSourceUrl() = withIo {
-        try {
-            val list = gson.fromJson<List<String>>(http.get(URL_BOOK_SOURCE_URL_LIST).body)
-            if (!list.isNullOrEmpty()) {
-                val list1 = globalConfig.bookSourceImportUrlsNet.toMutableList()
-                list.forEach {
-                    if (!list1.contains(it.trim())) {
-                        list1.add(it.trim())
-                    }
-                }
-                globalConfig.bookSourceImportUrlsNet = list1
-            }
-            Log.i("书源地址导入成功")
-        } catch (e: Exception) {
-            Log.e("书源地址导入失败", e)
-        }
-    }
-
     suspend fun autoImport() = withIo {
-        fetchSourceUrl()
         import(globalConfig.bookSourceImportUrlsNet)
     }
 
