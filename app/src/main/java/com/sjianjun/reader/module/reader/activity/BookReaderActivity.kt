@@ -159,12 +159,15 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.BROWSER_OPEN) {
             //使用浏览器打开书籍链接
             val chapterIdx = mPageLoader.curChapter?.chapterIndex ?: -1
-            val txtChapter = book?.chapterList?.getOrNull(chapterIdx)
-            if (txtChapter == null) {
-                toast("当前章节获取失败")
+            var url = book?.chapterList?.getOrNull(chapterIdx)?.url
+            if (url == null) {
+                url = book?.url
+            }
+            if (url.isNullOrEmpty()) {
+                toast("书籍链接为空")
                 return@observe
             }
-            BrowserReaderActivity.startActivity(this, txtChapter.url)
+            BrowserReaderActivity.startActivity(this, url)
         }
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {
