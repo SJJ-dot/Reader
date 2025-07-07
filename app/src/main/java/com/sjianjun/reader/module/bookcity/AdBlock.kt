@@ -30,7 +30,7 @@ fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boo
 }
 
 class AdBlock(url: String?) {
-    private val config = AppConfig("BookCity-" + (url?.toHttpUrlOrNull()?.topPrivateDomain() ?: url?.toHttpUrlOrNull()?.host ?: url))
+    private val config = AppConfig("ad-" + (url?.toHttpUrlOrNull()?.topPrivateDomain() ?: url?.toHttpUrlOrNull()?.host ?: url))
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
