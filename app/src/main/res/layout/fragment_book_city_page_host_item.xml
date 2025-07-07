@@ -46,21 +46,6 @@
             android:textColor="@color/mdr_white"
             android:textSize="14dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btn_mark_white"
-            app:layout_constraintTop_toTopOf="parent"
-            app:stv_corner="5dp"
-            app:stv_solid="@color/colorPrimary" />
-
-        <com.coorchice.library.SuperTextView
-            android:id="@+id/btn_mark_white"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:padding="5dp"
-            android:text="+白名单"
-            android:textColor="@color/mdr_white"
-            android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:stv_corner="5dp"

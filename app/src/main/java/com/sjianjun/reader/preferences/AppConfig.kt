@@ -95,6 +95,5 @@ class AppConfig(val name: String) :
 
     //本次启动之后书城访问的所有的URL
     var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
-    var hostWhitelist by dataPref("hostWhitelistHostStr", mutableListOf<HostStr>())
 }
 

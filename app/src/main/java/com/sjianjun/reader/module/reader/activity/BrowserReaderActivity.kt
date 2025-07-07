@@ -145,7 +145,6 @@ class BrowserReaderActivity : BaseActivity() {
 
     private fun initDrawer() {
         val hostListAdapter = HostListAdapter(adBlock)
-        val whiteListAdapter = WhiteListAdapter(adBlock)
         val blackListAdapter = BlackListAdapter(adBlock)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = hostListAdapter
@@ -154,8 +153,7 @@ class BrowserReaderActivity : BaseActivity() {
                 Log.i("tab:${tab?.position}")
                 binding.recyclerView.adapter = when (tab?.position) {
                     0 -> hostListAdapter
-                    1 -> whiteListAdapter
-                    2 -> blackListAdapter
+                    1 -> blackListAdapter
                     else -> hostListAdapter
                 }
             }
@@ -166,20 +164,17 @@ class BrowserReaderActivity : BaseActivity() {
             override fun onTabReselected(tab: TabLayout.Tab?) {
             }
         })
-        initAdBlockList(hostListAdapter, whiteListAdapter, blackListAdapter)
+        initAdBlockList(hostListAdapter, blackListAdapter)
     }
 
     private fun initAdBlockList(
         hostListAdapter: HostListAdapter,
-        whiteListAdapter: WhiteListAdapter,
         blackListAdapter: BlackListAdapter
     ) {
         hostListAdapter.adBlock.hostList.removeObservers(this)
-        hostListAdapter.adBlock.whitelist.removeObservers(this)
         hostListAdapter.adBlock.blacklist.removeObservers(this)
 
         hostListAdapter.adBlock = adBlock
-        whiteListAdapter.adBlock = adBlock
         blackListAdapter.adBlock = adBlock
         adBlock.hostList.observe(this) {
             hostListAdapter.data = it
@@ -189,10 +184,6 @@ class BrowserReaderActivity : BaseActivity() {
             blackListAdapter.data = it
             blackListAdapter.notifyDataSetChanged()
         }
-        adBlock.whitelist.observe(this) {
-            whiteListAdapter.data = it
-            whiteListAdapter.notifyDataSetChanged()
-        }
     }
 
     class HostListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
@@ -200,10 +191,6 @@ class BrowserReaderActivity : BaseActivity() {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position].host
             binding.tvTime.text = data[position].time
-            binding.btnMarkWhite.text = "+白名单"
-            binding.btnMarkWhite.click {
-                adBlock.addWhiteHost(data[position])
-            }
             binding.btnMarkBlack.text = "+黑名单"
             binding.btnMarkBlack.click {
                 adBlock.addBlackHost(data[position])
@@ -211,26 +198,11 @@ class BrowserReaderActivity : BaseActivity() {
         }
     }
 
-    class WhiteListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position].host
-            binding.tvTime.text = data[position].time
-            binding.btnMarkBlack.gone()
-            binding.btnMarkWhite.text = "移除白名单"
-            binding.btnMarkWhite.click {
-                adBlock.removeWhiteHost(data[position])
-            }
-        }
-
-    }
-
     class BlackListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             binding.tvHost.text = data[position].host
             binding.tvTime.text = data[position].time
-            binding.btnMarkWhite.gone()
             binding.btnMarkBlack.text = "移除黑名单"
             binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])

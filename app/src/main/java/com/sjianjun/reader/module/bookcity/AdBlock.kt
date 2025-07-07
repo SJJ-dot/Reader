@@ -33,14 +33,12 @@ class AdBlock(url: String?) {
     private val config = AppConfig("BookCity-" + (url?.toHttpUrlOrNull()?.topPrivateDomain() ?: url?.toHttpUrlOrNull()?.host ?: url))
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
-    val whitelist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
     // 记录所有的url
     val hostList = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
     init {
         blacklist.postValue(CopyOnWriteArrayList(config.hostBlacklist))
-        whitelist.postValue(CopyOnWriteArrayList(config.hostWhitelist))
     }
 
     fun addBlackHost(host: HostStr) {
@@ -68,39 +66,14 @@ class AdBlock(url: String?) {
         hostList.postValue(mutableList)
     }
 
-    fun addWhiteHost(host: HostStr) {
-        if (whitelist.value?.contains(host) == true) {
-            return
-        }
-        whitelist.value?.add(host)
-        whitelist.postValue(whitelist.value)
-        config.hostWhitelist = whitelist.value ?: mutableListOf()
-
-        val mutableList = hostList.value as CopyOnWriteArrayList
-        mutableList.removeAll { it.host.endsWith(host.host) }
-        hostList.postValue(mutableList)
-    }
-
-    fun removeWhiteHost(host: HostStr) {
-        val list = whitelist.value as CopyOnWriteArrayList
-        list.remove(host)
-        whitelist.postValue(list)
-        config.hostWhitelist = whitelist.value ?: mutableListOf()
-
-        val mutableList = hostList.value as CopyOnWriteArrayList
-        mutableList.add(host)
-        mutableList.sortBy { it.time }
-        hostList.postValue(mutableList)
-    }
-
     fun addUrl(url: String) {
         val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        if (topHost.isBlank() || blacklist.contains(topHost) || whitelist.contains(topHost)) {
+        if (topHost.isBlank() || blacklist.contains(topHost)) {
             return
         }
         if (!hostList.contains(topHost)) {
             hostList.value?.add(HostStr(topHost))
+            hostList.postValue(hostList.value)
         }
-        hostList.postValue(hostList.value)
     }
 }
