@@ -2,13 +2,13 @@ package com.sjianjun.reader.module.bookcity
 
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.preferences.AppConfig
-import com.sjianjun.reader.utils.md5
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import sjj.alog.Log
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 
-class HostStr(val host: String) {
+class HostStr(val host: String, var type: List<String>) {
     val time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -71,8 +71,15 @@ class AdBlock(url: String?) {
         if (topHost.isBlank() || blacklist.contains(topHost)) {
             return
         }
-        if (!hostList.contains(topHost)) {
-            hostList.value?.add(HostStr(topHost))
+        val type = url.split("?")[0].split("/").last().split(".").last()
+        var hostStr = hostList.value?.firstOrNull { it.host == topHost }
+        if (hostStr == null) {
+            hostStr = HostStr(topHost, listOf())
+            hostList.value?.add(hostStr)
+            hostList.postValue(hostList.value)
+        }
+        if (type.isNotBlank() && type !in hostStr.type) {
+            hostStr.type = hostStr.type.toMutableList().apply { add(type) }
             hostList.postValue(hostList.value)
         }
     }

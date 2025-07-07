@@ -205,7 +205,7 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                adBlock?.addUrl(request.url.toString())
+
                 if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
                         request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
                     )
@@ -217,6 +217,7 @@ class CustomWebView @JvmOverloads constructor(
                         ByteArrayInputStream("".toByteArray())
                     )
                 }
+                adBlock?.addUrl(request.url.toString())
                 return super.shouldInterceptRequest(view, request)
             }
 

@@ -19,3 +19,18 @@ fun String?.format(indent: Boolean = false): CharSequence {
     }
     return sb.toString().trimEnd()
 }
+
+fun String.htmlToSpanned(): CharSequence {
+    return Html.fromHtml(this, Html.FROM_HTML_MODE_COMPACT)
+}
+
+fun colorText(text: String, color: String): String {
+    // color 支持 "#RRGGBB" 或 "red" 这类格式
+    return "<font color=\"$color\">$text</font>"
+}
+
+fun colorText(text: String, color: Int): String {
+    // 将颜色转换为十六进制字符串
+    val hexColor = String.format("#%06X", 0xFFFFFF and color)
+    return colorText(text, hexColor)
+}

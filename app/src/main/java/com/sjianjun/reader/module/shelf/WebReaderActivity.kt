@@ -36,7 +36,10 @@ import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
+import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.setBackForwardCacheEnabled
 import com.sjianjun.reader.utils.setDarkening
 import com.sjianjun.reader.utils.toast
@@ -209,8 +212,10 @@ class WebReaderActivity : BaseActivity() {
     class HostListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position].host
-            binding.tvTime.text = data[position].time
+            val host = data[position]
+            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
+            binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
+            binding.tvTime.text = host.time
             binding.btnMarkBlack.text = "+黑名单"
             binding.btnMarkBlack.click {
                 adBlock.addBlackHost(data[position])
@@ -221,9 +226,11 @@ class WebReaderActivity : BaseActivity() {
     class BlackListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position].host
-            binding.tvTime.text = data[position].time
-            binding.btnMarkBlack.text = "移除黑名单"
+            val host = data[position]
+            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
+            binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
+            binding.tvTime.text = host.time
+            binding.btnMarkBlack.text = "-移除"
             binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])
             }
@@ -298,7 +305,6 @@ class WebReaderActivity : BaseActivity() {
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                adBlock?.addUrl(request.url.toString())
                 if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
                         request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
                     )
@@ -310,6 +316,7 @@ class WebReaderActivity : BaseActivity() {
                         ByteArrayInputStream("".toByteArray())
                     )
                 }
+                adBlock.addUrl(request.url.toString())
                 return super.shouldInterceptRequest(view, request)
             }
 
