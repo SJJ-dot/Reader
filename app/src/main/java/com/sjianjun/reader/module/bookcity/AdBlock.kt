@@ -79,7 +79,7 @@ class AdBlock(url: String?) {
             hostList.postValue(hostList.value)
         }
         if (type.isNotBlank() && type !in hostStr.type) {
-            hostStr.type = hostStr.type.toMutableList().apply { add(type) }
+            hostStr.type = hostStr.type.toMutableList().apply { add(type) }.sortedBy { it.length }
             hostList.postValue(hostList.value)
         }
     }
