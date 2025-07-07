@@ -104,10 +104,6 @@ class WebReaderActivity : BaseActivity() {
     }
 
     private fun initCtrlBtn() {
-        setOnBackPressed {
-            finish()
-            true
-        }
         binding.refresh.click {
 
             if (binding.refresh.isSelected) {
@@ -156,13 +152,10 @@ class WebReaderActivity : BaseActivity() {
         setOnBackPressed {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
-                true
-            } else if (binding.webView.canGoBack()) {
-                binding.webView.goBack()
-                true
             } else {
-                false
+                finish()
             }
+            true
         }
     }
 
@@ -209,11 +202,14 @@ class WebReaderActivity : BaseActivity() {
         }
     }
 
-    class HostListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+    class HostListAdapter(var adBlock: AdBlock) :
+        BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             val host = data[position]
-            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
+            val type = host.type.joinToString(
+                ",",
+                transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
             binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
             binding.tvTime.text = host.time
             binding.btnMarkBlack.text = "+黑名单"
@@ -223,11 +219,14 @@ class WebReaderActivity : BaseActivity() {
         }
     }
 
-    class BlackListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+    class BlackListAdapter(var adBlock: AdBlock) :
+        BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             val host = data[position]
-            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
+            val type = host.type.joinToString(
+                ",",
+                transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
             binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
             binding.tvTime.text = host.time
             binding.btnMarkBlack.text = "-移除"

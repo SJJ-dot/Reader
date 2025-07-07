@@ -118,7 +118,7 @@ class BrowserReaderActivity : BaseActivity() {
             binding.drawerLayout.openDrawer(GravityCompat.END)
         }
         binding.home.click {
-            finish()
+            binding.webView.loadUrl(url)
         }
     }
 
@@ -136,13 +136,10 @@ class BrowserReaderActivity : BaseActivity() {
         setOnBackPressed {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
-                true
-            } else if (binding.webView.canGoBack()) {
-                binding.webView.goBack()
-                true
             } else {
-                false
+                finish()
             }
+            true
         }
     }
 

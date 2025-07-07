@@ -491,10 +491,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     val curChapter: TxtChapter?
         get() {
             Log.i("getCurChapter mCurChapterPos:" + this.chapterPos)
-            if (this.chapterCategory == null) {
-                return null
-            }
-            return if (chapterCategory!!.size > this.chapterPos) chapterCategory!!.get(this.chapterPos) else null
+            return chapterCategory?.getOrNull(chapterPos)
         }
 
     val marginHeight: Int

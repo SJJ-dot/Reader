@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.TypedValue
 import androidx.appcompat.widget.AppCompatTextView
+import sjj.alog.Log
+import kotlin.math.max
 
 
 class AutofitTextView @JvmOverloads constructor(
@@ -27,7 +29,6 @@ class AutofitTextView @JvmOverloads constructor(
         // setGravity(Gravity.CENTER);
         // //如果不调用ondraw，另外画text的话当setSingleLine（true）和setGravity（Gravity。center）同时设置时textView中的内容无法正常显示
     }
-
     /**
      * Re size the font so the specified text fits in the text box * assuming
      * the text box is the specified width.
@@ -42,8 +43,12 @@ class AutofitTextView @JvmOverloads constructor(
      * @param textHeight
      * textView控件的高度
      */
-    private fun refitText(text: String, textWidth: Int, textHeight: Int) {
+    private fun refitText(text: String, width: Int) {
+        var textWidth = width
         if (textWidth > 0) {
+            if (maxWidth > 0 && maxWidth != Int.MAX_VALUE) {
+                textWidth = max(maxWidth, textWidth)
+            }
             // 得到textView中显示文本部分的长度
             val availableWidth = textWidth - paddingLeft - paddingRight
             var maxSize = maxTextSize
@@ -87,13 +92,13 @@ class AutofitTextView @JvmOverloads constructor(
     }
 
     override fun onTextChanged(text: CharSequence, start: Int, before: Int, after: Int) {
-        refitText(text.toString(), width, height)
+        refitText(text.toString(), width)
         super.onTextChanged(text, start, before, after)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         if (w != oldw) {
-            refitText(text.toString(), w, h)
+            refitText(text.toString(), w)
         }
         super.onSizeChanged(w, h, oldw, oldh)
     }
