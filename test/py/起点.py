@@ -74,6 +74,7 @@ def getDetails(book_url):
     info["intro"] = soup.select("meta[property='og:description']")[0].get("content")
     # 封面
     info["cover"] = soup.select("meta[property='og:image']")[0].get("content")
+    info["cover"] = urljoin(book_url, info["cover"])+".webp"
     # 章节列表
     info["chapterList"] = []
     log("加载章节目录")
@@ -112,3 +113,6 @@ def getChapterContent(chapter_url):
     return content
 
 
+if __name__ == '__main__':
+    res = getDetails("https://m.qidian.com/book/1040451309/")
+    log(res)
