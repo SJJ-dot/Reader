@@ -72,7 +72,7 @@ class BookCityPageFragment : BaseFragment() {
                     true
                 } else {
                     if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("再按一次退出")
+                        toast("双击退出")
                         lastTime = System.currentTimeMillis()
                         true
                     } else {
