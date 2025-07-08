@@ -47,6 +47,7 @@ def getDetails(url):
         "title": soup.select_one(".booktxt h1").text.strip(),
         "author": soup.select_one(".booktxt a").text.split("者：")[1].strip(),
         "intro": soup.select_one(".des").text.strip(),
+        "cover": urljoin(url, soup.select(".bookdetail img")[0].attrs["src"]),
         "chapterList": []
     }
 
@@ -84,3 +85,6 @@ def getChapterContent(url):
     return content
 
 
+if __name__ == '__main__':
+    details = getDetails("https://www.bvquge.com/736")
+    log(details)
