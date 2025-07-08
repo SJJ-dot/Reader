@@ -15,6 +15,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import sjj.alog.Log
+import java.util.UUID
 import java.util.zip.GZIPInputStream
 
 object BookSourceMgr {
@@ -88,7 +89,7 @@ object BookSourceMgr {
     suspend fun autoImport() = withIo {
         val list = globalConfig.bookSourceListUser.toMutableList()
         val def = globalConfig.bookSourceDef
-        if (def.isNotBlank() || list.isEmpty()){
+        if (def.isNotBlank() || list.isEmpty()) {
             list.add(URL_BOOK_SOURCE_DEF)
         }
         import(list)
@@ -100,7 +101,9 @@ object BookSourceMgr {
         val sources = urls.map { url ->
             async {
                 try {
-                    var body = http.get(url).body
+                    val header = mapOf("Cache-Control" to "no-cache", "Pragma" to "no-cache")
+                    val query = mapOf("_" to System.currentTimeMillis().toString())
+                    var body = http.get(url, queryMap = query, header = header).body
                     if (url.endsWith("gzip")) {
                         body = GZIPInputStream(
                             Base64.decode(body, Base64.NO_WRAP).inputStream()
