@@ -18,7 +18,7 @@ object BookMgr {
     suspend fun reloadBookFromNet(book: Book?) = withIo {
         book ?: return@withIo
         try {
-            val script = book.bookSource ?: dao.getBookSourceById(book.bookSourceId).firstOrNull()
+            val script = dao.getBookSourceById(book.bookSourceId).firstOrNull()
             ?: throw MessageException("未找到对应书籍书源")
             book.isLoading = true
             dao.updateBook(book)

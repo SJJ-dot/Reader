@@ -4,7 +4,6 @@ import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
@@ -199,11 +198,10 @@ object DataManager {
         dao.saveSearchResult(searchResult.toBookList())
     }
 
-    suspend fun reloadBookFromNet(book: Book?, javaScript: BookSource? = null) = withIo {
+    suspend fun reloadBookFromNet(book: Book?) = withIo {
 
         book ?: return@withIo
-        val script =
-            javaScript ?: book.bookSource ?: dao.getBookSourceById(book.bookSourceId).firstOrNull()
+        val script = dao.getBookSourceById(book.bookSourceId).firstOrNull()
         try {
             if (script == null) {
                 throw MessageException("未找到对应书籍书源")
