@@ -16,9 +16,9 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceMgr
-import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.WebDavMgr
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.view.click
 
@@ -42,7 +42,7 @@ class MainActivity : BaseActivity() {
         launchIo {
             launchIo { checkUpdate(this@MainActivity, false) }
             launchIo {
-                BookSourceMgr.autoImport()
+                BookSourceUseCase.autoImport()
             }
 //            com.sjianjun.reader.test.SourceTest.test()
         }

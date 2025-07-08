@@ -1,18 +1,18 @@
-package com.sjianjun.reader.repository
+package com.sjianjun.reader.utils
 
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.fromJson
-import com.sjianjun.reader.utils.gson
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.repository.DbFactory
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 
@@ -118,7 +118,7 @@ object WebDavMgr {
         return@withIo upload
     }
 
-    private suspend fun pull(): Result<Unit> = kotlin.runCatching {
+    private suspend fun pull(): Result<Unit> = runCatching {
         if (!globalConfig.webdavHasCfg) {
             return Result.failure(Exception("没有配置webDav账号信息"))
         }

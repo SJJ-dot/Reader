@@ -7,8 +7,19 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sjianjun.reader.App
-import com.sjianjun.reader.bean.*
-import com.sjianjun.reader.repository.dao.Dao
+import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ChapterContent
+import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.bean.SearchHistory
+import com.sjianjun.reader.bean.WebBook
+import com.sjianjun.reader.repository.dao.BookDao
+import com.sjianjun.reader.repository.dao.BookSourceDao
+import com.sjianjun.reader.repository.dao.ChapterContentDao
+import com.sjianjun.reader.repository.dao.ChapterDao
+import com.sjianjun.reader.repository.dao.ReadingRecordDao
+import com.sjianjun.reader.repository.dao.SearchHistoryDao
 import com.sjianjun.reader.repository.dao.WebBookDao
 import java.io.File
 
@@ -18,7 +29,12 @@ import java.io.File
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
-    abstract fun dao(): Dao
+    abstract fun bookDao(): BookDao
+    abstract fun searchHistoryDao(): SearchHistoryDao
+    abstract fun chapterDao(): ChapterDao
+    abstract fun chapterContentDao(): ChapterContentDao
+    abstract fun readingRecordDao(): ReadingRecordDao
+    abstract fun bookSourceDao(): BookSourceDao
     abstract fun webBookDao(): WebBookDao
 }
 

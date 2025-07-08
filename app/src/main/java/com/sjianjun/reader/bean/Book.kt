@@ -20,13 +20,13 @@ class Book {
     @JvmField
     var url: String = ""
 
-    /**
-     * 书籍来源[BookSource.source]
-     */
-    @Ignore
-    @Expose(serialize = false)
-    @Deprecated("没用了这个属性")
-    var source: String = ""
+//    /**
+//     * 书籍来源[BookSource.source]
+//     */
+//    @Ignore
+//    @Expose(serialize = false)
+//    @Deprecated("没用了这个属性")
+//    var source: String = ""
     @JvmField
     var bookSourceId: String = ""
 
@@ -86,6 +86,13 @@ class Book {
     @Ignore
     @Expose(serialize = false)
     var bookSource: BookSource? = null
+
+    /**
+     * 有多少个书源包含本书
+     */
+    @Ignore
+    @Expose(serialize = false)
+    var bookSourceCount = 0
 
     constructor()
 

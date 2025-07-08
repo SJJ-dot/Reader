@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -16,7 +17,6 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
-import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.isLoading
@@ -25,15 +25,9 @@ import kotlinx.coroutines.launch
 
 @Suppress("UNCHECKED_CAST")
 class BookSourceListFragment : BaseFragment() {
+    private val bookTitle = requireArguments().getString(BOOK_TITLE)
     var binding: MainFragmentBookSourceListBinding? = null
-    private val vm by lazy {
-        ViewModelProvider(this, object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val bookTitle = requireArguments().getString(BOOK_TITLE)!!
-                return BookSourceListViewModel(bookTitle) as T
-            }
-        }).get(BookSourceListViewModel::class.java)
-    }
+    private val vm by viewModels<BookSourceListViewModel>()
 
     private val adapter by lazy { BookListAdapter(this) }
 
@@ -101,7 +95,7 @@ class BookSourceListFragment : BaseFragment() {
 
                 click {
                     fragment.launch {
-                        DataManager.changeReadingRecordBookSource(book)
+                        fragment.vm.changeReadingRecordBookSource(book)
                         fragment.dismissAllowingStateLoss()
                     }
 
@@ -112,7 +106,7 @@ class BookSourceListFragment : BaseFragment() {
                         .setMessage("确定要删除《${book.title}》吗?")
                         .setPositiveButton("删除") { _, _ ->
                             fragment.launch {
-                                val success = DataManager.deleteBookById(book)
+                                val success = fragment.vm.deleteBookById(book)
                                 if (!success) {
                                     toast("删除失败")
                                 } else {

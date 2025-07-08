@@ -11,7 +11,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.WebDavMgr
+import com.sjianjun.reader.utils.WebDavMgr
 import com.sjianjun.reader.utils.HttpServiceHelper
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click

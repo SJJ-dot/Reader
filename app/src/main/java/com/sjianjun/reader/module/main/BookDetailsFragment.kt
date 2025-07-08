@@ -1,29 +1,39 @@
 package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
-import android.view.*
+import android.view.Gravity
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import androidx.core.view.GravityCompat
+import androidx.fragment.app.viewModels
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.*
+import com.sjianjun.reader.BOOK_ID
+import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.BaseAsyncFragment
+import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
-import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.repository.BookSourceMgr
-import com.sjianjun.reader.repository.DataManager
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.dp2Px
+import com.sjianjun.reader.utils.format
+import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.hide
+import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 
 @Suppress("EXPERIMENTAL_API_USAGE")
 class BookDetailsFragment : BaseAsyncFragment() {
     private var binding: MainFragmentBookDetailsBinding? = null
     private val bookTitle: String
         get() = requireArguments().getString(BOOK_TITLE)!!
+    private val viewModel: BookDetailsViewModel by viewModels()
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
 
@@ -44,7 +54,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             ).show(childFragmentManager, "BookSourceListFragment")
         }
         setHasOptionsMenu(true)
-        initData()
+        init()
     }
 
     override fun onDestroyView() {
@@ -52,17 +62,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         setHasOptionsMenu(false)
     }
 
-    private fun refresh(book: Book?) {
-        book ?: return
-        launch(singleCoroutineKey = "refreshBookDetails") {
-            binding?.detailsRefreshLayout?.isRefreshing = true
-            DataManager.reloadBookFromNet(book)
-            binding?.detailsRefreshLayout?.isRefreshing = false
-        }
-    }
-
-
-    private fun initData() {
+    private fun init() {
         childFragmentManager.beginTransaction()
             .replace(
                 R.id.chapter_list,
@@ -71,28 +71,14 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 )
             )
             .commitNowAllowingStateLoss()
-
-        launch(singleCoroutineKey = "initBookDetailsData") {
-            DataManager.getReadingBook(bookTitle).collectLatest {
-                it?.also {
-                    val record = DataManager.getReadingRecord(it).firstOrNull()
-                    val chapter = DataManager.getChapterByIndex(
-                        record?.bookId ?: "",
-                        record?.chapterIndex ?: -1
-                    )
-                    it.readChapter = chapter
-                }
-
-
-                fillView(it)
-                initListener(it)
-                initLatestChapter(it)
-            }
+        viewModel.init(bookTitle)
+        viewModel.bookLivedata.observeViewLifecycle {
+            fillView(it)
         }
     }
 
     @SuppressLint("SetTextI18n")
-    private suspend fun fillView(book: Book?) {
+    private fun fillView(book: Book?) {
         binding?.bookCover?.glide(book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = "作者：${book?.author}"
@@ -101,7 +87,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         binding?.bookClickableArea?.click {
             //使用浏览器打开书籍链接
             val url = book?.readChapter?.url
-            if (url != null){
+            if (url != null) {
                 BrowserReaderActivity.startActivity(requireActivity(), url)
                 return@click
             }
@@ -112,11 +98,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             BrowserReaderActivity.startActivity(requireActivity(), book.url)
         }
 
-        val count = DataManager.getBookBookSourceNum(bookTitle)
-        val source = book?.bookSourceId?.let {
-            BookSourceMgr.getBookSourceById(it).firstOrNull()
-        }
-        binding?.originWebsite?.text = "${source?.group}：${source?.name}共${count}个"
+        binding?.originWebsite?.text = "${book?.bookSource?.group}：${book?.bookSource?.name}共${book?.bookSourceCount}个"
         val error = book?.error
         if (error == null) {
             binding?.syncError?.hide()
@@ -135,41 +117,25 @@ class BookDetailsFragment : BaseAsyncFragment() {
             binding?.bookName?.maxWidth = (binding?.bookClickableArea?.measuredWidth ?: 0) - 30.dp2Px
             binding?.originWebsite?.maxWidth = (binding?.originClickableArea?.measuredWidth ?: 0) - 25.dp2Px
         }
-    }
-
-    private fun initListener(book: Book?) {
+        binding?.detailsRefreshLayout?.isRefreshing = book?.isLoading == true
         binding?.detailsRefreshLayout?.setOnRefreshListener {
-            refresh(book)
+            viewModel.reloadBookFromNet()
         }
         binding?.reading?.click {
             book ?: return@click
             startActivity<BookReaderActivity>(BOOK_ID, book.id)
         }
-    }
-
-    @SuppressLint("SetTextI18n")
-    private suspend fun initLatestChapter(book: Book?) {
-        DataManager.getLastChapterByBookId(book?.id ?: "")
-            .collectLatest { lastChapter ->
-                binding?.latestChapter?.text = "最新：${lastChapter?.title ?: "无"}"
-                binding?.latestChapter?.click { _ ->
-                    book ?: return@click
-                    launch {
-                        val readingRecord = DataManager.getReadingRecord(book).first() ?: ReadingRecord(book.title, book.id)
-                        if (readingRecord.chapterIndex != lastChapter?.index) {
-                            readingRecord.chapterIndex = lastChapter?.index ?: 0
-                            readingRecord.offest = 0
-                            readingRecord.isEnd = false
-                            readingRecord.updateTime = System.currentTimeMillis()
-                            DataManager.setReadingRecord(readingRecord)
-                        }
-                        startActivity<BookReaderActivity>(BOOK_ID to book.id)
-                    }
-
-
-                }
+        val lastChapter = book?.lastChapter
+        binding?.latestChapter?.text = "最新：${lastChapter?.title ?: "无"}"
+        binding?.latestChapter?.click { _ ->
+            book ?: return@click
+            launch {
+                viewModel.setRecordToLastChapter()
+                startActivity<BookReaderActivity>(BOOK_ID to book.id)
             }
 
+
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
