@@ -25,6 +25,7 @@ import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.setBackForwardCacheEnabled
 import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -123,16 +124,19 @@ class CustomWebView @JvmOverloads constructor(
             """.trimIndent()
             ) {
                 Log.i("title:$it")
-                val str = it?.toString()?.replace("\"", "")?.split(",")?.first()
+                val str = it?.replace("\"", "")?.split(",")?.first()
                 if (str.isNullOrBlank() || str == "null") {
                     return@evaluateJavascript
                 }
-                Log.i("复制到剪贴板:$str")
-                val clipboard =
-                    context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                val clipData = android.content.ClipData.newPlainText("text", str)
-                clipboard?.setPrimaryClip(clipData)
-                toast("已复制标题：${str}")
+                showSnackbar("是否复制'${str}'到剪贴板？", actionText = "复制") {
+                    Log.i("复制到剪贴板:$str")
+                    val clipboard =
+                        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    val clipData = android.content.ClipData.newPlainText("text", str)
+                    clipboard?.setPrimaryClip(clipData)
+                    toast("已复制到剪贴板：${str}")
+                }
+
             }
             true
         }
@@ -249,18 +253,6 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
             }
-    }
-
-    /**
-     * 底部导航按钮设置
-     */
-
-    fun onBackPressed(): Boolean {
-        if (webView?.canGoBack() == true) {
-            webView?.goBack()
-            return true
-        }
-        return false
     }
 
     class LifecycleObserver(private val customWebView: CustomWebView) :

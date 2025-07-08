@@ -1,22 +1,30 @@
 package com.sjianjun.reader.utils
 
 import android.view.View
-import androidx.annotation.UiThread
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.reader.R
 import sjj.alog.Log
 
-@UiThread
-fun showSnackbar(view: View?, msg: String, duration: Int = Snackbar.LENGTH_SHORT): Snackbar? {
+fun View?.showSnackbar(
+    msg: String, duration: Int = Snackbar.LENGTH_SHORT,
+    actionText: String = "确认", onConfirm: (() -> Unit)? = null
+): Snackbar? {
     Log.i(msg)
-    var snackbar = view?.getTag(R.id.snackbar) as? Snackbar?
+    this ?: return null
+    var snackbar = getTag(R.id.snackbar) as? Snackbar?
     if (snackbar?.isShown == true) {
+        if (onConfirm != null) {
+            snackbar.setAction(actionText) { onConfirm() }
+        }
         snackbar.setText(msg)
         snackbar.show()
         return snackbar
     }
-    snackbar = Snackbar.make(view ?: return null, msg, duration)
-    view.setTag(R.id.snackbar,snackbar)
+    snackbar = Snackbar.make(this, msg, duration)
+    setTag(R.id.snackbar, snackbar)
+    if (onConfirm != null) {
+        snackbar.setAction(actionText) { onConfirm() }
+    }
     snackbar.show()
     return snackbar
 }

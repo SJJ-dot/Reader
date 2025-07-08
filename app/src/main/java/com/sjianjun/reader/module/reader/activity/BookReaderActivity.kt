@@ -141,16 +141,16 @@ class BookReaderActivity : BaseActivity() {
 
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
             launch("CHAPTER_LIST_CAHE") {
-                showSnackbar(binding!!.pageView, "章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
+                binding!!.pageView.showSnackbar("章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
                 var first = 3
                 (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
                     getChapterContent(book?.chapterList?.get(it))
                     ensureActive()
                     if (first-- > 0) {
-                        showSnackbar(binding!!.pageView, "章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
+                        binding!!.pageView.showSnackbar("章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
                     }
                 }
-                showSnackbar(binding!!.pageView, "章节缓存：完成")
+                binding!!.pageView.showSnackbar("章节缓存：完成")
             }
         }
         observe<String>(EventKey.CHAPTER_LIST) {
@@ -333,9 +333,9 @@ class BookReaderActivity : BaseActivity() {
             var chapterList = DataManager.getChapterList(bookId).first()
             book.chapterList = chapterList
             if (chapterList.isEmpty()) {
-                showSnackbar(binding!!.pageView, "正在加载书籍信息,请稍后……")
+                binding!!.pageView.showSnackbar("正在加载书籍信息,请稍后……")
                 DataManager.reloadBookFromNet(book)
-                showSnackbar(binding!!.pageView, "加载完成")
+                binding!!.pageView.showSnackbar("加载完成")
                 chapterList = DataManager.getChapterList(bookId).first()
                 book.chapterList = chapterList
                 if (chapterList.isEmpty()) {

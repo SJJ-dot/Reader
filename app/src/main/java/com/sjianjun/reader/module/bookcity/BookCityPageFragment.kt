@@ -22,6 +22,7 @@ import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.htmlToSpanned
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.CustomWebView
 import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -64,15 +65,19 @@ class BookCityPageFragment : BaseFragment() {
                     }
                 }
             })
-
+            var lastTime = System.currentTimeMillis()
             setOnBackPressed {
                 if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
                     drawerLayout.closeDrawer(GravityCompat.END)
                     true
-                } else if (customWebView.onBackPressed()) {
-                    true
                 } else {
-                    false
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("再按一次退出")
+                        lastTime = System.currentTimeMillis()
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
 
