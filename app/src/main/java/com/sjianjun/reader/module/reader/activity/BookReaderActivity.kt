@@ -306,6 +306,7 @@ class BookReaderActivity : BaseActivity() {
 
     private fun initData() {
         launch(singleCoroutineKey = "initBookReaderData") {
+            mPageLoader.closeBook()
             Log.i("加载书籍：${bookId}")
             val book = DataManager.getBookById(bookId)
             if (book == null) {
@@ -428,7 +429,6 @@ class BookReaderActivity : BaseActivity() {
 
     private fun initBookData(book: Book) {
         Log.i("设置书籍信息")
-        mPageLoader.closeBook()
         mPageLoader.book = BookBean().apply {
             id = book.url
             title = book.title
