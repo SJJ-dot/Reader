@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from log import log
 from urllib.parse import quote
 
+
 def isSupported(url):
     if "qidian.com" in url:
         return True
@@ -74,7 +75,7 @@ def getDetails(book_url):
     info["intro"] = soup.select("meta[property='og:description']")[0].get("content")
     # 封面
     info["cover"] = soup.select("meta[property='og:image']")[0].get("content")
-    info["cover"] = urljoin(book_url, info["cover"])+".webp"
+    info["cover"] = urljoin(book_url, info["cover"]) + ".webp"
     # 章节列表
     info["chapterList"] = []
     log("加载章节目录")
@@ -87,7 +88,7 @@ def getDetails(book_url):
     for el in soup.select(".y-list__content .y-list__item a"):
         info["chapterList"].append({
             "title": el.select("h2")[0].text.replace("\xa0", " "),
-            "url": "https://m.qidian.com" + el.attrs["href"]
+            "url": urljoin("https://m.qidian.com/", el.attrs["href"])
         })
     return info
 
@@ -109,7 +110,7 @@ def getChapterContent(chapter_url):
     log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     # 章节内容 html
-    content = soup.select(".jsChapterWrapper > div")[0].prettify()
+    content = soup.select("main")[0].prettify()
     return content
 
 
