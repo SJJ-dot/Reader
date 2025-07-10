@@ -11,6 +11,7 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
+import com.sjianjun.reader.BuildConfig
 import io.reactivex.Single
 import io.reactivex.SingleObserver
 import io.reactivex.SingleTransformer
@@ -54,6 +55,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     private var mCurPage: TxtPage? = null
         set(value) {
             field = value
+            if (BuildConfig.DEBUG)
+                Log.e("设置当前页 mCurPage position:" + value?.position + " title:${value?.title}", Exception())
             saveRecord()
         }
 
@@ -64,6 +67,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     var curPageList: MutableList<TxtPage>? = null
         private set(value) {
             field = value
+            if (BuildConfig.DEBUG)
+                Log.e("设置当前页列表 curPageList size:" + value?.size + " title:${value?.firstOrNull()?.title}", Exception())
             saveRecord()
         }
 
@@ -95,7 +100,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     protected var mStatus: Int = STATUS_LOADING
         set(value) {
             field = value
-            Log.i("setPageStatus status:$value")
+            if (BuildConfig.DEBUG)
+                Log.i("setPageStatus status:$value", Exception())
         }
 
     // 判断章节列表是否加载完成
@@ -138,7 +144,12 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      */
     // 当前章
     var chapterPos: Int = 0
-        protected set
+        protected set(value) {
+            field = value
+            if (BuildConfig.DEBUG)
+                Log.e("设置章节位置 chapterPos:$value", Exception())
+        }
+
 
     //上一章的记录
     private var mLastChapterPos = 0
@@ -453,14 +464,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     }
 
     var pageStatus: Int
-        /**
-         * 获取当前页的状态
-         *
-         * @return
-         */
         get() = mStatus
         set(status) {
-            Log.i("setPageStatus status:$status")
             mStatus = status
             mPageView!!.drawCurPage(false)
         }
@@ -565,7 +570,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
 
         if (parseCurChapter()) {
-            Log.e("章节解析完成 " + curPageList!!.size)
+            Log.e("章节解析完成 page size:${curPageList?.size} title:${curPageList?.firstOrNull()?.title}")
             // 如果章节从未打开
             if (!isChapterOpen) {
                 var position = mBookRecord.pagePos
@@ -603,6 +608,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * 关闭书本
      */
     fun closeBook() {
+        isChapterOpen = false
         isChapterListPrepare = false
         isClose = true
 
@@ -1272,28 +1278,17 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
 
     private val nextPage: TxtPage?
-        /**
-         * @return:获取下一的页面
-         */
         get() {
-            if (mCurPage == null) {
-                return null
-            }
-            val pos = mCurPage!!.position + 1
-            if (pos >= curPageList!!.size) {
-                return null
-            }
-            return curPageList!![pos]
+            val txtPage = curPageList?.getOrNull((mCurPage?.position ?: return null) + 1)
+            if (BuildConfig.DEBUG)
+                Log.i("获取下一页 mCurPage title:${mCurPage?.title} postion:${mCurPage?.position} nextPage title:${txtPage?.title} postion:${txtPage?.position}", Exception())
+            return txtPage
         }
 
-    private val prevLastPage: TxtPage?
-        /**
-         * @return:获取上一个章节的最后一页
-         */
-        get() {
-            val pos = curPageList!!.size - 1
-            return curPageList!![pos]
-        }
+    /**
+     * @return:获取上一个章节的最后一页
+     */
+    private val prevLastPage: TxtPage? get() = curPageList?.lastOrNull()
 
     /**
      * 根据当前状态，决定是否能够翻页
