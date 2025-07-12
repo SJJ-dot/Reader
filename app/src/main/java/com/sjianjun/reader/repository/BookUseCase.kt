@@ -37,7 +37,7 @@ object BookUseCase {
     }
 
     suspend fun deleteById(book: Book) = withIo {
-        val readingRecord = readingRecordDao.getReadingRecord(book.title)
+        val readingRecord = readingRecordDao.getReadingRecord(book.title).firstOrNull()
         if (readingRecord?.bookId == book.id) {
             bookDao.getBookByTitleAndAuthor(book.title).first().find { it.id != book.id }?.let { otherBook ->
                 changeReadingRecordBookSource(otherBook)
@@ -92,7 +92,7 @@ object BookUseCase {
             book.isLoading = false
             book.error = null
             //先检查章节内容是否有错
-            val record = readingRecordDao.getReadingRecord(book.title)
+            val record = readingRecordDao.getReadingRecord(book.title).firstOrNull()
             val readingChapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
             val chapterLikeName = readingChapter?.let {
                 chapterDao.getChapterLikeName(book.id, readingChapter.name()).minByOrNull { abs(readingChapter.index - it.index) }
@@ -127,40 +127,36 @@ object BookUseCase {
     /**
      * -1 local ,0 normal,1 force
      */
-    suspend fun getChapterContent(
-        chapter: Chapter,
-        force: Int = 0
-    ): Chapter {
-        withIo {
-            if (chapter.isLoaded) {
-                val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.index)
-                chapter.content = chapterContent.toMutableList()
-                if (force != 1 && chapter.content?.firstOrNull()?.contentError == false) {
-                    return@withIo
-                }
+    suspend fun getChapterContent(chapter: Chapter, force: Int = 0): Chapter = withIo {
+        if (chapter.isLoaded) {
+            val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.index)
+            chapter.content = chapterContent.toMutableList()
+            if (force != 1 && chapter.content?.firstOrNull()?.contentError == false) {
+                return@withIo chapter
             }
-
-            if (force == -1) {
-                return@withIo
-            }
-
-            val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo
-
-            val content = js.getChapterContent(chapter.url)
-            content.bookId = chapter.bookId
-            content.chapterIndex = chapter.index
-            if (!content.contentError) {
-                if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
-                    content.contentError = true
-                }
-            }
-            chapter.content = mutableListOf(content)
-            chapter.isLoaded = true
-            chapterDao.insert(chapter)
-            contentDao.insert(content)
-
         }
-        return chapter
+
+        if (force == -1) {
+            return@withIo chapter
+        }
+
+        val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo chapter
+
+        val content = js.getChapterContent(chapter.url)
+        content.bookId = chapter.bookId
+        content.chapterIndex = chapter.index
+        if (!content.contentError) {
+            if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
+                content.contentError = true
+            }
+        }
+        chapter.content = mutableListOf(content)
+        chapter.isLoaded = true
+        chapterDao.insert(chapter)
+        contentDao.insert(content)
+
+
+        return@withIo chapter
     }
 
     suspend fun getChapterContentPage(
@@ -195,7 +191,7 @@ object BookUseCase {
      * 切换正在阅读的书的书源
      */
     suspend fun changeReadingRecordBookSource(book: Book) = withIo {
-        val readingRecord = readingRecordDao.getReadingRecord(book.title) ?: ReadingRecord(book.title)
+        val readingRecord = readingRecordDao.getReadingRecord(book.title).firstOrNull() ?: ReadingRecord(book.title)
         if (readingRecord.bookId == book.id) {
             return@withIo
         }

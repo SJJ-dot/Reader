@@ -11,7 +11,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.WebDavMgr
+import com.sjianjun.reader.repository.ReadingRecordUseCase
 import com.sjianjun.reader.utils.HttpServiceHelper
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -53,7 +53,7 @@ class SettingsFragment : Fragment() {
                         webdavHasCfg = false
                     }
 
-                    val init = WebDavMgr.setAccount(
+                    val init = ReadingRecordUseCase.setAccount(
                         webdavServerUrlInput.text.toString().trim(),
                         webdavUsernameInput.text.toString().trim(),
                         webdavPasswordInput.text.toString().trim(),
@@ -63,7 +63,7 @@ class SettingsFragment : Fragment() {
                     toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
                     Log.i(init)
                     if (init.isSuccess) {
-                        WebDavMgr.init()
+                        ReadingRecordUseCase.init()
                     }
                 }
             }

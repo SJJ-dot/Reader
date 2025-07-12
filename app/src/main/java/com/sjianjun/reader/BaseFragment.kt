@@ -41,7 +41,7 @@ abstract class BaseFragment : DialogFragment() {
         observeViewLifecycle(Observer { observer(it) })
     }
 
-    fun <T> LiveData<T>.observeViewLifecycle(observer: Observer<T>) {
+    private fun <T> LiveData<T>.observeViewLifecycle(observer: Observer<T>) {
         observe(viewLifecycleOwner, observer)
     }
 

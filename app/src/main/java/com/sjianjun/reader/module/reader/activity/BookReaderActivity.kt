@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
+import androidx.activity.viewModels
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.MediatorLiveData
@@ -18,7 +19,6 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -26,7 +26,6 @@ import com.sjianjun.reader.event.observe
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
@@ -35,6 +34,7 @@ import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
@@ -54,11 +54,10 @@ class BookReaderActivity : BaseActivity() {
     var binding: ActivityBookReaderBinding? = null
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
-    private var book: Book? = null
-    private lateinit var readingRecord: ReadingRecord
 
     private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
     private val mPageLoader by lazy { binding?.pageView!!.pageLoader }
+    private val viewModel by viewModels<BookReaderViewModel>()
     override fun immersionBar() {
         ImmersionBar.with(this).init()
     }
@@ -71,6 +70,7 @@ class BookReaderActivity : BaseActivity() {
         initSettingMenu()
         Log.i("BookReaderActivity onCreate savedInstanceState: $savedInstanceState")
         initData()
+        initView()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -122,7 +122,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("书籍正在加载中")
                     return@launch
                 }
-                val chapter = book?.chapterList?.getOrNull(mPageLoader.chapterPos)
+                val chapter = viewModel.chapterList.value?.getOrNull(mPageLoader.chapterPos)
                 if (chapter == null) {
                     toast("当前章节获取失败")
                     return@launch
@@ -141,13 +141,14 @@ class BookReaderActivity : BaseActivity() {
 
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
             launch("CHAPTER_LIST_CAHE") {
-                binding!!.pageView.showSnackbar("章节缓存：${0}/${(book?.chapterList?.size ?: 0)}")
+                val chapterList = viewModel.chapterList.value ?: return@launch
+                binding!!.pageView.showSnackbar("章节缓存：${0}/${chapterList.size}")
                 var first = 3
-                (max(0, mPageLoader.chapterPos) until (book?.chapterList?.size ?: 0)).forEach {
-                    getChapterContent(book?.chapterList?.get(it))
+                (max(0, mPageLoader.chapterPos) until chapterList.size).forEach {
+                    viewModel.getChapterContent(chapterList[it])
                     ensureActive()
                     if (first-- > 0) {
-                        binding!!.pageView.showSnackbar("章节缓存：${it}/${(book?.chapterList?.size ?: 0)}")
+                        binding!!.pageView.showSnackbar("章节缓存：${it}/${chapterList.size}")
                     }
                 }
                 binding!!.pageView.showSnackbar("章节缓存：完成")
@@ -159,9 +160,9 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.BROWSER_OPEN) {
             //使用浏览器打开书籍链接
             val chapterIdx = mPageLoader.curChapter?.chapterIndex ?: -1
-            var url = book?.chapterList?.getOrNull(chapterIdx)?.url
+            var url = viewModel.chapterList.value?.getOrNull(chapterIdx)?.url
             if (url == null) {
-                url = book?.url
+                url = viewModel.book.value?.url
             }
             if (url.isNullOrEmpty()) {
                 toast("书籍链接为空")
@@ -177,9 +178,9 @@ class BookReaderActivity : BaseActivity() {
                 mPageLoader.pageStatus = STATUS_LOADING
 
                 mPageLoader.curChapter?.let { curChapter ->
-                    val chapter = book?.chapterList?.getOrNull(curChapter.chapterIndex) ?: return@launch
+                    val chapter = viewModel.chapterList.value?.getOrNull(curChapter.chapterIndex) ?: return@launch
                     toast("正在加载中，请稍候……")
-                    getChapterContent(chapter, 1)
+                    viewModel.getChapterContent(chapter, 1)
                     curChapter.content = chapter.content?.joinToString("\n") { it.format() }
                     if (chapter.content?.firstOrNull()?.contentError == true) {
                         curChapter.title = chapter.title + "(章节内容错误)"
@@ -199,7 +200,7 @@ class BookReaderActivity : BaseActivity() {
                 }
                 val txtChapter = mPageLoader.curChapter
                 val curChapter = mPageLoader.chapterPos
-                val chapter = book?.chapterList?.getOrNull(curChapter)
+                val chapter = viewModel.chapterList.value?.getOrNull(curChapter)
                 if (chapter == null) {
                     toast("当前章节获取失败")
                     return@launch
@@ -208,24 +209,15 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节未加载成功 $chapter")
                     return@launch
                 }
-                if (chapter.content?.firstOrNull()?.contentError != false) {
-                    chapter.content?.firstOrNull()?.contentError = false
-                    txtChapter?.title = chapter.title
-                    toast("已取消标记章节内容错误")
-                } else {
-                    chapter.content?.firstOrNull()?.contentError = true
-                    txtChapter?.title = chapter.title + "(章节内容错误)"
-                    toast("已标记章节内容错误")
-                }
+                viewModel.maskChapterContentErr(chapter, txtChapter)
                 val pagePos = mPageLoader.pagePos
                 mPageLoader.skipToChapter(curChapter)
                 mPageLoader.skipToPage(pagePos)
-                DataManager.insertChapterContent(chapter.content?.firstOrNull())
             }
         }
 
         globalConfig.readerPageMode.observe(this) {
-            mPageLoader.setPageMode(PageMode.values()[it])
+            mPageLoader.setPageMode(PageMode.entries.getOrNull(it) ?: PageMode.SIMULATION)
         }
         globalConfig.readerBrightnessMaskColor.observe(this) {
             binding!!.brightnessMask.setBackgroundColor(it)
@@ -304,21 +296,12 @@ class BookReaderActivity : BaseActivity() {
         fragment.show(supportFragmentManager, TAG_SETTING_DIALOG)
     }
 
-    private fun initData() {
-        launch(singleCoroutineKey = "initBookReaderData") {
-            mPageLoader.closeBook()
-            Log.i("加载书籍：${bookId}")
-            val book = DataManager.getBookById(bookId)
-            if (book == null) {
-                Log.i("书籍不存在：${bookId}")
-                toast("书籍不存在")
-                finish()
-                return@launch
-            }
-            this@BookReaderActivity.book = book
+    private fun initView() {
+        viewModel.book.observe(this) { book ->
+            book ?: return@observe
             Log.i("设置章节列表 ChapterListFragment")
             val fragment = supportFragmentManager.findFragmentByTag(book.title)
-            if (fragment != null && fragment is ChapterListFragment) {
+            if (fragment != null && fragment is ChapterListFragment && fragment.bookTitle == book.title) {
                 Log.i("章节列表已存在，直接使用")
             } else {
                 Log.i("章节列表不存在，创建新的")
@@ -326,83 +309,80 @@ class BookReaderActivity : BaseActivity() {
                     .replace(R.id.drawer_chapter_list, fragmentCreate<ChapterListFragment>(BOOK_TITLE to book.title), book.title)
                     .commitAllowingStateLoss()
             }
-            readingRecord = DataManager.getReadingRecord(book).first()
-                ?: ReadingRecord(book.title)
-            readingRecord.bookId = bookId
-            Log.i("阅读记录 $readingRecord")
-            Log.i("加载章节列表")
-            var chapterList = DataManager.getChapterList(bookId).first()
-            book.chapterList = chapterList
-            if (chapterList.isEmpty()) {
-                binding!!.pageView.showSnackbar("正在加载书籍信息,请稍后……")
-                DataManager.reloadBookFromNet(book)
-                binding!!.pageView.showSnackbar("加载完成")
-                chapterList = DataManager.getChapterList(bookId).first()
-                book.chapterList = chapterList
-                if (chapterList.isEmpty()) {
-                    mPageLoader.chapterError()
-                }
-            }
+        }
 
-            readingRecord.also {
-                Log.i("设置阅读记录")
-                mPageLoader.setBookRecord(BookRecordBean().apply {
-                    bookId = book.id
-                    chapter = if (it.isEnd) it.chapterIndex + 1 else it.chapterIndex
-                    chapter = min(max(chapter, 0), chapterList.lastIndex)
-                    pagePos =
-                        if (it.isEnd && chapterList.lastIndex > it.chapterIndex) 0 else it.offest
-                    isEnd = it.isEnd
-                })
-            }
-            Log.i("设置阅读器内容")
-            mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
+        mPageLoader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
 
-                override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
-                    Log.i("加载章节内容 $requestChapters")
+            override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
+                Log.i("加载章节内容 $requestChapters")
 
-                    launch("requestChapters") {
-                        requestChapters.forEach { requestChapter ->
-                            val chapter = book.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
-                            if (getChapterContent(chapter)) {
-                                requestChapter.content = chapter.content?.joinToString("\n") { it.format() }
-                                if (chapter.content?.firstOrNull()?.contentError == true) {
-                                    requestChapter.title = chapter.title + "(章节内容错误)"
-                                }
-                                if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
-                                    mPageLoader.openChapter()
-                                } else if (mPageLoader.pageStatus == STATUS_FINISH && mPageLoader.chapterPos == requestChapter.chapterIndex - 1) {
-                                    mPageLoader.preLoadNextChapter()
-                                }
-                                getChapterContentPage(requestChapter, chapter)
+                launch("requestChapters") {
+                    requestChapters.forEach { requestChapter ->
+                        val chapter = viewModel.book.value?.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
+                        if (viewModel.getChapterContent(chapter)) {
+                            requestChapter.content =
+                                chapter.content?.joinToString("\n") { it.format() }
+                            if (chapter.content?.firstOrNull()?.contentError == true) {
+                                requestChapter.title = chapter.title + "(章节内容错误)"
+                            }
+                            if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
+                                mPageLoader.openChapter()
+                            } else if (mPageLoader.pageStatus == STATUS_FINISH && mPageLoader.chapterPos == requestChapter.chapterIndex - 1) {
+                                mPageLoader.preLoadNextChapter()
+                            }
+                            getChapterContentPage(requestChapter, chapter)
 
-                            } else {
-                                if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
-                                    mPageLoader.chapterError()
-                                }
+                        } else {
+                            if (mPageLoader.pageStatus == STATUS_LOADING && mPageLoader.chapterPos == requestChapter.chapterIndex) {
+                                mPageLoader.chapterError()
                             }
                         }
                     }
                 }
+            }
 
-                override fun onBookRecordChange(bean: BookRecordBean) {
+            override fun onBookRecordChange(bean: BookRecordBean) {
+                viewModel.saveRecord(bean)
+            }
+        })
+    }
 
-                    if (bean.chapter != readingRecord.chapterIndex ||
-                        bean.pagePos != readingRecord.offest ||
-                        bean.isEnd != readingRecord.isEnd
-                    ) {
-                        Log.i("保存阅读记录 $bean")
-                        launch("saveReadingRecord") {
-                            readingRecord.chapterIndex = bean.chapter
-                            readingRecord.offest = bean.pagePos
-                            readingRecord.isEnd = bean.isEnd
-                            readingRecord.updateTime = System.currentTimeMillis()
-                            DataManager.setReadingRecord(readingRecord)
-                        }
-                    }
+    private fun initData() {
+        launch(singleCoroutineKey = "initBookReaderData") {
+            mPageLoader.closeBook()
+            Log.i("加载书籍：${bookId}")
+            val book = viewModel.init(bookId)
+            if (book == null) {
+                Log.i("书籍不存在：${bookId}")
+                toast("书籍不存在")
+                finish()
+                return@launch
+            }
 
+            Log.i("阅读记录 ${book.record}")
+            Log.i("加载章节列表")
+
+            if (book.chapterList.isNullOrEmpty()) {
+                binding!!.pageView.showSnackbar("正在加载书籍信息,请稍后……")
+                viewModel.reloadBookFromNet()
+                binding!!.pageView.showSnackbar("加载完成")
+                if (book.chapterList.isNullOrEmpty()) {
+                    mPageLoader.chapterError()
                 }
-            })
+            }
+
+            book.record?.also { record ->
+                Log.i("设置阅读记录")
+                mPageLoader.setBookRecord(BookRecordBean().apply {
+                    bookId = book.id
+                    chapter = if (record.isEnd) record.chapterIndex + 1 else record.chapterIndex
+                    val lastChapterIndex = book.chapterList?.lastIndex ?: 0
+                    chapter = min(max(chapter, 0), lastChapterIndex)
+                    pagePos = if (record.isEnd && lastChapterIndex > record.chapterIndex) 0 else record.offest
+                    isEnd = record.isEnd
+                })
+            }
+            Log.i("设置阅读器内容")
             initBookData(book)
         }
     }
@@ -411,7 +391,7 @@ class BookReaderActivity : BaseActivity() {
         val launch = launch("getChapterContentPage") {
             while (true) {
                 ensureActive()
-                if (DataManager.getChapterContentPage(chapter)) {
+                if (viewModel.getChapterContentPage(chapter)) {
                     if (mPageLoader.chapterPos in txtChapter.chapterIndex - 3..txtChapter.chapterIndex + 3) {
                         txtChapter.content = chapter.content?.joinToString("\n") { it.format() }
                     }
@@ -447,36 +427,6 @@ class BookReaderActivity : BaseActivity() {
         }
         Log.i("刷新章节信息，章节数：${book.chapterList?.size}")
         mPageLoader.refreshChapterList()
-    }
-
-    /**
-     * 加载 上一章 当前章 下一章
-     */
-    private suspend fun getChapterContent(
-        chapter: Chapter?, force: Int = 0
-    ) = withIo {
-        chapter ?: return@withIo false
-
-        while (chapter.isLoading.get()) {
-            delay(100)
-        }
-
-        if (chapter.isLoaded && chapter.content != null && force != 1) {
-            return@withIo false
-        }
-
-        if (!chapter.isLoading.compareAndSet(false, true)) {
-            return@withIo false
-        }
-
-        try {
-            //force
-            DataManager.getChapterContent(chapter, force)
-        } finally {
-            chapter.isLoading.set(false)
-        }
-
-        return@withIo true
     }
 
 }

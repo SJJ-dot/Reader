@@ -5,7 +5,9 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.repository.DbFactory
+import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 
 class BookSourceManagerViewModel : ViewModel() {
@@ -50,5 +52,38 @@ class BookSourceManagerViewModel : ViewModel() {
         js.checkErrorMsg = null
     }.apply {
         bookSourceDao.insertBookSource(listOf(js))
+    }
+
+    suspend fun delete(list: List<BookSource>) = withIo {
+        bookSourceDao.deleteBookSource(list)
+    }
+
+    suspend fun import(list: List<String>): Int {
+        return BookSourceUseCase.import(list)
+    }
+
+    private fun List<BookSource>.sort(): List<BookSource> {
+        return sortedWith { p0, p1 ->
+            val g0 = p0.group
+            val g1 = p1.group
+            if (g0 != g1) {
+                return@sortedWith g0.compareTo(g1)
+            }
+            if (p0.enable != p1.enable) {
+                return@sortedWith if (p0.enable) -1 else 1
+            }
+            return@sortedWith p0.name.compareTo(p1.name)
+
+        }
+    }
+
+    suspend fun getAllBookSource(): List<BookSource> = withIo {
+        return@withIo bookSourceDao.getAllBookSource().sort()
+    }
+
+    suspend fun saveJs(list: List<BookSource>) {
+        withIo {
+            bookSourceDao.insertBookSource(list)
+        }
     }
 }

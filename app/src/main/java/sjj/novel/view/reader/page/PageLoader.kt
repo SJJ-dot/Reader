@@ -56,7 +56,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         set(value) {
             field = value
             if (BuildConfig.DEBUG)
-                Log.e("设置当前页 mCurPage position:" + value?.position + " title:${value?.title}", Exception())
+                Log.e(
+                    "设置当前页 mCurPage position:" + value?.position + " title:${value?.title}",
+                    Exception()
+                )
             saveRecord()
         }
 
@@ -68,7 +71,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         private set(value) {
             field = value
             if (BuildConfig.DEBUG)
-                Log.e("设置当前页列表 curPageList size:" + value?.size + " title:${value?.firstOrNull()?.title}", Exception())
+                Log.e(
+                    "设置当前页列表 curPageList size:" + value?.size + " title:${value?.firstOrNull()?.title}",
+                    Exception()
+                )
             saveRecord()
         }
 
@@ -426,8 +432,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * @param pageMode:翻页模式
      * @see PageMode
      */
-    fun setPageMode(pageMode: PageMode?) {
-        Log.i("setPageMode pageMode:" + pageMode)
+    fun setPageMode(pageMode: PageMode) {
+        Log.i("setPageMode pageMode:$pageMode")
         mPageMode = pageMode
 
         mPageView!!.setPageMode(mPageMode)
@@ -527,7 +533,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         bookRecord.chapter = curChapterPos
         bookRecord.pagePos = curPage.position
 
-        bookRecord.isEnd = curChapterPos == chapterList.size - 1 && curPageList.size == curPage.position + 1
+        bookRecord.isEnd =
+            curChapterPos == chapterList.size - 1 && curPageList.size == curPage.position + 1
         mPageChangeListener!!.onBookRecordChange(bookRecord)
     }
 
@@ -694,19 +701,42 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (chapterCategory?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop = mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
+                val tipTop =
+                    mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
-                        canvas.drawText(chapterCategory!!.get(this.chapterPos).title, mDisplayParams.contentLeft, tipTop, mTipPaint!!)
+                        canvas.drawText(
+                            chapterCategory!!.get(this.chapterPos).title,
+                            mDisplayParams.contentLeft,
+                            tipTop,
+                            mTipPaint!!
+                        )
                     }
                 } else {
                     /******绘制页码 */
                     val percent = (mCurPage!!.position + 1).toString() + "/" + curPageList!!.size
-                    canvas.drawText(percent, mDisplayParams.contentRight - mTipPaint!!.measureText(percent), tipTop, mTipPaint!!)
+                    canvas.drawText(
+                        percent,
+                        mDisplayParams.contentRight - mTipPaint!!.measureText(percent),
+                        tipTop,
+                        mTipPaint!!
+                    )
 
-                    val count = mTipPaint!!.breakText(mCurPage!!.title, true, mDisplayParams.contentRight - mTipPaint!!.measureText(percent) - tipMarginHeight, null)
-                    canvas.drawText(mCurPage!!.title, 0, count, mDisplayParams.contentLeft, tipTop, mTipPaint!!)
+                    val count = mTipPaint!!.breakText(
+                        mCurPage!!.title,
+                        true,
+                        mDisplayParams.contentRight - mTipPaint!!.measureText(percent) - tipMarginHeight,
+                        null
+                    )
+                    canvas.drawText(
+                        mCurPage!!.title,
+                        0,
+                        count,
+                        mDisplayParams.contentLeft,
+                        tipTop,
+                        mTipPaint!!
+                    )
                 }
             }
         } else {
@@ -1038,7 +1068,9 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             } else {
                 e.onSuccess(pages)
             }
-        }.compose(SingleTransformer { upstream: Single<MutableList<TxtPage>> -> RxUtils.toSimpleSingle(upstream) }).subscribe(object : SingleObserver<MutableList<TxtPage>?> {
+        }.compose(SingleTransformer { upstream: Single<MutableList<TxtPage>> ->
+            RxUtils.toSimpleSingle(upstream)
+        }).subscribe(object : SingleObserver<MutableList<TxtPage>?> {
             override fun onSubscribe(d: Disposable) {
                 mPreLoadDisp = d
             }
@@ -1189,7 +1221,13 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
         text = sb.trimEnd()
 
-        val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, Math.round(mDisplayParams.contentWidth)).build()
+        val layout = StaticLayout.Builder.obtain(
+            text,
+            0,
+            text.length,
+            paint,
+            Math.round(mDisplayParams.contentWidth)
+        ).build()
         for (i in 0..<layout.getLineCount()) {
             val left = layout.getLineLeft(i)
             val right = layout.getLineRight(i)
@@ -1203,12 +1241,23 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             val isParaEnd = lineStr.get(lineStr.length - 1) == '\n'
             lineStr = lineStr.trimEnd().toString()
             lineEnd = lineStart + lineStr.length
-            val line = TxtLine(lineStr.toString(), paint === mTitlePaint, lineHeight.toFloat(), right - left, isParaEnd)
+            val line = TxtLine(
+                lineStr.toString(),
+                paint === mTitlePaint,
+                lineHeight.toFloat(),
+                right - left,
+                isParaEnd
+            )
             lines.add(line)
             for (offset in lineStart..<lineEnd) {
                 val leftOf = layout.getPrimaryHorizontal(offset)
-                val rightOf = if (offset == lineEnd - 1) right else layout.getPrimaryHorizontal(offset + 1)
-                line.setLeftOfRight(offset - lineStart, leftOf + mDisplayParams.contentLeft, rightOf + mDisplayParams.contentLeft)
+                val rightOf =
+                    if (offset == lineEnd - 1) right else layout.getPrimaryHorizontal(offset + 1)
+                line.setLeftOfRight(
+                    offset - lineStart,
+                    leftOf + mDisplayParams.contentLeft,
+                    rightOf + mDisplayParams.contentLeft
+                )
             }
 
 
@@ -1241,7 +1290,11 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
             for (idx in line.charLeft.indices) {
                 val offsetX = max((idx - st), 0) * extX
-                line.setLeftOfRight(idx, offsetX + line.charLeft[idx], offsetX + line.charRight[idx])
+                line.setLeftOfRight(
+                    idx,
+                    offsetX + line.charLeft[idx],
+                    offsetX + line.charRight[idx]
+                )
             }
         }
     }
@@ -1281,7 +1334,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         get() {
             val txtPage = curPageList?.getOrNull((mCurPage?.position ?: return null) + 1)
             if (BuildConfig.DEBUG)
-                Log.i("获取下一页 mCurPage title:${mCurPage?.title} postion:${mCurPage?.position} nextPage title:${txtPage?.title} postion:${txtPage?.position}", Exception())
+                Log.i(
+                    "获取下一页 mCurPage title:${mCurPage?.title} postion:${mCurPage?.position} nextPage title:${txtPage?.title} postion:${txtPage?.position}",
+                    Exception()
+                )
             return txtPage
         }
 
@@ -1460,7 +1516,9 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             var difX = Int.Companion.MAX_VALUE.toFloat()
             var lineOffset = -1
             for (i in 0..<txtLine.txt.length) {
-                if (!txtLine.txt.get(i).isWhitespace() && abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x) < difX) {
+                if (!txtLine.txt.get(i)
+                        .isWhitespace() && abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x) < difX
+                ) {
                     lineOffset = i
                     difX = abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x)
                 }
@@ -1562,7 +1620,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             val startLine = page.lines.get(getLineForOffset(start))
             val endLine = page.lines.get(getLineForOffset(end))
             if (startLine == endLine) {
-                return startLine.txt.substring(start - startLine.charStart, end - startLine.charStart + 1)
+                return startLine.txt.substring(
+                    start - startLine.charStart,
+                    end - startLine.charStart + 1
+                )
             }
             val stringBuilder = StringBuilder()
             for (i in startLine.index..endLine.index) {

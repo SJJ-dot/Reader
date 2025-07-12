@@ -1,63 +1,64 @@
 package com.sjianjun.reader.module.search
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.room.Transaction
 import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.repository.DataManager.dao
-import com.sjianjun.reader.repository.DbFactory.db
+import com.sjianjun.reader.repository.BookUseCase
+import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.key
 import com.sjianjun.reader.utils.name
 import com.sjianjun.reader.utils.toBookList
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 
 class SearchViewModel : ViewModel() {
-    /**
-     * 搜素历史记录
-     */
-    fun getAllSearchHistory(): Flow<List<SearchHistory>> {
-        return dao.getAllSearchHistory()
+    private val bookSourceDao get() = DbFactory.db.bookSourceDao()
+    private val searchHistoryDao get() = DbFactory.db.searchHistoryDao()
+    private val bookDao get() = DbFactory.db.bookDao()
+    private val readingRecordDao get() = DbFactory.db.readingRecordDao()
+
+    fun getAllEnableBookSource(): List<BookSource> {
+        return bookSourceDao.getAllBookSource().filter { it.enable }
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): String = withIo {
-        dao.saveSearchResult(searchResult.toBookList())
-    }
-
-    suspend fun saveSearchResult(bookList: List<Book>): String = withIo {
-        db.runInTransaction<String> {
-            cleanDirtyData()
-            insertBook(bookList)
+        val bookList = searchResult.toBookList()
+        DbFactory.db.runInTransaction<String> {
+            BookUseCase.cleanDirtyData()
+            bookDao.insertBook(bookList)
             val book = bookList.first()
-            val readingRecord = getReadingRecord(book.title)
+            val readingRecord = readingRecordDao.getReadingRecordSync(book.title)
             Log.i("保存搜索结果记录：$readingRecord $bookList")
             if (bookList.find { it.id == readingRecord?.bookId } == null) {
-                insertReadingRecord(ReadingRecord(book.title, book.id))
+                readingRecordDao.insertReadingRecord(ReadingRecord(book.title, book.id))
                 book.id
-            } else{
+            } else {
                 readingRecord!!.bookId
             }
-
         }
-
-
     }
 
     suspend fun searchHint(query: String): List<String>? {
@@ -66,11 +67,7 @@ class SearchViewModel : ViewModel() {
         }
         return withIo {
             try {
-                val resp = http.get(
-                    "https://suggestion.baidu.com/su", mapOf(
-                        "wd" to "小说 $query",
-                    ), encoded = false
-                )
+                val resp = http.get("https://suggestion.baidu.com/su", mapOf("wd" to "小说 $query"), encoded = false)
                 //window.baidu.sug({q:"阵",p:false,s:["阵的拼音","阵问长生","阵组词","阵的笔顺","阵风战斗机","阵雨","阵痛","阵风","阵雨的拼音","阵发性室上性心动过速"]});
                 val respJson = Regex("""\((.*)\)""").find(resp.body)?.groupValues?.getOrNull(1)
                 val jarr = gson.fromJson(respJson, JsonObject::class.java).getAsJsonArray("s")
@@ -105,7 +102,7 @@ class SearchViewModel : ViewModel() {
     }
 
     suspend fun searchUrl(url: String): Flow<List<List<SearchResult>>> = withIo {
-        val allJavaScript = dao.getAllBookSource().first().filter { it.enable }
+        val allJavaScript = getAllEnableBookSource()
         if (allJavaScript.isEmpty()) {
             toast("无可用书源，请导入书源")
             return@withIo emptyFlow<List<List<SearchResult>>>()
@@ -148,13 +145,13 @@ class SearchViewModel : ViewModel() {
      */
     suspend fun search(query: String): Flow<List<List<SearchResult>>> {
         //是否是URL
-        if (query.startsWith("http://") || query.startsWith("https://")) {
+        if (query.startsWith("http")) {
             return searchUrl(query)
         }
         return withIo {
-            dao.insertSearchHistory(SearchHistory(query = query))
+            searchHistoryDao.insertSearchHistory(SearchHistory(query = query))
             //读取所有脚本。只读取一次，不接受后续更新
-            val allJavaScript = dao.getAllBookSource().first().filter { it.enable }
+            val allJavaScript = getAllEnableBookSource()
             if (allJavaScript.isEmpty()) {
                 toast("无可用书源，请导入书源")
                 return@withIo emptyFlow<List<List<SearchResult>>>()
@@ -204,4 +201,25 @@ class SearchViewModel : ViewModel() {
             }.flowIo()
         }
     }
+
+    fun getAllSearchHistory(): Flow<List<SearchHistory>> {
+        //查询全部搜索历史记录
+        return searchHistoryDao.getAllSearchHistory()
+    }
+
+    fun deleteSearchHistory(list: List<SearchHistory>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            searchHistoryDao.deleteSearchHistory(list)
+        }
+    }
+
+    fun deleteAllSearchHistory() {
+        //删除全部搜索历史记录
+        viewModelScope.launch(Dispatchers.IO) {
+            Log.i("删除全部搜索历史记录")
+            searchHistoryDao.deleteAllSearchHistory()
+        }
+
+    }
+
 }

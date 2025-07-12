@@ -11,6 +11,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -29,8 +30,6 @@ import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.repository.BookSourceMgr
-import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.bundle
 import com.sjianjun.reader.utils.color
@@ -59,6 +58,7 @@ class BookshelfFragment : BaseFragment() {
     private lateinit var bookShelfBinding: MainFragmentBookShelfBinding
     private val bookShelfTitle = BookShelfTitle()
     private var welcomeDialog: Boolean = true
+    private val viewModel by viewModels<BookShelfViewModel>()
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -85,38 +85,10 @@ class BookshelfFragment : BaseFragment() {
         adapter = Adapter(this@BookshelfFragment)
         bookShelfBinding.recycleView.adapter = adapter
         bookShelfBinding.rootRefresh.setOnRefreshListener {
-            launchIo {
-                val sourceMap = mutableMapOf<String, MutableList<Book>>()
-
-                bookList.values.forEach {
-                    val list = sourceMap.getOrPut(it.bookSourceId) { mutableListOf() }
-                    list.add(it)
-                }
-
-                sourceMap.map {
-                    async {
-                        val script = it.value.firstOrNull()?.javaScriptList?.find { js ->
-                            js.id == it.key
-                        }
-                        val delay = script?.requestDelay ?: 1000L
-                        if (delay < 0) {
-                            it.value.map {
-                                async {
-                                    DataManager.reloadBookFromNet(it)
-                                }
-                            }.awaitAll()
-                        } else {
-                            it.value.apply { it.value.sortWith(bookComparator) }.forEach {
-                                DataManager.reloadBookFromNet(it)
-                                delay(delay)
-                            }
-                        }
-                    }
-                }.awaitAll()
-                withMain {
-                    bookShelfBinding.rootRefresh.isRefreshing = false
-                    adapter.notifyDataSetChanged()
-                }
+            launch {
+                viewModel.reloadBookFromNet()
+                bookShelfBinding.rootRefresh.isRefreshing = false
+                adapter.notifyDataSetChanged()
             }
         }
     }
@@ -132,52 +104,11 @@ class BookshelfFragment : BaseFragment() {
     }
 
     private fun initData() {
-        launch {
-            DataManager.getAllReadingBook().collectLatest {
-                if (it.isEmpty()) {
-                    if (welcomeDialog) {
-                        welcome()
-                    }
-                } else {
-                    welcomeDialog = false
-                }
-                //书籍数据更新的时候必须重新创建 章节 书源 阅读数据的观察流
-                bookList.clear()
-                it.map { book ->
-                    bookList[book.key] = book
-                    async(Dispatchers.IO) {
-                        val record = DataManager.getReadingRecord(book).firstOrNull()
-                        val lastChapter = DataManager.getLastChapterByBookId(book.id).firstOrNull()
-                        book.record = record
-                        val chapter = DataManager.getChapterByIndex(
-                            record?.bookId ?: "",
-                            record?.chapterIndex ?: -1
-                        )
-                        book.readChapter = chapter
-                        if (chapter != null) {
-                            DataManager.getChapterContent(chapter, -1)
-                        }
-
-                        book.lastChapter = lastChapter
-                        val js = BookSourceMgr.getBookBookSource(book.title)
-                        book.javaScriptList = js
-                        book.bookSource =
-                            BookSourceMgr.getBookSourceById(book.bookSourceId).firstOrNull()
-                        val lastChapterIndex = book.lastChapter?.index ?: 0
-                        val readChapterIndex = book.readChapter?.index ?: 0
-                        book.unreadChapterCount = if (book.record?.isEnd == true) {
-                            lastChapterIndex - readChapterIndex
-                        } else {
-                            lastChapterIndex - readChapterIndex + 1
-                        }
-                        book
-                    }
-                }.awaitAll().apply {
-                    adapter.data.clear()
-                    adapter.data.addAll(bookList.values.sortedWith(bookComparator))
-                    adapter.notifyDataSetChanged()
-                }
-            }
+        viewModel.init()
+        viewModel.bookList.observeViewLifecycle {
+            adapter.data.clear()
+            adapter.data.addAll(it)
+            adapter.notifyDataSetChanged()
         }
     }
 
@@ -233,11 +164,7 @@ class BookshelfFragment : BaseFragment() {
                     visibleSet.invisible(syncError)
                     syncError.isClickable = false
                 } else {
-                    syncError.imageTintList = if (error != null) {
-                        ColorStateList.valueOf(R.color.mdr_red_100.color(root.context))
-                    } else {
-                        ColorStateList.valueOf(R.color.mdr_grey_700.color(root.context))
-                    }
+                    syncError.imageTintList = ColorStateList.valueOf(R.color.mdr_red_100.color(root.context))
                     visibleSet.visible(syncError)
                     syncError.click {
                         fragment.launch {
@@ -283,9 +210,7 @@ class BookshelfFragment : BaseFragment() {
                 }
                 refreshClickableArea.click {
                     if (!book.isLoading) {
-                        fragment.launch {
-                            DataManager.reloadBookFromNet(book)
-                        }
+                        fragment.viewModel.reloadBookFromNet(book)
                     }
                 }
                 root.click {
@@ -302,7 +227,7 @@ class BookshelfFragment : BaseFragment() {
                             fragment.bookList.remove(book.key)
                             data.removeAt(position)
                             notifyItemRemoved(position)
-                            fragment.launchIo { DataManager.deleteBook(book) }
+                            fragment.viewModel.deleteBook(book)
                         }
                         .show()
                     true

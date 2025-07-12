@@ -11,6 +11,7 @@ import com.sjianjun.reader.utils.launchIo
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.firstOrNull
 
 class BookDetailsViewModel : ViewModel() {
     val bookLivedata = MutableLiveData<Book>()
@@ -18,19 +19,20 @@ class BookDetailsViewModel : ViewModel() {
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
+
     @OptIn(FlowPreview::class)
     fun init(title: String) {
         launchIo {
             bookDao.getReadingBook(title).debounce(300).collectLatest {
                 it?.also {
-                    val record = readingRecordDao.getReadingRecord(it.title)
+                    val record = readingRecordDao.getReadingRecord(it.title).firstOrNull()
                     val chapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
                     it.readChapter = chapter
                     it.bookSourceCount = bookDao.getBookBookSourceNum(it.title)
                     it.bookSource = bookSourceDao.getBookSourceById(it.bookSourceId)
                     it.lastChapter = chapterDao.getLastChapterByBookId(it.id)
                 }
-                bookLivedata.value = it
+                bookLivedata.postValue(it)
             }
         }
     }
@@ -44,7 +46,7 @@ class BookDetailsViewModel : ViewModel() {
     suspend fun setRecordToLastChapter() = withIo {
         val book = bookLivedata.value ?: return@withIo
         val lastChapter = book.lastChapter
-        val readingRecord = readingRecordDao.getReadingRecord(book.title) ?: ReadingRecord(book.title, book.id)
+        val readingRecord = readingRecordDao.getReadingRecord(book.title).firstOrNull() ?: ReadingRecord(book.title, book.id)
         if (readingRecord.chapterIndex != lastChapter?.index) {
             readingRecord.chapterIndex = lastChapter?.index ?: 0
             readingRecord.offest = 0

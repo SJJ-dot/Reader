@@ -1,10 +1,12 @@
-package com.sjianjun.reader.utils
+package com.sjianjun.reader.repository
 
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.DbFactory
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
+import com.sjianjun.reader.utils.toast
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
 import kotlinx.coroutines.CoroutineScope
@@ -16,13 +18,14 @@ import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 
-object WebDavMgr {
+object ReadingRecordUseCase {
     const val WEB_DAV_ID = "webDavId.txt"
     const val BOOK_INFO_LIST = "bookInfoList.json"
     const val READING_RECORD_LIST = "readingRecordList.json"
-    private val dao get() = DbFactory.db.dao()
     private var job: Job? = null
     private var lastToastTime = 0L
+    private val readingRecordDao get() = DbFactory.db.readingRecordDao()
+    private val bookDao get() = DbFactory.db.bookDao()
 
     private fun webDav(relativePath: String) = globalConfig.let {
         val auth = Authorization(it.webdavUsername ?: "", it.webdavPassword ?: "")
@@ -50,7 +53,7 @@ object WebDavMgr {
             launch {
                 Log.i("监听书籍信息变化")
                 var lastBook = emptySet<String>()
-                dao.getAllBook().debounce(1000).collect {
+                bookDao.getAllBook().debounce(1000).collect {
                     val bookListInfo = it.map { it.title + it.author + it.bookSourceId }.toSet()
                     Log.i("同步书籍记录 change:${lastBook != bookListInfo}")
                     if (lastBook != bookListInfo) {
@@ -62,7 +65,7 @@ object WebDavMgr {
             launch {
                 Log.i("监听阅读记录变化")
                 var lastRecord = emptySet<String>()
-                dao.getAllReadingRecord().debounce(1000).collect {
+                readingRecordDao.getAllReadingRecord().debounce(1000).collect {
                     val bookListInfo = it.map { it.bookId + it.chapterIndex + it.offest }.toSet()
                     Log.i("同步阅读记录 change:${lastRecord != bookListInfo}")
                     if (lastRecord != bookListInfo) {
@@ -76,7 +79,7 @@ object WebDavMgr {
     }
 
 
-    private suspend fun sync(run: suspend WebDavMgr.() -> Unit = {}) = withIo {
+    private suspend fun sync(run: suspend ReadingRecordUseCase.() -> Unit = {}) = withIo {
         if (needPull()) {
             pull()
             val webDavId =
@@ -84,7 +87,7 @@ object WebDavMgr {
             Log.i("webDavId 同步结果：${webDavId} put ID:${globalConfig.webDavId}")
         }
 
-        WebDavMgr.run()
+        ReadingRecordUseCase.run()
     }
 
     private suspend fun uploadBookInfo(bookList: List<Book>): Result<Unit> = withIo {
@@ -130,9 +133,9 @@ object WebDavMgr {
         val bookList =
             gson.fromJson<List<Book>>(webDav(BOOK_INFO_LIST).downloadStr()) ?: emptyList()
 
-        val list = dao.insertBook(bookList)
+        val list = bookDao.insertBook(bookList)
         Log.i("保存书籍数据：${list} $bookList")
-        val list1 = dao.insertReadingRecordList(readingList)
+        val list1 = readingRecordDao.insertReadingRecordList(readingList)
         Log.i("保存阅读记录：${list1} $readingList")
     }
 

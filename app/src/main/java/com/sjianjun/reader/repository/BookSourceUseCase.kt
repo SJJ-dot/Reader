@@ -91,7 +91,7 @@ object BookSourceUseCase {
         }.awaitAll().flatten()
 
 
-        val allJs = bookSourceDao.getAllBookSource().firstOrNull() ?: emptyList()
+        val allJs = bookSourceDao.getAllBookSource()
         val updates = sources.filter { s ->
             val local = allJs.find { it.id == s.id }
             local != null && local.version < s.version

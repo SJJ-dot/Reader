@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.*
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -13,13 +14,8 @@ import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ItemTextTextBinding
 import com.sjianjun.reader.databinding.MainFragmentBookChapterListBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
-import com.sjianjun.reader.repository.DataManager
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.click
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapLatest
 
 
 /**
@@ -27,9 +23,9 @@ import kotlinx.coroutines.flow.flatMapLatest
  */
 class ChapterListFragment : BaseFragment() {
     val bookTitle: String get() = requireArguments().getString(BOOK_TITLE)!!
-
     private val adapter = ChapterListAdapter(this)
-    var binding: MainFragmentBookChapterListBinding? = null
+    private var binding: MainFragmentBookChapterListBinding? = null
+    private val viewModel by viewModels<ChapterListViewModel>()
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
     override fun onCreateView(
@@ -47,31 +43,26 @@ class ChapterListFragment : BaseFragment() {
     }
 
     private fun initData() {
-        launch {
-            DataManager.getReadingBook(bookTitle).flatMapLatest {
-                if (it == null) {
-                    emptyFlow<Pair<List<Chapter>, ReadingRecord>>()
-                } else {
-                    DataManager.getChapterList(it.id)
-                        .combine(DataManager.getReadingRecord(it)) { chapterList, readingRecord ->
-                            chapterList to readingRecord
-                        }
-                }
-            }.debounce(300).collectLatest { (chapterList, readingRecord) ->
-                adapter.readingRecord = readingRecord
-                var change = adapter.readingChapterIndex != readingRecord?.chapterIndex
-                change = change || (adapter.data.size != chapterList.size)
-                adapter.readingChapterIndex = readingRecord?.chapterIndex ?: 0
-                adapter.data.clear()
-                adapter.data.addAll(chapterList)
-                adapter.notifyDataSetChanged()
-                if (change) {
-                    val index = adapter.data.indexOfFirst {
-                        it.index == adapter.readingChapterIndex
-                    }
-                    binding?.recycleViewChapterList?.scrollToPosition(index)
-                }
+        viewModel.init(bookTitle)
+        viewModel.chapterListLiveData.observeViewLifecycle {
+            adapter.data.clear()
+            adapter.data.addAll(it)
+            adapter.notifyDataSetChanged()
+            val index = adapter.data.indexOfFirst {
+                it.index == adapter.readingChapterIndex
             }
+            if (index > 0)
+                binding?.recycleViewChapterList?.scrollToPosition(index)
+
+        }
+        viewModel.readingRecord.observeViewLifecycle {
+            adapter.readingRecord = it
+            adapter.readingChapterIndex = it?.chapterIndex ?: 0
+            val index = adapter.data.indexOfFirst {
+                it.index == adapter.readingChapterIndex
+            }
+            if (index > 0)
+                binding?.recycleViewChapterList?.scrollToPosition(index)
         }
     }
 
@@ -88,7 +79,10 @@ class ChapterListFragment : BaseFragment() {
             return R.layout.item_text_text
         }
 
-        override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+            position: Int
+        ) {
             val binding = ItemTextTextBinding.bind(holder.itemView)
             holder.itemView.apply {
                 val c = data[position]
@@ -110,13 +104,7 @@ class ChapterListFragment : BaseFragment() {
                     }
                     fragment.launch {
                         //如果不是当前章节，更新阅读记录
-                        readingRecord?.let {
-                            it.chapterIndex = c.index
-                            it.offest = 0
-                            it.isEnd = false
-                            it.updateTime = System.currentTimeMillis()
-                            DataManager.setReadingRecord(it)
-                        }
+                        fragment.viewModel.saveRecord(c)
                         fragment.startActivity<BookReaderActivity>(BOOK_ID to c.bookId)
 
                     }

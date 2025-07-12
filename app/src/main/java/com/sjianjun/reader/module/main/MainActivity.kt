@@ -18,7 +18,7 @@ import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
-import com.sjianjun.reader.utils.WebDavMgr
+import com.sjianjun.reader.repository.ReadingRecordUseCase
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.view.click
 
@@ -79,7 +79,7 @@ class MainActivity : BaseActivity() {
         }
 
         initDrawerMenuWidget()
-        WebDavMgr.init()
+        ReadingRecordUseCase.init()
     }
 
     private fun initDrawerMenuWidget() {

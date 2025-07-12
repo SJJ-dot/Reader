@@ -17,10 +17,7 @@ interface BookSourceDao {
     fun getBookSourceByBookId(bookId: String): BookSource?
 
     @Query("select * from BookSource order by id")
-    fun getAllBookSource(): Flow<List<BookSource>>
-
-    @Query("select * from BookSource where enable!=0 order by id")
-    fun getAllEnableBookSource(): Flow<List<BookSource>>
+    fun getAllBookSource(): List<BookSource>
 
     @Query("select * from BookSource where id=:id")
     fun getBookSourceById(id: String): BookSource?

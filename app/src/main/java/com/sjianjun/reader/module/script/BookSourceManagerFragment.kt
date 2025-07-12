@@ -5,6 +5,7 @@ import android.view.*
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
+import androidx.fragment.app.viewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
@@ -20,7 +21,6 @@ import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookSourceMgr
 import com.sjianjun.reader.utils.*
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -30,7 +30,8 @@ import sjj.alog.Log
 import java.util.concurrent.Executors
 
 class BookSourceManagerFragment : BaseAsyncFragment() {
-    var binding: MainFragmentBookScriptManagerBinding? = null
+    private val viewModel by viewModels<BookSourceManagerViewModel>()
+    private var binding: MainFragmentBookScriptManagerBinding? = null
     private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
     private val adapter = Adapter(this@BookSourceManagerFragment)
     private lateinit var searchView: SearchView
@@ -75,7 +76,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 .setMessage("确定要删除选中的${list.size}个书源吗？")
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     launch {
-                        BookSourceMgr.delete(*list.toTypedArray())
+                        viewModel.delete(list)
                         adapter.data.removeAll(list)
                         adapter.notifyDataSetChanged()
                         refreshSelectAll()
@@ -165,7 +166,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         launch {
                             try {
                                 showSnackbar(binding!!.recycleView, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
-                                val import = BookSourceMgr.import(listOf(url))
+                                val import = viewModel.import(listOf(url))
                                 if (import > 0) {
                                     initData()
                                     showSnackbar(binding!!.recycleView, "书源导入成功")
@@ -218,7 +219,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initData() {
         launch {
-            val allJs = BookSourceMgr.getAllBookSource().sort()
+            val allJs = viewModel.getAllBookSource()
             adapter.data.clear()
             adapter.data.addAll(allJs)
             adapter.notifyDataSetChanged()
@@ -226,25 +227,11 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         }
     }
 
-    private fun List<BookSource>.sort(): List<BookSource> {
-        return sortedWith { p0, p1 ->
-            val g0 = p0.group
-            val g1 = p1.group
-            if (g0 != g1) {
-                return@sortedWith g0.compareTo(g1)
-            }
-            if (p0.enable != p1.enable) {
-                return@sortedWith if (p0.enable) -1 else 1
-            }
-            return@sortedWith p0.name.compareTo(p1.name)
-
-        }
-    }
 
     private fun query() {
         launch {
             val query = searchView.query.toString().trim()
-            val allJs = BookSourceMgr.getAllBookSource().sort()
+            val allJs = viewModel.getAllBookSource()
             adapter.data.clear()
             if (query.isBlank()) {
                 adapter.data.addAll(allJs)
@@ -297,7 +284,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     } else {
                         launch {
                             list.forEach { it.enable = true }
-                            BookSourceMgr.saveJs(*list.toTypedArray())
+                            viewModel.saveJs(list)
                             adapter.notifyDataSetChanged()
                         }
                     }
@@ -310,7 +297,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     } else {
                         launch {
                             list.forEach { it.enable = false }
-                            BookSourceMgr.saveJs(*list.toTypedArray())
+                            viewModel.saveJs(list)
                             adapter.notifyDataSetChanged()
                         }
                     }
@@ -336,10 +323,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                         showSnackbar(binding!!.recycleView, "书源校验中，请稍后……(0/${list.size})", Snackbar.LENGTH_INDEFINITE)
                                         val deferreds = list.map { js ->
                                             async(dispatcher) {
-                                                BookSourceMgr.check(
-                                                    js,
-                                                    key
-                                                );
+                                                viewModel.check(js, key)
                                                 js
                                             }
                                         }.onEach { deferred ->
@@ -364,7 +348,6 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                             }
                                             if (errorList.isNotEmpty()) {
                                                 searchView.setQuery("校验失败", true)
-//                                            searchView.clearFocus()
                                                 query()
                                             }
                                         }
@@ -398,10 +381,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             return R.layout.script_item_fragment_manager_java_script
         }
 
-        override fun onBindViewHolder(
-            holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
-            p1: Int
-        ) {
+        override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, p1: Int) {
             val binding = ScriptItemFragmentManagerJavaScriptBinding.bind(holder.itemView)
             holder.itemView.apply {
                 val script = data[p1]
@@ -424,7 +404,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 binding.swSourceEnable.setOnCheckedChangeListener { view, isChecked ->
                     fragment.launch {
                         script.enable = isChecked
-                        BookSourceMgr.saveJs(script)
+                        fragment.viewModel.saveJs(listOf(script))
                     }
                 }
                 if (script.checkErrorMsg.isNullOrBlank()) {
@@ -440,10 +420,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     }
                 }
                 binding.ivEditSource.click {
-                    fragment.startActivity<EditJavaScriptActivity>(
-                        BOOK_SOURCE_ID,
-                        script.id
-                    )
+                    fragment.startActivity<EditJavaScriptActivity>(BOOK_SOURCE_ID, script.id)
                 }
             }
         }

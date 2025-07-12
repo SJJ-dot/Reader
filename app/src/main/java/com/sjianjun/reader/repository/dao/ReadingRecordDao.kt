@@ -6,12 +6,14 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.sjianjun.reader.bean.ReadingRecord
 import kotlinx.coroutines.flow.Flow
-import java.util.List
 
 @Dao
 public interface ReadingRecordDao {
     @Query("select * from ReadingRecord where bookTitle=:bookTitle")
-    fun getReadingRecord(bookTitle: String): ReadingRecord?
+    fun getReadingRecord(bookTitle: String): Flow<ReadingRecord?>
+
+    @Query("select * from ReadingRecord where bookTitle=:bookTitle")
+    fun getReadingRecordSync(bookTitle: String): ReadingRecord?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertReadingRecord(record: ReadingRecord): Long

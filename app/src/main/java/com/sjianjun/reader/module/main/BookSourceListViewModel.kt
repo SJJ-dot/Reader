@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -35,7 +36,7 @@ class BookSourceListViewModel() : ViewModel() {
     fun init(bookTitle: String) {
         viewModelScope.launch(Dispatchers.IO) {
             bookDao.getAllSourceBooksByTitle(bookTitle).debounce(100).collectLatest {
-                val record = readingRecordDao.getReadingRecord(bookTitle)
+                val record = readingRecordDao.getReadingRecord(bookTitle).firstOrNull()
                 val readingChapter = if (record != null) chapterDao.getChapterByIndex(record.bookId, record.chapterIndex) else null
                 val list = it.map { async { loadBookInfo(it, record, readingChapter) } }.awaitAll()
                 bookList.postValue(list.sortedWith(bookComparator))

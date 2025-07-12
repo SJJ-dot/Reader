@@ -91,11 +91,12 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 BrowserReaderActivity.startActivity(requireActivity(), url)
                 return@click
             }
-            if (book?.url.isNullOrBlank()) {
+            val bookUrl = book?.url
+            if (bookUrl.isNullOrBlank()) {
                 toast("书籍链接为空")
                 return@click
             }
-            BrowserReaderActivity.startActivity(requireActivity(), book.url)
+            BrowserReaderActivity.startActivity(requireActivity(), bookUrl)
         }
 
         binding?.originWebsite?.text = "${book?.bookSource?.group}：${book?.bookSource?.name}共${book?.bookSourceCount}个"

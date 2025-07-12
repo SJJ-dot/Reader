@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @Suppress("UNCHECKED_CAST")
 class BookSourceListFragment : BaseFragment() {
-    private val bookTitle = requireArguments().getString(BOOK_TITLE)
+    private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE) ?: "" }
     var binding: MainFragmentBookSourceListBinding? = null
     private val vm by viewModels<BookSourceListViewModel>()
 
@@ -41,22 +41,16 @@ class BookSourceListFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding = MainFragmentBookSourceListBinding.bind(view)
         binding?.recycleView?.adapter = adapter
+        vm.init(bookTitle)
         vm.bookList.observe(this) {
             adapter.data.clear()
             adapter.data.addAll(it)
             adapter.notifyDataSetChanged()
         }
-        initRefresh()
-    }
-
-    private fun initRefresh() {
-
         binding?.swipeRefresh?.setOnRefreshListener {
-            vm.viewModelScope.launch {
-                binding?.swipeRefresh?.isRefreshing = false
-                binding?.swipeRefresh?.isEnabled = false
+            launch {
                 vm.reloadAllBookFromNet()
-                binding?.swipeRefresh?.isEnabled = true
+                binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }
