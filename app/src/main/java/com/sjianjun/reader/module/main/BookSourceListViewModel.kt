@@ -53,7 +53,7 @@ class BookSourceListViewModel() : ViewModel() {
         if (readingChapter != null) {
             book.readChapter = BookUseCase.getChapterLikeTitle(book.id, readingChapter.name()).firstOrNull()
             if (book.readChapter == null) {
-                book.readChapter = chapterDao.getChapterByIndex(book.id, readingChapter.index) ?: chapterDao.getLastChapterByBookId(book.id)
+                book.readChapter = chapterDao.getChapterByIndex(book.id, readingChapter.index)
             }
         }
 
