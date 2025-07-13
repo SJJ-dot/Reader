@@ -19,7 +19,7 @@ interface ChapterDao {
     fun getChapterListByBookId(bookId: String): Flow<List<Chapter>>
 
     @Query("select * from Chapter where title=:title and bookId=:bookId order by `index`")
-    fun getChapterByTitle(bookId: String, title: String): Flow<List<Chapter>>
+    fun getChapterByTitle(bookId: String, title: String): List<Chapter>
 
     @Query("select * from Chapter where bookId=:bookId and title like :name")
     fun getChapterLikeName(bookId: String, name: String): List<Chapter>

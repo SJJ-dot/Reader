@@ -51,9 +51,12 @@ class BookSourceListViewModel() : ViewModel() {
     ): Book {
 
         if (readingChapter != null) {
-            val chapterLikeName = chapterDao.getChapterLikeName(book.id, "%${readingChapter.name()}%")
-            book.readChapter = chapterLikeName.minByOrNull { abs(readingChapter.index - it.index) }
+            book.readChapter = BookUseCase.getChapterLikeTitle(book.id, readingChapter.name()).firstOrNull()
+            if (book.readChapter == null) {
+                book.readChapter = chapterDao.getChapterByIndex(book.id, readingChapter.index) ?: chapterDao.getLastChapterByBookId(book.id)
+            }
         }
+
 
         book.lastChapter = chapterDao.getLastChapterByBookId(book.id)
         book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)

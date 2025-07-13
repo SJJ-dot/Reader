@@ -204,10 +204,9 @@ object BookUseCase {
         var readChapter: Chapter? = null
         if (chapter != null) {
             //根据章节名查询。取索引最接近那个 这里将章节名转拼音按相似度排序在模糊搜索的时候更准确
-            readChapter = chapterDao.getChapterByTitle(book.id, chapter.title ?: "")
-                .firstOrNull()?.minByOrNull { abs(chapter.index - it.index) }
+            readChapter = chapterDao.getChapterByTitle(book.id, chapter.title ?: "").minByOrNull { abs(chapter.index - it.index) }
             if (readChapter == null) {
-                readChapter = chapterDao.getChapterLikeName(book.id, "%${chapter.name()}%").minByOrNull { abs(chapter.index - it.index) }
+                readChapter = getChapterLikeTitle(book.id, chapter.name()).firstOrNull()
             }
             if (readChapter == null) {
                 readChapter = chapterDao.getChapterByIndex(book.id, chapter.index) ?: chapterDao.getLastChapterByBookId(book.id)
@@ -219,5 +218,20 @@ object BookUseCase {
             readingRecord.offest = 0
         }
         readingRecordDao.insertReadingRecord(readingRecord)
+    }
+
+
+    // 查询所有关键词的章节并取交集
+    fun getChapterLikeTitle(bookId: String, chapterTitle: String): List<Chapter> {
+        val keywords = Regex("[\\u4e00-\\u9fa5\\d]+").findAll(chapterTitle).map { it.value }.toList()
+        if (keywords.isEmpty()) return emptyList()
+        // 先查第一个关键词
+        var result = chapterDao.getChapterLikeName(bookId, "%${keywords[0]}%").toSet()
+        // 依次与后续关键词结果取交集
+        for (i in 1 until keywords.size) {
+            val chapters = chapterDao.getChapterLikeName(bookId, "%${keywords[i]}%")
+            result = result.intersect(chapters.toSet())
+        }
+        return result.toList()
     }
 }
