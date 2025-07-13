@@ -12,14 +12,13 @@ import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
 import com.sjianjun.reader.BuildConfig
-import io.reactivex.Single
-import io.reactivex.SingleObserver
-import io.reactivex.SingleTransformer
-import io.reactivex.disposables.Disposable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
-import sjj.novel.view.reader.utils.RxUtils
 import sjj.novel.view.reader.utils.ScreenUtils
 import kotlin.math.abs
 import kotlin.math.max
@@ -63,11 +62,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             saveRecord()
         }
 
-    // 上一章的页面列表缓存
-    private var mPrePageList: MutableList<TxtPage>? = null
-
     // 当前章节的页面列表
-    var curPageList: MutableList<TxtPage>? = null
+    var curPageList: List<TxtPage>? = null
         private set(value) {
             field = value
             if (BuildConfig.DEBUG)
@@ -77,9 +73,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
                 )
             saveRecord()
         }
-
-    // 下一章的页面列表缓存
-    private var mNextPageList: MutableList<TxtPage>? = null
 
     // 绘制提示的画笔
     private var mTipPaint: Paint? = null
@@ -99,7 +92,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     // 存储阅读记录类
     private var mBookRecord = BookRecordBean()
 
-    private var mPreLoadDisp: Disposable? = null
+    private var mPreLoadDisp: Job? = null
 
     /*****************params */ // 当前的状态
 
@@ -124,9 +117,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     // 页面的翻页效果模式
     private var mPageMode: PageMode? = null
 
-    //当前是否是夜间模式
-    private val isNightMode = false
-    private val mDisplayParams: DisplayParams
+    private val mDisplayParams: DisplayParams = DisplayParams()
 
     //字体的颜色
     private var mTextColor = 0
@@ -166,7 +157,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
     /*****************************init params */
     init {
-        mDisplayParams = DisplayParams()
         this.chapterCategory = ArrayList<TxtChapter>(1)
         screenUtils = ScreenUtils(mContext)
         mSelectableTextHelper = SelectableTextHelper.Builder(pageView, mLocation).build()
@@ -285,16 +275,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         Log.i("skipToChapter pos:$pos")
         // 设置参数
         this.chapterPos = pos
-
-        // 将上一章的缓存设置为null
-        mPrePageList = null
         // 如果当前下一章缓存正在执行，则取消
-        if (mPreLoadDisp != null) {
-            mPreLoadDisp!!.dispose()
-        }
-        // 将下一章缓存设置为null
-        mNextPageList = null
-
+        mPreLoadDisp?.cancel()
         // 打开指定章节
         openChapter()
     }
@@ -387,8 +369,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         mTitlePaint!!.setTextSize(mTitleSize)
         Log.i("字体大小：$mTextSize 标题大小:$mTitleSize")
         // 取消缓存
-        mPrePageList = null
-        mNextPageList = null
+        ChapterPageCache.reset()
 
         // 如果当前已经显示数据
         if (isChapterListPrepare && mStatus == STATUS_FINISH) {
@@ -618,26 +599,11 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         isChapterOpen = false
         isChapterListPrepare = false
         isClose = true
-
-        if (mPreLoadDisp != null) {
-            mPreLoadDisp!!.dispose()
-        }
-
-        clearList(this.chapterCategory)
-        clearList(this.curPageList)
-        clearList(mNextPageList)
-
+        mPreLoadDisp?.cancel()
+        chapterCategory?.clear()
         this.chapterCategory = null
         this.curPageList = null
-        mNextPageList = null
-//        mPageView = null
         mCurPage = null
-    }
-
-    private fun clearList(list: MutableList<*>?) {
-        if (list != null) {
-            list.clear()
-        }
     }
 
     /**
@@ -911,14 +877,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         mLastChapterPos = this.chapterPos
         this.chapterPos = prevChapter
 
-        // 当前章缓存为下一章
-        mNextPageList = this.curPageList
-
         // 判断是否具有上一章缓存
-        if (mPrePageList != null) {
-            this.curPageList = mPrePageList
-            mPrePageList = null
-
+        val pageList = ChapterPageCache.get(this.chapterPos)
+        if (pageList != null) {
+            this.curPageList = pageList
         } else {
             dealLoadPageList(prevChapter)
         }
@@ -1001,19 +963,14 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      */
     open fun parseNextChapter(): Boolean {
         val nextChapter = this.chapterPos + 1
-
         mLastChapterPos = this.chapterPos
         this.chapterPos = nextChapter
 
-        // 将当前章的页面列表，作为上一章缓存
-        mPrePageList = this.curPageList
-
         // 是否下一章数据已经预加载了
-        if (mNextPageList != null) {
-            this.curPageList = mNextPageList
-            mNextPageList = null
+        val txtPages = ChapterPageCache.get(this.chapterPos)
+        if (txtPages != null) {
+            this.curPageList = txtPages
         } else {
-            // 处理页面解析
             dealLoadPageList(nextChapter)
         }
         // 预加载下一页面
@@ -1027,10 +984,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             if (this.curPageList != null) {
                 if (curPageList!!.isEmpty()) {
                     mStatus = STATUS_EMPTY
-
-                    // 添加一个空数据
-                    val page = TxtPage()
-                    curPageList!!.add(page)
+                    curPageList = listOf(TxtPage())
                 } else {
                     mStatus = STATUS_FINISH
                 }
@@ -1056,39 +1010,22 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         }
 
         //如果之前正在加载则取消
-        if (mPreLoadDisp != null) {
-            mPreLoadDisp!!.dispose()
-        }
+        mPreLoadDisp?.cancel()
 
         //调用异步进行预加载加载
-        Single.create { e ->
+        mPreLoadDisp = GlobalScope.launch(Dispatchers.IO) {
             val pages = loadPageList(nextChapter)
-            if (pages == null) {
-                e.onError(Exception("页面加载失败"))
-            } else {
-                e.onSuccess(pages)
+            if (!pages.isNullOrEmpty()) {
+                ChapterPageCache.put(nextChapter, pages)
             }
-        }.compose(SingleTransformer { upstream: Single<MutableList<TxtPage>> ->
-            RxUtils.toSimpleSingle(upstream)
-        }).subscribe(object : SingleObserver<MutableList<TxtPage>?> {
-            override fun onSubscribe(d: Disposable) {
-                mPreLoadDisp = d
-            }
-
-            override fun onSuccess(pages: MutableList<TxtPage>) {
-                mNextPageList = pages
-            }
-
-            override fun onError(e: Throwable) {
-                //无视错误
-            }
-        })
+        }
     }
 
     // 取消翻页
     fun pageCancel() {
         if (mCurPage!!.position == 0 && this.chapterPos > mLastChapterPos) { // 加载到下一章取消了
-            if (mPrePageList != null) {
+            val pageList = ChapterPageCache.get(mLastChapterPos)
+            if (pageList != null) {
                 cancelNextChapter()
             } else {
                 if (parsePrevChapter()) {
@@ -1098,8 +1035,8 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
                 }
             }
         } else if (this.curPageList == null || (mCurPage!!.position == curPageList!!.size - 1 && this.chapterPos < mLastChapterPos)) {  // 加载上一章取消了
-
-            if (mNextPageList != null) {
+            val pageList = ChapterPageCache.get(mLastChapterPos)
+            if (pageList != null) {
                 cancelPreChapter()
             } else {
                 if (parseNextChapter()) {
@@ -1118,11 +1055,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         val temp = mLastChapterPos
         mLastChapterPos = this.chapterPos
         this.chapterPos = temp
-
-        mNextPageList = this.curPageList
-        this.curPageList = mPrePageList
-        mPrePageList = null
-
+        this.curPageList = ChapterPageCache.get(this.chapterPos)
         mCurPage = this.prevLastPage
         mCancelPage = null
     }
@@ -1133,9 +1066,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         mLastChapterPos = this.chapterPos
         this.chapterPos = temp
         // 重置页面列表
-        mPrePageList = this.curPageList
-        this.curPageList = mNextPageList
-        mNextPageList = null
+        this.curPageList = ChapterPageCache.get(this.chapterPos)
 
         mCurPage = getCurPage(0)
         mCancelPage = null

@@ -11,7 +11,6 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.distinctUntilChanged
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.withIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
@@ -31,13 +30,11 @@ import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
+import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_FINISH
@@ -349,6 +346,7 @@ class BookReaderActivity : BaseActivity() {
 
     private fun initData() {
         launch(singleCoroutineKey = "initBookReaderData") {
+            ChapterPageCache.reset(bookId)
             mPageLoader.closeBook()
             Log.i("加载书籍：${bookId}")
             val book = viewModel.init(bookId)
