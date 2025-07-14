@@ -177,6 +177,7 @@ class SearchFragment : BaseAsyncFragment() {
 
     private fun initSearchResultList(searchView: SearchView) {
         binding?.searchRecyclerView?.apply {
+            binding?.searchRecyclerView?.itemAnimator = null
             binding?.searchRecyclerView?.layoutManager = LinearLayoutManager(context)
             val resultBookAdapter = SearchResultBookAdapter(this@SearchFragment)
             resultBookAdapter.setHasStableIds(true)
