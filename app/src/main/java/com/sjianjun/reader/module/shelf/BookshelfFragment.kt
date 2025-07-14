@@ -205,7 +205,7 @@ class BookshelfFragment : BaseFragment() {
                         fragment.viewModel.reloadBookFromNet(book)
                     }
                 }
-                root.clickWithDouble(500, onClick = {
+                root.clickWithDouble(onClick = {
                     fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
                 }, onDoubleClick = {
                     if (!book.isLoading) {
