@@ -17,8 +17,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
-import com.sjianjun.coroutine.launchIo
-import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
@@ -30,7 +28,6 @@ import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.bundle
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
@@ -41,14 +38,9 @@ import com.sjianjun.reader.utils.key
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.visibleSet
 import com.sjianjun.reader.view.click
+import com.sjianjun.reader.view.clickWithDouble
 import com.sjianjun.reader.view.isLoading
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.firstOrNull
 import java.util.concurrent.ConcurrentHashMap
 
 @FlowPreview
@@ -213,9 +205,13 @@ class BookshelfFragment : BaseFragment() {
                         fragment.viewModel.reloadBookFromNet(book)
                     }
                 }
-                root.click {
+                root.clickWithDouble(500, onClick = {
                     fragment.startActivity<BookReaderActivity>(BOOK_ID, book.id)
-                }
+                }, onDoubleClick = {
+                    if (!book.isLoading) {
+                        fragment.viewModel.reloadBookFromNet(book)
+                    }
+                })
 
                 visibleSet.apply()
 
