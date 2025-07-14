@@ -1,288 +1,254 @@
-package sjj.novel.view.reader.page;
+package sjj.novel.view.reader.page
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
-import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewConfiguration;
-
-import sjj.alog.Log;
-import sjj.novel.view.reader.animation.CoverPageAnim;
-import sjj.novel.view.reader.animation.HorizonPageAnim;
-import sjj.novel.view.reader.animation.NonePageAnim;
-import sjj.novel.view.reader.animation.PageAnimation;
-import sjj.novel.view.reader.animation.ScrollPageAnim;
-import sjj.novel.view.reader.animation.SimulationPageAnim;
-import sjj.novel.view.reader.animation.SlidePageAnim;
-import sjj.novel.view.reader.bean.BookBean;
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.RectF
+import android.graphics.drawable.Drawable
+import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
+import androidx.activity.viewModels
+import com.sjianjun.reader.utils.act
+import sjj.alog.Log
+import sjj.novel.view.reader.animation.CoverPageAnim
+import sjj.novel.view.reader.animation.HorizonPageAnim
+import sjj.novel.view.reader.animation.NonePageAnim
+import sjj.novel.view.reader.animation.PageAnimation
+import sjj.novel.view.reader.animation.ScrollPageAnim
+import sjj.novel.view.reader.animation.SimulationPageAnim
+import sjj.novel.view.reader.animation.SlidePageAnim
+import kotlin.math.abs
 
 /**
  * Created by Administrator on 2016/8/29 0029.
  * 原作者的GitHub Project Path:(https://github.com/PeachBlossom/treader)
  * 绘制页面显示内容的类
  */
-public class PageView extends View {
+class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : View(context, attrs, defStyleAttr) {
+    private var mViewWidth = 0 // 当前View的宽
+    private var mViewHeight = 0 // 当前View的高
 
-    private final static String TAG = "BookPageWidget";
+    private var mStartX = 0
+    private var mStartY = 0
+    private var isMove = false
 
-    private int mViewWidth = 0; // 当前View的宽
-    private int mViewHeight = 0; // 当前View的高
-
-    private int mStartX = 0;
-    private int mStartY = 0;
-    private boolean isMove = false;
     // 初始化参数
-    private Drawable mBackground;
+    private var mBackground: Drawable? = null
+
     // 唤醒菜单的区域
-    private RectF mCenterRect = null;
-    private boolean isPrepare;
+    private var mCenterRect: RectF? = null
+    var isPrepare: Boolean = false
+        private set
+
     // 动画类
-    private PageAnimation mPageAnim;
-    // 动画监听类
-    private PageAnimation.OnPageChangeListener mPageAnimListener = new PageAnimation.OnPageChangeListener() {
-        @Override
-        public boolean hasPrev() {
-            return PageView.this.hasPrevPage();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return PageView.this.hasNextPage();
-        }
-
-        @Override
-        public void pageCancel() {
-            PageView.this.pageCancel();
-        }
-    };
+    private var mPageAnim: PageAnimation? = null
 
     //点击监听
-    private TouchListener mTouchListener;
-    //内容加载器
-    private PageLoader mPageLoader;
-
-    public PageView(Context context) {
-        this(context, null);
-    }
-
-    public PageView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public PageView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        if (isInEditMode()) {
-            return;
+    private var mTouchListener: TouchListener? = null
+    var pageLoader: PageLoader? = null
+        get() {
+            if (field == null) {
+                field = act?.viewModels<NetPageLoader>()?.value
+                field?.initPageView(this)
+            }
+            return field
         }
-        mPageLoader = new EmptyPageLoader(this);
+
+    // 动画监听类
+    private val mPageAnimListener: PageAnimation.OnPageChangeListener = object : PageAnimation.OnPageChangeListener {
+        override fun hasPrev(): Boolean {
+            return this@PageView.hasPrevPage()
+        }
+
+        override fun hasNext(): Boolean {
+            return this@PageView.hasNextPage()
+        }
+
+        override fun pageCancel() {
+            this@PageView.pageCancel()
+        }
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        mViewWidth = w;
-        mViewHeight = h;
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        mViewWidth = w
+        mViewHeight = h
 
-        isPrepare = true;
+        isPrepare = true
 
-        if (mPageLoader != null) {
-            mPageLoader.prepareDisplay(w, h);
-        }
+        pageLoader?.prepareDisplay(w, h)
     }
 
     //设置翻页的模式
-    void setPageMode(PageMode pageMode) {
+    fun setPageMode(pageMode: PageMode) {
         //视图未初始化的时候，禁止调用
-        if (mViewWidth == 0 || mViewHeight == 0) return;
+        if (mViewWidth == 0 || mViewHeight == 0) return
 
-        switch (pageMode) {
-            case SIMULATION:
-                mPageAnim = new SimulationPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener);
-                break;
-            case COVER:
-                mPageAnim = new CoverPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener);
-                break;
-            case SLIDE:
-                mPageAnim = new SlidePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener);
-                break;
-            case NONE:
-                mPageAnim = new NonePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener);
-                break;
-            case SCROLL:
-                mPageAnim = new ScrollPageAnim(mViewWidth, mViewHeight, 0,
-                        mPageLoader.getMarginHeight(), this, mPageAnimListener);
-                break;
-//            default:
-//                mPageAnim = new SimulationPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener);
+        when (pageMode) {
+            PageMode.SIMULATION -> mPageAnim = SimulationPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
+            PageMode.COVER -> mPageAnim = CoverPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
+            PageMode.SLIDE -> mPageAnim = SlidePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
+            PageMode.NONE -> mPageAnim = NonePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
+            PageMode.SCROLL -> mPageAnim = ScrollPageAnim(mViewWidth, mViewHeight, 0, pageLoader?.marginHeight ?: 0, this, mPageAnimListener)
         }
     }
 
-    public Bitmap getNextBitmap() {
-        if (mPageAnim == null) return null;
-        return mPageAnim.getNextBitmap();
-    }
-
-    public Bitmap getBgBitmap() {
-        if (mPageAnim == null) return null;
-        return mPageAnim.getBgBitmap();
-    }
-
-    public boolean autoPrevPage() {
+    val nextBitmap: Bitmap? get() = mPageAnim?.getNextBitmap()
+    val bgBitmap: Bitmap? get() = mPageAnim?.getBgBitmap()
+    fun autoPrevPage(): Boolean {
         //滚动暂时不支持自动翻页
-        if (mPageAnim instanceof ScrollPageAnim) {
-            return false;
+        if (mPageAnim is ScrollPageAnim) {
+            return false
         } else {
-            startPageAnim(PageAnimation.Direction.PRE);
-            return true;
+            startPageAnim(PageAnimation.Direction.PRE)
+            return true
         }
     }
 
-    public boolean autoNextPage() {
-        if (mPageAnim instanceof ScrollPageAnim) {
-            return false;
+    fun autoNextPage(): Boolean {
+        if (mPageAnim is ScrollPageAnim) {
+            return false
         } else {
-            startPageAnim(PageAnimation.Direction.NEXT);
-            return true;
+            startPageAnim(PageAnimation.Direction.NEXT)
+            return true
         }
     }
 
-    private void startPageAnim(PageAnimation.Direction direction) {
-        if (mTouchListener == null) return;
+    private fun startPageAnim(direction: PageAnimation.Direction?) {
+        if (mTouchListener == null) return
         //是否正在执行动画
-        abortAnimation();
+        abortAnimation()
         if (direction == PageAnimation.Direction.NEXT) {
-            int x = mViewWidth;
-            int y = mViewHeight;
+            val x = mViewWidth
+            val y = mViewHeight
             //初始化动画
-            mPageAnim.setStartPoint(x, y);
+            mPageAnim!!.setStartPoint(x.toFloat(), y.toFloat())
             //设置点击点
-            mPageAnim.setTouchPoint(x, y);
+            mPageAnim!!.setTouchPoint(x.toFloat(), y.toFloat())
             //设置方向
-            Boolean hasNext = hasNextPage();
+            val hasNext = hasNextPage()
 
-            mPageAnim.setDirection(direction);
+            mPageAnim!!.setDirection(direction)
             if (!hasNext) {
-                return;
+                return
             }
         } else {
-            int x = 0;
-            int y = mViewHeight;
+            val x = 0
+            val y = mViewHeight
             //初始化动画
-            mPageAnim.setStartPoint(x, y);
+            mPageAnim!!.setStartPoint(x.toFloat(), y.toFloat())
             //设置点击点
-            mPageAnim.setTouchPoint(x, y);
-            mPageAnim.setDirection(direction);
+            mPageAnim!!.setTouchPoint(x.toFloat(), y.toFloat())
+            mPageAnim!!.setDirection(direction)
             //设置方向方向
-            Boolean hashPrev = hasPrevPage();
+            val hashPrev = hasPrevPage()
             if (!hashPrev) {
-                return;
+                return
             }
         }
-        mPageAnim.startAnim();
-        this.postInvalidate();
+        mPageAnim!!.startAnim()
+        this.postInvalidate()
     }
 
-    public void setBackground(Drawable background) {
-        mBackground = background;
+    override fun setBackground(background: Drawable?) {
+        mBackground = background
     }
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-
+    override fun onDraw(canvas: Canvas) {
         //绘制背景
+
         if (mBackground != null) {
-            mBackground.draw(canvas);
+            mBackground!!.draw(canvas)
         }
         if (mPageAnim != null) {
             //绘制动画
-            mPageAnim.draw(canvas);
+            mPageAnim!!.draw(canvas)
         }
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-
-        if (mTouchListener != null && mTouchListener.intercept(event)) {
-            return true;
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (mTouchListener != null && mTouchListener!!.intercept(event)) {
+            return true
         }
 
-        int x = (int) event.getX();
-        int y = (int) event.getY();
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mHasPerformedLongPress = false;
-                mStartX = x;
-                mStartY = y;
-                isMove = false;
-                mPageAnim.onTouchEvent(event);
-                postDelayed(longClick, ViewConfiguration.getLongPressTimeout());
-                break;
-            case MotionEvent.ACTION_MOVE:
+        val x = event.getX().toInt()
+        val y = event.getY().toInt()
+        when (event.getAction()) {
+            MotionEvent.ACTION_DOWN -> {
+                mHasPerformedLongPress = false
+                mStartX = x
+                mStartY = y
+                isMove = false
+                mPageAnim!!.onTouchEvent(event)
+                postDelayed(longClick, ViewConfiguration.getLongPressTimeout().toLong())
+            }
+
+            MotionEvent.ACTION_MOVE -> {
                 if (mHasPerformedLongPress) {
-                    return true;
+                    return true
                 }
                 // 判断是否大于最小滑动值。
-                int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                val slop = ViewConfiguration.get(getContext()).getScaledTouchSlop()
                 if (!isMove) {
-                    isMove = Math.abs(mStartX - event.getX()) > slop || Math.abs(mStartY - event.getY()) > slop;
+                    isMove = abs(mStartX - event.getX()) > slop || abs(mStartY - event.getY()) > slop
                 }
 
                 // 如果滑动了，则进行翻页。
                 if (isMove) {
-                    mPageLoader.hideSelectView();
-                    mPageAnim.onTouchEvent(event);
-                    removeCallbacks(longClick);
+                    pageLoader?.hideSelectView()
+                    mPageAnim!!.onTouchEvent(event)
+                    removeCallbacks(longClick)
                 }
-                break;
-            case MotionEvent.ACTION_UP:
+            }
+
+            MotionEvent.ACTION_UP -> {
                 if (mHasPerformedLongPress) {
-                    return true;
+                    return true
                 }
-                removeCallbacks(longClick);
+                removeCallbacks(longClick)
                 if (!isMove) {
                     //设置中间区域范围
                     if (mCenterRect == null) {
-                        mCenterRect = new RectF(mViewWidth / 5, mViewHeight / 3,
-                                mViewWidth * 4 / 5, mViewHeight * 2 / 3);
+                        mCenterRect = RectF(
+                            (mViewWidth / 5).toFloat(), (mViewHeight / 3).toFloat(),
+                            (mViewWidth * 4 / 5).toFloat(), (mViewHeight * 2 / 3).toFloat()
+                        )
                     }
-                    if (mPageLoader.hideSelectView()) {
-                        return true;
+                    if (pageLoader?.hideSelectView() == true) {
+                        return true
                     }
 
                     //是否点击了中间
-                    if (mCenterRect.contains(x, y)) {
+                    if (mCenterRect!!.contains(x.toFloat(), y.toFloat())) {
                         if (mTouchListener != null) {
-                            mTouchListener.center();
+                            mTouchListener!!.center()
                         }
-                        return true;
+                        return true
                     }
                 }
-                mPageAnim.onTouchEvent(event);
-                break;
-            case MotionEvent.ACTION_CANCEL:
-                removeCallbacks(longClick);
-                break;
+                mPageAnim!!.onTouchEvent(event)
+            }
+
+            MotionEvent.ACTION_CANCEL -> removeCallbacks(longClick)
         }
-        return true;
+        return true
     }
 
-    private boolean mHasPerformedLongPress = false;
-    private Runnable longClick = () -> {
-        mHasPerformedLongPress = true;
-        mPageLoader.onLongPress(mStartX,mStartY);
-    };
+    private var mHasPerformedLongPress = false
+    private val longClick = Runnable {
+        mHasPerformedLongPress = true
+        pageLoader?.onLongPress(mStartX, mStartY)
+    }
 
     /**
      * 判断是否存在上一页
      *
      * @return
      */
-    private boolean hasPrevPage() {
-        return mPageLoader.prev();
+    private fun hasPrevPage(): Boolean {
+        return pageLoader?.prev() ?: false
     }
 
     /**
@@ -290,50 +256,40 @@ public class PageView extends View {
      *
      * @return
      */
-    private boolean hasNextPage() {
-        return mPageLoader.next();
+    private fun hasNextPage(): Boolean {
+        return pageLoader?.next() ?: false
     }
 
-    private void pageCancel() {
-        mPageLoader.pageCancel();
+    private fun pageCancel() {
+        pageLoader?.pageCancel()
     }
 
-    @Override
-    public void computeScroll() {
+    override fun computeScroll() {
         //进行滑动
         if (mPageAnim != null) {
-            mPageAnim.scrollAnim();
+            mPageAnim!!.scrollAnim()
         }
-        super.computeScroll();
+        super.computeScroll()
     }
 
     //如果滑动状态没有停止就取消状态，重新设置Anim的触碰点
-    public void abortAnimation() {
-        mPageAnim.abortAnim();
+    fun abortAnimation() {
+        mPageAnim!!.abortAnim()
     }
 
-    public boolean isRunning() {
-        if (mPageAnim == null) {
-            return false;
+    val isRunning: Boolean get() = mPageAnim?.isRunning() == true
+
+    fun setTouchListener(mTouchListener: TouchListener?) {
+        this.mTouchListener = mTouchListener
+    }
+
+    fun drawNextPage() {
+        if (!isPrepare) return
+
+        if (mPageAnim is HorizonPageAnim) {
+            (mPageAnim as HorizonPageAnim).changePage()
         }
-        return mPageAnim.isRunning();
-    }
-
-    public boolean isPrepare() {
-        return isPrepare;
-    }
-
-    public void setTouchListener(TouchListener mTouchListener) {
-        this.mTouchListener = mTouchListener;
-    }
-
-    public void drawNextPage() {
-        if (!isPrepare) return;
-
-        if (mPageAnim instanceof HorizonPageAnim) {
-            ((HorizonPageAnim) mPageAnim).changePage();
-        }
-        mPageLoader.drawPage(getNextBitmap(), false);
+        pageLoader?.drawPage(this.nextBitmap ?: return, false)
     }
 
     /**
@@ -341,51 +297,34 @@ public class PageView extends View {
      *
      * @param isUpdate
      */
-    public void drawCurPage(boolean isUpdate) {
-        Log.i("绘制书籍内容 isPrepare:" + isPrepare + " isUpdate:" + isUpdate);
-        if (!isPrepare) return;
+    fun drawCurPage(isUpdate: Boolean) {
+        Log.i("绘制书籍内容 isPrepare:$isPrepare isUpdate:$isUpdate")
+        if (!isPrepare) return
 
         if (!isUpdate) {
-            if (mPageAnim instanceof ScrollPageAnim) {
-                ((ScrollPageAnim) mPageAnim).resetBitmap();
+            if (mPageAnim is ScrollPageAnim) {
+                (mPageAnim as ScrollPageAnim).resetBitmap()
             }
         }
-        mPageLoader.drawPage(getNextBitmap(), isUpdate);
+        pageLoader?.drawPage(this.nextBitmap ?: return, isUpdate)
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        mPageAnim.abortAnim();
-        mPageAnim.clear();
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        mPageAnim!!.abortAnim()
+        mPageAnim!!.clear()
 
-        mPageLoader = null;
-        mPageAnim = null;
+        pageLoader = null
+        mPageAnim = null
     }
 
-    /**
-     * 获取 PageLoader
-     *
-     * @return
-     */
-    public PageLoader getPageLoader() {
-        // 判是否已经存在
-        if (mPageLoader != null && !(mPageLoader instanceof EmptyPageLoader)) {
-            return mPageLoader;
-        }
-        mPageLoader = new NetPageLoader(this);
-        // 判断是否 PageView 已经初始化完成
-        if (mViewWidth != 0 || mViewHeight != 0) {
-            // 初始化 PageLoader 的屏幕大小
-            mPageLoader.prepareDisplay(mViewWidth, mViewHeight);
-        }
+    interface TouchListener {
+        fun intercept(event: MotionEvent?): Boolean
 
-        return mPageLoader;
+        fun center()
     }
 
-    public interface TouchListener {
-        boolean intercept(MotionEvent event);
-
-        void center();
+    companion object {
+        private const val TAG = "BookPageWidget"
     }
 }

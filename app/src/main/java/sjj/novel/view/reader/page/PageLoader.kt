@@ -1,17 +1,19 @@
 package sjj.novel.view.reader.page
 
-import android.content.Context
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.text.StaticLayout
 import android.text.TextPaint
+import androidx.lifecycle.ViewModel
 import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
 import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.utils.dp2Px
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -19,36 +21,33 @@ import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
-import sjj.novel.view.reader.utils.ScreenUtils
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Created by newbiechen on 17-7-1.
  */
-abstract class PageLoader(pageView: PageView) : OnSelectListener {
+abstract class PageLoader : ViewModel(), OnSelectListener {
     /**
      * 获取章节目录。
      *
      * @return
      */
     // 当前章节列表
-    var chapterCategory: MutableList<TxtChapter>?
+    var chapterCategory: MutableList<TxtChapter>? = null
         protected set
 
     // 书本对象
-    @JvmField
-    protected var mCollBook: BookBean? = null
+    var mCollBook: BookBean? = null
 
     // 监听器
     @JvmField
     protected var mPageChangeListener: OnPageChangeListener? = null
 
-    private val mContext: Context = pageView.context
-
-    // 页面显示类
-    private var mPageView: PageView? = pageView
+    @SuppressLint("StaticFieldLeak")
+    private var mPageView: PageView? = null
 
     // 当前显示的页
     private var mCurPage: TxtPage? = null
@@ -115,7 +114,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         private set
 
     // 页面的翻页效果模式
-    private var mPageMode: PageMode? = null
+    private var mPageMode: PageMode = PageMode.SIMULATION
 
     private val mDisplayParams: DisplayParams = DisplayParams()
 
@@ -150,21 +149,22 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
     //上一章的记录
     private var mLastChapterPos = 0
-    private val screenUtils: ScreenUtils
-
-    private val mSelectableTextHelper: SelectableTextHelper
+    private var mSelectableTextHelper: SelectableTextHelper? = null
     private val mLocation = TxtLocationImpl()
 
-    /*****************************init params */
     init {
-        this.chapterCategory = ArrayList<TxtChapter>(1)
-        screenUtils = ScreenUtils(mContext)
-        mSelectableTextHelper = SelectableTextHelper.Builder(pageView, mLocation).build()
-        mSelectableTextHelper.setSelectListener(this)
+        chapterCategory = mutableListOf()
         // 初始化画笔
         initPaint()
+    }
+
+    fun initPageView(pageView: PageView) {
+        mPageView = pageView
+        mSelectableTextHelper = SelectableTextHelper.Builder(pageView, mLocation).build()
+        mSelectableTextHelper?.setSelectListener(this)
         // 初始化PageView
-        initPageView()
+        pageView.setPageMode(mPageMode)
+        pageView.setBackground(mBackground)
     }
 
     /**
@@ -194,7 +194,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         // 绘制提示的画笔
         mTipPaint = Paint()
         mTipPaint!!.setTextAlign(Paint.Align.LEFT) // 绘制的起始点
-        mTipPaint!!.setTextSize(screenUtils.spToPx(12).toFloat()) // Tip默认的字体大小
+        mTipPaint!!.setTextSize(12.dp2Px.toFloat()) // Tip默认的字体大小
         mTipPaint!!.setAntiAlias(true)
         mTipPaint!!.setSubpixelText(true)
 
@@ -215,12 +215,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         mSelectedPaint!!.setSubpixelText(true)
         mSelectedPaint!!.setAntiAlias(true)
         mSelectedPaint!!.setStyle(Paint.Style.FILL_AND_STROKE)
-    }
-
-    private fun initPageView() {
-        //配置参数
-        mPageView!!.setPageMode(mPageMode)
-        mPageView!!.setBackground(mBackground)
     }
 
     /****************************** public method */
@@ -321,7 +315,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      */
     fun updateTime() {
         Log.i("updateTime")
-        if (!mPageView!!.isRunning()) {
+        if (mPageView?.isRunning == true) {
             mPageView!!.drawCurPage(true)
         }
     }
@@ -332,10 +326,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * @param level
      */
     fun updateBattery(level: Int) {
-        Log.i("updateBattery level:" + level)
+        Log.i("updateBattery level:$level")
         mBatteryLevel = level
 
-        if (!mPageView!!.isRunning()) {
+        if (mPageView?.isRunning == true) {
             mPageView!!.drawCurPage(true)
         }
     }
@@ -359,30 +353,24 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * @param textSize
      */
     fun setTextSize(textSize: Float, lineSpace: Float) {
-        Log.i("setTextSize textSize:" + textSize + " lineSpace:" + lineSpace)
+        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace")
         // 设置文字相关参数
         setUpTextParams(textSize, lineSpace)
 
         // 设置画笔的字体大小
-        mTextPaint!!.setTextSize(mTextSize)
+        mTextPaint!!.textSize = mTextSize
         // 设置标题的字体大小
-        mTitlePaint!!.setTextSize(mTitleSize)
+        mTitlePaint!!.textSize = mTitleSize
         Log.i("字体大小：$mTextSize 标题大小:$mTitleSize")
         // 取消缓存
-        ChapterPageCache.reset()
+        ChapterPageCache.resetTextSize(textSize, lineSpace)
 
         // 如果当前已经显示数据
         if (isChapterListPrepare && mStatus == STATUS_FINISH) {
             // 重新计算当前页面
             dealLoadPageList(this.chapterPos)
-
-            // 防止在最后一页，通过修改字体，以至于页面数减少导致崩溃的问题
-            if (mCurPage!!.position >= curPageList!!.size) {
-                mCurPage!!.position = curPageList!!.size - 1
-            }
-
             // 重新获取指定页面
-            mCurPage = curPageList!!.get(mCurPage!!.position)
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 
         mPageView!!.drawCurPage(false)
@@ -396,13 +384,13 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     fun setPageStyle(pageStyle: PageStyle) {
         Log.i("设置页面样式:$pageStyle")
         // 设置当前颜色样式
-        mTextColor = pageStyle.getChapterContentColor(mContext)
-        mBackground = BgDrawable(pageStyle.getBackground(mContext, 0, 0))
+        mTextColor = pageStyle.getChapterContentColor(mPageView!!.context)
+        mBackground = BgDrawable(pageStyle.getBackground(mPageView!!.context, 0, 0))
 
-        mTipPaint!!.setColor(pageStyle.getLabelColor(mContext))
-        mTitlePaint!!.setColor(pageStyle.getChapterTitleColor(mContext))
+        mTipPaint!!.setColor(pageStyle.getLabelColor(mPageView!!.context))
+        mTitlePaint!!.setColor(pageStyle.getChapterTitleColor(mPageView!!.context))
         mTextPaint!!.setColor(mTextColor)
-        mSelectedPaint!!.setColor(pageStyle.getSelectedColor(mContext))
+        mSelectedPaint!!.setColor(pageStyle.getSelectedColor(mPageView!!.context))
 
         mPageView!!.drawCurPage(false)
     }
@@ -417,7 +405,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         Log.i("setPageMode pageMode:$pageMode")
         mPageMode = pageMode
 
-        mPageView!!.setPageMode(mPageMode)
+        mPageView!!.setPageMode(pageMode)
 
         // 重新绘制当前页
         mPageView!!.drawCurPage(false)
@@ -457,18 +445,6 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             mPageView!!.drawCurPage(false)
         }
 
-    var book: BookBean?
-        /**
-         * 获取书籍信息
-         *
-         * @return
-         */
-        get() = mCollBook
-        set(book) {
-            TxtChapter.evictAll()
-            mCollBook = book
-        }
-
     val pagePos: Int
         /**
          * 获取当前页的页码
@@ -486,13 +462,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             return chapterCategory?.getOrNull(chapterPos)
         }
 
-    val marginHeight: Int
-        /**
-         * 获取距离屏幕的高度
-         *
-         * @return
-         */
-        get() = Math.round(mDisplayParams.tipHeight)
+    val marginHeight: Int get() = mDisplayParams.tipHeight.roundToInt()
 
     /**
      * 保存阅读记录
@@ -596,6 +566,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
      * 关闭书本
      */
     fun closeBook() {
+        Log.i("chapterCategory size:${chapterCategory?.size} isChapterOpen:$isChapterOpen isChapterListPrepare:$isChapterListPrepare isClose:$isClose")
         isChapterOpen = false
         isChapterListPrepare = false
         isClose = true
@@ -615,7 +586,11 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     @Throws(Exception::class)
     private fun loadPageList(chapterPos: Int): MutableList<TxtPage>? {
         // 获取章节
-        val chapter = chapterCategory?.getOrNull(chapterPos) ?: return null
+        val chapter = chapterCategory?.getOrNull(chapterPos)
+        if (chapter == null) {
+            Log.e("章节不存在 chapterPos:$chapterPos chapterCategory size:${chapterCategory?.size}")
+            return null
+        }
         // 判断章节是否存在
         if (!hasChapterData(chapter)) {
             Log.e("章节数据不存在 chapterPos:" + chapterPos + " title:" + chapter.title)
@@ -643,7 +618,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
 
     /***********************************default method */
     fun drawPage(bitmap: Bitmap, isUpdate: Boolean) {
-        drawBackground(mPageView!!.getBgBitmap(), isUpdate)
+        drawBackground(mPageView?.bgBitmap ?: return, isUpdate)
         if (!isUpdate) {
             drawContent(bitmap)
         }
@@ -655,7 +630,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     private fun drawBackground(bitmap: Bitmap, isUpdate: Boolean) {
         Log.i("绘制背景 Width:" + bitmap.getWidth() + " Height:" + bitmap.getHeight())
         val canvas = Canvas(bitmap)
-        val tipMarginHeight = screenUtils.dpToPx(3)
+        val tipMarginHeight = 3.dp2Px
         if (!isUpdate) {
             /****绘制背景 */
             if (mBackground != null) {
@@ -747,9 +722,10 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
             val pivotY = (mDisplayParams.contentHeight - textHeight) / 2
             canvas.drawText(tip, pivotX, pivotY, mTextPaint!!)
         } else {
-            if (mSelectableTextHelper.mSelectionInfo.select) {
-                val start = mSelectableTextHelper.mSelectionInfo.start
-                val end = mSelectableTextHelper.mSelectionInfo.end
+            val helper = mSelectableTextHelper
+            if (helper?.mSelectionInfo?.select == true) {
+                val start = helper.mSelectionInfo.start
+                val end = helper.mSelectionInfo.end
 
                 val startLine = mLocation.getLineForOffset(start)
                 val endLine = mLocation.getLineForOffset(end)
@@ -805,6 +781,7 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
         // 获取PageView的宽高
         mDisplayParams.width = w
         mDisplayParams.height = h
+        ChapterPageCache.resetDisplay(w, h)
         // 获取内容显示位置的大小
         // 重置 PageMode
         mPageView!!.setPageMode(mPageMode)
@@ -1296,18 +1273,19 @@ abstract class PageLoader(pageView: PageView) : OnSelectListener {
     }
 
     fun hideSelectView(): Boolean {
-        if (!mSelectableTextHelper.mSelectionInfo.select) {
+        val helper = mSelectableTextHelper
+        if (helper?.mSelectionInfo?.select != true) {
             return false
         }
-        mSelectableTextHelper.resetSelectionInfo()
-        mSelectableTextHelper.hideSelectView()
+        helper.resetSelectionInfo()
+        helper.hideSelectView()
         mPageView!!.drawNextPage()
         return true
     }
 
     fun onLongPress(x: Int, y: Int) {
-        Log.e("长按 x:" + x + " y:" + y)
-        mSelectableTextHelper.showSelectView(x, y)
+        Log.e("长按 x:$x y:$y")
+        mSelectableTextHelper?.showSelectView(x, y)
     }
 
     override fun onTextSelected(info: SelectionInfo?) {

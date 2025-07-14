@@ -9,7 +9,7 @@ import kotlin.math.min
  * Created by newbiechen on 17-5-29.
  * 网络页面加载器
  */
-class NetPageLoader(pageView: PageView) : PageLoader(pageView) {
+class NetPageLoader() : PageLoader() {
     public override fun refreshChapterList() {
         if (mCollBook == null || mCollBook!!.bookChapterList == null) return
 
