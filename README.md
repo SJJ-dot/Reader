@@ -1,4 +1,4 @@
-## 📖📖开源网络小说阅读器，支持自定义书源脚本(Python🐍)
+## 📖📖网络小说阅读器，支持自定义书源脚本(Python🐍)
 ## 如果喜欢就动动小手点个star吧😁😁😁😁
 
 | <img src="img/01.jpg" width = "180" height = "360"/> | <img src="img/02.jpg" width = "180" height = "360"/> |
