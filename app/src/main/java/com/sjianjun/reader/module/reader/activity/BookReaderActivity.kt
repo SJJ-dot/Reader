@@ -182,6 +182,8 @@ class BookReaderActivity : BaseActivity() {
                     curChapter.content = chapter.content?.joinToString("\n") { it.format() }
                     if (chapter.content?.firstOrNull()?.contentError == true) {
                         curChapter.title = chapter.title + "(章节内容错误)"
+                    } else {
+                        curChapter.title = chapter.title
                     }
                     Log.e("加载完成 ${curChapter.chapterIndex} ${curChapter.title}")
                     loader.reloadPages()
