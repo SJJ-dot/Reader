@@ -9,6 +9,7 @@ object ChapterPageCache {
     private var lineSpace = 0f
     private var displayWidth = 0
     private var displayHeight = 0
+
     //保留5个章节的分页缓存
     private val cache = LruCache<Int, List<TxtPage>>(5)
     fun resetId(id: String) {
@@ -25,6 +26,11 @@ object ChapterPageCache {
 
     fun get(chapterPos: Int): List<TxtPage>? {
         return cache.get(chapterPos)
+    }
+
+    @JvmStatic
+    fun remove(chapterPos: Int) {
+        cache.remove(chapterPos)
     }
 
     fun resetTextSize(textSize: Float, lineSpace: Float) {

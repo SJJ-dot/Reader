@@ -584,7 +584,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      * @return
      */
     @Throws(Exception::class)
-    private fun loadPageList(chapterPos: Int): MutableList<TxtPage>? {
+    private fun loadPageList(chapterPos: Int): List<TxtPage>? {
         // 获取章节
         val chapter = chapterCategory?.getOrNull(chapterPos)
         if (chapter == null) {
@@ -596,9 +596,16 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             Log.e("章节数据不存在 chapterPos:" + chapterPos + " title:" + chapter.title)
             return null
         }
+        val txtPages = ChapterPageCache.get(chapterPos)
+        if (!txtPages.isNullOrEmpty()){
+            return txtPages
+        }
         // 获取章节的文本流
-        val chapters = loadPages(chapter)
-        return chapters
+        val pages = loadPages(chapter)
+        if (pages.isNotEmpty()) {
+            ChapterPageCache.put(chapterPos, pages)
+        }
+        return pages
     }
 
     /*******************************abstract method */
@@ -991,10 +998,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
         //调用异步进行预加载加载
         mPreLoadDisp = GlobalScope.launch(Dispatchers.IO) {
-            val pages = loadPageList(nextChapter)
-            if (!pages.isNullOrEmpty()) {
-                ChapterPageCache.put(nextChapter, pages)
-            }
+            loadPageList(nextChapter)
         }
     }
 
