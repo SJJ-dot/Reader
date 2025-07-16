@@ -318,24 +318,17 @@ class BookReaderActivity : BaseActivity() {
                 launch("requestChapters") {
                     requestChapters.forEach { requestChapter ->
                         val chapter = viewModel.book.value?.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
-                        if (viewModel.getChapterContent(chapter)) {
-                            requestChapter.content =
-                                chapter.content?.joinToString("\n") { it.format() }
-                            if (chapter.content?.firstOrNull()?.contentError == true) {
-                                requestChapter.title = chapter.title + "(章节内容错误)"
-                            }
-                            if (loader.pageStatus == STATUS_LOADING && loader.chapterPos == requestChapter.chapterIndex) {
-                                loader.openChapter()
-                            } else if (loader.pageStatus == STATUS_FINISH && loader.chapterPos == requestChapter.chapterIndex - 1) {
-                                loader.preLoadNextChapter()
-                            }
-                            getChapterContentPage(requestChapter, chapter)
-
-                        } else {
-                            if (loader.pageStatus == STATUS_LOADING && loader.chapterPos == requestChapter.chapterIndex) {
-                                loader.chapterError()
-                            }
+                        viewModel.getChapterContent(chapter)
+                        requestChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                        if (chapter.content?.firstOrNull()?.contentError == true) {
+                            requestChapter.title = chapter.title + "(章节内容错误)"
                         }
+                        if (loader.pageStatus == STATUS_LOADING && loader.chapterPos == requestChapter.chapterIndex) {
+                            loader.openChapter()
+                        } else if (loader.pageStatus == STATUS_FINISH && loader.chapterPos == requestChapter.chapterIndex - 1) {
+                            loader.preLoadNextChapter()
+                        }
+                        getChapterContentPage(requestChapter, chapter)
                     }
                 }
             }
