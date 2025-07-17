@@ -172,6 +172,7 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             binding?.dayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
         binding?.dayNight?.click {
+            dismissAllowingStateLoss()
             when (globalConfig.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
