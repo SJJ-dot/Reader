@@ -26,6 +26,14 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
+            <FrameLayout
+                android:id="@+id/fl_setting_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
             <View
                 android:id="@+id/brightness_mask"
                 android:layout_width="match_parent"

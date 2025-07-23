@@ -20,10 +20,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
@@ -49,15 +49,12 @@ import java.text.DecimalFormat
 /*
  * Created by shen jian jun on 2020-07-13
  */
-class BookReaderSettingFragment : BottomSheetDialogFragment() {
+class BookReaderSettingFragment : BaseFragment() {
     var binding: ReaderFragmentSettingViewBinding? = null
 
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
     private val REQUEST_CODE_PICK_FONT = 1111
-    override fun getTheme(): Int {
-        return R.style.reader_setting_dialog
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,8 +65,6 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
-            ?.setBackgroundColor(Color.TRANSPARENT)
         binding = ReaderFragmentSettingViewBinding.bind(view)
         initSpeak()
         initChapterList()
@@ -83,12 +78,6 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
         initPageModel()
         initFontList()
         initBrowser()
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        return dialog
     }
 
     private fun initBrowser(){
@@ -245,11 +234,6 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
     }
 
     private fun initPageStyle() {
-        if (PageStyle.getStyle(globalConfig.readerPageStyle.value).isDark) {
-            ImmersionBar.with(this).statusBarDarkFont(false).init()
-        } else {
-            ImmersionBar.with(this).statusBarDarkFont(true).init()
-        }
         binding?.pageStyleImport?.click {
             dismissAllowingStateLoss()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
@@ -398,11 +382,6 @@ class BookReaderSettingFragment : BottomSheetDialogFragment() {
             holder.itemView.click {
                 notifyDataSetChanged()
                 globalConfig.readerPageStyle.postValue(pageStyle.id)
-                if (pageStyle.isDark) {
-                    ImmersionBar.with(fragment).statusBarDarkFont(false).init()
-                } else {
-                    ImmersionBar.with(fragment).statusBarDarkFont(true).init()
-                }
                 //记录浅色 深色样式 和深色样式
                 if (pageStyle.isDark) {
                     globalConfig.lastDarkTheme.postValue(pageStyle.id)

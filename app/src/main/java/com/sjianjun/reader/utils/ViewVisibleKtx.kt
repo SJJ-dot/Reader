@@ -5,15 +5,18 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import com.sjianjun.reader.R
 
-fun View.show() {
+fun View?.show() {
+    if (this == null) return
     visibility(View.VISIBLE, this)
 }
 
-fun View.hide() {
+fun View?.hide() {
+    if (this == null) return
     visibility(View.INVISIBLE, this)
 }
 
-fun View.gone() {
+fun View?.gone() {
+    if (this == null) return
     visibility(View.GONE, this)
 }
 

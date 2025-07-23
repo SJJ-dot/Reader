@@ -16,7 +16,6 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
-import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.event.EventBus
@@ -28,6 +27,8 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.ensureActive
@@ -272,32 +273,32 @@ class BookReaderActivity : BaseActivity() {
 
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
-                val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
-                settingDialog as BookReaderSettingFragment?
-                val showing = settingDialog?.isVisible == true
+                val showing = binding?.flSettingContainer?.isShown ?: false
                 if (showing && event?.action == MotionEvent.ACTION_DOWN) {
                     return true
                 }
                 if (showing && event?.action == MotionEvent.ACTION_UP) {
-                    settingDialog?.dismissAllowingStateLoss()
+                    binding?.flSettingContainer.gone()
                     return true
                 }
                 return showing
             }
 
             override fun center() {
-                showSetting()
+                val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
+                if (settingDialog == null) {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fl_setting_container, BookReaderSettingFragment(), TAG_SETTING_DIALOG)
+                        .commitAllowingStateLoss()
+                }
+                binding?.flSettingContainer.show()
             }
 
         })
     }
 
-    private fun showSetting() {
-        val fragment = BookReaderSettingFragment()
-        fragment.show(supportFragmentManager, TAG_SETTING_DIALOG)
-    }
-
     private fun initView() {
+
         viewModel.book.observe(this) { book ->
             book ?: return@observe
             Log.i("设置章节列表 ChapterListFragment")
