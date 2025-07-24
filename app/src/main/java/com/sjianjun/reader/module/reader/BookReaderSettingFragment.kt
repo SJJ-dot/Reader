@@ -1,27 +1,22 @@
 package com.sjianjun.reader.module.reader
 
 import android.app.Activity
-import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.view.postDelayed
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -83,7 +78,7 @@ class BookReaderSettingFragment : BaseFragment() {
     private fun initBrowser(){
         binding?.browser?.click {
             EventBus.post(EventKey.BROWSER_OPEN)
-            dismiss()
+            hide()
         }
     }
     private fun initChapterList() {
@@ -93,20 +88,20 @@ class BookReaderSettingFragment : BaseFragment() {
                 .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                    dismiss()
+                    hide()
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
         binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
-            dismiss()
+            hide()
         }
     }
 
     private fun initSpeak() {
         binding?.speak?.click {
             EventBus.post(EventKey.CHAPTER_SPEAK)
-            dismiss()
+            hide()
         }
     }
 
@@ -161,7 +156,6 @@ class BookReaderSettingFragment : BaseFragment() {
             binding?.dayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
         binding?.dayNight?.click {
-            //dismissAllowingStateLoss()
             when (globalConfig.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
@@ -235,14 +229,14 @@ class BookReaderSettingFragment : BaseFragment() {
 
     private fun initPageStyle() {
         binding?.pageStyleImport?.click {
-            dismissAllowingStateLoss()
+            hide()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
         }
         val adapter = Adapter(this)
         adapter.itemLongClickListener = {
             val pageStyle = adapter.data[it]
             if (pageStyle is CustomPageStyle && binding?.pageStyleList?.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
-                dismissAllowingStateLoss()
+                hide()
                 val isDeleteable = adapter.data.filter { it.isDark == pageStyle.isDark }.size > 1
                 pageStyle.info.isDeleteable = isDeleteable
                 CustomPageStyleFragment.newInstance(pageStyle.info)
@@ -327,6 +321,10 @@ class BookReaderSettingFragment : BaseFragment() {
             Log.e("导入字体失败:${e.message}", e)
             toast("导入字体失败:${e.message}")
         }
+    }
+
+    private fun hide() {
+        parentFragmentManager.beginTransaction().hide(this).commitAllowingStateLoss()
     }
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {

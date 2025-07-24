@@ -273,32 +273,39 @@ class BookReaderActivity : BaseActivity() {
 
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
-                val showing = binding?.flSettingContainer?.isShown ?: false
-                if (showing && event?.action == MotionEvent.ACTION_DOWN) {
-                    return true
-                }
-                if (showing && event?.action == MotionEvent.ACTION_UP) {
-                    binding?.flSettingContainer.gone()
-                    return true
-                }
-                return showing
+                //隐藏设置对话框
+                return supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
+                    if (it.isVisible && event?.action == MotionEvent.ACTION_UP) {
+                        supportFragmentManager.beginTransaction()
+                            .hide(it)
+                            .commitAllowingStateLoss()
+                    }
+                    return@let it.isVisible
+
+                } ?: false
             }
 
             override fun center() {
-                val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
-                if (settingDialog == null) {
+                //显示设置对话框
+                supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.fl_setting_container, BookReaderSettingFragment(), TAG_SETTING_DIALOG)
+                        .show(it)
                         .commitAllowingStateLoss()
                 }
-                binding?.flSettingContainer.show()
             }
 
         })
     }
 
     private fun initView() {
-
+        val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
+        if (settingDialog == null) {
+            val fragment = BookReaderSettingFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fl_setting_container, fragment, TAG_SETTING_DIALOG)
+                .hide(fragment)
+                .commitAllowingStateLoss()
+        }
         viewModel.book.observe(this) { book ->
             book ?: return@observe
             Log.i("设置章节列表 ChapterListFragment")
