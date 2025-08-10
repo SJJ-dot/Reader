@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from WebViewClient import web_get
+from SessionManager import start_verification_activity
 from log import log
 
 
@@ -59,12 +60,15 @@ def get_chapter_list(url, chapter_list):
         }
         chapter_list.append(chapter)
 
-
 def getChapterContent(url):
-    result = web_get(url)
-    if not result:
-        raise "No result returned from web_get"
+    try:
+        return parse(web_get(url))
+    except Exception as e:
+        log(f"Error :{e}")
+        start_verification_activity(url)
+        return parse(web_get(url))
 
+def parse(result):
     result = json.loads(result)
     log("url:" + result.get("url"))
     log("html:" + result.get("html"))
@@ -75,9 +79,7 @@ def getChapterContent(url):
         h1.decompose()
     for h1 in txt_el.find_all("div"):
         h1.decompose()
-
     return txt_el.prettify()
-
 
 if __name__ == '__main__':
     log("===============================")

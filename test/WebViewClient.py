@@ -11,6 +11,7 @@ _server_port = None
 
 def init():
     global _server_ip, _server_port
+    log("获取接口，需要APP打开测试开关")
     _server_ip, _server_port = discover_services()
     log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
 
