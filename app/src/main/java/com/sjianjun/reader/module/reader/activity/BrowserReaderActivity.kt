@@ -26,7 +26,6 @@ import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
-import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
@@ -36,8 +35,7 @@ import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.htmlToSpanned
-import com.sjianjun.reader.utils.setBackForwardCacheEnabled
-import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -224,28 +222,14 @@ class BrowserReaderActivity : BaseActivity() {
     private fun initWebView() {
         val cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
-//        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
+        cookieManager.setAcceptThirdPartyCookies(binding.webView, true); // 启用第三方 Cookie
 
 //chrome://inspect   edge://inspect
         if (BuildConfig.DEBUG) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
 //声明WebSettings子类
-        val webSettings = binding.webView.settings
-        webSettings.setDarkening()
-        webSettings.userAgentString = WEB_VIEW_UA_ANDROID
-        webSettings.javaScriptEnabled = true
-        webSettings.domStorageEnabled = true
-        webSettings.loadsImagesAutomatically = true //支持自动加载图片
-//设置自适应屏幕，两者合用
-        webSettings.useWideViewPort = true //将图片调整到适合webview的大小
-        webSettings.loadWithOverviewMode = true // 缩放至屏幕的大小
-        webSettings.blockNetworkImage = false //设置图片加载方式，默认true，表示不加载图片
-//缩放操作
-        webSettings.setSupportZoom(true) //支持缩放，默认为true。是下面那个的前提。
-        webSettings.builtInZoomControls = true //设置内置的缩放控件。若为false，则该WebView不可缩放
-        webSettings.displayZoomControls = false //隐藏原生的缩放控件
-        webSettings.setBackForwardCacheEnabled()
+        binding.webView.settings.init()
         binding.webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
         binding.webView.isScrollbarFadingEnabled = false
 

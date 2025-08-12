@@ -14,7 +14,6 @@ import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.enableEdgeToEdge
@@ -25,8 +24,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.CookieMgr
-import com.sjianjun.reader.utils.setBackForwardCacheEnabled
-import com.sjianjun.reader.utils.setDarkening
+import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -127,23 +125,10 @@ class WebViewVerificationActivity : BaseActivity() {
     private fun initWebView(url: String, headerMap: Map<String, String>) {
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
+        cookieManager.setAcceptThirdPartyCookies(binding.webView,true)
         CookieMgr.clearCookiesForUrl(url)
 
-        binding.webView.settings.apply {
-            setDarkening()
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            domStorageEnabled = true
-            allowContentAccess = true
-            useWideViewPort = true
-            loadWithOverviewMode = true
-            javaScriptEnabled = true
-            builtInZoomControls = true
-            displayZoomControls = false
-            headerMap["User-Agent"]?.let {
-                userAgentString = it
-            }
-            setBackForwardCacheEnabled()
-        }
+        binding.webView.settings.init(headerMap)
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {
         }

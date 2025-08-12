@@ -5,15 +5,15 @@ import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
 import android.util.AndroidRuntimeException
+import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.sjianjun.reader.App
-import com.sjianjun.reader.WEB_VIEW_UA_ANDROID
 import com.sjianjun.reader.utils.gson
+import com.sjianjun.reader.utils.init
 import io.legado.app.exception.NoStackTraceException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -89,12 +89,11 @@ class BackstageWebView(
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun createWebView(): WebView {
         val webView = WebView(App.app)
-        val settings = webView.settings
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.blockNetworkImage = true
-        settings.userAgentString = headerMap?.get("User-Agent") ?: WEB_VIEW_UA_ANDROID
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
+        cookieManager.setAcceptThirdPartyCookies(webView,true)
+
+        webView.settings.init(headerMap)
         webView.webViewClient = HtmlWebViewClient()
         return webView
     }

@@ -49,3 +49,23 @@ fun WebSettings.setBackForwardCacheEnabled() {
         WebSettingsCompat.setBackForwardCacheEnabled(this, true);
     }
 }
+
+
+fun WebSettings.init(headerMap: Map<String, String>? = null){
+    setDarkening()
+    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+    domStorageEnabled = true
+    allowContentAccess = true
+    useWideViewPort = true
+    loadWithOverviewMode = true
+    javaScriptEnabled = true
+    setSupportZoom(true)
+    builtInZoomControls = true
+    displayZoomControls = false
+    headerMap?.get("User-Agent")?.let {
+        userAgentString = it
+    }
+    blockNetworkImage = false // 设置图片加载方式，默认true，表示不加载图片
+    loadsImagesAutomatically = true // 支持自动加载图片
+    setBackForwardCacheEnabled()
+}
