@@ -45,7 +45,7 @@ class CustomWebView @JvmOverloads constructor(
     private var url: String? = null
     var adBlock: AdBlock? = null
     var openMenu: () -> Unit = {}
-    val history = MutableLiveData<MutableList<HistoryItem>>()
+    val history = MutableLiveData<List<HistoryItem>>()
     private var needClearHistory = false
     fun init(owner: LifecycleOwner, adBlock: AdBlock) {
         this.adBlock = adBlock
@@ -192,12 +192,20 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
                 Log.i("title:${webView?.title} ${webView?.url} ")
-                val list = history.value!!
+                val list = history.value!!.toMutableList()
                 webView?.url?.let {
                     webView.title?.let {
                         val item = HistoryItem(webView.title ?: "", webView.url ?: "")
                         if (item.url != list.firstOrNull()?.url) {
+                            list.indexOfFirst { it.url == item.url }.let { index ->
+                                if (index >= 0) {
+                                    list.removeAt(index)
+                                }
+                            }
                             list.add(0, item)
+                            if (list.size > 100) {
+                                list.removeAt(list.lastIndex)
+                            }
                             History.list = list
                             history.postValue(list)
                         }
@@ -262,7 +270,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun removeHistory(item: HistoryItem) {
-        val list = history.value!!
+        val list = history.value!!.toMutableList()
         list.remove(item)
         History.list = list
         history.postValue(list)
