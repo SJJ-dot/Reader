@@ -99,7 +99,7 @@ class BookCityPageFragment : BaseFragment() {
             }
         }
         view.history.observe(viewLifecycleOwner) {
-            historyAdapter.data = it
+            historyAdapter.data = it.toMutableList()
             historyAdapter.notifyDataSetChanged()
         }
         val hostListAdapter = HostListAdapter(adBlock)
