@@ -301,7 +301,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
-        var list by dataPref("History", mutableListOf<HistoryItem>())
+        var list by dataPref("History", listOf<HistoryItem>())
     }
 
     class HistoryItem(val title: String, val url: String, val time: Long = System.currentTimeMillis()) {
