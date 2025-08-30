@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
@@ -16,6 +17,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
+import com.sjianjun.reader.databinding.FragmentBookCityPageHistoryItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
@@ -85,6 +87,21 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
+        val historyAdapter = HistoryListAdapter()
+        historyAdapter.onClick = {
+            view.loadUrl(it, false)
+        }
+        historyAdapter.onDeleteHistory = { item ->
+            if (item == null) {
+                view.clearHistory()
+            } else {
+                view.removeHistory(item)
+            }
+        }
+        view.history.observe(viewLifecycleOwner) {
+            historyAdapter.data = it
+            historyAdapter.notifyDataSetChanged()
+        }
         val hostListAdapter = HostListAdapter(adBlock)
         val blackListAdapter = BlackListAdapter(adBlock)
         val homeAdapter = HomeListAdapter {
@@ -104,6 +121,7 @@ class BookCityPageFragment : BaseFragment() {
                     0 -> homeAdapter
                     1 -> hostListAdapter
                     2 -> blackListAdapter
+                    3 -> historyAdapter
                     else -> hostListAdapter
                 }
             }
@@ -173,6 +191,44 @@ class BookCityPageFragment : BaseFragment() {
             binding.btnMarkBlack.text = "-移除"
             binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])
+            }
+        }
+    }
+
+    class HistoryListAdapter : BaseAdapter<CustomWebView.HistoryItem>(R.layout.fragment_book_city_page_history_item) {
+        var onClick: ((url: String) -> Unit)? = null
+        var onDeleteHistory: ((item: CustomWebView.HistoryItem?) -> Unit)? = null
+        private val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+
+        @SuppressLint("SetTextI18n")
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityPageHistoryItemBinding.bind(holder.itemView)
+            val history = data[position]
+            binding.tvTitle.text = history.title
+            binding.tvTime.text = sdf.format(history.time)
+            binding.root.click {
+                onClick?.invoke(history.url)
+            }
+            binding.root.setOnLongClickListener {
+                AlertDialog.Builder(it.context).apply {
+                    setTitle("删除记录")
+                    setMessage("是否删除 ${history.title} ?")
+                    setNegativeButton("取消", null)
+                    setPositiveButton("删除") { _, _ ->
+                        onDeleteHistory?.invoke(history)
+                    }
+                    setNeutralButton("清空") { _, _ ->
+                        AlertDialog.Builder(it.context).apply {
+                            setTitle("清空全部记录")
+                            setMessage("是否清空全部历史记录 ?")
+                            setNegativeButton("取消", null)
+                            setPositiveButton("清空") { _, _ ->
+                                onDeleteHistory?.invoke(null)
+                            }.show()
+                        }
+                    }
+                }.show()
+                return@setOnLongClickListener true
             }
         }
     }

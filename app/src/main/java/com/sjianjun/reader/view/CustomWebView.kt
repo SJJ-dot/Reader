@@ -17,12 +17,16 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.contains
+import com.sjianjun.reader.preferences.DelegateSharedPref
+import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
+import com.tencent.mmkv.MMKV
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
@@ -41,6 +45,7 @@ class CustomWebView @JvmOverloads constructor(
     private var url: String? = null
     var adBlock: AdBlock? = null
     var openMenu: () -> Unit = {}
+    val history = MutableLiveData<MutableList<HistoryItem>>()
     private var needClearHistory = false
     fun init(owner: LifecycleOwner, adBlock: AdBlock) {
         this.adBlock = adBlock
@@ -49,6 +54,7 @@ class CustomWebView @JvmOverloads constructor(
         initWebView(binding.webView)
         initView()
         owner.lifecycle.addObserver(lifecycleObserver)
+        history.value = History.list.toMutableList()
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
@@ -185,6 +191,18 @@ class CustomWebView @JvmOverloads constructor(
                         binding.forward.isEnabled = webView.canGoForward()
                     }
                 }
+                Log.i("title:${webView?.title} ${webView?.url} ")
+                val list = history.value!!
+                webView?.url?.let {
+                    webView.title?.let {
+                        val item = HistoryItem(webView.title ?: "", webView.url ?: "")
+                        if (item.url != list.firstOrNull()?.url) {
+                            list.add(0, item)
+                            History.list = list
+                            history.postValue(list)
+                        }
+                    }
+                }
 
             }
 
@@ -238,6 +256,18 @@ class CustomWebView @JvmOverloads constructor(
             }
     }
 
+    fun clearHistory() {
+        History.list = mutableListOf()
+        history.postValue(mutableListOf())
+    }
+
+    fun removeHistory(item: HistoryItem) {
+        val list = history.value!!
+        list.remove(item)
+        History.list = list
+        history.postValue(list)
+    }
+
     class LifecycleObserver(private val customWebView: CustomWebView) :
         DefaultLifecycleObserver {
 
@@ -262,5 +292,29 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
+    object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
+        var list by dataPref("History", mutableListOf<HistoryItem>())
+    }
 
+    class HistoryItem(val title: String, val url: String, val time: Long = System.currentTimeMillis()) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as HistoryItem
+
+            if (time != other.time) return false
+            if (title != other.title) return false
+            if (url != other.url) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = time.hashCode()
+            result = 31 * result + title.hashCode()
+            result = 31 * result + url.hashCode()
+            return result
+        }
+    }
 }
