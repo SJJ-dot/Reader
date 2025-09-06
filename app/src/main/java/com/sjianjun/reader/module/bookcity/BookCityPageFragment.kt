@@ -58,15 +58,7 @@ class BookCityPageFragment : BaseFragment() {
             })
             customWebView.loadUrl(url!!, true)
 
-            drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
-                var first = true
-                override fun onDrawerOpened(drawerView: View) {
-                    if (first) {
-                        first = false
-                        initDrawer(drawerLayout, customWebView, this@apply)
-                    }
-                }
-            })
+            initDrawer(drawerLayout, customWebView, this@apply)
             var lastTime = System.currentTimeMillis()
             setOnBackPressed {
                 if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
