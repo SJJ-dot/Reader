@@ -57,8 +57,10 @@ class BookSourceListViewModel() : ViewModel() {
             }
         }
 
-
         book.lastChapter = chapterDao.getLastChapterByBookId(book.id)
+        if (book.readChapter == null) {
+            book.readChapter = book.lastChapter
+        }
         book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
         if (book.readChapter != null) {
             if (book.readChapter?.isLoaded == true) {
