@@ -8,6 +8,10 @@ from SessionManager import start_verification_activity
 from log import log
 
 
+def getSiteUrl():
+    return "https://www.69shuba.com"
+
+
 def isSupported(url):
     if "69shuba.com" in url:
         return True
@@ -60,6 +64,7 @@ def get_chapter_list(url, chapter_list):
         }
         chapter_list.append(chapter)
 
+
 def getChapterContent(url):
     try:
         return parse(web_get(url))
@@ -67,6 +72,7 @@ def getChapterContent(url):
         log(f"Error :{e}")
         start_verification_activity(url)
         return parse(web_get(url))
+
 
 def parse(result):
     result = json.loads(result)
@@ -80,6 +86,7 @@ def parse(result):
     for h1 in txt_el.find_all("div"):
         h1.decompose()
     return txt_el.prettify()
+
 
 if __name__ == '__main__':
     log("===============================")
