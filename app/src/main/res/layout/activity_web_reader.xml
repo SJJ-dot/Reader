@@ -117,7 +117,8 @@
                 android:id="@+id/tab_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toTopOf="parent"
+                app:tabSelectedTextColor="@color/colorPrimary">
 
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"

@@ -65,6 +65,17 @@ class CustomWebView @JvmOverloads constructor(
         needClearHistory = clearHistory
     }
 
+    fun back(): Boolean {
+        Log.i("后退")
+        if (webView?.canGoBack() == true) {
+            webView?.goBack()
+            return true
+        } else {
+            Log.w("没有后退页面")
+            return false
+        }
+    }
+
     private fun initView() {
         binding.refresh.click {
 
@@ -76,12 +87,7 @@ class CustomWebView @JvmOverloads constructor(
             }
         }
         binding.backward.click {
-            Log.i("后退")
-            if (webView?.canGoBack() == true) {
-                webView?.goBack()
-            } else {
-                Log.w("没有后退页面")
-            }
+            back()
         }
         binding.forward.click {
             Log.i("前进")
@@ -99,6 +105,7 @@ class CustomWebView @JvmOverloads constructor(
             Log.i("回到首页")
             webView?.stopLoading()
             webView?.loadUrl(this.url ?: "https://www.baidu.com")
+            needClearHistory = true
         }
     }
 

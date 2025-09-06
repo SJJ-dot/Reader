@@ -46,6 +46,7 @@ class BrowserReaderActivity : BaseActivity() {
     private val url by lazy { intent.getStringExtra(URL) ?: "" }
     private val binding by lazy { ActivityBrowserReaderBinding.inflate(layoutInflater) }
     private val adBlock by lazy { AdBlock(url) }
+    private var needClearHistory = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,6 +118,7 @@ class BrowserReaderActivity : BaseActivity() {
         }
         binding.home.click {
             binding.webView.loadUrl(url)
+            needClearHistory = true
         }
     }
 
@@ -137,12 +139,17 @@ class BrowserReaderActivity : BaseActivity() {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
                 true
             } else {
-                if (System.currentTimeMillis() - lastTime > 1000) {
-                    toast("双击退出")
-                    lastTime = System.currentTimeMillis()
+                if (binding.webView.canGoBack()) {
+                    binding.webView.goBack()
                     true
                 } else {
-                    false
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("双击退出")
+                        lastTime = System.currentTimeMillis()
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
         }
@@ -260,6 +267,17 @@ class BrowserReaderActivity : BaseActivity() {
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                if (needClearHistory && url == this@BrowserReaderActivity.url) {
+                    needClearHistory = false
+                    view?.clearHistory()
+                }
+                binding.backward.isEnabled = binding.webView.canGoBack()
+                binding.forward.isEnabled = binding.webView.canGoForward()
+                Log.i("onPageFinished:$url ")
             }
 
             override fun onLoadResource(view: WebView?, url: String?) {

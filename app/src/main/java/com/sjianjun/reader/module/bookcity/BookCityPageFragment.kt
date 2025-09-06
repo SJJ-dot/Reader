@@ -65,13 +65,18 @@ class BookCityPageFragment : BaseFragment() {
                     drawerLayout.closeDrawer(GravityCompat.END)
                     true
                 } else {
-                    if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
-                        lastTime = System.currentTimeMillis()
-                        true
+                    if (!customWebView.back()) {
+                        if (System.currentTimeMillis() - lastTime > 1000) {
+                            toast("双击退出")
+                            lastTime = System.currentTimeMillis()
+                            true
+                        } else {
+                            false
+                        }
                     } else {
-                        false
+                        true
                     }
+
                 }
             }
 

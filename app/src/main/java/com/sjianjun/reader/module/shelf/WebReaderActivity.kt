@@ -52,6 +52,7 @@ class WebReaderActivity : BaseActivity() {
     private lateinit var adBlock: AdBlock
     private lateinit var book: WebBook
     private val viewModel: WebShelfViewModel by viewModels()
+    private var needClearHistory = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,6 +133,7 @@ class WebReaderActivity : BaseActivity() {
         }
         binding.home.click {
             binding.webView.loadUrl(book.url)
+            needClearHistory = true
         }
     }
 
@@ -151,12 +153,18 @@ class WebReaderActivity : BaseActivity() {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
                 true
             } else {
-                if (System.currentTimeMillis() - lastTime > 1000) {
-                    toast("双击退出")
-                    lastTime = System.currentTimeMillis()
+                if (binding.webView.canGoBack()) {
+                    binding.webView.goBack()
                     true
                 } else {
-                    false
+                    Log.w("没有后退页面")
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("双击退出")
+                        lastTime = System.currentTimeMillis()
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
         }
@@ -288,6 +296,12 @@ class WebReaderActivity : BaseActivity() {
                 launch {
                     viewModel.insertWebBook(book)
                 }
+                if (url == book.url && needClearHistory) {
+                    needClearHistory = false
+                    webView?.clearHistory()
+                }
+                binding.backward.isEnabled = binding.webView.canGoBack()
+                binding.forward.isEnabled = binding.webView.canGoForward()
             }
 
             override fun shouldInterceptRequest(
