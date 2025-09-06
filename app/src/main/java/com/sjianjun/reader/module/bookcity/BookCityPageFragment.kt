@@ -8,7 +8,9 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
@@ -24,15 +26,19 @@ import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.htmlToSpanned
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.CustomWebView
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import kotlin.getValue
 
 private const val ARG_URL = "ARG_URL"
 
 class BookCityPageFragment : BaseFragment() {
+    private val vm by viewModels<BookCityViewModel>()
     private val adBlockMap = mutableMapOf<String, AdBlock>()
     private var url: String? = null
     private val adBlock: AdBlock get() = adBlockMap.getOrPut(url?.toHttpUrlOrNull()?.topPrivateDomain() ?: "") { AdBlock(url) }
@@ -84,6 +90,12 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
+        binding.btnCopyUrl.click {
+            view.copyUrlToClipboard()
+        }
+        binding.btnCopyTitle.click {
+            view.copyTitleToClipboard()
+        }
         val historyAdapter = HistoryListAdapter()
         historyAdapter.onClick = {
             view.loadUrl(it, false)
@@ -108,7 +120,15 @@ class BookCityPageFragment : BaseFragment() {
             view.adBlock = adBlock
             initAdBlockList(hostListAdapter, blackListAdapter)
         }
-        homeAdapter.data.addAll(globalConfig.bookCityUrlHistoryList)
+        lifecycleScope.launch {
+            val sites = vm.getAllBookSourceSite().toMutableList().distinct()
+            val list = globalConfig.bookCityUrlHistoryList.toMutableList()
+            list.removeAll(sites)
+            homeAdapter.data.clear()
+            homeAdapter.data.addAll(sites.map { it to true })
+            homeAdapter.data.addAll(list.map { it to false })
+            homeAdapter.notifyDataSetChanged()
+        }
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = homeAdapter
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -151,13 +171,18 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class HomeListAdapter(val onClick: (url: String) -> Unit) : BaseAdapter<String>(R.layout.fragment_book_city_home_item) {
+    class HomeListAdapter(val onClick: (url: String) -> Unit) : BaseAdapter<Pair<String, Boolean>>(R.layout.fragment_book_city_home_item) {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position]
+            binding.tvHost.text = data[position].first
+            if (data[position].second) {
+                binding.tvHostFlag.show()
+            } else {
+                binding.tvHostFlag.gone()
+            }
             binding.root.click {
-                onClick(data[position])
+                onClick(data[position].first)
             }
         }
     }

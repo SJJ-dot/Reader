@@ -10,8 +10,12 @@ import sjj.alog.Log
 inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     val py = Python.getInstance()
     val exec = py.getModule("exec_script")
-    val param = params.map { "$it" }.reduce { acc, s -> "$acc,$s" }
-    val result = exec.callAttr("exec_script", js, func, param).toString()
+    val result = if (params.isEmpty()) {
+        exec.callAttr("exec_script", js, func).toString()
+    } else {
+        val param = params.map { "$it" }.reduce { acc, s -> "$acc,$s" }
+        exec.callAttr("exec_script", js, func, param).toString()
+    }
     if (T::class.java == String::class.java) {
         return result as T
     }
@@ -22,7 +26,7 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     return try {
         gson.fromJson<T>(result)
     } catch (e: Exception) {
-        Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
+        Log.i("调用脚本方法：$func, 参数：$params, 返回结果：$result")
         throw e
     }
 }

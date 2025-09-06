@@ -109,10 +109,19 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    private fun initWebView(webView: WebView) {
-        webView?.setOnLongClickListener {
-            webView.evaluateJavascript(
-                """
+    fun copyUrlToClipboard() {
+        webView?.url?.let { url ->
+            val clipboard =
+                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            val clipData = android.content.ClipData.newPlainText("text", url)
+            clipboard?.setPrimaryClip(clipData)
+            toast("已复制到剪贴板：${url}")
+        }
+    }
+
+    fun copyTitleToClipboard() {
+        webView?.evaluateJavascript(
+            """
                 javascript:(function() {
                     // 尝试获取 og:title 的内容
                     let ogTitle = document.querySelector('meta[property="og:title"]');
@@ -131,25 +140,23 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 })()
             """.trimIndent()
-            ) {
-                Log.i("title:$it")
-                val str = it?.replace("\"", "")?.split(",")?.first()
-                if (str.isNullOrBlank() || str == "null") {
-                    return@evaluateJavascript
-                }
-                showSnackbar("是否复制'${str}'到剪贴板？", actionText = "复制") {
-                    Log.i("复制到剪贴板:$str")
-                    val clipboard =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                    val clipData = android.content.ClipData.newPlainText("text", str)
-                    clipboard?.setPrimaryClip(clipData)
-                    toast("已复制到剪贴板：${str}")
-                }
-
+        ) {
+            Log.i("title:$it")
+            val str = it?.replace("\"", "")?.split(",")?.first()
+            if (str.isNullOrBlank() || str == "null") {
+                toast("标题获取失败")
+                return@evaluateJavascript
             }
-            true
+            Log.i("复制到剪贴板:$str")
+            val clipboard =
+                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            val clipData = android.content.ClipData.newPlainText("text", str)
+            clipboard?.setPrimaryClip(clipData)
+            toast("已复制到剪贴板：${str}")
         }
+    }
 
+    private fun initWebView(webView: WebView) {
         val cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
         cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie

@@ -67,6 +67,17 @@ class BookSource {
         }
     }
 
+    suspend fun getSiteUrl(): String? {
+        return withIo {
+            try {
+                execute<String>(Func.getSiteUrl)
+            } catch (t: Throwable) {
+                Log.e("$name 书源网站地址获取失败", t)
+                null
+            }
+        }
+    }
+
     suspend fun isSupported(url: String): Boolean {
         return withIo {
             try {
@@ -160,7 +171,7 @@ class BookSource {
 
 
     enum class Func {
-        search, getDetails, getChapterContent, isSupported
+        search, getDetails, getChapterContent, isSupported, getSiteUrl
     }
 
     enum class Language {
