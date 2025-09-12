@@ -45,24 +45,30 @@ class ChapterListFragment : BaseFragment() {
     private fun initData() {
         viewModel.init(bookTitle)
         viewModel.chapterListLiveData.observeViewLifecycle {
+            var change = adapter.readingChapterIndex != adapter.readingRecord?.chapterIndex
+            change = change || (adapter.data.size != it.size)
             adapter.data.clear()
             adapter.data.addAll(it)
             adapter.notifyDataSetChanged()
-            val index = adapter.data.indexOfFirst {
-                it.index == adapter.readingChapterIndex
+            if (change){
+                val index = adapter.data.indexOfFirst {
+                    it.index == adapter.readingChapterIndex
+                }
+                if (index > 0)
+                    binding?.recycleViewChapterList?.scrollToPosition(index)
             }
-            if (index > 0)
-                binding?.recycleViewChapterList?.scrollToPosition(index)
-
         }
         viewModel.readingRecord.observeViewLifecycle {
+            val change = adapter.readingChapterIndex != it?.chapterIndex
             adapter.readingRecord = it
             adapter.readingChapterIndex = it?.chapterIndex ?: 0
-            val index = adapter.data.indexOfFirst {
-                it.index == adapter.readingChapterIndex
+            if (change){
+                val index = adapter.data.indexOfFirst {
+                    it.index == adapter.readingChapterIndex
+                }
+                if (index > 0)
+                    binding?.recycleViewChapterList?.scrollToPosition(index)
             }
-            if (index > 0)
-                binding?.recycleViewChapterList?.scrollToPosition(index)
         }
     }
 
