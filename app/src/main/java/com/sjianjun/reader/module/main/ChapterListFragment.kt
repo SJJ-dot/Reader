@@ -59,16 +59,13 @@ class ChapterListFragment : BaseFragment() {
             }
         }
         viewModel.readingRecord.observeViewLifecycle {
-            val change = adapter.readingChapterIndex != it?.chapterIndex
             adapter.readingRecord = it
             adapter.readingChapterIndex = it?.chapterIndex ?: 0
-            if (change){
-                val index = adapter.data.indexOfFirst {
-                    it.index == adapter.readingChapterIndex
-                }
-                if (index > 0)
-                    binding?.recycleViewChapterList?.scrollToPosition(index)
+            val index = adapter.data.indexOfFirst {
+                it.index == adapter.readingChapterIndex
             }
+            if (index > 0)
+                binding?.recycleViewChapterList?.scrollToPosition(index)
         }
     }
 
