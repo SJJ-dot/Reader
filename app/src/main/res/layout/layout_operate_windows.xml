@@ -19,9 +19,14 @@
             android:gravity="center"
             android:paddingStart="8dp"
             android:paddingEnd="5dp"
-            android:textSize="18dp"
             android:text="字典"
-            android:textColor="@color/mdr_white" />
+            android:textColor="@color/mdr_white"
+            android:textSize="18dp" />
+
+        <View
+            android:layout_width="1px"
+            android:layout_height="match_parent"
+            android:background="@color/mdr_white" />
 
         <TextView
             android:id="@+id/txt_search"
@@ -29,10 +34,28 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:paddingStart="5dp"
-            android:textSize="18dp"
             android:paddingEnd="8dp"
             android:text="搜索"
-            android:textColor="@color/mdr_white" />
+            android:textColor="@color/mdr_white"
+            android:textSize="18dp" />
+
+        <View
+            android:layout_width="1px"
+            android:layout_height="match_parent"
+            android:background="@color/mdr_white" />
+
+        <TextView
+            android:id="@+id/txt_copy"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingStart="5dp"
+            android:paddingEnd="8dp"
+            android:text="复制"
+            android:textColor="@color/mdr_white"
+            android:textSize="18dp" />
+
+
     </LinearLayout>
 
     <ImageView

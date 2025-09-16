@@ -1,11 +1,11 @@
 package com.jaeger.library
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.net.Uri
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,13 +17,14 @@ import android.view.ViewTreeObserver.OnScrollChangedListener
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.annotation.ColorInt
+import androidx.core.net.toUri
 import com.sjianjun.reader.R
+import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.view.click
 import sjj.alog.Log
 import java.net.URLEncoder
 import kotlin.math.max
 import kotlin.math.roundToInt
-import androidx.core.net.toUri
-import com.sjianjun.reader.view.click
 
 /**
  * Created by Jaeger on 16/8/30.
@@ -251,6 +252,18 @@ class SelectableTextHelper(builder: Builder) {
                     mSelectListener!!.onTextSelectedChange(mSelectionInfo)
                 } catch (e: Exception) {
                     Log.e("字典搜索出错", e)
+                }
+            }
+            contentView.findViewById<View?>(R.id.txt_copy).click {
+                try {
+                    val str = mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end)
+                    // 获取系统剪贴板服务
+                    val clipboard = context?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    val clipData = android.content.ClipData.newPlainText("text", str)
+                    clipboard?.setPrimaryClip(clipData)
+                    toast("复制成功：${str}")
+                } catch (e: Exception) {
+                    Log.e("复制出错", e)
                 }
             }
         }
