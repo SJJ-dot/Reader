@@ -89,6 +89,17 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
+    private fun initHomeListAdapterData(homeAdapter: HomeListAdapter) {
+        lifecycleScope.launch {
+            val sites = vm.getAllBookSourceSite().distinct().toMutableList()
+            val list = globalConfig.bookCityUrlHistoryList.toMutableList()
+            homeAdapter.data.clear()
+            homeAdapter.data.addAll(list.map { it to false })
+            homeAdapter.data.addAll(sites.map { it to true })
+            homeAdapter.notifyDataSetChanged()
+        }
+    }
+
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
         binding.btnCopyUrl.click {
             view.copyUrlToClipboard()
@@ -120,15 +131,20 @@ class BookCityPageFragment : BaseFragment() {
             view.adBlock = adBlock
             initAdBlockList(hostListAdapter, blackListAdapter)
         }
-        lifecycleScope.launch {
-            val sites = vm.getAllBookSourceSite().toMutableList().distinct()
-            val list = globalConfig.bookCityUrlHistoryList.toMutableList()
-            list.removeAll(sites)
-            homeAdapter.data.clear()
-            homeAdapter.data.addAll(sites.map { it to true })
-            homeAdapter.data.addAll(list.map { it to false })
-            homeAdapter.notifyDataSetChanged()
+        homeAdapter.onLongClickListener = {
+            AlertDialog.Builder(requireActivity())
+                .setTitle("删除")
+                .setMessage("确定删除吗？\n${it}")
+                .setPositiveButton("删除") { _, _ ->
+                    val list = globalConfig.bookCityUrlHistoryList.toMutableList()
+                    list.remove(it.first)
+                    globalConfig.bookCityUrlHistoryList = list
+                    initHomeListAdapterData(homeAdapter)
+                }
+                .setNegativeButton("取消") { _, _ -> }
+                .show()
         }
+        initHomeListAdapterData(homeAdapter)
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = homeAdapter
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -172,6 +188,7 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     class HomeListAdapter(val onClick: (url: String) -> Unit) : BaseAdapter<Pair<String, Boolean>>(R.layout.fragment_book_city_home_item) {
+        var onLongClickListener: (Pair<String, Boolean>) -> Unit = {}
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
@@ -183,6 +200,10 @@ class BookCityPageFragment : BaseFragment() {
             }
             binding.root.click {
                 onClick(data[position].first)
+            }
+            binding.root.setOnLongClickListener {
+                onLongClickListener(data[position])
+                true
             }
         }
     }
