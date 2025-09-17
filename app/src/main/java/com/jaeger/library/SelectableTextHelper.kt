@@ -262,6 +262,9 @@ class SelectableTextHelper(builder: Builder) {
                     val clipData = android.content.ClipData.newPlainText("text", str)
                     clipboard?.setPrimaryClip(clipData)
                     toast("复制成功：${str}")
+                    this@SelectableTextHelper.resetSelectionInfo()
+                    this@SelectableTextHelper.hideSelectView()
+                    mSelectListener!!.onTextSelectedChange(mSelectionInfo)
                 } catch (e: Exception) {
                     Log.e("复制出错", e)
                 }
