@@ -55,7 +55,11 @@ open class WebDav(val path: String, val authorization: Authorization) {
             </propfind>"""
     }
 
-    private val url: URL = URL(path)
+    private val url: URL = try {
+        URL(path)
+    }catch (e: Exception){
+        URL("http://localhost")
+    }
     private val httpUrl: String? by lazy {
         val raw = url.toString().replace("davs://", "https://").replace("dav://", "http://")
         return@lazy kotlin.runCatching {
