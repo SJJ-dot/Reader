@@ -29,7 +29,12 @@ object ReadingRecordUseCase {
 
     private fun webDav(relativePath: String) = globalConfig.let {
         val auth = Authorization(it.webdavUsername ?: "", it.webdavPassword ?: "")
-        WebDav("${it.webdavUrl}${it.webdavSubdir}/${relativePath}", auth)
+        var server = it.webdavUrl ?: "http://127.0.0.1:8080/"
+        if (!server.endsWith("/")) {
+            server = "${server}/"
+        }
+        var subDir = it.webdavSubdir ?: "reader"
+        WebDav("${server}${subDir}/${relativePath}", auth)
     }
 
     suspend fun setAccount(
