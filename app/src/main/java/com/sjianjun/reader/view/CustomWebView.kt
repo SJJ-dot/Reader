@@ -24,7 +24,6 @@ import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.utils.init
-import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
 import com.tencent.mmkv.MMKV
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -42,7 +41,7 @@ class CustomWebView @JvmOverloads constructor(
         CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     private val lifecycleObserver by lazy { LifecycleObserver(this) }
     private var webView: WebView? = null
-    private var url: String? = null
+    private var homeUrl: String? = null
     var adBlock: AdBlock? = null
     var openMenu: () -> Unit = {}
     val history = MutableLiveData<List<HistoryItem>>()
@@ -58,7 +57,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
-        this.url = url
+        this.homeUrl = url
         Log.i("loadUrl:${url} ")
         webView?.stopLoading()
         webView?.loadUrl(url)
@@ -104,7 +103,7 @@ class CustomWebView @JvmOverloads constructor(
         binding.home.click {
             Log.i("回到首页")
             webView?.stopLoading()
-            webView?.loadUrl(this.url ?: "https://www.baidu.com")
+            webView?.loadUrl(this.homeUrl ?: "https://www.baidu.com")
             needClearHistory = true
         }
     }
@@ -182,9 +181,7 @@ class CustomWebView @JvmOverloads constructor(
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (adBlock?.blacklist.contains(httpUrl?.host) ||
-                    adBlock?.blacklist.contains(httpUrl?.topPrivateDomain())
-                ) {
+                if (adBlock?.blacklist.contains(httpUrl?.topPrivateDomain())) {
                     return true
                 }
                 if (request.url?.scheme == "http" || request.url?.scheme == "https") {
@@ -233,10 +230,7 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): WebResourceResponse? {
 
-                if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
-                        request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-                    )
-                ) {
+                if (adBlock?.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(
                         "text/plain",

@@ -45,7 +45,7 @@ import java.io.ByteArrayInputStream
 class BrowserReaderActivity : BaseActivity() {
     private val url by lazy { intent.getStringExtra(URL) ?: "" }
     private val binding by lazy { ActivityBrowserReaderBinding.inflate(layoutInflater) }
-    private val adBlock by lazy { AdBlock(url) }
+    private val adBlock by lazy { AdBlock() }
     private var needClearHistory = false
 
 
@@ -253,9 +253,7 @@ class BrowserReaderActivity : BaseActivity() {
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (adBlock.blacklist.contains(httpUrl?.host) ||
-                    adBlock.blacklist.contains(httpUrl?.topPrivateDomain())
-                ) {
+                if (adBlock.blacklist.contains(httpUrl?.topPrivateDomain())) {
                     return true
                 }
                 if (request.url?.scheme == "http" || request.url?.scheme == "https") {
@@ -287,10 +285,7 @@ class BrowserReaderActivity : BaseActivity() {
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
-                        request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-                    )
-                ) {
+                if (adBlock.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(
                         "text/plain",

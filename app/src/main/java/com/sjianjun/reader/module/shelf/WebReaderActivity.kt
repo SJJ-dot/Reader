@@ -92,7 +92,7 @@ class WebReaderActivity : BaseActivity() {
                 return@launch
             }
             this@WebReaderActivity.book = book
-            adBlock = AdBlock(book.id)
+            adBlock = AdBlock()
 
             initCtrlBtn()
             initAdBlock()
@@ -274,9 +274,7 @@ class WebReaderActivity : BaseActivity() {
                     return true
                 }
                 val httpUrl = url.toHttpUrlOrNull()
-                if (adBlock.blacklist.contains(httpUrl?.host) ||
-                    adBlock.blacklist.contains(httpUrl?.topPrivateDomain())
-                ) {
+                if (adBlock.blacklist.contains(httpUrl?.topPrivateDomain())) {
                     return true
                 }
                 if (request.url?.scheme == "http" || request.url?.scheme == "https") {
@@ -308,10 +306,7 @@ class WebReaderActivity : BaseActivity() {
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                if (adBlock?.blacklist.contains(request.url.host) || adBlock?.blacklist.contains(
-                        request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-                    )
-                ) {
+                if (adBlock.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(
                         "text/plain",

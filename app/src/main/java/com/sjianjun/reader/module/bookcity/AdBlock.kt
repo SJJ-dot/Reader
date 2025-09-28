@@ -3,13 +3,12 @@ package com.sjianjun.reader.module.bookcity
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.preferences.AppConfig
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import sjj.alog.Log
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 
 class HostStr(val host: String, var type: List<String>) {
-    val time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
+    var time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -29,8 +28,8 @@ fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boo
     return this?.value?.any { it.host == host } == true
 }
 
-class AdBlock(url: String?) {
-    private val config = AppConfig("ad-" + (url?.toHttpUrlOrNull()?.topPrivateDomain() ?: url?.toHttpUrlOrNull()?.host ?: url))
+class AdBlock() {
+    private val config = AppConfig("ad-blacklist1")
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
