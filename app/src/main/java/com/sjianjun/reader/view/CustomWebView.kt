@@ -205,8 +205,8 @@ class CustomWebView @JvmOverloads constructor(
                 Log.i("title:${webView?.title} ${webView?.url} ")
                 val list = history.value!!.toMutableList()
                 webView?.url?.let {url->
-                    val item = list.firstOrNull { it.url == url } ?:HistoryItem(webView.title ?: "无标题", url)
-                    item.title = webView.title ?: "无标题"
+                    val item = HistoryItem(webView.title ?: "无标题", url)
+                    item.isMark = list.firstOrNull { it.url == url }?.isMark ?: false
                     list.removeAll { item ->  item.url == url }
                     list.add(item)
                     list.sortDescending()
