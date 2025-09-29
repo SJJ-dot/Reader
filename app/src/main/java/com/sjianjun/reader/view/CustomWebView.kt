@@ -204,23 +204,15 @@ class CustomWebView @JvmOverloads constructor(
                 }
                 Log.i("title:${webView?.title} ${webView?.url} ")
                 val list = history.value!!.toMutableList()
-                webView?.url?.let {
-                    webView.title?.let {
-                        val item = HistoryItem(webView.title ?: "", webView.url ?: "")
-                        if (item.url != list.firstOrNull()?.url) {
-                            list.indexOfFirst { it.url == item.url }.let { index ->
-                                if (index >= 0) {
-                                    list.removeAt(index)
-                                }
-                            }
-                            list.add(0, item)
-                            if (list.size > 100) {
-                                list.removeAt(list.lastIndex)
-                            }
-                            History.list = list
-                            history.postValue(list)
-                        }
+                webView?.url?.let {url->
+                    val item = HistoryItem(webView.title ?: "无标题", url)
+                    list.removeAll { item ->  item.url == url }
+                    list.add(0, item)
+                    if (list.size > 100) {
+                        list.removeAt(list.lastIndex)
                     }
+                    History.list = list
+                    history.postValue(list)
                 }
 
             }
