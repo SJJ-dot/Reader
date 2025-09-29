@@ -205,9 +205,11 @@ class CustomWebView @JvmOverloads constructor(
                 Log.i("title:${webView?.title} ${webView?.url} ")
                 val list = history.value!!.toMutableList()
                 webView?.url?.let {url->
-                    val item = HistoryItem(webView.title ?: "无标题", url)
+                    val item = list.firstOrNull { it.url == url } ?:HistoryItem(webView.title ?: "无标题", url)
+                    item.title = webView.title ?: "无标题"
                     list.removeAll { item ->  item.url == url }
-                    list.add(0, item)
+                    list.add(item)
+                    list.sortDescending()
                     if (list.size > 100) {
                         list.removeAt(list.lastIndex)
                     }
@@ -276,6 +278,17 @@ class CustomWebView @JvmOverloads constructor(
         history.postValue(list)
     }
 
+    fun markHistory(item: HistoryItem) {
+        item.isMark = !item.isMark
+        val list = history.value!!.toMutableList()
+        list.remove(item)
+        list.add(0, item)
+        list.sortDescending()
+        History.list = list
+        Log.i("markHistory:$list")
+        history.postValue(list)
+    }
+
     class LifecycleObserver(private val customWebView: CustomWebView) :
         DefaultLifecycleObserver {
 
@@ -304,7 +317,11 @@ class CustomWebView @JvmOverloads constructor(
         var list by dataPref("History", listOf<HistoryItem>())
     }
 
-    class HistoryItem(val title: String, val url: String, val time: Long = System.currentTimeMillis()) {
+    class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false): Comparable<HistoryItem> {
+        override fun compareTo(other: HistoryItem): Int {
+            if (isMark != other.isMark) return if (isMark) 1 else -1
+            return time.compareTo(other.time)
+        }
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -324,5 +341,10 @@ class CustomWebView @JvmOverloads constructor(
             result = 31 * result + url.hashCode()
             return result
         }
+
+        override fun toString(): String {
+            return "HistoryItem(title='$title', isMark=$isMark, time=$time, url='$url')"
+        }
+
     }
 }

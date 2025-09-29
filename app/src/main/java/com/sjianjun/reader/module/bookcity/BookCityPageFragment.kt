@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.annotation.SuppressLint
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -116,6 +117,9 @@ class BookCityPageFragment : BaseFragment() {
             } else {
                 view.removeHistory(item)
             }
+        }
+        historyAdapter.onMark = { item ->
+            view.markHistory(item)
         }
         view.history.observe(viewLifecycleOwner) {
             historyAdapter.data = it.toMutableList()
@@ -240,6 +244,7 @@ class BookCityPageFragment : BaseFragment() {
     class HistoryListAdapter : BaseAdapter<CustomWebView.HistoryItem>(R.layout.fragment_book_city_page_history_item) {
         var onClick: ((url: String) -> Unit)? = null
         var onDeleteHistory: ((item: CustomWebView.HistoryItem?) -> Unit)? = null
+        var onMark: ((item: CustomWebView.HistoryItem) -> Unit)? = null
         private val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
 
         @SuppressLint("SetTextI18n")
@@ -271,6 +276,10 @@ class BookCityPageFragment : BaseFragment() {
                     }
                 }.show()
                 return@setOnLongClickListener true
+            }
+            binding.ivMark.imageTintList = ColorStateList.valueOf(if (history.isMark) R.color.colorPrimary.color() else R.color.mdr_grey_700.color())
+            binding.ivMark.click {
+                onMark?.invoke(history)
             }
         }
     }
