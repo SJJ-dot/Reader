@@ -232,9 +232,9 @@ class BrowserReaderActivity : BaseActivity() {
         cookieManager.setAcceptThirdPartyCookies(binding.webView, true); // 启用第三方 Cookie
 
 //chrome://inspect   edge://inspect
-        if (BuildConfig.DEBUG) {
-            WebView.setWebContentsDebuggingEnabled(true)
-        }
+//        if (BuildConfig.DEBUG) {
+//            WebView.setWebContentsDebuggingEnabled(true)
+//        }
 //声明WebSettings子类
         binding.webView.settings.init()
         binding.webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
