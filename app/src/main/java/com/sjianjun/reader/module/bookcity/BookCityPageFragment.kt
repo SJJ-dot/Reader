@@ -133,7 +133,7 @@ class BookCityPageFragment : BaseFragment() {
         homeAdapter.onLongClickListener = {
             AlertDialog.Builder(requireActivity())
                 .setTitle("删除")
-                .setMessage("确定删除吗？\n${it}")
+                .setMessage("确定删除吗？\n${it.first}")
                 .setPositiveButton("删除") { _, _ ->
                     val list = globalConfig.bookCityUrlHistoryList.toMutableList()
                     list.remove(it.first)
