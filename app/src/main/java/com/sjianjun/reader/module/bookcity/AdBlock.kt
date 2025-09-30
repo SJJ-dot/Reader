@@ -41,28 +41,27 @@ class AdBlock() {
     }
 
     fun addBlackHost(host: HostStr) {
-        if (blacklist.value?.contains(host) == true) {
-            return
+        if (blacklist.value?.contains(host) == false) {
+            blacklist.value?.add(0,host)
+            blacklist.postValue(blacklist.value)
+            config.hostBlacklist = blacklist.value ?: mutableListOf()
         }
-        blacklist.value?.add(0,host)
-        blacklist.postValue(blacklist.value)
-        config.hostBlacklist = blacklist.value ?: mutableListOf()
 
         val mutableList = hostList.value as CopyOnWriteArrayList
-        mutableList.removeAll { it.host.endsWith(host.host) }
+        mutableList.removeAll { it.host == host.host }
         hostList.postValue(mutableList)
     }
 
     fun removeBlackHost(host: HostStr) {
-        val list = blacklist.value as CopyOnWriteArrayList
-        list.remove(host)
-        blacklist.postValue(list)
-        config.hostBlacklist = blacklist.value ?: mutableListOf()
-
         val mutableList = hostList.value as CopyOnWriteArrayList
         mutableList.add(host)
         mutableList.sortByDescending { it.time }
         hostList.postValue(mutableList)
+
+        val list = blacklist.value as CopyOnWriteArrayList
+        list.removeAll { it.host == host.host }
+        blacklist.postValue(list)
+        config.hostBlacklist = blacklist.value ?: mutableListOf()
     }
 
     fun addUrl(url: String) {
