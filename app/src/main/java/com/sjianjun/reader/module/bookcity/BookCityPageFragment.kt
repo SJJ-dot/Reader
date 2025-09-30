@@ -277,7 +277,7 @@ class BookCityPageFragment : BaseFragment() {
                 }.show()
                 return@setOnLongClickListener true
             }
-            binding.ivMark.imageTintList = ColorStateList.valueOf(if (history.isMark) R.color.colorPrimary.color() else R.color.mdr_grey_700.color())
+            binding.ivMark.imageTintList = ColorStateList.valueOf(if (history.isMark) R.color.colorPrimary.color() else R.color.mdr_grey_500.color())
             binding.ivMark.click {
                 onMark?.invoke(history)
             }
