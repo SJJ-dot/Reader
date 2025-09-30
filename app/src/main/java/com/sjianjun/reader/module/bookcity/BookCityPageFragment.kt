@@ -14,6 +14,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -101,6 +102,12 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
+        binding.btnFontAdd.setOnClickListener {
+            view.setFontSize(1)
+        }
+        binding.btnFontSubtract.setOnClickListener {
+            view.setFontSize(-1)
+        }
         binding.btnCopyUrl.click {
             view.copyUrlToClipboard()
         }
@@ -135,7 +142,7 @@ class BookCityPageFragment : BaseFragment() {
             initAdBlockList(hostListAdapter, blackListAdapter)
         }
         homeAdapter.onLongClickListener = {
-            AlertDialog.Builder(requireActivity())
+            MaterialAlertDialogBuilder(requireActivity())
                 .setTitle("删除")
                 .setMessage("确定删除吗？\n${it.first}")
                 .setPositiveButton("删除") { _, _ ->
@@ -257,7 +264,7 @@ class BookCityPageFragment : BaseFragment() {
                 onClick?.invoke(history.url)
             }
             binding.root.setOnLongClickListener {
-                AlertDialog.Builder(it.context).apply {
+                MaterialAlertDialogBuilder(it.context).apply {
                     setTitle("删除记录")
                     setMessage("是否删除 ${history.title} ?")
                     setNegativeButton("取消", null)
@@ -265,7 +272,7 @@ class BookCityPageFragment : BaseFragment() {
                         onDeleteHistory?.invoke(history)
                     }
                     setNeutralButton("清空") { _, _ ->
-                        AlertDialog.Builder(it.context).apply {
+                        MaterialAlertDialogBuilder(it.context).apply {
                             setTitle("清空全部记录")
                             setMessage("是否清空全部历史记录 ?")
                             setNegativeButton("取消", null)

@@ -204,10 +204,10 @@ class CustomWebView @JvmOverloads constructor(
                 }
                 Log.i("title:${webView?.title} ${webView?.url} ")
                 val list = history.value!!.toMutableList()
-                webView?.url?.let {url->
+                webView?.url?.let { url ->
                     val item = HistoryItem(webView.title ?: "无标题", url)
                     item.isMark = list.firstOrNull { it.url == url }?.isMark ?: false
-                    list.removeAll { item ->  item.url == url }
+                    list.removeAll { item -> item.url == url }
                     list.add(item)
                     list.sortDescending()
                     if (list.size > 100) {
@@ -289,6 +289,12 @@ class CustomWebView @JvmOverloads constructor(
         history.postValue(list)
     }
 
+    fun setFontSize(i: Int) {
+        webView?.settings?.apply {
+            textZoom = textZoom + i
+        }
+    }
+
     class LifecycleObserver(private val customWebView: CustomWebView) :
         DefaultLifecycleObserver {
 
@@ -317,11 +323,12 @@ class CustomWebView @JvmOverloads constructor(
         var list by dataPref("History", listOf<HistoryItem>())
     }
 
-    class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false): Comparable<HistoryItem> {
+    class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false) : Comparable<HistoryItem> {
         override fun compareTo(other: HistoryItem): Int {
             if (isMark != other.isMark) return if (isMark) 1 else -1
             return time.compareTo(other.time)
         }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

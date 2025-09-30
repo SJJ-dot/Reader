@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
@@ -95,7 +96,7 @@ class BookSourceListFragment : BaseFragment() {
 
                 }
                 setOnLongClickListener {
-                    AlertDialog.Builder(context!!)
+                    MaterialAlertDialogBuilder(context!!)
                         .setTitle("确认删除")
                         .setMessage("确定要删除《${book.title}》吗?")
                         .setPositiveButton("删除") { _, _ ->

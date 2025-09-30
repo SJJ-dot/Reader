@@ -212,7 +212,7 @@ class BookshelfFragment : BaseFragment() {
                 visibleSet.apply()
 
                 root.setOnLongClickListener {
-                    AlertDialog.Builder(root.context)
+                    MaterialAlertDialogBuilder(root.context)
                         .setTitle("确认删除")
                         .setMessage("确定要删除《${book.title}》吗?")
                         .setPositiveButton("删除") { _, _ ->
