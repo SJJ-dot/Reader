@@ -153,18 +153,13 @@ class WebReaderActivity : BaseActivity() {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
                 true
             } else {
-                if (binding.webView.canGoBack()) {
-                    binding.webView.goBack()
+                Log.w("没有后退页面")
+                if (System.currentTimeMillis() - lastTime > 1000) {
+                    toast("双击退出")
+                    lastTime = System.currentTimeMillis()
                     true
                 } else {
-                    Log.w("没有后退页面")
-                    if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
-                        lastTime = System.currentTimeMillis()
-                        true
-                    } else {
-                        false
-                    }
+                    false
                 }
             }
         }

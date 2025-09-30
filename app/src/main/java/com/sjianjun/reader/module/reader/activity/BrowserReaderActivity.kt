@@ -139,17 +139,12 @@ class BrowserReaderActivity : BaseActivity() {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
                 true
             } else {
-                if (binding.webView.canGoBack()) {
-                    binding.webView.goBack()
+                if (System.currentTimeMillis() - lastTime > 1000) {
+                    toast("双击退出")
+                    lastTime = System.currentTimeMillis()
                     true
                 } else {
-                    if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
-                        lastTime = System.currentTimeMillis()
-                        true
-                    } else {
-                        false
-                    }
+                    false
                 }
             }
         }
