@@ -44,7 +44,7 @@ class AdBlock() {
         if (blacklist.value?.contains(host) == true) {
             return
         }
-        blacklist.value?.add(host)
+        blacklist.value?.add(0,host)
         blacklist.postValue(blacklist.value)
         config.hostBlacklist = blacklist.value ?: mutableListOf()
 
@@ -61,7 +61,7 @@ class AdBlock() {
 
         val mutableList = hostList.value as CopyOnWriteArrayList
         mutableList.add(host)
-        mutableList.sortBy { it.time }
+        mutableList.sortByDescending { it.time }
         hostList.postValue(mutableList)
     }
 
@@ -74,7 +74,7 @@ class AdBlock() {
         var hostStr = hostList.value?.firstOrNull { it.host == topHost }
         if (hostStr == null) {
             hostStr = HostStr(topHost, listOf())
-            hostList.value?.add(hostStr)
+            hostList.value?.add(0,hostStr)
             hostList.postValue(hostList.value)
         }
         if (type.isNotBlank() && type !in hostStr.type) {
