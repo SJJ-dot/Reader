@@ -53,67 +53,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:paddingBottom="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/flexbox_layout"
-            app:layout_constraintTop_toBottomOf="@+id/tab_layout" />
-
-        <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexbox_layout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:padding="5dp"
-            app:dividerDrawable="@drawable/shape_space_divider"
-            app:flexDirection="row"
-            app:flexWrap="wrap"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:showDivider="middle">
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/btn_copy_url"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="复制网址"
-                android:textColor="@color/mdr_white"
-                android:textSize="14dp"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/colorPrimary" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/btn_copy_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="复制标题"
-                android:textColor="@color/mdr_white"
-                android:textSize="14dp"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/colorPrimary" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/btn_font_add"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="字体+"
-                android:textColor="@color/mdr_white"
-                android:textSize="14dp"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/colorPrimary" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/btn_font_subtract"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="字体-"
-                android:textColor="@color/mdr_white"
-                android:textSize="14dp"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/colorPrimary" />
-
-        </com.google.android.flexbox.FlexboxLayout>
+            app:layout_constraintTop_toBottomOf="@+id/tab_layout" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -26,4 +26,7 @@ object EventKey {
 
     /** 使用webview打开链接 */
     val BROWSER_OPEN = "BROWSER_OPEN"
+
+    /** 打开网页菜单 */
+    val WEB_VIEW_SETTINGS = "WEB_VIEW_SETTINGS"
 }

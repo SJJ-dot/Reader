@@ -23,6 +23,8 @@ import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHistoryItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
@@ -55,9 +57,9 @@ class BookCityPageFragment : BaseFragment() {
         FragmentBookCityPageBinding.bind(view).apply {
             url = globalConfig.bookCityUrl
             customWebView.init(viewLifecycleOwner, adBlock)
-            customWebView.openMenu = {
+            EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
-            }
+            })
             //QQ登录
             globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
                 val url = it?.toString() ?: return@Observer
@@ -102,18 +104,6 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
-        binding.btnFontAdd.setOnClickListener {
-            view.setFontSize(1)
-        }
-        binding.btnFontSubtract.setOnClickListener {
-            view.setFontSize(-1)
-        }
-        binding.btnCopyUrl.click {
-            view.copyUrlToClipboard()
-        }
-        binding.btnCopyTitle.click {
-            view.copyTitleToClipboard()
-        }
         val historyAdapter = HistoryListAdapter()
         historyAdapter.onClick = {
             view.loadUrl(it, false)

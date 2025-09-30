@@ -15,6 +15,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.core.view.isVisible
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
@@ -23,7 +24,9 @@ import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
+import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.tencent.mmkv.MMKV
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -43,7 +46,6 @@ class CustomWebView @JvmOverloads constructor(
     private var webView: WebView? = null
     private var homeUrl: String? = null
     var adBlock: AdBlock? = null
-    var openMenu: () -> Unit = {}
     val history = MutableLiveData<List<HistoryItem>>()
     private var needClearHistory = false
     fun init(owner: LifecycleOwner, adBlock: AdBlock) {
@@ -76,6 +78,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initView() {
+        binding.webViewSettings.bind(binding.webView)
         binding.refresh.click {
 
             if (binding.refresh.isSelected) {
@@ -96,9 +99,13 @@ class CustomWebView @JvmOverloads constructor(
                 Log.w("没有前进页面")
             }
         }
-        binding.menu.click {
+        binding.settings.click {
             Log.i("打开菜单")
-            openMenu()
+            if (binding.webViewSettings.isVisible) {
+                binding.webViewSettings.hide()
+            } else {
+                binding.webViewSettings.show()
+            }
         }
         binding.home.click {
             Log.i("回到首页")
@@ -108,52 +115,6 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    fun copyUrlToClipboard() {
-        webView?.url?.let { url ->
-            val clipboard =
-                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-            val clipData = android.content.ClipData.newPlainText("text", url)
-            clipboard?.setPrimaryClip(clipData)
-            toast("已复制到剪贴板：${url}")
-        }
-    }
-
-    fun copyTitleToClipboard() {
-        webView?.evaluateJavascript(
-            """
-                javascript:(function() {
-                    // 尝试获取 og:title 的内容
-                    let ogTitle = document.querySelector('meta[property="og:title"]');
-
-                    // 如果 og:title 存在，获取其 content 属性
-                    if (ogTitle) {
-                        return ogTitle.getAttribute('content')
-                    } else {
-                        // 如果 og:title 不存在，获取 keywords 的内容
-                        let keywords = document.querySelector('meta[name="keywords"]');
-                        if (keywords) {
-                            return keywords.getAttribute('content')
-                        } else {
-                            return ""
-                        }
-                    }
-                })()
-            """.trimIndent()
-        ) {
-            Log.i("title:$it")
-            val str = it?.replace("\"", "")?.split(",")?.first()
-            if (str.isNullOrBlank() || str == "null") {
-                toast("标题获取失败")
-                return@evaluateJavascript
-            }
-            Log.i("复制到剪贴板:$str")
-            val clipboard =
-                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-            val clipData = android.content.ClipData.newPlainText("text", str)
-            clipboard?.setPrimaryClip(clipData)
-            toast("已复制到剪贴板：${str}")
-        }
-    }
 
     private fun initWebView(webView: WebView) {
         val cookieManager = CookieManager.getInstance();
@@ -287,12 +248,6 @@ class CustomWebView @JvmOverloads constructor(
         History.list = list
         Log.i("markHistory:$list")
         history.postValue(list)
-    }
-
-    fun setFontSize(i: Int) {
-        webView?.settings?.apply {
-            textZoom = textZoom + i
-        }
     }
 
     class LifecycleObserver(private val customWebView: CustomWebView) :
