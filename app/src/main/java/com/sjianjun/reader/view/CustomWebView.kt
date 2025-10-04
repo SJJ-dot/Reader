@@ -99,7 +99,7 @@ class CustomWebView @JvmOverloads constructor(
                 Log.w("没有前进页面")
             }
         }
-        binding.settings.click {
+        binding.settings.setOnClickListener {
             Log.i("打开菜单")
             if (binding.webViewSettings.isVisible) {
                 binding.webViewSettings.hide()

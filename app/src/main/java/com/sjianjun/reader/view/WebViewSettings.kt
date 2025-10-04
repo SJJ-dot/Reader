@@ -6,9 +6,11 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.webkit.WebView
 import android.widget.FrameLayout
+import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.toast
 import sjj.alog.Log
@@ -18,12 +20,18 @@ class WebViewSettings @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
     val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
 
+    init {
+        setBackgroundColor(R.color.translucent.color(context))
+    }
+
     fun bind(webView: WebView) {
         binding.btnCopyUrl.setOnClickListener {
             webView.copyUrlToClipboard()
+            hide()
         }
         binding.btnCopyTitle.setOnClickListener {
             webView.copyTitleToClipboard()
+            hide()
         }
         binding.btnFontAdd.setOnClickListener {
             webView.setFontSize(1)
@@ -33,6 +41,7 @@ class WebViewSettings @JvmOverloads constructor(
         }
         binding.menu.setOnClickListener {
             EventBus.post(EventKey.WEB_VIEW_SETTINGS)
+            hide()
         }
         setOnClickListener {
             hide()
