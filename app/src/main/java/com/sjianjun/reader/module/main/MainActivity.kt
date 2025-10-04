@@ -20,6 +20,7 @@ import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.repository.ReadingRecordUseCase
 import com.sjianjun.reader.utils.checkUpdate
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 
 
@@ -133,12 +134,18 @@ class MainActivity : BaseActivity() {
         ) || super.onSupportNavigateUp()
     }
 
+    private var lastTime = System.currentTimeMillis()
     override fun onBackPressed() {
         if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {
             binding?.drawerLayout?.closeDrawer(GravityCompat.START)
         } else {
             if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
-                finishAfterTransition()
+                if (System.currentTimeMillis() - lastTime > 1000) {
+                    toast("双击退出")
+                    lastTime = System.currentTimeMillis()
+                } else {
+                    finishAfterTransition()
+                }
             } else {
                 super.onBackPressed()
             }
