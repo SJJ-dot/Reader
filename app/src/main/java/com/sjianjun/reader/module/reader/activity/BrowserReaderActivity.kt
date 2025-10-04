@@ -19,7 +19,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
@@ -29,13 +31,17 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
+import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -112,10 +118,18 @@ class BrowserReaderActivity : BaseActivity() {
                 Log.w("没有前进页面")
             }
         }
-        binding.menu.click {
+        binding.webViewSettings.bind(binding.webView)
+        binding.settings.setOnClickListener {
             Log.i("打开菜单")
-            binding.drawerLayout.openDrawer(GravityCompat.END)
+            if (binding.webViewSettings.isVisible) {
+                binding.webViewSettings.hide()
+            } else {
+                binding.webViewSettings.show()
+            }
         }
+        EventBus.observe(EventKey.WEB_VIEW_SETTINGS, this, Observer<String> {
+            binding.drawerLayout.openDrawer(GravityCompat.END)
+        })
         binding.home.click {
             binding.webView.loadUrl(url)
             needClearHistory = true

@@ -70,6 +70,7 @@ class WebViewSettings @JvmOverloads constructor(
         }
         binding.tvFontSizeValue.setOnClickListener {
             webView.setFontSize(-(webView.settings.textZoom - 100))
+            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.urlInput.addTextChangedListener {
             if (webView?.url == it.toString()) {
@@ -100,7 +101,7 @@ class WebViewSettings @JvmOverloads constructor(
                 context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             val clipData = android.content.ClipData.newPlainText("text", url)
             clipboard?.setPrimaryClip(clipData)
-            toast("已复制到剪贴板：${url}")
+            toast("已复制：${url}")
         }
     }
 
@@ -127,17 +128,21 @@ class WebViewSettings @JvmOverloads constructor(
             """.trimIndent()
         ) {
             Log.i("title:$it")
-            val str = it?.replace("\"", "")?.split(",")?.first()
+            var str = it?.replace("\"", "")?.split(",")?.first()
             if (str.isNullOrBlank() || str == "null") {
-                toast("标题获取失败")
-                return@evaluateJavascript
+//                toast("标题获取失败")
+                str = title
+                if (str.isNullOrBlank()) {
+                    toast("标题获取失败")
+                    return@evaluateJavascript
+                }
             }
             Log.i("复制到剪贴板:$str")
             val clipboard =
                 context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             val clipData = android.content.ClipData.newPlainText("text", str)
             clipboard?.setPrimaryClip(clipData)
-            toast("已复制到剪贴板：${str}")
+            toast("已复制：${str}")
         }
     }
 

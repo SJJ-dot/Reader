@@ -30,6 +30,15 @@
                 tools:progress="50"
                 tools:visibility="visible" />
 
+            <com.sjianjun.reader.view.WebViewSettings
+                android:id="@+id/web_view_settings"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toTopOf="@+id/browser_book_city_toolbar"
+                app:layout_constraintTop_toBottomOf="@+id/browser_book_city_toolbar"
+                app:layout_constraintTop_toTopOf="parent" />
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/browser_book_city_toolbar"
                 android:layout_width="match_parent"
@@ -85,17 +94,17 @@
                         android:padding="12dp"
                         android:scaleType="centerInside"
                         android:src="@drawable/browser_navigation_home"
-                        app:layout_constraintEnd_toStartOf="@+id/menu"
+                        app:layout_constraintEnd_toStartOf="@+id/settings"
                         app:layout_constraintStart_toEndOf="@+id/refresh" />
 
                     <ImageView
-                        android:id="@+id/menu"
+                        android:id="@+id/settings"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:background="?android:attr/selectableItemBackground"
-                        android:padding="12dp"
+                        android:padding="6dp"
                         android:scaleType="centerInside"
-                        android:src="@drawable/browser_navigation_menu"
+                        android:src="@mipmap/ic_setting"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@+id/home" />
 
