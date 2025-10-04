@@ -13,35 +13,127 @@
         android:focusable="true"
         android:padding="5dp">
 
-        <com.coorchice.library.SuperTextView
-            android:id="@+id/btn_copy_url"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/web_title"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:longClickable="true"
             android:padding="5dp"
-            android:text="复制网址"
-            android:textColor="@color/mdr_white"
-            android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="当前标题"
+            android:textColor="@color/dn_reader_chapter_title_text_color"
+            android:textIsSelectable="true"
+            android:textSize="16dp"
             app:layout_constraintEnd_toStartOf="@+id/btn_copy_title"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/web_title_background"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="@+id/web_title"
+            app:layout_constraintEnd_toEndOf="@+id/web_title"
+            app:layout_constraintStart_toStartOf="@+id/web_title"
+            app:layout_constraintTop_toTopOf="@+id/web_title"
             app:stv_corner="5dp"
-            app:stv_solid="@color/colorPrimary" />
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
 
         <com.coorchice.library.SuperTextView
             android:id="@+id/btn_copy_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="5dp"
-            android:text="复制标题"
+            android:text="复制"
             android:textColor="@color/mdr_white"
             android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btn_font_add"
-            app:layout_constraintStart_toEndOf="@id/btn_copy_url"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/web_title"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/web_title"
             app:stv_corner="5dp"
             app:stv_solid="@color/colorPrimary" />
+
+
+        <EditText
+            android:id="@+id/url_input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@color/transparent"
+            android:padding="5dp"
+            android:text="http:://ss"
+            android:textColor="@color/dn_reader_chapter_title_text_color"
+            android:textSize="14dp"
+            app:layout_constraintEnd_toStartOf="@+id/btn_copy_url"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/web_title" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/url_input_background"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="@+id/url_input"
+            app:layout_constraintEnd_toEndOf="@+id/url_input"
+            app:layout_constraintStart_toStartOf="@+id/url_input"
+            app:layout_constraintTop_toTopOf="@+id/url_input"
+            app:stv_corner="5dp"
+            app:stv_stroke_color="@color/dn_color_primary"
+            app:stv_stroke_width="1dp" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/btn_copy_url"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:text="复制"
+            android:textColor="@color/mdr_white"
+            android:textSize="14dp"
+            app:layout_constraintBottom_toBottomOf="@+id/url_input"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/url_input"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tv_font_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="字体大小："
+            android:textColor="@color/dn_reader_chapter_title_text_color"
+            android:textSize="14dp"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_font_subtract"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/btn_font_subtract" />
+
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/btn_font_subtract"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="5dp"
+            android:text="字体-"
+            android:textColor="@color/mdr_white"
+            android:textSize="14dp"
+            app:layout_constraintEnd_toStartOf="@+id/tv_font_size_value"
+            app:layout_constraintStart_toEndOf="@+id/tv_font_size"
+            app:layout_constraintTop_toBottomOf="@+id/url_input"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tv_font_size_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100"
+            android:textColor="@color/dn_reader_chapter_title_text_color"
+            android:textSize="14dp"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_font_subtract"
+            app:layout_constraintEnd_toStartOf="@+id/btn_font_add"
+            app:layout_constraintStart_toEndOf="@+id/btn_font_subtract"
+            app:layout_constraintTop_toTopOf="@+id/btn_font_subtract" />
 
         <com.coorchice.library.SuperTextView
             android:id="@+id/btn_font_add"
@@ -51,39 +143,37 @@
             android:text="字体+"
             android:textColor="@color/mdr_white"
             android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btn_font_subtract"
-            app:layout_constraintStart_toEndOf="@id/btn_copy_title"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_font_subtract"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/tv_font_size_value"
+            app:layout_constraintTop_toTopOf="@+id/btn_font_subtract"
             app:stv_corner="5dp"
             app:stv_solid="@color/colorPrimary" />
 
-        <com.coorchice.library.SuperTextView
-            android:id="@+id/btn_font_subtract"
+        <TextView
+            android:id="@+id/tv_ad_block"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="5dp"
-            android:text="字体-"
-            android:textColor="@color/mdr_white"
+            android:layout_marginStart="8dp"
+            android:text="广告拦截："
+            android:textColor="@color/dn_reader_chapter_title_text_color"
             android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/menu"
-            app:layout_constraintStart_toEndOf="@+id/btn_font_add"
-            app:layout_constraintTop_toTopOf="parent"
-            app:stv_corner="5dp"
-            app:stv_solid="@color/colorPrimary" />
+            app:layout_constraintBottom_toBottomOf="@+id/menu"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/menu" />
 
         <ImageView
             android:id="@+id/menu"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:background="?android:attr/selectableItemBackground"
             android:scaleType="centerInside"
-            android:src="@drawable/browser_navigation_menu"
+            android:src="@mipmap/ic_ad_block"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/btn_font_subtract"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/tv_ad_block"
+            app:layout_constraintTop_toBottomOf="@+id/btn_font_subtract"
             app:tint="@color/colorPrimary" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

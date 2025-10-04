@@ -4,40 +4,62 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.webkit.WebView
 import android.widget.FrameLayout
+import androidx.core.widget.addTextChangedListener
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.hide
+import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 class WebViewSettings @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
     val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
+    private var webView: WebView? = null
 
     init {
         setBackgroundColor(R.color.translucent.color(context))
     }
 
     fun bind(webView: WebView) {
+        this.webView = webView
         binding.btnCopyUrl.setOnClickListener {
-            webView.copyUrlToClipboard()
-            hide()
+            if (binding.btnCopyUrl.text == "复制") {
+                webView.copyUrlToClipboard()
+            } else {
+                var url = binding.urlInput.text.toString()
+                if (!url.startsWith("http")) {
+                    url = "http://$url"
+                }
+                if (url.toHttpUrlOrNull() == null) {
+                    toast("请输入正确的网址")
+                    return@setOnClickListener
+                }
+                webView.loadUrl(url)
+                hide()
+                //隐藏输入法
+                binding.urlInput.hideKeyboard()
+            }
         }
         binding.btnCopyTitle.setOnClickListener {
             webView.copyTitleToClipboard()
-            hide()
         }
         binding.btnFontAdd.setOnClickListener {
-            webView.setFontSize(1)
+            webView.setFontSize(2)
+            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.btnFontSubtract.setOnClickListener {
-            webView.setFontSize(-1)
+            webView.setFontSize(-2)
+            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.menu.setOnClickListener {
             EventBus.post(EventKey.WEB_VIEW_SETTINGS)
@@ -45,6 +67,24 @@ class WebViewSettings @JvmOverloads constructor(
         }
         setOnClickListener {
             hide()
+        }
+        binding.tvFontSizeValue.setOnClickListener {
+            webView.setFontSize(-(webView.settings.textZoom - 100))
+        }
+        binding.urlInput.addTextChangedListener {
+            if (webView?.url == it.toString()) {
+                binding.btnCopyUrl.text = "复制"
+            } else {
+                binding.btnCopyUrl.text = "跳转"
+            }
+        }
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (visibility == VISIBLE) {
+            binding.webTitle.text = webView?.title ?: "~"
+            binding.urlInput.setText(webView?.url ?: "")
         }
     }
 
