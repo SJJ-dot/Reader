@@ -236,19 +236,7 @@ class BrowserReaderActivity : BaseActivity() {
     }
 
     private fun initWebView() {
-        val cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
-        cookieManager.setAcceptThirdPartyCookies(binding.webView, true); // 启用第三方 Cookie
-
-//chrome://inspect   edge://inspect
-//        if (BuildConfig.DEBUG) {
-//            WebView.setWebContentsDebuggingEnabled(true)
-//        }
-//声明WebSettings子类
-        binding.webView.settings.init()
-        binding.webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        binding.webView.isScrollbarFadingEnabled = false
-
+        binding.webView.init()
         binding.webView.webViewClient = object : WebViewClient() {
 
 

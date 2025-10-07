@@ -123,12 +123,8 @@ class WebViewVerificationActivity : BaseActivity() {
     }
 
     private fun initWebView(url: String, headerMap: Map<String, String>) {
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
-        cookieManager.setAcceptThirdPartyCookies(binding.webView,true)
         CookieMgr.clearCookiesForUrl(url)
-
-        binding.webView.settings.init(headerMap)
+        binding.webView.init(headerMap)
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {
         }

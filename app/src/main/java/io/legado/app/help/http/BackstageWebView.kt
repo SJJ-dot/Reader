@@ -89,11 +89,7 @@ class BackstageWebView(
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun createWebView(): WebView {
         val webView = WebView(App.app)
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
-        cookieManager.setAcceptThirdPartyCookies(webView,true)
-
-        webView.settings.init(headerMap)
+        webView.init(headerMap)
         webView.webViewClient = HtmlWebViewClient()
         return webView
     }

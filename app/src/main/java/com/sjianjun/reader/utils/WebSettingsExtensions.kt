@@ -2,7 +2,10 @@ package com.sjianjun.reader.utils
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.view.View.SCROLLBARS_INSIDE_OVERLAY
+import android.webkit.CookieManager
 import android.webkit.WebSettings
+import android.webkit.WebView
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.webkit.WebSettingsCompat
@@ -51,21 +54,27 @@ fun WebSettings.setBackForwardCacheEnabled() {
 }
 
 
-fun WebSettings.init(headerMap: Map<String, String>? = null){
-    setDarkening()
-    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-    domStorageEnabled = true
-    allowContentAccess = true
-    useWideViewPort = true
-    loadWithOverviewMode = true
-    javaScriptEnabled = true
-    setSupportZoom(true)
-    builtInZoomControls = true
-    displayZoomControls = false
-    headerMap?.get("User-Agent")?.let {
-        userAgentString = it
+fun WebView.init(headerMap: Map<String, String>? = null){
+    val cookieManager = CookieManager.getInstance();
+    cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
+    cookieManager.setAcceptThirdPartyCookies(this, true) // 启用第三方 Cookie
+    scrollBarStyle = SCROLLBARS_INSIDE_OVERLAY
+    settings.apply {
+        setDarkening()
+        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        domStorageEnabled = true
+        allowContentAccess = true
+        useWideViewPort = true
+        loadWithOverviewMode = true
+        javaScriptEnabled = true
+        setSupportZoom(true)
+        builtInZoomControls = true
+        displayZoomControls = false
+        headerMap?.get("User-Agent")?.let {
+            userAgentString = it
+        }
+        blockNetworkImage = false // 设置图片加载方式，默认true，表示不加载图片
+        loadsImagesAutomatically = true // 支持自动加载图片
+        setBackForwardCacheEnabled()
     }
-    blockNetworkImage = false // 设置图片加载方式，默认true，表示不加载图片
-    loadsImagesAutomatically = true // 支持自动加载图片
-    setBackForwardCacheEnabled()
 }

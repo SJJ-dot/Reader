@@ -117,18 +117,7 @@ class CustomWebView @JvmOverloads constructor(
 
 
     private fun initWebView(webView: WebView) {
-        val cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true); // 启用 Cookie 支持
-        cookieManager.setAcceptThirdPartyCookies(webView, true); // 启用第三方 Cookie
-////chrome://inspect   edge://inspect
-//        if (BuildConfig.DEBUG){
-//            WebView.setWebContentsDebuggingEnabled(true)
-//        }
-//声明WebSettings子类
-        webView.settings.init()
-
-        webView.scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        webView.isScrollbarFadingEnabled = false
+        webView.init()
         webView.webViewClient = object : WebViewClient() {
 
 
