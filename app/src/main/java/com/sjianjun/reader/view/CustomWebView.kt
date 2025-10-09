@@ -85,7 +85,7 @@ class CustomWebView @JvmOverloads constructor(
                 webView?.stopLoading()
             } else {
                 webView?.stopLoading()
-                webView?.reload()
+                webView?.loadUrl(webView?.url ?: "")
             }
         }
         binding.backward.click {

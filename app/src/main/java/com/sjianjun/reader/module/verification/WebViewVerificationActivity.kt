@@ -97,7 +97,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 binding.webView.stopLoading()
             } else {
                 binding.webView.stopLoading()
-                binding.webView.reload()
+                binding.webView.loadUrl(binding.webView.url ?: "")
             }
         }
         binding.backward.click {
