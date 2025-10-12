@@ -8,6 +8,7 @@ import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 
 class HostStr(val host: String, var type: List<String>) {
+    var isPage = false
     var time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -80,5 +81,12 @@ class AdBlock() {
             hostStr.type = hostStr.type.toMutableList().apply { add(type) }.sortedBy { it.length }
             hostList.postValue(hostList.value)
         }
+    }
+
+    fun markPage(url: String?) {
+        val topHost = url?.toHttpUrlOrNull()?.topPrivateDomain() ?: return
+        val hostStr = hostList.value?.firstOrNull { it.host == topHost }?:return
+        hostStr.isPage = true
+        hostList.postValue(hostList.value)
     }
 }

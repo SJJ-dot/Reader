@@ -97,7 +97,8 @@
                 android:scaleType="centerInside"
                 android:src="@mipmap/ic_setting"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/home" />
+                app:layout_constraintStart_toEndOf="@+id/home"
+                app:tint="@color/dn_text_color_black" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
