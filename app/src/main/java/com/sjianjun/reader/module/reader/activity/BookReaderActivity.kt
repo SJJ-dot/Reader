@@ -78,6 +78,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     override fun onBackPressed() {
+        val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
         when {
             binding?.drawerLayout!!.isDrawerOpen(GravityCompat.END) -> {
                 binding?.drawerLayout!!.closeDrawer(GravityCompat.END)
@@ -85,6 +86,12 @@ class BookReaderActivity : BaseActivity() {
 
             binding?.drawerLayout!!.isDrawerOpen(GravityCompat.START) -> {
                 binding?.drawerLayout!!.closeDrawer(GravityCompat.START)
+            }
+
+            fragment?.isVisible == true -> {
+                supportFragmentManager.beginTransaction()
+                    .hide(fragment)
+                    .commitAllowingStateLoss()
             }
 
             else -> {
