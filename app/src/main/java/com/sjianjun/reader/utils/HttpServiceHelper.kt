@@ -84,9 +84,27 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                     newFixedLengthResponse(res)
                 }
 
+                "/verification_activity_get" -> {
+                    val data = gson.fromJson<RobotVerify>(requestBody)!!
+                    val res = WebViewVerificationActivity.startAndWaitResult(
+                        data.url!!,
+                        data.headers ?: emptyMap(),
+                        data.html ?: "",
+                        data.encoding ?: "UTF-8",
+                        data.verificationKey ?: ""
+                    )
+                    newFixedLengthResponse(res)
+                }
+
                 "/start_verification_activity" -> {
                     val data = gson.fromJson<RobotVerify>(requestBody)!!
-                    WebViewVerificationActivity.startAndWaitResult(data.url!!, data.headers ?: emptyMap(), data.html ?: "", data.encoding ?: "UTF-8")
+                    WebViewVerificationActivity.startAndWaitResult(
+                        data.url!!,
+                        data.headers ?: emptyMap(),
+                        data.html ?: "",
+                        data.encoding ?: "UTF-8",
+                        data.verificationKey ?: ""
+                    )
                     newFixedLengthResponse(CookieMgr.getCookie(data.url ?: ""))
                 }
 
@@ -113,6 +131,7 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         var headers: Map<String, String>? = null
         var html: String? = null
         var encoding: String? = null
+        var verificationKey: String? = null
     }
 
     class WebGet {

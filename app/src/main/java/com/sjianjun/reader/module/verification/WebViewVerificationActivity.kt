@@ -5,12 +5,12 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -24,12 +24,16 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.CookieMgr
+import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.launch
+import org.apache.commons.text.StringEscapeUtils
 import sjj.alog.Log
+import java.lang.ref.WeakReference
 import java.util.UUID
 
 class WebViewVerificationActivity : BaseActivity() {
@@ -39,9 +43,9 @@ class WebViewVerificationActivity : BaseActivity() {
         intent.getSerializableExtra(KEY_HEADER_MAP) as? Map<String, String> ?: mapOf()
     }
     private val html: String by lazy { intent.getStringExtra(KEY_HTML) ?: "" }
-    private val resultKey: String by lazy { intent.getStringExtra(KEY_RESULT) ?: "" }
-
     private val encoding: String by lazy { intent.getStringExtra(KEY_ENCODING) ?: "UTF-8" }
+    private val mHandler = Handler(Looper.getMainLooper())
+    private val runnable by lazy { EvalJsRunnable(binding.webView, url) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +74,10 @@ class WebViewVerificationActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        waitResultSet.remove(resultKey)
+        val result = resultMap[intent.getStringExtra(KEY_RESULT)]
+        result?.finished = true
+        mHandler.removeCallbacks(runnable)
+        binding.webView.destroy()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -106,6 +113,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 binding.webView.goBack()
             } else {
                 Log.w("没有后退页面")
+                finish() // 关闭当前 Activity
             }
         }
         binding.forward.click {
@@ -149,6 +157,8 @@ class WebViewVerificationActivity : BaseActivity() {
 
             override fun onPageFinished(view: WebView?, url: String) {
                 super.onPageFinished(view, url)
+                mHandler.removeCallbacks(runnable)
+                mHandler.postDelayed(runnable, 100)
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -177,39 +187,87 @@ class WebViewVerificationActivity : BaseActivity() {
         private val KEY_URL = "url"
         private val KEY_HEADER_MAP = "header_map"
         private val KEY_HTML = "html"
-        private val KEY_RESULT = "result"
         private val KEY_ENCODING = "encoding"
-        private val waitResultSet = mutableSetOf<String>()
+        private val KEY_VERIFICATION_KEY = "VerificationKey"
+        private val KEY_RESULT = "result"
+        private val resultMap = mutableMapOf<String, Result>()
 
         @JvmStatic
-        fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), html: String = "", encoding: String = "UTF-8") {
+        fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), html: String = "", encoding: String = "UTF-8", verificationKey: String = ""): String? {
             Log.i("WebViewVerificationActivity startAndWaitResult URL: $url, headerMap: $headerMap, html: $html")
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 throw IllegalStateException("startAndWaitResult 必须在子线程中调用")
             }
-            val key = UUID.randomUUID().toString()
+            val keyResult = UUID.randomUUID().toString()
             val intent = Intent(App.app, WebViewVerificationActivity::class.java).apply {
                 putExtra(KEY_URL, url)
                 putExtra(KEY_HEADER_MAP, HashMap(headerMap))
                 putExtra(KEY_HTML, html)
-                putExtra(KEY_RESULT, key)
+                putExtra(KEY_RESULT, keyResult)
                 putExtra(KEY_ENCODING, encoding)
+                putExtra(KEY_VERIFICATION_KEY, verificationKey)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            waitResultSet.add(key)
+            val result = Result(url)
+            resultMap[keyResult] = result
             GlobalScope.launch(Dispatchers.Main) {
                 Log.i("WebViewVerificationActivity start for $url")
                 App.app.startActivity(intent)
             }
             while (true) {
-                if (!waitResultSet.contains(key)) {
+                if (result.finished) {
                     break
                 }
                 Thread.sleep(500)
             }
+            resultMap.remove(keyResult)
             Log.i("WebViewVerificationActivity result for $url is done")
+            return gson.toJson(Response(result.url, result.html))
         }
 
+    }
+
+    private inner class EvalJsRunnable(
+        webView: WebView,
+        private val url: String,
+        private val mJavaScript: String = "document.documentElement.outerHTML"
+    ) : Runnable {
+        private val quoteRegex = "^\"|\"$".toRegex()
+        var retry = 0
+        private val mWebView: WeakReference<WebView> = WeakReference(webView)
+        override fun run() {
+            mWebView.get()?.evaluateJavascript(mJavaScript) {
+                handleResult(it)
+            }
+        }
+
+        private fun handleResult(result: String) = GlobalScope.launch {
+            if (!result.isBlank() && result != "null") {
+                val content = StringEscapeUtils.unescapeJson(result).replace(quoteRegex, "")
+                Log.i("js执行结果获取成功：$url")
+                val result = resultMap[intent.getStringExtra(KEY_RESULT)]
+                result?.url = url
+                result?.html = content
+                val verificationKey: String by lazy { intent.getStringExtra(KEY_VERIFICATION_KEY) ?: "" }
+                if (verificationKey.isNotBlank() && content.contains(verificationKey)) {
+                    result?.finished = true
+                    finish()
+                }
+                return@launch
+            }
+            if (isDestroyed) {
+                return@launch
+            }
+            retry++
+            mHandler.postDelayed(this@EvalJsRunnable, 1000)
+        }
+
+    }
+
+    class Response(val url: String, val html: String)
+    class Result(var url: String) {
+        var html: String = ""
+        var finished: Boolean = false
     }
 
 }
