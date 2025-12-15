@@ -26,4 +26,5 @@
 
     <color name="dn_appbar_icon_tint">@color/mdr_white</color>
     <color name="dn_badge_color">@color/mdr_red_A200</color>
+    <color name="dn_bookcity_host_item_background">@color/mdr_white</color>
 </resources>

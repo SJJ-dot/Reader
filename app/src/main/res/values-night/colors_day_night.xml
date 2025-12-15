@@ -23,4 +23,5 @@
     <!--  标题栏图标着色  -->
     <color name="dn_appbar_icon_tint">@color/dark_text_primary_color</color>
     <color name="dn_badge_color">@color/dark_text_primary_color</color>
+    <color name="dn_bookcity_host_item_background">#1F1F1F</color>
 </resources>

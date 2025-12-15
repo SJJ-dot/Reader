@@ -105,6 +105,7 @@
                         android:padding="6dp"
                         android:scaleType="centerInside"
                         android:src="@mipmap/ic_setting"
+                        app:tint="@color/dn_text_color_black"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@+id/home" />
 

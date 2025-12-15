@@ -41,6 +41,7 @@ import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -211,8 +212,23 @@ class BrowserReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             val host = data[position]
-            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
-            binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
+            if (host.isPage) {
+                binding.root.setCardBackgroundColor(R.color.colorPrimary.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.mdr_white)
+                binding.tvType.setTextColorRes(R.color.mdr_white)
+                binding.tvTime.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setTextColorRes(R.color.colorPrimary)
+                binding.btnMarkBlack.setSolid(R.color.mdr_white.color(holder.itemView.context))
+            } else {
+                binding.root.setCardBackgroundColor(R.color.dn_bookcity_host_item_background.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.dn_text_color_black)
+                binding.tvType.setTextColorRes(R.color.colorPrimary)
+                binding.tvTime.setTextColorRes(R.color.dn_text_color_black)
+                binding.btnMarkBlack.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setSolid(R.color.colorPrimary.color(holder.itemView.context))
+            }
+            binding.tvType.text = host.type.joinToString(",")
+            binding.tvHost.text = host.host
             binding.tvTime.text = host.time
             binding.btnMarkBlack.text = "+黑名单"
             binding.btnMarkBlack.click {
@@ -225,8 +241,23 @@ class BrowserReaderActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
             val host = data[position]
-            val type = host.type.joinToString(",", transform = { colorText(it, R.color.colorPrimary.color(holder.itemView.context)) })
-            binding.tvHost.text = (host.host + "<br/>" + type).htmlToSpanned()
+            if (host.isPage) {
+                binding.root.setCardBackgroundColor(R.color.colorPrimary.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.mdr_white)
+                binding.tvType.setTextColorRes(R.color.mdr_white)
+                binding.tvTime.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setTextColorRes(R.color.colorPrimary)
+                binding.btnMarkBlack.setSolid(R.color.mdr_white.color(holder.itemView.context))
+            } else {
+                binding.root.setCardBackgroundColor(R.color.dn_bookcity_host_item_background.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.dn_text_color_black)
+                binding.tvType.setTextColorRes(R.color.colorPrimary)
+                binding.tvTime.setTextColorRes(R.color.dn_text_color_black)
+                binding.btnMarkBlack.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setSolid(R.color.colorPrimary.color(holder.itemView.context))
+            }
+            binding.tvType.text = host.type.joinToString(",")
+            binding.tvHost.text = host.host
             binding.tvTime.text = host.time
             binding.btnMarkBlack.text = "-移除"
             binding.btnMarkBlack.click {
@@ -262,6 +293,7 @@ class BrowserReaderActivity : BaseActivity() {
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                adBlock.markPage(url)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {

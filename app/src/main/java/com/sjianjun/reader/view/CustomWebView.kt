@@ -2,6 +2,7 @@ package com.sjianjun.reader.view
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.http.SslError
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -126,7 +127,7 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): Boolean {
                 val url = request.url.toString()
-                Log.i("shouldOverrideUrlLoading:$url ")
+//                Log.i("shouldOverrideUrlLoading:$url ")
                 if (url.endsWith(".apk")) {
                     return true
                 }
@@ -142,6 +143,12 @@ class CustomWebView @JvmOverloads constructor(
 
             }
 
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+//                Log.i("onPageStarted:$url ")
+                adBlock?.markPage(url)
+            }
+
             override fun onPageFinished(webView: WebView?, url: String?) {
                 if (needClearHistory) {
                     needClearHistory = false
@@ -152,7 +159,7 @@ class CustomWebView @JvmOverloads constructor(
                         binding.forward.isEnabled = webView.canGoForward()
                     }
                 }
-                Log.i("title:${webView?.title} ${webView?.url} ")
+//                Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
                 val list = history.value!!.toMutableList()
                 webView?.url?.let { url ->
                     val item = HistoryItem(webView.title ?: "无标题", url)
@@ -173,7 +180,7 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-
+//                Log.i("shouldInterceptRequest:${request.url} ")
                 if (adBlock?.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(
