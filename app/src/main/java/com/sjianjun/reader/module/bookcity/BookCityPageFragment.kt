@@ -33,7 +33,6 @@ import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
-import com.sjianjun.reader.view.CustomWebView
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull

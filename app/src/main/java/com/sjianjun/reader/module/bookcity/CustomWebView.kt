@@ -1,14 +1,11 @@
-package com.sjianjun.reader.view
+package com.sjianjun.reader.module.bookcity
 
-import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.util.AttributeSet
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -21,19 +18,16 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.module.bookcity.AdBlock
-import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
-
 
 /*
  * Created by shen jian jun on 2020-07-10
