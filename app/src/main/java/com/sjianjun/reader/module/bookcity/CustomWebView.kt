@@ -62,13 +62,29 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun back(): Boolean {
-        Log.i("后退")
-        if (webView?.canGoBack() == true) {
-            webView?.goBack()
-            return true
-        } else {
-            Log.w("没有后退页面")
+        if (webView?.canGoBack() != true) {
             return false
+        }
+        val wv = webView ?: return false
+        val list = wv.copyBackForwardList()
+        val currentIndex = list.currentIndex
+        // 向前（更早）查找第一个非广告页面
+        var targetIndex = -1
+        for (i in currentIndex - 1 downTo 0) {
+            val itemUrl = list.getItemAtIndex(i).url
+            val host = itemUrl.toHttpUrlOrNull()?.topPrivateDomain()
+            if (adBlock?.blacklist?.contains(host) != true) {
+                targetIndex = i
+                break
+            }
+        }
+        return if (targetIndex >= 0) {
+            val steps = targetIndex - currentIndex
+            wv.goBackOrForward(steps)
+            true
+        } else {
+            // 没找到非广告的历史项
+            false
         }
     }
 
@@ -139,7 +155,7 @@ class CustomWebView @JvmOverloads constructor(
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-//                Log.i("onPageStarted:$url ")
+                Log.i("onPageStarted:$url ")
                 adBlock?.markPage(url)
             }
 
@@ -153,7 +169,7 @@ class CustomWebView @JvmOverloads constructor(
                         binding.forward.isEnabled = webView.canGoForward()
                     }
                 }
-//                Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
+                Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
                 val list = history.value!!.toMutableList()
                 webView?.url?.let { url ->
                     val item = HistoryItem(webView.title ?: "无标题", url)
