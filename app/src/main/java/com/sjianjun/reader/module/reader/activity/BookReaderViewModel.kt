@@ -23,7 +23,6 @@ import sjj.novel.view.reader.page.TxtChapter
 class BookReaderViewModel : ViewModel() {
     val book = MutableLiveData<Book?>()
     val chapterList = MutableLiveData<List<Chapter>>()
-    val readingRecord = MutableLiveData<ReadingRecord>()
 
     private val bookDao get() = DbFactory.db.bookDao()
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()
@@ -39,7 +38,6 @@ class BookReaderViewModel : ViewModel() {
         withMain {
             this@BookReaderViewModel.book.value = book
             this@BookReaderViewModel.chapterList.value = chapterList
-            this@BookReaderViewModel.readingRecord.value = book.record
         }
         return@withIo book
     }
@@ -63,7 +61,7 @@ class BookReaderViewModel : ViewModel() {
     }
 
     fun saveRecord(bean: BookRecordBean) {
-        val record = readingRecord.value ?: return
+        val record = book.value?.record ?: return
         if (bean.chapter != record.chapterIndex ||
             bean.pagePos != record.offest ||
             bean.isEnd != record.isEnd
