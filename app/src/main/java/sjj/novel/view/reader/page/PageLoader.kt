@@ -116,7 +116,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     // 页面的翻页效果模式
     private var mPageMode: PageMode = PageMode.SIMULATION
 
-    private val mDisplayParams: DisplayParams = DisplayParams()
+    val mDisplayParams: DisplayParams = DisplayParams()
 
     //字体的颜色
     private var mTextColor = 0
@@ -462,8 +462,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             return chapterCategory?.getOrNull(chapterPos)
         }
 
-    val marginHeight: Int get() = mDisplayParams.tipHeight.roundToInt()
-
     /**
      * 保存阅读记录
      */
@@ -597,7 +595,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             return null
         }
         val txtPages = ChapterPageCache.get(chapterPos)
-        if (!txtPages.isNullOrEmpty()){
+        if (!txtPages.isNullOrEmpty()) {
             return txtPages
         }
         // 获取章节的文本流
@@ -649,8 +647,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (chapterCategory?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop =
-                    mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
+                val tipTop =mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
@@ -756,13 +753,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 }
             }
 
-            val top: Float
-
-            if (mPageMode == PageMode.SCROLL) {
-                top = -mTextPaint!!.getFontMetrics().top
-            } else {
-                top = mDisplayParams.tipHeight - mTextPaint!!.getFontMetrics().top
-            }
             val titleMetrics = mTitlePaint!!.getFontMetrics()
             val titleBase = -titleMetrics.ascent
             val textMetrics = mTextPaint!!.getFontMetrics()
@@ -773,13 +763,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 for (i in 0..<line.txt.length) {
                     canvas.drawText(line.txt, i, i + 1, line.charLeft[i], y, paint)
                 }
-
-                //                canvas.drawText(line.txt, line.left, y, paint);
-
-//                if (BuildConfig.DEBUG) {
-//                    canvas.drawLine(line.left, line.top, line.right, line.top, mTitlePaint);
-//                    canvas.drawLine(line.left, line.bottom, line.right, line.bottom, mTitlePaint);
-//                }
             }
         }
     }

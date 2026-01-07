@@ -20,6 +20,7 @@ import sjj.novel.view.reader.animation.ScrollPageAnim
 import sjj.novel.view.reader.animation.SimulationPageAnim
 import sjj.novel.view.reader.animation.SlidePageAnim
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Created by Administrator on 2016/8/29 0029.
@@ -91,7 +92,10 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
             PageMode.COVER -> mPageAnim = CoverPageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.SLIDE -> mPageAnim = SlidePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.NONE -> mPageAnim = NonePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
-            PageMode.SCROLL -> mPageAnim = ScrollPageAnim(mViewWidth, mViewHeight, 0, pageLoader?.marginHeight ?: 0, this, mPageAnimListener)
+            PageMode.SCROLL -> {
+                val marginHeight = pageLoader?.mDisplayParams?.let { it.tipHeight + it.statusBarHeight } ?: 0f
+                mPageAnim = ScrollPageAnim(mViewWidth, mViewHeight, 0, marginHeight.roundToInt(), this, mPageAnimListener)
+            }
         }
     }
 

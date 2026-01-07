@@ -6,6 +6,8 @@ class DisplayParams {
     var width = 0
     var height = 0
 
+    var statusBarHeight = 0
+
     var tipHeight = dpToPx(28f)
 
     var paddingWidth = dpToPx(8f)
@@ -24,7 +26,7 @@ class DisplayParams {
     var textInterval = 0f
 
     val contentLeft: Float get() = paddingWidth
-    val contentTop: Float get() = tipHeight + paddingHeight
+    val contentTop: Float get() = tipHeight + paddingHeight + statusBarHeight
     val contentRight: Float get() = width - paddingWidth
     val contentBottom: Float get() = height - paddingHeight
     val contentWidth: Float get() = contentRight - contentLeft

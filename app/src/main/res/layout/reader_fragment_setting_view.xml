@@ -134,7 +134,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="5dp"
             android:layout_marginEnd="16dp"
-            android:max="100"
+            android:max="200"
             android:progressDrawable="@drawable/seekbar_track_material"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/barrier"

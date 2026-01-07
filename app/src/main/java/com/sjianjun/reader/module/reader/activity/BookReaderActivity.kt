@@ -27,8 +27,6 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
-import com.sjianjun.reader.utils.gone
-import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.ensureActive
@@ -64,7 +62,9 @@ class BookReaderActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
-        binding?.readerRoot?.setPadding(0, ImmersionBar.getStatusBarHeight(this), 0, 0)
+        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
+        binding?.drawerChapterList?.setPadding(0, statusBarHeight, 0, 0)
+        mPageLoader?.mDisplayParams?.statusBarHeight = statusBarHeight
         initSettingMenu()
         Log.i("BookReaderActivity onCreate savedInstanceState: $savedInstanceState")
         initData()
@@ -246,7 +246,6 @@ class BookReaderActivity : BaseActivity() {
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader?.setPageStyle(it)
-            binding!!.readerRoot.background = it.getBackground(this)
             if (it.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
@@ -255,7 +254,6 @@ class BookReaderActivity : BaseActivity() {
         }
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
-            binding!!.readerRoot.background = pageStyle.getBackground(this)
             if (pageStyle.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {
