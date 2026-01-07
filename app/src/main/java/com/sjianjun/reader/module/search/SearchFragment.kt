@@ -17,7 +17,6 @@ import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.SEARCH_KEY
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SearchResult
