@@ -1,17 +1,25 @@
 package com.sjianjun.reader.module.main
 
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.coroutine.withMain
+import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
+import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.launchIo
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import sjj.alog.Log
+import java.io.File
 
 class BookDetailsViewModel : ViewModel() {
     val bookLivedata = MutableLiveData<Book>()
@@ -19,6 +27,7 @@ class BookDetailsViewModel : ViewModel() {
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
+    private val chapterContentDao get() = DbFactory.db.chapterContentDao()
 
     @OptIn(FlowPreview::class)
     fun init(title: String) {
@@ -53,6 +62,93 @@ class BookDetailsViewModel : ViewModel() {
             readingRecord.isEnd = false
             readingRecord.updateTime = System.currentTimeMillis()
             readingRecordDao.insertReadingRecord(readingRecord)
+        }
+    }
+
+    fun exportBookToTxt(progress: (step: Int) -> Unit, onSuccess: (file: File) -> Unit, onError: (msg: String) -> Unit) {
+        //导出当前书籍为txt文件
+        Log.i("exportBookToTxt1")
+        val book = bookLivedata.value
+        if (book == null) {
+            onError("书籍信息获取失败")
+            return
+        }
+        Log.i("exportBookToTxt2")
+
+        // run on IO
+        launchIo {
+            try {
+                // choose export dir: externalCacheDir/export or cacheDir/export
+                val baseDir = App.app.externalCacheDir ?: App.app.cacheDir
+                val exportDir = File(baseDir, "export")
+                if (exportDir.exists()) exportDir.delete()
+                if (!exportDir.exists()) exportDir.mkdirs()
+
+                fun sanitize(fileName: String): String {
+                    // forbid characters not allowed in filenames on many platforms
+                    return fileName.replace(Regex("""[\\/:*?"<>|]"""), "_")
+                }
+
+                val author = book.author.takeIf { it.isNotBlank() } ?: "佚名"
+                val name = sanitize("${book.title} - $author.txt")
+                val outFile = File(exportDir, name)
+
+                // get chapter list
+                val chapters = try {
+                    chapterDao.getChapterListByBookId(book.id).first()
+                } catch (_: Throwable) {
+                    emptyList<com.sjianjun.reader.bean.Chapter>()
+                }
+
+                outFile.bufferedWriter(Charsets.UTF_8).use { writer ->
+                    // write book header
+                    val displayAuthor = author
+                    writer.appendLine(book.title)
+                    writer.appendLine("作者：$displayAuthor")
+                    writer.appendLine("简介：${book.intro ?: "无"}")
+                    writer.appendLine("来源：${book.bookSource?.group} - ${book.bookSource?.name}")
+                    writer.appendLine("网址：${book.url}")
+                    writer.appendLine()
+
+                    var step = 0
+                    val total = chapters.size
+
+                    for (chapter in chapters) {
+                        withMain { progress(step * 100 / total) }
+                        step++
+                        val titleLine = chapter.title ?: "第 ${chapter.index} 章"
+                        writer.appendLine(titleLine)
+                        writer.appendLine()
+
+                        val contents = chapterContentDao.getChapterContent(book.id, chapter.index).sortedBy { it.pageIndex }
+                        if (contents.isEmpty()) {
+                            // if no cached content, leave blank or skip
+                            writer.appendLine("[无内容]")
+                            writer.appendLine()
+                            continue
+                        }
+
+                        for (cc in contents) {
+                            val text = cc.content.format().toString()
+                            // ensure normalized line endings
+                            writer.appendLine(text.replace("\r\n", "\n"))
+                            writer.appendLine()
+                        }
+
+                        // add separator between chapters
+                        writer.appendLine("\n")
+                    }
+                    withMain { progress(100) }
+                }
+                withMain {
+                    onSuccess(outFile)
+                }
+            } catch (e: Throwable) {
+                Log.e("exportBookToTxt", e)
+                withMain {
+                    onError(e.message ?: "导出失败")
+                }
+            }
         }
     }
 }

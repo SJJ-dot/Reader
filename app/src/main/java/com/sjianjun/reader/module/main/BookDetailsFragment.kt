@@ -18,6 +18,8 @@ import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
+import com.sjianjun.reader.utils.animFadeIn
+import com.sjianjun.reader.utils.animFadeOut
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.fragmentCreate
@@ -27,6 +29,8 @@ import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import sjj.alog.Log
+import java.io.File
 
 @Suppress("EXPERIMENTAL_API_USAGE")
 class BookDetailsFragment : BaseAsyncFragment() {
@@ -150,7 +154,63 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 true
             }
 
+            R.id.export -> {
+                //将小说导出为txt文件，并分享
+                toast("正在导出...")
+                binding?.progress?.max = 100
+                binding?.progress?.animFadeIn()
+                viewModel.exportBookToTxt({
+                    Log.i("exportBookToTxt progress: $it")
+                    binding?.progress?.progress = it
+                }, { file ->
+                    Log.i("exportBookToTxt success: ${file.absolutePath}")
+                    binding?.progress?.animFadeOut()
+                    shareFile(file)
+                }, {
+                    Log.i("exportBookToTxt error: $it")
+                    binding?.progress?.animFadeOut()
+                    toast("导出失败：$it")
+                    return@exportBookToTxt
+                })
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun shareFile(file: File) {
+        // Share the exported file via system share sheet.
+        try {
+            val context = requireContext()
+            // Always try to obtain a FileProvider Uri. If that fails, copy to internal cache and use that.
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                context.packageName + ".fileprovider",
+                file
+            )
+
+            val mime = "text/plain"
+
+            val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = mime
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                putExtra(android.content.Intent.EXTRA_SUBJECT, file.name)
+                putExtra(android.content.Intent.EXTRA_TITLE, file.name)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            // Grant URI permission to resolved activities
+            val resInfos = context.packageManager.queryIntentActivities(share, 0)
+            for (ri in resInfos) {
+                val pkg = ri.activityInfo.packageName
+                context.grantUriPermission(pkg, uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            startActivity(android.content.Intent.createChooser(share, "分享书籍"))
+        } catch (t: Throwable) {
+            Log.e("shareFile", t)
+            toast("分享失败：${t.message}")
         }
     }
 

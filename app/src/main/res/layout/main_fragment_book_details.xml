@@ -249,6 +249,15 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+                <androidx.core.widget.ContentLoadingProgressBar
+                    android:id="@+id/progress"
+                    style="@style/ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:progress="50"
+                    tools:visibility="visible" />
+
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
