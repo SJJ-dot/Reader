@@ -81,7 +81,7 @@ class BookDetailsViewModel : ViewModel() {
                 // choose export dir: externalCacheDir/export or cacheDir/export
                 val baseDir = App.app.externalCacheDir ?: App.app.cacheDir
                 val exportDir = File(baseDir, "export")
-                if (exportDir.exists()) exportDir.delete()
+                if (exportDir.exists()) exportDir.deleteRecursively()
                 if (!exportDir.exists()) exportDir.mkdirs()
 
                 fun sanitize(fileName: String): String {
