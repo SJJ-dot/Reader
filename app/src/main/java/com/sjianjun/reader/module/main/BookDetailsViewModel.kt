@@ -1,7 +1,5 @@
 package com.sjianjun.reader.module.main
 
-import android.os.Handler
-import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.sjianjun.coroutine.withIo
@@ -65,7 +63,11 @@ class BookDetailsViewModel : ViewModel() {
         }
     }
 
-    fun exportBookToTxt(progress: (step: Int) -> Unit, onSuccess: (file: File) -> Unit, onError: (msg: String) -> Unit) {
+    /**
+     * 导出书籍为 txt 文件。
+     * @param startIndex 章节索引
+     */
+    fun exportBookToTxt(startIndex: Int, progress: (step: Int) -> Unit, onSuccess: (file: File) -> Unit, onError: (msg: String) -> Unit) {
         //导出当前书籍为txt文件
         Log.i("exportBookToTxt1")
         val book = bookLivedata.value
@@ -93,12 +95,15 @@ class BookDetailsViewModel : ViewModel() {
                 val name = sanitize("${book.title} - $author.txt")
                 val outFile = File(exportDir, name)
 
-                // get chapter list
-                val chapters = try {
+                // get full chapter list
+                val fullChapters = try {
                     chapterDao.getChapterListByBookId(book.id).first()
                 } catch (_: Throwable) {
                     emptyList<com.sjianjun.reader.bean.Chapter>()
                 }
+
+                // filter chapters to export
+                val chapters = if (startIndex <= 0) fullChapters else fullChapters.filter { it.index >= startIndex }
 
                 outFile.bufferedWriter(Charsets.UTF_8).use { writer ->
                     // write book header
@@ -113,32 +118,38 @@ class BookDetailsViewModel : ViewModel() {
                     var step = 0
                     val total = chapters.size
 
-                    for (chapter in chapters) {
-                        withMain { progress(step * 100 / total) }
-                        step++
-                        val titleLine = chapter.title ?: "第 ${chapter.index} 章"
-                        writer.appendLine(titleLine)
-                        writer.appendLine()
-
-                        val contents = chapterContentDao.getChapterContent(book.id, chapter.index).sortedBy { it.pageIndex }
-                        if (contents.isEmpty()) {
-                            // if no cached content, leave blank or skip
-                            writer.appendLine("[无内容]")
+                    if (total == 0) {
+                        // nothing to write
+                        writer.appendLine("[无章节可导出]")
+                        withMain { progress(100) }
+                    } else {
+                        for (chapter in chapters) {
+                            withMain { progress(step * 100 / total) }
+                            step++
+                            val titleLine = chapter.title ?: "第 ${chapter.index} 章"
+                            writer.appendLine(titleLine)
                             writer.appendLine()
-                            continue
-                        }
 
-                        for (cc in contents) {
-                            val text = cc.content.format().toString()
-                            // ensure normalized line endings
-                            writer.appendLine(text.replace("\r\n", "\n"))
-                            writer.appendLine()
-                        }
+                            val contents = chapterContentDao.getChapterContent(book.id, chapter.index).sortedBy { it.pageIndex }
+                            if (contents.isEmpty()) {
+                                // if no cached content, leave blank or skip
+                                writer.appendLine("[无内容]")
+                                writer.appendLine()
+                                continue
+                            }
 
-                        // add separator between chapters
-                        writer.appendLine("\n")
+                            for (cc in contents) {
+                                val text = cc.content.format().toString()
+                                // ensure normalized line endings
+                                writer.appendLine(text.replace("\r\n", "\n"))
+                                writer.appendLine()
+                            }
+
+                            // add separator between chapters
+                            writer.appendLine("\n")
+                        }
+                        withMain { progress(100) }
                     }
-                    withMain { progress(100) }
                 }
                 withMain {
                     onSuccess(outFile)

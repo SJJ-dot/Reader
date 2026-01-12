@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.viewModels
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
@@ -155,28 +156,42 @@ class BookDetailsFragment : BaseAsyncFragment() {
             }
 
             R.id.export -> {
-                //将小说导出为txt文件，并分享
-                toast("正在导出...")
-                binding?.progress?.max = 100
-                binding?.progress?.animFadeIn()
-                viewModel.exportBookToTxt({
-                    Log.i("exportBookToTxt progress: $it")
-                    binding?.progress?.progress = it
-                }, { file ->
-                    Log.i("exportBookToTxt success: ${file.absolutePath}")
-                    binding?.progress?.animFadeOut()
-                    shareFile(file)
-                }, {
-                    Log.i("exportBookToTxt error: $it")
-                    binding?.progress?.animFadeOut()
-                    toast("导出失败：$it")
-                    return@exportBookToTxt
-                })
+                // show export option dialog: default from current chapter
+                val chapter = viewModel.bookLivedata.value?.readChapter
+                val options = if (chapter == null) arrayOf("全本") else arrayOf("全本", "《${chapter.title}》至末尾")
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("导出范围")
+                    .setSingleChoiceItems(options, 1, null)
+                    .setPositiveButton("确定") { _, _ ->
+                        doExport(chapter?.index ?: 0)
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
                 true
             }
 
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun doExport(startIndex: Int) {
+        //将小说导出为txt文件，并分享
+        toast("正在导出...")
+        binding?.progress?.max = 100
+        binding?.progress?.animFadeIn()
+        viewModel.exportBookToTxt(startIndex, {
+            Log.i("exportBookToTxt progress: $it")
+            binding?.progress?.progress = it
+        }, { file ->
+            Log.i("exportBookToTxt success: ${file.absolutePath}")
+            binding?.progress?.animFadeOut()
+            shareFile(file)
+        }, {
+            Log.i("exportBookToTxt error: $it")
+            binding?.progress?.animFadeOut()
+            toast("导出失败：$it")
+            return@exportBookToTxt
+        })
     }
 
     private fun shareFile(file: File) {
