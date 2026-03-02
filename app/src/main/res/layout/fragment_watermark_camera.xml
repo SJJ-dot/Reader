@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Camera Preview -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/preview_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Watermark Preview Overlay -->
+    <LinearLayout
+        android:id="@+id/watermark_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="120dp"
+        android:orientation="vertical"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- 第一行：时间(大字) | 日期+星期 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_watermark_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"
+                android:text="17:38"
+                android:textColor="@android:color/white"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="2dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@android:color/white" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_watermark_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="3"
+                    android:text="2026.03.02"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_watermark_day_of_week"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="3"
+                    android:text="星期一"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 第二行：地址 -->
+        <TextView
+            android:id="@+id/tv_watermark_address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:shadowColor="#80000000"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            tools:text="四川省成都市郫都区"
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <!-- Capture Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btn_capture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="拍照"
+        android:src="@android:drawable/ic_menu_camera"
+        app:fabSize="normal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Toggle Settings Button -->
+    <ImageView
+        android:id="@+id/btn_toggle_settings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="36dp"
+        android:contentDescription="设置"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_menu_manage"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@android:color/white" />
+
+    <!-- Switch Camera Button -->
+    <ImageView
+        android:id="@+id/btn_switch_camera"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="36dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="切换摄像头"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_menu_rotate"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tint="@android:color/white" />
+
+    <!-- Settings Panel -->
+    <ScrollView
+        android:id="@+id/settings_panel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#E0000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="水印设置"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Date Setting -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#40FFFFFF"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="日期"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/et_date"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:background="#30FFFFFF"
+                            android:clickable="true"
+                            android:focusable="false"
+                            android:hint="点击选择日期"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="14sp" />
+
+                        <Button
+                            android:id="@+id/btn_pick_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:text="选择"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btn_reset_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:text="自动"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <CheckBox
+                        android:id="@+id/cb_date_auto_increment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:buttonTint="@android:color/white"
+                        android:text="日期自增（每拍一张日期+1天）"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Time Setting -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#40FFFFFF"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="时间"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_time_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rb_time_auto"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="@android:color/white"
+                            android:checked="true"
+                            android:text="自动"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_time_manual"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:buttonTint="@android:color/white"
+                            android:text="手动"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_time_range"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:buttonTint="@android:color/white"
+                            android:text="范围随机"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
+                    </RadioGroup>
+
+                    <!-- Manual time input -->
+                    <LinearLayout
+                        android:id="@+id/layout_time_manual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <EditText
+                            android:id="@+id/et_time_hour"
+                            android:layout_width="60dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="时"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:text=":"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp" />
+
+                        <EditText
+                            android:id="@+id/et_time_minute"
+                            android:layout_width="60dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="分"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <!-- Time range input -->
+                    <LinearLayout
+                        android:id="@+id/layout_time_range"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <EditText
+                            android:id="@+id/et_range_start_hour"
+                            android:layout_width="48dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="时"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp"
+                            android:text=":"
+                            android:textColor="@android:color/white" />
+
+                        <EditText
+                            android:id="@+id/et_range_start_minute"
+                            android:layout_width="48dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="分"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:text="~"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp" />
+
+                        <EditText
+                            android:id="@+id/et_range_end_hour"
+                            android:layout_width="48dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="时"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp"
+                            android:text=":"
+                            android:textColor="@android:color/white" />
+
+                        <EditText
+                            android:id="@+id/et_range_end_minute"
+                            android:layout_width="48dp"
+                            android:layout_height="40dp"
+                            android:background="#30FFFFFF"
+                            android:gravity="center"
+                            android:hint="分"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- GPS Setting -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#40FFFFFF"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="经纬度"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/et_gps"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:background="#30FFFFFF"
+                            android:hint="经纬度信息"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="14sp" />
+
+                        <Button
+                            android:id="@+id/btn_reset_gps"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:text="自动"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Address Setting -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#40FFFFFF"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="地址"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/et_address"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:background="#30FFFFFF"
+                            android:hint="手动输入地址"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#80FFFFFF"
+                            android:textSize="14sp" />
+
+                        <Button
+                            android:id="@+id/btn_reset_address"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:text="清空"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Close Settings Button -->
+            <Button
+                android:id="@+id/btn_close_settings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="关闭设置"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Photo count indicator -->
+    <TextView
+        android:id="@+id/tv_photo_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="#80000000"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:text="已拍: 0"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

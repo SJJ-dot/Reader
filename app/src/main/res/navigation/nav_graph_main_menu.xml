@@ -47,4 +47,10 @@
         android:label="网页"
         tools:layout="@layout/fragment_web_shelf" />
 
+    <fragment
+        android:id="@+id/watermarkCameraFragment"
+        android:name="com.sjianjun.reader.module.watermarkcamera.WatermarkCameraFragment"
+        android:label="水印相机"
+        tools:layout="@layout/fragment_watermark_camera" />
+
 </navigation>
