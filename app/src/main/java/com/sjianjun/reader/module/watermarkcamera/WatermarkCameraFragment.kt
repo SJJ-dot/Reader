@@ -435,6 +435,10 @@ class WatermarkCameraFragment : BaseFragment() {
     private fun takePhoto() {
         val capture = imageCapture ?: return
 
+        // 开始转圈，禁用按钮防止重复拍照
+        binding.captureProgress.visibility = View.VISIBLE
+        binding.btnCapture.isEnabled = false
+
         if (viewModel.timeMode == WatermarkCameraViewModel.TimeMode.AUTO) {
             viewModel.refreshTime()
         }
@@ -452,6 +456,8 @@ class WatermarkCameraFragment : BaseFragment() {
                     processAndSavePhoto(tempFile)
                 }
                 override fun onError(exception: ImageCaptureException) {
+                    binding.captureProgress.visibility = View.GONE
+                    binding.btnCapture.isEnabled = true
                     Toast.makeText(requireContext(), "拍照失败: ${exception.message}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -490,8 +496,12 @@ class WatermarkCameraFragment : BaseFragment() {
 
             viewModel.onPhotoTaken()
             binding.tvPhotoCount.text = "已拍: ${viewModel.photoCount}"
+            binding.captureProgress.visibility = View.GONE
+            binding.btnCapture.isEnabled = true
             Toast.makeText(requireContext(), "照片已保存", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
+            binding.captureProgress.visibility = View.GONE
+            binding.btnCapture.isEnabled = true
             Toast.makeText(requireContext(), "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }

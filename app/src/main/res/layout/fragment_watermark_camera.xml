@@ -100,23 +100,40 @@
             android:shadowDx="1"
             android:shadowDy="1"
             android:shadowRadius="3"
-            tools:text="四川省成都市郫都区"
             android:textColor="@android:color/white"
-            android:textSize="20sp" />
+            android:textSize="20sp"
+            tools:text="四川省成都市郫都区" />
     </LinearLayout>
 
-    <!-- Capture Button -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btn_capture"
+    <!-- Capture Button with Progress -->
+    <FrameLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:contentDescription="拍照"
-        android:src="@android:drawable/ic_menu_camera"
-        app:fabSize="normal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_capture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:contentDescription="拍照"
+            android:src="@drawable/camera"
+            app:fabSize="normal"
+            app:tint="@color/mdr_white" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/capture_progress"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorColor="@android:color/white"
+            app:trackThickness="3dp" />
+    </FrameLayout>
 
     <!-- Toggle Settings Button -->
     <ImageView
@@ -127,7 +144,7 @@
         android:layout_marginBottom="36dp"
         android:contentDescription="设置"
         android:padding="8dp"
-        android:src="@android:drawable/ic_menu_manage"
+        android:src="@drawable/ic_menu_manage"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@android:color/white" />
@@ -142,7 +159,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="切换摄像头"
         android:padding="8dp"
-        android:src="@android:drawable/ic_menu_rotate"
+        android:src="@drawable/ic_menu_rotate"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:tint="@android:color/white" />
