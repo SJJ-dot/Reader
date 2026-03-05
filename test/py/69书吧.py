@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from WebViewClient import web_get
-from SessionManager import start_verification_activity
+from SessionManager import verification_activity_get
 from log import log
 
 
@@ -24,7 +24,11 @@ def search(query):
 
 
 def getDetails(url):
-    result = web_get(url)
+    try:
+        result = web_get(url)
+    except Exception as e:
+        log(f"Error :{e}")
+        result = verification_activity_get(url)
     if not result:
         raise "No result returned from web_get"
 
@@ -46,7 +50,11 @@ def getDetails(url):
 
 
 def get_chapter_list(url, chapter_list):
-    response = web_get(url)
+    try:
+        response = web_get(url)
+    except Exception as e:
+        log(f"Error :{e}")
+        response = verification_activity_get(url)
     if not response:
         log("No result returned from web_get")
         return
@@ -70,8 +78,7 @@ def getChapterContent(url):
         return parse(web_get(url))
     except Exception as e:
         log(f"Error :{e}")
-        start_verification_activity(url)
-        return parse(web_get(url))
+        return parse(verification_activity_get(url))
 
 
 def parse(result):

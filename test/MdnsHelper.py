@@ -26,6 +26,7 @@ class MyListener(ServiceListener):
 
 
 def discover_services():
+    log("discover_services: 开始发现服务...")
     zeroconf = Zeroconf()
     listener = MyListener()
     browser = ServiceBrowser(zeroconf, "_http._tcp.local.", listener)  # 替换为需要发现的服务类型
