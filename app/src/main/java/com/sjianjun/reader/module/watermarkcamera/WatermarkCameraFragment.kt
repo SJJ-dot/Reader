@@ -120,12 +120,24 @@ class WatermarkCameraFragment : BaseFragment() {
     private fun bindCameraUseCases() {
         val provider = cameraProvider ?: return
 
-        val preview = Preview.Builder().build().also {
-            it.surfaceProvider = binding.previewView.surfaceProvider
-        }
+        // 预览和拍照使用相同的 4:3 宽高比，确保所见即所得
+        @Suppress("DEPRECATION")
+        val aspectRatio = androidx.camera.core.AspectRatio.RATIO_4_3
 
+        @Suppress("DEPRECATION")
+        val preview = Preview.Builder()
+            .setTargetAspectRatio(aspectRatio)
+            .build().also {
+                it.surfaceProvider = binding.previewView.surfaceProvider
+            }
+
+        // 预览不裁剪，完整显示相机画面
+        binding.previewView.scaleType = androidx.camera.view.PreviewView.ScaleType.FIT_CENTER
+
+        @Suppress("DEPRECATION")
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setTargetAspectRatio(aspectRatio)
             .build()
 
         val cameraSelector = CameraSelector.Builder()
@@ -457,7 +469,13 @@ class WatermarkCameraFragment : BaseFragment() {
                 ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL
             )
             val rotatedBitmap = rotateBitmap(originalBitmap, orientation)
-            val watermarkedBitmap = drawWatermark(rotatedBitmap)
+            // 前置摄像头预览是镜像的，拍出的照片需要水平翻转以与预览一致
+            val finalBitmap = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                mirrorBitmap(rotatedBitmap)
+            } else {
+                rotatedBitmap
+            }
+            val watermarkedBitmap = drawWatermark(finalBitmap)
 
             // 保存到系统相册（含EXIF信息）
             saveToGallery(watermarkedBitmap)
@@ -467,6 +485,7 @@ class WatermarkCameraFragment : BaseFragment() {
             tempFile.delete()
             originalBitmap.recycle()
             if (rotatedBitmap !== originalBitmap) rotatedBitmap.recycle()
+            if (finalBitmap !== rotatedBitmap) finalBitmap.recycle()
             watermarkedBitmap.recycle()
 
             viewModel.onPhotoTaken()
@@ -487,6 +506,12 @@ class WatermarkCameraFragment : BaseFragment() {
             ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
             else -> return bitmap
         }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    /** 水平翻转图片（前置摄像头镜像） */
+    private fun mirrorBitmap(bitmap: Bitmap): Bitmap {
+        val matrix = Matrix().apply { preScale(-1f, 1f) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
