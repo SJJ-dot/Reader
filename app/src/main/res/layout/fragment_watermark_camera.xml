@@ -462,34 +462,46 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <LinearLayout
+                    <RadioGroup
+                        android:id="@+id/rg_gps_mode"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp"
                         android:orientation="horizontal">
 
-                        <EditText
-                            android:id="@+id/et_gps"
-                            android:layout_width="0dp"
-                            android:layout_height="40dp"
-                            android:layout_weight="1"
-                            android:background="#30FFFFFF"
-                            android:hint="经纬度信息"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:textColor="@android:color/white"
-                            android:textColorHint="#80FFFFFF"
-                            android:textSize="14sp" />
-
-                        <Button
-                            android:id="@+id/btn_reset_gps"
+                        <RadioButton
+                            android:id="@+id/rb_gps_auto"
                             android:layout_width="wrap_content"
-                            android:layout_height="40dp"
-                            android:layout_marginStart="8dp"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="@android:color/white"
+                            android:checked="true"
                             android:text="自动"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_gps_manual"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:buttonTint="@android:color/white"
+                            android:text="手动"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/et_gps"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="8dp"
+                        android:background="#30FFFFFF"
+                        android:hint="经纬度信息"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:textColor="@android:color/white"
+                        android:textColorHint="#80FFFFFF"
+                        android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -25,9 +25,6 @@ class WatermarkCameraViewModel : ViewModel() {
     val gpsText = MutableLiveData<String>()
     val addressText = MutableLiveData<String>()
 
-    // GPS模式标签（显示"手动"或"自动"）
-    val gpsModeLabelText = MutableLiveData<String>()
-
     // 当前日期
     var currentDate: LocalDate = LocalDate.now()
         private set
@@ -38,7 +35,6 @@ class WatermarkCameraViewModel : ViewModel() {
         get() = prefs.decodeBool("isGpsManual", false)
         set(value) {
             prefs.encode("isGpsManual", value)
-            gpsModeLabelText.value = if (value) "手动" else "自动"
         }
     var isAddressManual = false
 
@@ -74,7 +70,7 @@ class WatermarkCameraViewModel : ViewModel() {
         get() = prefs.decodeInt("rangeEndMinute", 0)
         set(value) { prefs.encode("rangeEndMinute", value) }
 
-    // 经纬度（自动模式下不持久化，手动模式下持久化）
+    // 经纬度（自动和手动模式均持久化保存）
     var latitude = 0.0
     var longitude = 0.0
 
@@ -88,18 +84,13 @@ class WatermarkCameraViewModel : ViewModel() {
             addressText.value = savedAddress
         }
 
-        // 恢复GPS模式标签
-        gpsModeLabelText.value = if (isGpsManual) "手动" else "自动"
-
-        // 手动模式下恢复保存的GPS文本和经纬度
-        if (isGpsManual) {
-            val savedGps = prefs.decodeString("gpsText", "") ?: ""
-            if (savedGps.isNotEmpty()) {
-                gpsText.value = savedGps
-            }
-            latitude = prefs.decodeDouble("latitude", 0.0)
-            longitude = prefs.decodeDouble("longitude", 0.0)
+        // 恢复保存的GPS文本和经纬度（无论手动/自动模式都恢复）
+        val savedGps = prefs.decodeString("gpsText", "") ?: ""
+        if (savedGps.isNotEmpty()) {
+            gpsText.value = savedGps
         }
+        latitude = prefs.decodeDouble("latitude", 0.0)
+        longitude = prefs.decodeDouble("longitude", 0.0)
 
         refreshDate(LocalDate.now())
         refreshTime()
@@ -144,14 +135,17 @@ class WatermarkCameraViewModel : ViewModel() {
         return String.format(Locale.US, "%02d:%02d", h, m)
     }
 
-    /** 更新 GPS 信息（来自系统定位） */
+    /** 更新 GPS 信息（来自系统定位），仅在自动模式下生效 */
     fun updateLocation(location: Location) {
-        // 手动模式下不更新经纬度，保持手动设置的值
         if (isGpsManual) return
         latitude = location.latitude
         longitude = location.longitude
-        // 自动模式：更新显示文本，不持久化
-        gpsText.value = formatGpsText(latitude, longitude)
+        val text = formatGpsText(latitude, longitude)
+        gpsText.value = text
+        // 自动模式下也保存坐标
+        prefs.encode("gpsText", text)
+        prefs.encode("latitude", latitude)
+        prefs.encode("longitude", longitude)
     }
 
     /** 格式化经纬度文本 */
@@ -164,6 +158,40 @@ class WatermarkCameraViewModel : ViewModel() {
             latDir, Math.abs(lat),
             lngDir, Math.abs(lng)
         )
+    }
+
+    /** 切换GPS模式：自动或手动 */
+    fun setGpsMode(manual: Boolean) {
+        isGpsManual = manual
+        if (!manual) {
+            // 切换到自动模式：清空当前显示，等待定位更新
+            gpsText.value = "定位中..."
+        }
+        // 手动模式：保持当前输入框中的坐标不变
+    }
+
+    /** 手动编辑GPS文本并保存 */
+    fun saveManualGps(gps: String) {
+        gpsText.value = gps
+        prefs.encode("gpsText", gps)
+        parseGpsText(gps)
+        prefs.encode("latitude", latitude)
+        prefs.encode("longitude", longitude)
+    }
+
+    /** 从GPS文本中解析经纬度值 */
+    private fun parseGpsText(gps: String) {
+        try {
+            val regex = Regex("""([NS])(\d+\.?\d*)°?\s*([EW])(\d+\.?\d*)°?""")
+            val match = regex.find(gps) ?: return
+            val latDir = match.groupValues[1]
+            val latVal = match.groupValues[2].toDoubleOrNull() ?: return
+            val lngDir = match.groupValues[3]
+            val lngVal = match.groupValues[4].toDoubleOrNull() ?: return
+            latitude = if (latDir == "S") -latVal else latVal
+            longitude = if (lngDir == "W") -lngVal else lngVal
+        } catch (_: Exception) {
+        }
     }
 
     /** 更新地址信息 */
@@ -180,50 +208,6 @@ class WatermarkCameraViewModel : ViewModel() {
         prefs.encode("address", address)
     }
 
-    /** 手动编辑GPS文本并持久化保存 */
-    fun saveGpsText(gps: String) {
-        isGpsManual = true
-        gpsText.value = gps
-        prefs.encode("gpsText", gps)
-        // 从文本中解析经纬度，格式如: N30.5700° E104.0700°
-        parseGpsText(gps)
-        prefs.encode("latitude", latitude)
-        prefs.encode("longitude", longitude)
-    }
-
-    /** 从GPS文本中解析经纬度值 */
-    private fun parseGpsText(gps: String) {
-        try {
-            // 匹配格式: N30.5700° E104.0700° 或 S30.5700° W104.0700°
-            val regex = Regex("""([NS])(\d+\.?\d*)°?\s*([EW])(\d+\.?\d*)°?""")
-            val match = regex.find(gps) ?: return
-            val latDir = match.groupValues[1]
-            val latVal = match.groupValues[2].toDoubleOrNull() ?: return
-            val lngDir = match.groupValues[3]
-            val lngVal = match.groupValues[4].toDoubleOrNull() ?: return
-            latitude = if (latDir == "S") -latVal else latVal
-            longitude = if (lngDir == "W") -lngVal else lngVal
-        } catch (_: Exception) {
-        }
-    }
-
-    /** 切换到自动GPS模式，清除持久化数据 */
-    fun resetToAutoGps() {
-        isGpsManual = false
-        // 清除持久化的GPS数据
-        prefs.remove("gpsText")
-        prefs.remove("latitude")
-        prefs.remove("longitude")
-        // 清空经纬度和显示
-        clearGpsDisplay()
-    }
-
-    /** 清除GPS显示和内存中的经纬度，用于自动定位前重置状态 */
-    fun clearGpsDisplay() {
-        latitude = 0.0
-        longitude = 0.0
-        gpsText.value = "定位中..."
-    }
 
     /** 拍照后处理日期自增 */
     fun onPhotoTaken() {

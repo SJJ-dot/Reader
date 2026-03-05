@@ -222,14 +222,26 @@ class WatermarkCameraFragment : BaseFragment() {
         binding.etRangeEndMinute.onFocusChangeListener = rangeFocusListener
 
         // ---- 经纬度 ----
-        binding.etGps.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus && binding.etGps.text.toString() != viewModel.gpsText.value) {
-                viewModel.saveGpsText(binding.etGps.text.toString())
+        binding.rgGpsMode.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                binding.rbGpsAuto.id -> {
+                    viewModel.setGpsMode(false)
+                    binding.etGps.isFocusable = false
+                    binding.etGps.isFocusableInTouchMode = false
+                    startLocationUpdates()
+                }
+                binding.rbGpsManual.id -> {
+                    viewModel.setGpsMode(true)
+                    binding.etGps.isFocusable = true
+                    binding.etGps.isFocusableInTouchMode = true
+                    stopLocationUpdates()
+                }
             }
         }
-        binding.btnResetGps.setOnClickListener {
-            viewModel.resetToAutoGps()
-            startLocationUpdates()
+        binding.etGps.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus && viewModel.isGpsManual) {
+                viewModel.saveManualGps(binding.etGps.text.toString())
+            }
         }
 
         // ---- 地址（纯手动输入，不自动获取） ----
@@ -283,6 +295,17 @@ class WatermarkCameraFragment : BaseFragment() {
             binding.etAddress.setText(savedAddress)
         }
 
+        // 恢复GPS模式
+        if (viewModel.isGpsManual) {
+            binding.rbGpsManual.isChecked = true
+            binding.etGps.isFocusable = true
+            binding.etGps.isFocusableInTouchMode = true
+        } else {
+            binding.rbGpsAuto.isChecked = true
+            binding.etGps.isFocusable = false
+            binding.etGps.isFocusableInTouchMode = false
+        }
+
         // 恢复GPS文本
         val savedGps = viewModel.gpsText.value ?: ""
         if (savedGps.isNotEmpty()) {
@@ -305,12 +328,7 @@ class WatermarkCameraFragment : BaseFragment() {
             binding.tvWatermarkTime.text = time
         }
         viewModel.gpsText.observe(viewLifecycleOwner) { gps ->
-            if (!viewModel.isGpsManual) {
-                binding.etGps.setText(gps)
-            }
-        }
-        viewModel.gpsModeLabelText.observe(viewLifecycleOwner) { label ->
-            binding.btnResetGps.text = label
+            binding.etGps.setText(gps)
         }
         viewModel.addressText.observe(viewLifecycleOwner) { addr ->
             binding.tvWatermarkAddress.text = addr
@@ -335,8 +353,6 @@ class WatermarkCameraFragment : BaseFragment() {
         // 手动模式下不需要定位
         if (viewModel.isGpsManual) return
 
-        // 先清除历史定位信息和显示，让用户知道正在重新定位
-        viewModel.clearGpsDisplay()
 
         if (locationManager == null) {
             locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
