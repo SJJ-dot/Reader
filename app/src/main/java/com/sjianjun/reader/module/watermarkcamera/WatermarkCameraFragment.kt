@@ -615,7 +615,10 @@ class WatermarkCameraFragment : BaseFragment() {
 
     private fun saveToGallery(bitmap: Bitmap) {
         try {
-            val fileName = "WM_${System.currentTimeMillis()}.jpg"
+            val date = (viewModel.dateText.value ?: "").replace(".", "")
+            val seconds = String.format(java.util.Locale.US, "%02d", java.time.LocalTime.now().second)
+            val time = (viewModel.timeText.value ?: "").replace(":", "") + seconds
+            val fileName = "WM_${date}_${time}.jpg"
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                 put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
@@ -634,7 +637,8 @@ class WatermarkCameraFragment : BaseFragment() {
                         val exif = ExifInterface(pfd.fileDescriptor)
                         val date = viewModel.dateText.value ?: ""
                         val time = viewModel.timeText.value ?: ""
-                        val dateTime = "${date.replace(".", ":")} $time:00"
+                        val sec = String.format(java.util.Locale.US, "%02d", java.time.LocalTime.now().second)
+                        val dateTime = "${date.replace(".", ":")} $time:$sec"
                         exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
                         exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTime)
                         if (viewModel.latitude != 0.0 || viewModel.longitude != 0.0) {
