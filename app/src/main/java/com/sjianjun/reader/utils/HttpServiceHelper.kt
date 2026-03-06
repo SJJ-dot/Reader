@@ -119,6 +119,16 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                     newFixedLengthResponse(Response.Status.OK, MIME_PLAINTEXT, "Cookie 设置成功")
                 }
 
+                "/verification_activity_post" -> {
+                    val data = gson.fromJson<RobotVerify>(requestBody)!!
+                    val res = WebViewVerificationActivity.postAndWaitResult(
+                        data.url!!,
+                        data.postData ?: "",
+                        data.verificationKey ?: ""
+                    )
+                    newFixedLengthResponse(res)
+                }
+
                 else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "未找到资源")
             }
         } catch (e: Exception) {
@@ -132,6 +142,7 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         var html: String? = null
         var encoding: String? = null
         var verificationKey: String? = null
+        var postData: String? = null
     }
 
     class WebGet {

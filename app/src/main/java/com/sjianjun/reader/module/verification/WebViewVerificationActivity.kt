@@ -44,6 +44,7 @@ class WebViewVerificationActivity : BaseActivity() {
     }
     private val html: String by lazy { intent.getStringExtra(KEY_HTML) ?: "" }
     private val encoding: String by lazy { intent.getStringExtra(KEY_ENCODING) ?: "UTF-8" }
+    private val postData: ByteArray? by lazy { intent.getByteArrayExtra(KEY_POST_DATA) }
     private val mHandler = Handler(Looper.getMainLooper())
     private val runnable by lazy { EvalJsRunnable(binding.webView, url) }
 
@@ -64,6 +65,9 @@ class WebViewVerificationActivity : BaseActivity() {
         if (html.isNotEmpty()) {
             binding.webView.loadDataWithBaseURL(url, html, "text/html", encoding, url)
             Log.i("WebViewVerificationActivity loading HTML content")
+        } else if (url.isNotEmpty() && postData != null) {
+            binding.webView.postUrl(url, postData!!)
+            Log.i("WebViewVerificationActivity loading URL with POST")
         } else if (url.isNotEmpty()) {
             binding.webView.loadUrl(url, headerMap)
         } else {
@@ -188,9 +192,40 @@ class WebViewVerificationActivity : BaseActivity() {
         private val KEY_HEADER_MAP = "header_map"
         private val KEY_HTML = "html"
         private val KEY_ENCODING = "encoding"
+        private val KEY_POST_DATA = "post_data"
         private val KEY_VERIFICATION_KEY = "VerificationKey"
         private val KEY_RESULT = "result"
         private val resultMap = mutableMapOf<String, Result>()
+
+        fun postAndWaitResult(url: String, postData: String, verificationKey: String = ""): String? {
+            Log.i("WebViewVerificationActivity postAndWaitResult URL: $url, postData: $postData")
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                throw IllegalStateException("startAndWaitResult 必须在子线程中调用")
+            }
+            val keyResult = UUID.randomUUID().toString()
+            val intent = Intent(App.app, WebViewVerificationActivity::class.java).apply {
+                putExtra(KEY_URL, url)
+                putExtra(KEY_POST_DATA, postData.toByteArray())
+                putExtra(KEY_RESULT, keyResult)
+                putExtra(KEY_VERIFICATION_KEY, verificationKey)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val result = Result(url)
+            resultMap[keyResult] = result
+            GlobalScope.launch(Dispatchers.Main) {
+                Log.i("WebViewVerificationActivity start for $url")
+                App.app.startActivity(intent)
+            }
+            while (true) {
+                if (result.finished) {
+                    break
+                }
+                Thread.sleep(500)
+            }
+            resultMap.remove(keyResult)
+            Log.i("WebViewVerificationActivity result for $url is done")
+            return gson.toJson(Response(result.url, result.html))
+        }
 
         @JvmStatic
         fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), html: String = "", encoding: String = "UTF-8", verificationKey: String = ""): String? {
