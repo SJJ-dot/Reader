@@ -35,16 +35,18 @@ def set_cookie(url, cookies):
     response.encoding = 'utf-8'
     log(f'Set cookies for {url}: {response.text} (cookies: {cookies})')
 
-def verification_activity_get(url, headers=None, html=None, encoding='utf-8'):
+
+def verification_activity_get(url, headers=None, html=None, encoding='utf-8', verificationKey=None):
     init()
     server_url = f'http://{_server_ip}:{_server_port}/verification_activity_get'
     # POST请求的数据
-    data = {'url': url, 'headers': headers, 'html': html, 'encoding': encoding}
+    data = {'url': url, 'headers': headers, 'html': html, 'encoding': encoding, 'verificationKey': verificationKey}
     # 发送POST请求
     response = requests.post(server_url, json=data)
     response.encoding = 'utf-8'
     log(f'Verification activity get finish for {url}: {response.text}')
     return response.text
+
 
 def start_verification_activity(url, headers=None, html=None, encoding='utf-8'):
     init()
@@ -55,6 +57,18 @@ def start_verification_activity(url, headers=None, html=None, encoding='utf-8'):
     response = requests.post(server_url, json=data)
     response.encoding = 'utf-8'
     log(f'Start verification activity finish for {url}: {response.text}')
+    return response.text
+
+
+def verification_activity_post(url, postData=None, verificationKey=None):
+    init()
+    server_url = f'http://{_server_ip}:{_server_port}/verification_activity_post'
+    # POST请求的数据
+    data = {'url': url, 'postData': postData, 'verificationKey': verificationKey}
+    # 发送POST请求
+    response = requests.post(server_url, json=data)
+    response.encoding = 'utf-8'
+    log(f'Verification activity post finish for {url}: {response.text}')
     return response.text
 
 
