@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.main
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
@@ -10,15 +11,17 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
+import com.sjianjun.reader.mqtt.OnlineInfos
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
-import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.repository.ReadingRecordUseCase
+import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -83,7 +86,10 @@ class MainActivity : BaseActivity() {
         ReadingRecordUseCase.init()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun initDrawerMenuWidget() {
+        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
+        binding?.navUi?.setPadding(0, statusBarHeight, 0, 0)
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
         binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
@@ -112,6 +118,10 @@ class MainActivity : BaseActivity() {
 
             }
         }
+        OnlineInfos.onlineMap.observe(this) {
+            headerBinding.tvOnline.text = "书友在线：${it.size}"
+        }
+
 
     }
 

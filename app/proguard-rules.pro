@@ -101,3 +101,31 @@ public static final int *;
 -keep class com.sjianjun.reader.** { *; }
 -keep class io.legado.app.** { *; }
 -keepattributes Signature
+
+############################################
+# Keep rules for Eclipse Paho MQTT (org.eclipse.paho)
+# Prevent R8/ProGuard from removing or obfuscating classes used by
+# the Paho MQTT client and the Android service wrapper. Also suppress
+# warnings about missing optional dependencies.
+#
+# These rules keep:
+#  - core client classes: org.eclipse.paho.client.mqttv3.**
+#  - Android service wrapper: org.eclipse.paho.android.service.**
+#  - the MqttService (kept explicitly because it's declared in the manifest)
+############################################
+
+# Keep all Paho MQTT client classes
+-keep class org.eclipse.paho.client.mqttv3.** { *; }
+-dontwarn org.eclipse.paho.client.mqttv3.**
+
+# Keep Android wrapper/service classes (if you use paho.mqtt.android)
+-keep class org.eclipse.paho.android.service.** { *; }
+-dontwarn org.eclipse.paho.android.service.**
+
+# Ensure the Service declared in the manifest isn't removed/renamed
+-keep public class org.eclipse.paho.android.service.MqttService { *; }
+
+# Some third-party builds/package names may vary; be conservative and
+# silence warnings for anything under org.eclipse.paho
+-dontwarn org.eclipse.paho.**
+

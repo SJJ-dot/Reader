@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.sjianjun.reader.mqtt.MqttUtil
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.mmkv.MMKV
@@ -29,6 +30,7 @@ class App : Application() {
             writeToFileDir = File(externalCacheDir, "alog")
         }
         Python.start(AndroidPlatform(this))
+        MqttUtil.connect(this)
     }
 
     companion object {

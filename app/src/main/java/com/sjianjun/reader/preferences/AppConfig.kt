@@ -95,5 +95,7 @@ class AppConfig(val name: String) :
 
     //本次启动之后书城访问的所有的URL
     var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
+
+    var mqttClientId by strPref("mqtt_client_id", null)
 }
 

@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '2.0.21'
+    ext.kotlin_version = '2.2.0'
     repositories {
         maven { url 'https://repo1.maven.org/maven2/' }
         google()
@@ -18,7 +18,7 @@ buildscript {
 }
 plugins {
     id 'com.chaquo.python' version '16.0.0' apply false
-    id 'com.google.devtools.ksp' version "2.0.21-1.0.26" apply false
+    id 'com.google.devtools.ksp' version "2.3.6" apply false
 }
 String localRepo() {
     if (hasProperty("LOCAL_REPO")) {
@@ -47,5 +47,5 @@ task clean(type: Delete) {
 }
 
 ext.MIN_SDK_VERSION = 25
-ext.TARGET_SDK_VERSION = 34
+ext.TARGET_SDK_VERSION = 36
 

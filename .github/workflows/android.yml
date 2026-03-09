@@ -47,6 +47,9 @@ jobs:
 
       - name: Create local.properties
         run: |
+          echo "mqtt.serverUri=${{ secrets.MQTT_SERVERURI }}" >> local.properties
+          echo "mqtt.username=${{ secrets.MQTT_USERNAME }}" >> local.properties
+          echo "mqtt.password=${{ secrets.MQTT_PASSWORD }}" >> local.properties
           echo "sign.storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
           echo "sign.keyAlias=${{ secrets.ALIAS }}" >> local.properties
           echo "sign.keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
