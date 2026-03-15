@@ -3,8 +3,6 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from log import log
-
 
 def getSiteUrl():
     return "https://www.min-yuan.com"
@@ -56,4 +54,9 @@ def getChapterContent(url):
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
     con = soup.select_one("#booktxt")
-    return con.prettify()
+    content = con.prettify()
+    next_url = urljoin(url, soup.select("a[rel='next']")[0].get("href"))
+    if "_" in next_url:
+        content += getChapterContent(next_url)
+
+    return content
