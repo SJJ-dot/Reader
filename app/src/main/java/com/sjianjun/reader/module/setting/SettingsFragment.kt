@@ -33,42 +33,6 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentSettingsBinding.bind(view).apply {
 
-            Log.i("bookCityUrl:" + globalConfig.bookCityUrl)
-            bookCityUrlInput.text = globalConfig.bookCityUrl
-            bookCityUrlInput.click {
-                val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
-                bindingDialog.editView.apply {
-                    val historyList = globalConfig.bookCityUrlHistoryList
-                    setFilterValues(historyList)
-                    delCallBack = {
-                        if (historyList.remove(it)) {
-                            globalConfig.bookCityUrlHistoryList = historyList
-                        }
-                    }
-                }
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("书城地址")
-                    .setView(bindingDialog.root)
-                    .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        var url = bindingDialog.editView.text.toString().trim().lowercase()
-                        if (!url.startsWith("http")) {
-                            url = "https://$url"
-                        }
-                        if (url.toHttpUrlOrNull() != null) {
-                            val historyList = globalConfig.bookCityUrlHistoryList
-                            historyList.remove(url)
-                            historyList.add(0, url)
-                            globalConfig.bookCityUrlHistoryList = historyList
-                            globalConfig.bookCityUrl = url
-                            bookCityUrlInput.text = url
-                            toast("设置成功")
-                        } else {
-                            toast("请输入正确的网址")
-                        }
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-            }
             HttpServiceHelper.isRunning.observe(viewLifecycleOwner) {
                 debugServiceSwitch.isChecked = it
             }

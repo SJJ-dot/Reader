@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.viewModels
@@ -19,6 +18,7 @@ import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHistoryItemBinding
@@ -27,9 +27,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
-import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.gone
-import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
@@ -37,7 +35,6 @@ import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
-import kotlin.getValue
 
 private const val ARG_URL = "ARG_URL"
 
@@ -140,6 +137,40 @@ class BookCityPageFragment : BaseFragment() {
                 .show()
         }
         initHomeListAdapterData(homeAdapter)
+        binding.fab.click {
+            val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
+            bindingDialog.editView.apply {
+                val historyList = globalConfig.bookCityUrlHistoryList
+                setFilterValues(historyList)
+                delCallBack = {
+                    if (historyList.remove(it)) {
+                        globalConfig.bookCityUrlHistoryList = historyList
+                    }
+                }
+            }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("主页记录")
+                .setView(bindingDialog.root)
+                .setPositiveButton(android.R.string.ok) { dialog, _ ->
+                    var url = bindingDialog.editView.text.toString().trim().lowercase()
+                    if (!url.startsWith("http")) {
+                        url = "https://$url"
+                    }
+                    if (url.toHttpUrlOrNull() != null) {
+                        val historyList = globalConfig.bookCityUrlHistoryList
+                        historyList.remove(url)
+                        historyList.add(0, url)
+                        globalConfig.bookCityUrlHistoryList = historyList
+                        globalConfig.bookCityUrl = url
+                        toast("设置成功")
+                        initHomeListAdapterData(homeAdapter)
+                    } else {
+                        toast("请输入正确的网址")
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = homeAdapter
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
