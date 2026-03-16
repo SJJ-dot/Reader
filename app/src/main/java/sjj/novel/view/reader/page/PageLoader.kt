@@ -706,7 +706,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 //            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
 //        }
         /******绘制内容 */
-        if (mStatus != STATUS_FINISH) {
+        val curPage = mCurPage
+        if (mStatus != STATUS_FINISH || curPage == null) {
             //绘制字体
             var tip = ""
             when (mStatus) {
@@ -735,7 +736,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 val endLine = mLocation.getLineForOffset(end)
                 //                Log.e("startLine:" + startLine + " endLine:" + endLine + " start:" + start + " end:" + end);
                 for (i in startLine..endLine) {
-                    val txtLine = mCurPage!!.lines.get(i)
+                    val txtLine = curPage.lines.get(i)
                     val left: Float
                     val right: Float
                     if (startLine == i) {
@@ -757,7 +758,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             val titleBase = -titleMetrics.ascent
             val textMetrics = mTextPaint!!.getFontMetrics()
             val textBase = -textMetrics.ascent
-            for (line in mCurPage!!.lines) {
+            for (line in curPage.lines) {
                 val y = line.top + (if (line.isTitle) titleBase else textBase)
                 val paint: Paint = (if (line.isTitle) mTitlePaint else mTextPaint)!!
                 for (i in 0..<line.txt.length) {

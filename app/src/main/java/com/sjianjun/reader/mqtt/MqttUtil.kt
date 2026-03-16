@@ -1,12 +1,9 @@
 package com.sjianjun.reader.mqtt
 
+import android.annotation.SuppressLint
 import android.content.Context
-import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.gson
-import com.sjianjun.reader.utils.unzip
-import com.sjianjun.reader.utils.zip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -28,12 +25,11 @@ object MqttUtil {
     private const val TOPIC_ONLINE = "reader/online"
 
 
+    @SuppressLint("StaticFieldLeak")
     private var mqttAndroidClient: MqttAndroidClient? = null
 
     fun connect(context: Context) {
         val serverURI = BuildConfig.MQTT_SERVER_URI
-        val username = BuildConfig.MQTT_USERNAME
-        val password = BuildConfig.MQTT_PASSWORD
 
         // use a stable clientId stored in SharedPreferences to allow session persistence
         val clientId = globalConfig.mqttClientId ?: UUID.randomUUID().toString().replace("-", "").also {
@@ -69,44 +65,56 @@ object MqttUtil {
             }
         })
 
-        val mqttConnectOptions = MqttConnectOptions().apply {
-            isAutomaticReconnect = true
-            isCleanSession = true
-            connectionTimeout = 10
-            keepAliveInterval = 30
-            // use explicit setters to avoid name collision with local 'password' variable
-            userName = username
-            setPassword(password.toCharArray())
-        }
+        recursiveConnect()
+        startHeartbeat()
+    }
 
-
-
-
-
+    private fun recursiveConnect() {
         try {
-            //addToHistory("Connecting to " + serverUri);
+            if (mqttAndroidClient?.isConnected == true) {
+                return
+            }
+            val mqttConnectOptions = MqttConnectOptions().apply {
+                isAutomaticReconnect = true
+                isCleanSession = true
+                connectionTimeout = 10
+                keepAliveInterval = 30
+                // use explicit setters to avoid name collision with local 'password' variable
+                userName = BuildConfig.MQTT_USERNAME
+                password = BuildConfig.MQTT_PASSWORD.toCharArray()
+                setWill(TOPIC_ONLINE + "/" + globalConfig.mqttClientId, ByteArray(0), 1, true)
+            }
             mqttAndroidClient?.connect(mqttConnectOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("Connected to: $serverURI")
+                    Log.i("MQTT connected successfully")
+
                     val disconnectedBufferOptions = DisconnectedBufferOptions()
-                    disconnectedBufferOptions.setBufferEnabled(true)
+                    disconnectedBufferOptions.isBufferEnabled = true
                     disconnectedBufferOptions.setBufferSize(100)
-                    disconnectedBufferOptions.setPersistBuffer(false)
-                    disconnectedBufferOptions.setDeleteOldestMessages(false)
+                    disconnectedBufferOptions.isPersistBuffer = false
+                    disconnectedBufferOptions.isDeleteOldestMessages = false
                     mqttAndroidClient?.setBufferOpts(disconnectedBufferOptions)
                     subscribeToTopic()
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.i("Failed to connect to: $serverURI, exception: ${exception?.message}")
+                    Log.e("MQTT connection failed: ${exception?.message}")
+                    // Optionally implement retry logic here
+                    GlobalScope.launch(Dispatchers.IO) {
+                        delay(5000) // wait before retrying
+                        recursiveConnect()
+                    }
                 }
             })
-        } catch (ex: MqttException) {
+        } catch (ex: Exception) {
             ex.printStackTrace()
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(5000) // wait before retrying
+                recursiveConnect()
+            }
         }
-
-        startHeartbeat()
     }
+
 
     private fun subscribeToTopic() {
         subscribe("${TOPIC_ONLINE}/#")
@@ -124,8 +132,8 @@ object MqttUtil {
                     }
                     delay(1000)
                 }
-                publish(TOPIC_ONLINE, System.currentTimeMillis().toString().toByteArray())
-                delay(30000)
+                publish(TOPIC_ONLINE, System.currentTimeMillis().toString().toByteArray(), qos = 1, retained = true)
+                delay(29 * 60 * 1000)
             }
         }
     }
@@ -149,7 +157,7 @@ object MqttUtil {
 
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
         Log.i("Received message from $topic")
-        when  {
+        when {
             topic.startsWith(TOPIC_ONLINE) -> {
                 OnlineInfos.parseInfo(topic, String(message.payload).toLongOrNull() ?: return)
             }
