@@ -60,11 +60,6 @@ class BookCityPageFragment : BaseFragment() {
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
             })
-            //QQ登录
-            globalConfig.qqAuthLoginUri.observe(viewLifecycleOwner, Observer {
-                val url = it?.toString() ?: return@Observer
-                customWebView.loadUrl(url, true)
-            })
             customWebView.loadUrl(url!!, true)
 
             initDrawer(drawerLayout, customWebView, this@apply)
