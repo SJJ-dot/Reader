@@ -6,12 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.ReadingRecordUseCase
 import com.sjianjun.reader.utils.HttpServiceHelper
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -35,38 +33,6 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentSettingsBinding.bind(view).apply {
 
-            webdavServerUrlInput.setText(globalConfig.webdavUrl)
-
-            webdavUsernameInput.setText(globalConfig.webdavUsername)
-
-            webdavPasswordInput.setText(globalConfig.webdavPassword)
-
-            webdavDirInput.setText(globalConfig.webdavSubdir)
-
-            webdavSave.click {
-                launch {
-                    globalConfig.apply {
-                        webdavUrl = webdavServerUrlInput.text.toString().trim()
-                        webdavUsername = webdavUsernameInput.text.toString().trim()
-                        webdavPassword = webdavPasswordInput.text.toString().trim()
-                        webdavSubdir = webdavDirInput.text.toString().trim()
-                        webdavHasCfg = false
-                    }
-
-                    val init = ReadingRecordUseCase.setAccount(
-                        webdavServerUrlInput.text.toString().trim(),
-                        webdavUsernameInput.text.toString().trim(),
-                        webdavPasswordInput.text.toString().trim(),
-                        webdavDirInput.text.toString().trim()
-                    )
-                    globalConfig.webdavHasCfg = init.isSuccess
-                    toast("WebDav配置${if (init.isSuccess) "成功" else "失败"}")
-                    Log.i(init)
-                    if (init.isSuccess) {
-                        ReadingRecordUseCase.init()
-                    }
-                }
-            }
             Log.i("bookCityUrl:" + globalConfig.bookCityUrl)
             bookCityUrlInput.text = globalConfig.bookCityUrl
             bookCityUrlInput.click {

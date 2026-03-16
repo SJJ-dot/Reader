@@ -71,21 +71,6 @@ class AppConfig(val name: String) :
 
     var bookSourceDef by dataPref("bookSourceDef", URL_BOOK_SOURCE_DEF)
 
-    var webdavUrl by strPref("webdavUrl", "https://dav.jianguoyun.com/dav/")
-    var webdavUsername by strPref("webdavUsername", null)
-    var webdavPassword by strPref("webdavPassword", null)
-    var webdavSubdir by strPref("webdavSubdir", "reader")
-
-    var webdavHasCfg by boolPref("webdavHasCfg")
-
-    val webDavId: String
-        get() {
-            if (!contains("webDavId")) {
-                edit { putString("webDavId", UUID.randomUUID().toString()) }
-            }
-            return getString("webDavId", null)!!
-        }
-
     val customPageStyleInfoList by lazy {
         dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr2", emptyList())
     }
