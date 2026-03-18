@@ -82,5 +82,7 @@ class AppConfig(val name: String) :
     var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
 
     var mqttClientId by strPref("mqtt_client_id", null)
+
+    var admin by boolPref("admin", false)
 }
 

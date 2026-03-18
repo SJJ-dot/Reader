@@ -23,6 +23,7 @@ import java.util.UUID
 object MqttUtil {
 
     private const val TOPIC_ONLINE = "reader/online"
+    const val TOPIC_FEEDBACK = "reader/feedback"
 
 
     @SuppressLint("StaticFieldLeak")
@@ -40,11 +41,11 @@ object MqttUtil {
         mqttAndroidClient?.setCallback(object : MqttCallbackExtended {
             override fun connectComplete(reconnect: Boolean, serverURI: String?) {
                 if (reconnect) {
-                    Log.i("Reconnected to : " + serverURI)
+                    Log.i("Reconnected to : $serverURI")
                     // Because Clean Session is true, we need to re-subscribe
                     subscribeToTopic()
                 } else {
-                    Log.i("Connected to: " + serverURI)
+                    Log.i("Connected to: $serverURI")
                 }
             }
 
@@ -132,7 +133,7 @@ object MqttUtil {
                     }
                     delay(1000)
                 }
-                publish(TOPIC_ONLINE, System.currentTimeMillis().toString().toByteArray(), qos = 1, retained = true)
+                publish(TOPIC_ONLINE + "/" + globalConfig.mqttClientId, System.currentTimeMillis().toString().toByteArray(), qos = 1, retained = true)
                 delay(29 * 60 * 1000)
             }
         }
@@ -154,6 +155,22 @@ object MqttUtil {
         }
     }
 
+    fun unsubscribe(topic: String) {
+        try {
+            mqttAndroidClient?.unsubscribe(topic, null, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken?) {
+                    Log.i("Unsubscribed from $topic")
+                }
+
+                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                    Log.i("Failed to unsubscribe $topic")
+                }
+            })
+        } catch (e: MqttException) {
+            e.printStackTrace()
+        }
+    }
+
 
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
         Log.i("Received message from $topic")
@@ -162,29 +179,41 @@ object MqttUtil {
                 OnlineInfos.parseInfo(topic, String(message.payload).toLongOrNull() ?: return)
             }
 
+            topic.startsWith(TOPIC_FEEDBACK) -> {
+                Log.i("Received feedback message: ${String(message.payload)}")
+                Feedbacks.parseFeedback(topic,String(message.payload))
+            }
+
             else -> {
             }
         }
     }
 
-    fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false) {
+    fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false, callback: (success: Boolean) -> Unit = {}) {
         try {
-            val topic = tpc + "/" + globalConfig.mqttClientId
+            if (mqttAndroidClient?.isConnected != true) {
+                Log.i("MQTT client is not connected. Cannot publish to $tpc")
+                callback(false)
+                return
+            }
             val message = MqttMessage()
             message.payload = payload
             message.qos = qos
             message.isRetained = retained
-            mqttAndroidClient?.publish(topic, message, null, object : IMqttActionListener {
+            mqttAndroidClient?.publish(tpc, message, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("published to $topic")
+                    Log.i("published to $tpc")
+                    callback(true)
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.i("Failed to publish to $topic")
+                    Log.i("Failed to publish to $tpc")
+                    callback(false)
                 }
             })
         } catch (e: MqttException) {
-            e.printStackTrace()
+            Log.e("Error publishing to $tpc: ${e.message}")
+            callback(false)
         }
     }
 

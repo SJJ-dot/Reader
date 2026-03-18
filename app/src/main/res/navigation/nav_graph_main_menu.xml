@@ -53,4 +53,9 @@
         android:label="水印相机"
         tools:layout="@layout/fragment_watermark_camera" />
 
+    <fragment
+        android:id="@+id/feedbackFragment"
+        android:name="com.sjianjun.reader.module.feedback.FeedbackFragment"
+        android:label="意见反馈"
+        tools:layout="@layout/fragment_feedback_fragment" />
 </navigation>
