@@ -647,7 +647,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (chapterCategory?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop =mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
+                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
@@ -706,6 +706,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 //            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
 //        }
         /******绘制内容 */
+        val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.paddingHeight else 0f
+        canvas.translate(0f, -scrollY)
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {
             //绘制字体
