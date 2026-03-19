@@ -46,6 +46,12 @@ class FeedbackAdapter(
         } else {
             holder.itemView.findViewById<View>(R.id.btn_delete).gone()
         }
+
+        if (globalConfig.admin) {
+            holder.itemView.findViewById<View>(R.id.tv_reply).show()
+        } else {
+            holder.itemView.findViewById<View>(R.id.tv_reply).gone()
+        }
     }
 
     override fun getItemCount(): Int = list.size
