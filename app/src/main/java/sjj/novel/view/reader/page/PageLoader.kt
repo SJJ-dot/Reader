@@ -907,6 +907,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     fun reloadPages() {
+        ChapterPageCache.remove(this.chapterPos)
         dealLoadPageList(this.chapterPos)
         preLoadNextChapter()
         // 重新设置文章指针的位置

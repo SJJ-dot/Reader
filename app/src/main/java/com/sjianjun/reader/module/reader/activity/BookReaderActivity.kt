@@ -215,13 +215,14 @@ class BookReaderActivity : BaseActivity() {
                     return@launch
                 }
                 if (!chapter.isLoaded || chapter.content?.isEmpty() != false) {
-                    toast("章节未加载成功 $chapter")
+                    Log.i("章节未加载成功 ${chapter.title} isLoaded:${chapter.isLoaded} ${chapter.content}")
+                    toast("章节未加载成功")
                     return@launch
                 }
                 viewModel.maskChapterContentErr(chapter, txtChapter)
-                val pagePos = loader.pagePos
-                loader.skipToChapter(curChapter)
-                loader.skipToPage(pagePos)
+                loader.reloadPages()
+                getChapterContentPage(txtChapter, chapter)
+
             }
         }
 
@@ -357,6 +358,7 @@ class BookReaderActivity : BaseActivity() {
     private fun initData() {
         launch(singleCoroutineKey = "initBookReaderData") {
             ChapterPageCache.resetId(bookId)
+            TxtChapter.evictAll()
             mPageLoader?.closeBook()
             Log.i("加载书籍：${bookId}")
             val book = viewModel.init(bookId)
@@ -413,9 +415,10 @@ class BookReaderActivity : BaseActivity() {
         }
     }
 
-    private suspend fun getChapterContentPage(txtChapter: TxtChapter, chapter: Chapter) = withMain {
+    private suspend fun getChapterContentPage(txtChapter: TxtChapter?, chapter: Chapter) = withMain {
         val launch = launch("getChapterContentPage") {
             val loader = mPageLoader ?: return@launch
+            val txtChapter = txtChapter ?: return@launch
             while (true) {
                 ensureActive()
                 if (viewModel.getChapterContentPage(chapter)) {
