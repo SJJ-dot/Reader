@@ -86,8 +86,8 @@ class MainActivity : BaseActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun initDrawerMenuWidget() {
-        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
-        binding?.navUi?.setPadding(0, statusBarHeight, 0, 0)
+//        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
+//        binding?.navUi?.setPadding(0, statusBarHeight, 0, 0)
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
         binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
