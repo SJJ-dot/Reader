@@ -41,16 +41,17 @@ class FeedbackAdapter(
             onDelete(list[position])
         }
 
+        //只允许管理员和反馈者自己删除反馈
         if (globalConfig.admin || list[position].clientId == globalConfig.mqttClientId) {
             holder.itemView.findViewById<View>(R.id.btn_delete).show()
         } else {
             holder.itemView.findViewById<View>(R.id.btn_delete).gone()
         }
-
-        if (globalConfig.admin) {
-            holder.itemView.findViewById<View>(R.id.tv_reply).show()
+        //只允许管理员和自己回复反馈
+        if (globalConfig.admin || list[position].clientId == globalConfig.mqttClientId) {
+            holder.itemView.findViewById<View>(R.id.btn_reply).show()
         } else {
-            holder.itemView.findViewById<View>(R.id.tv_reply).gone()
+            holder.itemView.findViewById<View>(R.id.btn_reply).gone()
         }
     }
 
