@@ -91,7 +91,7 @@ class FeedbackFragment : BaseFragment() {
                 if (text.isNotEmpty()) {
                     feedback.reply = text
                     feedback.repliedAt = System.currentTimeMillis()
-                    Feedbacks.replyFeedback(feedback)
+                    Feedbacks.appendReply(feedback, text)
                 }
             }
             .show()

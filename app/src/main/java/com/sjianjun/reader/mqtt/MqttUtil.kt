@@ -199,6 +199,7 @@ object MqttUtil {
                 callback(false)
                 return
             }
+            Log.i("Publishing message to $tpc: ${String(payload)}")
             val message = MqttMessage()
             message.payload = payload
             message.qos = qos
@@ -214,7 +215,7 @@ object MqttUtil {
                     callback(false)
                 }
             })
-        } catch (e: MqttException) {
+        } catch (e: Exception) {
             Log.e("Error publishing to $tpc: ${e.message}")
             callback(false)
         }

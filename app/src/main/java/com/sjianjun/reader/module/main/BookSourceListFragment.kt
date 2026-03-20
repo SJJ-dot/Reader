@@ -3,11 +3,7 @@ package com.sjianjun.reader.module.main
 import android.app.Dialog
 import android.os.Bundle
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
@@ -18,10 +14,13 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.hide
+import com.sjianjun.reader.utils.id
+import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.isLoading
-import kotlinx.coroutines.launch
 
 
 @Suppress("UNCHECKED_CAST")

@@ -30,13 +30,46 @@
             android:textSize="12sp" />
 
         <TextView
-            android:id="@+id/tv_reply"
+            android:id="@+id/tv_latest_reply"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
             android:textColor="@color/mdr_grey_800"
             android:textSize="14sp"
             android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tv_latest_reply_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="4dp"
+            android:textColor="@color/mdr_grey_600"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp">
+
+            <TextView
+                android:id="@+id/tv_toggle_replies"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/mdr_grey_600"
+                android:textSize="14sp"
+                android:text="展开回复" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_replies"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:paddingTop="8dp"
+            android:nestedScrollingEnabled="false" />
 
         <LinearLayout
             android:layout_width="match_parent"
