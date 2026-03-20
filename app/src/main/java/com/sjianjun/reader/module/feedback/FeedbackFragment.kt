@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
@@ -31,7 +32,14 @@ class FeedbackFragment : BaseFragment() {
         adapter = FeedbackAdapter(onReply = { feedback ->
             showReplyDialog(feedback)
         }, onDelete = { feedback ->
-            Feedbacks.deleteFeedback(feedback)
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("删除反馈")
+                .setMessage("确定删除该反馈吗？")
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    Feedbacks.deleteFeedback(feedback)
+                }
+                .show()
         })
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
