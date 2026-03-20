@@ -30,7 +30,7 @@ class App : Application() {
             writeToFileDir = File(externalCacheDir, "alog")
         }
         Python.start(AndroidPlatform(this))
-        MqttUtil.connect(this)
+        MqttUtil.connect()
     }
 
     companion object {

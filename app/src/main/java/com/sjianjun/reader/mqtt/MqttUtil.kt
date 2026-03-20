@@ -1,15 +1,15 @@
 package com.sjianjun.reader.mqtt
 
 import android.annotation.SuppressLint
-import android.content.Context
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.preferences.globalConfig
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
@@ -25,11 +25,12 @@ object MqttUtil {
     private const val TOPIC_ONLINE = "reader/online"
     const val TOPIC_FEEDBACK = "reader/feedback"
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @SuppressLint("StaticFieldLeak")
-    private var mqttAndroidClient: MqttAndroidClient? = null
+    private var mqttClient: MqttAsyncClient? = null
 
-    fun connect(context: Context) {
+    fun connect() {
         val serverURI = BuildConfig.MQTT_SERVER_URI
 
         // use a stable clientId stored in SharedPreferences to allow session persistence
@@ -37,8 +38,8 @@ object MqttUtil {
             globalConfig.mqttClientId = it
         }
 
-        mqttAndroidClient = MqttAndroidClient(context.applicationContext, serverURI, clientId)
-        mqttAndroidClient?.setCallback(object : MqttCallbackExtended {
+        mqttClient = MqttAsyncClient(serverURI, clientId, MemoryPersistence())
+        mqttClient?.setCallback(object : MqttCallbackExtended {
             override fun connectComplete(reconnect: Boolean, serverURI: String?) {
                 if (reconnect) {
                     Log.i("Reconnected to : $serverURI")
@@ -72,7 +73,7 @@ object MqttUtil {
 
     private fun recursiveConnect() {
         try {
-            if (mqttAndroidClient?.isConnected == true) {
+            if (mqttClient?.isConnected == true) {
                 return
             }
             val mqttConnectOptions = MqttConnectOptions().apply {
@@ -85,23 +86,17 @@ object MqttUtil {
                 password = BuildConfig.MQTT_PASSWORD.toCharArray()
                 setWill(TOPIC_ONLINE + "/" + globalConfig.mqttClientId, ByteArray(0), 1, true)
             }
-            mqttAndroidClient?.connect(mqttConnectOptions, null, object : IMqttActionListener {
+            mqttClient?.connect(mqttConnectOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.i("MQTT connected successfully")
-
-                    val disconnectedBufferOptions = DisconnectedBufferOptions()
-                    disconnectedBufferOptions.isBufferEnabled = true
-                    disconnectedBufferOptions.setBufferSize(100)
-                    disconnectedBufferOptions.isPersistBuffer = false
-                    disconnectedBufferOptions.isDeleteOldestMessages = false
-                    mqttAndroidClient?.setBufferOpts(disconnectedBufferOptions)
+                    // MemoryPersistence MqttAsyncClient doesn't use Android disconnected buffer options
                     subscribeToTopic()
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     Log.e("MQTT connection failed: ${exception?.message}")
                     // Optionally implement retry logic here
-                    GlobalScope.launch(Dispatchers.IO) {
+                    scope.launch {
                         delay(5000) // wait before retrying
                         recursiveConnect()
                     }
@@ -109,7 +104,7 @@ object MqttUtil {
             })
         } catch (ex: Exception) {
             ex.printStackTrace()
-            GlobalScope.launch(Dispatchers.IO) {
+            scope.launch {
                 delay(5000) // wait before retrying
                 recursiveConnect()
             }
@@ -124,11 +119,11 @@ object MqttUtil {
 
 
     private fun startHeartbeat() {
-        GlobalScope.launch(Dispatchers.IO) {
+        scope.launch {
             while (true) {
                 while (true) {
                     //wait for connection
-                    if (mqttAndroidClient?.isConnected == true) {
+                    if (mqttClient?.isConnected == true) {
                         break
                     }
                     delay(1000)
@@ -141,7 +136,11 @@ object MqttUtil {
 
     fun subscribe(topic: String, qos: Int = 1) {
         try {
-            mqttAndroidClient?.subscribe(topic, qos, null, object : IMqttActionListener {
+            if (mqttClient?.isConnected != true) {
+                Log.i("MQTT client is not connected. Cannot subscribe to $topic")
+                return
+            }
+            mqttClient?.subscribe(topic, qos, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.i("Subscribed to $topic")
                 }
@@ -150,14 +149,18 @@ object MqttUtil {
                     Log.i("Failed to subscribe $topic")
                 }
             })
-        } catch (e: MqttException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     fun unsubscribe(topic: String) {
         try {
-            mqttAndroidClient?.unsubscribe(topic, null, object : IMqttActionListener {
+            if (mqttClient?.isConnected != true) {
+                Log.i("MQTT client is not connected. Cannot unsubscribe from $topic")
+                return
+            }
+            mqttClient?.unsubscribe(topic, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.i("Unsubscribed from $topic")
                 }
@@ -166,7 +169,7 @@ object MqttUtil {
                     Log.i("Failed to unsubscribe $topic")
                 }
             })
-        } catch (e: MqttException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
@@ -180,8 +183,8 @@ object MqttUtil {
             }
 
             topic.startsWith(TOPIC_FEEDBACK) -> {
+                Feedbacks.parseFeedback(topic, String(message.payload))
                 Log.i("Received feedback message: ${String(message.payload)}")
-                Feedbacks.parseFeedback(topic,String(message.payload))
             }
 
             else -> {
@@ -191,7 +194,7 @@ object MqttUtil {
 
     fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false, callback: (success: Boolean) -> Unit = {}) {
         try {
-            if (mqttAndroidClient?.isConnected != true) {
+            if (mqttClient?.isConnected != true) {
                 Log.i("MQTT client is not connected. Cannot publish to $tpc")
                 callback(false)
                 return
@@ -200,7 +203,7 @@ object MqttUtil {
             message.payload = payload
             message.qos = qos
             message.isRetained = retained
-            mqttAndroidClient?.publish(tpc, message, null, object : IMqttActionListener {
+            mqttClient?.publish(tpc, message, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.i("published to $tpc")
                     callback(true)
