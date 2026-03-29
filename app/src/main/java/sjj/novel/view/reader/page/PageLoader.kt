@@ -70,7 +70,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                     "设置当前页列表 curPageList size:" + value?.size + " title:${value?.firstOrNull()?.title}",
                     Exception()
                 )
-            saveRecord()
         }
 
     // 绘制提示的画笔
@@ -535,10 +534,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 if (position >= curPageList!!.size) {
                     position = curPageList!!.size - 1
                 }
-                mCurPage = getCurPage(position)
-                mCancelPage = mCurPage
                 // 切换状态
                 isChapterOpen = true
+                mCurPage = getCurPage(position)
+                mCancelPage = mCurPage
             } else {
                 if (mLastChapterPos == this.chapterPos + 1) {
                     mCurPage = getCurPage(curPageList!!.size - 1)
