@@ -55,7 +55,7 @@ class BookReaderActivity : BaseActivity() {
     private val mPageLoader get() = binding?.pageView?.pageLoader
     private val viewModel by viewModels<BookReaderViewModel>()
     override fun immersionBar() {
-        ImmersionBar.with(this).init()
+//        ImmersionBar.with(this).init()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -7,7 +7,7 @@ plugins {
 }
 
 def shortHash = 'git log -1 --pretty=%h'.execute().text.trim().toUpperCase()
-def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 3
+def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 5
 def currentBranch = 'git symbolic-ref --short -q HEAD'.execute().text.trim()
 //创建版本号===
 //获取之前的版本列表

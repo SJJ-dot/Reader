@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.utils.isNight
 
 abstract class BaseActivity : AppCompatActivity() {
@@ -26,9 +25,7 @@ abstract class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         initTheme(isNight)
         super.onCreate(savedInstanceState)
-        launch {
-            immersionBar()
-        }
+        immersionBar()
     }
 
     override fun finish() {

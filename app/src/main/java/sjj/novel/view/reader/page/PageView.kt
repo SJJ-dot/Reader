@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import androidx.activity.viewModels
+import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.utils.act
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.CoverPageAnim
@@ -43,6 +44,8 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
     var isPrepare: Boolean = false
         private set
 
+    // Add a debounced runnable so onSizeChanged doesn't immediately act on transient sizes
+    private var pendingSizeChangeRunnable: Runnable? = null
     // 动画类
     private var mPageAnim: PageAnimation? = null
 
@@ -74,12 +77,20 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        mViewWidth = w
-        mViewHeight = h
+        pendingSizeChangeRunnable?.let { removeCallbacks(it) }
+        pendingSizeChangeRunnable = Runnable {
+            // Commit the queued size now that the system has likely settled
+            mViewWidth = w
+            mViewHeight = h
+            isPrepare = true
 
-        isPrepare = true
 
-        pageLoader?.prepareDisplay(w, h)
+             pageLoader?.prepareDisplay(mViewWidth, mViewHeight)
+            // clear the queued runnable
+            pendingSizeChangeRunnable = null
+        }
+        // Delay slightly to allow system to settle (values observed briefly before final layout)
+        postDelayed(pendingSizeChangeRunnable, 200)
     }
 
     //设置翻页的模式
@@ -315,6 +326,10 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        // Remove any pending size change callbacks to avoid leaking runnables
+        pendingSizeChangeRunnable?.let { removeCallbacks(it) }
+        pendingSizeChangeRunnable = null
+
         mPageAnim!!.abortAnim()
         mPageAnim!!.clear()
 
@@ -326,9 +341,5 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
         fun intercept(event: MotionEvent?): Boolean
 
         fun center()
-    }
-
-    companion object {
-        private const val TAG = "BookPageWidget"
     }
 }

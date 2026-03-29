@@ -53,24 +53,11 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     private var mCurPage: TxtPage? = null
         set(value) {
             field = value
-            if (BuildConfig.DEBUG)
-                Log.e(
-                    "设置当前页 mCurPage position:" + value?.position + " title:${value?.title}",
-                    Exception()
-                )
             saveRecord()
         }
 
     // 当前章节的页面列表
     var curPageList: List<TxtPage>? = null
-        private set(value) {
-            field = value
-            if (BuildConfig.DEBUG)
-                Log.e(
-                    "设置当前页列表 curPageList size:" + value?.size + " title:${value?.firstOrNull()?.title}",
-                    Exception()
-                )
-        }
 
     // 绘制提示的画笔
     private var mTipPaint: Paint? = null
@@ -95,11 +82,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     /*****************params */ // 当前的状态
 
     protected var mStatus: Int = STATUS_LOADING
-        set(value) {
-            field = value
-            if (BuildConfig.DEBUG)
-                Log.i("setPageStatus status:$value", Exception())
-        }
 
     // 判断章节列表是否加载完成
     @JvmField
@@ -139,11 +121,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      */
     // 当前章
     var chapterPos: Int = 0
-        protected set(value) {
-            field = value
-            if (BuildConfig.DEBUG)
-                Log.e("设置章节位置 chapterPos:$value", Exception())
-        }
 
 
     //上一章的记录
@@ -1212,6 +1189,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         }
         pos = min(pos, list.size - 1)
         pos = max(0, pos)
+        Log.i("获取书页，调整后 pos:$pos")
         return list.get(pos)
     }
 
@@ -1233,11 +1211,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     private val nextPage: TxtPage?
         get() {
             val txtPage = curPageList?.getOrNull((mCurPage?.position ?: return null) + 1)
-            if (BuildConfig.DEBUG)
-                Log.i(
-                    "获取下一页 mCurPage title:${mCurPage?.title} postion:${mCurPage?.position} nextPage title:${txtPage?.title} postion:${txtPage?.position}",
-                    Exception()
-                )
             return txtPage
         }
 
