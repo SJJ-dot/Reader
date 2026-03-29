@@ -358,7 +358,7 @@ class BookReaderActivity : BaseActivity() {
     private fun initData() {
         launch(singleCoroutineKey = "initBookReaderData") {
             ChapterPageCache.resetId(bookId)
-            TxtChapter.evictAll()
+//            TxtChapter.evictAll()
             mPageLoader?.closeBook()
             Log.i("加载书籍：${bookId}")
             val book = viewModel.init(bookId)

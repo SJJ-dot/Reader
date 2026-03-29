@@ -17,6 +17,12 @@ public class TxtChapter {
     public static void evictAll() {
         contents.evictAll();
     }
+
+    public static void evict(String link) {
+        if (link == null) return;
+        contents.remove(link);
+    }
+
     public int chapterIndex;
     //章节所属的小说(网络)
     public String bookId;

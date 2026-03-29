@@ -908,6 +908,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     fun reloadPages() {
+        val chapter = chapterCategory?.getOrNull(chapterPos)
+        TxtChapter.evict(chapter?.link)
         ChapterPageCache.remove(this.chapterPos)
         dealLoadPageList(this.chapterPos)
         preLoadNextChapter()

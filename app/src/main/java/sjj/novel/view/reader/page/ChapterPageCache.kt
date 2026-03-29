@@ -13,9 +13,11 @@ object ChapterPageCache {
     //保留5个章节的分页缓存
     private val cache = LruCache<Int, List<TxtPage>>(5)
     fun resetId(id: String) {
-        Log.d("resetId: $id")
-        this.id = id
-        cache.evictAll()
+        if (id != this.id) {
+            Log.d("resetId: $id")
+            this.id = id
+            cache.evictAll()
+        }
     }
 
     fun put(chapterPos: Int, pages: List<TxtPage>) {
