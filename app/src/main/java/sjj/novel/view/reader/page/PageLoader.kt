@@ -609,34 +609,33 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     private fun drawBackground(bitmap: Bitmap, isUpdate: Boolean) {
-        Log.i("绘制背景 Width:" + bitmap.getWidth() + " Height:" + bitmap.getHeight())
+        Log.i("绘制背景 Width:" + bitmap.width + " Height:" + bitmap.height)
         val canvas = Canvas(bitmap)
         val tipMarginHeight = 3.dp2Px
         if (!isUpdate) {
             /****绘制背景 */
-            if (mBackground != null) {
-                mBackground!!.draw(canvas)
-            } else {
-                Log.e("没设置背景？")
-            }
-
-            if (chapterCategory?.isEmpty() == false) {
+            mBackground?.draw(canvas)
+            val chapters = chapterCategory
+            if (chapters?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.getFontMetrics().bottom - mTipPaint!!.getFontMetrics().top) / 2
+                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.fontMetrics.bottom - mTipPaint!!.fontMetrics.top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
                         canvas.drawText(
-                            chapterCategory!!.get(this.chapterPos).title,
+                            chapters!!.get(this.chapterPos).title,
                             mDisplayParams.contentLeft,
                             tipTop,
                             mTipPaint!!
                         )
                     }
                 } else {
+                    val curPage = mCurPage ?: return
+                    val pageList = curPageList ?: return
+
                     /******绘制页码 */
-                    val percent = (mCurPage!!.position + 1).toString() + "/" + curPageList!!.size
+                    val percent = (curPage.position + 1).toString() + "/" + pageList.size
                     canvas.drawText(
                         percent,
                         mDisplayParams.contentRight - mTipPaint!!.measureText(percent),
@@ -645,13 +644,13 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                     )
 
                     val count = mTipPaint!!.breakText(
-                        mCurPage!!.title,
+                        curPage.title,
                         true,
                         mDisplayParams.contentRight - mTipPaint!!.measureText(percent) - tipMarginHeight,
                         null
                     )
                     canvas.drawText(
-                        mCurPage!!.title,
+                        curPage.title,
                         0,
                         count,
                         mDisplayParams.contentLeft,
