@@ -43,10 +43,8 @@ object OnlineInfos {
     }
 
     fun parseInfo(topic: String, time: Long) {
-//        val id = topic.substringAfterLast("/")
-//        if (onlineMap.value?.put(id, time) == null && globalConfig.mqttClientId != id) {
-//            toast("书友上线了")
-//        }
+        val id = topic.substringAfterLast("/")
+        onlineMap.value?.put(id, time)
         refresh()
         onlineMap.postValue(onlineMap.value)
     }
