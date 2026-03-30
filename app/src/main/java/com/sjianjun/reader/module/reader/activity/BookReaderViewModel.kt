@@ -23,6 +23,7 @@ import sjj.novel.view.reader.page.TxtChapter
 class BookReaderViewModel : ViewModel() {
     val book = MutableLiveData<Book?>()
     val chapterList = MutableLiveData<List<Chapter>>()
+    val chapterCache = MutableLiveData<Boolean>()
 
     private val bookDao get() = DbFactory.db.bookDao()
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()

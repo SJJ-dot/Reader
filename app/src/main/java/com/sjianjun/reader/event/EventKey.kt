@@ -18,9 +18,6 @@ object EventKey {
     /** 阅读页tts开始语音阅读 */
     val CHAPTER_SPEAK = "CHAPTER_SPEAK"
 
-    /** 阅读页tts耳机拔出通知 */
-    val ACTION_AUDIO_BECOMING_NOISY = AudioManager.ACTION_AUDIO_BECOMING_NOISY
-
     /** 阅读页 页面样式修改 */
     val CUSTOM_PAGE_STYLE = "CUSTOM_PAGE_STYLE"
 

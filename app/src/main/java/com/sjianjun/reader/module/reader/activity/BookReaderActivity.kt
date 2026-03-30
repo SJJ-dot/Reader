@@ -29,6 +29,8 @@ import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookBean
@@ -51,9 +53,12 @@ class BookReaderActivity : BaseActivity() {
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
 
-    private val ttsUtil by lazy { TtsUtil(this, lifecycle) }
+    private val ttsUtil by viewModels<TtsUtil>()
     private val mPageLoader get() = binding?.pageView?.pageLoader
     private val viewModel by viewModels<BookReaderViewModel>()
+
+    private var chapterCacheJob: Job? = null
+
     override fun immersionBar() {
 //        ImmersionBar.with(this).init()
     }
@@ -146,17 +151,24 @@ class BookReaderActivity : BaseActivity() {
         }
 
         observe<String>(EventKey.CHAPTER_LIST_CAHE) {
-            launch("CHAPTER_LIST_CAHE") {
+            if (chapterCacheJob?.isActive == true) {
+                chapterCacheJob?.cancel()
+                viewModel.chapterCache.postValue(false)
+                toast("已取消章节缓存")
+                return@observe
+            }
+            chapterCacheJob = launch("CHAPTER_LIST_CAHE") {
                 val chapterList = viewModel.chapterList.value ?: return@launch
-                binding!!.pageView.showSnackbar("章节缓存：${0}/${chapterList.size}")
-                var first = 3
-                (max(0, mPageLoader?.chapterPos ?: 0) until chapterList.size).forEach {
+                viewModel.chapterCache.postValue(true)
+                val end = chapterList.size
+                val start = max(0, mPageLoader?.chapterPos ?: 0)
+                binding!!.pageView.showSnackbar("章节缓存：${start}/${end}")
+                (start until end).forEach {
                     viewModel.getChapterContent(chapterList[it])
+                    delay(100)
                     ensureActive()
-                    if (first-- > 0) {
-                        binding!!.pageView.showSnackbar("章节缓存：${it}/${chapterList.size}")
-                    }
                 }
+                viewModel.chapterCache.postValue(false)
                 binding!!.pageView.showSnackbar("章节缓存：完成")
             }
         }

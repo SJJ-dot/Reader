@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.reader
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -10,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
@@ -26,7 +28,9 @@ import com.sjianjun.reader.databinding.ItemFontBinding
 import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
@@ -75,22 +79,48 @@ class BookReaderSettingFragment : BaseFragment() {
         initBrowser()
     }
 
-    private fun initBrowser(){
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+
+        val ttsUtil = activity?.viewModels<TtsUtil>()
+        if (ttsUtil?.value?.isSpeaking == true) {
+            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
+        } else {
+            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(requireContext()))
+        }
+
+        val vm = activity?.viewModels<BookReaderViewModel>()
+        if (vm?.value?.chapterCache?.value == true) {
+            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
+        } else {
+            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(requireContext()))
+        }
+
+    }
+
+    private fun initBrowser() {
         binding?.browser?.click {
             EventBus.post(EventKey.BROWSER_OPEN)
             hide()
         }
     }
+
     private fun initChapterList() {
         binding?.download?.click {
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("缓存章节")
-                .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                    hide()
-                }.setNegativeButton(android.R.string.cancel, null)
-                .show()
+            val vm = activity?.viewModels<BookReaderViewModel>()
+            if (vm?.value?.chapterCache?.value == true) {
+                EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                hide()
+            } else {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("缓存章节")
+                    .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                        hide()
+                    }.setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
         }
         binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
