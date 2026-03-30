@@ -887,8 +887,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         val chapter = chapterCategory?.getOrNull(chapterPos)
         TxtChapter.evict(chapter?.link)
         ChapterPageCache.remove(this.chapterPos)
-        dealLoadPageList(this.chapterPos)
-        preLoadNextChapter()
+        parseCurChapter()
         // 重新设置文章指针的位置
         mCurPage = getCurPage(mCurPage?.position ?: 0)
         mPageView!!.drawCurPage(false)

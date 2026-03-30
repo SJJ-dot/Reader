@@ -132,6 +132,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("当前章节获取失败")
                     return@launch
                 }
+                viewModel.getChapterContent(chapter, 0)
                 if (!chapter.isLoaded || chapter.content == null) {
                     toast("章节未加载成功 $chapter")
                     return@launch
@@ -214,6 +215,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("当前章节获取失败")
                     return@launch
                 }
+                viewModel.getChapterContent(chapter, 0)
                 if (!chapter.isLoaded || chapter.content?.isEmpty() != false) {
                     Log.i("章节未加载成功 ${chapter.title} isLoaded:${chapter.isLoaded} ${chapter.content}")
                     toast("章节未加载成功")
