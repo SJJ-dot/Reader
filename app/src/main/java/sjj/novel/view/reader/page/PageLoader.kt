@@ -56,6 +56,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             saveRecord()
         }
 
+    private var ttsSpeakLine: List<TxtLine>? = null
+    private val ttsSpeakLineCurPageCache = mutableListOf<TxtLine>()
+
     // 当前章节的页面列表
     var curPageList: List<TxtPage>? = null
 
@@ -65,7 +68,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     // 绘制标题的画笔
     private var mTitlePaint: TextPaint? = null
 
-    // 绘制背景颜色的画笔(用来擦除需要重绘的部分)
+    // 高亮文字选中测试
+    private var mSelectedColorTest = false
     private var mSelectedPaint: Paint? = null
 
     // 绘制小说内容的画笔
@@ -251,6 +255,11 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         openChapter()
     }
 
+    fun setTtsSpeakLine(lines: List<TxtLine>?) {
+        ttsSpeakLine = lines
+        mPageView?.drawCurPage(false)
+    }
+
     /**
      * 跳转到指定的页
      *
@@ -357,7 +366,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      *
      * @param pageStyle:页面样式
      */
-    fun setPageStyle(pageStyle: PageStyle) {
+    fun setPageStyle(pageStyle: PageStyle, selectedColorTest: Boolean = false) {
         Log.i("设置页面样式:$pageStyle")
         // 设置当前颜色样式
         mTextColor = pageStyle.getChapterContentColor(mPageView!!.context)
@@ -367,7 +376,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         mTitlePaint!!.setColor(pageStyle.getChapterTitleColor(mPageView!!.context))
         mTextPaint!!.setColor(mTextColor)
         mSelectedPaint!!.setColor(pageStyle.getSelectedColor(mPageView!!.context))
-
+        mSelectedColorTest = selectedColorTest
         mPageView!!.drawCurPage(false)
     }
 
@@ -729,6 +738,43 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                     //                    Log.e("left:" + left + " top:" + txtLine.top + " right:" + right + " bottom:" + txtLine.bottom + " " + txtLine);
                     canvas.drawRect(left, txtLine.top, right, txtLine.bottom, mSelectedPaint!!)
                 }
+            }
+
+            if (mSelectedColorTest) {
+                val line = curPage.lines.firstOrNull()
+                if (line != null) {
+                    canvas.drawRect(line.left, line.top, line.right, line.bottom, mSelectedPaint!!)
+                }
+            }
+            ttsSpeakLineCurPageCache.clear()
+            ttsSpeakLine?.forEach {
+                if (it in curPage.lines) {
+                    ttsSpeakLineCurPageCache.add(it)
+                }
+            }
+            ttsSpeakLineCurPageCache.forEachIndexed { index, line ->
+                var left = line.left
+                var right = line.right
+                if (index == 0) {
+                    for (i in 0 until line.txt.length) {
+                        if (line.txt[i].isWhitespace()) {
+                            continue
+                        }
+                        left = line.charLeft[i]
+                        break
+                    }
+                }
+                if (index == ttsSpeakLineCurPageCache.size - 1) {
+                    for (i in line.txt.length - 1 downTo 0) {
+                        if (line.txt[i].isWhitespace()) {
+                            continue
+                        }
+                        right = line.charRight[i]
+                        break
+                    }
+                }
+
+                canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
             }
 
             val titleMetrics = mTitlePaint!!.getFontMetrics()

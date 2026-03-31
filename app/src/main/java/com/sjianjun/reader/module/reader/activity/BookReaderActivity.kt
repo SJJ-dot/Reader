@@ -108,16 +108,19 @@ class BookReaderActivity : BaseActivity() {
     private fun initSettingMenu() {
         ttsUtil.progressChangeCallback = { paragraph ->
             launch {
-                val page = mPageLoader?.curPageList?.find { page ->
+                val loader = mPageLoader ?: return@launch
+                val page = loader.curPageList?.find { page ->
                     page.lines.find { paragraph.first() == it } != null
                 }
-                if (page != null) {
-                    mPageLoader?.skipToPage(page.position)
+                loader.setTtsSpeakLine(paragraph)
+                if (page != null && page.position != loader.pagePos) {
+                    loader.skipToPage(page.position)
                 }
             }
         }
         ttsUtil.onCompleted = {
 //            播放下一个段落
+            mPageLoader?.setTtsSpeakLine(null)
             if (mPageLoader?.skipNextChapter() == true) {
                 EventBus.post(EventKey.CHAPTER_SPEAK)
             }
@@ -126,6 +129,7 @@ class BookReaderActivity : BaseActivity() {
             launch {
                 if (ttsUtil.isSpeaking) {
                     ttsUtil.stop()
+                    mPageLoader?.setTtsSpeakLine(null)
                     return@launch
                 }
                 if (mPageLoader?.pageStatus == STATUS_LOADING) {
@@ -260,7 +264,7 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setTextSize(it.first.dp2Px.toFloat(), it.second)
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
-            mPageLoader?.setPageStyle(it)
+            mPageLoader?.setPageStyle(it, true)
             if (it.isDark) {
                 ImmersionBar.with(this).statusBarDarkFont(false).init()
             } else {

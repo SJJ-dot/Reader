@@ -153,6 +153,32 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
             binding?.chapterLabelColor!!.performClick()
         }
 
+        setColor(binding?.selectColor!!, binding?.selectColorPreview!!, info.selectedColor)
+        binding!!.selectColor.click {
+            Log.i("info: $info")
+            ColorPickerDialogBuilder
+                .with(context)
+                .setTitle("选择选中颜色")
+                .initialColor(info.selectedColor)
+                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .density(12)
+                .setPositiveButton("确定") { dialog, selectedColor, allColors ->
+                    Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
+                    setColor(binding?.selectColor!!, binding?.selectColorPreview!!, selectedColor)
+                    info.selectedColor = selectedColor
+                    dialog.dismiss()
+                    EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
+                }
+                .setNegativeButton("取消") { dialog, which ->
+                    Log.i("取消")
+                }
+                .build()
+                .show()
+        }
+        binding?.selectColorPreview!!.click {
+            binding?.selectColor!!.performClick()
+        }
+
 
         binding?.chapterBackgroundColor!!.click {
             Log.i("info: $info")

@@ -162,6 +162,7 @@ class TtsUtil() : ViewModel() {
             override fun onError(utteranceId: String?) {
                 paragraphs.poll()
                 toast("speak error")
+                speakNext()
             }
 
             override fun onStart(utteranceId: String?) {
