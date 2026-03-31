@@ -11,6 +11,7 @@ import com.sjianjun.reader.utils.hex
 import sjj.alog.Log
 import java.lang.ref.WeakReference
 import java.util.UUID
+import androidx.core.graphics.toColorInt
 
 class CustomPageStyleInfo {
     var id: String = UUID.randomUUID().toString().replace("-", "")
@@ -18,6 +19,7 @@ class CustomPageStyleInfo {
     var chapterTitleColor: Int = Color.BLACK
     var chapterContentColor: Int = Color.BLACK
     var backgroundColor: Int = Color.WHITE
+    var selectedColor: Int = "#0F9D58".toColorInt()
     var backgroundImage: String = ""
     var backgroundResName: String = "" // 资源id 名称
     var isDark: Boolean = false
@@ -92,6 +94,10 @@ class CustomPageStyle(val info: CustomPageStyleInfo) : PageStyle(info.id) {
 
     override fun getChapterContentColor(context: Context): Int {
         return info.chapterContentColor
+    }
+
+    override fun getSelectedColor(context: Context): Int {
+        return info.selectedColor
     }
 
     override fun toString(): String {

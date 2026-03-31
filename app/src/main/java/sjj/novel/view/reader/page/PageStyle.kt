@@ -87,9 +87,7 @@ abstract class PageStyle(val id: String) {
     @ColorInt
     abstract fun getChapterContentColor(context: Context): Int
 
-    open fun getSelectedColor(context: Context): Int {
-        return Color.parseColor("#ffd54f")
-    }
+    abstract fun getSelectedColor(context: Context): Int
 
 
     companion object {
