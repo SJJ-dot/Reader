@@ -10,7 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import androidx.activity.viewModels
-import com.sjianjun.reader.databinding.ActivityBookReaderBinding
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.act
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.CoverPageAnim
@@ -84,13 +84,21 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
             mViewHeight = h
             isPrepare = true
 
+            globalConfig.readerSizeW = w
+            globalConfig.readerSizeH = h
 
              pageLoader?.prepareDisplay(mViewWidth, mViewHeight)
             // clear the queued runnable
             pendingSizeChangeRunnable = null
         }
         // Delay slightly to allow system to settle (values observed briefly before final layout)
-        postDelayed(pendingSizeChangeRunnable, 200)
+        if (w > 0 && h > 0){
+            if (globalConfig.readerSizeW != w || globalConfig.readerSizeH != h) {
+                postDelayed(pendingSizeChangeRunnable, 1000)
+            }else{
+                postDelayed(pendingSizeChangeRunnable, 100)
+            }
+        }
     }
 
     //设置翻页的模式

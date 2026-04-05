@@ -1,9 +1,6 @@
 package com.sjianjun.reader.preferences
 
-import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-import androidx.core.content.edit
-import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
@@ -11,24 +8,18 @@ import com.sjianjun.reader.module.bookcity.HostStr
 import com.tencent.mmkv.MMKV
 import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
-import java.util.*
 
 val globalConfig by lazy { AppConfig("default") }
 
 class AppConfig(val name: String) :
     DelegateSharedPref(MMKV.mmkvWithID("AppConfig_$name")) {
 
-    var hasPermission by boolPref("hasPermission", false)
-
     /**
      * github 发布的版本信息
      */
     var releasesInfo by dataPref<ReleasesInfo?>("releasesInfo_new222", null)
-    var releasesInfoGithub by dataPref<ReleasesInfo?>("releasesInfoGithub", null)
 
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
-
-    val qqAuthLoginUri = MutableLiveData<Uri>()
 
     /**
      * 阅读器亮度蒙层的颜色
@@ -84,5 +75,8 @@ class AppConfig(val name: String) :
     var mqttClientId by strPref("mqtt_client_id", null)
 
     var admin by boolPref("admin", false)
+
+    var readerSizeW by intPref("readerSizeW", 0)
+    var readerSizeH by intPref("readerSizeH", 0)
 }
 
