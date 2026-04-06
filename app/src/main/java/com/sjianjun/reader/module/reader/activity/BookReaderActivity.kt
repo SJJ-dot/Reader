@@ -7,6 +7,8 @@ import android.view.MotionEvent
 import androidx.activity.viewModels
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.distinctUntilChanged
 import com.gyf.immersionbar.ImmersionBar
@@ -59,14 +61,15 @@ class BookReaderActivity : BaseActivity() {
 
     private var chapterCacheJob: Job? = null
 
-    override fun immersionBar() {
-//        ImmersionBar.with(this).init()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding!!.content) { view, insets ->
+            val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navigationBars.bottom)
+            insets
+        }
         val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
         binding?.drawerChapterList?.setPadding(0, statusBarHeight, 0, 0)
         mPageLoader?.mDisplayParams?.statusBarHeight = statusBarHeight

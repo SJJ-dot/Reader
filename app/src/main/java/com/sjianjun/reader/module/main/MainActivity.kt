@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
@@ -35,6 +36,9 @@ class MainActivity : BaseActivity() {
             setTheme(R.style.Splash_noBackDark)
         } else {
             setTheme(R.style.Splash_noBack)
+            ImmersionBar.with(this)
+                .navigationBarColorInt(Color.BLACK)
+                .init()
         }
 
     }
@@ -86,9 +90,9 @@ class MainActivity : BaseActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun initDrawerMenuWidget() {
-//        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
-//        binding?.navUi?.setPadding(0, statusBarHeight, 0, 0)
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
+        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
+        headerBinding.navHeaderContainer.setPadding(0, statusBarHeight, 0, 0)
         binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
                 headerBinding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
