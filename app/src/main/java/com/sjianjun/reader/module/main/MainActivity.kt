@@ -4,10 +4,14 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -36,15 +40,13 @@ class MainActivity : BaseActivity() {
             setTheme(R.style.Splash_noBackDark)
         } else {
             setTheme(R.style.Splash_noBack)
-            ImmersionBar.with(this)
-                .navigationBarColorInt(Color.BLACK)
-                .init()
         }
 
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ActivityManger.finishSameType(this)
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
         launchIo {
             launchIo { checkUpdate(this@MainActivity, false) }
@@ -61,7 +63,6 @@ class MainActivity : BaseActivity() {
     private fun init() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding?.root)
-
         binding?.hostFragmentViewStub?.inflate()
         binding?.drawerContent?.requestApplyInsets()
 

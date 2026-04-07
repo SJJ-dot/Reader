@@ -26,9 +26,7 @@
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    app:layout_scrollFlags="scroll|enterAlways|snap"
-                    app:popupTheme="@style/AppTheme.PopupOverlay">
+                    android:layout_height="?attr/actionBarSize">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/toolbar_content"
@@ -53,7 +51,6 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            android:fitsSystemWindows="true"
             app:headerLayout="@layout/main_menu_nav_header"
             app:menu="@menu/main_activity_drawer" />
 
