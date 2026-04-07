@@ -69,13 +69,14 @@ class BookReaderActivity : BaseActivity() {
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.content) { view, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             mPageLoader?.mDisplayParams?.navigationBarHeight = navigationBars.bottom
+            mPageLoader?.mDisplayParams?.statusBarHeight =  statusBars.top
+            binding?.drawerChapterList?.setPadding(0, statusBars.top, 0, navigationBars.bottom)
             insets
         }
-        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
-        binding?.drawerChapterList?.setPadding(0, statusBarHeight, 0, 0)
-        mPageLoader?.mDisplayParams?.statusBarHeight = statusBarHeight
+
         initSettingMenu()
         Log.i("BookReaderActivity onCreate savedInstanceState: $savedInstanceState")
         initData()
