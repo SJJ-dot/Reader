@@ -167,7 +167,7 @@ class WebReaderActivity : BaseActivity() {
                 }
             }
         })
-        var lastTime = System.currentTimeMillis()
+        var lastTime = 0L
         setOnBackPressed {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)

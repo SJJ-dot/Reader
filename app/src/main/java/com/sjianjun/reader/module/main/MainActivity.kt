@@ -151,7 +151,7 @@ class MainActivity : BaseActivity() {
         ) || super.onSupportNavigateUp()
     }
 
-    private var lastTime = System.currentTimeMillis()
+    private var lastTime = 0L
     fun initBackPressed() {
         setOnBackPressed {
             if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {

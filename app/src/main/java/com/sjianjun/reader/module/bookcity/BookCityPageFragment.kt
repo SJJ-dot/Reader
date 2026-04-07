@@ -65,7 +65,7 @@ class BookCityPageFragment : BaseFragment() {
             customWebView.loadUrl(url!!, true)
 
             initDrawer(drawerLayout, customWebView, this@apply)
-            var lastTime = System.currentTimeMillis()
+            var lastTime = 0L
             val binding = this
             setOnBackPressed {
                 if (drawerLayout.isDrawerOpen(GravityCompat.END)) {

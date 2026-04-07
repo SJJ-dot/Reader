@@ -47,7 +47,7 @@ class EditJavaScriptActivity : BaseActivity() {
             }
         }
 
-        var lastTime = System.currentTimeMillis()
+        var lastTime = 0L
         setOnBackPressed {
             val rootInsets = ViewCompat.getRootWindowInsets(binding!!.root)
             val imeVisible = rootInsets?.isVisible(WindowInsetsCompat.Type.ime()) == true

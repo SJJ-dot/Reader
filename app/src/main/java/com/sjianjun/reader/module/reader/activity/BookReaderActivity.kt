@@ -90,6 +90,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     fun initBackPressed() {
+        var lastTime = 0L
         setOnBackPressed {
             val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
             when {
@@ -110,7 +111,16 @@ class BookReaderActivity : BaseActivity() {
                     true
                 }
 
-                else -> false
+                else -> {
+
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("双击退出")
+                        lastTime = System.currentTimeMillis()
+                        true
+                    } else {
+                        false
+                    }
+                }
             }
         }
 
