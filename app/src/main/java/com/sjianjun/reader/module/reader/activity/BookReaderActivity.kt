@@ -14,7 +14,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.distinctUntilChanged
-import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_ID
@@ -68,7 +67,7 @@ class BookReaderActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
-        ViewCompat.setOnApplyWindowInsetsListener(binding!!.content) { view, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { view, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             mPageLoader?.mDisplayParams?.navigationBarHeight = navigationBars.bottom

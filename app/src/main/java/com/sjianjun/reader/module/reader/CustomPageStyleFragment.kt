@@ -16,7 +16,6 @@ import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ReaderFragmentCustomPageStyleBinding
 import com.sjianjun.reader.event.EventBus
@@ -227,12 +226,6 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
 
         binding?.rgStatusBarColor!!.setOnCheckedChangeListener { group, checkedId ->
             info.isDark = checkedId == R.id.rb_status_bar_color_white
-            if (pageStyle.isDark) {
-                ImmersionBar.with(this).statusBarDarkFont(false).init()
-            } else {
-                ImmersionBar.with(this).statusBarDarkFont(true).init()
-            }
-
             EventBus.post(EventKey.CUSTOM_PAGE_STYLE, pageStyle)
         }
         binding?.rgStatusBarColor!!.check(if (info.isDark) R.id.rb_status_bar_color_white else R.id.rb_status_bar_color_black)

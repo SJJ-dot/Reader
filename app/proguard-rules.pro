@@ -33,8 +33,6 @@
 
 -keep class android.support.**{*;}
 
- -keep class com.gyf.immersionbar.* {*;}
- -dontwarn com.gyf.immersionbar.**
 -keep class org.mozilla.javascript.** { *; }
 -keep class com.sjianjun.reader.** { *; }
 -keep class sjj.novel.view.reader.** { *; }

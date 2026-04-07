@@ -16,7 +16,6 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
-import com.gyf.immersionbar.ImmersionBar
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -29,6 +28,7 @@ import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import sjj.alog.Log
 
 
 class MainActivity : BaseActivity() {
@@ -93,8 +93,11 @@ class MainActivity : BaseActivity() {
     @SuppressLint("SetTextI18n")
     private fun initDrawerMenuWidget() {
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
-        val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
-        headerBinding.navHeaderContainer.setPadding(0, statusBarHeight, 0, 0)
+        ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { v, insets ->
+             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            headerBinding.navHeaderContainer.setPadding(0, statusBars.top, 0, 0)
+            insets
+        }
         binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
                 headerBinding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)

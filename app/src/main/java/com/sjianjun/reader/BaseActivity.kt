@@ -7,10 +7,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.sjianjun.reader.utils.isNight
 
 abstract class BaseActivity : AppCompatActivity() {
-    open fun immersionBar() {
-
-    }
-
     open fun initTheme(isNight: Boolean) {
         if (isNight) {
             setTheme(R.style.AppTheme_Dark)
@@ -22,7 +18,6 @@ abstract class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         initTheme(isNight)
         super.onCreate(savedInstanceState)
-        immersionBar()
     }
 
     override fun finish() {
