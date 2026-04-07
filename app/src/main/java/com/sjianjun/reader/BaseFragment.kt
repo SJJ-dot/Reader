@@ -71,6 +71,14 @@ abstract class BaseFragment : DialogFragment() {
 
 
     fun setOnBackPressed(onBackPressed: () -> Boolean) {
-        activity?.setOnBackPressed(viewLifecycleOwner.lifecycle, onBackPressed)
+        activity?.onBackPressedDispatcher?.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!onBackPressed()) {
+                    isEnabled = false
+                    activity?.onBackPressedDispatcher?.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
     }
 }

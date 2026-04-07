@@ -54,6 +54,7 @@ class MainActivity : BaseActivity() {
 //            com.sjianjun.reader.test.SourceTest.test()
         }
         init()
+        initBackPressed()
     }
 
 
@@ -147,21 +148,27 @@ class MainActivity : BaseActivity() {
     }
 
     private var lastTime = System.currentTimeMillis()
-    override fun onBackPressed() {
-        if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {
-            binding?.drawerLayout?.closeDrawer(GravityCompat.START)
-        } else {
-            if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
-                if (System.currentTimeMillis() - lastTime > 1000) {
-                    toast("双击退出")
-                    lastTime = System.currentTimeMillis()
-                } else {
-                    finishAfterTransition()
-                }
+    fun initBackPressed() {
+        setOnBackPressed {
+            if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {
+                binding?.drawerLayout?.closeDrawer(GravityCompat.START)
+                true
             } else {
-                super.onBackPressed()
+                if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("双击退出")
+                        lastTime = System.currentTimeMillis()
+                        true
+                    } else {
+                        finishAfterTransition()
+                        true
+                    }
+                } else {
+                    false
+                }
             }
         }
+
     }
 
 

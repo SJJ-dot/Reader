@@ -77,6 +77,7 @@ class BookReaderActivity : BaseActivity() {
         Log.i("BookReaderActivity onCreate savedInstanceState: $savedInstanceState")
         initData()
         initView()
+        initBackPressed()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -85,27 +86,31 @@ class BookReaderActivity : BaseActivity() {
         initData()
     }
 
-    override fun onBackPressed() {
-        val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
-        when {
-            binding?.drawerLayout!!.isDrawerOpen(GravityCompat.END) -> {
-                binding?.drawerLayout!!.closeDrawer(GravityCompat.END)
-            }
+    fun initBackPressed() {
+        setOnBackPressed {
+            val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
+            when {
+                binding?.drawerLayout!!.isDrawerOpen(GravityCompat.END) -> {
+                    binding?.drawerLayout!!.closeDrawer(GravityCompat.END)
+                    true
+                }
 
-            binding?.drawerLayout!!.isDrawerOpen(GravityCompat.START) -> {
-                binding?.drawerLayout!!.closeDrawer(GravityCompat.START)
-            }
+                binding?.drawerLayout!!.isDrawerOpen(GravityCompat.START) -> {
+                    binding?.drawerLayout!!.closeDrawer(GravityCompat.START)
+                    true
+                }
 
-            fragment?.isVisible == true -> {
-                supportFragmentManager.beginTransaction()
-                    .hide(fragment)
-                    .commitAllowingStateLoss()
-            }
+                fragment?.isVisible == true -> {
+                    supportFragmentManager.beginTransaction()
+                        .hide(fragment)
+                        .commitAllowingStateLoss()
+                    true
+                }
 
-            else -> {
-                super.onBackPressed()
+                else -> false
             }
         }
+
     }
 
     private fun initSettingMenu() {
