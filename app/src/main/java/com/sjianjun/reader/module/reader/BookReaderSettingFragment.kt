@@ -13,6 +13,8 @@ import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -65,6 +67,11 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = ReaderFragmentSettingViewBinding.bind(view)
+        ViewCompat.setOnApplyWindowInsetsListener(view) { view, insets ->
+            val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navigationBars.bottom)
+            insets
+        }
         initSpeak()
         initChapterList()
         initChapterError()
