@@ -7,6 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -28,6 +32,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
@@ -61,23 +66,32 @@ class BookCityPageFragment : BaseFragment() {
 
             initDrawer(drawerLayout, customWebView, this@apply)
             var lastTime = System.currentTimeMillis()
+            val binding = this
             setOnBackPressed {
                 if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
                     drawerLayout.closeDrawer(GravityCompat.END)
-                    true
-                } else {
-                    if (!customWebView.back()) {
-                        if (System.currentTimeMillis() - lastTime > 1000) {
-                            toast("双击退出")
-                            lastTime = System.currentTimeMillis()
-                            true
-                        } else {
-                            false
-                        }
+                    return@setOnBackPressed true
+                }
+                val rootInsets = ViewCompat.getRootWindowInsets(binding.root)
+                val imeVisible = rootInsets?.isVisible(WindowInsetsCompat.Type.ime()) == true
+                if (imeVisible) {
+                    WindowInsetsControllerCompat(requireActivity().window, binding.root).hide(WindowInsetsCompat.Type.ime())
+                    return@setOnBackPressed true
+                }
+                if (customWebView.binding.webViewSettings.isVisible) {
+                    customWebView.binding.webViewSettings.hide()
+                    return@setOnBackPressed true
+                }
+                if (!customWebView.back()) {
+                    if (System.currentTimeMillis() - lastTime > 1000) {
+                        toast("双击退出")
+                        lastTime = System.currentTimeMillis()
+                        return@setOnBackPressed true
                     } else {
-                        true
+                        return@setOnBackPressed false
                     }
-
+                } else {
+                    true
                 }
             }
 

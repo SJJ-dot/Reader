@@ -13,6 +13,8 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -89,6 +91,16 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun initView() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+
+            val offset = (imeInsets.bottom - systemBars.bottom).coerceAtLeast(0)
+            binding.browserBookCityToolbar.translationY = -offset.toFloat()
+            binding.webViewSettings.translationY = -offset.toFloat()
+
+            insets
+        }
         binding.webViewSettings.bind(binding.webView)
         binding.refresh.click {
 

@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -21,6 +20,7 @@ import androidx.activity.viewModels
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.WebBook
@@ -41,9 +40,7 @@ import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.color
-import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.hide
-import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
@@ -68,7 +65,14 @@ class WebReaderActivity : BaseActivity() {
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+
+            val offset = (imeInsets.bottom - systemBars.bottom).coerceAtLeast(0)
+            binding.browserBookCityToolbar.translationY = -offset.toFloat()
+            binding.webViewSettings.translationY = -offset.toFloat()
+
             insets
         }
         initData()
@@ -167,16 +171,25 @@ class WebReaderActivity : BaseActivity() {
         setOnBackPressed {
             if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 binding.drawerLayout.closeDrawer(GravityCompat.END)
-                true
+                return@setOnBackPressed true
+            }
+            val rootInsets = ViewCompat.getRootWindowInsets(binding.root)
+            val imeVisible = rootInsets?.isVisible(WindowInsetsCompat.Type.ime()) == true
+            if (imeVisible) {
+                WindowInsetsControllerCompat(window, binding.root).hide(WindowInsetsCompat.Type.ime())
+                return@setOnBackPressed true
+            }
+            if (binding.webViewSettings.isVisible) {
+                binding.webViewSettings.hide()
+                return@setOnBackPressed true
+            }
+            Log.w("没有后退页面")
+            if (System.currentTimeMillis() - lastTime > 1000) {
+                toast("双击退出")
+                lastTime = System.currentTimeMillis()
+                return@setOnBackPressed true
             } else {
-                Log.w("没有后退页面")
-                if (System.currentTimeMillis() - lastTime > 1000) {
-                    toast("双击退出")
-                    lastTime = System.currentTimeMillis()
-                    true
-                } else {
-                    false
-                }
+                return@setOnBackPressed false
             }
         }
     }
