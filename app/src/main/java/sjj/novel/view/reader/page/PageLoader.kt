@@ -682,12 +682,12 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             }
         }
 
-        //        if (BuildConfig.DEBUG) {
-//            canvas.drawLine(mDisplayParams.getContentLeft(), 0f, mDisplayParams.getContentLeft(), mDisplayParams.getHeight(), mTitlePaint);
-//            canvas.drawLine(mDisplayParams.getContentRight(), 0f, mDisplayParams.getContentRight(), mDisplayParams.getHeight(), mTitlePaint);
+//        if (BuildConfig.DEBUG) {
+//            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
+//            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
 //
-//            canvas.drawLine(0f, mDisplayParams.getContentTop(), mDisplayParams.getWidth(), mDisplayParams.getContentTop(), mTitlePaint);
-//            canvas.drawLine(0f, mDisplayParams.getContentBottom(), mDisplayParams.getWidth(), mDisplayParams.getContentBottom(), mTitlePaint);
+//            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
+//            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
 //        }
         /******绘制内容 */
         val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.paddingHeight else 0f

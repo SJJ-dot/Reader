@@ -1,9 +1,12 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
@@ -67,7 +70,7 @@ class BookReaderActivity : BaseActivity() {
         setContentView(binding!!.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.content) { view, insets ->
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navigationBars.bottom)
+            mPageLoader?.mDisplayParams?.navigationBarHeight = navigationBars.bottom
             insets
         }
         val statusBarHeight = ImmersionBar.getStatusBarHeight(this)
@@ -111,6 +114,14 @@ class BookReaderActivity : BaseActivity() {
             }
         }
 
+    }
+
+    private fun enableEdgeToEdge(isDark: Boolean) {
+        if (isDark) {
+            enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
+        } else {
+            enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT))
+        }
     }
 
     private fun initSettingMenu() {
@@ -273,19 +284,11 @@ class BookReaderActivity : BaseActivity() {
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader?.setPageStyle(it, true)
-            if (it.isDark) {
-                ImmersionBar.with(this).statusBarDarkFont(false).init()
-            } else {
-                ImmersionBar.with(this).statusBarDarkFont(true).init()
-            }
+            enableEdgeToEdge(it.isDark)
         }
         globalConfig.readerPageStyle.observe(this) {
             val pageStyle = PageStyle.getStyle(it)
-            if (pageStyle.isDark) {
-                ImmersionBar.with(this).statusBarDarkFont(false).init()
-            } else {
-                ImmersionBar.with(this).statusBarDarkFont(true).init()
-            }
+            enableEdgeToEdge(pageStyle.isDark)
             mPageLoader?.setPageStyle(pageStyle)
         }
 

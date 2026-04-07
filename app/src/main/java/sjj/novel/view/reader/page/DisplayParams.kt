@@ -11,7 +11,7 @@ class DisplayParams {
     var tipHeight = dpToPx(28f)
 
     var paddingWidth = dpToPx(8f)
-    var paddingHeight = dpToPx(5f)
+    var paddingHeight = dpToPx(2f)
 
     /**
      * 段落间距
@@ -25,10 +25,12 @@ class DisplayParams {
     var titleInterval = 0f
     var textInterval = 0f
 
+    var navigationBarHeight = 0
+
     val contentLeft: Float get() = paddingWidth
     val contentTop: Float get() = tipHeight + paddingHeight + statusBarHeight
     val contentRight: Float get() = width - paddingWidth
-    val contentBottom: Float get() = height - paddingHeight
+    val contentBottom: Float get() = height - paddingHeight - navigationBarHeight
     val contentWidth: Float get() = contentRight - contentLeft
     val contentHeight: Float get() = contentBottom - contentTop
 
