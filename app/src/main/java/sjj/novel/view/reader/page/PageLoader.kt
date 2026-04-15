@@ -95,25 +95,11 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     var isChapterOpen: Boolean = false
         private set
     private var isFirstOpen = true
-    var isClose: Boolean = false
-        private set
 
     // 页面的翻页效果模式
     private var mPageMode: PageMode = PageMode.SIMULATION
 
     val mDisplayParams: DisplayParams = DisplayParams()
-
-    //字体的颜色
-    private var mTextColor = 0
-
-    //标题的大小
-    private var mTitleSize = 0f
-
-    //字体的大小
-    private var mTextSize = 0f
-
-    //电池的百分比
-    private var mBatteryLevel = 0
 
     //当前页面的背景
     private var mBackground: BgDrawable? = null
@@ -145,22 +131,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         // 初始化PageView
         pageView.setPageMode(mPageMode)
         pageView.setBackground(mBackground)
-    }
-
-    /**
-     * 作用：设置与文字相关的参数
-     *
-     * @param textSize
-     */
-    private fun setUpTextParams(textSize: Float, lineSpace: Float) {
-        // 文字大小
-        mTextSize = textSize
-        mDisplayParams.textInterval = mTextSize * lineSpace
-        mDisplayParams.textPara = mTextSize * 1.5f
-
-        mTitleSize = mTextSize * 1.1f
-        mDisplayParams.titleInterval = mDisplayParams.textInterval
-        mDisplayParams.titlePara = mTitleSize * 1.5f
     }
 
     fun setTypeface(typeface: Typeface?) {
@@ -306,49 +276,22 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     /**
-     * 更新电量
-     *
-     * @param level
-     */
-    fun updateBattery(level: Int) {
-        Log.i("updateBattery level:$level")
-        mBatteryLevel = level
-
-        if (mPageView?.isRunning == true) {
-            mPageView!!.drawCurPage(true)
-        }
-    }
-
-    /**
-     * 设置提示的文字大小
-     *
-     * @param textSize:单位为 px。
-     */
-    fun setTipTextSize(textSize: Int) {
-        Log.i("setTipTextSize")
-        mTipPaint!!.setTextSize(textSize.toFloat())
-
-        // 如果屏幕大小加载完成
-        mPageView!!.drawCurPage(false)
-    }
-
-    /**
      * 设置文字相关参数
      *
      * @param textSize
      */
-    fun setTextSize(textSize: Float, lineSpace: Float) {
-        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace")
-        // 设置文字相关参数
-        setUpTextParams(textSize, lineSpace)
+    fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float) {
+        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace")
+        // 文字大小
+        mDisplayParams.textInterval = lineSpace
+        mDisplayParams.textPara = paraSpace
+        mTextPaint!!.textSize = textSize
 
-        // 设置画笔的字体大小
-        mTextPaint!!.textSize = mTextSize
-        // 设置标题的字体大小
-        mTitlePaint!!.textSize = mTitleSize
-        Log.i("字体大小：$mTextSize 标题大小:$mTitleSize")
+        mDisplayParams.titleInterval = lineSpace
+        mDisplayParams.titlePara = paraSpace * 1.5f
+        mTitlePaint!!.textSize = textSize * 1.1f
         // 取消缓存
-        ChapterPageCache.resetTextSize(textSize, lineSpace)
+        ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace)
 
         // 如果当前已经显示数据
         if (isChapterListPrepare && mStatus == STATUS_FINISH) {
@@ -369,12 +312,11 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     fun setPageStyle(pageStyle: PageStyle, selectedColorTest: Boolean = false) {
         Log.i("设置页面样式:$pageStyle")
         // 设置当前颜色样式
-        mTextColor = pageStyle.getChapterContentColor(mPageView!!.context)
         mBackground = BgDrawable(pageStyle.getBackground(mPageView!!.context, 0, 0))
 
         mTipPaint!!.setColor(pageStyle.getLabelColor(mPageView!!.context))
         mTitlePaint!!.setColor(pageStyle.getChapterTitleColor(mPageView!!.context))
-        mTextPaint!!.setColor(mTextColor)
+        mTextPaint!!.setColor(pageStyle.getChapterContentColor(mPageView!!.context))
         mSelectedPaint!!.setColor(pageStyle.getSelectedColor(mPageView!!.context))
         mSelectedColorTest = selectedColorTest
         mPageView!!.drawCurPage(false)
@@ -549,10 +491,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      * 关闭书本
      */
     fun closeBook() {
-        Log.i("chapterCategory size:${chapterCategory?.size} isChapterOpen:$isChapterOpen isChapterListPrepare:$isChapterListPrepare isClose:$isClose")
+        Log.i("chapterCategory size:${chapterCategory?.size} isChapterOpen:$isChapterOpen isChapterListPrepare:$isChapterListPrepare")
         isChapterOpen = false
         isChapterListPrepare = false
-        isClose = true
         mPreLoadDisp?.cancel()
         chapterCategory?.clear()
         this.chapterCategory = null
@@ -1074,11 +1015,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
         //生成的页面
         val pages: MutableList<TxtPage> = ArrayList()
-        //使用流的方式加载
         val lines: MutableList<TxtLine> = ArrayList()
 
         createTxtLine(lines, chapter.title, mTitlePaint!!)
-        val titleLines = lines.size
         createTxtLine(lines, chapter.content, mTextPaint!!)
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
@@ -1106,17 +1045,17 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 //                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
                 i++
                 top += line.height
-                if (line.isTitle) {
-                    if (line.index == titleLines - 1) {
-                        top += mDisplayParams.titlePara
+                top += if (line.isTitle) {
+                    if (line.isParaEnd) {
+                        mDisplayParams.titlePara
                     } else {
-                        top += mDisplayParams.titleInterval
+                        mDisplayParams.titleInterval
                     }
                 } else {
                     if (line.isParaEnd) {
-                        top += mDisplayParams.textPara
+                        mDisplayParams.textPara
                     } else {
-                        top += mDisplayParams.textInterval
+                        mDisplayParams.textInterval
                     }
                 }
             }
@@ -1155,30 +1094,19 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             val lineStart = layout.getLineStart(i)
             var lineEnd = layout.getLineEnd(i)
             val lineHeight = layout.getLineBottom(i) - layout.getLineTop(i)
-            var lineStr = layout.getText().subSequence(lineStart, lineEnd)
+            var lineStr = layout.text.subSequence(lineStart, lineEnd)
             if (lineStr.isBlank()) {
                 continue
             }
-            val isParaEnd = lineStr.get(lineStr.length - 1) == '\n'
+            val isParaEnd = lineStr[lineStr.length - 1] == '\n'
             lineStr = lineStr.trimEnd().toString()
             lineEnd = lineStart + lineStr.length
-            val line = TxtLine(
-                lineStr.toString(),
-                paint === mTitlePaint,
-                lineHeight.toFloat(),
-                right - left,
-                isParaEnd
-            )
+            val line = TxtLine(lineStr, paint === mTitlePaint, lineHeight.toFloat(), right - left, isParaEnd)
             lines.add(line)
             for (offset in lineStart..<lineEnd) {
                 val leftOf = layout.getPrimaryHorizontal(offset)
-                val rightOf =
-                    if (offset == lineEnd - 1) right else layout.getPrimaryHorizontal(offset + 1)
-                line.setLeftOfRight(
-                    offset - lineStart,
-                    leftOf + mDisplayParams.contentLeft,
-                    rightOf + mDisplayParams.contentLeft
-                )
+                val rightOf = if (offset == lineEnd - 1) right else layout.getPrimaryHorizontal(offset + 1)
+                line.setLeftOfRight(offset - lineStart, leftOf + mDisplayParams.contentLeft, rightOf + mDisplayParams.contentLeft)
             }
 
 
@@ -1186,10 +1114,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             var len = line.txt.length
             var st = 0
 
-            while ((st < len) && (line.txt.get(st).isWhitespace())) {
+            while ((st < len) && (line.txt[st].isWhitespace())) {
                 st++
             }
-            while ((st < len) && (line.txt.get(len - 1).isWhitespace())) {
+            while ((st < len) && (line.txt[len - 1].isWhitespace())) {
                 len--
             }
             if (len - st <= 1) {
@@ -1211,13 +1139,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
             for (idx in line.charLeft.indices) {
                 val offsetX = max((idx - st), 0) * extX
-                line.setLeftOfRight(
-                    idx,
-                    offsetX + line.charLeft[idx],
-                    offsetX + line.charRight[idx]
-                )
+                line.setLeftOfRight(idx, offsetX + line.charLeft[idx], offsetX + line.charRight[idx])
             }
         }
+        lines.lastOrNull()?.isParaEnd = true
     }
 
     /**

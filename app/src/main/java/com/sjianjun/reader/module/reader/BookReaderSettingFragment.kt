@@ -248,19 +248,24 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initLineSpacing() {
-        val decimalFormat = DecimalFormat("0.#")
         globalConfig.readerLineSpacing.observe(viewLifecycleOwner, Observer {
-            binding?.lineSpacingText?.text = decimalFormat.format(it)
+            binding?.lineSpacingText?.text = "$it"
         })
         binding?.lineSpacingDecrease?.click(10) {
-            globalConfig.readerLineSpacing.postValue(
-                decimalFormat.format(globalConfig.readerLineSpacing.value!! - 0.1f).toFloat()
-            )
+            globalConfig.readerLineSpacing.postValue(globalConfig.readerLineSpacing.value!! - 1)
         }
         binding?.lineSpacingIncrease?.click(10) {
-            globalConfig.readerLineSpacing.postValue(
-                decimalFormat.format(globalConfig.readerLineSpacing.value!! + 0.1f).toFloat()
-            )
+            globalConfig.readerLineSpacing.postValue(globalConfig.readerLineSpacing.value!! + 1)
+        }
+
+        globalConfig.readerParaSpacing.observe(viewLifecycleOwner, Observer {
+            binding?.paraSpacingText?.text = "$it"
+        })
+        binding?.paraSpacingDecrease?.click(10) {
+            globalConfig.readerParaSpacing.postValue(globalConfig.readerParaSpacing.value!! - 1)
+        }
+        binding?.paraSpacingIncrease?.click(10) {
+            globalConfig.readerParaSpacing.postValue(globalConfig.readerParaSpacing.value!! + 1)
         }
     }
 

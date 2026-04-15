@@ -71,7 +71,7 @@ class BookReaderActivity : BaseActivity() {
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             mPageLoader?.mDisplayParams?.navigationBarHeight = navigationBars.bottom
-            mPageLoader?.mDisplayParams?.statusBarHeight =  statusBars.top
+            mPageLoader?.mDisplayParams?.statusBarHeight = statusBars.top
             binding?.drawerChapterList?.setPadding(0, statusBars.top, 0, navigationBars.bottom)
             insets
         }
@@ -279,18 +279,21 @@ class BookReaderActivity : BaseActivity() {
         globalConfig.readerBrightnessMaskColor.observe(this) {
             binding!!.brightnessMask.setBackgroundColor(it)
         }
-        val text = MediatorLiveData<Pair<Int, Float>>()
-        text.addSource(globalConfig.readerLineSpacing) {
-            text.value =
-                globalConfig.readerFontSize.value!! to globalConfig.readerLineSpacing.value!!
-        }
+        val text = MediatorLiveData<Int>()
         text.addSource(globalConfig.readerFontSize) {
-            text.value =
-                globalConfig.readerFontSize.value!! to globalConfig.readerLineSpacing.value!!
+            text.value = it
+        }
+        text.addSource(globalConfig.readerLineSpacing) {
+            text.value = it
+        }
+        text.addSource(globalConfig.readerParaSpacing) {
+            text.value = it
         }
         text.distinctUntilChanged().observe(this) {
-            Log.i("设置字号:${it.first} 行间距：${it.second}")
-            mPageLoader?.setTextSize(it.first.dp2Px.toFloat(), it.second)
+            val textSize = globalConfig.readerFontSize.value ?: return@observe
+            val lineSpace = globalConfig.readerLineSpacing.value ?: return@observe
+            val paraSpace = globalConfig.readerParaSpacing.value ?: return@observe
+            mPageLoader?.setTextSize(textSize.toFloat(), lineSpace.toFloat(), paraSpace.toFloat())
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader?.setPageStyle(it, true)

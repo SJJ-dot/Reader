@@ -5,6 +5,7 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.module.bookcity.HostStr
+import com.sjianjun.reader.utils.dp2Px
 import com.tencent.mmkv.MMKV
 import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
@@ -29,12 +30,13 @@ class AppConfig(val name: String) :
     /**
      * 阅读器 内容字体大小 、章节名称+4
      */
-    val readerFontSize by lazy { intLivedata("readerFontSize", 22) }
+    val readerFontSize by lazy { intLivedata("readerFontSize3", 30.dp2Px) }
 
     /**
      * 阅读器 内容字体行间距
      */
-    val readerLineSpacing by lazy { floatLivedata("readerLineSpacing2", 0.5f) }
+    val readerLineSpacing by lazy { intLivedata("readerLineSpacing3", 5.dp2Px) }
+    val readerParaSpacing by lazy { intLivedata("readerParaSpacing", 16.dp2Px) }
 
     /**
      * 阅读器 页面样式 位置索引
