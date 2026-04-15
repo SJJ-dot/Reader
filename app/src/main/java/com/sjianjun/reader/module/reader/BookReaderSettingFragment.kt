@@ -267,6 +267,16 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.paraSpacingIncrease?.click(10) {
             globalConfig.readerParaSpacing.postValue(globalConfig.readerParaSpacing.value!! + 1)
         }
+
+        globalConfig.readerLetterSpacing.observe(viewLifecycleOwner, Observer {
+            binding?.letterSpacingText?.text = "$it"
+        })
+        binding?.letterSpacingDecrease?.click(10) {
+            globalConfig.readerLetterSpacing.postValue(globalConfig.readerLetterSpacing.value!! - 1)
+        }
+        binding?.letterSpacingIncrease?.click(10) {
+            globalConfig.readerLetterSpacing.postValue(globalConfig.readerLetterSpacing.value!! + 1)
+        }
     }
 
     private fun initPageStyle() {
@@ -308,9 +318,25 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initFontListData() {
+        adapter.onLongClickListener = {fontInfo->
+            //长按删除自定义字体
+            if (!fontInfo.isAsset) {
+                val file = File(fontInfo.path!!)
+                if (file.exists()) {
+                    file.delete()
+                    initFontListData()
+                    toast("删除字体成功:${fontInfo.name}")
+                } else {
+                    toast("字体文件不存在，无法删除:${fontInfo.name}")
+                }
+            }else{
+                toast("内置字体无法删除:${fontInfo.name}")
+            }
+
+        }
         adapter.data = mutableListOf(
             FontInfo.DEFAULT,
-            FontInfo("方正楷体", resId = R.font.fangzhengkaiti, isAsset = true)
+            FontInfo("楷体", resId = R.font.fangzhengkaiti, isAsset = true)
         )
         val fontFiles = File(requireContext().filesDir, "font").listFiles()
         fontFiles?.forEach {
@@ -370,6 +396,7 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
+        var onLongClickListener : ((FontInfo) -> Unit)? = null
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val binding = ItemFontBinding.bind(holder.itemView)
             holder.itemView.apply {
@@ -378,6 +405,10 @@ class BookReaderSettingFragment : BaseFragment() {
                 click {
                     globalConfig.readerFontFamily.postValue(fontInfo)
                     notifyDataSetChanged()
+                }
+                setOnLongClickListener {
+                    onLongClickListener?.invoke(fontInfo)
+                    true
                 }
 
                 if (globalConfig.readerFontFamily.value == fontInfo) {

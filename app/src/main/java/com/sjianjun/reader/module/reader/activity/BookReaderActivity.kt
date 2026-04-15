@@ -289,11 +289,15 @@ class BookReaderActivity : BaseActivity() {
         text.addSource(globalConfig.readerParaSpacing) {
             text.value = it
         }
+        text.addSource(globalConfig.readerLetterSpacing) {
+            text.value = it
+        }
         text.distinctUntilChanged().observe(this) {
             val textSize = globalConfig.readerFontSize.value ?: return@observe
             val lineSpace = globalConfig.readerLineSpacing.value ?: return@observe
             val paraSpace = globalConfig.readerParaSpacing.value ?: return@observe
-            mPageLoader?.setTextSize(textSize.toFloat(), lineSpace.toFloat(), paraSpace.toFloat())
+            val letterSpacing = globalConfig.readerLetterSpacing.value ?: return@observe
+            mPageLoader?.setTextSize(textSize.toFloat(), lineSpace.toFloat(), paraSpace.toFloat(),letterSpacing.toFloat() / 100)
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader?.setPageStyle(it, true)

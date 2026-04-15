@@ -12,7 +12,6 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.dp2Px
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -280,18 +279,20 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      *
      * @param textSize
      */
-    fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float) {
-        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace")
+    fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float,letterSpacing: Float) {
+        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace letterSpacing:$letterSpacing")
         // 文字大小
         mDisplayParams.textInterval = lineSpace
         mDisplayParams.textPara = paraSpace
         mTextPaint!!.textSize = textSize
+        mTextPaint!!.letterSpacing = letterSpacing
 
         mDisplayParams.titleInterval = lineSpace
         mDisplayParams.titlePara = paraSpace * 1.5f
         mTitlePaint!!.textSize = textSize * 1.1f
+        mTitlePaint!!.letterSpacing = letterSpacing
         // 取消缓存
-        ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace)
+        ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace,letterSpacing)
 
         // 如果当前已经显示数据
         if (isChapterListPrepare && mStatus == STATUS_FINISH) {
@@ -1086,7 +1087,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             0,
             text.length,
             paint,
-            Math.round(mDisplayParams.contentWidth)
+            mDisplayParams.contentWidth.roundToInt()
         ).build()
         for (i in 0..<layout.getLineCount()) {
             val left = layout.getLineLeft(i)
@@ -1312,15 +1313,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 return -1
             }
             val txtLine = page.lines.get(line)
-            val paint: Paint?
-            if (txtLine.isTitle) {
-                paint = mTitlePaint
-            } else {
-                paint = mTextPaint
-            }
-            //            Log.e(txtLine);
-//            Log.e(page.lines.get(line + 1));
-//            Log.e("len:" + txtLine.txt.length() + ">>" + txtLine.txt);
             val lineStart = getLineStart(txtLine.index)
             if (x < lineStart) {
                 return -1

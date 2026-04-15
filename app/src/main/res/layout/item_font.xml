@@ -9,7 +9,7 @@
     <com.coorchice.library.SuperTextView
         android:id="@+id/font_text"
         android:layout_width="0dp"
-        android:layout_height="36dp"
+        android:layout_height="28dp"
         android:gravity="center"
         android:paddingStart="5dp"
         android:paddingEnd="5dp"

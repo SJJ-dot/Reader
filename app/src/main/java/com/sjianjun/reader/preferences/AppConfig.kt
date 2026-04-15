@@ -37,6 +37,7 @@ class AppConfig(val name: String) :
      */
     val readerLineSpacing by lazy { intLivedata("readerLineSpacing3", 5.dp2Px) }
     val readerParaSpacing by lazy { intLivedata("readerParaSpacing", 16.dp2Px) }
+    val readerLetterSpacing by lazy { intLivedata("readerLetterSpacing", 0.dp2Px) }
 
     /**
      * 阅读器 页面样式 位置索引

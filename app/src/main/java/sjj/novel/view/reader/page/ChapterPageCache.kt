@@ -8,6 +8,7 @@ object ChapterPageCache {
     private var textSize = 0f
     private var lineSpace = 0f
     private var paraSpace = 0f
+    private var letterSpacing = 0f
     private var displayWidth = 0
     private var displayHeight = 0
 
@@ -34,12 +35,13 @@ object ChapterPageCache {
         cache.remove(chapterPos)
     }
 
-    fun resetTextSize(textSize: Float, lineSpace: Float, paraSpace: Float) {
-        if (this.textSize != textSize || this.lineSpace != lineSpace || this.paraSpace != paraSpace) {
+    fun resetTextSize(textSize: Float, lineSpace: Float, paraSpace: Float, letterSpacing: Float) {
+        if (this.textSize != textSize || this.lineSpace != lineSpace || this.paraSpace != paraSpace || this.letterSpacing != letterSpacing) {
             Log.d("resetTextSize: $textSize, lineSpace: $lineSpace")
             this.textSize = textSize
             this.lineSpace = lineSpace
             this.paraSpace = paraSpace
+            this.letterSpacing = letterSpacing
             cache.evictAll()
         }
     }
