@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.lifecycle.ViewModel
 import com.jaeger.library.OnSelectListener
@@ -23,12 +22,15 @@ import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 /**
  * Created by newbiechen on 17-7-1.
  */
 abstract class PageLoader : ViewModel(), OnSelectListener {
+    private val breakIteratorTl = ThreadLocal.withInitial {
+        android.icu.text.BreakIterator.getCharacterInstance()
+    }
+
     /**
      * 获取章节目录。
      *
@@ -279,20 +281,19 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      *
      * @param textSize
      */
-    fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float,letterSpacing: Float) {
+    fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float, letterSpacing: Float) {
         Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace letterSpacing:$letterSpacing")
         // 文字大小
         mDisplayParams.textInterval = lineSpace
         mDisplayParams.textPara = paraSpace
+        mDisplayParams.letterSpacing = letterSpacing
         mTextPaint!!.textSize = textSize
-        mTextPaint!!.letterSpacing = letterSpacing
 
         mDisplayParams.titleInterval = lineSpace
         mDisplayParams.titlePara = paraSpace * 1.5f
         mTitlePaint!!.textSize = textSize * 1.1f
-        mTitlePaint!!.letterSpacing = letterSpacing
         // 取消缓存
-        ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace,letterSpacing)
+        ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace, letterSpacing)
 
         // 如果当前已经显示数据
         if (isChapterListPrepare && mStatus == STATUS_FINISH) {
@@ -698,20 +699,22 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 var left = line.left
                 var right = line.right
                 if (index == 0) {
-                    for (i in 0 until line.txt.length) {
-                        if (line.txt[i].isWhitespace()) {
+                    for (i in 0 until line.clusterBoundaries.size - 1) {
+                        val isBlank = line.txt.substring(line.clusterBoundaries[i], line.clusterBoundaries[i + 1]).isBlank()
+                        if (isBlank) {
                             continue
                         }
-                        left = line.charLeft[i]
+                        left = line.clusterLeft[i]
                         break
                     }
                 }
                 if (index == ttsSpeakLineCurPageCache.size - 1) {
-                    for (i in line.txt.length - 1 downTo 0) {
-                        if (line.txt[i].isWhitespace()) {
+                    for (i in line.clusterBoundaries.size - 2 downTo 0) {
+                        val isBlank = line.txt.substring(line.clusterBoundaries[i], line.clusterBoundaries[i + 1]).isBlank()
+                        if (isBlank) {
                             continue
                         }
-                        right = line.charRight[i]
+                        right = line.clusterRight[i]
                         break
                     }
                 }
@@ -726,8 +729,17 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             for (line in curPage.lines) {
                 val y = line.top + (if (line.isTitle) titleBase else textBase)
                 val paint: Paint = (if (line.isTitle) mTitlePaint else mTextPaint)!!
-                for (i in 0..<line.txt.length) {
-                    canvas.drawText(line.txt, i, i + 1, line.charLeft[i], y, paint)
+                val bounds = line.clusterBoundaries
+                if (bounds.size >= 2) {
+                    // 按 grapheme cluster 绘制（兼容 emoji / surrogate pair）
+                    for (ci in 0 until bounds.size - 1) {
+                        val s = bounds[ci]
+                        val e = bounds[ci + 1]
+                        canvas.drawText(line.txt, s, e, line.clusterLeft[ci], y, paint)
+                    }
+                } else {
+                    // fallback: 整行一次性绘制
+                    canvas.drawText(line.txt, 0, line.txt.length, line.left, y, paint)
                 }
             }
         }
@@ -1027,7 +1039,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (i == 0) {
                 top += mDisplayParams.titlePara
             }
-            var nextCharStart = 0
+            var clusterStart = 0
             while (i < lines.size) {
                 val line = lines.get(i)
                 val remHeight = mDisplayParams.contentBottom - top - line.height
@@ -1040,8 +1052,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 line.bottom = top + line.height
 
                 line.index = pageLine.size
-                line.charStart = nextCharStart
-                nextCharStart += line.txt.length
+                line.clusterStart = clusterStart
+                clusterStart += line.clusterBoundaries.size - 1
                 pageLine.add(line)
                 //                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
                 i++
@@ -1070,80 +1082,90 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         return pages
     }
 
+    /**
+     * 获取字符串的 grapheme cluster 边界数组
+     * 返回 [0, end1, end2, ..., text.length]
+     */
+    private fun getGraphemeBoundaries(text: String): IntArray {
+        val boundaries = mutableListOf(0)
+        if (text.isEmpty()) return boundaries.toIntArray()
+        val bi = breakIteratorTl.get()!!
+        bi.setText(text)
+        bi.first()
+        while (true) {
+            val nxt = bi.next()
+            if (nxt == android.icu.text.BreakIterator.DONE) break
+            boundaries.add(nxt)
+        }
+        if (boundaries.last() != text.length) {
+            boundaries.add(text.length)
+        }
+        return boundaries.toIntArray()
+    }
+
     private fun createTxtLine(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
-        var text = text
+        //拆分文本成行
+        // 计算行高和字符宽度
+        val fm = paint.fontMetrics
+        val lineHeight = fm.bottom - fm.top
+        val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
+        val charWidth = paint.measureText("啊")
         val sb = StringBuilder()
-        for (line in text.lines()) {
-            var line = line
-            line = line.trim()
-            if (!line.isEmpty()) {
-                sb.append("　　").append(line).append(System.lineSeparator())
+        val clusterLeft = FloatArray(1024)
+        val clusterRight = FloatArray(1024)
+        val createLine = { left: Float, charWidth: Float ->
+            val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, false)
+            line.clusterBoundaries = getGraphemeBoundaries(line.txt)
+            //两端对齐。
+            val remWidth = (mDisplayParams.contentRight - left) % (charWidth + letterSpacing)
+            if (remWidth > 0) {
+                val extX = remWidth / (line.clusterBoundaries.size - 2)
+                for (ci in 1 until line.clusterBoundaries.size - 1) {
+                    val offset = max(ci, 0) * extX
+                    clusterLeft[ci] = clusterLeft[ci] + offset
+                    clusterRight[ci] = clusterRight[ci] + offset
+                }
             }
-        }
-        text = sb.trimEnd()
-
-        val layout = StaticLayout.Builder.obtain(
-            text,
-            0,
-            text.length,
-            paint,
-            mDisplayParams.contentWidth.roundToInt()
-        ).build()
-        for (i in 0..<layout.getLineCount()) {
-            val left = layout.getLineLeft(i)
-            val right = layout.getLineRight(i)
-            val lineStart = layout.getLineStart(i)
-            var lineEnd = layout.getLineEnd(i)
-            val lineHeight = layout.getLineBottom(i) - layout.getLineTop(i)
-            var lineStr = layout.text.subSequence(lineStart, lineEnd)
-            if (lineStr.isBlank()) {
-                continue
-            }
-            val isParaEnd = lineStr[lineStr.length - 1] == '\n'
-            lineStr = lineStr.trimEnd().toString()
-            lineEnd = lineStart + lineStr.length
-            val line = TxtLine(lineStr, paint === mTitlePaint, lineHeight.toFloat(), right - left, isParaEnd)
+            line.setLeftAndRight(clusterLeft, clusterRight, line.clusterBoundaries.size - 1)
             lines.add(line)
-            for (offset in lineStart..<lineEnd) {
-                val leftOf = layout.getPrimaryHorizontal(offset)
-                val rightOf = if (offset == lineEnd - 1) right else layout.getPrimaryHorizontal(offset + 1)
-                line.setLeftOfRight(offset - lineStart, leftOf + mDisplayParams.contentLeft, rightOf + mDisplayParams.contentLeft)
-            }
+        }
 
-
-            var extX = 0f
-            var len = line.txt.length
-            var st = 0
-
-            while ((st < len) && (line.txt[st].isWhitespace())) {
-                st++
-            }
-            while ((st < len) && (line.txt[len - 1].isWhitespace())) {
-                len--
-            }
-            if (len - st <= 1) {
+        for (paragraph in text.lines()) {
+            var trimmed = paragraph.trim()
+            if (trimmed.isBlank()) {
                 continue
             }
-
-            var maxCharWidth = 0f
-            for (idx in line.charLeft.indices) {
-                maxCharWidth = max(line.charRight[idx] - line.charLeft[idx], maxCharWidth)
+            // 添加缩进
+            trimmed = "　　$trimmed"
+            sb.clear()
+            val allBounds = getGraphemeBoundaries(trimmed)
+            var left = mDisplayParams.contentLeft
+            var idx = 0
+            for (i in 0 until allBounds.size - 1) {
+                val s = allBounds[i]
+                val e = allBounds[i + 1]
+                val w = paint.measureText(trimmed, s, e)
+                if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
+                    createLine(left, charWidth)
+                    sb.clear()
+                    left = mDisplayParams.contentLeft
+                    idx = 0
+                }
+                //添加一个字符
+                sb.append(trimmed, s, e)
+                if (idx != 0) {
+                    left += letterSpacing
+                }
+                clusterLeft[idx] = left
+                clusterRight[idx] = left + w
+                left += w
+                idx++
             }
-
-            var remWidth = mDisplayParams.contentWidth - line.width
-            if (remWidth > maxCharWidth * 2) {
-                remWidth = maxCharWidth
+            if (sb.isNotEmpty()) {
+                createLine(left, charWidth)
             }
-
-            extX = remWidth / (len - st - 1)
-            extX = min(extX, maxCharWidth / 8f)
-
-            for (idx in line.charLeft.indices) {
-                val offsetX = max((idx - st), 0) * extX
-                line.setLeftOfRight(idx, offsetX + line.charLeft[idx], offsetX + line.charRight[idx])
-            }
+            lines.lastOrNull()?.isParaEnd = true
         }
-        lines.lastOrNull()?.isParaEnd = true
     }
 
     /**
@@ -1233,10 +1255,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     private inner class TxtLocationImpl : TxtLocation {
         override fun getLine(y: Float): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1
-            }
+            val page = this@PageLoader.mCurPage ?: return -1
             for (line in page.lines) {
                 if (line.top <= y && line.bottom >= y) {
                     return line.index
@@ -1246,12 +1265,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         }
 
         override fun getLineForOffset(offset: Int): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1
-            }
+            val page = this@PageLoader.mCurPage ?: return -1
             for (line in page.lines) {
-                if (line.charStart <= offset && line.charStart + line.txt.length > offset) {
+                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
                     return line.index
                 }
             }
@@ -1259,60 +1275,50 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         }
 
         override fun getLineStart(line: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
-            val txtLine = page.lines.get(line)
+            val page = this@PageLoader.mCurPage ?: return -1f
+            val txtLine = page.lines[line]
             if (txtLine.txt.isBlank()) {
                 return -1f
             }
-            for (i in 0..<txtLine.txt.length) {
-                if (Character.isWhitespace(txtLine.txt.get(i))) {
+            for (i in 0 until txtLine.clusterBoundaries.size -2){
+                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
+                if (isBlank) {
                     continue
                 }
-                return getHorizontalLeft(txtLine.charStart + i)
+                return txtLine.clusterLeft[i]
             }
             return -1f
         }
 
         override fun getLineStartOffset(line: Int): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1
-            }
-            val txtLine = page.lines.get(line)
-            return txtLine.charStart
+            val page = this@PageLoader.mCurPage ?: return -1
+            val txtLine = page.lines[line]
+            return txtLine.clusterStart
         }
 
         override fun getLineEnd(line: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
-            val txtLine = page.lines.get(line)
+            val page = this@PageLoader.mCurPage ?: return -1f
+            val txtLine = page.lines[line]
             if (txtLine.txt.isBlank()) {
                 return -1f
             }
-            for (i in txtLine.txt.length - 1 downTo 0) {
-                if (Character.isWhitespace(txtLine.txt.get(i))) {
+            for ( i in txtLine.clusterBoundaries.size - 2 downTo 0) {
+                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
+                if (isBlank) {
                     continue
                 }
-                return getHorizontalRight(txtLine.charStart + i)
+                return txtLine.clusterRight[i]
             }
             return -1f
         }
 
         override fun getOffset(x: Float, y: Float): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1
-            }
+            val page = this@PageLoader.mCurPage ?: return -1
             val line = getLine(y)
             if (line == -1) {
                 return -1
             }
-            val txtLine = page.lines.get(line)
+            val txtLine = page.lines[line]
             val lineStart = getLineStart(txtLine.index)
             if (x < lineStart) {
                 return -1
@@ -1321,21 +1327,18 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (x > lineEnd) {
                 return -1
             }
-            for (i in txtLine.charLeft.indices) {
-                if (x >= txtLine.charLeft[i] && x <= txtLine.charRight[i]) {
-                    return i + txtLine.charStart
+            for (i in txtLine.clusterLeft.indices) {
+                if (x >= txtLine.clusterLeft[i] && x <= txtLine.clusterRight[i]) {
+                    return i + txtLine.clusterStart
                 }
             }
             return -1
         }
 
         override fun getHysteresisOffset(x: Float, y: Float, oldOffset: Int, isLeft: Boolean): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return oldOffset
-            }
+            val page = this@PageLoader.mCurPage ?: return oldOffset
 
-            var difY = Int.Companion.MAX_VALUE.toFloat()
+            var difY = Int.MAX_VALUE.toFloat()
             var line = -1
             for (txtLine in page.lines) {
                 if (!txtLine.txt.isBlank() && abs(txtLine.bottom - y) < difY) {
@@ -1346,127 +1349,75 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (line == -1) {
                 return oldOffset
             }
-            val txtLine = page.lines.get(line)
-            //            Log.e(txtLine);
-            var difX = Int.Companion.MAX_VALUE.toFloat()
+            val txtLine = page.lines[line]
+            var difX = Int.MAX_VALUE.toFloat()
             var lineOffset = -1
-            for (i in 0..<txtLine.txt.length) {
-                if (!txtLine.txt.get(i)
-                        .isWhitespace() && abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x) < difX
-                ) {
+            for (i in 0..<txtLine.clusterBoundaries.size - 1) {
+                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
+                val clusterCenter = (txtLine.clusterLeft[i] + txtLine.clusterRight[i]) / 2
+                if (!isBlank && abs(clusterCenter - x) < difX) {
                     lineOffset = i
-                    difX = abs((txtLine.charLeft[i] + txtLine.charRight[i]) / 2 - x)
+                    difX = abs(clusterCenter - x)
                 }
             }
-            return if (lineOffset == -1) oldOffset else (lineOffset + txtLine.charStart)
-        }
-
-        fun getNotWhitespace(line: Int, isLeft: Boolean): Int {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1
-            }
-            if (line < 0 || line >= page.lines.size) {
-                return -1
-            }
-            val txtLine = page.lines.get(line)
-            if (txtLine.txt.isBlank()) {
-                if (isLeft) {
-                    return getNotWhitespace(line + 1, isLeft)
-                } else {
-                    return getNotWhitespace(line - 1, isLeft)
-                }
-            } else {
-                if (isLeft) {
-                    for (i in 0..<txtLine.txt.length) {
-                        if (Character.isWhitespace(txtLine.txt.get(i))) {
-                            continue
-                        }
-                        return txtLine.charStart + i
-                    }
-                } else {
-                    for (i in txtLine.txt.length - 1 downTo 0) {
-                        if (Character.isWhitespace(txtLine.txt.get(i))) {
-                            continue
-                        }
-                        return txtLine.charStart + i
-                    }
-                }
-            }
-            return -1
+            return if (lineOffset == -1) oldOffset else (lineOffset + txtLine.clusterStart)
         }
 
         override fun getHorizontalRight(offset: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
+            val page = this@PageLoader.mCurPage ?: return -1f
             for (line in page.lines) {
-                if (line.charStart <= offset && line.charStart + line.txt.length > offset) {
-                    val lineOffset = offset - line.charStart
-                    return line.charRight[lineOffset]
+                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
+                    val lineOffset = offset - line.clusterStart
+                    return line.clusterRight[lineOffset]
                 }
             }
             return -1f
         }
 
         override fun getHorizontalLeft(offset: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
+            val page = this@PageLoader.mCurPage ?: return -1f
             for (line in page.lines) {
-                if (line.charStart <= offset && line.charStart + line.txt.length > offset) {
-                    val lineOffset = offset - line.charStart
+                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
+                    val lineOffset = offset - line.clusterStart
                     if (lineOffset == 0) {
                         return line.left
                     }
 
-                    return line.charLeft[lineOffset]
+                    return line.clusterLeft[lineOffset]
                 }
             }
             return -1f
         }
 
         override fun getLineTop(line: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
-            val txtLine = page.lines.get(line)
+            val page = this@PageLoader.mCurPage ?: return -1f
+            val txtLine = page.lines[line]
             return txtLine.top
         }
 
         override fun getLineBottom(line: Int): Float {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return -1f
-            }
-            val txtLine = page.lines.get(line)
+            val page = this@PageLoader.mCurPage ?: return -1f
+            val txtLine = page.lines[line]
             return txtLine.bottom
         }
 
         override fun getTxt(start: Int, end: Int): String {
-            val page = this@PageLoader.mCurPage
-            if (page == null) {
-                return ""
-            }
+            val page = this@PageLoader.mCurPage ?: return ""
 
-            val startLine = page.lines.get(getLineForOffset(start))
-            val endLine = page.lines.get(getLineForOffset(end))
+            val startLine = page.lines[getLineForOffset(start)]
+            val endLine = page.lines[getLineForOffset(end)]
+            val startIdx = startLine.clusterBoundaries[start - startLine.clusterStart]
+            val endIdx = endLine.clusterBoundaries[end - endLine.clusterStart + 1]
             if (startLine == endLine) {
-                return startLine.txt.substring(
-                    start - startLine.charStart,
-                    end - startLine.charStart + 1
-                )
+                return startLine.txt.substring(startIdx,endIdx)
             }
             val stringBuilder = StringBuilder()
             for (i in startLine.index..endLine.index) {
-                val line = page.lines.get(i)
+                val line = page.lines[i]
                 if (line == startLine) {
-                    stringBuilder.append(line.txt.substring(start - line.charStart))
+                    stringBuilder.append(line.txt.substring(startIdx))
                 } else if (line == endLine) {
-                    stringBuilder.append(line.txt.substring(0, end - line.charStart + 1))
+                    stringBuilder.append(line.txt.substring(0, endIdx))
                 } else {
                     stringBuilder.append(line.txt)
                 }

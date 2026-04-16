@@ -159,7 +159,6 @@ class SelectableTextHelper(builder: Builder) {
         if (mLocation.getTxt(startOffset, endOffset).isBlank()) {
             return
         }
-
         selectText(startOffset, endOffset)
         showCursorHandle(mStartHandle!!)
         showCursorHandle(mEndHandle!!)

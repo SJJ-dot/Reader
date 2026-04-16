@@ -26,6 +26,7 @@ class DisplayParams {
     var textInterval = 0f
 
     var navigationBarHeight = 0
+    var letterSpacing = 0f
 
     val contentLeft: Float get() = paddingWidth
     val contentTop: Float get() = tipHeight + paddingHeight + statusBarHeight

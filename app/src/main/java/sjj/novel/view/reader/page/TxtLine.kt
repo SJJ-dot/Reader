@@ -1,44 +1,46 @@
 package sjj.novel.view.reader.page
 
-import sjj.novel.view.reader.page.TxtLine
-import java.util.*
-
 class TxtLine(
-    @JvmField var txt: String,
-    @JvmField var isTitle: Boolean,
-    @JvmField var height: Float,
-    @JvmField var width: Float,
-    @JvmField var isParaEnd: Boolean
+    var txt: String,
+    var isTitle: Boolean,
+    var height: Float,
+    var width: Float,
+    var isParaEnd: Boolean
 ) {
-    @JvmField
+
     var top = 0f
 
-    @JvmField
+
     var bottom = 0f
 
-    @JvmField
+
     var left = 0f
 
-    @JvmField
+
     var right = 0f
 
     /**
      * 当前行号
      */
-    @JvmField
+
     var index = 0
 
-    @JvmField
-    var charStart = 0
 
-    @JvmField
-    val charLeft = FloatArray(txt.length)
+    var clusterStart = 0
 
-    @JvmField
-    val charRight = FloatArray(txt.length)
-    fun setLeftOfRight(index: Int, leftOf: Float, rightOf: Float) {
-        charLeft[index] = leftOf
-        charRight[index] = rightOf
+
+    var clusterLeft = FloatArray(0)
+
+
+    var clusterRight = FloatArray(0)
+
+    /** grapheme cluster boundaries: [0, end1, end2, ..., txt.length] */
+
+    var clusterBoundaries: IntArray = IntArray(0)
+
+    fun setLeftAndRight(left: FloatArray, right: FloatArray, size: Int) {
+        this.clusterLeft = left.copyOf(size)
+        this.clusterRight = right.copyOf(size)
     }
 
     override fun toString(): String {
@@ -50,7 +52,7 @@ class TxtLine(
                 ", left=" + left +
                 ", right=" + right +
                 ", index=" + index +
-                ", charStart=" + charStart +
+                ", clusterStart=" + clusterStart +
                 '}'
     }
 
