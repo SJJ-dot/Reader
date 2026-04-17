@@ -1113,13 +1113,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         val sb = StringBuilder()
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
-        val createLine = { left: Float, charWidth: Float ->
-            val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, false)
+        var lastExtX = 0f
+        val createLine = { left: Float, charWidth: Float, end: Boolean ->
+            val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
             val remWidth = (mDisplayParams.contentRight - left) % (charWidth + letterSpacing)
             if (remWidth > 0) {
-                val extX = remWidth / (line.clusterBoundaries.size - 2)
+                val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
+                lastExtX = extX
                 for (ci in 1 until line.clusterBoundaries.size - 1) {
                     val offset = max(ci, 0) * extX
                     clusterLeft[ci] = clusterLeft[ci] + offset
@@ -1145,8 +1147,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
                 val w = paint.measureText(trimmed, s, e)
-                if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
-                    createLine(left, charWidth)
+                if (left + letterSpacing + max(w, charWidth) > mDisplayParams.contentRight && sb.isNotEmpty()) {
+                    createLine(left, charWidth, false)
                     sb.clear()
                     left = mDisplayParams.contentLeft
                     idx = 0
@@ -1158,13 +1160,12 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 }
                 clusterLeft[idx] = left
                 clusterRight[idx] = left + w
-                left += w
+                left += max(w, charWidth)
                 idx++
             }
             if (sb.isNotEmpty()) {
-                createLine(left, charWidth)
+                createLine(left, charWidth, true)
             }
-            lines.lastOrNull()?.isParaEnd = true
         }
     }
 
@@ -1280,7 +1281,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (txtLine.txt.isBlank()) {
                 return -1f
             }
-            for (i in 0 until txtLine.clusterBoundaries.size -2){
+            for (i in 0 until txtLine.clusterBoundaries.size - 2) {
                 val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
                 if (isBlank) {
                     continue
@@ -1302,7 +1303,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (txtLine.txt.isBlank()) {
                 return -1f
             }
-            for ( i in txtLine.clusterBoundaries.size - 2 downTo 0) {
+            for (i in txtLine.clusterBoundaries.size - 2 downTo 0) {
                 val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
                 if (isBlank) {
                     continue
@@ -1409,7 +1410,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             val startIdx = startLine.clusterBoundaries[start - startLine.clusterStart]
             val endIdx = endLine.clusterBoundaries[end - endLine.clusterStart + 1]
             if (startLine == endLine) {
-                return startLine.txt.substring(startIdx,endIdx)
+                return startLine.txt.substring(startIdx, endIdx)
             }
             val stringBuilder = StringBuilder()
             for (i in startLine.index..endLine.index) {
