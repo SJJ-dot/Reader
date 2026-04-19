@@ -111,16 +111,7 @@ class BookReaderActivity : BaseActivity() {
                     true
                 }
 
-                else -> {
-
-                    if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
-                        lastTime = System.currentTimeMillis()
-                        true
-                    } else {
-                        false
-                    }
-                }
+                else -> false
             }
         }
 
@@ -297,7 +288,7 @@ class BookReaderActivity : BaseActivity() {
             val lineSpace = globalConfig.readerLineSpacing.value ?: return@observe
             val paraSpace = globalConfig.readerParaSpacing.value ?: return@observe
             val letterSpacing = globalConfig.readerLetterSpacing.value ?: return@observe
-            mPageLoader?.setTextSize(textSize.toFloat(), lineSpace.toFloat(), paraSpace.toFloat(),letterSpacing.toFloat() / 100)
+            mPageLoader?.setTextSize(textSize.toFloat(), lineSpace.toFloat(), paraSpace.toFloat(), letterSpacing.toFloat() / 100)
         }
         observe<CustomPageStyle>(EventKey.CUSTOM_PAGE_STYLE) {
             mPageLoader?.setPageStyle(it, true)
@@ -458,6 +449,8 @@ class BookReaderActivity : BaseActivity() {
             }
             Log.i("刷新章节信息，章节数：${book.chapterList?.size}")
             mPageLoader?.refreshChapterList()
+            val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG) as? BookReaderSettingFragment
+            settingDialog?.refreshChapterProgress()
         }
     }
 

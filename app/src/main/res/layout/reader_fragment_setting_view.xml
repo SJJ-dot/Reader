@@ -1,242 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/dn_background">
+    android:background="@color/dn_background"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical">
+
 
     <LinearLayout
-        android:id="@+id/setting_bar"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/speak"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="9dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_audio"
-            app:tint="@color/dn_color_primary" />
-
-        <ImageButton
-            android:id="@+id/chapter_error"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="6dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_sync_error"
-            app:tint="@color/dn_color_primary" />
-
-
-        <ImageButton
-            android:id="@+id/chapter_sync"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_refresh_white_24dp"
-            app:tint="@color/dn_color_primary" />
-
-        <ImageButton
-            android:id="@+id/download"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_download"
-            app:tint="@color/dn_color_primary" />
-
-    </LinearLayout>
-
-    <FrameLayout
         android:id="@+id/setting_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:clickable="true"
-        android:focusable="true"
-        android:orientation="vertical"
-        android:paddingBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/setting_bar">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/setting_container_first"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-
-            <androidx.constraintlayout.widget.Guideline
-                android:id="@+id/barrier"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                app:layout_constraintGuide_begin="80dp" />
-
-
-            <TextView
-                android:id="@+id/page_style"
-                android:layout_width="64dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="样式"
-                android:layout_margin="8dp"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="14dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
-                app:layout_constraintEnd_toStartOf="@+id/barrier"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/page_style_list" />
-
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/page_style_list"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="5dp"
-                android:layout_marginEnd="16dp"
-                android:orientation="horizontal"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                app:layout_constraintEnd_toStartOf="@+id/page_style_import"
-                app:layout_constraintStart_toEndOf="@id/barrier"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:listitem="@layout/reader_item_page_style" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_style_import"
-                android:layout_width="45dp"
-                android:layout_height="28dp"
-                android:layout_marginEnd="16dp"
-                android:gravity="center"
-                android:text="导入"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/page_style_list"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-
-            <TextView
-                android:id="@+id/page_model"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="翻页模式"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="14dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
-                app:layout_constraintEnd_toEndOf="@+id/page_style"
-                app:layout_constraintStart_toStartOf="@id/page_style"
-                app:layout_constraintTop_toTopOf="@+id/page_model_simulation" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_model_simulation"
-                android:layout_width="0dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="5dp"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:text="仿真"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintEnd_toStartOf="@+id/page_model_cover"
-                app:layout_constraintStart_toEndOf="@+id/barrier"
-                app:layout_constraintTop_toBottomOf="@+id/page_style_list"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_model_cover"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:text="覆盖"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
-                app:layout_constraintEnd_toStartOf="@+id/page_model_slide"
-                app:layout_constraintStart_toEndOf="@+id/page_model_simulation"
-                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_model_slide"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:text="平移"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
-                app:layout_constraintEnd_toStartOf="@+id/page_model_scroll"
-                app:layout_constraintStart_toEndOf="@+id/page_model_cover"
-                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_model_scroll"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:text="滚动"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
-                app:layout_constraintEnd_toStartOf="@+id/page_model_none"
-                app:layout_constraintStart_toEndOf="@+id/page_model_slide"
-                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-
-            <com.coorchice.library.SuperTextView
-                android:id="@+id/page_model_none"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="16dp"
-                android:gravity="center"
-                android:text="无"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16dp"
-                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/page_model_scroll"
-                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
-                app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
-                app:stv_stroke_color="@color/dn_color_primary"
-                app:stv_stroke_width="1dp" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        android:orientation="vertical">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/setting_container_second"
@@ -267,11 +45,13 @@
             <SeekBar
                 android:id="@+id/brightness_seek_bar"
                 android:layout_width="0dp"
-                android:layout_height="25dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:layout_marginTop="5dp"
                 android:layout_marginEnd="16dp"
+                android:layout_marginTop="8dp"
                 android:max="200"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
                 android:progressDrawable="@drawable/seekbar_track_material"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
@@ -565,7 +345,6 @@
                 android:layout_marginEnd="16dp"
                 android:orientation="horizontal"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/font_import"
                 app:layout_constraintStart_toEndOf="@id/barrier2"
                 app:layout_constraintTop_toBottomOf="@+id/letter_spacing_decrease"
@@ -587,17 +366,222 @@
                 app:stv_solid="@color/dn_background"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
+
+            <TextView
+                android:id="@+id/page_style"
+                android:layout_width="64dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:gravity="center"
+                android:text="样式"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="14dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
+                app:layout_constraintEnd_toStartOf="@+id/barrier2"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/page_style_list" />
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/page_style_list"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="16dp"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintEnd_toStartOf="@+id/page_style_import"
+                app:layout_constraintStart_toEndOf="@id/barrier2"
+                app:layout_constraintTop_toBottomOf="@+id/font_list"
+                tools:listitem="@layout/reader_item_page_style" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_style_import"
+                android:layout_width="45dp"
+                android:layout_height="28dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center"
+                android:text="导入"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_style_list"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/page_style_list"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
+
+            <TextView
+                android:id="@+id/page_model"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="翻页模式"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="14dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+                app:layout_constraintEnd_toEndOf="@+id/page_style"
+                app:layout_constraintStart_toStartOf="@id/page_style"
+                app:layout_constraintTop_toTopOf="@+id/page_model_simulation" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_model_simulation"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:text="仿真"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintEnd_toStartOf="@+id/page_model_cover"
+                app:layout_constraintStart_toEndOf="@+id/barrier2"
+                app:layout_constraintTop_toBottomOf="@+id/page_style_list"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_model_cover"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:text="覆盖"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+                app:layout_constraintEnd_toStartOf="@+id/page_model_slide"
+                app:layout_constraintStart_toEndOf="@+id/page_model_simulation"
+                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_model_slide"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:text="平移"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+                app:layout_constraintEnd_toStartOf="@+id/page_model_scroll"
+                app:layout_constraintStart_toEndOf="@+id/page_model_cover"
+                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_model_scroll"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:text="滚动"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+                app:layout_constraintEnd_toStartOf="@+id/page_model_none"
+                app:layout_constraintStart_toEndOf="@+id/page_model_slide"
+                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
+
+            <com.coorchice.library.SuperTextView
+                android:id="@+id/page_model_none"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center"
+                android:text="无"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/page_model_simulation"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/page_model_scroll"
+                app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
+                app:stv_corner="5dp"
+                app:stv_solid="@color/dn_background"
+                app:stv_stroke_color="@color/dn_color_primary"
+                app:stv_stroke_width="1dp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </FrameLayout>
+
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/setting_container_first"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/chapter_last"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingStart="32dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="16dp"
+                android:text="上一章"
+                android:textColor="@color/dn_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/chapter_progress"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <SeekBar
+                android:id="@+id/chapter_progress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/chapter_last"
+                app:layout_constraintEnd_toStartOf="@+id/chapter_next"
+                app:layout_constraintStart_toEndOf="@+id/chapter_last"
+                app:layout_constraintTop_toTopOf="@+id/chapter_last"
+                tools:progress="50" />
+
+
+            <TextView
+                android:id="@+id/chapter_next"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingStart="8dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="32dp"
+                android:paddingBottom="16dp"
+                android:text="下一章"
+                android:textColor="@color/dn_text_color_black"
+                app:layout_constraintBottom_toBottomOf="@+id/chapter_last"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/chapter_progress"
+                app:layout_constraintTop_toTopOf="@+id/chapter_last" />
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/setting_container">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <ImageButton
             android:id="@+id/chapter_list"
@@ -609,6 +593,18 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
+            android:id="@+id/chapter_error"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_sync_error"
+            app:tint="@color/dn_text_color_black" />
+
+
+        <ImageButton
             android:id="@+id/day_night"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -616,6 +612,7 @@
             android:background="?android:attr/selectableItemBackground"
             android:src="@drawable/ic_theme_dark_24px"
             app:tint="@color/dn_text_color_black" />
+
 
         <ImageButton
             android:id="@+id/browser"
@@ -628,6 +625,44 @@
             android:src="@mipmap/ic_browser"
             app:tint="@color/dn_text_color_black" />
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal">
+
+
+        <ImageButton
+            android:id="@+id/speak"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="9dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_audio"
+            app:tint="@color/dn_text_color_black" />
+
+
+        <ImageButton
+            android:id="@+id/chapter_sync"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/ic_refresh_white_24dp"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageButton
+            android:id="@+id/download"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/ic_download"
+            app:tint="@color/dn_text_color_black" />
+
         <ImageButton
             android:id="@+id/settings"
             android:layout_width="0dp"
@@ -638,5 +673,4 @@
             app:tint="@color/dn_text_color_black" />
 
     </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

@@ -43,10 +43,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
+import sjj.novel.view.reader.page.NetPageLoader
+import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
-import java.text.DecimalFormat
 
 /*
  * Created by shen jian jun on 2020-07-13
@@ -57,6 +58,14 @@ class BookReaderSettingFragment : BaseFragment() {
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
     private val REQUEST_CODE_PICK_FONT = 1111
+
+    var pageLoader: PageLoader? = null
+        get() {
+            if (field == null) {
+                field = activity?.viewModels<NetPageLoader>()?.value
+            }
+            return field
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -95,22 +104,23 @@ class BookReaderSettingFragment : BaseFragment() {
         if (ttsUtil?.value?.isSpeaking == true) {
             binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
         } else {
-            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(requireContext()))
+            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
         }
 
         val vm = activity?.viewModels<BookReaderViewModel>()
         if (vm?.value?.chapterCache?.value == true) {
             binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
         } else {
-            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(requireContext()))
+            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
         }
 
         binding?.settingContainerFirst?.isVisible = true
         binding?.settingContainerSecond?.isVisible = false
+        refreshChapterProgress()
     }
 
     private fun initSettings() {
-        binding?.settings?.click {
+        binding?.settings?.click(10) {
             if (binding?.settingContainerFirst?.isVisible == true) {
                 binding?.settingContainerFirst?.isVisible = false
                 binding?.settingContainerSecond?.isVisible = true
@@ -124,11 +134,24 @@ class BookReaderSettingFragment : BaseFragment() {
     private fun initBrowser() {
         binding?.browser?.click {
             EventBus.post(EventKey.BROWSER_OPEN)
-            hide()
         }
     }
 
+    fun refreshChapterProgress() {
+        binding?.chapterProgress?.max = pageLoader?.chapterCategory?.size ?: 0
+        binding?.chapterProgress?.progress = pageLoader?.chapterPos ?: 0
+    }
+
     private fun initChapterList() {
+        binding?.chapterLast?.click {
+            pageLoader?.skipPreChapter()
+            refreshChapterProgress()
+        }
+        binding?.chapterNext?.click {
+            pageLoader?.skipNextChapter()
+            refreshChapterProgress()
+        }
+        refreshChapterProgress()
         binding?.download?.click {
             val vm = activity?.viewModels<BookReaderViewModel>()
             if (vm?.value?.chapterCache?.value == true) {
@@ -147,14 +170,12 @@ class BookReaderSettingFragment : BaseFragment() {
         }
         binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
-            hide()
         }
     }
 
     private fun initSpeak() {
         binding?.speak?.click {
             EventBus.post(EventKey.CHAPTER_SPEAK)
-            hide()
         }
     }
 
