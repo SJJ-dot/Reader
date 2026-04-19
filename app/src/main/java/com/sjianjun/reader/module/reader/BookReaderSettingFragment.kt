@@ -15,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -84,6 +85,7 @@ class BookReaderSettingFragment : BaseFragment() {
         initPageModel()
         initFontList()
         initBrowser()
+        initSettings()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -103,6 +105,20 @@ class BookReaderSettingFragment : BaseFragment() {
             binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(requireContext()))
         }
 
+        binding?.settingContainerFirst?.isVisible = true
+        binding?.settingContainerSecond?.isVisible = false
+    }
+
+    private fun initSettings() {
+        binding?.settings?.click {
+            if (binding?.settingContainerFirst?.isVisible == true) {
+                binding?.settingContainerFirst?.isVisible = false
+                binding?.settingContainerSecond?.isVisible = true
+            } else {
+                binding?.settingContainerFirst?.isVisible = true
+                binding?.settingContainerSecond?.isVisible = false
+            }
+        }
     }
 
     private fun initBrowser() {
@@ -318,7 +334,7 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initFontListData() {
-        adapter.onLongClickListener = {fontInfo->
+        adapter.onLongClickListener = { fontInfo ->
             //长按删除自定义字体
             if (!fontInfo.isAsset) {
                 val file = File(fontInfo.path!!)
@@ -329,7 +345,7 @@ class BookReaderSettingFragment : BaseFragment() {
                 } else {
                     toast("字体文件不存在，无法删除:${fontInfo.name}")
                 }
-            }else{
+            } else {
                 toast("内置字体无法删除:${fontInfo.name}")
             }
 
@@ -396,7 +412,7 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
-        var onLongClickListener : ((FontInfo) -> Unit)? = null
+        var onLongClickListener: ((FontInfo) -> Unit)? = null
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val binding = ItemFontBinding.bind(holder.itemView)
             holder.itemView.apply {
