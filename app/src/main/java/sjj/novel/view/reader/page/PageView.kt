@@ -1,5 +1,6 @@
 package sjj.novel.view.reader.page
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -28,13 +29,15 @@ import kotlin.math.roundToInt
  * 原作者的GitHub Project Path:(https://github.com/PeachBlossom/treader)
  * 绘制页面显示内容的类
  */
-class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : View(context, attrs, defStyleAttr) {
+class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : View(context, attrs, defStyleAttr) {
     private var mViewWidth = 0 // 当前View的宽
     private var mViewHeight = 0 // 当前View的高
 
-    private var mStartX = 0
-    private var mStartY = 0
+    private var mStartX = 0f
+    private var mStartY = 0f
     private var isMove = false
+    private val slop by lazy { ViewConfiguration.get(context).scaledTouchSlop }
+    private val timeout by lazy { ViewConfiguration.getLongPressTimeout().toLong() }
 
     // 初始化参数
     private var mBackground: Drawable? = null
@@ -46,6 +49,7 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
 
     // Add a debounced runnable so onSizeChanged doesn't immediately act on transient sizes
     private var pendingSizeChangeRunnable: Runnable? = null
+
     // 动画类
     private var mPageAnim: PageAnimation? = null
 
@@ -87,15 +91,15 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
             globalConfig.readerSizeW = w
             globalConfig.readerSizeH = h
 
-             pageLoader?.prepareDisplay(mViewWidth, mViewHeight)
+            pageLoader?.prepareDisplay(mViewWidth, mViewHeight)
             // clear the queued runnable
             pendingSizeChangeRunnable = null
         }
         // Delay slightly to allow system to settle (values observed briefly before final layout)
-        if (w > 0 && h > 0){
+        if (w > 0 && h > 0) {
             if (globalConfig.readerSizeW != w || globalConfig.readerSizeH != h) {
                 postDelayed(pendingSizeChangeRunnable, 1000)
-            }else{
+            } else {
                 postDelayed(pendingSizeChangeRunnable, 100)
             }
         }
@@ -147,13 +151,13 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
             val x = mViewWidth
             val y = mViewHeight
             //初始化动画
-            mPageAnim!!.setStartPoint(x.toFloat(), y.toFloat())
+            mPageAnim?.setStartPoint(x.toFloat(), y.toFloat())
             //设置点击点
-            mPageAnim!!.setTouchPoint(x.toFloat(), y.toFloat())
+            mPageAnim?.setTouchPoint(x.toFloat(), y.toFloat())
             //设置方向
             val hasNext = hasNextPage()
 
-            mPageAnim!!.setDirection(direction)
+            mPageAnim?.direction = direction
             if (!hasNext) {
                 return
             }
@@ -161,17 +165,17 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
             val x = 0
             val y = mViewHeight
             //初始化动画
-            mPageAnim!!.setStartPoint(x.toFloat(), y.toFloat())
+            mPageAnim?.setStartPoint(x.toFloat(), y.toFloat())
             //设置点击点
-            mPageAnim!!.setTouchPoint(x.toFloat(), y.toFloat())
-            mPageAnim!!.setDirection(direction)
+            mPageAnim?.setTouchPoint(x.toFloat(), y.toFloat())
+            mPageAnim?.direction = direction
             //设置方向方向
             val hashPrev = hasPrevPage()
             if (!hashPrev) {
                 return
             }
         }
-        mPageAnim!!.startAnim()
+        mPageAnim?.startAnim()
         this.postInvalidate()
     }
 
@@ -181,31 +185,26 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
 
     override fun onDraw(canvas: Canvas) {
         //绘制背景
-
-        if (mBackground != null) {
-            mBackground!!.draw(canvas)
-        }
-        if (mPageAnim != null) {
-            //绘制动画
-            mPageAnim!!.draw(canvas)
-        }
+        mBackground?.draw(canvas)
+        mPageAnim?.draw(canvas)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (mTouchListener != null && mTouchListener!!.intercept(event)) {
+        if (mTouchListener?.intercept(event) == true) {
             return true
         }
 
-        val x = event.getX().toInt()
-        val y = event.getY().toInt()
-        when (event.getAction()) {
+        val x = event.x
+        val y = event.y
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 mHasPerformedLongPress = false
                 mStartX = x
                 mStartY = y
                 isMove = false
-                mPageAnim!!.onTouchEvent(event)
-                postDelayed(longClick, ViewConfiguration.getLongPressTimeout().toLong())
+                mPageAnim?.onTouchEvent(event)
+                postDelayed(longClick, timeout)
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -213,16 +212,20 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
                     return true
                 }
                 // 判断是否大于最小滑动值。
-                val slop = ViewConfiguration.get(getContext()).getScaledTouchSlop()
                 if (!isMove) {
-                    isMove = abs(mStartX - event.getX()) > slop || abs(mStartY - event.getY()) > slop
+                    val dx = event.x - mStartX
+                    val dy = event.y - mStartY
+                    // compare squared distance—avoid sqrt
+                    if (dx * dx + dy * dy > slop * slop) {
+                        isMove = true
+                        removeCallbacks(longClick)
+                    }
                 }
 
                 // 如果滑动了，则进行翻页。
                 if (isMove) {
                     pageLoader?.hideSelectView()
-                    mPageAnim!!.onTouchEvent(event)
-                    removeCallbacks(longClick)
+                    mPageAnim?.onTouchEvent(event)
                 }
             }
 
@@ -244,14 +247,12 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
                     }
 
                     //是否点击了中间
-                    if (mCenterRect!!.contains(x.toFloat(), y.toFloat())) {
-                        if (mTouchListener != null) {
-                            mTouchListener!!.center()
-                        }
+                    if (mCenterRect?.contains(x, y) == true) {
+                        mTouchListener?.center()
                         return true
                     }
                 }
-                mPageAnim!!.onTouchEvent(event)
+                mPageAnim?.onTouchEvent(event)
             }
 
             MotionEvent.ACTION_CANCEL -> removeCallbacks(longClick)
@@ -288,16 +289,12 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
     }
 
     override fun computeScroll() {
-        //进行滑动
-        if (mPageAnim != null) {
-            mPageAnim!!.scrollAnim()
-        }
-        super.computeScroll()
+        mPageAnim?.scrollAnim()
     }
 
     //如果滑动状态没有停止就取消状态，重新设置Anim的触碰点
     fun abortAnimation() {
-        mPageAnim!!.abortAnim()
+        mPageAnim?.abortAnim()
     }
 
     val isRunning: Boolean get() = mPageAnim?.isRunning() == true
@@ -338,8 +335,8 @@ class PageView @JvmOverloads constructor(context: Context?, attrs: AttributeSet?
         pendingSizeChangeRunnable?.let { removeCallbacks(it) }
         pendingSizeChangeRunnable = null
 
-        mPageAnim!!.abortAnim()
-        mPageAnim!!.clear()
+        mPageAnim?.abortAnim()
+        mPageAnim?.clear()
 
         pageLoader = null
         mPageAnim = null

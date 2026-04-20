@@ -247,36 +247,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     /**
-     * 翻到上一页
-     *
-     * @return
-     */
-    fun skipToPrePage(): Boolean {
-        Log.i("skipToPrePage")
-        return mPageView!!.autoPrevPage()
-    }
-
-    /**
-     * 翻到下一页
-     *
-     * @return
-     */
-    fun skipToNextPage(): Boolean {
-        Log.i("skipToNextPage")
-        return mPageView!!.autoNextPage()
-    }
-
-    /**
-     * 更新时间
-     */
-    fun updateTime() {
-        Log.i("updateTime")
-        if (mPageView?.isRunning == true) {
-            mPageView!!.drawCurPage(true)
-        }
-    }
-
-    /**
      * 设置文字相关参数
      *
      * @param textSize
@@ -341,24 +311,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     /**
-     * 设置内容与屏幕的间距
-     *
-     * @param marginWidth  :单位为 px
-     * @param marginHeight :单位为 px
-     */
-    fun setPadding(paddingWidth: Int, marginHeight: Int) {
-        Log.i("setPadding paddingWidth:$paddingWidth marginHeight:$marginHeight")
-        mDisplayParams.paddingWidth = paddingWidth.toFloat()
-        mDisplayParams.paddingHeight = marginHeight.toFloat()
-        // 如果是滑动动画，则需要重新创建了
-        if (mPageMode == PageMode.SCROLL) {
-            mPageView!!.setPageMode(PageMode.SCROLL)
-        }
-
-        mPageView!!.drawCurPage(false)
-    }
-
-    /**
      * 设置页面切换监听
      *
      * @param listener
@@ -381,9 +333,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
          * @return
          */
         get() = if (mCurPage == null) 0 else mCurPage!!.position
-
-    val pageCount: Int
-        get() = if (this.curPageList == null) 0 else curPageList!!.size
 
     val curChapter: TxtChapter?
         get() {
@@ -568,19 +517,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             /****绘制背景 */
             mBackground?.draw(canvas)
             val chapters = chapterCategory
+            val tipPaint = mTipPaint!!
             if (chapters?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (mTipPaint!!.fontMetrics.bottom - mTipPaint!!.fontMetrics.top) / 2
+                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
-                        canvas.drawText(
-                            chapters!!.get(this.chapterPos).title,
-                            mDisplayParams.contentLeft,
-                            tipTop,
-                            mTipPaint!!
-                        )
+                        canvas.drawText(chapters[this.chapterPos].title, mDisplayParams.contentLeft, tipTop, tipPaint)
                     }
                 } else {
                     val curPage = mCurPage ?: return
@@ -588,27 +533,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
                     /******绘制页码 */
                     val percent = (curPage.position + 1).toString() + "/" + pageList.size
-                    canvas.drawText(
-                        percent,
-                        mDisplayParams.contentRight - mTipPaint!!.measureText(percent),
-                        tipTop,
-                        mTipPaint!!
-                    )
+                    canvas.drawText(percent, mDisplayParams.contentRight - tipPaint.measureText(percent), tipTop, tipPaint)
 
-                    val count = mTipPaint!!.breakText(
-                        curPage.title,
-                        true,
-                        mDisplayParams.contentRight - mTipPaint!!.measureText(percent) - tipMarginHeight,
-                        null
-                    )
-                    canvas.drawText(
-                        curPage.title,
-                        0,
-                        count,
-                        mDisplayParams.contentLeft,
-                        tipTop,
-                        mTipPaint!!
-                    )
+                    val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - tipMarginHeight, null)
+                    canvas.drawText(curPage.title, 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
                 }
             }
         } else {
@@ -620,9 +548,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         val canvas = Canvas(bitmap)
         Log.i("绘制书籍内容 w:" + bitmap.getWidth() + " h:" + bitmap.getHeight() + " mStatus:" + mStatus)
         if (mPageMode == PageMode.SCROLL) {
-            if (mBackground != null) {
-                mBackground!!.draw(canvas)
-            }
+            mBackground?.draw(canvas)
         }
 
 //        if (BuildConfig.DEBUG) {
@@ -1146,8 +1072,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = paint.measureText(trimmed, s, e)
-                if (left + letterSpacing + max(w, charWidth) > mDisplayParams.contentRight && sb.isNotEmpty()) {
+                val w = max(paint.measureText(trimmed, s, e), charWidth)
+                if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
                     createLine(left, charWidth, false)
                     sb.clear()
                     left = mDisplayParams.contentLeft
@@ -1160,7 +1086,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 }
                 clusterLeft[idx] = left
                 clusterRight[idx] = left + w
-                left += max(w, charWidth)
+                left += w
                 idx++
             }
             if (sb.isNotEmpty()) {
@@ -1241,7 +1167,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         return true
     }
 
-    fun onLongPress(x: Int, y: Int) {
+    fun onLongPress(x: Float, y: Float) {
         Log.e("长按 x:$x y:$y")
         mSelectableTextHelper?.showSelectView(x, y)
     }

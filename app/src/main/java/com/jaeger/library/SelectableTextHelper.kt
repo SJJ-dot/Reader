@@ -145,21 +145,20 @@ class SelectableTextHelper(builder: Builder) {
         mSelectionInfo.select = false
     }
 
-    fun showSelectView(x: Int, y: Int) {
+    fun showSelectView(x: Float, y: Float) {
         hideSelectView()
         resetSelectionInfo()
         if (mStartHandle == null) mStartHandle = CursorHandle(true)
         if (mEndHandle == null) mEndHandle = CursorHandle(false)
 
-        val startOffset = mLocation.getOffset(x.toFloat(), y.toFloat())
+        val startOffset = mLocation.getOffset(x, y)
         if (startOffset < 0) {
             return
         }
-        val endOffset = startOffset
-        if (mLocation.getTxt(startOffset, endOffset).isBlank()) {
+        if (mLocation.getTxt(startOffset, startOffset).isBlank()) {
             return
         }
-        selectText(startOffset, endOffset)
+        selectText(startOffset, startOffset)
         showCursorHandle(mStartHandle!!)
         showCursorHandle(mEndHandle!!)
         mOperateWindow!!.show()
