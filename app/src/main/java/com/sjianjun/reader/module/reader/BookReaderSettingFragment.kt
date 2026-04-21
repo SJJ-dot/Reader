@@ -100,21 +100,6 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-
-        val ttsUtil = activity?.viewModels<TtsUtil>()
-        if (ttsUtil?.value?.isSpeaking == true) {
-            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
-        } else {
-            binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
-        }
-
-        val vm = activity?.viewModels<BookReaderViewModel>()
-        if (vm?.value?.chapterCache?.value == true) {
-            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
-        } else {
-            binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
-        }
-
         binding?.settingContainerFirst?.isVisible = true
         binding?.settingContainerSecond?.isVisible = false
         refreshChapterProgress()
@@ -153,6 +138,14 @@ class BookReaderSettingFragment : BaseFragment() {
             refreshChapterProgress()
         }
         refreshChapterProgress()
+        val vm = activity?.viewModels<BookReaderViewModel>()
+        vm?.value?.chapterCache?.observe(viewLifecycleOwner, Observer { isCache ->
+            if (isCache) {
+                binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
+            } else {
+                binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
+            }
+        })
         binding?.download?.click {
             val vm = activity?.viewModels<BookReaderViewModel>()
             if (vm?.value?.chapterCache?.value == true) {
@@ -175,6 +168,14 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initSpeak() {
+        val ttsUtil = activity?.viewModels<TtsUtil>()
+        ttsUtil?.value?.isSpeaking?.observe(viewLifecycleOwner, Observer { isSpeaking ->
+            if (isSpeaking) {
+                binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
+            } else {
+                binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
+            }
+        })
         binding?.speak?.click {
             EventBus.post(EventKey.CHAPTER_SPEAK)
         }

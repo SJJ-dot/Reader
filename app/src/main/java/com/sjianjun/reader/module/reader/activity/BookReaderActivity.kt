@@ -128,13 +128,13 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
-        ttsUtil.progressChangeCallback = { paragraph ->
+        ttsUtil.progressChangeCallback = { textLine ->
             launch {
                 val loader = mPageLoader ?: return@launch
                 val page = loader.curPageList?.find { page ->
-                    page.lines.find { paragraph.first() == it } != null
+                    page.lines.find { textLine == it } != null
                 }
-                loader.setTtsSpeakLine(paragraph)
+                loader.setTtsSpeakLine(textLine)
                 if (page != null && page.position != loader.pagePos) {
                     loader.skipToPage(page.position)
                 }
@@ -149,7 +149,7 @@ class BookReaderActivity : BaseActivity() {
         }
         observe<String>(EventKey.CHAPTER_SPEAK) {
             launch {
-                if (ttsUtil.isSpeaking) {
+                if (ttsUtil.isSpeaking.value == true) {
                     ttsUtil.stop()
                     mPageLoader?.setTtsSpeakLine(null)
                     return@launch

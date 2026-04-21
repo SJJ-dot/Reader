@@ -8,7 +8,7 @@ import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
-import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.sjianjun.reader.App
 import kotlinx.coroutines.*
@@ -17,18 +17,22 @@ import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.coroutines.resume
+import kotlin.math.abs
 
 class TtsUtil() : ViewModel() {
 
 
     private val paragraphs = ConcurrentLinkedDeque<List<TxtLine>>()
 
-    lateinit var progressChangeCallback: (List<TxtLine>) -> Unit
+    lateinit var progressChangeCallback: (TxtLine) -> Unit
 
     lateinit var onCompleted: () -> Unit
 
     private var textToSpeech: TextToSpeech? = null
-    val isSpeaking: Boolean get() = textToSpeech?.isSpeaking == true || paragraphs.isNotEmpty()
+    val isSpeaking = MutableLiveData(false)
+    private var speakTime = 0L
+    private var estimateJob: Job? = null
+    private var baseMsPerWeight: Long = 200L
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
@@ -88,9 +92,8 @@ class TtsUtil() : ViewModel() {
             toast("语音引擎初始化失败")
             return
         }
-
-
-        this.paragraphs.clear()
+        stop()
+        isSpeaking.postValue(true)
         var paragraphLines = mutableListOf<TxtLine>()
         var isTitle = false
         for (pos in pagePos until pages.size) {
@@ -121,52 +124,111 @@ class TtsUtil() : ViewModel() {
         if (paragraphLines.isNotEmpty()) {
             this.paragraphs.add(paragraphLines)
         }
-
-        textToSpeech?.stop()
         speakNext()
     }
 
     fun stop() {
         textToSpeech?.stop()
         paragraphs.clear()
+        // cancel any running estimator
+        estimateJob?.cancel()
+        estimateJob = null
+        if (isSpeaking.value != false) {
+            isSpeaking.postValue(false)
+        }
     }
 
 
     private fun speakNext() {
         GlobalScope.launch(Dispatchers.Main) {
             delay(100)
-            val txtLines = paragraphs.peek()?.also {
-                val txt = it.joinToString(separator = "") { line -> line.txt }
-                textToSpeech?.speak(
-                    txt,
-                    QUEUE_ADD,
-                    null,
-                    txt.md5
-                )
-            }
-            if (txtLines == null) {
+            val paragraph = paragraphs.peek()
+            if (paragraph == null) {
+                isSpeaking.value = false
                 onCompleted.invoke()
+                return@launch
+            }
+            val txt = paragraph.joinToString(separator = "") { line -> line.txt }
+            textToSpeech?.speak(txt, QUEUE_ADD, null, txt.md5)
+        }
+    }
+
+    // start a coroutine to estimate playback percentage for the given paragraph text
+    private fun startEstimateForParagraph() {
+        val paragraph = paragraphs.peek() ?: return
+        // build simple weight model per character
+        val expectedLineMs = mutableListOf<Pair<Long, TxtLine> >()
+        for (line in paragraph) {
+            var lineWeight = 0f
+            line.txt.forEach {
+                lineWeight += when (it) {
+                    ',', '，', '、' -> 2f
+                    '.', '。', '!', '！', '?', '？', ';', '；' -> 2.2f
+                    ' ', '\t', '\n' -> 0.6f
+                    else -> 1.0f
+                }
+            }
+            expectedLineMs.add((lineWeight * baseMsPerWeight).toLong() to line)
+        }
+        val startTime = System.currentTimeMillis()
+        var lastTextLine: TxtLine = paragraph.first()
+        estimateJob?.cancel()
+        estimateJob = GlobalScope.launch(Dispatchers.Main) {
+            try {
+                while (isActive) {
+                    if (paragraphs.peek() != paragraph) {
+                        val expectedTotalTime = expectedLineMs.sumOf { it.first }
+                        if (speakTime > 5000 && abs(speakTime - expectedTotalTime) > 1000) {
+                            baseMsPerWeight = (baseMsPerWeight.toFloat() * speakTime / expectedTotalTime).toLong()
+                            Log.i("Adjusting baseMsPerWeight to $baseMsPerWeight ms per weight unit, speakTime: $speakTime ms, expectedTotalTime: $expectedTotalTime ms")
+                        }
+                        break
+                    }
+                    val elapsed = System.currentTimeMillis() - startTime
+                    var elapsedLine = 0L
+                    for ((time,line) in expectedLineMs) {
+                        elapsedLine += time
+                        if (elapsed < elapsedLine) {
+                            if (line != lastTextLine) {
+                                progressChangeCallback.invoke(line)
+                                lastTextLine = line
+                            }
+                            break
+                        }
+                    }
+                    delay(150)
+                }
+                val actualElapsedTime = System.currentTimeMillis() - startTime
+                val expectedTotalMs = expectedLineMs.sumOf { it.first }
+                Log.i("actualElapsedTime: $actualElapsedTime ms, ExpectedTime: $expectedTotalMs ms, dif:${expectedTotalMs - actualElapsedTime}")
+            } finally {
+                // ensure cleanup but keep polling/Done listener to advance queue
             }
         }
     }
 
     private val listener: UtteranceProgressListener by lazy {
+        var speakStartTime = 0L
         object : UtteranceProgressListener() {
             override fun onDone(utteranceId: String?) {
-                paragraphs.poll()?.also {
-                    progressChangeCallback.invoke(it)
+                speakTime = System.currentTimeMillis() - speakStartTime
+                paragraphs.poll()?.let {
+                    progressChangeCallback.invoke(it.last())
                 }
                 speakNext()
             }
 
             override fun onError(utteranceId: String?) {
-                paragraphs.poll()
+                stop()
                 toast("speak error")
-                speakNext()
             }
 
             override fun onStart(utteranceId: String?) {
-                paragraphs.peek()?.let { progressChangeCallback.invoke(it) }
+                paragraphs.peek()?.let {
+                    progressChangeCallback.invoke(it.first())
+                }
+                startEstimateForParagraph()
+                speakStartTime = System.currentTimeMillis()
             }
         }
     }

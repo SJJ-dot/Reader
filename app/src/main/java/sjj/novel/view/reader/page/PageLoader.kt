@@ -57,9 +57,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             saveRecord()
         }
 
-    private var ttsSpeakLine: List<TxtLine>? = null
-    private val ttsSpeakLineCurPageCache = mutableListOf<TxtLine>()
-
+    private var ttsSpeakLine: TxtLine? = null
     // 当前章节的页面列表
     var curPageList: List<TxtPage>? = null
 
@@ -226,7 +224,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         openChapter()
     }
 
-    fun setTtsSpeakLine(lines: List<TxtLine>?) {
+    fun setTtsSpeakLine(lines: TxtLine?) {
         ttsSpeakLine = lines
         mPageView?.drawCurPage(false)
     }
@@ -615,16 +613,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                     canvas.drawRect(line.left, line.top, line.right, line.bottom, mSelectedPaint!!)
                 }
             }
-            ttsSpeakLineCurPageCache.clear()
-            ttsSpeakLine?.forEach {
-                if (it in curPage.lines) {
-                    ttsSpeakLineCurPageCache.add(it)
-                }
-            }
-            ttsSpeakLineCurPageCache.forEachIndexed { index, line ->
-                var left = line.left
-                var right = line.right
-                if (index == 0) {
+            ttsSpeakLine?.let { line ->
+                if (line in curPage.lines) {
+                    var left = line.left
+                    var right = line.right
                     for (i in 0 until line.clusterBoundaries.size - 1) {
                         val isBlank = line.txt.substring(line.clusterBoundaries[i], line.clusterBoundaries[i + 1]).isBlank()
                         if (isBlank) {
@@ -633,8 +625,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                         left = line.clusterLeft[i]
                         break
                     }
-                }
-                if (index == ttsSpeakLineCurPageCache.size - 1) {
                     for (i in line.clusterBoundaries.size - 2 downTo 0) {
                         val isBlank = line.txt.substring(line.clusterBoundaries[i], line.clusterBoundaries[i + 1]).isBlank()
                         if (isBlank) {
@@ -643,9 +633,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                         right = line.clusterRight[i]
                         break
                     }
+                    canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
                 }
-
-                canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
             }
 
             val titleMetrics = mTitlePaint!!.getFontMetrics()
