@@ -47,11 +47,9 @@ class BookReaderViewModel : ViewModel() {
         if (chapter.content?.firstOrNull()?.contentError != false) {
             chapter.content?.firstOrNull()?.contentError = false
             txtChapter?.title = chapter.title
-            toast("已取消标记章节内容错误")
         } else {
             chapter.content?.firstOrNull()?.contentError = true
             txtChapter?.title = chapter.title + "(章节内容错误)"
-            toast("已标记章节内容错误")
         }
         chapter.content?.firstOrNull()?.let { chapterContentDao.insert(it) }
     }

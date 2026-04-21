@@ -66,6 +66,8 @@ class BookReaderActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
+        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        enableEdgeToEdge(pageStyle.isDark)
         setContentView(binding!!.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { view, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
@@ -186,14 +188,14 @@ class BookReaderActivity : BaseActivity() {
                 viewModel.chapterCache.postValue(true)
                 val end = chapterList.size
                 val start = max(0, mPageLoader?.chapterPos ?: 0)
-                binding!!.pageView.showSnackbar("章节缓存：${start}/${end}")
+                toast("章节缓存：开始")
                 (start until end).forEach {
                     viewModel.getChapterContent(chapterList[it])
                     delay(100)
                     ensureActive()
                 }
                 viewModel.chapterCache.postValue(false)
-                binding!!.pageView.showSnackbar("章节缓存：完成")
+                toast("章节缓存：完成")
             }
         }
         observe<String>(EventKey.CHAPTER_LIST) {
@@ -222,7 +224,6 @@ class BookReaderActivity : BaseActivity() {
 
                 loader.curChapter?.let { curChapter ->
                     val chapter = viewModel.chapterList.value?.getOrNull(curChapter.chapterIndex) ?: return@launch
-                    toast("正在加载中，请稍候……")
                     viewModel.getChapterContent(chapter, 1)
                     curChapter.content = chapter.content?.joinToString("\n") { it.format() }
                     if (chapter.content?.firstOrNull()?.contentError == true) {
@@ -232,7 +233,6 @@ class BookReaderActivity : BaseActivity() {
                     }
                     Log.e("加载完成 ${curChapter.chapterIndex} ${curChapter.title}")
                     loader.reloadPages()
-                    toast("加载完成")
                     getChapterContentPage(curChapter, chapter)
                 }
             }

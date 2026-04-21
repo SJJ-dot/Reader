@@ -77,9 +77,10 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = ReaderFragmentSettingViewBinding.bind(view)
+        val v = binding?.settingBottomContainer!!
         ViewCompat.setOnApplyWindowInsetsListener(view) { view, insets ->
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navigationBars.bottom)
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, navigationBars.bottom)
             insets
         }
         initSpeak()
@@ -225,9 +226,9 @@ class BookReaderSettingFragment : BaseFragment() {
 
     private fun initDayNight() {
         if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
-            binding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
+            binding?.ivDayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
         } else {
-            binding?.dayNight?.setImageResource(R.drawable.ic_theme_light_24px)
+            binding?.ivDayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
         binding?.dayNight?.click {
             when (globalConfig.appDayNightMode) {
