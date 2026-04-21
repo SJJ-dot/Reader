@@ -69,6 +69,8 @@ class BookReaderActivity : BaseActivity() {
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
         enableEdgeToEdge(pageStyle.isDark)
         setContentView(binding!!.root)
+        // 保持屏幕常亮（阅读时屏幕不自动关闭）
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { view, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
