@@ -50,11 +50,8 @@ class RepliesAdapter(private val onLongDelete: ((Int) -> Unit)? = null) : Recycl
         private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
         fun bind(r: Reply) {
-            if (r.author.isNullOrBlank()) {
-                tvAuthor.text = "无名氏"
-            } else {
-                tvAuthor.text = if (r.author == globalConfig.mqttClientId) "我" else r.author ?: "回复"
-            }
+            val author = if (r.author == globalConfig.mqttClientId) "我" else "书友"
+            tvAuthor.text = author
             tvContent.text = r.content ?: ""
             tvTime.text = sdf.format(Date(r.timestamp))
         }

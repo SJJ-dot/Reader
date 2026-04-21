@@ -46,30 +46,22 @@
             android:textColor="@color/mdr_grey_600"
             android:textSize="12sp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tv_toggle_replies"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="8dp">
-
-            <TextView
-                android:id="@+id/tv_toggle_replies"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/mdr_grey_600"
-                android:textSize="14sp"
-                android:text="展开回复" />
-
-        </LinearLayout>
+            android:paddingTop="8dp"
+            android:text="展开回复"
+            android:textColor="@color/mdr_grey_600"
+            android:textSize="14sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_replies"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
+            android:nestedScrollingEnabled="false"
             android:paddingTop="8dp"
-            android:nestedScrollingEnabled="false" />
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"

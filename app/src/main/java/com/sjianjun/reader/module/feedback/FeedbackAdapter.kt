@@ -79,7 +79,7 @@ class FeedbackAdapter(
             tvLatest.setOnClickListener(null)
             if (!isExpanded && feedback.replies.isNotEmpty()) {
                 val latest = feedback.replies.last()
-                val author = if (latest.author.isNullOrBlank()) "无名氏" else if (latest.author == globalConfig.mqttClientId) "我" else "回复"
+                val author = if (latest.author == globalConfig.mqttClientId) "我" else "书友"
                 val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
                 tvLatest?.visibility = View.VISIBLE
                 tvLatest?.text = "${author}: ${latest.content}"
@@ -107,6 +107,10 @@ class FeedbackAdapter(
                     if (isExpanded) expanded.remove(feedback.id) else expanded.add(feedback.id)
                     notifyItemChanged(position)
                 }
+            }
+
+            if (feedback.replies.size == 1){
+                tvToggle.gone()
             }
         }
     }
