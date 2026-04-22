@@ -148,27 +148,15 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): Boolean {
-                val url = request.url.toString()
-//                Log.i("shouldOverrideUrlLoading:$url ")
-                if (url.endsWith(".apk")) {
-                    return true
-                }
-                val httpUrl = url.toHttpUrlOrNull()
-                if (adBlock?.blacklist.contains(httpUrl?.topPrivateDomain())) {
-                    return true
-                }
-                if (request.url?.scheme == "http" || request.url?.scheme == "https") {
-                    // 处理 http 和 https 的链接
-                    return false // 返回 false 以让 WebView 加载该链接
-                }
-                return true
-
+                // 返回 true 表示我们处理了该事件（等待用户选择）
+                return binding.webViewSettings.showBlockDialog(view, request, adBlock)
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 Log.i("onPageStarted:$url ")
                 adBlock?.markPage(url)
+                binding.webViewSettings.refresh()
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {

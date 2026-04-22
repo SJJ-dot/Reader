@@ -289,20 +289,7 @@ class BrowserReaderActivity : BaseActivity() {
                 view: WebView?,
                 request: WebResourceRequest
             ): Boolean {
-                val url = request.url.toString()
-                Log.i("shouldOverrideUrlLoading:$url ")
-                if (url.endsWith(".apk")) {
-                    return true
-                }
-                val httpUrl = url.toHttpUrlOrNull()
-                if (adBlock.blacklist.contains(httpUrl?.topPrivateDomain())) {
-                    return true
-                }
-                if (request.url?.scheme == "http" || request.url?.scheme == "https") {
-                    // 处理 http 和 https 的链接
-                    return false // 返回 false 以让 WebView 加载该链接
-                }
-                return true
+                return binding.webViewSettings.showBlockDialog(view, request, adBlock)
 
             }
 

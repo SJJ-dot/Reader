@@ -5,13 +5,18 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.bookcity.AdBlock
+import com.sjianjun.reader.module.bookcity.HostStr
+import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.hideKeyboard
@@ -155,5 +160,64 @@ class WebViewSettings @JvmOverloads constructor(
             }
 
         }
+    }
+
+    /**
+     * 显示拦截提示
+     */
+    fun showBlockDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?): Boolean {
+        val url = request.url.toString()
+//        Log.i("shouldOverrideUrlLoading:$url ")
+        if (url.endsWith(".apk")) {
+            return true
+        }
+        val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
+        // 若为广告黑名单，直接拦截
+        if (targetTop != null && adBlock?.blacklist.contains(targetTop)) {
+            return true
+        }
+
+        // 仅对 http/https 链接处理，其他 scheme 拦截
+        val scheme = request.url?.scheme
+        if (scheme != "http" && scheme != "https") {
+            return true
+        }
+
+        // 若目标域与当前页主域不同，弹窗询问用户是否加载或加入黑名单
+        val currentTop = view?.url?.toHttpUrlOrNull()?.topPrivateDomain()
+        val differentSite = when {
+            currentTop == null || targetTop == null -> true
+            else -> currentTop != targetTop
+        }
+
+        if (!differentSite) {
+            // 同主域，允许加载
+            return false
+        }
+
+        // 弹窗询问：拦截并加入黑名单 / 继续加载
+        try {
+            MaterialAlertDialogBuilder(context)
+                .setTitle("外部链接")
+                .setMessage(url)
+                .setPositiveButton("继续加载") { _, _ ->
+                    view?.post { view.loadUrl(url) }
+                }
+                .setNegativeButton("加入黑名单") { dialog, _ ->
+                    // 将目标主域加入黑名单（保持现有黑名单实现）
+                    if (targetTop != null) {
+                        adBlock?.addBlackHost(HostStr(targetTop, listOf()))
+                    }
+                    dialog.dismiss()
+                }
+                .setCancelable(true)
+                .show()
+        } catch (t: Throwable) {
+            Log.e("show confirm dialog error", t)
+            // 若弹窗失败，默认允许加载
+            return false
+        }
+        // 返回 true 表示我们处理了该事件（等待用户选择）
+        return true
     }
 }
