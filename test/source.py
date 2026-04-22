@@ -1,4 +1,4 @@
-from urllib.parse import urljoin, quote, urlparse
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -6,96 +6,85 @@ from bs4 import BeautifulSoup
 from log import log
 
 
-def verify():
-    try:
-        res = search("我的")
-        res = getDetails(res[0]["bookUrl"])
-        res = getChapterContent(res["chapterList"][0]["url"])
-        return len(res) > 10
-    except Exception as e:
-        log(f"Error :{e}")
-        return False
-
-
-def isSupported(url):
-    u = url if "://" in url else "https://" + url
-    host = (urlparse(u).hostname or "").lower()
-    return host == "sudugu.org" or host.endswith(".sudugu.org")
+def getSiteUrl():
+    return "http://www.xbiqugu.la"
 
 
 def search(query):
-    url = "https://www.sudugu.org/i/sor.aspx?key=" + quote(query)
-    response = requests.get(url, timeout=(5, 10))
+    url = f"http://www.xbiqugu.la/modules/article/waps.php"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
+    response = requests.post(url, data={"searchkey": query}, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
+    # log(response.request)
+    # log(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
-
+    book_list_el = soup.select(".grid tr")
     results = []
-    book_list = soup.select(".itemtxt")
-    for book_element in book_list:
-        results.append({
-            "bookTitle": book_element.select("a")[0].text.strip(),
-            "bookUrl": urljoin(url, book_element.select("a")[0].get("href")),
-            "bookAuthor": book_element.select("a")[1].text.replace("作者：", "").strip()
-        })
+
+    for book_el in book_list_el[1:]:
+        result = {
+            "bookTitle": book_el.select("a")[0].text,
+            "bookUrl": urljoin(url, book_el.select("a")[0].get("href")),
+            "bookAuthor": book_el.select("td")[2].text
+        }
+        results.append(result)
 
     return results
 
 
 def getDetails(url):
+    url = url.replace("://wap.", "://www.")
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
     response = requests.get(url, headers=headers, timeout=(5, 10))
-    response.encoding = 'uft-8'
-    html = response.text
-    soup = BeautifulSoup(html, 'html.parser')
+    response.encoding = 'utf-8'
+    soup = BeautifulSoup(response.text, 'html.parser')
     book = {
         "url": url,
-        "title": soup.select_one(".itemtxt a").text.strip(),
-        "author": soup.select(".itemtxt a")[1].text.replace("作者：", "").strip(),
-        "intro": soup.select_one(".des").text.strip(),
+        "title": soup.select("meta[property='og:novel:book_name']")[0].get("content"),
+        "author": soup.select("meta[property='og:novel:author']")[0].get("content"),
+        "intro": soup.select("meta[property='og:description']")[0].get("content"),
+        "cover": soup.select("meta[property='og:image']")[0].get("content"),
         "chapterList": []
     }
-    getChapterList(soup, url, book["chapterList"])
+
+    children = soup.select("#list a")
+    for chapter_el in children:
+        chapter = {
+            "title": chapter_el.text,
+            "url": urljoin(url, chapter_el.get("href"))
+        }
+        # http://www.xbiqugu.net/83/83137/33405352.html
+        # http://wap.xbiqugu.net/wapbook/83137_33405352.html
+        # http://wap.xbiqugu.net/wapbook/83_83137.html
+        # urls = chapter["url"].split("/")
+        # chapter["url"] = f"http://wap.xbiqugu.net/wapbook/{urls[-2]}_{urls[-1]}"
+
+        book["chapterList"].append(chapter)
 
     return book
 
 
-def getChapterList(soup, url, chapter_list):
-    chapter_elements = soup.select("#list li a")
-    for chapter_element in chapter_elements:
-        chapter_list.append({
-            "title": chapter_element.text.strip(),
-            "url": urljoin(url, chapter_element.get("href"))
-        })
-
-    next_element = soup.select("#pages a")
-    if next_element and len(next_element) > 0 and next_element[-1].text.strip() == "下一页":
-        next_page_url = urljoin(url, next_element[-1].get("href"))
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-        }
-        response = requests.get(next_page_url, headers=headers, timeout=(5, 10))
-        response.encoding = 'uft-8'
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        getChapterList(soup, next_page_url, chapter_list)
-
-
 def getChapterContent(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
-    html = response.text
-    soup = BeautifulSoup(html, 'html.parser')
-    con = soup.select_one(".con")
-    return con.prettify()
+    soup = BeautifulSoup(response.text, 'html.parser')
+    content = soup.select("#content")[0]
+    content.select("#content_tip")[0].extract()
+    content.select("p")[0].extract()
+
+
+    return content.prettify()
+
+
+
 
 
 if __name__ == '__main__':
-    isSupported("https://sudugu.org/51/")
     res = search("我的")
     print(res)
 

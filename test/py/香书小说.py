@@ -36,7 +36,7 @@ def search(query):
 
 
 def getDetails(url):
-    url = url.replace("://m.", "://www.")
+    url = url.replace("://wap.", "://www.")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
@@ -58,11 +58,6 @@ def getDetails(url):
             "title": chapter_el.text,
             "url": urljoin(url, chapter_el.get("href"))
         }
-        # http://www.xbiqugu.net/83/83137/33405352.html
-        # http://wap.xbiqugu.net/wapbook/83137_33405352.html
-        # http://wap.xbiqugu.net/wapbook/83_83137.html
-        urls = chapter["url"].split("/")
-        chapter["url"] = f"http://wap.xbiqugu.net/wapbook/{urls[-2]}_{urls[-1]}"
 
         book["chapterList"].append(chapter)
 
@@ -73,14 +68,9 @@ def getChapterContent(url):
     response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
-    content = soup.select("#nr1")[0].prettify()
-
-    a = soup.select_one("#pb_next")
-    if a and "下一页" in a.text:
-        next_url = urljoin(url, a.get("href"))
-        next_content = getChapterContent(next_url)
-        content += next_content
-
-    return content
+    content = soup.select("#content")[0]
+    content.select("#content_tip")[0].extract()
+    content.select("p")[0].extract()
 
 
+    return content.prettify()
