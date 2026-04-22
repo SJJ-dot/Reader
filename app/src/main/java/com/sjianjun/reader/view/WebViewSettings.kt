@@ -16,25 +16,36 @@ import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import kotlin.coroutines.resume
 
 class WebViewSettings @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
     val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
     private var webView: WebView? = null
+    private var titleJob: Job? = null
 
     init {
         setBackgroundColor(R.color.translucent.color(context))
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        titleJob?.cancel()
     }
 
     fun bind(webView: WebView) {
         this.webView = webView
         binding.btnCopyUrl.setOnClickListener {
             if (binding.btnCopyUrl.text == "复制") {
-                webView.copyUrlToClipboard()
+                binding.urlInput.text.toString().trim().copyToClipboard()
             } else {
                 var url = binding.urlInput.text.toString()
                 if (!url.startsWith("http")) {
@@ -51,7 +62,7 @@ class WebViewSettings @JvmOverloads constructor(
             }
         }
         binding.btnCopyTitle.setOnClickListener {
-            webView.copyTitleToClipboard()
+            binding.webTitle.text.toString().trim().copyToClipboard()
         }
         binding.btnFontAdd.setOnClickListener {
             webView.setFontSize(2)
@@ -73,7 +84,7 @@ class WebViewSettings @JvmOverloads constructor(
             binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.urlInput.addTextChangedListener {
-            if (webView?.url == it.toString()) {
+            if (webView.url == it.toString()) {
                 binding.btnCopyUrl.text = "复制"
             } else {
                 binding.btnCopyUrl.text = "跳转"
@@ -81,12 +92,17 @@ class WebViewSettings @JvmOverloads constructor(
         }
     }
 
-    override fun onVisibilityChanged(changedView: View, visibility: Int) {
-        super.onVisibilityChanged(changedView, visibility)
-        if (visibility == VISIBLE) {
-            binding.webTitle.text = webView?.title ?: "~"
-            binding.urlInput.setText(webView?.url ?: "")
+    fun refresh() {
+        titleJob?.cancel()
+        titleJob = GlobalScope.launch(Dispatchers.Main) {
+            val title = webView?.getTitleFromMeta()
+            if (!title.isNullOrBlank()) {
+                binding.webTitle.text = title
+            } else {
+                binding.webTitle.text = webView?.title ?: "~"
+            }
         }
+        binding.urlInput.setText(webView?.url ?: "")
     }
 
     private fun WebView.setFontSize(i: Int) {
@@ -95,19 +111,18 @@ class WebViewSettings @JvmOverloads constructor(
         }
     }
 
-    private fun WebView.copyUrlToClipboard() {
-        url?.let { url ->
-            val clipboard =
-                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-            val clipData = android.content.ClipData.newPlainText("text", url)
-            clipboard?.setPrimaryClip(clipData)
-            toast("已复制：${url}")
-        }
+    private fun String?.copyToClipboard() {
+        val str = this ?: return
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val clipData = android.content.ClipData.newPlainText("text", str)
+        clipboard?.setPrimaryClip(clipData)
+        toast("已复制：${str}")
     }
 
-    private fun WebView.copyTitleToClipboard() {
-        evaluateJavascript(
-            """
+    private suspend fun WebView.getTitleFromMeta(): String {
+        return suspendCancellableCoroutine { continuation ->
+            evaluateJavascript(
+                """
                 javascript:(function() {
                     // 尝试获取 og:title 的内容
                     let ogTitle = document.querySelector('meta[property="og:title"]');
@@ -126,24 +141,19 @@ class WebViewSettings @JvmOverloads constructor(
                     }
                 })()
             """.trimIndent()
-        ) {
-            Log.i("title:$it")
-            var str = it?.replace("\"", "")?.split(",")?.first()
-            if (str.isNullOrBlank() || str == "null") {
-//                toast("标题获取失败")
-                str = title
-                if (str.isNullOrBlank()) {
-                    toast("标题获取失败")
-                    return@evaluateJavascript
+            ) {
+                Log.i("title:$it")
+                if (continuation.isActive) {
+                    val str = it?.replace("\"", "")?.split(",")?.first()
+                    if (str.isNullOrBlank() || str == "null") {
+                        continuation.resume("")
+                    } else {
+                        continuation.resume(str)
+                    }
                 }
+
             }
-            Log.i("复制到剪贴板:$str")
-            val clipboard =
-                context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-            val clipData = android.content.ClipData.newPlainText("text", str)
-            clipboard?.setPrimaryClip(clipData)
-            toast("已复制：${str}")
+
         }
     }
-
 }

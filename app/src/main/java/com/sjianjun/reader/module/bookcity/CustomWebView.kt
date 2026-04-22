@@ -172,6 +172,7 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
+                binding.webViewSettings.refresh()
                 if (needClearHistory) {
                     needClearHistory = false
                     webView?.post {
