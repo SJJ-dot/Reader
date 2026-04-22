@@ -4,11 +4,8 @@ from urllib.parse import urlencode, urljoin
 
 from log import log
 
-def isSupported(url):
-    if "soduzw.com" in url:
-        return True
-    return False
-
+def getSiteUrl():
+    return "https://www.soduzw.com"
 
 def search(query):
     base_url = "http://www.soduzw.com/search.html"

@@ -15,6 +15,11 @@ def test(filename):
     # 加载模块
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # 调用verify函数校验
+    if hasattr(module, "verify"):
+        if module.verify():
+            return
+        raise Exception(f"Module {module_name} verification failed")
 
     # 调用模块中的search函数
     result = module.search("我的")
@@ -23,7 +28,6 @@ def test(filename):
     log(result)
     result = module.getChapterContent(result["chapterList"][0]["url"])
     log(result)
-    result.replace("", "")
 
 
 
@@ -45,5 +49,5 @@ def test_all():
 
 
 if __name__ == '__main__':
-    # test_all()
-    test("./py/香书小说.py")
+    test_all()
+    # test("./py/香书小说.py")

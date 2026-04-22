@@ -44,7 +44,6 @@ def verification_activity_get(url, headers=None, html=None, encoding='utf-8', ve
     # 发送POST请求
     response = requests.post(server_url, json=data)
     response.encoding = 'utf-8'
-    log(f'Verification activity get finish for {url}: {response.text}')
     return response.text
 
 

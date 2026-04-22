@@ -13,6 +13,7 @@ def log(arg):
         print("")
     elif isinstance(arg, Response):
         # 打印响应头
+        print("url:", arg.url)
         print("status_code:", arg.status_code)
         for key, value in arg.headers.items():
             print(f"{key}: {value}")

@@ -5,10 +5,8 @@ from bs4 import BeautifulSoup
 from log import log
 from urllib.parse import quote
 
-def isSupported(url):
-    if "22biqu.com" in url:
-        return True
-    return False
+def getSiteUrl():
+    return "https://www.22biqu.com"
 
 def search(query):
     """
@@ -85,7 +83,7 @@ def getDetails(book_url):
 
 
 def loadChapterList(book_url, soup, chapterList):
-    log("加载章节目录")
+    log(f"加载章节目录：{book_url}")
     for el in soup.select(".section-list")[1].select("a"):
         chapterList.append({
             "title": el.text,
@@ -93,7 +91,11 @@ def loadChapterList(book_url, soup, chapterList):
         })
     if soup.select(".index-container-btn")[1].text.strip() == "下一页":
         next_url = urljoin(book_url, soup.select(".index-container-btn")[1].get("href"))
-        response = requests.get(next_url, timeout=(5, 10))
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
+        }
+        response = requests.get(next_url, headers=headers, timeout=(5, 10))
         response.encoding = "utf-8"
         soup = BeautifulSoup(response.text, 'html.parser')
         loadChapterList(book_url, soup, chapterList)

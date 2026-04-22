@@ -2,17 +2,19 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from log import log
 
+def verify():
+    try:
+        res = getDetails("https://www.min-yuan.com/txt/wk/")
+        res = getChapterContent(res["chapterList"][0]["url"])
+        return len(res) > 10
+    except Exception as e:
+        log(f"Error :{e}")
+        return False
 
 def getSiteUrl():
     return "https://www.min-yuan.com"
-
-
-def isSupported(url):
-    if "min-yuan.com" in url:
-        return True
-    return False
-
 
 def search(query):
     # 不支持搜索

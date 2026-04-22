@@ -4,11 +4,8 @@ from urllib.parse import urljoin, quote
 
 from log import log
 
-def isSupported(url):
-    if "mayiwsk.com" in url:
-        return True
-    return False
-
+def getSiteUrl():
+    return "https://www.mayiwsk.com"
 
 def search(query):
     url = "https://www.mayiwsk.com/modules/article/search.php"

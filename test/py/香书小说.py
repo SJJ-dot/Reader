@@ -6,10 +6,8 @@ from bs4 import BeautifulSoup
 from log import log
 
 
-def isSupported(url):
-    if "xbiqugu.la" in url:
-        return True
-    return False
+def getSiteUrl():
+    return "https://www.xbiqugu.la"
 
 
 def search(query):

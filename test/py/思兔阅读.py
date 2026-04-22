@@ -3,11 +3,8 @@ from urllib.parse import urljoin, quote
 import requests
 from bs4 import BeautifulSoup
 
-def isSupported(url):
-    if "sto66.com" in url:
-        return True
-    return False
-
+def getSiteUrl():
+    return "https://www.sto66.com"
 
 def search(query):
     url = "https://www.sto66.com/search/" + quote(query)+".html"

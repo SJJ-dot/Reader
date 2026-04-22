@@ -3,25 +3,8 @@ from urllib.parse import urljoin, quote, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from log import log
-
-
-def verify():
-    try:
-        res = search("我的")
-        res = getDetails(res[0]["bookUrl"])
-        res = getChapterContent(res["chapterList"][0]["url"])
-        return len(res) > 10
-    except Exception as e:
-        log(f"Error :{e}")
-        return False
-
-
-def isSupported(url):
-    u = url if "://" in url else "https://" + url
-    host = (urlparse(u).hostname or "").lower()
-    return host == "sudugu.org" or host.endswith(".sudugu.org")
-
+def getSiteUrl():
+    return "https://www.sudugu.org"
 
 def search(query):
     url = "https://www.sudugu.org/i/sor.aspx?key=" + quote(query)
@@ -92,21 +75,3 @@ def getChapterContent(url):
     soup = BeautifulSoup(html, 'html.parser')
     con = soup.select_one(".con")
     return con.prettify()
-
-
-if __name__ == '__main__':
-    isSupported("https://sudugu.org/51/")
-    res = search("我的")
-    print(res)
-
-    print("================================")
-    print("================================")
-    print("================================")
-    res = getDetails(res[0]["bookUrl"])
-    print(res)
-
-    print("================================")
-    print("================================")
-    print("================================")
-    res = getChapterContent(res["chapterList"][0]["url"])
-    print(res)

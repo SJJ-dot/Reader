@@ -2,65 +2,38 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from log import log
-from urllib.parse import quote
 
-def isSupported(url):
-    if "22shuqu.com" in url:
-        return True
-    return False
+from log import log
+
+def verify():
+    try:
+        res = getDetails("https://www.22sq.net/b/1643/1643570/")
+        res = getChapterContent(res["chapterList"][0]["url"])
+        return len(res) > 10
+    except Exception as e:
+        log(f"Error :{e}")
+        return False
+
+def getSiteUrl():
+    return "https://www.22sq.net/"
+
 
 def search(query):
-    """
-    书源搜索函数
-    :param query: 搜索关键词
-    :return [{"bookTitle":"书名", "bookUrl": "书籍链接", "bookAuthor": "作者"}, ...] 搜索结果列表
-    """
-    # utf8编码
-    # query = query.encode('utf-8')
-    # url encode
-    # query = quote(query)
-    url = f'https://www.22shuqu.com/search/'
-    # searchkey=%E6%88%91%E7%9A%84&Submit=
-    # data = {"searchkey": query, "Submit": ""}
-    data = f'searchkey={quote(query)}&Submit={quote("搜索")}'
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    # 发送get请求
-    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
-    response.encoding = 'utf-8'
-    # log(response.request)
-    # log(response.text)
-    # 创建BeautifulSoup对象
-    soup = BeautifulSoup(response.text, 'html.parser')
-    books = []
-    for i,bookEl in enumerate(soup.select(".txt-list > li ")):
-        if i == 0:
-            continue
-        books.append({
-            "bookTitle": bookEl.select(".s2 > a")[0].text,
-            "bookUrl": urljoin(url, bookEl.select(".s2 > a")[0].get("href"))
-        })
+    # 搜索需要验证码 可以调用 verification_activity_get 函数
+    return []
 
-    return books
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0",
+}
 
 
 def getDetails(book_url):
-    """
-    获取章节列表
-    :param book_url: 书籍链接
-    :return
-    {"url": "书籍链接", "title": "书名", "author": "作者", "intro": "简介", "cover": "封面链接",
-     "chapterList": [{"title": "章节名", "URL": "章节链接"}, ...]
-     }
-    """
-
     # url book_url
     # 发送get请求
-    response = requests.get(book_url, timeout=(5, 10))
+    response = requests.get(book_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
+    # log(response)
     info = {}
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -84,7 +57,7 @@ def getDetails(book_url):
                 "url": urljoin(book_url, el.get("href"))
             })
         if soup.select(".index-container-btn")[1].text.strip() == "下一页":
-            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href")), timeout=(5, 10)).text, 'html.parser')
+            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href")), headers=headers, timeout=(5, 10)).text, 'html.parser')
         else:
             break
     return info
@@ -97,7 +70,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url, timeout=(5, 10))
+    response = requests.get(chapter_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
