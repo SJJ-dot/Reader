@@ -7,6 +7,8 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 @Entity
@@ -81,7 +83,11 @@ class BookSource {
     suspend fun isSupported(url: String): Boolean {
         return withIo {
             try {
-                execute<Boolean>(Func.isSupported, url) == true
+                val site = getSiteUrl()
+                val siteHost = site?.toHttpUrlOrNull()?.topPrivateDomain()
+                val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
+                val result = siteHost != null && urlHost != null && siteHost == urlHost
+                return@withIo result
             } catch (t: Throwable) {
                 Log.e("$name 检查是否支持出错：$url", t)
                 false
@@ -171,7 +177,7 @@ class BookSource {
 
 
     enum class Func {
-        search, getDetails, getChapterContent, isSupported, getSiteUrl
+        search, getDetails, getChapterContent, getSiteUrl
     }
 
     enum class Language {
