@@ -33,6 +33,7 @@ def search(query):
 
 
 def getDetails(url):
+    url = url.replace("://m.", "://www.")
     response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     html = response.text

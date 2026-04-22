@@ -30,6 +30,7 @@ headers = {
 
 def getDetails(book_url):
     # url book_url
+    book_url = book_url.replace("://m.", "://www.")
     # 发送get请求
     response = requests.get(book_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"

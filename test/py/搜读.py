@@ -5,7 +5,7 @@ from urllib.parse import urlencode, urljoin
 from log import log
 
 def getSiteUrl():
-    return "https://www.soduzw.com"
+    return "http://www.soduzw.com"
 
 def search(query):
     base_url = "http://www.soduzw.com/search.html"
@@ -37,6 +37,7 @@ def search(query):
 
 
 def getDetails(url):
+    url = url.replace("://m.", "://www.")
     response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     # log(response.request)

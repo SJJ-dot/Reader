@@ -54,7 +54,7 @@ def getDetails(book_url):
      "chapterList": [{"title": "章节名", "URL": "章节链接"}, ...]
      }
     """
-
+    book_url = book_url.replace("://m.", "://www.")
     # url book_url
     # 发送get请求
     headers = {
