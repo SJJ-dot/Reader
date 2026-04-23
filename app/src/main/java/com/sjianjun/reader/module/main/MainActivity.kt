@@ -125,8 +125,8 @@ class MainActivity : BaseActivity() {
 
             }
         }
-        OnlineInfos.onlineMap.observe(this) {
-            headerBinding.tvOnline.text = "书友在线：${it.size}"
+        OnlineInfos.onlineCount.observe(this) {
+            headerBinding.tvOnline.text = "书友在线：${it}"
         }
 
 

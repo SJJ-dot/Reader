@@ -3,32 +3,47 @@ package com.sjianjun.reader.mqtt
 import android.annotation.SuppressLint
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import sjj.alog.Log
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
+
+val String.topic: String
+    get() = this.replace("{clientId}", globalConfig.mqttClientId ?: "unknown")
 
 object MqttUtil {
+    private const val TOPIC_ONLINE = "reader/online2/login/{clientId}/server"
 
-    private const val TOPIC_ONLINE = "reader/online"
-    const val TOPIC_FEEDBACK = "reader/feedback"
+    //查询在线用户数
+    const val TOPIC_ONLINE_QUERY_NUM_REQUEST = "reader/online2/num/{clientId}/server"
+    const val TOPIC_ONLINE_QUERY_NUM_RESP = "reader/online2/num/server/{clientId}"
+    const val TOPIC_FEEDBACK_REQUEST = "reader/feedback2/{clientId}/server"
+    const val TOPIC_FEEDBACK_RESP = "reader/feedback2/server/{clientId}"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var onlineJob: Job? = null
 
     @SuppressLint("StaticFieldLeak")
     private var mqttClient: MqttAsyncClient? = null
+
+    private val msgQueueCallback = ConcurrentHashMap<String, (MqttMessage) -> Unit>()
 
     fun connect() {
         val serverURI = BuildConfig.MQTT_SERVER_URI
@@ -43,8 +58,7 @@ object MqttUtil {
             override fun connectComplete(reconnect: Boolean, serverURI: String?) {
                 if (reconnect) {
                     Log.i("Reconnected to : $serverURI")
-                    // Because Clean Session is true, we need to re-subscribe
-                    subscribeToTopic()
+                    publishOnline()
                 } else {
                     Log.i("Connected to: $serverURI")
                 }
@@ -57,7 +71,8 @@ object MqttUtil {
             @Throws(Exception::class)
             override fun messageArrived(topic: String?, message: MqttMessage) {
                 try {
-                    handleIncomingMessage(topic ?: return, message)
+                    Log.i("Received message from $topic")
+                    msgQueueCallback[topic]?.invoke(message)
                 } catch (e: Exception) {
                     Log.e("Error handling incoming MQTT message: ${e.message}")
                 }
@@ -68,7 +83,6 @@ object MqttUtil {
         })
 
         recursiveConnect()
-        startHeartbeat()
     }
 
     private fun recursiveConnect() {
@@ -84,13 +98,16 @@ object MqttUtil {
                 // use explicit setters to avoid name collision with local 'password' variable
                 userName = BuildConfig.MQTT_USERNAME
                 password = BuildConfig.MQTT_PASSWORD.toCharArray()
-                setWill(TOPIC_ONLINE + "/" + globalConfig.mqttClientId, ByteArray(0), 1, true)
+                val payload = mapOf(
+                    "clientId" to globalConfig.mqttClientId,
+                    "status" to "offline"
+                )
+                setWill(TOPIC_ONLINE.topic, gson.toJson(payload).toByteArray(), 1, true)
             }
             mqttClient?.connect(mqttConnectOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.i("MQTT connected successfully")
-                    // MemoryPersistence MqttAsyncClient doesn't use Android disconnected buffer options
-                    subscribeToTopic()
+                    publishOnline()
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
@@ -112,45 +129,52 @@ object MqttUtil {
     }
 
 
-    private fun subscribeToTopic() {
-        subscribe("${TOPIC_ONLINE}/#")
-
-    }
-
-
-    private fun startHeartbeat() {
-        scope.launch {
-            while (true) {
-                while (true) {
-                    //wait for connection
-                    if (mqttClient?.isConnected == true) {
-                        break
-                    }
-                    delay(1000)
+    private fun publishOnline() {
+        val payload = mapOf(
+            "clientId" to globalConfig.mqttClientId,
+            "status" to "online"
+        )
+        val payloadByteArray = gson.toJson(payload).toByteArray()
+        onlineJob?.cancel()
+        onlineJob = scope.launch {
+            while (mqttClient?.isConnected == true && isActive) {
+                val throwable = publish(TOPIC_ONLINE, payloadByteArray, qos = 1, retained = true)
+                if (throwable == null) {
+                    break
+                } else {
+                    Log.e("Failed to publish online status: ${throwable.message}")
+                    delay(5000)
                 }
-                publish(TOPIC_ONLINE + "/" + globalConfig.mqttClientId, System.currentTimeMillis().toString().toByteArray(), qos = 1, retained = true)
-                delay(29 * 60 * 1000)
             }
         }
     }
 
-    fun subscribe(topic: String, qos: Int = 1) {
+    suspend fun subscribe(topic: String, qos: Int = 1): Throwable? {
         try {
             if (mqttClient?.isConnected != true) {
                 Log.i("MQTT client is not connected. Cannot subscribe to $topic")
-                return
+                return Exception("MQTT client is not connected")
             }
-            mqttClient?.subscribe(topic, qos, null, object : IMqttActionListener {
-                override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("Subscribed to $topic")
-                }
+            val topic = topic.topic
+            return suspendCancellableCoroutine { con ->
+                mqttClient?.subscribe(topic, qos, null, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        if (con.isActive) {
+                            con.resume(null)
+                        }
+                    }
 
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.i("Failed to subscribe $topic")
-                }
-            })
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        Log.i("Failed to subscribe $topic")
+                        if (con.isActive) {
+                            con.resume(exception ?: Exception("Unknown error"))
+                        }
+                    }
+                })
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("Error subscribing to $topic: ${e.message}")
+            return e
         }
     }
 
@@ -174,50 +198,116 @@ object MqttUtil {
         }
     }
 
-
-    private fun handleIncomingMessage(topic: String, message: MqttMessage) {
-        Log.i("Received message from $topic")
-        when {
-            topic.startsWith(TOPIC_ONLINE) -> {
-                OnlineInfos.parseInfo(topic, String(message.payload).toLongOrNull() ?: return)
-            }
-
-            topic.startsWith(TOPIC_FEEDBACK) -> {
-                Feedbacks.parseFeedback(topic, String(message.payload))
-                Log.i("Received feedback message: ${String(message.payload)}")
-            }
-
-            else -> {
-            }
-        }
-    }
-
-    fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false, callback: (success: Boolean) -> Unit = {}) {
+    suspend fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false): Throwable? {
         try {
             if (mqttClient?.isConnected != true) {
                 Log.i("MQTT client is not connected. Cannot publish to $tpc")
-                callback(false)
-                return
+                return Exception("MQTT client is not connected")
             }
+            val tpc = tpc.topic
             Log.i("Publishing message to $tpc: ${String(payload)}")
             val message = MqttMessage()
             message.payload = payload
             message.qos = qos
             message.isRetained = retained
-            mqttClient?.publish(tpc, message, null, object : IMqttActionListener {
-                override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("published to $tpc")
-                    callback(true)
-                }
+            return suspendCancellableCoroutine { cont ->
+                mqttClient?.publish(tpc, message, null, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        if (cont.isActive) {
+                            cont.resume(null)
+                        }
+                    }
 
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.i("Failed to publish to $tpc")
-                    callback(false)
-                }
-            })
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        Log.i("Failed to publish to $tpc")
+                        if (cont.isActive) {
+                            cont.resume(exception ?: Exception("Unknown error"))
+                        }
+                    }
+                })
+            }
         } catch (e: Exception) {
             Log.e("Error publishing to $tpc: ${e.message}")
-            callback(false)
+            return e
+        }
+    }
+
+
+    suspend fun request(requestTopic: String, responseTopic: String, payload: ByteArray = ByteArray(0), timeout: Long = 5000): ByteArray? {
+        return try {
+            if (mqttClient?.isConnected != true) {
+                Log.i("MQTT client is not connected. Cannot send request to $requestTopic")
+                return null
+            }
+            val respTpc = responseTopic.topic
+
+            return suspendCancellableCoroutine { cont ->
+                // 保存 job 引用，便于取消
+                var timeoutJob: Job? = null
+                var subscriptionJob: Job? = null
+
+                val clear = {
+                    msgQueueCallback.remove(respTpc)
+                    try {
+                        // 取消定时任务与订阅任务
+                        timeoutJob?.cancel()
+                        subscriptionJob?.cancel()
+                    } catch (t: Throwable) {
+                        Log.e("cancel jobs error: ${t.message}")
+                    }
+                    try {
+                        // 尝试退订（异步，不等待），防止抛
+                        mqttClient?.unsubscribe(respTpc)
+                    } catch (t: Throwable) {
+                        Log.e("unsubscribe error: ${t.message}")
+                    }
+                }
+                msgQueueCallback[respTpc] = { msg ->
+                    clear()
+                    if (cont.isActive) {
+                        cont.resume(msg.payload)
+                    }
+                }
+
+                // 启动超时 job
+                timeoutJob = scope.launch {
+                    try {
+                        delay(timeout)
+                        Log.i("Request to $requestTopic timed out")
+                        clear()
+                        if (cont.isActive) {
+                            cont.resume(null)
+                        }
+                    } catch (ignore: Throwable) {
+                        // coroutine cancelled
+                    }
+                }
+
+                // 启动订阅 + 发布流程（在同一个 scope 下）
+                subscriptionJob = scope.launch {
+                    val subErr = subscribe(respTpc)
+                    if (subErr != null) {
+                        Log.e("Failed to subscribe to response topic $respTpc: ${subErr.message}")
+                        clear()
+                        if (cont.isActive) cont.resume(null)
+                        return@launch
+                    }
+                    val pubErr = publish(requestTopic, payload)
+                    if (pubErr != null) {
+                        Log.e("Failed to publish request to $requestTopic: ${pubErr.message}")
+                        clear()
+                        if (cont.isActive) cont.resume(null)
+                        return@launch
+                    }
+                }
+
+                cont.invokeOnCancellation {
+                    clear()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Error sending request to $requestTopic: ${e.message}")
+            null
         }
     }
 

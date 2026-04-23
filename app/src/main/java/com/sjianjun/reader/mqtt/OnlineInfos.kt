@@ -1,55 +1,38 @@
 package com.sjianjun.reader.mqtt
 
 import androidx.lifecycle.MutableLiveData
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_ONLINE_QUERY_NUM_REQUEST
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_ONLINE_QUERY_NUM_RESP
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.ConcurrentHashMap
 
 @OptIn(DelicateCoroutinesApi::class)
 object OnlineInfos {
-    val onlineMap = MutableLiveData(ConcurrentHashMap<String, Long>())
+    val onlineCount = MutableLiveData(0)
 
     init {
         GlobalScope.launch(Dispatchers.IO) {
+            delay(5 * 1000)
             while (true) {
-                val changed = refresh()
-                if (changed) {
-                    onlineMap.postValue(onlineMap.value)
-                }
+                refresh()
                 delay(60 * 1000)//每分钟检查一次
             }
         }
     }
 
-    fun refresh(): Boolean {
-        val now = System.currentTimeMillis()
-        val iterator = onlineMap.value?.iterator()
-        var changed = false
-        if (iterator != null) {
-            while (iterator.hasNext()) {
-                val entry = iterator.next()
-                if (now - entry.value > 30 * 60 * 1000) {//30分钟未更新则认为离线
-                    iterator.remove()
-                    changed = true
-                }
-            }
-        }
-        return changed
-    }
-
-    fun parseInfo(topic: String, time: Long) {
-        val id = topic.substringAfterLast("/")
-        onlineMap.value?.put(id, time)
-        refresh()
-        onlineMap.postValue(onlineMap.value)
-    }
-
-    override fun toString(): String {
-        return "OnlineInfos(onlines=${onlineMap.value})"
+    suspend fun refresh() {
+        val payload = mapOf(
+            "clientId" to globalConfig.mqttClientId,
+            "period" to 30 * 60 //请求30分钟内在线的客户端列表
+        )
+        val response = MqttUtil.request(TOPIC_ONLINE_QUERY_NUM_REQUEST, TOPIC_ONLINE_QUERY_NUM_RESP, gson.toJson(payload).toByteArray()) ?: return
+        val online = gson.fromJson<Map<String, String>>(String(response)) ?: emptyMap()
+        onlineCount.postValue(online["online_count"]?.toIntOrNull() ?: 0)
     }
 }

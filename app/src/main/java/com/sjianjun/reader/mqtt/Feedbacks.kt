@@ -6,14 +6,17 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import sjj.alog.Log
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 object Feedbacks {
     val feedbackMap = MutableLiveData(ConcurrentHashMap<String, Feedback>())
     fun subscribe() {
-        MqttUtil.subscribe("$TOPIC_FEEDBACK/#")
+        GlobalScope.launch {
+            MqttUtil.subscribe("$TOPIC_FEEDBACK/#")
+        }
     }
 
     fun unsubscribe() {
@@ -44,14 +47,17 @@ object Feedbacks {
             this.content = content
             this.clientId = globalConfig.mqttClientId
         }
-        MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = gson.toJson(feedback).toByteArray()) {
-            toast(if (it) "反馈发送成功" else "反馈发送失败")
+        GlobalScope.launch {
+            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = gson.toJson(feedback).toByteArray())
+            toast(if (pub == null) "反馈发送成功" else "反馈发送失败")
         }
+
     }
 
     fun deleteFeedback(feedback: Feedback) {
-        MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = ByteArray(0)) {
-            toast(if (it) "反馈删除成功" else "反馈删除失败")
+        GlobalScope.launch {
+            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = ByteArray(0))
+            toast(if (pub == null) "反馈删除成功" else "反馈删除失败")
         }
     }
 
@@ -72,8 +78,9 @@ object Feedbacks {
         newFeedback.reply = r.content
         newFeedback.repliedAt = r.timestamp
 
-        MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray()) {
-            toast(if (it) "发送成功" else "发送失败")
+        GlobalScope.launch {
+            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray())
+            toast(if (pub == null) "发送成功" else "发送失败")
         }
     }
 
@@ -91,8 +98,9 @@ object Feedbacks {
             newFeedback.repliedAt = null
         }
 
-        MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray()) {
-            toast(if (it) "删除回复成功" else "删除回复失败")
+        GlobalScope.launch {
+            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray())
+            toast(if (pub == null) "删除回复成功" else "删除回复失败")
         }
     }
 
