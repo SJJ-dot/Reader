@@ -23,7 +23,7 @@
             app:cardBackgroundColor="@color/dn_background"
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/chapter_error"
+            app:layout_constraintEnd_toStartOf="@+id/chapter_sync"
             app:layout_constraintHorizontal_chainStyle="spread_inside"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -38,7 +38,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/chapter_error"
+            android:id="@+id/chapter_sync"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_weight="1"
@@ -55,7 +55,7 @@
                 android:background="@color/transparent"
                 android:padding="6dp"
                 android:scaleType="fitCenter"
-                android:src="@mipmap/ic_sync_error"
+                android:src="@drawable/ic_refresh_white_24dp"
                 app:tint="@color/dn_text_color_black" />
         </com.google.android.material.card.MaterialCardView>
 
@@ -69,7 +69,7 @@
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/browser"
-            app:layout_constraintStart_toEndOf="@+id/chapter_error"
+            app:layout_constraintStart_toEndOf="@+id/chapter_sync"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
@@ -698,12 +698,12 @@
 
 
         <ImageButton
-            android:id="@+id/chapter_sync"
+            android:id="@+id/chapter_error"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_refresh_white_24dp"
+            android:src="@mipmap/ic_sync_error"
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
