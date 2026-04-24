@@ -1,24 +1,26 @@
 package com.sjianjun.reader.mqtt
 
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import java.util.UUID
 
 
 data class Feedback(
     var id: String = UUID.randomUUID().toString().replace("-", ""),
-    var clientId: String? = null,
+    var client_id: String? = null,
+    var parent_id: String? = null,
     var content: String? = null,
-    var timestamp: Long = System.currentTimeMillis(),
-    // legacy compatibility fields
-    var reply: String? = null,
-    var repliedAt: Long? = null,
-    var replies: MutableList<Reply> = mutableListOf()
+    var created_at: Long = 0,
+    var updated_at: Long = 0,
+    var replies: List<Feedback>? = null,
 )
 
-// helper copy extension to produce a shallow copy with a new mutable replies list
-fun Feedback.copy(): Feedback {
-    val f = Feedback(id = this.id, clientId = this.clientId, content = this.content, timestamp = this.timestamp)
-    f.reply = this.reply
-    f.repliedAt = this.repliedAt
-    f.replies = ArrayList(this.replies)
-    return f
-}
+
+data class FeedbackListResponse(
+    val status: String? = null,
+    val items: List<Feedback>? = null,
+    val count: Int = 0,
+    val total: Int = 0,
+    val limit: Int = 0,
+    val offset: Int = 0,
+)

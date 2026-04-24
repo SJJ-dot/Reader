@@ -5,24 +5,29 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.ItemFeedbackBinding
 import com.sjianjun.reader.mqtt.Feedback
 import com.sjianjun.reader.mqtt.Feedbacks
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.show
+import kotlinx.coroutines.launch
+import sjj.alog.Log
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class FeedbackAdapter(
+    private val lifecycleScope: LifecycleCoroutineScope,
     private val onReply: (Feedback) -> Unit,
     private val onDelete: (Feedback) -> Unit
-) : RecyclerView.Adapter<FeedbackAdapter.VH>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     private val list = mutableListOf<Feedback>()
 
     // track expanded feedback ids
@@ -34,112 +39,97 @@ class FeedbackAdapter(
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_feedback, parent, false)
-        return VH(v)
+        return object : RecyclerView.ViewHolder(v) {}
     }
 
     @SuppressLint("SetTextI18n")
-    override fun onBindViewHolder(holder: VH, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val feedback = list[position]
-        holder.bind(feedback)
+        val binding = ItemFeedbackBinding.bind(holder.itemView)
+        binding.tvContent.text = feedback.content ?: ""
+        binding.tvTime.text = sdf.format(Date(feedback.created_at * 1000))
 
-        holder.itemView.findViewById<View>(R.id.btn_reply).setOnClickListener { onReply(feedback) }
-        holder.itemView.findViewById<View>(R.id.btn_delete).setOnClickListener { onDelete(feedback) }
+        binding.btnReply.setOnClickListener { onReply(feedback) }
+        binding.btnDelete.setOnClickListener { onDelete(feedback) }
 
-        if (globalConfig.admin || feedback.clientId == globalConfig.mqttClientId) {
-            holder.itemView.findViewById<View>(R.id.btn_delete).show()
+        if (globalConfig.admin || feedback.client_id == globalConfig.mqttClientId) {
+            binding.btnReply.show()
+            binding.btnDelete.show()
         } else {
-            holder.itemView.findViewById<View>(R.id.btn_delete).gone()
-        }
-        if (globalConfig.admin || feedback.clientId == globalConfig.mqttClientId) {
-            holder.itemView.findViewById<View>(R.id.btn_reply).show()
-        } else {
-            holder.itemView.findViewById<View>(R.id.btn_reply).gone()
+            binding.btnReply.gone()
+            binding.btnDelete.gone()
         }
 
-        val rvReplies = holder.itemView.findViewById<RecyclerView>(R.id.rv_replies)
-        val tvToggle = holder.itemView.findViewById<TextView>(R.id.tv_toggle_replies)
-        val tvLatest = holder.itemView.findViewById<TextView>(R.id.tv_latest_reply)
-        val tvLatestTime = holder.itemView.findViewById<TextView>(R.id.tv_latest_reply_time)
-        if (rvReplies != null && tvToggle != null) {
-            if (rvReplies.adapter == null) {
-                rvReplies.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(holder.itemView.context)
-                rvReplies.adapter = RepliesAdapter { idx ->
-                    // long press delete callback
-                    val ctx = holder.itemView.context
-                    showDeleteDialog(feedback, idx, ctx)
-                }
-            }
-            (rvReplies.adapter as RepliesAdapter).submitList(feedback.replies)
+
+        binding.rvReplies.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(holder.itemView.context)
+        binding.rvReplies.adapter = RepliesAdapter(feedback.replies?.sortedBy { it.created_at } ?: emptyList()) { f ->
+            // long press delete callback
+            val ctx = holder.itemView.context
+            showDeleteDialog(f, ctx)
+        }
+        if (feedback.replies.isNullOrEmpty()) {
+            binding.tvToggleReplies.gone()
+            binding.tvLatestReply.gone()
+            binding.tvLatestReplyTime.gone()
+            binding.rvReplies.gone()
+        } else if (feedback.replies?.size == 1) {
+            binding.tvToggleReplies.gone()
+            binding.rvReplies.gone()
+            binding.tvLatestReply.show()
+            binding.tvLatestReplyTime.show()
+            val latest = feedback.replies?.last()!!
+            val author = if (latest.client_id == globalConfig.mqttClientId) "我" else "书友"
+            binding.tvLatestReply.text = "${author}: ${latest.content}"
+            binding.tvLatestReplyTime.text = sdf.format(Date(latest.created_at * 1000))
+        } else {
             val isExpanded = expanded.contains(feedback.id)
-            rvReplies.visibility = if (isExpanded) View.VISIBLE else View.GONE
-            tvToggle.text = if (isExpanded) "收起回复" else "展开回复"
-            // show latest reply preview when collapsed
-            tvLatest.setOnClickListener(null)
-            if (!isExpanded && feedback.replies.isNotEmpty()) {
-                val latest = feedback.replies.last()
-                val author = if (latest.author == globalConfig.mqttClientId) "我" else "书友"
-                val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-                tvLatest?.visibility = View.VISIBLE
-                tvLatest?.text = "${author}: ${latest.content}"
-                tvLatestTime?.visibility = View.VISIBLE
-                tvLatestTime?.text = sdf.format(Date(latest.timestamp))
-                if (globalConfig.admin || latest.author == globalConfig.mqttClientId) {
-                    tvLatest.setOnLongClickListener {
-                        // long press delete callback
-                        val ctx = holder.itemView.context
-                        showDeleteDialog(feedback, feedback.replies.size - 1, ctx)
-                        true
-                    }
-                }
+            if (isExpanded) {
+                binding.rvReplies.show()
+                binding.tvLatestReply.gone()
+                binding.tvLatestReplyTime.gone()
             } else {
-                tvLatest?.visibility = View.GONE
-                tvLatestTime?.visibility = View.GONE
+                binding.rvReplies.gone()
+                binding.tvLatestReply.show()
+                binding.tvLatestReplyTime.show()
             }
-            if (feedback.replies.isEmpty()) {
-                tvToggle.visibility = View.GONE
-                tvLatest?.visibility = View.GONE
-                tvLatestTime?.visibility = View.GONE
-            } else {
-                tvToggle.visibility = View.VISIBLE
-                tvToggle.setOnClickListener {
-                    if (isExpanded) expanded.remove(feedback.id) else expanded.add(feedback.id)
-                    notifyItemChanged(position)
-                }
-            }
-
-            if (feedback.replies.size == 1){
-                tvToggle.gone()
-            }
+            binding.tvToggleReplies.show()
+            val latest = feedback.replies?.last()!!
+            val author = if (latest.client_id == globalConfig.mqttClientId) "我" else "书友"
+            binding.tvLatestReply.text = "${author}: ${latest.content}"
+            binding.tvLatestReplyTime.text = sdf.format(Date(latest.created_at * 1000))
+            binding.tvToggleReplies.text = if (isExpanded) "收起回复" else "展开回复"
+        }
+        val isExpanded = expanded.contains(feedback.id)
+        binding.tvToggleReplies.setOnClickListener {
+            if (isExpanded) expanded.remove(feedback.id) else expanded.add(feedback.id)
+            notifyItemChanged(position)
+        }
+        binding.tvLatestReply.setOnLongClickListener {
+            // long press delete callback
+            val latest = feedback.replies?.last()!!
+            val ctx = holder.itemView.context
+            showDeleteDialog(feedback, ctx)
+            true
         }
     }
 
-    private fun showDeleteDialog(feedback: Feedback, idx: Int, ctx: Context) {
+    private fun showDeleteDialog(feedback: Feedback, ctx: Context) {
         MaterialAlertDialogBuilder(ctx)
             .setTitle("删除回复")
             .setMessage("确定删除该回复吗？")
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                Feedbacks.deleteReply(feedback, idx)
+                lifecycleScope.launch {
+                    Feedbacks.deleteReply(feedback)
+                }
             }
             .show()
     }
 
     override fun getItemCount(): Int = list.size
 
-    class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val tvContent: TextView = itemView.findViewById(R.id.tv_content)
-        private val tvTime: TextView = itemView.findViewById(R.id.tv_time)
-
-        private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-
-        fun bind(f: Feedback) {
-            tvContent.text = f.content ?: ""
-            tvTime.text = sdf.format(Date(f.timestamp))
-            // replies shown in nested RecyclerView
-        }
-    }
 
 }
 

@@ -34,8 +34,10 @@ object MqttUtil {
     //查询在线用户数
     const val TOPIC_ONLINE_QUERY_NUM_REQUEST = "reader/online2/num/{clientId}/server"
     const val TOPIC_ONLINE_QUERY_NUM_RESP = "reader/online2/num/server/{clientId}"
-    const val TOPIC_FEEDBACK_REQUEST = "reader/feedback2/{clientId}/server"
-    const val TOPIC_FEEDBACK_RESP = "reader/feedback2/server/{clientId}"
+    const val TOPIC_FEEDBACK_LIST = "reader/feedback2/list/{clientId}/server"
+    const val TOPIC_FEEDBACK_LIST_RESP = "reader/feedback2/list/server/{clientId}"
+    const val TOPIC_FEEDBACK_SET = "reader/feedback2/set/{clientId}/server"
+    const val TOPIC_FEEDBACK_SET_RESP = "reader/feedback2/set/server/{clientId}"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var onlineJob: Job? = null
@@ -71,7 +73,6 @@ object MqttUtil {
             @Throws(Exception::class)
             override fun messageArrived(topic: String?, message: MqttMessage) {
                 try {
-                    Log.i("Received message from $topic")
                     msgQueueCallback[topic]?.invoke(message)
                 } catch (e: Exception) {
                     Log.e("Error handling incoming MQTT message: ${e.message}")
@@ -205,7 +206,6 @@ object MqttUtil {
                 return Exception("MQTT client is not connected")
             }
             val tpc = tpc.topic
-            Log.i("Publishing message to $tpc: ${String(payload)}")
             val message = MqttMessage()
             message.payload = payload
             message.qos = qos
@@ -236,7 +236,7 @@ object MqttUtil {
     suspend fun request(requestTopic: String, responseTopic: String, payload: ByteArray = ByteArray(0), timeout: Long = 5000): ByteArray? {
         return try {
             if (mqttClient?.isConnected != true) {
-                Log.i("MQTT client is not connected. Cannot send request to $requestTopic")
+                Log.i("MQTT client is not connected. Cannot send request to ${requestTopic.topic}")
                 return null
             }
             val respTpc = responseTopic.topic
@@ -273,7 +273,7 @@ object MqttUtil {
                 timeoutJob = scope.launch {
                     try {
                         delay(timeout)
-                        Log.i("Request to $requestTopic timed out")
+                        Log.i("Request to ${requestTopic.topic} timed out")
                         clear()
                         if (cont.isActive) {
                             cont.resume(null)

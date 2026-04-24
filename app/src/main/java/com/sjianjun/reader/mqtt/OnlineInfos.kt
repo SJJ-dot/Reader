@@ -29,7 +29,7 @@ object OnlineInfos {
     suspend fun refresh() {
         val payload = mapOf(
             "clientId" to globalConfig.mqttClientId,
-            "period" to 30 * 60 //请求30分钟内在线的客户端列表
+            "period" to 10 * 60 //请求30分钟内在线的客户端列表
         )
         val response = MqttUtil.request(TOPIC_ONLINE_QUERY_NUM_REQUEST, TOPIC_ONLINE_QUERY_NUM_RESP, gson.toJson(payload).toByteArray()) ?: return
         val online = gson.fromJson<Map<String, String>>(String(response)) ?: emptyMap()

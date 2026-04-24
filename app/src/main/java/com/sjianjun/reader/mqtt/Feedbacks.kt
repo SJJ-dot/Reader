@@ -1,107 +1,69 @@
 package com.sjianjun.reader.mqtt
 
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_FEEDBACK
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_FEEDBACK_LIST
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_FEEDBACK_LIST_RESP
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_FEEDBACK_SET
+import com.sjianjun.reader.mqtt.MqttUtil.TOPIC_FEEDBACK_SET_RESP
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import sjj.alog.Log
-import java.util.concurrent.ConcurrentHashMap
 
 object Feedbacks {
-    val feedbackMap = MutableLiveData(ConcurrentHashMap<String, Feedback>())
-    fun subscribe() {
-        GlobalScope.launch {
-            MqttUtil.subscribe("$TOPIC_FEEDBACK/#")
+    val feedbackList = MutableLiveData<List<Feedback>>()
+    suspend fun request() {
+        val payload = mapOf(
+            "client_id" to globalConfig.mqttClientId,
+            "limit" to 100,
+            "offset" to 0
+        )
+        val response = MqttUtil.request(TOPIC_FEEDBACK_LIST, TOPIC_FEEDBACK_LIST_RESP, gson.toJson(payload).toByteArray())
+        if (response != null) {
+            //{"status": "ok", "items": items, "count": len(items), "total": total, "limit": limit, "offset": offset}
+            val resp = gson.fromJson<FeedbackListResponse>(String(response))
+            Log.i("Feedbacks request feedback list response: $resp")
+            feedbackList.postValue(resp?.items ?: emptyList())
         }
+
     }
 
-    fun unsubscribe() {
-        MqttUtil.unsubscribe("$TOPIC_FEEDBACK/#")
-    }
 
-    fun parseFeedback(topic: String, payload: String) {
-        if (payload.isBlank()) {
-            val id = topic.substringAfterLast("/")
-            feedbackMap.value?.remove(id)
-            feedbackMap.postValue(feedbackMap.value)
-            return
-        }
-        val feedback = gson.fromJson<Feedback>(payload)
-        if (feedback != null) {
-            val reply = feedback.replies.lastOrNull()
-            if (feedback.reply?.isNotBlank() == true && feedback.reply != reply?.content) {
-                feedback.replies.add(Reply(author = "", content = feedback.reply ?: "", timestamp = feedback.repliedAt ?: 0))
-            }
-            Log.i("Received feedback: $feedback")
-            feedbackMap.value?.put(feedback.id, feedback)
-            feedbackMap.postValue(feedbackMap.value)
-        }
-    }
-
-    fun sendFeedback(content: String) {
+    suspend fun sendFeedback(content: String) {
         val feedback = Feedback().apply {
+            this.client_id = globalConfig.mqttClientId
             this.content = content
-            this.clientId = globalConfig.mqttClientId
         }
-        GlobalScope.launch {
-            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = gson.toJson(feedback).toByteArray())
-            toast(if (pub == null) "反馈发送成功" else "反馈发送失败")
-        }
-
+        val pub = MqttUtil.request(TOPIC_FEEDBACK_SET, TOPIC_FEEDBACK_SET_RESP, payload = gson.toJson(feedback).toByteArray())
+        toast(if (pub != null) "反馈发送成功" else "反馈发送失败")
+        request()
     }
 
-    fun deleteFeedback(feedback: Feedback) {
-        GlobalScope.launch {
-            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${feedback.clientId}/${feedback.id}", retained = true, payload = ByteArray(0))
-            toast(if (pub == null) "反馈删除成功" else "反馈删除失败")
-        }
+    suspend fun deleteFeedback(feedback: Feedback) {
+        val delete = feedback.copy(content = null, replies = mutableListOf())
+        delete.client_id = globalConfig.mqttClientId
+        val pub = MqttUtil.request(TOPIC_FEEDBACK_SET, TOPIC_FEEDBACK_SET_RESP, payload = gson.toJson(delete).toByteArray())
+        toast(if (pub != null) "反馈删除成功" else "反馈删除失败")
+        request()
     }
 
-    /**
-     * Append a reply to a feedback and publish the updated feedback as a retained message.
-     * author can be null (will be set to clientId or "system")
-     */
-    fun appendReply(feedback: Feedback, replyContent: String, author: String? = null) {
-        val r = Reply().apply {
-            this.author = author ?: globalConfig.mqttClientId ?: ""
+    suspend fun appendReply(feedback: Feedback, replyContent: String) {
+        val reply = Feedback().apply {
+            this.client_id = globalConfig.mqttClientId
+            this.parent_id = feedback.id
             this.content = replyContent
-            this.timestamp = System.currentTimeMillis()
         }
-        // make a local copy
-        val newFeedback = feedback.copy()
-        newFeedback.replies.add(r)
-        // maintain legacy fields for backward compatibility (last reply)
-        newFeedback.reply = r.content
-        newFeedback.repliedAt = r.timestamp
-
-        GlobalScope.launch {
-            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray())
-            toast(if (pub == null) "发送成功" else "发送失败")
-        }
+        val pub = MqttUtil.request(TOPIC_FEEDBACK_SET, TOPIC_FEEDBACK_SET_RESP, payload = gson.toJson(reply).toByteArray())
+        toast(if (pub != null) "发送成功" else "发送失败")
+        request()
     }
 
-    // Delete a reply by index from a feedback, optimistic local update and publish retained
-    fun deleteReply(feedback: Feedback, index: Int) {
-        if (index < 0 || index >= feedback.replies.size) return
-        val newFeedback = feedback.copy()
-        newFeedback.replies.removeAt(index)
-        if (newFeedback.replies.isNotEmpty()) {
-            val last = newFeedback.replies.last()
-            newFeedback.reply = last.content
-            newFeedback.repliedAt = last.timestamp
-        } else {
-            newFeedback.reply = null
-            newFeedback.repliedAt = null
-        }
-
-        GlobalScope.launch {
-            val pub = MqttUtil.publish("$TOPIC_FEEDBACK/${newFeedback.clientId}/${newFeedback.id}", retained = true, payload = gson.toJson(newFeedback).toByteArray())
-            toast(if (pub == null) "删除回复成功" else "删除回复失败")
-        }
+    suspend fun deleteReply(feedback: Feedback) {
+        val reply = feedback.copy(content = null)
+        val pub = MqttUtil.request(TOPIC_FEEDBACK_SET, TOPIC_FEEDBACK_SET_RESP, payload = gson.toJson(reply).toByteArray())
+        toast(if (pub != null) "删除回复成功" else "删除回复失败")
+        request()
     }
 
 }

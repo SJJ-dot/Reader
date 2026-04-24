@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.BaseFragment
@@ -14,6 +15,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentFeedbackFragmentBinding
 import com.sjianjun.reader.mqtt.Feedbacks
 import com.sjianjun.reader.preferences.globalConfig
+import kotlinx.coroutines.launch
 
 
 class FeedbackFragment : BaseFragment() {
@@ -29,7 +31,7 @@ class FeedbackFragment : BaseFragment() {
         // Use view binding to inflate layout
         val binding = FragmentFeedbackFragmentBinding.inflate(inflater, container, false)
         this.binding = binding
-        adapter = FeedbackAdapter(onReply = { feedback ->
+        adapter = FeedbackAdapter(lifecycleScope, onReply = { feedback ->
             showReplyDialog(feedback)
         }, onDelete = { feedback ->
             MaterialAlertDialogBuilder(requireContext())
@@ -37,7 +39,7 @@ class FeedbackFragment : BaseFragment() {
                 .setMessage("确定删除该反馈吗？")
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    Feedbacks.deleteFeedback(feedback)
+                    lifecycleScope.launch { Feedbacks.deleteFeedback(feedback) }
                 }
                 .show()
         })
@@ -46,21 +48,16 @@ class FeedbackFragment : BaseFragment() {
         binding.recyclerView.adapter = adapter
 
         // observe feedback map and update list sorted by timestamp desc
-        Feedbacks.feedbackMap.observeViewLifecycle { map ->
-            val list = map.values.toList().sortedByDescending { it.timestamp }
+        Feedbacks.feedbackList.observeViewLifecycle { list ->
+            val list = list.sortedByDescending { it.created_at }
             adapter.updateList(list)
         }
 
         binding.fab.setOnClickListener {
             showSendDialog()
         }
-        Feedbacks.subscribe()
+        lifecycleScope.launch { Feedbacks.request() }
         return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        Feedbacks.unsubscribe()
     }
 
     private fun showSendDialog() {
@@ -73,13 +70,15 @@ class FeedbackFragment : BaseFragment() {
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val text = editText.text.toString().trim()
-                if (text == BuildConfig.MQTT_PASSWORD){
+                if (text == BuildConfig.MQTT_PASSWORD) {
                     globalConfig.admin = !globalConfig.admin
                     adapter.notifyDataSetChanged()
                     return@setPositiveButton
                 }
                 if (text.isNotEmpty()) {
-                    Feedbacks.sendFeedback(text)
+                    lifecycleScope.launch {
+                        Feedbacks.sendFeedback(text)
+                    }
                 }
             }
             .show()
@@ -97,9 +96,7 @@ class FeedbackFragment : BaseFragment() {
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val text = editText.text.toString().trim()
                 if (text.isNotEmpty()) {
-                    feedback.reply = text
-                    feedback.repliedAt = System.currentTimeMillis()
-                    Feedbacks.appendReply(feedback, text)
+                    lifecycleScope.launch { Feedbacks.appendReply(feedback, text) }
                 }
             }
             .show()
