@@ -12,6 +12,8 @@ import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
 import com.sjianjun.reader.utils.dp2Px
+import com.zqc.opencc.android.lib.ChineseConverter
+import com.zqc.opencc.android.lib.ConversionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -81,6 +83,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     private var mBookRecord = BookRecordBean()
 
     private var mPreLoadDisp: Job? = null
+
+    // 简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
+    private var mJianFanMode: Int = MODE_JIAN_FAN_OFF
 
     /*****************params */ // 当前的状态
 
@@ -944,9 +949,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         //生成的页面
         val pages: MutableList<TxtPage> = ArrayList()
         val lines: MutableList<TxtLine> = ArrayList()
-
-        createTxtLine(lines, chapter.title, mTitlePaint!!)
-        createTxtLine(lines, chapter.content, mTextPaint!!)
+        val titleText = convertByJianFanMode(chapter.title.toString())
+        val contentText = convertByJianFanMode(chapter.content.toString())
+        createTxtLine(lines, titleText, mTitlePaint!!)
+        createTxtLine(lines, contentText, mTextPaint!!)
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
         while (i < lines.size) {
@@ -995,6 +1001,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             pageLine.clear()
         }
         return pages
+    }
+
+    private fun convertByJianFanMode(text: String): String {
+        val context = mPageView?.context ?: return text
+        return when (mJianFanMode) {
+            MODE_JIAN_TO_FAN -> ChineseConverter.convert(text, ConversionType.S2T, context)
+            MODE_FAN_TO_JIAN -> ChineseConverter.convert(text, ConversionType.T2S, context)
+            else -> text
+        }
     }
 
     /**
@@ -1363,6 +1378,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     companion object {
         private const val TAG = "PageLoader"
 
+        const val MODE_JIAN_FAN_OFF: Int = 0
+        const val MODE_JIAN_TO_FAN: Int = 1
+        const val MODE_FAN_TO_JIAN: Int = 2
+
         // 当前页面的状态
         const val STATUS_LOADING: Int = 1 // 正在加载
         const val STATUS_FINISH: Int = 2 // 加载完成
@@ -1371,5 +1390,28 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         const val STATUS_PARING: Int = 5 // 正在解析 (装载本地数据)
         const val STATUS_PARSE_ERROR: Int = 6 // 本地文件解析错误(暂未被使用)
         const val STATUS_CATEGORY_EMPTY: Int = 7 // 获取到的目录为空
+    }
+
+    fun setJianFanMode(mode: Int) {
+        val normalized = when (mode) {
+            MODE_JIAN_TO_FAN, MODE_FAN_TO_JIAN -> mode
+            else -> MODE_JIAN_FAN_OFF
+        }
+        if (mJianFanMode == normalized) {
+            return
+        }
+        mJianFanMode = normalized
+        // 取消缓存
+        ChapterPageCache.reset()
+
+        // 如果当前已经显示数据
+        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
+            // 重新计算当前页面
+            dealLoadPageList(this.chapterPos)
+            // 重新获取指定页面
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
+        }
+
+        mPageView!!.drawCurPage(false)
     }
 }

@@ -316,6 +316,10 @@ class BookReaderActivity : BaseActivity() {
             }
         }
 
+        globalConfig.readerJianFanMode.observe(this) {
+            mPageLoader?.setJianFanMode(it)
+        }
+
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
                 //隐藏设置对话框

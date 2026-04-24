@@ -3,6 +3,7 @@
     <color name="dn_colorAccent">@color/colorAccent</color>
     <color name="dn_background">@color/mdr_blueGrey_50</color>
     <color name="dn_background_1">#ffffff</color>
+    <color name="dn_reader_setting_btn">@color/mdr_blueGrey_50</color>
     <!--  图标着色  -->
     <color name="dn_icon_tint_color">@color/mdr_black</color>
     <color name="dn_text_color_black">@color/mdr_textBlack_black</color>

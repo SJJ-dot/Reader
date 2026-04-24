@@ -96,6 +96,7 @@ class BookReaderSettingFragment : BaseFragment() {
         initFontList()
         initBrowser()
         initSettings()
+        initJianFan()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -103,6 +104,22 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.settingContainerFirst?.isVisible = true
         binding?.settingContainerSecond?.isVisible = false
         refreshChapterProgress()
+    }
+
+    private fun initJianFan() {
+        binding?.jianFan?.click(10) {
+            val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
+            val current = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
+                .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("简繁转换")
+                .setSingleChoiceItems(options, current) { dialog, which ->
+                    globalConfig.readerJianFanMode.postValue(which)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
     }
 
     private fun initSettings() {
