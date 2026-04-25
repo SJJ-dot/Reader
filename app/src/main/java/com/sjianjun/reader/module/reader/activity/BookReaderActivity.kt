@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.reader.activity
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -29,7 +30,6 @@ import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
-import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
@@ -41,6 +41,7 @@ import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.CustomPageStyle
+import sjj.novel.view.reader.page.DisplayParams
 import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_FINISH
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
@@ -64,6 +65,8 @@ class BookReaderActivity : BaseActivity() {
     private var chapterCacheJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 在 Activity 生命周期入口先应用方向策略，减少折叠切换时方向闪动。
+        applyReaderOrientation(globalConfig.readerOrientationMode.value ?: 0)
         super.onCreate(savedInstanceState)
         binding = ActivityBookReaderBinding.inflate(layoutInflater)
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
@@ -72,11 +75,20 @@ class BookReaderActivity : BaseActivity() {
         // 保持屏幕常亮（阅读时屏幕不自动关闭）
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { view, insets ->
-            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            mPageLoader?.mDisplayParams?.navigationBarHeight = navigationBars.bottom
-            mPageLoader?.mDisplayParams?.statusBarHeight = statusBars.top
-            binding?.drawerChapterList?.setPadding(0, statusBars.top, 0, navigationBars.bottom)
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val cutout = insets.displayCutout
+            val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
+            val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
+            val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
+            val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
+            val params = DisplayParams()
+            mPageLoader?.mDisplayParams?.setInsets(
+                left = params.insetLeft + safeLeft,
+                top = params.insetTop + safeTop,
+                right = params.insetRight + safeRight,
+                bottom = params.insetBottom + safeBottom,
+            )
+            binding?.drawerChapterList?.setPadding(0, safeTop, safeRight, safeBottom)
             insets
         }
 
@@ -320,6 +332,10 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setJianFanMode(it)
         }
 
+        globalConfig.readerOrientationMode.observe(this) {
+            applyReaderOrientation(it)
+        }
+
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
                 //隐藏设置对话框
@@ -457,6 +473,16 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.refreshChapterList()
             val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG) as? BookReaderSettingFragment
             settingDialog?.refreshChapterProgress()
+        }
+    }
+
+    private fun applyReaderOrientation(mode: Int) {
+        requestedOrientation = when (mode) {
+            0 -> ActivityInfo.SCREEN_ORIENTATION_USER
+            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            3 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_USER
         }
     }
 

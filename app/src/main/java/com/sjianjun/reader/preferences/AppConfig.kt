@@ -55,7 +55,10 @@ class AppConfig(val name: String) :
      * 阅读器简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
      */
     val readerJianFanMode by lazy { intLivedata("readerJianFanMode", 0) }
-
+    /**
+     * 阅读器横竖屏切换: 0=跟随系统, 1=竖屏, 2=横屏，3=横屏自动
+     */
+    val readerOrientationMode by lazy { intLivedata("readerOrientationMode", 0) }
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */

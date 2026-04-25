@@ -11,6 +11,7 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.dp2Px
 import com.zqc.opencc.android.lib.ChineseConverter
 import com.zqc.opencc.android.lib.ConversionType
@@ -524,7 +525,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             if (chapters?.isEmpty() == false) {
                 /*****初始化标题的参数 */
                 //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop = mDisplayParams.statusBarHeight + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
+                val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
                 //根据状态不一样，数据不一样
                 if (mStatus != STATUS_FINISH) {
                     if (isChapterListPrepare) {
@@ -554,15 +555,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             mBackground?.draw(canvas)
         }
 
-//        if (BuildConfig.DEBUG) {
-//            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
-//            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
-//
-//            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
-//            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
-//        }
+        if (BuildConfig.DEBUG) {
+            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
+            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
+
+            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
+            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
+        }
         /******绘制内容 */
-        val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.paddingHeight else 0f
+        val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.insetTop else 0f
         canvas.translate(0f, -scrollY)
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {

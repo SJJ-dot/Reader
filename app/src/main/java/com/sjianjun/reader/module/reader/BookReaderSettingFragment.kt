@@ -78,9 +78,16 @@ class BookReaderSettingFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = ReaderFragmentSettingViewBinding.bind(view)
         val v = binding?.settingBottomContainer!!
+        val root = binding?.root!!
         ViewCompat.setOnApplyWindowInsetsListener(view) { view, insets ->
-            val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, navigationBars.bottom)
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val cutout = insets.displayCutout
+            val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
+            val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
+            val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
+            val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, maxOf(safeBottom, v.paddingBottom))
+            root.setPadding(safeLeft, safeTop, safeRight, 0)
             insets
         }
         initSpeak()
@@ -97,6 +104,7 @@ class BookReaderSettingFragment : BaseFragment() {
         initBrowser()
         initSettings()
         initJianFan()
+        initScreenOrientationMode()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -104,6 +112,22 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.settingContainerFirst?.isVisible = true
         binding?.settingContainerSecond?.isVisible = false
         refreshChapterProgress()
+    }
+
+    fun initScreenOrientationMode(){
+        binding?.screenRotation?.click(10) {
+            val options = arrayOf("跟随系统", "竖屏", "横屏", "横屏自动")
+            val current = (globalConfig.readerOrientationMode.value ?: 0)
+                .coerceIn(0, 3)
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("屏幕旋转")
+                .setSingleChoiceItems(options, current) { dialog, which ->
+                    globalConfig.readerOrientationMode.postValue(which)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
     }
 
     private fun initJianFan() {

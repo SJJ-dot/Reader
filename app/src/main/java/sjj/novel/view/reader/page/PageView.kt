@@ -116,7 +116,7 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             PageMode.SLIDE -> mPageAnim = SlidePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.NONE -> mPageAnim = NonePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.SCROLL -> {
-                val marginHeight = pageLoader?.mDisplayParams?.let { it.tipHeight + it.statusBarHeight } ?: 0f
+                val marginHeight = pageLoader?.mDisplayParams?.let { it.tipHeight + it.insetTop } ?: 0f
                 mPageAnim = ScrollPageAnim(mViewWidth, mViewHeight, 0, marginHeight.roundToInt(), this, mPageAnimListener)
             }
         }

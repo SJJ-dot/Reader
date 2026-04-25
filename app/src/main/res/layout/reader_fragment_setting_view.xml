@@ -11,9 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="30dp"
-        android:paddingEnd="30dp">
+        android:orientation="horizontal">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/chapter_list"
@@ -24,7 +22,7 @@
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/day_night"
-            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintHorizontal_chainStyle="spread"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -84,7 +82,6 @@
         </com.google.android.material.card.MaterialCardView>
 
 
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/jian_fan"
             android:layout_width="40dp"
@@ -93,7 +90,7 @@
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/browser"
+            app:layout_constraintEnd_toStartOf="@+id/screen_rotation"
             app:layout_constraintStart_toEndOf="@+id/chapter_sync"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -108,6 +105,28 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/screen_rotation"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/browser"
+            app:layout_constraintStart_toEndOf="@+id/jian_fan"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_v2h"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/browser"
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -116,7 +135,7 @@
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/jian_fan"
+            app:layout_constraintStart_toEndOf="@+id/screen_rotation"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
@@ -727,7 +746,9 @@
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
-            android:src="@mipmap/ic_sync_error"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_flag_error"
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
