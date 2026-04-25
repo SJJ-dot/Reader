@@ -10,7 +10,6 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
-import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -63,13 +62,15 @@ class BookReaderViewModel : ViewModel() {
         val record = book.value?.record ?: return
         if (bean.chapter != record.chapterIndex ||
             bean.pagePos != record.offest ||
-            bean.isEnd != record.isEnd
+            bean.isEnd != record.isEnd ||
+            bean.scrollOffset != record.scrollOffset
         ) {
             Log.i("保存阅读记录 $bean")
             viewModelScope.launch(Dispatchers.IO) {
                 record.chapterIndex = bean.chapter
                 record.offest = bean.pagePos
                 record.isEnd = bean.isEnd
+                record.scrollOffset = bean.scrollOffset
                 record.updateTime = System.currentTimeMillis()
                 readingRecordDao.insertReadingRecord(record)
             }

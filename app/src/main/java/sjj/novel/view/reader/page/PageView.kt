@@ -2,7 +2,6 @@ package sjj.novel.view.reader.page
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
@@ -14,6 +13,7 @@ import androidx.activity.viewModels
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.act
 import sjj.alog.Log
+import sjj.novel.view.reader.animation.BitmapWrapper
 import sjj.novel.view.reader.animation.CoverPageAnim
 import sjj.novel.view.reader.animation.HorizonPageAnim
 import sjj.novel.view.reader.animation.NonePageAnim
@@ -21,8 +21,7 @@ import sjj.novel.view.reader.animation.PageAnimation
 import sjj.novel.view.reader.animation.ScrollPageAnim
 import sjj.novel.view.reader.animation.SimulationPageAnim
 import sjj.novel.view.reader.animation.SlidePageAnim
-import kotlin.math.abs
-import kotlin.math.roundToInt
+import sjj.novel.view.reader.bean.BookRecordBean
 
 /**
  * Created by Administrator on 2016/8/29 0029.
@@ -67,15 +66,15 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     // 动画监听类
     private val mPageAnimListener: PageAnimation.OnPageChangeListener = object : PageAnimation.OnPageChangeListener {
         override fun hasPrev(): Boolean {
-            return this@PageView.hasPrevPage()
+            return pageLoader?.prev() ?: false
         }
 
         override fun hasNext(): Boolean {
-            return this@PageView.hasNextPage()
+            return pageLoader?.next() ?: false
         }
 
         override fun pageCancel() {
-            this@PageView.pageCancel()
+            pageLoader?.pageCancel()
         }
     }
 
@@ -116,68 +115,23 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             PageMode.SLIDE -> mPageAnim = SlidePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.NONE -> mPageAnim = NonePageAnim(mViewWidth, mViewHeight, this, mPageAnimListener)
             PageMode.SCROLL -> {
-                val marginHeight = pageLoader?.mDisplayParams?.let { it.tipHeight + it.insetTop } ?: 0f
-                mPageAnim = ScrollPageAnim(mViewWidth, mViewHeight, 0, marginHeight.roundToInt(), this, mPageAnimListener)
+                val displayParams = pageLoader?.mDisplayParams
+                mPageAnim = ScrollPageAnim(
+                    mViewWidth,
+                    mViewHeight,
+                    displayParams?.contentLeft?.toInt() ?: 0,
+                    displayParams?.contentTop?.toInt() ?: 0,
+                    displayParams?.contentRight?.toInt() ?: mViewWidth,
+                    displayParams?.contentBottom?.toInt() ?: mViewHeight,
+                    this,
+                    mPageAnimListener
+                ).apply { pageLoader?.mBookRecord?.let { setBookRecord(it) } }
             }
         }
     }
 
-    val nextBitmap: Bitmap? get() = mPageAnim?.getNextBitmap()
-    val bgBitmap: Bitmap? get() = mPageAnim?.getBgBitmap()
-    fun autoPrevPage(): Boolean {
-        //滚动暂时不支持自动翻页
-        if (mPageAnim is ScrollPageAnim) {
-            return false
-        } else {
-            startPageAnim(PageAnimation.Direction.PRE)
-            return true
-        }
-    }
-
-    fun autoNextPage(): Boolean {
-        if (mPageAnim is ScrollPageAnim) {
-            return false
-        } else {
-            startPageAnim(PageAnimation.Direction.NEXT)
-            return true
-        }
-    }
-
-    private fun startPageAnim(direction: PageAnimation.Direction?) {
-        if (mTouchListener == null) return
-        //是否正在执行动画
-        abortAnimation()
-        if (direction == PageAnimation.Direction.NEXT) {
-            val x = mViewWidth
-            val y = mViewHeight
-            //初始化动画
-            mPageAnim?.setStartPoint(x.toFloat(), y.toFloat())
-            //设置点击点
-            mPageAnim?.setTouchPoint(x.toFloat(), y.toFloat())
-            //设置方向
-            val hasNext = hasNextPage()
-
-            mPageAnim?.direction = direction
-            if (!hasNext) {
-                return
-            }
-        } else {
-            val x = 0
-            val y = mViewHeight
-            //初始化动画
-            mPageAnim?.setStartPoint(x.toFloat(), y.toFloat())
-            //设置点击点
-            mPageAnim?.setTouchPoint(x.toFloat(), y.toFloat())
-            mPageAnim?.direction = direction
-            //设置方向方向
-            val hashPrev = hasPrevPage()
-            if (!hashPrev) {
-                return
-            }
-        }
-        mPageAnim?.startAnim()
-        this.postInvalidate()
-    }
+    val nextBitmap: BitmapWrapper? get() = mPageAnim?.getNextBitmap()
+    val bgBitmap: BitmapWrapper? get() = mPageAnim?.getBgBitmap()
 
     override fun setBackground(background: Drawable?) {
         mBackground = background
@@ -251,6 +205,10 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         mTouchListener?.center()
                         return true
                     }
+                } else {
+                    if (mPageAnim is ScrollPageAnim) {
+                        pageLoader?.saveRecord()
+                    }
                 }
                 mPageAnim?.onTouchEvent(event)
             }
@@ -264,28 +222,6 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private val longClick = Runnable {
         mHasPerformedLongPress = true
         pageLoader?.onLongPress(mStartX, mStartY)
-    }
-
-    /**
-     * 判断是否存在上一页
-     *
-     * @return
-     */
-    private fun hasPrevPage(): Boolean {
-        return pageLoader?.prev() ?: false
-    }
-
-    /**
-     * 判断是否下一页存在
-     *
-     * @return
-     */
-    private fun hasNextPage(): Boolean {
-        return pageLoader?.next() ?: false
-    }
-
-    private fun pageCancel() {
-        pageLoader?.pageCancel()
     }
 
     override fun computeScroll() {
@@ -309,24 +245,20 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (mPageAnim is HorizonPageAnim) {
             (mPageAnim as HorizonPageAnim).changePage()
         }
-        pageLoader?.drawPage(this.nextBitmap ?: return, false)
+        pageLoader?.drawPage(this.nextBitmap ?: return)
     }
 
     /**
      * 绘制当前页。
      *
-     * @param isUpdate
      */
-    fun drawCurPage(isUpdate: Boolean) {
-        Log.i("绘制书籍内容 isPrepare:$isPrepare isUpdate:$isUpdate")
+    fun drawCurPage() {
+        Log.i("绘制书籍内容 isPrepare:$isPrepare")
         if (!isPrepare) return
-
-        if (!isUpdate) {
-            if (mPageAnim is ScrollPageAnim) {
-                (mPageAnim as ScrollPageAnim).resetBitmap()
-            }
+        if (mPageAnim is ScrollPageAnim) {
+            (mPageAnim as ScrollPageAnim).resetBitmap()
         }
-        pageLoader?.drawPage(this.nextBitmap ?: return, isUpdate)
+        pageLoader?.drawPage(this.nextBitmap ?: return)
     }
 
     override fun onDetachedFromWindow() {
@@ -340,6 +272,21 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
 
         pageLoader = null
         mPageAnim = null
+    }
+
+    fun getBookRecord(): BookRecordBean? {
+        val pageAnim = mPageAnim ?: return null
+        if (pageAnim is ScrollPageAnim) {
+            return pageAnim.bookRecord
+        }
+        return null
+    }
+
+    fun setBookRecord(record: BookRecordBean) {
+        val pageAnim = mPageAnim ?: return
+        if (pageAnim is ScrollPageAnim) {
+            pageAnim.setBookRecord(record)
+        }
     }
 
     interface TouchListener {

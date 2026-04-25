@@ -57,6 +57,7 @@ class BookDetailsViewModel : ViewModel() {
         if (readingRecord.chapterIndex != lastChapter?.index) {
             readingRecord.chapterIndex = lastChapter?.index ?: 0
             readingRecord.offest = 0
+            readingRecord.scrollOffset = 0
             readingRecord.isEnd = false
             readingRecord.updateTime = System.currentTimeMillis()
             readingRecordDao.insertReadingRecord(readingRecord)

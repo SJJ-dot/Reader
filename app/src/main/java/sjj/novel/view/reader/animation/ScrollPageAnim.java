@@ -7,9 +7,15 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import sjj.alog.Log;
+import sjj.novel.view.reader.bean.BookRecordBean;
 
 public class ScrollPageAnim extends PageAnimation {
     private static final String TAG = "ScrollAnimation";
@@ -17,11 +23,15 @@ public class ScrollPageAnim extends PageAnimation {
     private static final int VELOCITY_DURATION = 1000;
     private VelocityTracker mVelocity;
 
-    // 整个Bitmap的背景显示
-    private Bitmap mBgBitmap;
-
     // 下一个展示的图片
-    private Bitmap mNextBitmap;
+    private BitmapWrapper mNextBitmap;
+
+    private final Rect mContentSrcRect;
+    private final int mContentLeft;
+    private final int mContentTop;
+    private final int mContentRight;
+    private final int mContentBottom;
+    private final int mContentHeight;
 
     // 被废弃的图片列表
     private ArrayDeque<BitmapView> mScrapViews;
@@ -30,25 +40,31 @@ public class ScrollPageAnim extends PageAnimation {
 
     // 是否处于刷新阶段
     private boolean isRefresh = true;
+    private BookRecordBean mBookRecord = new BookRecordBean();
 
-    public ScrollPageAnim(int w, int h, int marginWidth, int marginHeight,
+    public ScrollPageAnim(int w, int h,
+                          int contentLeft, int contentTop, int contentRight, int contentBottom,
                           View view, OnPageChangeListener listener) {
-        super(w, h, marginWidth, marginHeight, view, listener);
+        super(w, h, view, listener);
+        mContentLeft = Math.max(0, contentLeft);
+        mContentTop = Math.max(0, contentTop);
+        mContentRight = Math.min(mScreenWidth, contentRight);
+        mContentBottom = Math.min(mScreenHeight, contentBottom);
+        mContentHeight = Math.max(0, mContentBottom - mContentTop);
+        mContentSrcRect = new Rect(mContentLeft, mContentTop, mContentRight, mContentBottom);
         // 创建两个BitmapView
         initWidget();
     }
 
     private void initWidget() {
-        mBgBitmap = Bitmap.createBitmap(mScreenWidth, mScreenHeight, Bitmap.Config.RGB_565);
-
         mScrapViews = new ArrayDeque<>(2);
         for (int i = 0; i < 2; ++i) {
             BitmapView view = new BitmapView();
-            view.bitmap = Bitmap.createBitmap(mViewWidth, mViewHeight, Bitmap.Config.RGB_565);
-            view.srcRect = new Rect(0, 0, mViewWidth, mViewHeight);
-            view.destRect = new Rect(0, 0, mViewWidth, mViewHeight);
-            view.top = 0;
-            view.bottom = view.bitmap.getHeight();
+            view.bitmap = new BitmapWrapper(Bitmap.createBitmap(mScreenWidth, mScreenHeight, Bitmap.Config.RGB_565));
+            view.srcRect = new Rect(mContentSrcRect);
+            view.destRect = new Rect(mContentLeft, mContentTop, mContentRight, mContentBottom);
+            view.top = mContentTop;
+            view.bottom = mContentBottom;
 
             mScrapViews.push(view);
         }
@@ -58,9 +74,13 @@ public class ScrollPageAnim extends PageAnimation {
 
     // 修改布局,填充内容
     private void onLayout() {
+        if (mContentHeight <= 0) {
+            return;
+        }
         // 如果还没有开始加载，则从上到下进行绘制
-        if (mActiveViews.size() == 0) {
-            fillDown(0, 0);
+        if (mActiveViews.isEmpty()) {
+//            fillDown(mContentTop, mBookRecord.scrollOffset - mContentTop);
+            fillDown(mContentTop, 0);
             mDirection = Direction.NONE;
         } else {
             int offset = (int) (mTouchY - mLastY);
@@ -98,11 +118,13 @@ public class ScrollPageAnim extends PageAnimation {
             view.top = view.top + offset;
             view.bottom = view.bottom + offset;
             // 设置允许显示的范围
+            view.destRect.left = mContentLeft;
+            view.destRect.right = mContentRight;
             view.destRect.top = view.top;
             view.destRect.bottom = view.bottom;
 
             // 判断是否越界了
-            if (view.bottom <= 0) {
+            if (view.bottom <= mContentTop) {
                 // 添加到废弃的View中
                 mScrapViews.add(view);
                 // 从Active中移除
@@ -119,16 +141,15 @@ public class ScrollPageAnim extends PageAnimation {
         int realEdge = bottomEdge + offset;
 
         // 进行填充
-        while (realEdge < mViewHeight && mActiveViews.size() < 2) {
+        while (realEdge < mContentBottom && mActiveViews.size() < 2) {
             // 从废弃的Views中获取一个
             view = mScrapViews.getFirst();
 /*          //擦除其Bitmap(重新创建会不会更好一点)
             eraseBitmap(view.bitmap,view.bitmap.getWidth(),view.bitmap.getHeight(),0,0);*/
             if (view == null) return;
 
-            Bitmap cancelBitmap = mNextBitmap;
+            BitmapWrapper cancelBitmap = mNextBitmap;
             mNextBitmap = view.bitmap;
-
             if (!isRefresh) {
                 boolean hasNext = mListener.hasNext(); //如果不成功则无法滑动
 
@@ -136,9 +157,11 @@ public class ScrollPageAnim extends PageAnimation {
                 if (!hasNext) {
                     mNextBitmap = cancelBitmap;
                     for (BitmapView activeView : mActiveViews) {
-                        activeView.top = 0;
-                        activeView.bottom = mViewHeight;
+                        activeView.top = mContentTop;
+                        activeView.bottom = mContentBottom;
                         // 设置允许显示的范围
+                        activeView.destRect.left = mContentLeft;
+                        activeView.destRect.right = mContentRight;
                         activeView.destRect.top = activeView.top;
                         activeView.destRect.bottom = activeView.bottom;
                     }
@@ -155,12 +178,14 @@ public class ScrollPageAnim extends PageAnimation {
 
             // 设置Bitmap的范围
             view.top = realEdge;
-            view.bottom = realEdge + view.bitmap.getHeight();
+            view.bottom = realEdge + mContentHeight;
             // 设置允许显示的范围
+            view.destRect.left = mContentLeft;
+            view.destRect.right = mContentRight;
             view.destRect.top = view.top;
             view.destRect.bottom = view.bottom;
 
-            realEdge += view.bitmap.getHeight();
+            realEdge += mContentHeight;
         }
     }
 
@@ -181,11 +206,13 @@ public class ScrollPageAnim extends PageAnimation {
             view.top = view.top + offset;
             view.bottom = view.bottom + offset;
             //设置允许显示的范围
+            view.destRect.left = mContentLeft;
+            view.destRect.right = mContentRight;
             view.destRect.top = view.top;
             view.destRect.bottom = view.bottom;
 
             // 判断是否越界了
-            if (view.top >= mViewHeight) {
+            if (view.top >= mContentBottom) {
                 // 添加到废弃的View中
                 mScrapViews.add(view);
                 // 从Active中移除
@@ -204,13 +231,13 @@ public class ScrollPageAnim extends PageAnimation {
         int realEdge = topEdge + offset;
 
         // 对布局进行View填充
-        while (realEdge > 0 && mActiveViews.size() < 2) {
+        while (realEdge > mContentTop && mActiveViews.size() < 2) {
             // 从废弃的Views中获取一个
             view = mScrapViews.getFirst();
             if (view == null) return;
 
             // 判断是否存在上一章节
-            Bitmap cancelBitmap = mNextBitmap;
+            BitmapWrapper cancelBitmap = mNextBitmap;
             mNextBitmap = view.bitmap;
             if (!isRefresh) {
                 boolean hasPrev = mListener.hasPrev(); // 如果不成功则无法滑动
@@ -218,9 +245,11 @@ public class ScrollPageAnim extends PageAnimation {
                 if (!hasPrev) {
                     mNextBitmap = cancelBitmap;
                     for (BitmapView activeView : mActiveViews) {
-                        activeView.top = 0;
-                        activeView.bottom = mViewHeight;
+                        activeView.top = mContentTop;
+                        activeView.bottom = mContentBottom;
                         // 设置允许显示的范围
+                        activeView.destRect.left = mContentLeft;
+                        activeView.destRect.right = mContentRight;
                         activeView.destRect.top = activeView.top;
                         activeView.destRect.bottom = activeView.bottom;
                     }
@@ -234,29 +263,16 @@ public class ScrollPageAnim extends PageAnimation {
             mActiveViews.add(0, view);
             mDirection = Direction.UP;
             // 设置Bitmap的范围
-            view.top = realEdge - view.bitmap.getHeight();
+            view.top = realEdge - mContentHeight;
             view.bottom = realEdge;
 
             // 设置允许显示的范围
+            view.destRect.left = mContentLeft;
+            view.destRect.right = mContentRight;
             view.destRect.top = view.top;
             view.destRect.bottom = view.bottom;
-            realEdge -= view.bitmap.getHeight();
+            realEdge -= mContentHeight;
         }
-    }
-
-    /**
-     * 对Bitmap进行擦除
-     *
-     * @param b
-     * @param width
-     * @param height
-     * @param paddingLeft
-     * @param paddingTop
-     */
-    private void eraseBitmap(Bitmap b, int width, int height,
-                             int paddingLeft, int paddingTop) {
-     /*   if (mInitBitmapPix == null) return;
-        b.setPixels(mInitBitmapPix, 0, width, paddingLeft, paddingTop, width, height);*/
     }
 
     /**
@@ -330,22 +346,30 @@ public class ScrollPageAnim extends PageAnimation {
     @Override
     public void draw(Canvas canvas) {
         //进行布局
-        onLayout();
+        if (mNextBitmap.chapterPos != -1) {
+            onLayout();
+        }
 
-        //绘制背景
-        canvas.drawBitmap(mBgBitmap, 0, 0, null);
-        //绘制内容
+        BitmapWrapper fixedBitmap = mNextBitmap;
+        if (!mActiveViews.isEmpty()) {
+            BitmapView view = mActiveViews.get(0);
+            fixedBitmap = view.bitmap;
+            mBookRecord.chapter = fixedBitmap.chapterPos;
+            mBookRecord.pagePos = fixedBitmap.pagePos;
+            mBookRecord.scrollOffset = view.top;
+        }
+        if (fixedBitmap != null) {
+            canvas.drawBitmap(fixedBitmap.bitmap, 0, 0, null);
+        }
+
         canvas.save();
-        //移动位置
-        canvas.translate(0, mMarginHeight);
-        //裁剪显示区域
-        canvas.clipRect(0, 0, mViewWidth, mViewHeight);
+        canvas.clipRect(mContentLeft, mContentTop, mContentRight, mContentBottom);
 /*        //设置背景透明
         canvas.drawColor(0x40);*/
         //绘制Bitmap
         for (int i = 0; i < mActiveViews.size(); ++i) {
             tmpView = mActiveViews.get(i);
-            canvas.drawBitmap(tmpView.bitmap, tmpView.srcRect, tmpView.destRect, null);
+            canvas.drawBitmap(tmpView.bitmap.bitmap, tmpView.srcRect, tmpView.destRect, null);
         }
         canvas.restore();
     }
@@ -379,17 +403,27 @@ public class ScrollPageAnim extends PageAnimation {
     }
 
     @Override
-    public Bitmap getBgBitmap() {
-        return mBgBitmap;
-    }
-
-    @Override
-    public Bitmap getNextBitmap() {
+    public BitmapWrapper getBgBitmap() {
         return mNextBitmap;
     }
 
+    @Override
+    public BitmapWrapper getNextBitmap() {
+        return mNextBitmap;
+    }
+
+    public @Nullable BookRecordBean getBookRecord() {
+        Log.i("getBookRecord: " + mBookRecord);
+        return mBookRecord;
+    }
+
+    public void setBookRecord(@NotNull BookRecordBean record) {
+        Log.i("setBookRecord: " + record);
+        mBookRecord = record;
+    }
+
     private static class BitmapView {
-        Bitmap bitmap;
+        BitmapWrapper bitmap;
         Rect srcRect;
         Rect destRect;
         int top;

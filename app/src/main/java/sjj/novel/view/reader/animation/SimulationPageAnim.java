@@ -90,24 +90,24 @@ public class SimulationPageAnim extends HorizonPageAnim {
         switch (mDirection) {
             case NEXT:
                 calcPoints();
-                drawCurrentPageArea(canvas, mCurBitmap, mPath0);
-                drawNextPageAreaAndShadow(canvas, mNextBitmap);
+                drawCurrentPageArea(canvas, mCurBitmap.bitmap, mPath0);
+                drawNextPageAreaAndShadow(canvas, mNextBitmap.bitmap);
                 drawCurrentPageShadow(canvas);
-                drawCurrentBackArea(canvas, mCurBitmap);
+                drawCurrentBackArea(canvas, mCurBitmap.bitmap);
                 break;
             case PRE:
                 calcPoints();
-                drawCurrentPageArea(canvas, mCurBitmap, mPath0);
-                drawNextPageAreaAndShadow(canvas, mNextBitmap);
+                drawCurrentPageArea(canvas, mCurBitmap.bitmap, mPath0);
+                drawNextPageAreaAndShadow(canvas, mNextBitmap.bitmap);
                 drawCurrentPageShadow(canvas);
-                drawCurrentBackArea(canvas, mCurBitmap);
+                drawCurrentBackArea(canvas, mCurBitmap.bitmap);
                 break;
             default:
                 calcPoints();
-                drawCurrentPageArea(canvas, mNextBitmap, mPath0);
-                drawNextPageAreaAndShadow(canvas, mCurBitmap);
+                drawCurrentPageArea(canvas, mNextBitmap.bitmap, mPath0);
+                drawNextPageAreaAndShadow(canvas, mCurBitmap.bitmap);
                 drawCurrentPageShadow(canvas);
-                drawCurrentBackArea(canvas, mNextBitmap);
+                drawCurrentBackArea(canvas, mNextBitmap.bitmap);
                 break;
         }
     }
@@ -116,9 +116,9 @@ public class SimulationPageAnim extends HorizonPageAnim {
     public void drawStatic(Canvas canvas) {
         if (isCancel) {
             mNextBitmap = mCurBitmap.copy(Bitmap.Config.RGB_565, true);
-            canvas.drawBitmap(mCurBitmap, 0, 0, null);
+            canvas.drawBitmap(mCurBitmap.bitmap, 0, 0, null);
         } else {
-            canvas.drawBitmap(mNextBitmap, 0, 0, null);
+            canvas.drawBitmap(mNextBitmap.bitmap, 0, 0, null);
         }
     }
 

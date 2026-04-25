@@ -11,7 +11,6 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.dp2Px
 import com.zqc.opencc.android.lib.ChineseConverter
 import com.zqc.opencc.android.lib.ConversionType
@@ -20,6 +19,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
+import sjj.novel.view.reader.animation.BitmapWrapper
 import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
@@ -82,8 +82,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     private var mCancelPage: TxtPage? = null
 
     // 存储阅读记录类
-    private var mBookRecord = BookRecordBean()
-
+    var mBookRecord = BookRecordBean()
+        private set
     private var mPreLoadDisp: Job? = null
 
     // 简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
@@ -117,6 +117,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      */
     // 当前章
     var chapterPos: Int = 0
+        set(value) {
+            field = value
+            Log.i("chapterPos:$field")
+        }
 
 
     //上一章的记录
@@ -143,7 +147,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         mTipPaint!!.setTypeface(typeface)
         mTextPaint!!.setTypeface(typeface)
         mTitlePaint!!.setTypeface(typeface)
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     private fun initPaint() {
@@ -191,7 +195,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         } else {
             mCurPage = TxtPage()
         }
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
         return true
     }
 
@@ -212,7 +216,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         } else {
             mCurPage = TxtPage()
         }
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
         return true
     }
 
@@ -233,7 +237,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     fun setTtsSpeakLine(lines: TxtLine?) {
         ttsSpeakLine = lines
-        mPageView?.drawCurPage(false)
+        mPageView?.drawCurPage()
     }
 
     /**
@@ -247,7 +251,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             return false
         }
         mCurPage = getCurPage(pos)
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
         return true
     }
 
@@ -277,7 +281,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     /**
@@ -295,7 +299,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         mTextPaint!!.setColor(pageStyle.getChapterContentColor(mPageView!!.context))
         mSelectedPaint!!.setColor(pageStyle.getSelectedColor(mPageView!!.context))
         mSelectedColorTest = selectedColorTest
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     /**
@@ -311,7 +315,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         mPageView!!.setPageMode(pageMode)
 
         // 重新绘制当前页
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     /**
@@ -327,7 +331,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         get() = mStatus
         set(status) {
             mStatus = status
-            mPageView!!.drawCurPage(false)
+            mPageView!!.drawCurPage()
         }
 
     val pagePos: Int
@@ -357,21 +361,29 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         if (!isChapterOpen || chapterList.isEmpty() || collBook == null || curPage == null || curPageList == null || mStatus != STATUS_FINISH) {
             return
         }
-        //        if (curChapterPos == bookRecord.chapter && bookRecord.pagePos == curPage.position) {
-//            return;
-//        }
         bookRecord.bookId = collBook.id
-        bookRecord.chapter = curChapterPos
-        bookRecord.pagePos = curPage.position
+        val record = mPageView?.getBookRecord()
+        if (record != null) {
+            bookRecord.chapter = record.chapter
+            bookRecord.pagePos = record.pagePos
+            bookRecord.scrollOffset = record.scrollOffset
+        } else {
+            bookRecord.chapter = curChapterPos
+            bookRecord.pagePos = curPage.position
+            bookRecord.scrollOffset = 0
+        }
 
         bookRecord.isEnd =
             curChapterPos == chapterList.size - 1 && curPageList.size == curPage.position + 1
+
+        Log.i("保存阅读记录:${bookRecord}")
         mPageChangeListener!!.onBookRecordChange(bookRecord)
     }
 
     fun setBookRecord(record: BookRecordBean) {
-        Log.i("设置阅读记录")
+        Log.i("恢复阅读记录:${record}")
         mBookRecord = record
+        mPageView?.setBookRecord(record)
         this.chapterPos = record.chapter
         mLastChapterPos = this.chapterPos
         if (isChapterOpen) {
@@ -395,7 +407,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         if (!isChapterListPrepare) {
             Log.e("章节数没准备好")
             mStatus = STATUS_LOADING
-            mPageView!!.drawCurPage(false)
+            mPageView!!.drawCurPage()
             return
         }
 
@@ -403,7 +415,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         if (chapterCategory!!.isEmpty()) {
             Log.e("章节为空")
             mStatus = STATUS_CATEGORY_EMPTY
-            mPageView!!.drawCurPage(false)
+            mPageView!!.drawCurPage()
             return
         }
 
@@ -433,13 +445,13 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             mCurPage = TxtPage()
         }
 
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     fun chapterError() {
         //加载错误
         mStatus = STATUS_ERROR
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     /**
@@ -503,57 +515,51 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     /***********************************default method */
-    fun drawPage(bitmap: Bitmap, isUpdate: Boolean) {
-        drawBackground(mPageView?.bgBitmap ?: return, isUpdate)
-        if (!isUpdate) {
-            drawContent(bitmap)
-        }
+    fun drawPage(bitmap: BitmapWrapper) {
+        drawBackground(mPageView?.bgBitmap?.bitmap ?: return)
+        bitmap.chapterPos = this.chapterPos
+        bitmap.pagePos = pagePos
+        Log.i("chapterPos:" + this.chapterPos + " pagePos:" + pagePos)
+        drawContent(bitmap.bitmap)
         Log.i("书籍绘制完成")
         //更新绘制
         mPageView!!.invalidate()
     }
 
-    private fun drawBackground(bitmap: Bitmap, isUpdate: Boolean) {
+    private fun drawBackground(bitmap: Bitmap) {
         Log.i("绘制背景 Width:" + bitmap.width + " Height:" + bitmap.height)
         val canvas = Canvas(bitmap)
         val tipMarginHeight = 3.dp2Px
-        if (!isUpdate) {
-            /****绘制背景 */
-            mBackground?.draw(canvas)
-            val chapters = chapterCategory
-            val tipPaint = mTipPaint!!
-            if (chapters?.isEmpty() == false) {
-                /*****初始化标题的参数 */
-                //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-                val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
-                //根据状态不一样，数据不一样
-                if (mStatus != STATUS_FINISH) {
-                    if (isChapterListPrepare) {
-                        canvas.drawText(chapters[this.chapterPos].title, mDisplayParams.contentLeft, tipTop, tipPaint)
-                    }
-                } else {
-                    val curPage = mCurPage ?: return
-                    val pageList = curPageList ?: return
-
-                    /******绘制页码 */
-                    val percent = (curPage.position + 1).toString() + "/" + pageList.size
-                    canvas.drawText(percent, mDisplayParams.contentRight - tipPaint.measureText(percent), tipTop, tipPaint)
-
-                    val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - tipMarginHeight, null)
-                    canvas.drawText(curPage.title, 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
+        /****绘制背景 */
+        mBackground?.draw(canvas)
+        val chapters = chapterCategory
+        val tipPaint = mTipPaint!!
+        if (chapters?.isEmpty() == false) {
+            /*****初始化标题的参数 */
+            //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
+            val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
+            //根据状态不一样，数据不一样
+            if (mStatus != STATUS_FINISH) {
+                if (isChapterListPrepare) {
+                    canvas.drawText(chapters[this.chapterPos].title, mDisplayParams.contentLeft, tipTop, tipPaint)
                 }
+            } else {
+                val curPage = mCurPage ?: return
+                val pageList = curPageList ?: return
+
+                /******绘制页码 */
+                val percent = (curPage.position + 1).toString() + "/" + pageList.size
+                canvas.drawText(percent, mDisplayParams.contentRight - tipPaint.measureText(percent), tipTop, tipPaint)
+
+                val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - tipMarginHeight, null)
+                canvas.drawText(curPage.title, 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
             }
-        } else {
-            throw UnsupportedOperationException("不支持绘制时间。后续再改")
         }
     }
 
     private fun drawContent(bitmap: Bitmap) {
         val canvas = Canvas(bitmap)
         Log.i("绘制书籍内容 w:" + bitmap.getWidth() + " h:" + bitmap.getHeight() + " mStatus:" + mStatus)
-        if (mPageMode == PageMode.SCROLL) {
-            mBackground?.draw(canvas)
-        }
 
 //        if (BuildConfig.DEBUG) {
 //            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
@@ -563,8 +569,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 //            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
 //        }
         /******绘制内容 */
-        val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.insetTop else 0f
-        canvas.translate(0f, -scrollY)
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {
             //绘制字体
@@ -681,7 +685,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
         if (!isChapterOpen) {
             // 展示加载界面
-            mPageView!!.drawCurPage(false)
+            mPageView!!.drawCurPage()
             // 如果在 display 之前调用过 openChapter 肯定是无法打开的。
             // 所以需要通过 display 再重新调用一次。
             if (!isFirstOpen) {
@@ -695,7 +699,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 // 重新设置文章指针的位置
                 mCurPage = getCurPage(mCurPage!!.position)
             }
-            mPageView!!.drawCurPage(false)
+            mPageView!!.drawCurPage()
         }
     }
 
@@ -815,7 +819,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         parseCurChapter()
         // 重新设置文章指针的位置
         mCurPage = getCurPage(mCurPage?.position ?: 0)
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 
     open fun parseCurChapter(): Boolean {
@@ -1418,6 +1422,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 
-        mPageView!!.drawCurPage(false)
+        mPageView!!.drawCurPage()
     }
 }

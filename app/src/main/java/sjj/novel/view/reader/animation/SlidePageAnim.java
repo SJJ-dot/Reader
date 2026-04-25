@@ -23,9 +23,9 @@ public class SlidePageAnim extends HorizonPageAnim {
     @Override
     public void drawStatic(Canvas canvas) {
         if (isCancel){
-            canvas.drawBitmap(mCurBitmap, 0, 0, null);
+            canvas.drawBitmap(mCurBitmap.bitmap, 0, 0, null);
         }else {
-            canvas.drawBitmap(mNextBitmap, 0, 0, null);
+            canvas.drawBitmap(mNextBitmap.bitmap, 0, 0, null);
         }
     }
 
@@ -48,8 +48,8 @@ public class SlidePageAnim extends HorizonPageAnim {
                 //计算下一页在canvas显示的区域
                 mNextDestRect.left = dis;
 
-                canvas.drawBitmap(mNextBitmap,mNextSrcRect,mNextDestRect,null);
-                canvas.drawBitmap(mCurBitmap,mSrcRect,mDestRect,null);
+                canvas.drawBitmap(mNextBitmap.bitmap,mNextSrcRect,mNextDestRect,null);
+                canvas.drawBitmap(mCurBitmap.bitmap,mSrcRect,mDestRect,null);
                 break;
             default:
                 dis = (int) (mTouchX - mStartX);
@@ -65,8 +65,8 @@ public class SlidePageAnim extends HorizonPageAnim {
                 //计算下一页在canvas显示的区域
                 mNextDestRect.left = dis;
 
-                canvas.drawBitmap(mCurBitmap,mNextSrcRect,mNextDestRect,null);
-                canvas.drawBitmap(mNextBitmap,mSrcRect,mDestRect,null);
+                canvas.drawBitmap(mCurBitmap.bitmap,mNextSrcRect,mNextDestRect,null);
+                canvas.drawBitmap(mNextBitmap.bitmap,mSrcRect,mDestRect,null);
                 break;
         }
     }

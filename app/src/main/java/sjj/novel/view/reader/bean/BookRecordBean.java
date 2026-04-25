@@ -12,6 +12,8 @@ public class BookRecordBean{
     public int chapter;
     //当前的页码
     public int pagePos;
+    // 页内的偏移
+    public int scrollOffset;
 
     public boolean isEnd = false;
 
@@ -22,7 +24,8 @@ public class BookRecordBean{
                 "bookId='" + bookId + '\'' +
                 ", chapter=" + chapter +
                 ", pagePos=" + pagePos +
-                ", isThrough=" + isEnd +
+                ", scrollOffset=" + scrollOffset +
+                ", isEnd=" + isEnd +
                 '}';
     }
 }

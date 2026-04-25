@@ -30,9 +30,9 @@ public class CoverPageAnim extends HorizonPageAnim {
     public void drawStatic(Canvas canvas) {
         if (isCancel){
             mNextBitmap = mCurBitmap.copy(Bitmap.Config.RGB_565, true);
-            canvas.drawBitmap(mCurBitmap, 0, 0, null);
+            canvas.drawBitmap(mCurBitmap.bitmap, 0, 0, null);
         }else {
-            canvas.drawBitmap(mNextBitmap, 0, 0, null);
+            canvas.drawBitmap(mNextBitmap.bitmap, 0, 0, null);
         }
     }
 
@@ -49,15 +49,15 @@ public class CoverPageAnim extends HorizonPageAnim {
                 mSrcRect.left = mViewWidth - dis;
                 //计算bitmap在canvas显示的区域
                 mDestRect.right = dis;
-                canvas.drawBitmap(mNextBitmap,0,0,null);
-                canvas.drawBitmap(mCurBitmap,mSrcRect,mDestRect,null);
+                canvas.drawBitmap(mNextBitmap.bitmap,0,0,null);
+                canvas.drawBitmap(mCurBitmap.bitmap,mSrcRect,mDestRect,null);
                 addShadow(dis,canvas);
                 break;
             default:
                 mSrcRect.left = (int) (mViewWidth - mTouchX);
                 mDestRect.right = (int) mTouchX;
-                canvas.drawBitmap(mCurBitmap,0,0,null);
-                canvas.drawBitmap(mNextBitmap,mSrcRect,mDestRect,null);
+                canvas.drawBitmap(mCurBitmap.bitmap,0,0,null);
+                canvas.drawBitmap(mNextBitmap.bitmap,mSrcRect,mDestRect,null);
                 addShadow((int) mTouchX,canvas);
                 break;
         }

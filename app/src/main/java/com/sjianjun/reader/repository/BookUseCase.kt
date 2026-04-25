@@ -216,6 +216,7 @@ object BookUseCase {
         readingRecord.chapterIndex = readChapter?.index ?: readingRecord.chapterIndex
         if (readingRecord.chapterIndex == -1) {
             readingRecord.offest = 0
+            readingRecord.scrollOffset = 0
         }
         readingRecordDao.insertReadingRecord(readingRecord)
     }

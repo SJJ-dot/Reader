@@ -16,6 +16,9 @@ class ReadingRecord(
 
     var isEnd = false
 
+    //页内偏移（px）
+    var scrollOffset = 0
+
     /**
      * 更新时间
      */
@@ -38,6 +41,7 @@ class ReadingRecord(
         if (chapterIndex != other.chapterIndex) return false
         if (offest != other.offest) return false
         if (isEnd != other.isEnd) return false
+        if (scrollOffset != other.scrollOffset) return false
 
         return true
     }
@@ -48,6 +52,7 @@ class ReadingRecord(
         result = 31 * result + chapterIndex
         result = 31 * result + offest
         result = 31 * result + isEnd.hashCode()
+        result = 31 * result + scrollOffset
         return result
     }
 

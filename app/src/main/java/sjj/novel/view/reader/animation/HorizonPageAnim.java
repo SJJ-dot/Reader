@@ -2,7 +2,6 @@ package sjj.novel.view.reader.animation;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -15,8 +14,8 @@ import android.view.ViewConfiguration;
 public abstract class HorizonPageAnim extends PageAnimation{
     private static final String TAG = "HorizonPageAnim";
 
-    protected Bitmap mCurBitmap;
-    protected Bitmap mNextBitmap;
+    protected BitmapWrapper mCurBitmap;
+    protected BitmapWrapper mNextBitmap;
     //是否取消翻页
     protected boolean isCancel = false;
 
@@ -38,10 +37,10 @@ public abstract class HorizonPageAnim extends PageAnimation{
 
     public HorizonPageAnim(int w, int h, int marginWidth, int marginHeight,
                            View view, OnPageChangeListener listener) {
-        super(w, h, marginWidth, marginHeight, view,listener);
+        super(w, h, view,listener);
         //创建图片
-        mCurBitmap = Bitmap.createBitmap(mViewWidth, mViewHeight, Bitmap.Config.RGB_565);
-        mNextBitmap = Bitmap.createBitmap(mViewWidth, mViewHeight, Bitmap.Config.RGB_565);
+        mCurBitmap = new BitmapWrapper(Bitmap.createBitmap(mViewWidth, mViewHeight, Bitmap.Config.RGB_565));
+        mNextBitmap = new BitmapWrapper(Bitmap.createBitmap(mViewWidth, mViewHeight, Bitmap.Config.RGB_565));
         mSlop = ViewConfiguration.get(mView.getContext()).getScaledTouchSlop();
     }
 
@@ -49,7 +48,7 @@ public abstract class HorizonPageAnim extends PageAnimation{
      * 转换页面，在显示下一章的时候，必须首先调用此方法
      */
     public void changePage(){
-        Bitmap bitmap = mCurBitmap;
+        BitmapWrapper bitmap = mCurBitmap;
         mCurBitmap = mNextBitmap;
         mNextBitmap = bitmap;
     }
@@ -222,12 +221,12 @@ public abstract class HorizonPageAnim extends PageAnimation{
     }
 
     @Override
-    public Bitmap getBgBitmap() {
+    public BitmapWrapper getBgBitmap() {
         return mNextBitmap;
     }
 
     @Override
-    public Bitmap getNextBitmap() {
+    public BitmapWrapper getNextBitmap() {
         return mNextBitmap;
     }
 }

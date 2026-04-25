@@ -37,6 +37,7 @@ class ChapterListViewModel : ViewModel() {
         readingRecord.value?.let {
             it.chapterIndex = c.index
             it.offest = 0
+            it.scrollOffset = 0
             it.isEnd = false
             it.updateTime = System.currentTimeMillis()
             readingRecordDao.insertReadingRecord(it)

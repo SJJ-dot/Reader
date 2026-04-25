@@ -448,6 +448,7 @@ class BookReaderActivity : BaseActivity() {
                     val lastChapterIndex = book.chapterList?.lastIndex ?: 0
                     chapter = min(max(chapter, 0), lastChapterIndex)
                     pagePos = if (record.isEnd && lastChapterIndex > record.chapterIndex) 0 else record.offest
+                    scrollOffset = if (record.isEnd && lastChapterIndex > record.chapterIndex) 0 else record.scrollOffset
                     isEnd = record.isEnd
                 })
             }
