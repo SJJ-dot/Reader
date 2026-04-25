@@ -61,6 +61,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         }
 
     private var ttsSpeakLine: TxtLine? = null
+
     // 当前章节的页面列表
     var curPageList: List<TxtPage>? = null
 
@@ -258,13 +259,12 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float, letterSpacing: Float) {
         Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace letterSpacing:$letterSpacing")
         // 文字大小
-        mDisplayParams.textInterval = lineSpace
-        mDisplayParams.textPara = paraSpace
+        mDisplayParams.lineInterval = lineSpace
+        mDisplayParams.paraInterval = paraSpace
         mDisplayParams.letterSpacing = letterSpacing
         mTextPaint!!.textSize = textSize
 
-        mDisplayParams.titleInterval = lineSpace
-        mDisplayParams.titlePara = paraSpace * 1.5f
+        mDisplayParams.titleParaInterval = paraSpace * 1.5f
         mTitlePaint!!.textSize = textSize * 1.1f
         // 取消缓存
         ChapterPageCache.resetTextSize(textSize, lineSpace, paraSpace, letterSpacing)
@@ -555,13 +555,13 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             mBackground?.draw(canvas)
         }
 
-        if (BuildConfig.DEBUG) {
-            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
-            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
-
-            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
-            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
-        }
+//        if (BuildConfig.DEBUG) {
+//            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
+//            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
+//
+//            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
+//            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
+//        }
         /******绘制内容 */
         val scrollY = if (mPageMode == PageMode.SCROLL) mDisplayParams.contentTop - mDisplayParams.insetTop else 0f
         canvas.translate(0f, -scrollY)
@@ -648,6 +648,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             val textMetrics = mTextPaint!!.getFontMetrics()
             val textBase = -textMetrics.ascent
             for (line in curPage.lines) {
+//                if (BuildConfig.DEBUG) {
+//                    canvas.drawLine(0f, line.top, mDisplayParams.width.toFloat(), line.top, mTitlePaint!!)
+//                    canvas.drawLine(0f, line.bottom, mDisplayParams.width.toFloat(), line.bottom, mTitlePaint!!)
+//                }
                 val y = line.top + (if (line.isTitle) titleBase else textBase)
                 val paint: Paint = (if (line.isTitle) mTitlePaint else mTextPaint)!!
                 val bounds = line.clusterBoundaries
@@ -958,16 +962,21 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         var i = 0
         while (i < lines.size) {
             var top = mDisplayParams.contentTop
-            if (i == 0) {
-                top += mDisplayParams.titlePara
-            }
             var clusterStart = 0
             while (i < lines.size) {
-                val line = lines.get(i)
-                val remHeight = mDisplayParams.contentBottom - top - line.height
+                val line = lines[i]
+                var lineInterval = mDisplayParams.lineInterval
+                if (i == 0) {
+                    lineInterval = mDisplayParams.titleParaInterval
+                } else if (lines[i - 1].isParaEnd) {
+                    lineInterval = if (lines[i - 1].isTitle) mDisplayParams.titleParaInterval else mDisplayParams.paraInterval
+                }
+
+                val remHeight = mDisplayParams.contentBottom - top - line.height - lineInterval
                 if (remHeight < 0) {
                     break
                 }
+                top += lineInterval
                 line.left = mDisplayParams.contentLeft
                 line.top = top
                 line.right = mDisplayParams.contentRight
@@ -980,18 +989,14 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 //                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
                 i++
                 top += line.height
-                top += if (line.isTitle) {
-                    if (line.isParaEnd) {
-                        mDisplayParams.titlePara
-                    } else {
-                        mDisplayParams.titleInterval
-                    }
-                } else {
-                    if (line.isParaEnd) {
-                        mDisplayParams.textPara
-                    } else {
-                        mDisplayParams.textInterval
-                    }
+            }
+            //上下对齐，将剩余高度平均分配到行间距
+            val remHeight = mDisplayParams.contentBottom - top
+            if (remHeight > 0 && pageLine.isNotEmpty() && remHeight < pageLine.last().height + mDisplayParams.paraInterval) {
+                val extra = remHeight / (pageLine.size - 1)
+                for (j in 1 until pageLine.size) {
+                    pageLine[j].top += extra * j
+                    pageLine[j].bottom += extra * j
                 }
             }
             val page = TxtPage()

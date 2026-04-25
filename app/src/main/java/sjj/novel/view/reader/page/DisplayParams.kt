@@ -14,16 +14,20 @@ class DisplayParams {
     var insetBottom = dpToPx(2f) //包括导航按钮高度
 
     /**
+     * 标题段落间距
+     */
+    var titleParaInterval = 0f
+    /**
      * 段落间距
      */
-    var titlePara = 0f
-    var textPara = 0f
-
+    var paraInterval = 0f
     /**
      * 行间距
      */
-    var titleInterval = 0f
-    var textInterval = 0f
+    var lineInterval = 0f
+    /**
+     * 字间距
+     */
     var letterSpacing = 0f
 
     val contentLeft: Float get() = insetLeft
