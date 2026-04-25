@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -28,7 +29,7 @@ import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
-import sjj.alog.Log
+import kotlinx.coroutines.launch
 
 
 class MainActivity : BaseActivity() {
@@ -94,7 +95,7 @@ class MainActivity : BaseActivity() {
     private fun initDrawerMenuWidget() {
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { v, insets ->
-             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             headerBinding.navHeaderContainer.setPadding(0, statusBars.top, 0, 0)
             insets
         }
@@ -128,6 +129,13 @@ class MainActivity : BaseActivity() {
         OnlineInfos.onlineCount.observe(this) {
             headerBinding.tvOnline.text = "书友在线：${it}"
         }
+        binding?.drawerLayout?.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: android.view.View) {
+                lifecycleScope.launch {
+                    OnlineInfos.refresh()
+                }
+            }
+        })
 
 
     }

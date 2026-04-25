@@ -7,24 +7,10 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(DelicateCoroutinesApi::class)
 object OnlineInfos {
     val onlineCount = MutableLiveData(0)
-
-    init {
-        GlobalScope.launch(Dispatchers.IO) {
-            delay(5 * 1000)
-            while (true) {
-                refresh()
-                delay(60 * 1000)//每分钟检查一次
-            }
-        }
-    }
 
     suspend fun refresh() {
         val payload = mapOf(
