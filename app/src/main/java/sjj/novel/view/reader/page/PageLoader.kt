@@ -261,7 +261,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      * @param textSize
      */
     fun setTextSize(textSize: Float, lineSpace: Float, paraSpace: Float, letterSpacing: Float) {
-        Log.i("setTextSize textSize:$textSize lineSpace:$lineSpace paraSpace:$paraSpace letterSpacing:$letterSpacing")
         // 文字大小
         mDisplayParams.lineInterval = lineSpace
         mDisplayParams.paraInterval = paraSpace
@@ -309,7 +308,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      * @see PageMode
      */
     fun setPageMode(pageMode: PageMode) {
-        Log.i("setPageMode pageMode:$pageMode")
         mPageMode = pageMode
 
         mPageView!!.setPageMode(pageMode)
@@ -519,15 +517,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         drawBackground(mPageView?.bgBitmap?.bitmap ?: return)
         bitmap.chapterPos = this.chapterPos
         bitmap.pagePos = pagePos
-        Log.i("chapterPos:" + this.chapterPos + " pagePos:" + pagePos)
+        if (!bitmap.inited) {
+            bitmap.inited = mStatus == STATUS_FINISH && mCurPage != null
+        }
         drawContent(bitmap.bitmap)
-        Log.i("书籍绘制完成")
         //更新绘制
         mPageView!!.invalidate()
     }
 
     private fun drawBackground(bitmap: Bitmap) {
-        Log.i("绘制背景 Width:" + bitmap.width + " Height:" + bitmap.height)
         val canvas = Canvas(bitmap)
         val tipMarginHeight = 3.dp2Px
         /****绘制背景 */
@@ -559,8 +557,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     private fun drawContent(bitmap: Bitmap) {
         val canvas = Canvas(bitmap)
-        Log.i("绘制书籍内容 w:" + bitmap.getWidth() + " h:" + bitmap.getHeight() + " mStatus:" + mStatus)
-
 //        if (BuildConfig.DEBUG) {
 //            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
 //            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)

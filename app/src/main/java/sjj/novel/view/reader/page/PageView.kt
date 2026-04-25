@@ -253,7 +253,6 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
      *
      */
     fun drawCurPage() {
-        Log.i("绘制书籍内容 isPrepare:$isPrepare")
         if (!isPrepare) return
         if (mPageAnim is ScrollPageAnim) {
             (mPageAnim as ScrollPageAnim).resetBitmap()

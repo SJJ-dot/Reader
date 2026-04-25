@@ -6,6 +6,7 @@ public class BitmapWrapper {
     public final Bitmap bitmap;
     public int chapterPos = -1;
     public int pagePos = -1;
+    public boolean inited = false;
 
     public BitmapWrapper(Bitmap bitmap) {
         this.bitmap = bitmap;

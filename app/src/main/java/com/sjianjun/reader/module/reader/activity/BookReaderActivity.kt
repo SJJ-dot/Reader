@@ -452,8 +452,6 @@ class BookReaderActivity : BaseActivity() {
                     isEnd = record.isEnd
                 })
             }
-            Log.i("设置阅读器内容")
-            Log.i("设置书籍信息")
             mPageLoader?.mCollBook = BookBean().apply {
                 id = book.url
                 title = book.title

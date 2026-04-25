@@ -27,7 +27,7 @@ class ReadingRecord(
 
 
     override fun toString(): String {
-        return "ReadingRecord(bookTitle='$bookTitle', chapterIndex=$chapterIndex, isEnd=$isEnd)"
+        return "ReadingRecord(bookTitle='$bookTitle', chapterIndex=$chapterIndex, isEnd=$isEnd, scrollOffset=$scrollOffset)"
     }
 
     override fun equals(other: Any?): Boolean {

@@ -84,7 +84,7 @@ object BookSourceUseCase {
                     }
                     bookSourceList
                 } catch (e: Exception) {
-                    Log.i("书源导入失败:${url}", e)
+                    Log.i("书源导入失败:${url}:${e.message}")
                     emptyList()
                 }
             }

@@ -41,6 +41,7 @@ public class ScrollPageAnim extends PageAnimation {
     // 是否处于刷新阶段
     private boolean isRefresh = true;
     private BookRecordBean mBookRecord = new BookRecordBean();
+    private boolean restoreRecord = false;
 
     public ScrollPageAnim(int w, int h,
                           int contentLeft, int contentTop, int contentRight, int contentBottom,
@@ -84,6 +85,12 @@ public class ScrollPageAnim extends PageAnimation {
             mDirection = Direction.NONE;
         } else {
             int offset = (int) (mTouchY - mLastY);
+            if (mNextBitmap.inited) {
+                if (!restoreRecord) {
+                    restoreRecord = true;
+                    offset = mBookRecord.scrollOffset;
+                }
+            }
             // 判断是下滑还是上拉 (下滑)
             if (offset > 0) {
                 int topEdge = mActiveViews.get(0).top;
@@ -346,17 +353,17 @@ public class ScrollPageAnim extends PageAnimation {
     @Override
     public void draw(Canvas canvas) {
         //进行布局
-        if (mNextBitmap.chapterPos != -1) {
-            onLayout();
-        }
+        onLayout();
 
         BitmapWrapper fixedBitmap = mNextBitmap;
         if (!mActiveViews.isEmpty()) {
             BitmapView view = mActiveViews.get(0);
             fixedBitmap = view.bitmap;
-            mBookRecord.chapter = fixedBitmap.chapterPos;
-            mBookRecord.pagePos = fixedBitmap.pagePos;
-            mBookRecord.scrollOffset = view.top;
+            if (mNextBitmap.inited){
+                mBookRecord.chapter = fixedBitmap.chapterPos;
+                mBookRecord.pagePos = fixedBitmap.pagePos;
+                mBookRecord.scrollOffset = view.top - mContentTop;
+            }
         }
         if (fixedBitmap != null) {
             canvas.drawBitmap(fixedBitmap.bitmap, 0, 0, null);
@@ -413,12 +420,10 @@ public class ScrollPageAnim extends PageAnimation {
     }
 
     public @Nullable BookRecordBean getBookRecord() {
-        Log.i("getBookRecord: " + mBookRecord);
         return mBookRecord;
     }
 
     public void setBookRecord(@NotNull BookRecordBean record) {
-        Log.i("setBookRecord: " + record);
         mBookRecord = record;
     }
 
