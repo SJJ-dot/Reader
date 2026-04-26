@@ -59,6 +59,12 @@ class AppConfig(val name: String) :
      * 阅读器横竖屏切换: 0=跟随系统, 1=竖屏, 2=横屏，3=横屏自动
      */
     val readerOrientationMode by lazy { intLivedata("readerOrientationMode", 0) }
+
+    /**
+     * 阅读器排版模式:
+     * 0=默认横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
+     */
+    val readerTypesettingMode by lazy { intLivedata("readerTypesettingMode", 0) }
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */

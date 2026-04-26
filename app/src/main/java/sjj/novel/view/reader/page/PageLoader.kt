@@ -11,9 +11,11 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.jaeger.library.TxtLocation
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.dp2Px
 import com.zqc.opencc.android.lib.ChineseConverter
 import com.zqc.opencc.android.lib.ConversionType
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -88,6 +90,12 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     // 简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
     private var mJianFanMode: Int = MODE_JIAN_FAN_OFF
+
+    // 排版模式: 0=横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
+    private var mTypesettingMode: Int = MODE_TYPESETTING_HORIZONTAL_LTR
+
+    private val isVerticalTypesetting: Boolean
+        get() = mTypesettingMode == MODE_TYPESETTING_VERTICAL_LTR || mTypesettingMode == MODE_TYPESETTING_VERTICAL_RTL
 
     /*****************params */ // 当前的状态
 
@@ -557,13 +565,13 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     private fun drawContent(bitmap: Bitmap) {
         val canvas = Canvas(bitmap)
-//        if (BuildConfig.DEBUG) {
-//            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
-//            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
-//
-//            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
-//            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
-//        }
+        if (BuildConfig.DEBUG) {
+            canvas.drawLine(mDisplayParams.contentLeft, 0f, mDisplayParams.contentLeft, mDisplayParams.height.toFloat(), mTitlePaint!!)
+            canvas.drawLine(mDisplayParams.contentRight, 0f, mDisplayParams.contentRight, mDisplayParams.height.toFloat(), mTitlePaint!!)
+
+            canvas.drawLine(0f, mDisplayParams.contentTop, mDisplayParams.width.toFloat(), mDisplayParams.contentTop, mTitlePaint!!)
+            canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
+        }
         /******绘制内容 */
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {
@@ -587,7 +595,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             canvas.drawText(tip, pivotX, pivotY, mTextPaint!!)
         } else {
             val helper = mSelectableTextHelper
-            if (helper?.mSelectionInfo?.select == true) {
+            if (!isVerticalTypesetting && helper?.mSelectionInfo?.select == true) {
                 val start = helper.mSelectionInfo.start
                 val end = helper.mSelectionInfo.end
 
@@ -621,14 +629,14 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             }
             ttsSpeakLine?.let { line ->
                 if (line in curPage.lines) {
-                    var left = line.left
-                    var right = line.right
+                    var startIndex = 0
+                    var endIndex = line.clusterBoundaries.size - 2
                     for (i in 0 until line.clusterBoundaries.size - 1) {
                         val isBlank = line.txt.substring(line.clusterBoundaries[i], line.clusterBoundaries[i + 1]).isBlank()
                         if (isBlank) {
                             continue
                         }
-                        left = line.clusterLeft[i]
+                        startIndex = i
                         break
                     }
                     for (i in line.clusterBoundaries.size - 2 downTo 0) {
@@ -636,10 +644,18 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                         if (isBlank) {
                             continue
                         }
-                        right = line.clusterRight[i]
+                        endIndex = i
                         break
                     }
-                    canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
+                    if (isVerticalTypesetting) {
+                        val top = line.clusterLeft[startIndex]
+                        val bottom = line.clusterRight[endIndex]
+                        canvas.drawRect(line.left, top, line.right, bottom, mSelectedPaint!!)
+                    } else {
+                        val left = line.clusterLeft[startIndex]
+                        val right = line.clusterRight[endIndex]
+                        canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
+                    }
                 }
             }
 
@@ -648,11 +664,6 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             val textMetrics = mTextPaint!!.getFontMetrics()
             val textBase = -textMetrics.ascent
             for (line in curPage.lines) {
-//                if (BuildConfig.DEBUG) {
-//                    canvas.drawLine(0f, line.top, mDisplayParams.width.toFloat(), line.top, mTitlePaint!!)
-//                    canvas.drawLine(0f, line.bottom, mDisplayParams.width.toFloat(), line.bottom, mTitlePaint!!)
-//                }
-                val y = line.top + (if (line.isTitle) titleBase else textBase)
                 val paint: Paint = (if (line.isTitle) mTitlePaint else mTextPaint)!!
                 val bounds = line.clusterBoundaries
                 if (bounds.size >= 2) {
@@ -660,10 +671,28 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                     for (ci in 0 until bounds.size - 1) {
                         val s = bounds[ci]
                         val e = bounds[ci + 1]
-                        canvas.drawText(line.txt, s, e, line.clusterLeft[ci], y, paint)
+                        if (isVerticalTypesetting) {
+                            val x = line.left + (line.width - paint.measureText(line.txt, s, e)) / 2
+                            val y = line.clusterLeft[ci] + (if (line.isTitle) titleBase else textBase)
+                            canvas.drawText(line.txt, s, e, x, y, paint)
+
+                            if (BuildConfig.DEBUG) {
+                                canvas.drawLine(line.left, 0f, line.left, mDisplayParams.height.toFloat(), mTitlePaint!!)
+                                canvas.drawLine(line.right, 0f, line.right, mDisplayParams.height.toFloat(), mTitlePaint!!)
+                            }
+                        } else {
+                            val y = line.top + (if (line.isTitle) titleBase else textBase)
+                            canvas.drawText(line.txt, s, e, line.clusterLeft[ci], y, paint)
+
+                            if (BuildConfig.DEBUG) {
+                                canvas.drawLine(0f, line.top, mDisplayParams.width.toFloat(), line.top, mTitlePaint!!)
+                                canvas.drawLine(0f, line.bottom, mDisplayParams.width.toFloat(), line.bottom, mTitlePaint!!)
+                            }
+                        }
                     }
                 } else {
                     // fallback: 整行一次性绘制
+                    val y = line.top + (if (line.isTitle) titleBase else textBase)
                     canvas.drawText(line.txt, 0, line.txt.length, line.left, y, paint)
                 }
             }
@@ -873,6 +902,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     // 预加载下一章
+    @OptIn(DelicateCoroutinesApi::class)
     fun preLoadNextChapter() {
         val nextChapter = this.chapterPos + 1
 
@@ -946,18 +976,46 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
      * 将章节数据，解析成页面列表
      *
      * @param chapter ：章节信息
-     * @param br      ：章节的文本流
      * @return
      */
     private fun loadPages(chapter: TxtChapter): MutableList<TxtPage> {
         Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
-        //生成的页面
-        val pages: MutableList<TxtPage> = ArrayList()
         val lines: MutableList<TxtLine> = ArrayList()
         val titleText = convertByJianFanMode(chapter.title.toString())
         val contentText = convertByJianFanMode(chapter.content.toString())
-        createTxtLine(lines, titleText, mTitlePaint!!)
-        createTxtLine(lines, contentText, mTextPaint!!)
+        return when (mTypesettingMode) {
+
+            MODE_TYPESETTING_HORIZONTAL_RTL -> {
+                createTxtLineHRTL(lines, titleText, mTitlePaint!!)
+                createTxtLineHRTL(lines, contentText, mTextPaint!!)
+                createPagesHTTB(lines, chapter)
+            }
+
+            MODE_TYPESETTING_VERTICAL_LTR -> {
+                createTxtLineVTTB(lines, titleText, mTitlePaint!!)
+                createTxtLineVTTB(lines, contentText, mTextPaint!!)
+                createPagesVLTR(lines, chapter)
+            }
+
+            MODE_TYPESETTING_VERTICAL_RTL -> {
+                createTxtLineVTTB(lines, titleText, mTitlePaint!!)
+                createTxtLineVTTB(lines, contentText, mTextPaint!!)
+                createPagesVRTL(lines, chapter)
+            }
+
+            else -> {
+                createTxtLineHLTR(lines, titleText, mTitlePaint!!)
+                createTxtLineHLTR(lines, contentText, mTextPaint!!)
+                createPagesHTTB(lines, chapter)
+            }
+        }
+    }
+
+    /**
+     * 将文本行分页，生成横排页面列表。文本行从上到下排列
+     */
+    private fun createPagesHTTB(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+        val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
         while (i < lines.size) {
@@ -992,7 +1050,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             }
             //上下对齐，将剩余高度平均分配到行间距
             val remHeight = mDisplayParams.contentBottom - top
-            if (remHeight > 0 && pageLine.isNotEmpty() && remHeight < pageLine.last().height + mDisplayParams.paraInterval) {
+            if (remHeight > 0 && pageLine.size > 1 && remHeight < pageLine.last().height + mDisplayParams.paraInterval) {
                 val extra = remHeight / (pageLine.size - 1)
                 for (j in 1 until pageLine.size) {
                     pageLine[j].top += extra * j
@@ -1009,7 +1067,122 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         return pages
     }
 
+    /**
+     * 将文本行分页，生成竖排页面列表。文本行从左到右
+     */
+    private fun createPagesVLTR(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+        val pages: MutableList<TxtPage> = ArrayList()
+        val pageLine: MutableList<TxtLine> = ArrayList()
+        var i = 0
+        while (i < lines.size) {
+            var left = mDisplayParams.contentLeft
+            var clusterStart = 0
+            while (i < lines.size) {
+                val line = lines[i]
+                var lineInterval = 0f
+                if (pageLine.lastOrNull()?.isParaEnd == true) {
+                    lineInterval = if (lines[i - 1].isTitle) mDisplayParams.titleParaInterval else mDisplayParams.paraInterval
+                } else if (pageLine.lastOrNull()?.isParaEnd == false) {
+                    lineInterval = mDisplayParams.lineInterval
+                }
+
+                val remWidth = mDisplayParams.contentRight - left - line.width - lineInterval
+                if (remWidth < 0) {
+                    break
+                }
+                left += lineInterval
+                line.left = left
+                line.top = mDisplayParams.contentTop
+                line.right = left + line.width
+                line.bottom = mDisplayParams.contentBottom
+
+                line.index = pageLine.size
+                line.clusterStart = clusterStart
+                clusterStart += line.clusterBoundaries.size - 1
+                pageLine.add(line)
+                //                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
+                i++
+                left += line.width
+            }
+            val remWidth = mDisplayParams.contentRight - left
+            if (remWidth > 0 && pageLine.size > 1 && remWidth < pageLine.last().width + mDisplayParams.paraInterval) {
+                val extra = remWidth / (pageLine.size - 1)
+                for (j in 1 until pageLine.size) {
+                    pageLine[j].left += extra * j
+                    pageLine[j].right += extra * j
+                }
+            }
+            val page = TxtPage()
+            page.position = pages.size
+            page.title = chapter.title
+            page.lines = pageLine.toList()
+            pages.add(page)
+            pageLine.clear()
+        }
+        return pages
+    }
+
+    /**
+     * 将文本行分页，生成竖排页面列表。文本行从右到左
+     */
+    private fun createPagesVRTL(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+        val pages: MutableList<TxtPage> = ArrayList()
+        val pageLine: MutableList<TxtLine> = ArrayList()
+        var i = 0
+        while (i < lines.size) {
+            var right = mDisplayParams.contentRight
+            var clusterStart = 0
+            while (i < lines.size) {
+                val line = lines[i]
+                var lineInterval = 0f
+                if (pageLine.lastOrNull()?.isParaEnd == true) {
+                    lineInterval = if (lines[i - 1].isTitle) mDisplayParams.titleParaInterval else mDisplayParams.paraInterval
+                } else if (pageLine.lastOrNull()?.isParaEnd == false) {
+                    lineInterval = mDisplayParams.lineInterval
+                }
+
+                val remWidth = right - mDisplayParams.contentLeft - line.width - lineInterval
+                if (remWidth < 0) {
+                    break
+                }
+                right -= lineInterval
+                line.left = right - line.width
+                line.top = mDisplayParams.contentTop
+                line.right = right
+                line.bottom = mDisplayParams.contentBottom
+
+                line.index = pageLine.size
+                line.clusterStart = clusterStart
+                clusterStart += line.clusterBoundaries.size - 1
+                pageLine.add(line)
+                //                Log.e(line.txt + "-" + line.txt.endsWith("\n") + "-" + line.isTitle);
+                i++
+                right -= line.width
+            }
+            val remWidth = right - mDisplayParams.contentLeft
+            if (remWidth > 0 && pageLine.size > 1 && remWidth < pageLine.last().width + mDisplayParams.paraInterval) {
+                val extra = remWidth / (pageLine.size - 1)
+                for (j in 1 until pageLine.size) {
+                    pageLine[j].left -= extra * j
+                    pageLine[j].right -= extra * j
+                }
+            }
+            val page = TxtPage()
+            page.position = pages.size
+            page.title = chapter.title
+            page.lines = pageLine.toList()
+            pages.add(page)
+            pageLine.clear()
+        }
+        return pages
+    }
+
     private fun convertByJianFanMode(text: String): String {
+        var text = text
+        if (text.length > 1024) {
+            // 分行的缓存只给了1024
+            text = text.substring(0, 1024)
+        }
         val context = mPageView?.context ?: return text
         return when (mJianFanMode) {
             MODE_JIAN_TO_FAN -> ChineseConverter.convert(text, ConversionType.S2T, context)
@@ -1039,8 +1212,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         return boundaries.toIntArray()
     }
 
-    private fun createTxtLine(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
-        //拆分文本成行
+    /**
+     * 创建水平从左到右的行
+     */
+    private fun createTxtLineHLTR(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
         // 计算行高和字符宽度
         val fm = paint.fontMetrics
         val lineHeight = fm.bottom - fm.top
@@ -1050,16 +1225,16 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
         var lastExtX = 0f
-        val createLine = { left: Float, charWidth: Float, end: Boolean ->
+        val createLine = { left: Float, end: Boolean ->
             val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
             val remWidth = (mDisplayParams.contentRight - left) % (charWidth + letterSpacing)
-            if (remWidth > 0) {
+            if (remWidth > 0 && line.clusterBoundaries.size > 2) {
                 val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
                 lastExtX = extX
                 for (ci in 1 until line.clusterBoundaries.size - 1) {
-                    val offset = max(ci, 0) * extX
+                    val offset = ci * extX
                     clusterLeft[ci] = clusterLeft[ci] + offset
                     clusterRight[ci] = clusterRight[ci] + offset
                 }
@@ -1084,7 +1259,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 val e = allBounds[i + 1]
                 val w = max(paint.measureText(trimmed, s, e), charWidth)
                 if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
-                    createLine(left, charWidth, false)
+                    createLine(left, false)
                     sb.clear()
                     left = mDisplayParams.contentLeft
                     idx = 0
@@ -1100,7 +1275,143 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 idx++
             }
             if (sb.isNotEmpty()) {
-                createLine(left, charWidth, true)
+                createLine(left, true)
+            }
+
+        }
+    }
+
+    /**
+     * 创建水平从右到左的行
+     */
+    private fun createTxtLineHRTL(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
+        val fm = paint.fontMetrics
+        val lineHeight = fm.bottom - fm.top
+        val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
+        val charWidth = paint.measureText("啊")
+        val sb = StringBuilder()
+        val clusterLeft = FloatArray(1024)
+        val clusterRight = FloatArray(1024)
+        var lastExtX = 0f
+        val createLine = { right: Float, end: Boolean ->
+            val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
+            line.clusterBoundaries = getGraphemeBoundaries(line.txt)
+            //两端对齐。
+            val remWidth = (right - mDisplayParams.contentLeft) % (charWidth + letterSpacing)
+            if (remWidth > 0 && line.clusterBoundaries.size > 2) {
+                val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
+                lastExtX = extX
+                for (ci in 1 until line.clusterBoundaries.size - 1) {
+                    val offset = ci * extX
+                    clusterLeft[ci] = clusterLeft[ci] - offset
+                    clusterRight[ci] = clusterRight[ci] - offset
+                }
+            }
+            line.setLeftAndRight(clusterLeft, clusterRight, line.clusterBoundaries.size - 1)
+            lines.add(line)
+        }
+
+        for (paragraph in text.lines()) {
+            var trimmed = paragraph.trim()
+            if (trimmed.isBlank()) {
+                continue
+            }
+            // 添加缩进
+            trimmed = "　　$trimmed"
+            sb.clear()
+            val allBounds = getGraphemeBoundaries(trimmed)
+            var right = mDisplayParams.contentRight
+            var idx = 0
+            for (i in 0 until allBounds.size - 1) {
+                val s = allBounds[i]
+                val e = allBounds[i + 1]
+                val w = max(paint.measureText(trimmed, s, e), charWidth)
+                if (right - letterSpacing - w < mDisplayParams.contentLeft && sb.isNotEmpty()) {
+                    createLine(right, false)
+                    sb.clear()
+                    right = mDisplayParams.contentRight
+                    idx = 0
+                }
+                //添加一个字符
+                sb.append(trimmed, s, e)
+                if (idx != 0) {
+                    right -= letterSpacing
+                }
+                clusterRight[idx] = right
+                clusterLeft[idx] = right - w
+                right -= w
+                idx++
+            }
+            if (sb.isNotEmpty()) {
+                createLine(right, true)
+            }
+        }
+    }
+
+    /**
+     * 创建竖排从上到下
+     */
+    private fun createTxtLineVTTB(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
+        val fm = paint.fontMetrics
+        val charHeight = fm.bottom - fm.top
+        val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
+        var lineWidth = paint.measureText("啊")
+        val sb = StringBuilder()
+        val clusterLeft = FloatArray(1024)
+        val clusterRight = FloatArray(1024)
+        var lastExtY = 0f
+        val createLine = { top: Float, end: Boolean ->
+            val line = TxtLine(sb.toString(), paint === mTitlePaint, mDisplayParams.contentHeight, lineWidth, end)
+            line.clusterBoundaries = getGraphemeBoundaries(line.txt)
+            //两端对齐。
+            val remHeight = (mDisplayParams.contentBottom - top) % (charHeight + letterSpacing)
+            if (remHeight > 0 && line.clusterBoundaries.size > 2) {
+                val extX = if (end && lastExtY > 0) lastExtY else remHeight / (line.clusterBoundaries.size - 2)
+                lastExtY = extX
+                for (ci in 1 until line.clusterBoundaries.size - 1) {
+                    val offset = ci * extX
+                    clusterLeft[ci] = clusterLeft[ci] + offset
+                    clusterRight[ci] = clusterRight[ci] + offset
+                }
+            }
+            line.setLeftAndRight(clusterLeft, clusterRight, line.clusterBoundaries.size - 1)
+            lines.add(line)
+        }
+
+        for (paragraph in text.lines()) {
+            var trimmed = paragraph.trim()
+            if (trimmed.isBlank()) {
+                continue
+            }
+            // 添加缩进
+            trimmed = "　　$trimmed"
+            sb.clear()
+            val allBounds = getGraphemeBoundaries(trimmed)
+            var top = mDisplayParams.contentTop
+            var idx = 0
+            for (i in 0 until allBounds.size - 1) {
+                val s = allBounds[i]
+                val e = allBounds[i + 1]
+                //竖排，字符宽度为行宽度，使用行字符最宽宽度作为行宽
+                lineWidth = max(paint.measureText(trimmed, s, e), lineWidth)
+                if (top + letterSpacing + charHeight > mDisplayParams.contentBottom && sb.isNotEmpty()) {
+                    createLine(top, false)
+                    sb.clear()
+                    top = mDisplayParams.contentTop
+                    idx = 0
+                }
+                //添加一个字符
+                sb.append(trimmed, s, e)
+                if (idx != 0) {
+                    top += letterSpacing
+                }
+                clusterLeft[idx] = top
+                clusterRight[idx] = top + charHeight
+                top += charHeight
+                idx++
+            }
+            if (sb.isNotEmpty()) {
+                createLine(top, true)
             }
         }
     }
@@ -1108,7 +1419,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     /**
      * @return:获取初始显示的页面
      */
-    private fun getCurPage(pos: Int): TxtPage? {
+    private fun getCurPage(pos: Int): TxtPage {
         var pos = pos
         Log.i("获取书页：$pos")
         val list = this.curPageList
@@ -1178,6 +1489,9 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     fun onLongPress(x: Float, y: Float) {
+        if (isVerticalTypesetting) {
+            return
+        }
         Log.e("长按 x:$x y:$y")
         mSelectableTextHelper?.showSelectView(x, y)
     }
@@ -1382,11 +1696,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     companion object {
-        private const val TAG = "PageLoader"
 
         const val MODE_JIAN_FAN_OFF: Int = 0
         const val MODE_JIAN_TO_FAN: Int = 1
         const val MODE_FAN_TO_JIAN: Int = 2
+
+        const val MODE_TYPESETTING_HORIZONTAL_LTR: Int = 0
+        const val MODE_TYPESETTING_HORIZONTAL_RTL: Int = 1
+        const val MODE_TYPESETTING_VERTICAL_LTR: Int = 2
+        const val MODE_TYPESETTING_VERTICAL_RTL: Int = 3
 
         // 当前页面的状态
         const val STATUS_LOADING: Int = 1 // 正在加载
@@ -1415,6 +1733,29 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             // 重新计算当前页面
             dealLoadPageList(this.chapterPos)
             // 重新获取指定页面
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
+        }
+
+        mPageView!!.drawCurPage()
+    }
+
+    fun setTypesettingMode(mode: Int) {
+        val normalized = when (mode) {
+            MODE_TYPESETTING_HORIZONTAL_RTL,
+            MODE_TYPESETTING_VERTICAL_LTR,
+            MODE_TYPESETTING_VERTICAL_RTL -> mode
+
+            else -> MODE_TYPESETTING_HORIZONTAL_LTR
+        }
+        if (mTypesettingMode == normalized) {
+            return
+        }
+        mTypesettingMode = normalized
+        // 先清缓存并重排，确保切换排版时分页立即更新。
+        ChapterPageCache.reset()
+
+        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
+            dealLoadPageList(this.chapterPos)
             mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 

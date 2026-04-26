@@ -332,6 +332,10 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setJianFanMode(it)
         }
 
+        globalConfig.readerTypesettingMode.observe(this) {
+            mPageLoader?.setTypesettingMode(it)
+        }
+
         globalConfig.readerOrientationMode.observe(this) {
             applyReaderOrientation(it)
         }

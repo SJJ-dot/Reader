@@ -752,6 +752,17 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
+            android:id="@+id/typesetting"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_typesetting"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageButton
             android:id="@+id/download"
             android:layout_width="0dp"
             android:layout_height="40dp"

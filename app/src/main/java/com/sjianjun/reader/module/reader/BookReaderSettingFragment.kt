@@ -103,6 +103,7 @@ class BookReaderSettingFragment : BaseFragment() {
         initFontList()
         initBrowser()
         initSettings()
+        initTypesetting()
         initJianFan()
         initScreenOrientationMode()
     }
@@ -155,6 +156,22 @@ class BookReaderSettingFragment : BaseFragment() {
                 binding?.settingContainerFirst?.isVisible = true
                 binding?.settingContainerSecond?.isVisible = false
             }
+        }
+    }
+
+    private fun initTypesetting() {
+        binding?.typesetting?.click(10) {
+            val options = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")
+            val current = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
+                .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("文字排版")
+                .setSingleChoiceItems(options, current) { dialog, which ->
+                    globalConfig.readerTypesettingMode.postValue(which)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
     }
 
