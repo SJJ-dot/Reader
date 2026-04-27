@@ -1220,11 +1220,6 @@ abstract class PageLoader : ViewModel() {
     }
 
     private fun convertByJianFanMode(text: String): String {
-        var text = text
-        if (text.length > 1024) {
-            // 分行的缓存只给了1024
-            text = text.substring(0, 1024)
-        }
         val context = mPageView?.context ?: return text
         return when (mJianFanMode) {
             MODE_JIAN_TO_FAN -> ChineseConverter.convert(text, ConversionType.S2T, context)
