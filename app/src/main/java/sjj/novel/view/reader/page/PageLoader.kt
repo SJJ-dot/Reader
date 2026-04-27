@@ -652,9 +652,15 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                         val bottom = line.clusterRight[endIndex]
                         canvas.drawRect(line.left, top, line.right, bottom, mSelectedPaint!!)
                     } else {
-                        val left = line.clusterLeft[startIndex]
-                        val right = line.clusterRight[endIndex]
-                        canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
+                        if (mTypesettingMode == MODE_TYPESETTING_HORIZONTAL_RTL) {
+                            val left = line.clusterLeft[endIndex]
+                            val right = line.clusterRight[startIndex]
+                            canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
+                        } else {
+                            val left = line.clusterLeft[startIndex]
+                            val right = line.clusterRight[endIndex]
+                            canvas.drawRect(left, line.top, right, line.bottom, mSelectedPaint!!)
+                        }
                     }
                 }
             }
