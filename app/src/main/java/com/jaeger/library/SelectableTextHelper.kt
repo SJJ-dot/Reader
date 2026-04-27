@@ -6,14 +6,13 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PointF
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnAttachStateChangeListener
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
-import android.view.ViewTreeObserver.OnScrollChangedListener
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.annotation.ColorInt
@@ -38,21 +37,14 @@ class SelectableTextHelper(builder: Builder) {
     private var mEndHandle: CursorHandle? = null
     private var mOperateWindow: OperateWindow? = null
     var mSelectionInfo: SelectionInfo = SelectionInfo()
-    private var mSelectListener: OnSelectListener? = null
+    private val mSelectListener: OnSelectListener = builder.onSelectListener
 
-    private val mContext: Context
-    private val mView: View
-    private val mLocation: TxtLocation
+    private val mContext: Context = builder.mView.context
+    private val mView: View = builder.mView
+    private val mCursorHandleColor: Int = builder.mCursorHandleColor
+    private val mCursorHandleSize: Int = TextLayoutUtil.dp2px(mContext, builder.mCursorHandleSizeInDp)
 
-    private val mSelectedColor: Int
-    private val mCursorHandleColor: Int
-    private val mCursorHandleSize: Int
-    private var isHideWhenScroll = false
-
-    private var mOnPreDrawListener: ViewTreeObserver.OnPreDrawListener? = null
-    var mOnScrollChangedListener: OnScrollChangedListener? = null
-
-    private fun init() {
+    init {
         mView.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
             }
@@ -61,36 +53,6 @@ class SelectableTextHelper(builder: Builder) {
                 destroy()
             }
         })
-
-        mOnPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                if (isHideWhenScroll) {
-                    isHideWhenScroll = false
-                    postShowSelectView(DEFAULT_SHOW_DURATION)
-                }
-                return true
-            }
-        }
-        mView.getViewTreeObserver().addOnPreDrawListener(mOnPreDrawListener)
-
-        mOnScrollChangedListener = object : OnScrollChangedListener {
-            override fun onScrollChanged() {
-                if (!isHideWhenScroll && !mSelectionInfo.select) {
-                    isHideWhenScroll = true
-                    if (mOperateWindow != null) {
-                        mOperateWindow!!.dismiss()
-                    }
-                    if (mStartHandle != null) {
-                        mStartHandle!!.dismiss()
-                    }
-                    if (mEndHandle != null) {
-                        mEndHandle!!.dismiss()
-                    }
-                }
-            }
-        }
-        mView.getViewTreeObserver().addOnScrollChangedListener(mOnScrollChangedListener)
-
         mOperateWindow = OperateWindow(mContext)
     }
 
@@ -118,15 +80,7 @@ class SelectableTextHelper(builder: Builder) {
         }
     }
 
-    init {
-        mView = builder.mView
-        mLocation = builder.mLocation
-        mContext = mView.getContext()
-        mSelectedColor = builder.mSelectedColor
-        mCursorHandleColor = builder.mCursorHandleColor
-        mCursorHandleSize = TextLayoutUtil.dp2px(mContext, builder.mCursorHandleSizeInDp)
-        init()
-    }
+
 
     fun hideSelectView() {
         mSelectionInfo.select = false
@@ -151,11 +105,11 @@ class SelectableTextHelper(builder: Builder) {
         if (mStartHandle == null) mStartHandle = CursorHandle(true)
         if (mEndHandle == null) mEndHandle = CursorHandle(false)
 
-        val startOffset = mLocation.getOffset(x, y)
+        val startOffset = mSelectListener.getOffset(x, y)
         if (startOffset < 0) {
             return
         }
-        if (mLocation.getTxt(startOffset, startOffset).isBlank()) {
+        if (mSelectListener.getTxt(startOffset, startOffset).isBlank()) {
             return
         }
         selectText(startOffset, startOffset)
@@ -165,10 +119,10 @@ class SelectableTextHelper(builder: Builder) {
     }
 
     private fun showCursorHandle(cursorHandle: CursorHandle) {
-        val offset = if (cursorHandle.isLeft) mSelectionInfo.start else mSelectionInfo.end
-        val line = mLocation.getLineForOffset(offset)
-        val x = if (cursorHandle.isLeft) mLocation.getHorizontalLeft(offset) else mLocation.getHorizontalRight(offset)
-        cursorHandle.show(x, mLocation.getLineBottom(line))
+        val isStartHandle = cursorHandle.isLeft
+        val offset = if (isStartHandle) mSelectionInfo.start else mSelectionInfo.end
+        val handlePos = mSelectListener.getHandlePosition(offset, isStartHandle)
+        cursorHandle.show(handlePos.x, handlePos.y)
     }
 
     private fun selectText(startPos: Int, endPos: Int) {
@@ -185,21 +139,17 @@ class SelectableTextHelper(builder: Builder) {
             mSelectionInfo.start = mSelectionInfo.end
             mSelectionInfo.end = temp
         }
-        //        Log.e(mSelectionInfo + mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end));
+        //        Log.e(mSelectionInfo + mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end));
         if (oldS != mSelectionInfo.start || oldE != mSelectionInfo.end || !mSelectionInfo.select) {
             mSelectionInfo.select = true
-            mSelectListener!!.onTextSelectedChange(mSelectionInfo)
+            mSelectListener.onTextSelectedChange(mSelectionInfo)
         }
-        //        int[] offset = checkOffset(mLocation, mSelectionInfo.start, mSelectionInfo.end);
+        //        int[] offset = checkOffset(mSelectListener, mSelectionInfo.start, mSelectionInfo.end);
 //        mSelectionInfo.start = offset[0];
 //        mSelectionInfo.end = offset[1];
 //
-//        mSelectionInfo.mSelectionContent = mLocation.getText().subSequence(mSelectionInfo.start, mSelectionInfo.end).toString();
+//        mSelectionInfo.mSelectionContent = mSelectListener.getText().subSequence(mSelectionInfo.start, mSelectionInfo.end).toString();
 //        Log.e("选中的文本："+mSelectionInfo.mSelectionContent);
-    }
-
-    fun setSelectListener(selectListener: OnSelectListener) {
-        mSelectListener = selectListener
     }
 
     fun destroy() {
@@ -228,33 +178,33 @@ class SelectableTextHelper(builder: Builder) {
             mWindow =
                 PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, false)
             mWindow.isClippingEnabled = false
-            contentView.findViewById<View?>(R.id.txt_search).click {
+            contentView.findViewById<View>(R.id.txt_search).click {
                 try {
-                    val encode = URLEncoder.encode(mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
+                    val encode = URLEncoder.encode(mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
                     val uri = ("https://www.bing.com/search?q=$encode").toUri()
                     mView.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
-                    mSelectListener!!.onTextSelectedChange(mSelectionInfo)
+                    mSelectListener.onTextSelectedChange(mSelectionInfo)
                 } catch (e: Exception) {
                     Log.e("搜索出错", e)
                 }
             }
-            contentView.findViewById<View?>(R.id.txt_dict).click {
+            contentView.findViewById<View>(R.id.txt_dict).click {
                 try {
-                    val encode = URLEncoder.encode(mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
+                    val encode = URLEncoder.encode(mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
                     val uri = ("https://hanyu.baidu.com/s?wd=$encode").toUri()
                     mView.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
-                    mSelectListener!!.onTextSelectedChange(mSelectionInfo)
+                    mSelectListener.onTextSelectedChange(mSelectionInfo)
                 } catch (e: Exception) {
                     Log.e("字典搜索出错", e)
                 }
             }
-            contentView.findViewById<View?>(R.id.txt_copy).click {
+            contentView.findViewById<View>(R.id.txt_copy).click {
                 try {
-                    val str = mLocation.getTxt(mSelectionInfo.start, mSelectionInfo.end)
+                    val str = mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end)
                     // 获取系统剪贴板服务
                     val clipboard = context?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                     val clipData = android.content.ClipData.newPlainText("text", str)
@@ -262,7 +212,7 @@ class SelectableTextHelper(builder: Builder) {
                     toast("复制成功：${str}")
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
-                    mSelectListener!!.onTextSelectedChange(mSelectionInfo)
+                    mSelectListener.onTextSelectedChange(mSelectionInfo)
                 } catch (e: Exception) {
                     Log.e("复制出错", e)
                 }
@@ -271,9 +221,10 @@ class SelectableTextHelper(builder: Builder) {
 
         fun show() {
             mView.getLocationInWindow(mTempCoors)
+            val anchor = mSelectListener.getOperateWindowAnchor(mSelectionInfo.start, mSelectionInfo.end)
 
-            val startX = mLocation.getHorizontalLeft(mSelectionInfo.start) + mTempCoors[0] + mView.getPaddingLeft()
-            val posY = mLocation.getLineTop(mLocation.getLineForOffset(mSelectionInfo.start)) + mTempCoors[1] - mHeight - 16
+            val startX = anchor.x + mTempCoors[0] + mView.paddingLeft
+            val posY = anchor.y + mTempCoors[1] + mView.paddingTop - mHeight - 16
 
             mWindow.setElevation(8f)
 
@@ -319,15 +270,86 @@ class SelectableTextHelper(builder: Builder) {
         private val mPaint: Paint
 
         private val mCircleRadius = mCursorHandleSize / 2f
-        private val mWidth = mCircleRadius * 2
+        private val mHandleWidth = mCircleRadius * 2
+        private val mStemThickness = max(mCircleRadius, 6f)
         private val mPadding = 25f
 
+        private fun getHandleDirection(): Int = mSelectListener.getHandleDirection(isLeft)
+
+        private fun getPopupWidth(direction: Int = getHandleDirection()): Int {
+            val width = when (direction) {
+                OnSelectListener.HANDLE_DIRECTION_LEFT,
+                OnSelectListener.HANDLE_DIRECTION_RIGHT -> mHandleWidth + mPadding * 2
+
+                else -> mHandleWidth + mPadding / 2f
+            }
+            return width.roundToInt()
+        }
+
+        private fun getPopupHeight(direction: Int = getHandleDirection()): Int {
+            val height = when (direction) {
+                OnSelectListener.HANDLE_DIRECTION_TOP,
+                OnSelectListener.HANDLE_DIRECTION_BOTTOM -> mHandleWidth + mPadding * 2
+
+                else -> mHandleWidth + mPadding / 2f
+            }
+            return height.roundToInt()
+        }
+
+        private fun getAnchorOffset(direction: Int = getHandleDirection()): PointF {
+            val width = getPopupWidth(direction).toFloat()
+            val height = getPopupHeight(direction).toFloat()
+            return when (direction) {
+                OnSelectListener.HANDLE_DIRECTION_LEFT -> PointF(width - mPadding, mPadding / 4f)
+                OnSelectListener.HANDLE_DIRECTION_RIGHT -> PointF(mPadding, mPadding / 4f)
+                OnSelectListener.HANDLE_DIRECTION_TOP -> PointF(width / 2f, height - mPadding)
+                else -> PointF(width / 2f, mPadding)
+            }
+        }
+
+        private fun updateWindowSize() {
+            val direction = getHandleDirection()
+            mPopupWindow.width = getPopupWidth(direction)
+            mPopupWindow.height = getPopupHeight(direction)
+            requestLayout()
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            setMeasuredDimension(getPopupWidth(), getPopupHeight())
+        }
+
         override fun onDraw(canvas: Canvas) {
-            canvas.drawCircle(mCircleRadius + mPadding, mCircleRadius, mCircleRadius, mPaint)
-            if (isLeft) {
-                canvas.drawRect(mCircleRadius + mPadding, 0f, mCircleRadius * 2 + mPadding, mCircleRadius, mPaint)
-            } else {
-                canvas.drawRect(mPadding, 0f, mCircleRadius + mPadding, mCircleRadius, mPaint)
+            val direction = getHandleDirection()
+            val width = getPopupWidth(direction).toFloat()
+            val height = getPopupHeight(direction).toFloat()
+            when (direction) {
+                OnSelectListener.HANDLE_DIRECTION_LEFT -> {
+                    val cy = mCircleRadius
+                    val cx = mPadding + mCircleRadius
+                    canvas.drawRect(cx, 0f, mPadding + mHandleWidth, mCircleRadius, mPaint)
+                    canvas.drawCircle(cx, cy, mCircleRadius, mPaint)
+                }
+
+                OnSelectListener.HANDLE_DIRECTION_RIGHT -> {
+                    val cy = mCircleRadius
+                    val cx = width - mPadding - mCircleRadius
+                    canvas.drawRect(mPadding, 0f, mPadding + mCircleRadius, mCircleRadius, mPaint)
+                    canvas.drawCircle(cx, cy, mCircleRadius, mPaint)
+                }
+
+                OnSelectListener.HANDLE_DIRECTION_TOP -> {
+                    val cx = width / 2f
+                    val cy = mPadding + mCircleRadius
+                    canvas.drawRect(cx - mStemThickness / 2f, cy, cx + mStemThickness / 2f, height - mPadding, mPaint)
+                    canvas.drawCircle(cx, cy, mCircleRadius, mPaint)
+                }
+
+                else -> {
+                    val cx = width / 2f
+                    val cy = height - mPadding - mCircleRadius
+                    canvas.drawRect(cx - mStemThickness / 2f, mPadding, cx + mStemThickness / 2f, cy, mPaint)
+                    canvas.drawCircle(cx, cy, mCircleRadius, mPaint)
+                }
             }
         }
 
@@ -346,31 +368,33 @@ class SelectableTextHelper(builder: Builder) {
                     mAdjustY = event.getY()
                 }
 
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> mOperateWindow!!.show()
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    performClick()
+                    mOperateWindow!!.show()
+                }
                 MotionEvent.ACTION_MOVE -> {
                     mOperateWindow!!.dismiss()
                     val rawX = event.getRawX()
                     val rawY = event.getRawY()
                     mView.getLocationInWindow(mTempCoors)
-                    //                    Log.e("rawX:" + rawX + " rawY:" + rawY + " mAdjustX:" + mAdjustX + " mAdjustY:" + mAdjustY + " TempCoors0:" + mTempCoors[0] + " TempCoors1:" + mTempCoors[1]);
-                    if (isLeft) {
-                        update(
-                            rawX - mAdjustX + mPadding + mWidth - mTempCoors[0] - mView.getPaddingLeft(),
-                            rawY - mAdjustY + mPadding / 4 - mTempCoors[1] - mView.getPaddingTop()
-                        )
-                    } else {
-                        update(
-                            rawX - mAdjustX + mPadding - mTempCoors[0] - mView.getPaddingLeft(),
-                            rawY - mAdjustY + mPadding / 4 - mTempCoors[1] - mView.getPaddingTop()
-                        )
-                    }
+                    val anchorOffset = getAnchorOffset()
+                    update(
+                        rawX - mAdjustX + anchorOffset.x - mTempCoors[0] - mView.paddingLeft,
+                        rawY - mAdjustY + anchorOffset.y - mTempCoors[1] - mView.paddingTop
+                    )
                 }
             }
             return true
         }
 
+        override fun performClick(): Boolean {
+            super.performClick()
+            return true
+        }
+
         fun changeDirection() {
             isLeft = !isLeft
+            updateWindowSize()
             invalidate()
         }
 
@@ -386,8 +410,7 @@ class SelectableTextHelper(builder: Builder) {
 
             mPopupWindow = PopupWindow(this)
             mPopupWindow.setClippingEnabled(false)
-            mPopupWindow.setWidth(Math.round(mWidth + mPadding * 2))
-            mPopupWindow.setHeight(Math.round(mCircleRadius * 2 + mPadding / 2))
+            updateWindowSize()
             invalidate()
         }
 
@@ -400,7 +423,7 @@ class SelectableTextHelper(builder: Builder) {
             }
 
             //            Log.e("Handle：x:" + x + " y:" + y);
-            val offset = mLocation.getHysteresisOffset(x, y, oldOffset, isLeft)
+            val offset = mSelectListener.getHysteresisOffset(x, y, oldOffset, isLeft)
 
             if (offset != oldOffset) {
                 resetSelectionInfo()
@@ -434,38 +457,29 @@ class SelectableTextHelper(builder: Builder) {
 
         fun updateCursorHandle() {
             mView.getLocationInWindow(mTempCoors)
-            if (isLeft) {
-                mPopupWindow.update(
-                    Math.round(mLocation.getHorizontalLeft(mSelectionInfo.start) - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
-                    Math.round(mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.start)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()),
-                    -1, -1
-                )
-            } else {
-                mPopupWindow.update(
-                    Math.round(mLocation.getHorizontalRight(mSelectionInfo.end) - mPadding + mTempCoors[0] + mView.getPaddingLeft()),
-                    Math.round(mLocation.getLineBottom(mLocation.getLineForOffset(mSelectionInfo.end)) - mPadding / 4 + mTempCoors[1] + mView.getPaddingTop()),
-                    -1, -1
-                )
-            }
+            updateWindowSize()
+            val isStartHandle = isLeft
+            val offset = if (isStartHandle) mSelectionInfo.start else mSelectionInfo.end
+            val handlePos = mSelectListener.getHandlePosition(offset, isStartHandle)
+            val anchorOffset = getAnchorOffset()
+            mPopupWindow.update(
+                (handlePos.x - anchorOffset.x + mTempCoors[0] + mView.paddingLeft).roundToInt(),
+                (handlePos.y - anchorOffset.y + mTempCoors[1] + mView.paddingTop).roundToInt(),
+                -1,
+                -1
+            )
         }
 
         fun show(x: Float, y: Float) {
             mView.getLocationInWindow(mTempCoors)
-            if (isLeft) {
-                mPopupWindow.showAtLocation(
-                    mView,
-                    Gravity.NO_GRAVITY,
-                    (x - mWidth - mPadding + mTempCoors[0] + mView.getPaddingLeft()).roundToInt(),
-                    (y - mPadding / 4 + mTempCoors[1] + mView.paddingTop).roundToInt()
-                )
-            } else {
-                mPopupWindow.showAtLocation(
-                    mView,
-                    Gravity.NO_GRAVITY,
-                    (x - mPadding + mTempCoors[0] + mView.getPaddingLeft()).roundToInt(),
-                    (y - mPadding / 4 + mTempCoors[1] + mView.paddingTop).roundToInt()
-                )
-            }
+            updateWindowSize()
+            val anchorOffset = getAnchorOffset()
+            mPopupWindow.showAtLocation(
+                mView,
+                Gravity.NO_GRAVITY,
+                (x - anchorOffset.x + mTempCoors[0] + mView.paddingLeft).roundToInt(),
+                (y - anchorOffset.y + mTempCoors[1] + mView.paddingTop).roundToInt()
+            )
         }
     }
 
@@ -477,7 +491,7 @@ class SelectableTextHelper(builder: Builder) {
         }
     }
 
-    class Builder(val mView: View, val mLocation: TxtLocation) {
+    class Builder(val mView: View, val onSelectListener: OnSelectListener) {
         var mCursorHandleColor = Color.parseColor("#00CF7A")
         var mSelectedColor = Color.parseColor("#3D00CF7A")
         var mCursorHandleSizeInDp = 20f

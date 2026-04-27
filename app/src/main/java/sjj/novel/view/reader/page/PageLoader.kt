@@ -4,13 +4,13 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.PointF
 import android.graphics.Typeface
 import android.text.TextPaint
 import androidx.lifecycle.ViewModel
 import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
-import com.jaeger.library.TxtLocation
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.dp2Px
 import com.zqc.opencc.android.lib.ChineseConverter
@@ -31,7 +31,7 @@ import kotlin.math.min
 /**
  * Created by newbiechen on 17-7-1.
  */
-abstract class PageLoader : ViewModel(), OnSelectListener {
+abstract class PageLoader : ViewModel() {
     private val breakIteratorTl = ThreadLocal.withInitial {
         android.icu.text.BreakIterator.getCharacterInstance()
     }
@@ -134,7 +134,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     //上一章的记录
     private var mLastChapterPos = 0
     private var mSelectableTextHelper: SelectableTextHelper? = null
-    private val mLocation = TxtLocationImpl()
+    private val onSelectListenerImpl = OnSelectListenerImpl()
 
     init {
         chapterCategory = mutableListOf()
@@ -144,8 +144,7 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
     fun initPageView(pageView: PageView) {
         mPageView = pageView
-        mSelectableTextHelper = SelectableTextHelper.Builder(pageView, mLocation).build()
-        mSelectableTextHelper?.setSelectListener(this)
+        mSelectableTextHelper = SelectableTextHelper.Builder(pageView, onSelectListenerImpl).build()
         // 初始化PageView
         pageView.setPageMode(mPageMode)
         pageView.setBackground(mBackground)
@@ -595,30 +594,8 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
             canvas.drawText(tip, pivotX, pivotY, mTextPaint!!)
         } else {
             val helper = mSelectableTextHelper
-            if (!isVerticalTypesetting && helper?.mSelectionInfo?.select == true) {
-                val start = helper.mSelectionInfo.start
-                val end = helper.mSelectionInfo.end
-
-                val startLine = mLocation.getLineForOffset(start)
-                val endLine = mLocation.getLineForOffset(end)
-                //                Log.e("startLine:" + startLine + " endLine:" + endLine + " start:" + start + " end:" + end);
-                for (i in startLine..endLine) {
-                    val txtLine = curPage.lines.get(i)
-                    val left: Float
-                    val right: Float
-                    if (startLine == i) {
-                        left = mLocation.getHorizontalLeft(start)
-                    } else {
-                        left = mLocation.getLineStart(i)
-                    }
-                    if (endLine == i) {
-                        right = mLocation.getHorizontalRight(end)
-                    } else {
-                        right = mLocation.getLineEnd(i)
-                    }
-                    //                    Log.e("left:" + left + " top:" + txtLine.top + " right:" + right + " bottom:" + txtLine.bottom + " " + txtLine);
-                    canvas.drawRect(left, txtLine.top, right, txtLine.bottom, mSelectedPaint!!)
-                }
+            if (helper?.mSelectionInfo?.select == true) {
+                drawSelection(canvas, curPage, helper.mSelectionInfo.start, helper.mSelectionInfo.end)
             }
 
             if (mSelectedColorTest) {
@@ -703,6 +680,65 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 }
             }
         }
+    }
+
+    private fun drawSelection(canvas: Canvas, page: TxtPage, start: Int, end: Int) {
+        val startLine = onSelectListenerImpl.getLineForOffset(start)
+        val endLine = onSelectListenerImpl.getLineForOffset(end)
+        if (startLine < 0 || endLine < 0 || startLine > endLine) {
+            return
+        }
+        for (lineIndex in startLine..endLine) {
+            val txtLine = page.lines.getOrNull(lineIndex) ?: continue
+            if (txtLine.clusterBoundaries.size < 2 || txtLine.txt.isBlank()) {
+                continue
+            }
+            val firstIndex = if (lineIndex == startLine) {
+                (start - txtLine.clusterStart).coerceIn(0, txtLine.clusterBoundaries.size - 2)
+            } else {
+                firstNonBlankClusterIndex(txtLine) ?: continue
+            }
+            val lastIndex = if (lineIndex == endLine) {
+                (end - txtLine.clusterStart).coerceIn(0, txtLine.clusterBoundaries.size - 2)
+            } else {
+                lastNonBlankClusterIndex(txtLine) ?: continue
+            }
+            if (firstIndex > lastIndex) {
+                continue
+            }
+
+            if (isVerticalTypesetting) {
+                val top = min(txtLine.clusterLeft[firstIndex], txtLine.clusterLeft[lastIndex])
+                val bottom = max(txtLine.clusterRight[firstIndex], txtLine.clusterRight[lastIndex])
+                canvas.drawRect(txtLine.left, top, txtLine.right, bottom, mSelectedPaint!!)
+            } else {
+                val left = min(txtLine.clusterLeft[firstIndex], txtLine.clusterLeft[lastIndex])
+                val right = max(txtLine.clusterRight[firstIndex], txtLine.clusterRight[lastIndex])
+                canvas.drawRect(left, txtLine.top, right, txtLine.bottom, mSelectedPaint!!)
+            }
+        }
+    }
+
+    private fun firstNonBlankClusterIndex(line: TxtLine): Int? {
+        for (i in 0 until line.clusterBoundaries.size - 1) {
+            if (!isBlankCluster(line, i)) {
+                return i
+            }
+        }
+        return null
+    }
+
+    private fun lastNonBlankClusterIndex(line: TxtLine): Int? {
+        for (i in line.clusterBoundaries.size - 2 downTo 0) {
+            if (!isBlankCluster(line, i)) {
+                return i
+            }
+        }
+        return null
+    }
+
+    private fun isBlankCluster(line: TxtLine, clusterIndex: Int): Boolean {
+        return line.txt.substring(line.clusterBoundaries[clusterIndex], line.clusterBoundaries[clusterIndex + 1]).isBlank()
     }
 
     fun prepareDisplay(w: Int, h: Int) {
@@ -1495,26 +1531,54 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
     }
 
     fun onLongPress(x: Float, y: Float) {
-        if (isVerticalTypesetting) {
-            return
-        }
         Log.e("长按 x:$x y:$y")
         mSelectableTextHelper?.showSelectView(x, y)
     }
 
-    override fun onTextSelected(info: SelectionInfo?) {
-        Log.e("被选中的文字")
-    }
+    private inner class OnSelectListenerImpl : OnSelectListener {
+        private fun findLineForOffsetValue(offset: Int): TxtLine? {
+            val page = this@PageLoader.mCurPage ?: return null
+            for (line in page.lines) {
+                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
+                    return line
+                }
+            }
+            return null
+        }
 
-    override fun onTextSelectedChange(info: SelectionInfo?) {
-        mPageView!!.drawNextPage()
-    }
+        private fun distanceToLine(line: TxtLine, x: Float, y: Float): Float {
+            return if (isVerticalTypesetting) {
+                when {
+                    x < line.left -> line.left - x
+                    x > line.right -> x - line.right
+                    else -> 0f
+                }
+            } else {
+                when {
+                    y < line.top -> line.top - y
+                    y > line.bottom -> y - line.bottom
+                    else -> 0f
+                }
+            }
+        }
 
-    private inner class TxtLocationImpl : TxtLocation {
-        override fun getLine(y: Float): Int {
+        private fun getInlinePos(x: Float, y: Float): Float {
+            return if (isVerticalTypesetting) y else x
+        }
+
+        private fun getLineClusterOffset(line: TxtLine, offset: Int): Int {
+            return (offset - line.clusterStart).coerceIn(0, line.clusterBoundaries.size - 2)
+        }
+
+        override fun getLine(x: Float, y: Float): Int {
             val page = this@PageLoader.mCurPage ?: return -1
             for (line in page.lines) {
-                if (line.top <= y && line.bottom >= y) {
+                val hit = if (isVerticalTypesetting) {
+                    line.left <= x && line.right >= x
+                } else {
+                    line.top <= y && line.bottom >= y
+                }
+                if (hit) {
                     return line.index
                 }
             }
@@ -1523,69 +1587,28 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
 
         override fun getLineForOffset(offset: Int): Int {
             val page = this@PageLoader.mCurPage ?: return -1
-            for (line in page.lines) {
-                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
-                    return line.index
-                }
-            }
-            return page.lines.size - 1
-        }
-
-        override fun getLineStart(line: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            val txtLine = page.lines[line]
-            if (txtLine.txt.isBlank()) {
-                return -1f
-            }
-            for (i in 0 until txtLine.clusterBoundaries.size - 2) {
-                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
-                if (isBlank) {
-                    continue
-                }
-                return txtLine.clusterLeft[i]
-            }
-            return -1f
-        }
-
-        override fun getLineStartOffset(line: Int): Int {
-            val page = this@PageLoader.mCurPage ?: return -1
-            val txtLine = page.lines[line]
-            return txtLine.clusterStart
-        }
-
-        override fun getLineEnd(line: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            val txtLine = page.lines[line]
-            if (txtLine.txt.isBlank()) {
-                return -1f
-            }
-            for (i in txtLine.clusterBoundaries.size - 2 downTo 0) {
-                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
-                if (isBlank) {
-                    continue
-                }
-                return txtLine.clusterRight[i]
-            }
-            return -1f
+            return findLineForOffsetValue(offset)?.index ?: (page.lines.size - 1)
         }
 
         override fun getOffset(x: Float, y: Float): Int {
             val page = this@PageLoader.mCurPage ?: return -1
-            val line = getLine(y)
-            if (line == -1) {
+            val lineIndex = getLine(x, y)
+            if (lineIndex == -1) {
                 return -1
             }
-            val txtLine = page.lines[line]
-            val lineStart = getLineStart(txtLine.index)
-            if (x < lineStart) {
+            val txtLine = page.lines[lineIndex]
+            if (isVerticalTypesetting) {
+                if (x < txtLine.left || x > txtLine.right) {
+                    return -1
+                }
+            } else if (y < txtLine.top || y > txtLine.bottom) {
                 return -1
             }
-            val lineEnd = getLineEnd(txtLine.index)
-            if (x > lineEnd) {
-                return -1
-            }
+            val inlinePos = getInlinePos(x, y)
             for (i in txtLine.clusterLeft.indices) {
-                if (x >= txtLine.clusterLeft[i] && x <= txtLine.clusterRight[i]) {
+                val startPos = min(txtLine.clusterLeft[i], txtLine.clusterRight[i])
+                val endPos = max(txtLine.clusterLeft[i], txtLine.clusterRight[i])
+                if (inlinePos >= startPos && inlinePos <= endPos) {
                     return i + txtLine.clusterStart
                 }
             }
@@ -1595,67 +1618,76 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
         override fun getHysteresisOffset(x: Float, y: Float, oldOffset: Int, isLeft: Boolean): Int {
             val page = this@PageLoader.mCurPage ?: return oldOffset
 
-            var difY = Int.MAX_VALUE.toFloat()
+            var difY = Float.MAX_VALUE
             var line = -1
             for (txtLine in page.lines) {
-                if (!txtLine.txt.isBlank() && abs(txtLine.bottom - y) < difY) {
+                val distance = distanceToLine(txtLine, x, y)
+                if (!txtLine.txt.isBlank() && distance < difY) {
                     line = txtLine.index
-                    difY = abs(txtLine.bottom - y)
+                    difY = distance
                 }
             }
             if (line == -1) {
                 return oldOffset
             }
             val txtLine = page.lines[line]
-            var difX = Int.MAX_VALUE.toFloat()
+            val inlinePos = getInlinePos(x, y)
+            var difX = Float.MAX_VALUE
             var lineOffset = -1
             for (i in 0..<txtLine.clusterBoundaries.size - 1) {
-                val isBlank = txtLine.txt.substring(txtLine.clusterBoundaries[i], txtLine.clusterBoundaries[i + 1]).isBlank()
+                val isBlank = isBlankCluster(txtLine, i)
                 val clusterCenter = (txtLine.clusterLeft[i] + txtLine.clusterRight[i]) / 2
-                if (!isBlank && abs(clusterCenter - x) < difX) {
+                if (!isBlank && abs(clusterCenter - inlinePos) < difX) {
                     lineOffset = i
-                    difX = abs(clusterCenter - x)
+                    difX = abs(clusterCenter - inlinePos)
                 }
             }
             return if (lineOffset == -1) oldOffset else (lineOffset + txtLine.clusterStart)
         }
 
-        override fun getHorizontalRight(offset: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            for (line in page.lines) {
-                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
-                    val lineOffset = offset - line.clusterStart
-                    return line.clusterRight[lineOffset]
-                }
+        override fun getHandlePosition(offset: Int, isStartHandle: Boolean): PointF {
+            val line = findLineForOffsetValue(offset) ?: return PointF(-1f, -1f)
+            if (line.clusterBoundaries.size < 2) {
+                return PointF(line.left, line.top)
             }
-            return -1f
-        }
-
-        override fun getHorizontalLeft(offset: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            for (line in page.lines) {
-                if (line.clusterStart <= offset && line.clusterStart + line.clusterBoundaries.size - 1 > offset) {
-                    val lineOffset = offset - line.clusterStart
-                    if (lineOffset == 0) {
-                        return line.left
-                    }
-
-                    return line.clusterLeft[lineOffset]
-                }
+            val lineOffset = getLineClusterOffset(line, offset)
+            return if (isVerticalTypesetting) {
+                PointF(
+                    (line.left + line.right) / 2f,
+                    if (isStartHandle) line.clusterLeft[lineOffset] else line.clusterRight[lineOffset]
+                )
+            } else if (mTypesettingMode == MODE_TYPESETTING_HORIZONTAL_RTL) {
+                PointF(
+                    if (isStartHandle) line.clusterRight[lineOffset] else line.clusterLeft[lineOffset],
+                    line.bottom
+                )
+            } else {
+                PointF(
+                    if (isStartHandle) line.clusterLeft[lineOffset] else line.clusterRight[lineOffset],
+                    line.bottom
+                )
             }
-            return -1f
         }
 
-        override fun getLineTop(line: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            val txtLine = page.lines[line]
-            return txtLine.top
+        override fun getHandleDirection(isStartHandle: Boolean): Int {
+            return when (mTypesettingMode) {
+                MODE_TYPESETTING_HORIZONTAL_RTL -> if (isStartHandle) OnSelectListener.HANDLE_DIRECTION_RIGHT else OnSelectListener.HANDLE_DIRECTION_LEFT
+                MODE_TYPESETTING_VERTICAL_LTR, MODE_TYPESETTING_VERTICAL_RTL -> if (isStartHandle) OnSelectListener.HANDLE_DIRECTION_TOP else OnSelectListener.HANDLE_DIRECTION_BOTTOM
+                else -> if (isStartHandle) OnSelectListener.HANDLE_DIRECTION_LEFT else OnSelectListener.HANDLE_DIRECTION_RIGHT
+            }
         }
 
-        override fun getLineBottom(line: Int): Float {
-            val page = this@PageLoader.mCurPage ?: return -1f
-            val txtLine = page.lines[line]
-            return txtLine.bottom
+        override fun getOperateWindowAnchor(start: Int, end: Int): PointF {
+            val line = findLineForOffsetValue(start) ?: return PointF(0f, 0f)
+            if (line.clusterBoundaries.size < 2) {
+                return PointF(line.left, line.top)
+            }
+            val lineOffset = getLineClusterOffset(line, start)
+            return if (isVerticalTypesetting) {
+                PointF((line.left + line.right) / 2f, line.clusterLeft[lineOffset])
+            } else {
+                PointF(getHandlePosition(start, true).x, line.top)
+            }
         }
 
         override fun getTxt(start: Int, end: Int): String {
@@ -1680,6 +1712,10 @@ abstract class PageLoader : ViewModel(), OnSelectListener {
                 }
             }
             return stringBuilder.toString()
+        }
+
+        override fun onTextSelectedChange(info: SelectionInfo?) {
+            mPageView!!.drawNextPage()
         }
     }
 
