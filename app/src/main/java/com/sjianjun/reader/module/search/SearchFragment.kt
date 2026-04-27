@@ -64,7 +64,7 @@ class SearchFragment : BaseAsyncFragment() {
     private fun initData() {
         launchIo {
             val javaScriptList = viewModel.getAllEnableBookSource()
-            binding!!.searchRefresh.max = javaScriptList.size
+            binding!!.searchRefresh.max = javaScriptList.size + 1
         }
     }
 
@@ -194,8 +194,8 @@ class SearchFragment : BaseAsyncFragment() {
 
     private suspend fun search(searchKeyWord: String) = withMain {
         showProgress()
-        binding?.searchRefresh?.progress = 0
-        val count = AtomicInteger()
+        binding?.searchRefresh?.progress = 1
+        val count = AtomicInteger(1)
         viewModel.search(searchKeyWord).collect {
             binding?.searchRefresh?.progress = count.incrementAndGet()
             searchResult.postValue(it)
