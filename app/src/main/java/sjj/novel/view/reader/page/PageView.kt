@@ -237,7 +237,11 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         val loader = pageLoader ?: return false
         val anim = mPageAnim
         if (anim is ScrollPageAnim) {
-            val nextPagePos = loader.pagePos + if (isNext) 1 else -1
+            if (!isNext && (anim.bookRecord?.scrollOffset ?: 0) < 0) {
+                loader.skipToPage(anim.bookRecord?.pagePos ?: 0)
+                return true
+            }
+            val nextPagePos = (anim.bookRecord?.pagePos ?: 0) + if (isNext) 1 else -1
             if (nextPagePos < 0) {
                 loader.skipPreChapter()
             } else if (nextPagePos > (loader.curPageList?.size ?: 0)) {

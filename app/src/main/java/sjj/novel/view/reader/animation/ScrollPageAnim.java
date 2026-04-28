@@ -359,7 +359,7 @@ public class ScrollPageAnim extends PageAnimation {
         if (!mActiveViews.isEmpty()) {
             BitmapView view = mActiveViews.get(0);
             fixedBitmap = view.bitmap;
-            if (mNextBitmap.inited){
+            if (mNextBitmap.inited) {
                 mBookRecord.chapter = fixedBitmap.chapterPos;
                 mBookRecord.pagePos = fixedBitmap.pagePos;
                 mBookRecord.scrollOffset = view.top - mContentTop;
@@ -424,7 +424,11 @@ public class ScrollPageAnim extends PageAnimation {
     }
 
     public void setBookRecord(@NotNull BookRecordBean record) {
-        mBookRecord = record;
+        mBookRecord.bookId = record.bookId;
+        mBookRecord.chapter = record.chapter;
+        mBookRecord.pagePos = record.pagePos;
+        mBookRecord.scrollOffset = record.scrollOffset;
+        mBookRecord.isEnd = record.isEnd;
     }
 
     private static class BitmapView {
