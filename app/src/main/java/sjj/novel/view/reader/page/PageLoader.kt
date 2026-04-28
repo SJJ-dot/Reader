@@ -254,7 +254,7 @@ abstract class PageLoader : ViewModel() {
      * @param pos
      */
     fun skipToPage(pos: Int): Boolean {
-        Log.i("skipToPage pos:" + pos)
+        Log.i("skipToPage pos:$pos")
         if (!isChapterListPrepare) {
             return false
         }

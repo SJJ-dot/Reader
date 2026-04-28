@@ -27,6 +27,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.event.observe
 import com.sjianjun.reader.module.main.ChapterListFragment
+import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
@@ -354,17 +355,38 @@ class BookReaderActivity : BaseActivity() {
                 } ?: false
             }
 
-            override fun center() {
-                //显示设置对话框
-                supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
-                    supportFragmentManager.beginTransaction()
-                        .show(it)
-                        .commitAllowingStateLoss()
-                }
+            override fun onTap(x: Float, y: Float, viewWidth: Int, viewHeight: Int) {
+                val actions = ReaderClickAreaAction.normalize(globalConfig.readerClickAreaActions.value)
+                val cellIndex = ReaderClickAreaAction.cellIndexOf(x, y, viewWidth, viewHeight)
+                val action = actions.getOrElse(cellIndex) { ReaderClickAreaAction.MENU }
+                handleReaderClickAction(action)
             }
 
         })
     }
+
+    private fun handleReaderClickAction(action: Int) {
+        when (action) {
+            ReaderClickAreaAction.PREV_PAGE->binding?.pageView?.performPageTap(false)
+            ReaderClickAreaAction.NEXT_PAGE -> binding?.pageView?.performPageTap(true)
+            ReaderClickAreaAction.MENU -> showReaderSettingDialog()
+            ReaderClickAreaAction.PREV_CHAPTER -> mPageLoader?.skipPreChapter()
+            ReaderClickAreaAction.NEXT_CHAPTER -> mPageLoader?.skipNextChapter()
+            ReaderClickAreaAction.DIRECTORY ->  binding?.drawerLayout?.openDrawer(GravityCompat.END)
+            ReaderClickAreaAction.NONE -> {
+                //无操作
+            }
+        }
+    }
+
+    private fun showReaderSettingDialog() {
+        supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
+            supportFragmentManager.beginTransaction()
+                .show(it)
+                .commitAllowingStateLoss()
+        }
+    }
+
 
     private fun initView() {
         val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)

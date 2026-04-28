@@ -12,7 +12,6 @@ import android.view.ViewConfiguration
 import androidx.activity.viewModels
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.act
-import sjj.alog.Log
 import sjj.novel.view.reader.animation.BitmapWrapper
 import sjj.novel.view.reader.animation.CoverPageAnim
 import sjj.novel.view.reader.animation.HorizonPageAnim
@@ -200,11 +199,8 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
                         return true
                     }
 
-                    //是否点击了中间
-                    if (mCenterRect?.contains(x, y) == true) {
-                        mTouchListener?.center()
-                        return true
-                    }
+                    mTouchListener?.onTap(x, y, mViewWidth, mViewHeight)
+                    return true
                 } else {
                     if (mPageAnim is ScrollPageAnim) {
                         pageLoader?.saveRecord()
@@ -233,10 +229,36 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         mPageAnim?.abortAnim()
     }
 
-    val isRunning: Boolean get() = mPageAnim?.isRunning() == true
-
     fun setTouchListener(mTouchListener: TouchListener?) {
         this.mTouchListener = mTouchListener
+    }
+
+    fun performPageTap(isNext: Boolean): Boolean {
+        val loader = pageLoader ?: return false
+        val anim = mPageAnim
+        if (anim is ScrollPageAnim) {
+            val nextPagePos = loader.pagePos + if (isNext) 1 else -1
+            if (nextPagePos < 0) {
+                loader.skipPreChapter()
+            } else if (nextPagePos > (loader.curPageList?.size ?: 0)) {
+                loader.skipNextChapter()
+            } else {
+                loader.skipToPage(nextPagePos)
+            }
+            return true
+        }
+        val targetX = if (isNext) mViewWidth * 0.8f else mViewWidth * 0.2f
+        val targetY = mStartY
+        val downTime = System.currentTimeMillis()
+        val downEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, targetX, targetY, 0)
+        val upEvent = MotionEvent.obtain(downTime, downTime + 1, MotionEvent.ACTION_UP, targetX, targetY, 0)
+        return try {
+            anim?.onTouchEvent(downEvent)
+            anim?.onTouchEvent(upEvent) == true
+        } finally {
+            downEvent.recycle()
+            upEvent.recycle()
+        }
     }
 
     fun drawNextPage() {
@@ -291,6 +313,6 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     interface TouchListener {
         fun intercept(event: MotionEvent?): Boolean
 
-        fun center()
+        fun onTap(x: Float, y: Float, viewWidth: Int, viewHeight: Int)
     }
 }

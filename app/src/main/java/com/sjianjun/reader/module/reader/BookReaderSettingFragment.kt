@@ -154,21 +154,22 @@ class BookReaderSettingFragment : BaseFragment() {
                     val vm = activity?.viewModels<BookReaderViewModel>()
                     if (vm?.value?.chapterCache?.value == true) {
                         EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                        hide()
                     } else {
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle("缓存章节")
                             .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
                             .setPositiveButton(android.R.string.ok) { _, _ ->
                                 EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                                hide()
                             }.setNegativeButton(android.R.string.cancel, null)
                             .show()
                     }
                 }
 
                 R.id.reader_setting_click_area -> {
-
+                    hide()
+                    if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {
+                        ReaderClickAreaSettingDialogFragment().show(parentFragmentManager, ReaderClickAreaSettingDialogFragment.TAG)
+                    }
                 }
             }
             true

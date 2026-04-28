@@ -5,6 +5,7 @@ import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.module.bookcity.HostStr
+import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.utils.dp2Px
 import com.tencent.mmkv.MMKV
 import sjj.novel.view.reader.page.CustomPageStyleInfo
@@ -14,6 +15,12 @@ val globalConfig by lazy { AppConfig("default") }
 
 class AppConfig(val name: String) :
     DelegateSharedPref(MMKV.mmkvWithID("AppConfig_$name")) {
+    /**
+     * 阅读器九宫格点击区域配置
+     */
+    val readerClickAreaActions by lazy {
+        dataLivedata("readerClickAreaActions", ReaderClickAreaAction.defaultConfig())
+    }
 
     /**
      * github 发布的版本信息
