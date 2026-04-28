@@ -11,10 +11,9 @@ import kotlin.math.min
  */
 class NetPageLoader() : PageLoader() {
     public override fun refreshChapterList() {
-        if (mCollBook == null || mCollBook!!.bookChapterList == null) return
+        if (mCollBook == null || chapterCategory == null) return
 
         // 将 BookChapter 转换成当前可用的 Chapter
-        chapterCategory = mCollBook!!.bookChapterList
         isChapterListPrepare = true
 
         // 如果章节未打开

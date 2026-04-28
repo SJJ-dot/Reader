@@ -12,6 +12,7 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.repository.dao.BookDao
@@ -19,13 +20,14 @@ import com.sjianjun.reader.repository.dao.BookSourceDao
 import com.sjianjun.reader.repository.dao.ChapterContentDao
 import com.sjianjun.reader.repository.dao.ChapterDao
 import com.sjianjun.reader.repository.dao.ReadingRecordDao
+import com.sjianjun.reader.repository.dao.ReplacementRuleDao
 import com.sjianjun.reader.repository.dao.SearchHistoryDao
 import com.sjianjun.reader.repository.dao.WebBookDao
 import java.io.File
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class],
-    version = 22,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class],
+    version = 23,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -36,6 +38,7 @@ abstract class Db : RoomDatabase() {
     abstract fun readingRecordDao(): ReadingRecordDao
     abstract fun bookSourceDao(): BookSourceDao
     abstract fun webBookDao(): WebBookDao
+    abstract fun replacementRule(): ReplacementRuleDao
 }
 
 object DbFactory {
@@ -44,7 +47,7 @@ object DbFactory {
         val newDbDir = App.app.getDir("database", Context.MODE_PRIVATE)
         val dbFile = File(newDbDir, "app_database").absolutePath
         val room = Room.databaseBuilder(App.app, Db::class.java, dbFile)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(true)
             .addMigrations(object : Migration(12, 13) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
@@ -126,6 +129,11 @@ object DbFactory {
             .addMigrations(object : Migration(21, 22) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `scrollOffset` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(22, 23) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `ReplacementRule` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `rule` TEXT NOT NULL, `replacement` TEXT NOT NULL, `isRegex` INTEGER NOT NULL, `isEnabled` INTEGER NOT NULL, `order` INTEGER NOT NULL, `applyToTitle` INTEGER NOT NULL, `applyToContent` INTEGER NOT NULL, `scope` TEXT, `excludeScope` TEXT, PRIMARY KEY(`id`))")
                 }
             })
             .build()

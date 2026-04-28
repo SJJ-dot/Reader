@@ -171,6 +171,13 @@ class BookReaderSettingFragment : BaseFragment() {
                         ReaderClickAreaSettingDialogFragment().show(parentFragmentManager, ReaderClickAreaSettingDialogFragment.TAG)
                     }
                 }
+
+                R.id.reader_setting_purify_replace -> {
+                    hide()
+                    if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
+                        ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
+                    }
+                }
             }
             true
         }

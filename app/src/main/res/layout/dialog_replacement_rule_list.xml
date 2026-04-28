@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootOverlay"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dn_background">
+
+    <LinearLayout
+        android:id="@+id/panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/dn_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/replacement_rule_title"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnNewRule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="@string/replacement_rule_add"
+                android:textColor="@color/dn_color_primary"
+                android:textSize="14dp" />
+
+            <TextView
+                android:id="@+id/btnClose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="@string/replacement_rule_done"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="14dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:text="@string/replacement_rule_empty"
+            android:textColor="@color/dn_text_color_black_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="4dp"
+            tools:itemCount="3"
+            tools:listitem="@layout/item_replacement_rule" />
+    </LinearLayout>
+</FrameLayout>
+

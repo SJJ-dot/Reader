@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootOverlay"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/dn_background">
+
+    <ScrollView
+        android:id="@+id/editScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/dn_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:importantForAutofill="noExcludeDescendants"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/replacement_rule_edit_title"
+                    android:textColor="@color/dn_text_color_black"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:text="@string/replacement_rule_save"
+                    android:textColor="@color/dn_color_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/etName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:hint="@string/replacement_rule_name_hint"
+                android:inputType="text"
+                android:textColor="@color/dn_text_color_black"
+                android:textColorHint="@color/dn_text_color_black_secondary" />
+
+            <EditText
+                android:id="@+id/etRule"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:hint="@string/replacement_rule_pattern_hint"
+                android:textColor="@color/dn_text_color_black"
+                android:textColorHint="@color/dn_text_color_black_secondary" />
+
+            <EditText
+                android:id="@+id/etReplacement"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:hint="@string/replacement_rule_replacement_hint"
+                android:textColor="@color/dn_text_color_black"
+                android:textColorHint="@color/dn_text_color_black_secondary" />
+
+            <EditText
+                android:id="@+id/etScope"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:hint="@string/replacement_rule_scope_hint"
+                android:inputType="text"
+                android:textColor="@color/dn_text_color_black"
+                android:textColorHint="@color/dn_text_color_black_secondary" />
+
+            <EditText
+                android:id="@+id/etExcludeScope"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:hint="@string/replacement_rule_exclude_scope_hint"
+                android:inputType="text"
+                android:textColor="@color/dn_text_color_black"
+                android:textColorHint="@color/dn_text_color_black_secondary" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/cbEnabled"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/dn_color_primary"
+                    android:checked="true"
+                    android:text="@string/replacement_rule_enabled"
+                    android:textColor="@color/dn_text_color_black" />
+
+                <CheckBox
+                    android:id="@+id/cbRegex"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/dn_color_primary"
+                    android:text="@string/replacement_rule_regex"
+                    android:textColor="@color/dn_text_color_black" />
+
+                <CheckBox
+                    android:id="@+id/cbApplyTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/dn_color_primary"
+                    android:text="@string/replacement_rule_apply_title"
+                    android:textColor="@color/dn_text_color_black" />
+
+                <CheckBox
+                    android:id="@+id/cbApplyContent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/dn_color_primary"
+                    android:checked="true"
+                    android:text="@string/replacement_rule_apply_content"
+                    android:textColor="@color/dn_text_color_black" />
+            </LinearLayout>
+
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
+

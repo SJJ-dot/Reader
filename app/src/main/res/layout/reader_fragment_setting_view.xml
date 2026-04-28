@@ -133,7 +133,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_card"
         android:orientation="vertical">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -700,7 +700,7 @@
         android:id="@+id/setting_bottom_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_card"
         android:orientation="horizontal"
         android:paddingTop="8dp"
         android:paddingBottom="8dp">

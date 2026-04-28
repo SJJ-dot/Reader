@@ -26,4 +26,7 @@ object EventKey {
 
     /** 打开网页菜单 */
     val WEB_VIEW_SETTINGS = "WEB_VIEW_SETTINGS"
+
+    /** 阅读页净化替换规则变更 */
+    val REPLACEMENT_RULES_CHANGED = "REPLACEMENT_RULES_CHANGED"
 }

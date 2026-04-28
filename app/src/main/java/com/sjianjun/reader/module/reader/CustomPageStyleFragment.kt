@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.reader
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.Dialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -276,6 +277,11 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
         } else {
             binding?.btnDelete!!.gone()
         }
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        globalConfig.readerPageStyle.postValue(globalConfig.readerPageStyle.value!!)
     }
 
     private fun setColor(textView: SuperTextView, imageView: ImageView, color: Int) {

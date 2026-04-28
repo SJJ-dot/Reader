@@ -3,5 +3,24 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="feedback_title">提交反馈</string>
+    <string name="replacement_rule_title">净化替换规则</string>
+    <string name="replacement_rule_add">新增</string>
+    <string name="replacement_rule_done">完成</string>
+    <string name="replacement_rule_empty">暂无规则，点击右上角“新建规则”开始添加</string>
+    <string name="replacement_rule_edit_title">编辑规则</string>
+    <string name="replacement_rule_name_hint">规则名称</string>
+    <string name="replacement_rule_pattern_hint">匹配规则</string>
+    <string name="replacement_rule_replacement_hint">替换内容</string>
+    <string name="replacement_rule_scope_hint">作用范围（可选，书名/URL包含）</string>
+    <string name="replacement_rule_exclude_scope_hint">排除范围（可选，书名/URL包含）</string>
+    <string name="replacement_rule_enabled">启用</string>
+    <string name="replacement_rule_regex">正则</string>
+    <string name="replacement_rule_apply_title">章节标题</string>
+    <string name="replacement_rule_apply_content">章节内容</string>
+    <string name="replacement_rule_save">保存规则</string>
+    <string name="replacement_rule_move_up">上移</string>
+    <string name="replacement_rule_move_down">下移</string>
+    <string name="replacement_rule_edit">编辑</string>
+    <string name="replacement_rule_delete">删除</string>
 
 </resources>

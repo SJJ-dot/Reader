@@ -13,6 +13,10 @@ import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
 import com.sjianjun.reader.BuildConfig
+import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.dp2Px
 import com.zqc.opencc.android.lib.ChineseConverter
 import com.zqc.opencc.android.lib.ConversionType
@@ -23,7 +27,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.BitmapWrapper
-import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
 import kotlin.math.max
@@ -43,11 +46,10 @@ abstract class PageLoader : ViewModel() {
      * @return
      */
     // 当前章节列表
-    var chapterCategory: MutableList<TxtChapter>? = null
-        protected set
+    var chapterCategory: List<TxtChapter>? = null
 
     // 书本对象
-    var mCollBook: BookBean? = null
+    var mCollBook: Book? = null
 
     // 监听器
     @JvmField
@@ -91,6 +93,9 @@ abstract class PageLoader : ViewModel() {
 
     // 简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
     private var mJianFanMode: Int = MODE_JIAN_FAN_OFF
+
+    // 当前生效的净化替换规则，由外部预先注入，分页时只做纯文本处理，不做数据库 IO
+    private var mReplacementRules: List<ReplacementRule> = emptyList()
 
     // 排版模式: 0=横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
     private var mTypesettingMode: Int = MODE_TYPESETTING_HORIZONTAL_LTR
@@ -468,7 +473,6 @@ abstract class PageLoader : ViewModel() {
         isChapterOpen = false
         isChapterListPrepare = false
         mPreLoadDisp?.cancel()
-        chapterCategory?.clear()
         this.chapterCategory = null
         this.curPageList = null
         mCurPage = null
@@ -547,7 +551,7 @@ abstract class PageLoader : ViewModel() {
             //根据状态不一样，数据不一样
             if (mStatus != STATUS_FINISH) {
                 if (isChapterListPrepare) {
-                    canvas.drawText(chapters[this.chapterPos].title, mDisplayParams.contentLeft, tipTop, tipPaint)
+                    canvas.drawText(mCurPage?.title ?: "", mDisplayParams.contentLeft, tipTop, tipPaint)
                 }
             } else {
                 val curPage = mCurPage ?: return
@@ -1014,6 +1018,26 @@ abstract class PageLoader : ViewModel() {
         mCancelPage = null
     }
 
+    private fun applyRulesToTitle(text: String, chapter: TxtChapter? = null): String {
+        if (mReplacementRules.isEmpty()) return text
+        return ReplacementRuleUseCase.applyRules(text, mReplacementRules, mCollBook, chapter?.let(::buildReplacementChapter), true)
+    }
+
+    private fun applyRulesToContent(text: String, chapter: TxtChapter? = null): String {
+        if (mReplacementRules.isEmpty()) return text
+        val text = text.lines().joinToString("\n") { "　　$it" }
+        return ReplacementRuleUseCase.applyRules(text, mReplacementRules, mCollBook, chapter?.let(::buildReplacementChapter), false)
+    }
+
+    private fun buildReplacementChapter(chapter: TxtChapter): Chapter {
+        return Chapter().apply {
+            url = chapter.link ?: ""
+            bookId = chapter.bookId ?: ""
+            title = chapter.title.orEmpty()
+            index = chapter.chapterIndex
+        }
+    }
+
     /**************************************private method */
     /**
      * 将章节数据，解析成页面列表
@@ -1024,32 +1048,32 @@ abstract class PageLoader : ViewModel() {
     private fun loadPages(chapter: TxtChapter): MutableList<TxtPage> {
         Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
         val lines: MutableList<TxtLine> = ArrayList()
-        val titleText = convertByJianFanMode(chapter.title.toString())
-        val contentText = convertByJianFanMode(chapter.content.toString())
+        val titleText = applyRulesToTitle(convertByJianFanMode(chapter.title.orEmpty()), chapter)
+        val contentText = applyRulesToContent(convertByJianFanMode(chapter.content?.toString().orEmpty()), chapter)
         return when (mTypesettingMode) {
 
             MODE_TYPESETTING_HORIZONTAL_RTL -> {
                 createTxtLineHRTL(lines, titleText, mTitlePaint!!)
                 createTxtLineHRTL(lines, contentText, mTextPaint!!)
-                createPagesHTTB(lines, chapter)
+                createPagesHTTB(lines, titleText)
             }
 
             MODE_TYPESETTING_VERTICAL_LTR -> {
                 createTxtLineVTTB(lines, titleText, mTitlePaint!!)
                 createTxtLineVTTB(lines, contentText, mTextPaint!!)
-                createPagesVLTR(lines, chapter)
+                createPagesVLTR(lines, titleText)
             }
 
             MODE_TYPESETTING_VERTICAL_RTL -> {
                 createTxtLineVTTB(lines, titleText, mTitlePaint!!)
                 createTxtLineVTTB(lines, contentText, mTextPaint!!)
-                createPagesVRTL(lines, chapter)
+                createPagesVRTL(lines, titleText)
             }
 
             else -> {
                 createTxtLineHLTR(lines, titleText, mTitlePaint!!)
                 createTxtLineHLTR(lines, contentText, mTextPaint!!)
-                createPagesHTTB(lines, chapter)
+                createPagesHTTB(lines, titleText)
             }
         }
     }
@@ -1057,7 +1081,7 @@ abstract class PageLoader : ViewModel() {
     /**
      * 将文本行分页，生成横排页面列表。文本行从上到下排列
      */
-    private fun createPagesHTTB(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+    private fun createPagesHTTB(lines: MutableList<TxtLine>, pageTitle: String): MutableList<TxtPage> {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
@@ -1102,7 +1126,7 @@ abstract class PageLoader : ViewModel() {
             }
             val page = TxtPage()
             page.position = pages.size
-            page.title = chapter.title
+            page.title = pageTitle
             page.lines = pageLine.toList()
             pages.add(page)
             pageLine.clear()
@@ -1113,7 +1137,7 @@ abstract class PageLoader : ViewModel() {
     /**
      * 将文本行分页，生成竖排页面列表。文本行从左到右
      */
-    private fun createPagesVLTR(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+    private fun createPagesVLTR(lines: MutableList<TxtLine>, pageTitle: String): MutableList<TxtPage> {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
@@ -1157,7 +1181,7 @@ abstract class PageLoader : ViewModel() {
             }
             val page = TxtPage()
             page.position = pages.size
-            page.title = chapter.title
+            page.title = pageTitle
             page.lines = pageLine.toList()
             pages.add(page)
             pageLine.clear()
@@ -1168,7 +1192,7 @@ abstract class PageLoader : ViewModel() {
     /**
      * 将文本行分页，生成竖排页面列表。文本行从右到左
      */
-    private fun createPagesVRTL(lines: MutableList<TxtLine>, chapter: TxtChapter): MutableList<TxtPage> {
+    private fun createPagesVRTL(lines: MutableList<TxtLine>, pageTitle: String): MutableList<TxtPage> {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
@@ -1212,7 +1236,7 @@ abstract class PageLoader : ViewModel() {
             }
             val page = TxtPage()
             page.position = pages.size
-            page.title = chapter.title
+            page.title = pageTitle
             page.lines = pageLine.toList()
             pages.add(page)
             pageLine.clear()
@@ -1836,6 +1860,10 @@ abstract class PageLoader : ViewModel() {
         }
 
         mPageView!!.drawCurPage()
+    }
+
+    fun setReplacementRules(rules: List<ReplacementRule>) {
+        mReplacementRules = rules.sortedBy { it.order }
     }
 
     fun setTypesettingMode(mode: Int) {

@@ -27,9 +27,10 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.event.observe
 import com.sjianjun.reader.module.main.ChapterListFragment
-import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
+import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
@@ -38,7 +39,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import sjj.alog.Log
-import sjj.novel.view.reader.bean.BookBean
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.CustomPageStyle
@@ -279,6 +279,14 @@ class BookReaderActivity : BaseActivity() {
             }
         }
 
+        observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
+            launch {
+                mPageLoader?.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
+                ChapterPageCache.reset()
+                mPageLoader?.reloadPages()
+            }
+        }
+
         globalConfig.readerPageMode.observe(this) {
             mPageLoader?.setPageMode(PageMode.entries.getOrNull(it) ?: PageMode.SIMULATION)
         }
@@ -367,12 +375,12 @@ class BookReaderActivity : BaseActivity() {
 
     private fun handleReaderClickAction(action: Int) {
         when (action) {
-            ReaderClickAreaAction.PREV_PAGE->binding?.pageView?.performPageTap(false)
+            ReaderClickAreaAction.PREV_PAGE -> binding?.pageView?.performPageTap(false)
             ReaderClickAreaAction.NEXT_PAGE -> binding?.pageView?.performPageTap(true)
             ReaderClickAreaAction.MENU -> showReaderSettingDialog()
             ReaderClickAreaAction.PREV_CHAPTER -> mPageLoader?.skipPreChapter()
             ReaderClickAreaAction.NEXT_CHAPTER -> mPageLoader?.skipNextChapter()
-            ReaderClickAreaAction.DIRECTORY ->  binding?.drawerLayout?.openDrawer(GravityCompat.END)
+            ReaderClickAreaAction.DIRECTORY -> binding?.drawerLayout?.openDrawer(GravityCompat.END)
             ReaderClickAreaAction.NONE -> {
                 //无操作
             }
@@ -478,23 +486,17 @@ class BookReaderActivity : BaseActivity() {
                     isEnd = record.isEnd
                 })
             }
-            mPageLoader?.mCollBook = BookBean().apply {
-                id = book.url
-                title = book.title
-                author = book.author
-                shortIntro = book.intro
-                cover = book.cover
-                bookChapterList = book.chapterList?.map { chapter ->
-                    TxtChapter().apply {
-                        this.bookId = book.url
-                        this.link = chapter.url
-                        this.title = chapter.title
-                        this.chapterIndex = chapter.index
-                    }
+            mPageLoader?.mCollBook = book
+            mPageLoader?.chapterCategory = book.chapterList?.map { chapter ->
+                TxtChapter().apply {
+                    this.bookId = book.url
+                    this.link = chapter.url
+                    this.title = chapter.title
+                    this.chapterIndex = chapter.index
                 }
-
             }
             Log.i("刷新章节信息，章节数：${book.chapterList?.size}")
+            mPageLoader?.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
             mPageLoader?.refreshChapterList()
             val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG) as? BookReaderSettingFragment
             settingDialog?.refreshChapterProgress()
