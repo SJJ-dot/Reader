@@ -8,11 +8,13 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -103,9 +105,8 @@ class BookReaderSettingFragment : BaseFragment() {
         initFontList()
         initBrowser()
         initSettings()
-        initTypesetting()
-        initJianFan()
         initScreenOrientationMode()
+        initSettingMenu()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -115,7 +116,79 @@ class BookReaderSettingFragment : BaseFragment() {
         refreshChapterProgress()
     }
 
-    fun initScreenOrientationMode(){
+    private fun showPopupMenu(anchor: View) {
+        val popupMenu = PopupMenu(anchor.context, anchor)
+        popupMenu.menuInflater.inflate(R.menu.reader_setting_menu, popupMenu.menu)
+        updatePopupMenuTitles(popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener {
+            when (it.itemId) {
+                R.id.reader_setting_simplified_traditional_switch -> {
+                    val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
+                    val current = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
+                        .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("简繁转换")
+                        .setSingleChoiceItems(options, current) { dialog, which ->
+                            globalConfig.readerJianFanMode.postValue(which)
+                            dialog.dismiss()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+
+                R.id.reader_setting_text_layout -> {
+                    val options = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")
+                    val current = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
+                        .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("文字排版")
+                        .setSingleChoiceItems(options, current) { dialog, which ->
+                            globalConfig.readerTypesettingMode.postValue(which)
+                            dialog.dismiss()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+
+                R.id.reader_setting_cache_chapter -> {
+                    val vm = activity?.viewModels<BookReaderViewModel>()
+                    if (vm?.value?.chapterCache?.value == true) {
+                        EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                        hide()
+                    } else {
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("缓存章节")
+                            .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                                hide()
+                            }.setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    }
+                }
+
+                R.id.reader_setting_click_area -> {
+
+                }
+            }
+            true
+        }
+        popupMenu.show()
+    }
+
+    private fun updatePopupMenuTitles(menu: Menu) {
+        val isCached = activity?.viewModels<BookReaderViewModel>()?.value?.chapterCache?.value == true
+        menu.findItem(R.id.reader_setting_cache_chapter)?.title = if (isCached) "缓存章节（缓存中）" else "缓存章节"
+    }
+
+
+    fun initSettingMenu() {
+        binding?.settingsMore?.click(100) {
+            showPopupMenu(it)
+        }
+    }
+
+    fun initScreenOrientationMode() {
         binding?.screenRotation?.click(10) {
             val options = arrayOf("跟随系统", "竖屏", "横屏", "横屏自动")
             val current = (globalConfig.readerOrientationMode.value ?: 0)
@@ -124,22 +197,6 @@ class BookReaderSettingFragment : BaseFragment() {
                 .setTitle("屏幕旋转")
                 .setSingleChoiceItems(options, current) { dialog, which ->
                     globalConfig.readerOrientationMode.postValue(which)
-                    dialog.dismiss()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-        }
-    }
-
-    private fun initJianFan() {
-        binding?.jianFan?.click(10) {
-            val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
-            val current = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
-                .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("简繁转换")
-                .setSingleChoiceItems(options, current) { dialog, which ->
-                    globalConfig.readerJianFanMode.postValue(which)
                     dialog.dismiss()
                 }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -156,22 +213,6 @@ class BookReaderSettingFragment : BaseFragment() {
                 binding?.settingContainerFirst?.isVisible = true
                 binding?.settingContainerSecond?.isVisible = false
             }
-        }
-    }
-
-    private fun initTypesetting() {
-        binding?.typesetting?.click(10) {
-            val options = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")
-            val current = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
-                .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("文字排版")
-                .setSingleChoiceItems(options, current) { dialog, which ->
-                    globalConfig.readerTypesettingMode.postValue(which)
-                    dialog.dismiss()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
         }
     }
 
@@ -196,30 +237,6 @@ class BookReaderSettingFragment : BaseFragment() {
             refreshChapterProgress()
         }
         refreshChapterProgress()
-        val vm = activity?.viewModels<BookReaderViewModel>()
-        vm?.value?.chapterCache?.observe(viewLifecycleOwner, Observer { isCache ->
-            if (isCache) {
-                binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
-            } else {
-                binding?.download?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
-            }
-        })
-        binding?.download?.click {
-            val vm = activity?.viewModels<BookReaderViewModel>()
-            if (vm?.value?.chapterCache?.value == true) {
-                EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                hide()
-            } else {
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("缓存章节")
-                    .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                        hide()
-                    }.setNegativeButton(android.R.string.cancel, null)
-                    .show()
-            }
-        }
         binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
         }

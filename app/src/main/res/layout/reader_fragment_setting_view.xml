@@ -67,7 +67,7 @@
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/jian_fan"
+            app:layout_constraintEnd_toStartOf="@+id/screen_rotation"
             app:layout_constraintStart_toEndOf="@+id/day_night"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -83,28 +83,6 @@
 
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/jian_fan"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/screen_rotation"
-            app:layout_constraintStart_toEndOf="@+id/chapter_sync"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/transparent"
-                android:padding="6dp"
-                android:scaleType="fitCenter"
-                android:src="@mipmap/ic_jianfan"
-                app:tint="@color/dn_text_color_black" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
             android:id="@+id/screen_rotation"
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -113,7 +91,7 @@
             app:cardCornerRadius="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/browser"
-            app:layout_constraintStart_toEndOf="@+id/jian_fan"
+            app:layout_constraintStart_toEndOf="@+id/chapter_sync"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
@@ -752,32 +730,23 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
-            android:id="@+id/typesetting"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="9dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_typesetting"
-            app:tint="@color/dn_text_color_black" />
-
-        <ImageButton
-            android:id="@+id/download"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_download"
-            app:tint="@color/dn_text_color_black" />
-
-        <ImageButton
             android:id="@+id/settings"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
             android:src="@drawable/reader_setting"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageButton
+            android:id="@+id/settings_more"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_more_setting"
             app:tint="@color/dn_text_color_black" />
 
     </LinearLayout>
