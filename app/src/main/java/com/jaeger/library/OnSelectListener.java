@@ -1,6 +1,7 @@
 package com.jaeger.library;
 
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 public interface OnSelectListener {
 
@@ -28,6 +29,8 @@ public interface OnSelectListener {
     int getHandleDirection(boolean isStartHandle);
 
     PointF getOperateWindowAnchor(int start, int end);
+
+    RectF getSelectionBounds(int start, int end);
 
     /**
      *

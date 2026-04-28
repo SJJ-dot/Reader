@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PointF
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
 import androidx.lifecycle.ViewModel
@@ -1687,6 +1688,67 @@ abstract class PageLoader : ViewModel() {
                 PointF((line.left + line.right) / 2f, line.clusterLeft[lineOffset])
             } else {
                 PointF(getHandlePosition(start, true).x, line.top)
+            }
+        }
+
+        override fun getSelectionBounds(start: Int, end: Int): RectF {
+            val page = this@PageLoader.mCurPage ?: return RectF()
+            val startLine = getLineForOffset(start)
+            val endLine = getLineForOffset(end)
+            if (startLine < 0 || endLine < 0 || startLine > endLine) {
+                return RectF()
+            }
+
+            var minLeft = Float.MAX_VALUE
+            var minTop = Float.MAX_VALUE
+            var maxRight = Float.MIN_VALUE
+            var maxBottom = Float.MIN_VALUE
+
+            for (lineIndex in startLine..endLine) {
+                val txtLine = page.lines.getOrNull(lineIndex) ?: continue
+                if (txtLine.clusterBoundaries.size < 2 || txtLine.txt.isBlank()) {
+                    continue
+                }
+                val firstIndex = if (lineIndex == startLine) {
+                    (start - txtLine.clusterStart).coerceIn(0, txtLine.clusterBoundaries.size - 2)
+                } else {
+                    firstNonBlankClusterIndex(txtLine) ?: continue
+                }
+                val lastIndex = if (lineIndex == endLine) {
+                    (end - txtLine.clusterStart).coerceIn(0, txtLine.clusterBoundaries.size - 2)
+                } else {
+                    lastNonBlankClusterIndex(txtLine) ?: continue
+                }
+                if (firstIndex > lastIndex) {
+                    continue
+                }
+
+                val left: Float
+                val top: Float
+                val right: Float
+                val bottom: Float
+                if (isVerticalTypesetting) {
+                    left = txtLine.left
+                    top = min(txtLine.clusterLeft[firstIndex], txtLine.clusterLeft[lastIndex])
+                    right = txtLine.right
+                    bottom = max(txtLine.clusterRight[firstIndex], txtLine.clusterRight[lastIndex])
+                } else {
+                    left = min(txtLine.clusterLeft[firstIndex], txtLine.clusterLeft[lastIndex])
+                    top = txtLine.top
+                    right = max(txtLine.clusterRight[firstIndex], txtLine.clusterRight[lastIndex])
+                    bottom = txtLine.bottom
+                }
+
+                minLeft = min(minLeft, left)
+                minTop = min(minTop, top)
+                maxRight = max(maxRight, right)
+                maxBottom = max(maxBottom, bottom)
+            }
+
+            return if (minLeft == Float.MAX_VALUE || minTop == Float.MAX_VALUE) {
+                RectF()
+            } else {
+                RectF(minLeft, minTop, maxRight, maxBottom)
             }
         }
 

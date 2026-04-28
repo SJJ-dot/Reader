@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
+import android.graphics.RectF
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -163,6 +164,7 @@ class SelectableTextHelper(builder: Builder) {
     private inner class OperateWindow(context: Context?) {
         private val mWindow: PopupWindow
         private val mTempCoors = IntArray(2)
+        private val mVisibleRect = RectF()
 
         private val mWidth: Int
         private val mHeight: Int
@@ -220,41 +222,90 @@ class SelectableTextHelper(builder: Builder) {
         }
 
         fun show() {
+            val startHandle = getCursorHandle(true)
+            val endHandle = getCursorHandle(false)
             mView.getLocationInWindow(mTempCoors)
+            val screenWidth = TextLayoutUtil.getScreenWidth(mContext).toFloat()
+            val screenHeight = mContext.resources.displayMetrics.heightPixels.toFloat()
+            val screenMargin = TextLayoutUtil.dp2px(mContext, 16f).toFloat()
+            val popupGap = TextLayoutUtil.dp2px(mContext, 10f).toFloat()
+            mVisibleRect.set(screenMargin, screenMargin, screenWidth - screenMargin, screenHeight - screenMargin)
+
+            val startHandlePos = mSelectListener.getHandlePosition(mSelectionInfo.start, true)
+            val endHandlePos = mSelectListener.getHandlePosition(mSelectionInfo.end, false)
+            val startHandleRect = startHandle.getPopupRect(startHandlePos.x, startHandlePos.y)
+            val endHandleRect = endHandle.getPopupRect(endHandlePos.x, endHandlePos.y)
+            val selectionBounds = mSelectListener.getSelectionBounds(mSelectionInfo.start, mSelectionInfo.end)
+            val selectionTop = selectionBounds.top + mTempCoors[1] + mView.paddingTop
+            val selectionBottom = selectionBounds.bottom + mTempCoors[1] + mView.paddingTop
+
+            val handlesTop = minOf(startHandleRect.top, endHandleRect.top)
+            val handlesBottom = maxOf(startHandleRect.bottom, endHandleRect.bottom)
+            val effectiveTop = if (selectionBounds.isEmpty) handlesTop else minOf(selectionTop, handlesTop)
+            val effectiveBottom = if (selectionBounds.isEmpty) handlesBottom else maxOf(selectionBottom, handlesBottom)
             val anchor = mSelectListener.getOperateWindowAnchor(mSelectionInfo.start, mSelectionInfo.end)
 
             val startX = anchor.x + mTempCoors[0] + mView.paddingLeft
-            val posY = anchor.y + mTempCoors[1] + mView.paddingTop - mHeight - 16
+            val aboveY = effectiveTop - mHeight - popupGap
+            val belowY = effectiveBottom + popupGap
+            val edgeBuffer = mHeight.toFloat()
+            val topNearEdge = aboveY <= mVisibleRect.top + edgeBuffer
+            val bottomNearEdge = belowY + mHeight >= mVisibleRect.bottom - edgeBuffer
+
+            var posY = aboveY
+            var showBelow = false
+            var showCentered = false
+            if (topNearEdge && bottomNearEdge) {
+                posY = (screenHeight - mHeight) / 2f
+                showCentered = true
+            } else if (topNearEdge) {
+                posY = belowY
+                showBelow = true
+            } else {
+                posY = aboveY
+            }
+            posY = posY.coerceIn(mVisibleRect.top, maxOf(mVisibleRect.top, mVisibleRect.bottom - mHeight))
 
             mWindow.setElevation(8f)
 
             val arrowMargin = mWidth * 0.15f
-            var posX = startX - arrowMargin
-            val screenWidth = TextLayoutUtil.getScreenWidth(mContext)
-            if (posX + mWidth > screenWidth) {
-                posX = (screenWidth - mWidth).toFloat()
+            var posX = if (showCentered) {
+                (screenWidth - mWidth) / 2f
+            } else {
+                startX - arrowMargin
+            }
+            if (posX + mWidth > mVisibleRect.right + screenMargin) {
+                posX = (screenWidth - mWidth - screenMargin).coerceAtLeast(0f)
             } else if (posX < 0) {
                 posX = 0f
             }
 
             val contentView = mWindow.getContentView()
-            val arrow = contentView.findViewById<View>(R.id.arrow)
-            val params = arrow.getLayoutParams() as LinearLayout.LayoutParams
+            val topArrow = contentView.findViewById<View>(R.id.arrow_top)
+            val bottomArrow = contentView.findViewById<View>(R.id.arrow_bottom)
+            if (showCentered) {
+                topArrow.visibility = View.GONE
+                bottomArrow.visibility = View.GONE
+            } else {
+                topArrow.visibility = if (showBelow) View.VISIBLE else View.GONE
+                bottomArrow.visibility = if (showBelow) View.GONE else View.VISIBLE
+                val arrow = if (showBelow) topArrow else bottomArrow
+                val params = arrow.layoutParams as LinearLayout.LayoutParams
 
-            params.gravity = Gravity.NO_GRAVITY
+                params.gravity = Gravity.NO_GRAVITY
 
-            var leftMargin = startX - posX
-            if (leftMargin < arrowMargin) {
-                leftMargin = arrowMargin
-            } else if (leftMargin > mWidth - arrowMargin) {
-                leftMargin = mWidth - arrowMargin
+                var leftMargin = startX - posX
+                if (leftMargin < arrowMargin) {
+                    leftMargin = arrowMargin
+                } else if (leftMargin > mWidth - arrowMargin) {
+                    leftMargin = mWidth - arrowMargin
+                }
+
+                params.leftMargin = Math.round(leftMargin)
+                arrow.layoutParams = params
             }
 
-            params.leftMargin = Math.round(leftMargin)
-
-            arrow.setLayoutParams(params)
-
-            mWindow.showAtLocation(mView, Gravity.NO_GRAVITY, Math.round(posX), Math.round(max(posY, 16f)))
+            mWindow.showAtLocation(mView, Gravity.NO_GRAVITY, Math.round(posX), Math.round(posY))
         }
 
         fun dismiss() {
@@ -268,6 +319,7 @@ class SelectableTextHelper(builder: Builder) {
     private inner class CursorHandle(var isLeft: Boolean) : View(mContext) {
         private val mPopupWindow: PopupWindow
         private val mPaint: Paint
+        private val mPopupRect = RectF()
 
         private val mCircleRadius = mCursorHandleSize / 2f
         private val mHandleWidth = mCircleRadius * 2
@@ -480,6 +532,17 @@ class SelectableTextHelper(builder: Builder) {
                 (x - anchorOffset.x + mTempCoors[0] + mView.paddingLeft).roundToInt(),
                 (y - anchorOffset.y + mTempCoors[1] + mView.paddingTop).roundToInt()
             )
+        }
+
+        fun getPopupRect(anchorX: Float, anchorY: Float): RectF {
+            val anchorOffset = getAnchorOffset()
+            mView.getLocationInWindow(mTempCoors)
+            val left = anchorX - anchorOffset.x + mTempCoors[0] + mView.paddingLeft
+            val top = anchorY - anchorOffset.y + mTempCoors[1] + mView.paddingTop
+            val right = left + getPopupWidth()
+            val bottom = top + getPopupHeight()
+            mPopupRect.set(left, top, right, bottom)
+            return RectF(mPopupRect)
         }
     }
 
