@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.R
 import com.sjianjun.reader.mqtt.Feedback
+import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.preferences.globalConfig
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,8 +43,7 @@ class RepliesAdapter(val list: List<Feedback>, private val onLongDelete: ((Feedb
         private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
         fun bind(r: Feedback) {
-            val author = if (r.client_id == globalConfig.mqttClientId) "我" else "书友"
-            tvAuthor.text = author
+            tvAuthor.text = r.client_id.user
             tvContent.text = r.content ?: ""
             tvTime.text = sdf.format(Date(r.created_at * 1000))
         }

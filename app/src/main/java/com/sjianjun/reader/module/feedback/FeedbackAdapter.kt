@@ -3,7 +3,6 @@ package com.sjianjun.reader.module.feedback
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.recyclerview.widget.RecyclerView
@@ -12,11 +11,11 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ItemFeedbackBinding
 import com.sjianjun.reader.mqtt.Feedback
 import com.sjianjun.reader.mqtt.Feedbacks
+import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.show
 import kotlinx.coroutines.launch
-import sjj.alog.Log
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +48,7 @@ class FeedbackAdapter(
         val feedback = list[position]
         val binding = ItemFeedbackBinding.bind(holder.itemView)
         binding.tvContent.text = feedback.content ?: ""
-        binding.tvTime.text = sdf.format(Date(feedback.created_at * 1000))
+        binding.tvTime.text = "${feedback.client_id.user} " + sdf.format(Date(feedback.created_at * 1000))
 
         binding.btnReply.setOnClickListener { onReply(feedback) }
         binding.btnDelete.setOnClickListener { onDelete(feedback) }
@@ -80,9 +79,8 @@ class FeedbackAdapter(
             binding.tvLatestReply.show()
             binding.tvLatestReplyTime.show()
             val latest = feedback.replies?.last()!!
-            val author = if (latest.client_id == globalConfig.mqttClientId) "我" else "书友"
-            binding.tvLatestReply.text = "${author}: ${latest.content}"
-            binding.tvLatestReplyTime.text = sdf.format(Date(latest.created_at * 1000))
+            binding.tvLatestReply.text = "${latest.content}"
+            binding.tvLatestReplyTime.text ="${latest.client_id.user} " + sdf.format(Date(latest.created_at * 1000))
         } else {
             val isExpanded = expanded.contains(feedback.id)
             if (isExpanded) {
@@ -96,9 +94,8 @@ class FeedbackAdapter(
             }
             binding.tvToggleReplies.show()
             val latest = feedback.replies?.last()!!
-            val author = if (latest.client_id == globalConfig.mqttClientId) "我" else "书友"
-            binding.tvLatestReply.text = "${author}: ${latest.content}"
-            binding.tvLatestReplyTime.text = sdf.format(Date(latest.created_at * 1000))
+            binding.tvLatestReply.text = "${latest.content}"
+            binding.tvLatestReplyTime.text ="${latest.client_id.user} " + sdf.format(Date(latest.created_at * 1000))
             binding.tvToggleReplies.text = if (isExpanded) "收起回复" else "展开回复"
         }
         val isExpanded = expanded.contains(feedback.id)
