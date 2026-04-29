@@ -5,23 +5,28 @@ import android.app.Activity.RESULT_OK
 import android.app.Dialog
 import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.DialogFragment
 import com.coorchice.library.SuperTextView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ReaderFragmentCustomPageStyleBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.gson
@@ -33,7 +38,7 @@ import sjj.novel.view.reader.page.CustomPageStyleInfo
 import sjj.novel.view.reader.page.PageStyle
 
 
-class CustomPageStyleFragment : BottomSheetDialogFragment() {
+class CustomPageStyleFragment : DialogFragment() {
     var binding: ReaderFragmentCustomPageStyleBinding? = null
     private val PICK_IMAGE_REQUEST = 1234
     private val customPageStyleInfo: CustomPageStyleInfo by lazy {
@@ -46,8 +51,9 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
         CustomPageStyle(customPageStyleInfo)
     }
 
-    override fun getTheme(): Int {
-        return R.style.reader_page_style
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
     }
 
     override fun onCreateView(
@@ -65,10 +71,31 @@ class CustomPageStyleFragment : BottomSheetDialogFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
-            ?.setBackgroundColor(Color.TRANSPARENT)
         binding = ReaderFragmentCustomPageStyleBinding.bind(view)
+        val root = binding?.root!!
+        ViewCompat.setOnApplyWindowInsetsListener(view) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val cutout = insets.displayCutout
+            val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
+            val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
+            val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
+            val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
+            root.setPadding(safeLeft, 0, safeRight, safeBottom)
+            insets
+        }
         initView()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val window = dialog?.window ?: return
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        window.setGravity(Gravity.BOTTOM)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
+        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }
 
     @SuppressLint("SetTextI18n")

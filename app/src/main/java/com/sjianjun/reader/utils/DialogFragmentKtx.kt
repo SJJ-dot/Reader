@@ -1,18 +1,22 @@
 package com.sjianjun.reader.utils
 
-import androidx.core.content.ContextCompat
+import android.graphics.Color
+import android.os.Build
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.DialogFragment
 
-fun DialogFragment.applyEdgeToEdgeDialogBar(colorRes: Int, lightBars: Boolean) {
+fun DialogFragment.applyEdgeToEdgeDialogBar(darkIcons: Boolean) {
     val window = dialog?.window ?: return
-    val color = ContextCompat.getColor(requireContext(), colorRes)
-    window.statusBarColor = color
-    window.navigationBarColor = color
+    window.statusBarColor = Color.TRANSPARENT
+    window.navigationBarColor = Color.TRANSPARENT
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isStatusBarContrastEnforced = false
+        window.isNavigationBarContrastEnforced = false
+    }
     WindowCompat.setDecorFitsSystemWindows(window, false)
     WindowInsetsControllerCompat(window, window.decorView).apply {
-        isAppearanceLightStatusBars = lightBars
-        isAppearanceLightNavigationBars = lightBars
+        isAppearanceLightStatusBars = darkIcons
+        isAppearanceLightNavigationBars = darkIcons
     }
 }

@@ -1,6 +1,5 @@
 package com.sjianjun.reader.module.reader
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +10,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.ItemDefaultStyleBinding
 import com.sjianjun.reader.databinding.ReaderFragmentDefaultPageStyleBinding
+import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
 import com.sjianjun.reader.view.click
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageStyle
@@ -18,8 +18,9 @@ import sjj.novel.view.reader.page.PageStyle
 class DefaultPageStyleListFragment : DialogFragment() {
     var binding: ReaderFragmentDefaultPageStyleBinding? = null
     private val adapter = Adapter()
-    override fun getTheme(): Int {
-        return R.style.reader_setting_dialog
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
     }
 
     override fun onCreateView(
@@ -31,8 +32,6 @@ class DefaultPageStyleListFragment : DialogFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        dialog?.window?.findViewById<View>(R.id.design_bottom_sheet)
-            ?.setBackgroundColor(Color.TRANSPARENT)
         isCancelable = false
         binding = ReaderFragmentDefaultPageStyleBinding.bind(view)
         val params = dialog?.window?.attributes
@@ -40,14 +39,21 @@ class DefaultPageStyleListFragment : DialogFragment() {
         params?.height = ViewGroup.LayoutParams.MATCH_PARENT
         dialog?.window?.attributes = params
 
-        binding?.recyclerView!!.adapter = adapter
+        binding?.viewPager!!.adapter = adapter
         adapter.data.addAll(PageStyle.builtin().map { CustomPageStyle(it) })
+        binding?.viewPager?.registerOnPageChangeCallback(object : androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                val item = adapter.data[position]
+                applyEdgeToEdgeDialogBar(!item.isDark)
+            }
+        })
 
         binding?.btnCancel!!.click {
             dismiss()
         }
         binding?.btnSave!!.click {
-            val item = adapter.data[binding?.recyclerView!!.currentItem]
+            val item = adapter.data[binding?.viewPager!!.currentItem]
             CustomPageStyleFragment.newInstance(item.info).show(parentFragmentManager, "CustomPageStyleFragment")
             dismiss()
         }

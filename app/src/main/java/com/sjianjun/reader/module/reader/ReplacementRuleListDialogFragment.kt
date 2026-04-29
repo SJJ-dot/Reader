@@ -81,7 +81,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
-        applyEdgeToEdgeDialogBar(R.color.dn_background, !pageStyle.isDark)
+        applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

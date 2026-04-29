@@ -67,7 +67,7 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
-        applyEdgeToEdgeDialogBar(R.color.dn_background, !pageStyle.isDark)
+        applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
