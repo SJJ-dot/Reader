@@ -10,14 +10,19 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.core.os.bundleOf
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.databinding.DialogReplacementRuleEditBinding
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
+import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.launch
+import sjj.novel.view.reader.page.PageStyle
 
 class ReplacementRuleEditDialogFragment : DialogFragment() {
     private var binding: DialogReplacementRuleEditBinding? = null
@@ -25,7 +30,7 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(STYLE_NO_FRAME, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
+        setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -35,6 +40,18 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val root = binding?.root!!
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val cutout = insets.displayCutout
+            val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
+            val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
+            val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
+            val offset = (imeInsets.bottom - systemBars.bottom).coerceAtLeast(0)
+            root.setPadding(safeLeft, 0, safeRight, safeBottom + offset)
+            insets
+        }
         binding?.rootOverlay?.setOnClickListener { dismissAllowingStateLoss() }
         binding?.panel?.setOnClickListener { }
         binding?.btnSave?.setOnClickListener { saveRule() }
@@ -47,7 +64,10 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         window.setGravity(Gravity.BOTTOM)
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
+        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        applyEdgeToEdgeDialogBar(R.color.dn_background, !pageStyle.isDark)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
