@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
@@ -41,90 +42,191 @@ object MqttUtil {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var onlineJob: Job? = null
+    private var reconnectJob: Job? = null
+    private val connectLock = Any()
 
     @SuppressLint("StaticFieldLeak")
     private var mqttClient: MqttAsyncClient? = null
+    @Volatile
+    private var isConnecting = false
 
     private val msgQueueCallback = ConcurrentHashMap<String, (MqttMessage) -> Unit>()
+    private val subscribedTopics = ConcurrentHashMap<String, Int>()
 
-    fun connect() {
-        val serverURI = BuildConfig.MQTT_SERVER_URI
-
-        // use a stable clientId stored in SharedPreferences to allow session persistence
-        val clientId = globalConfig.mqttClientId ?: UUID.randomUUID().toString().replace("-", "").also {
-            globalConfig.mqttClientId = it
+    private val mqttCallback = object : MqttCallbackExtended {
+        override fun connectComplete(reconnect: Boolean, serverURI: String?) {
+            if (reconnect) {
+                Log.i("Reconnected to : $serverURI")
+            } else {
+                Log.i("Connected to: $serverURI")
+            }
+            publishOnline()
+            restoreSubscriptions()
         }
 
-        mqttClient = MqttAsyncClient(serverURI, clientId, MemoryPersistence())
-        mqttClient?.setCallback(object : MqttCallbackExtended {
-            override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-                if (reconnect) {
-                    Log.i("Reconnected to : $serverURI")
-                    publishOnline()
-                } else {
-                    Log.i("Connected to: $serverURI")
-                }
-            }
+        override fun connectionLost(cause: Throwable?) {
+            isConnecting = false
+            Log.i("The Connection was lost. cause=${cause?.message}")
+            scheduleReconnect(forceRecreate = true, delayMillis = 1500)
+        }
 
-            override fun connectionLost(cause: Throwable?) {
-                Log.i("The Connection was lost.")
+        @Throws(Exception::class)
+        override fun messageArrived(topic: String?, message: MqttMessage) {
+            try {
+                msgQueueCallback[topic]?.invoke(message)
+            } catch (e: Exception) {
+                Log.e("Error handling incoming MQTT message: ${e.message}")
             }
+        }
 
-            @Throws(Exception::class)
-            override fun messageArrived(topic: String?, message: MqttMessage) {
-                try {
-                    msgQueueCallback[topic]?.invoke(message)
-                } catch (e: Exception) {
-                    Log.e("Error handling incoming MQTT message: ${e.message}")
-                }
-            }
-
-            override fun deliveryComplete(token: IMqttDeliveryToken?) {
-            }
-        })
-
-        recursiveConnect()
+        override fun deliveryComplete(token: IMqttDeliveryToken?) {
+        }
     }
 
-    private fun recursiveConnect() {
-        try {
+    fun connect() {
+        ensureClient(forceRecreate = mqttClient == null)
+        scheduleReconnect()
+    }
+
+    private fun ensureClient(forceRecreate: Boolean = false): MqttAsyncClient? {
+        synchronized(connectLock) {
+            val current = mqttClient
+            if (!forceRecreate && current != null) {
+                return current
+            }
+
+            try {
+                current?.setCallback(null)
+                current?.close()
+            } catch (e: Exception) {
+                Log.e("Error closing old MQTT client: ${e.message}")
+            }
+
+            val serverURI = BuildConfig.MQTT_SERVER_URI
+            val clientId = globalConfig.mqttClientId ?: UUID.randomUUID().toString().replace("-", "").also {
+                globalConfig.mqttClientId = it
+            }
+            return MqttAsyncClient(serverURI, clientId, MemoryPersistence()).also { client ->
+                client.setCallback(mqttCallback)
+                mqttClient = client
+            }
+        }
+    }
+
+    private fun buildConnectOptions(): MqttConnectOptions {
+        return MqttConnectOptions().apply {
+            isAutomaticReconnect = false
+            isCleanSession = false
+            connectionTimeout = 10
+            keepAliveInterval = 30
+            userName = BuildConfig.MQTT_USERNAME
+            password = BuildConfig.MQTT_PASSWORD.toCharArray()
+            val payload = mapOf(
+                "clientId" to globalConfig.mqttClientId,
+                "status" to "offline"
+            )
+            setWill(TOPIC_ONLINE.topic, gson.toJson(payload).toByteArray(), 1, true)
+        }
+    }
+
+    private fun scheduleReconnect(forceRecreate: Boolean = false, delayMillis: Long = 0L) {
+        synchronized(connectLock) {
             if (mqttClient?.isConnected == true) {
                 return
             }
-            val mqttConnectOptions = MqttConnectOptions().apply {
-                isAutomaticReconnect = true
-                isCleanSession = true
-                connectionTimeout = 10
-                keepAliveInterval = 30
-                // use explicit setters to avoid name collision with local 'password' variable
-                userName = BuildConfig.MQTT_USERNAME
-                password = BuildConfig.MQTT_PASSWORD.toCharArray()
-                val payload = mapOf(
-                    "clientId" to globalConfig.mqttClientId,
-                    "status" to "offline"
-                )
-                setWill(TOPIC_ONLINE.topic, gson.toJson(payload).toByteArray(), 1, true)
+            if (reconnectJob?.isActive == true) {
+                return
             }
-            mqttClient?.connect(mqttConnectOptions, null, object : IMqttActionListener {
-                override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("MQTT connected successfully")
-                    publishOnline()
+            reconnectJob = scope.launch {
+                var recreate = forceRecreate
+                if (delayMillis > 0) {
+                    delay(delayMillis)
                 }
+                while (isActive && mqttClient?.isConnected != true) {
+                    val error = connectOnce(recreate)
+                    if (error == null && mqttClient?.isConnected == true) {
+                        break
+                    }
+                    Log.e("MQTT reconnect failed: ${error?.message}")
+                    recreate = true
+                    delay(5000)
+                }
+            }
+        }
+    }
 
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.e("MQTT connection failed: ${exception?.message}")
-                    // Optionally implement retry logic here
-                    scope.launch {
-                        delay(5000) // wait before retrying
-                        recursiveConnect()
+    private suspend fun connectOnce(forceRecreate: Boolean = false): Throwable? {
+        val client = ensureClient(forceRecreate) ?: return Exception("MQTT client create failed")
+        if (client.isConnected) {
+            return null
+        }
+        if (isConnecting) {
+            return waitUntilConnected().let {
+                if (it) null else Exception("MQTT client is still connecting")
+            }
+        }
+        isConnecting = true
+        return try {
+            suspendCancellableCoroutine { cont ->
+                try {
+                    client.connect(buildConnectOptions(), null, object : IMqttActionListener {
+                        override fun onSuccess(asyncActionToken: IMqttToken?) {
+                            Log.i("MQTT connected successfully")
+                            if (cont.isActive) {
+                                cont.resume(null)
+                            }
+                        }
+
+                        override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                            Log.e("MQTT connection failed: ${exception?.message}")
+                            if (cont.isActive) {
+                                cont.resume(exception ?: Exception("MQTT connect failed"))
+                            }
+                        }
+                    })
+                } catch (e: Exception) {
+                    if (cont.isActive) {
+                        cont.resume(e)
                     }
                 }
-            })
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            scope.launch {
-                delay(5000) // wait before retrying
-                recursiveConnect()
+            }
+        } finally {
+            isConnecting = false
+        }
+    }
+
+    private suspend fun waitUntilConnected(timeout: Long = 12_000L): Boolean {
+        scheduleReconnect()
+        return withTimeoutOrNull(timeout) {
+            while (mqttClient?.isConnected != true) {
+                delay(200)
+            }
+            true
+        } == true
+    }
+
+    private fun restoreSubscriptions() {
+        val client = mqttClient ?: return
+        if (!client.isConnected) {
+            return
+        }
+        val topics = subscribedTopics.entries.toList()
+        if (topics.isEmpty()) {
+            return
+        }
+        for ((topic, qos) in topics) {
+            try {
+                client.subscribe(topic, qos, null, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        Log.i("Resubscribed to $topic")
+                    }
+
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        Log.e("Failed to resubscribe $topic: ${exception?.message}")
+                    }
+                })
+            } catch (e: Exception) {
+                Log.e("Error resubscribing to $topic: ${e.message}")
             }
         }
     }
@@ -152,21 +254,22 @@ object MqttUtil {
 
     suspend fun subscribe(topic: String, qos: Int = 1): Throwable? {
         try {
-            if (mqttClient?.isConnected != true) {
+            val normalizedTopic = topic.topic
+            if (!waitUntilConnected()) {
                 Log.i("MQTT client is not connected. Cannot subscribe to $topic")
                 return Exception("MQTT client is not connected")
             }
-            val topic = topic.topic
             return suspendCancellableCoroutine { con ->
-                mqttClient?.subscribe(topic, qos, null, object : IMqttActionListener {
+                mqttClient?.subscribe(normalizedTopic, qos, null, object : IMqttActionListener {
                     override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        subscribedTopics[normalizedTopic] = qos
                         if (con.isActive) {
                             con.resume(null)
                         }
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                        Log.i("Failed to subscribe $topic")
+                        Log.i("Failed to subscribe $normalizedTopic")
                         if (con.isActive) {
                             con.resume(exception ?: Exception("Unknown error"))
                         }
@@ -180,18 +283,20 @@ object MqttUtil {
     }
 
     fun unsubscribe(topic: String) {
+        val normalizedTopic = topic.topic
+        subscribedTopics.remove(normalizedTopic)
         try {
             if (mqttClient?.isConnected != true) {
-                Log.i("MQTT client is not connected. Cannot unsubscribe from $topic")
+                Log.i("MQTT client is not connected. Cannot unsubscribe from $normalizedTopic")
                 return
             }
-            mqttClient?.unsubscribe(topic, null, object : IMqttActionListener {
+            mqttClient?.unsubscribe(normalizedTopic, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.i("Unsubscribed from $topic")
+                    Log.i("Unsubscribed from $normalizedTopic")
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.i("Failed to unsubscribe $topic")
+                    Log.i("Failed to unsubscribe $normalizedTopic")
                 }
             })
         } catch (e: Exception) {
@@ -201,7 +306,7 @@ object MqttUtil {
 
     suspend fun publish(tpc: String, payload: ByteArray, qos: Int = 1, retained: Boolean = false): Throwable? {
         try {
-            if (mqttClient?.isConnected != true) {
+            if (!waitUntilConnected()) {
                 Log.i("MQTT client is not connected. Cannot publish to $tpc")
                 return Exception("MQTT client is not connected")
             }
@@ -235,7 +340,7 @@ object MqttUtil {
 
     suspend fun request(requestTopic: String, responseTopic: String, payload: ByteArray = ByteArray(0), timeout: Long = 5000): ByteArray? {
         return try {
-            if (mqttClient?.isConnected != true) {
+            if (!waitUntilConnected()) {
                 Log.i("MQTT client is not connected. Cannot send request to ${requestTopic.topic}")
                 return null
             }
@@ -257,7 +362,7 @@ object MqttUtil {
                     }
                     try {
                         // 尝试退订（异步，不等待），防止抛
-                        mqttClient?.unsubscribe(respTpc)
+                        unsubscribe(respTpc)
                     } catch (t: Throwable) {
                         Log.e("unsubscribe error: ${t.message}")
                     }
