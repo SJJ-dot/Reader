@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.reader
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -442,18 +443,31 @@ class BookReaderSettingFragment : BaseFragment() {
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun initFontListData() {
+        globalConfig.readerFontFamily.observe(viewLifecycleOwner) {
+            adapter.notifyDataSetChanged()
+        }
         adapter.onLongClickListener = { fontInfo ->
             //长按删除自定义字体
             if (!fontInfo.isAsset) {
-                val file = File(fontInfo.path!!)
-                if (file.exists()) {
-                    file.delete()
-                    initFontListData()
-                    toast("删除字体成功:${fontInfo.name}")
-                } else {
-                    toast("字体文件不存在，无法删除:${fontInfo.name}")
-                }
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("删除字体")
+                    .setMessage("确定删除字体“${fontInfo.name}”吗？")
+                    .setPositiveButton("删除") { _, _ ->
+                        val file = File(fontInfo.path!!)
+                        if (file.exists()) {
+                            file.delete()
+                            initFontListData()
+                            if (globalConfig.readerFontFamily.value == fontInfo){
+                                globalConfig.readerFontFamily.postValue(FontInfo.DEFAULT)
+                            }
+                        } else {
+                            toast("字体文件不存在，无法删除:${fontInfo.name}")
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
             } else {
                 toast("内置字体无法删除:${fontInfo.name}")
             }
@@ -542,7 +556,6 @@ class BookReaderSettingFragment : BaseFragment() {
             Typeface.createFromFile(fontFile)
             // 现在你可以使用这个Typeface对象了
             initFontListData()
-            toast("导入字体成功:${fontName}")
         } catch (e: Exception) {
             Log.e("导入字体失败:${e.message}", e)
             toast("导入字体失败:${e.message}")
@@ -576,7 +589,6 @@ class BookReaderSettingFragment : BaseFragment() {
                 binding.fontText.text = fontInfo.name
                 click {
                     globalConfig.readerFontFamily.postValue(fontInfo)
-                    notifyDataSetChanged()
                 }
                 setOnLongClickListener {
                     onLongClickListener?.invoke(fontInfo)
