@@ -7,10 +7,13 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
@@ -463,7 +466,7 @@ class BookReaderSettingFragment : BaseFragment() {
         val fontFiles = File(requireContext().filesDir, "font").listFiles()
         fontFiles?.forEach {
             if (it.isFile) {
-                adapter.data.add(FontInfo(it.name, it.path))
+                adapter.data.add(FontInfo(it.nameWithoutExtension, it.path))
             }
         }
         adapter.notifyDataSetChanged()
@@ -483,34 +486,81 @@ class BookReaderSettingFragment : BaseFragment() {
         if (requestCode == REQUEST_CODE_PICK_FONT && resultCode == Activity.RESULT_OK) {
             val uri = data?.data
             if (uri != null) {
-                importFont(uri)
+                showImportFontNameDialog(uri)
             }
         }
     }
 
+    private fun showImportFontNameDialog(uri: Uri) {
+        val sourceFileName = resolveFontSourceFileName(uri)
+        val defaultFontName = sourceFileName.substringBeforeLast('.', sourceFileName)
+            .ifBlank { "自定义字体" }
+        val editText = EditText(requireContext()).apply {
+            setText(defaultFontName)
+            setSelection(text?.length ?: 0)
+            hint = "字体名称"
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("设置字体名称")
+            .setView(editText)
+            .setPositiveButton("导入") { _, _ ->
+                importFont(uri, editText.text?.toString())
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     // 导入字体文件
-    private fun importFont(uri: Uri) {
+    private fun importFont(uri: Uri, customFontName: String? = null) {
         try {
             Log.e("uri:$uri  uri.lastPathSegment:${uri.lastPathSegment}")
-            val contentResolver = activity?.getContentResolver()!!
-            val inputStream = contentResolver.openInputStream(uri)
-            val fileName = uri.lastPathSegment!!.split("/").last().split(".").first()
-            val fontFile = File(requireContext().filesDir, "font/${fileName}")
-            fontFile.deleteOnExit()
+            val contentResolver = requireContext().contentResolver
+            val sourceFileName = resolveFontSourceFileName(uri)
+            val defaultFontName = sourceFileName.substringBeforeLast('.', sourceFileName)
+                .ifBlank { "自定义字体" }
+            val extension = sourceFileName.substringAfterLast('.', "")
+                .takeIf { sourceFileName.contains('.') && it.isNotBlank() }
+            val fontName = sanitizeFontName(
+                customFontName
+                    ?.trim()
+                    ?.substringBeforeLast('.', customFontName.trim())
+                    .takeUnless { it.isNullOrBlank() }
+                    ?: defaultFontName
+            )
+            val targetFileName = if (extension != null) "$fontName.$extension" else fontName
+            val fontFile = File(requireContext().filesDir, "font/$targetFileName")
             fontFile.parentFile?.mkdirs()
-            inputStream?.use { input ->
+            if (fontFile.exists()) {
+                fontFile.delete()
+            }
+            contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(fontFile).use { output ->
                     input.copyTo(output)
                 }
-            }
-            val typeface = Typeface.createFromFile(fontFile)
+            } ?: throw IllegalStateException("无法读取字体文件")
+            Typeface.createFromFile(fontFile)
             // 现在你可以使用这个Typeface对象了
             initFontListData()
-            toast("导入字体成功:${fileName}")
+            toast("导入字体成功:${fontName}")
         } catch (e: Exception) {
             Log.e("导入字体失败:${e.message}", e)
             toast("导入字体失败:${e.message}")
         }
+    }
+
+    private fun resolveFontSourceFileName(uri: Uri): String {
+        requireContext().contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) {
+                cursor.getString(index)?.takeIf { it.isNotBlank() }?.let { return it }
+            }
+        }
+        return uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: "font.ttf"
+    }
+
+    private fun sanitizeFontName(name: String): String {
+        return name.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifBlank { "自定义字体" }
     }
 
     private fun hide() {
