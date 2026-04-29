@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.feedback
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
@@ -22,6 +24,7 @@ import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,12 +75,16 @@ class FeedbackAdapter(
             itemId = feedback.id,
             expandedState = expandedContent,
         )
+        binding.tvContent.setOnLongClickListener {
+            showContentActionDialog(feedback.content.orEmpty(), holder.itemView.context)
+            true
+        }
         binding.tvTime.text = "${feedback.client_id.user} " + sdf.format(Date(feedback.created_at * 1000))
 
         binding.btnReply.setOnClickListener { onReply(feedback) }
         binding.btnDelete.setOnClickListener { onDelete(feedback) }
 
-        if (globalConfig.admin || feedback.client_id == globalConfig.mqttClientId) {
+        if (canDelete(feedback)) {
             binding.btnReply.show()
             binding.btnDelete.show()
         } else {
@@ -90,11 +97,14 @@ class FeedbackAdapter(
         val latestReply = replies.firstOrNull()
 
         binding.rvReplies.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(holder.itemView.context)
-        binding.rvReplies.adapter = RepliesAdapter(replies) { f ->
-            // long press delete callback
-            val ctx = holder.itemView.context
-            showDeleteDialog(f, ctx)
-        }
+        binding.rvReplies.adapter = RepliesAdapter(
+            list = replies,
+            canDelete = { reply -> canDelete(reply) },
+            onDelete = { reply ->
+                val ctx = holder.itemView.context
+                showDeleteDialog(reply, ctx)
+            },
+        )
         if (replies.isEmpty()) {
             binding.tvToggleReplies.gone()
             binding.tvLatestReply.gone()
@@ -139,12 +149,15 @@ class FeedbackAdapter(
             notifyItemChanged(position)
         }
         binding.tvLatestReply.setOnLongClickListener {
-            // long press delete callback
             val latest = latestReply ?: return@setOnLongClickListener true
             val ctx = holder.itemView.context
-            showDeleteDialog(latest, ctx)
+            showReplyActionDialog(latest, ctx)
             true
         }
+    }
+
+    private fun canDelete(feedback: Feedback): Boolean {
+        return globalConfig.admin || feedback.client_id == globalConfig.mqttClientId
     }
 
     private fun bindExpandableText(
@@ -266,6 +279,48 @@ class FeedbackAdapter(
                 }
             }
             .show()
+    }
+
+    private fun showContentActionDialog(content: String, ctx: Context) {
+        if (content.isBlank()) {
+            return
+        }
+        MaterialAlertDialogBuilder(ctx)
+            .setItems(arrayOf("复制内容")) { _, which ->
+                if (which == 0) {
+                    copyToClipboard(content, ctx)
+                }
+            }
+            .show()
+    }
+
+    private fun showReplyActionDialog(reply: Feedback, ctx: Context) {
+        val content = reply.content.orEmpty()
+        if (content.isBlank() && !canDelete(reply)) {
+            return
+        }
+        val options = buildList {
+            if (content.isNotBlank()) {
+                add("复制内容")
+            }
+            if (canDelete(reply)) {
+                add("删除回复")
+            }
+        }
+        MaterialAlertDialogBuilder(ctx)
+            .setItems(options.toTypedArray()) { _, which ->
+                when (options[which]) {
+                    "复制内容" -> copyToClipboard(content, ctx)
+                    "删除回复" -> showDeleteDialog(reply, ctx)
+                }
+            }
+            .show()
+    }
+
+    private fun copyToClipboard(content: String, ctx: Context) {
+        val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        clipboard?.setPrimaryClip(ClipData.newPlainText("feedback", content))
+        toast("已复制")
     }
 
     override fun getItemCount(): Int = list.size
