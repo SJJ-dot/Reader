@@ -557,7 +557,7 @@ abstract class PageLoader : ViewModel() {
         if (chapters?.isEmpty() == false) {
             /*****初始化标题的参数 */
             //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
-            val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight / 2 + (tipPaint.fontMetrics.bottom - tipPaint.fontMetrics.top) / 2
+            val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f
             //根据状态不一样，数据不一样
             if (mStatus != STATUS_FINISH) {
                 if (isChapterListPrepare) {
@@ -1263,6 +1263,14 @@ abstract class PageLoader : ViewModel() {
         }
     }
 
+    private fun lineAdvance(paint: Paint): Float {
+        return max(paint.fontSpacing, paint.textSize)
+    }
+
+    private fun clusterAdvance(paint: TextPaint, text: CharSequence, start: Int, end: Int): Float {
+        return paint.measureText(text, start, end).coerceAtLeast(1f)
+    }
+
     /**
      * 获取字符串的 grapheme cluster 边界数组
      * 返回 [0, end1, end2, ..., text.length]
@@ -1289,10 +1297,9 @@ abstract class PageLoader : ViewModel() {
      */
     private fun createTxtLineHLTR(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
         // 计算行高和字符宽度
-        val fm = paint.fontMetrics
-        val lineHeight = fm.bottom - fm.top
+        val lineHeight = lineAdvance(paint)
         val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
-        val charWidth = paint.measureText("啊")
+        val referenceWidth = paint.measureText("啊").coerceAtLeast(paint.textSize)
         val sb = StringBuilder()
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
@@ -1301,7 +1308,7 @@ abstract class PageLoader : ViewModel() {
             val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
-            val remWidth = (mDisplayParams.contentRight - left) % (charWidth + letterSpacing)
+            val remWidth = (mDisplayParams.contentRight - left) % (referenceWidth + letterSpacing)
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
                 val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
                 lastExtX = extX
@@ -1329,7 +1336,7 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = max(paint.measureText(trimmed, s, e), charWidth)
+                val w = clusterAdvance(paint, trimmed, s, e)
                 if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
                     createLine(left, false)
                     sb.clear()
@@ -1357,10 +1364,9 @@ abstract class PageLoader : ViewModel() {
      * 创建水平从右到左的行
      */
     private fun createTxtLineHRTL(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
-        val fm = paint.fontMetrics
-        val lineHeight = fm.bottom - fm.top
+        val lineHeight = lineAdvance(paint)
         val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
-        val charWidth = paint.measureText("啊")
+        val referenceWidth = paint.measureText("啊").coerceAtLeast(paint.textSize)
         val sb = StringBuilder()
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
@@ -1369,7 +1375,7 @@ abstract class PageLoader : ViewModel() {
             val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
-            val remWidth = (right - mDisplayParams.contentLeft) % (charWidth + letterSpacing)
+            val remWidth = (right - mDisplayParams.contentLeft) % (referenceWidth + letterSpacing)
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
                 val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
                 lastExtX = extX
@@ -1397,7 +1403,7 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = max(paint.measureText(trimmed, s, e), charWidth)
+                val w = clusterAdvance(paint, trimmed, s, e)
                 if (right - letterSpacing - w < mDisplayParams.contentLeft && sb.isNotEmpty()) {
                     createLine(right, false)
                     sb.clear()
@@ -1424,16 +1430,15 @@ abstract class PageLoader : ViewModel() {
      * 创建竖排从上到下
      */
     private fun createTxtLineVTTB(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
-        val fm = paint.fontMetrics
-        val charHeight = fm.bottom - fm.top
+        val charHeight = lineAdvance(paint)
         val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
-        var lineWidth = paint.measureText("啊")
         val sb = StringBuilder()
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
         var lastExtY = 0f
+        var currentLineWidth = 0f
         val createLine = { top: Float, end: Boolean ->
-            val line = TxtLine(sb.toString(), paint === mTitlePaint, mDisplayParams.contentHeight, lineWidth, end)
+            val line = TxtLine(sb.toString(), paint === mTitlePaint, mDisplayParams.contentHeight, currentLineWidth.coerceAtLeast(paint.textSize), end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
             val remHeight = (mDisplayParams.contentBottom - top) % (charHeight + letterSpacing)
@@ -1448,6 +1453,7 @@ abstract class PageLoader : ViewModel() {
             }
             line.setLeftAndRight(clusterLeft, clusterRight, line.clusterBoundaries.size - 1)
             lines.add(line)
+            currentLineWidth = 0f
         }
 
         for (paragraph in text.lines()) {
@@ -1465,7 +1471,7 @@ abstract class PageLoader : ViewModel() {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
                 //竖排，字符宽度为行宽度，使用行字符最宽宽度作为行宽
-                lineWidth = max(paint.measureText(trimmed, s, e), lineWidth)
+                currentLineWidth = max(clusterAdvance(paint, trimmed, s, e), currentLineWidth)
                 if (top + letterSpacing + charHeight > mDisplayParams.contentBottom && sb.isNotEmpty()) {
                     createLine(top, false)
                     sb.clear()

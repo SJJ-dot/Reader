@@ -6,7 +6,7 @@ class DisplayParams {
     var width = 0
     var height = 0
 
-    var tipHeight = dpToPx(28f)
+    var tipHeight = dpToPx(16f)
 
     var insetLeft = dpToPx(8f)
     var insetTop = dpToPx(2f) //包括状态栏高度
