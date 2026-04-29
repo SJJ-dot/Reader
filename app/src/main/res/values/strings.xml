@@ -14,7 +14,7 @@
     <string name="replacement_rule_scope_hint">作用范围（可选，书名/URL包含）</string>
     <string name="replacement_rule_exclude_scope_hint">排除范围（可选，书名/URL包含）</string>
     <string name="replacement_rule_enabled">启用</string>
-    <string name="replacement_rule_regex">正则</string>
+    <string name="replacement_rule_regex">正则匹配</string>
     <string name="replacement_rule_apply_title">章节标题</string>
     <string name="replacement_rule_apply_content">章节内容</string>
     <string name="replacement_rule_save">保存规则</string>

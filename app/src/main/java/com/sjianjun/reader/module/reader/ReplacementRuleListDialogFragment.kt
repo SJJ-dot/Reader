@@ -143,7 +143,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
                 binding.tvRuleName.text = rule.name.ifBlank { rule.rule }
                 binding.tvRuleState.text = buildString {
                     append(if (rule.isEnabled) "已启用" else "已禁用")
-                    if (rule.isRegex) append(" · 正则")
+                    if (rule.isRegex) append(" · 正则匹配")
                 }
                 binding.tvRule.text = "规则：${rule.rule}"
                 binding.tvReplace.text = "替换：${rule.replacement}"
