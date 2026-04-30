@@ -78,6 +78,15 @@
             android:textSize="13dp" />
 
         <TextView
+            android:id="@+id/tv_next_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="距升级：0分钟"
+            android:textColor="@color/mdr_white"
+            android:textSize="13dp" />
+
+        <TextView
             android:id="@+id/tv_total_online"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

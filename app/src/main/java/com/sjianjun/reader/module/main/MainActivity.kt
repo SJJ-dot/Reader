@@ -166,6 +166,11 @@ class MainActivity : BaseActivity() {
         headerBinding.tvLevel.text = levelName
         headerBinding.levelProgress.progress = progressPercent
         headerBinding.tvTotalOnline.text = "总时长：${formatOnlineDuration(info?.total_online_seconds ?: 0)}"
+        headerBinding.tvNextLevel.text = if (level == null || level.is_max_level) {
+            "已满级"
+        } else {
+            "距升级：${formatOnlineDuration(level.next_level_need_seconds)}"
+        }
     }
 
     private fun formatOnlineDuration(seconds: Int): String {
