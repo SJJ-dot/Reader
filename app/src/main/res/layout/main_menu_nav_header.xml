@@ -65,7 +65,7 @@
             android:layout_height="wrap_content"
             android:text="书友在线：0"
             android:textColor="@color/mdr_white"
-            android:textSize="14sp"
+            android:textSize="13dp"
             android:textStyle="bold" />
 
         <TextView
@@ -75,7 +75,16 @@
             android:layout_marginTop="6dp"
             android:text="今日在线：0分钟"
             android:textColor="@color/mdr_white"
-            android:textSize="13sp" />
+            android:textSize="13dp" />
+
+        <TextView
+            android:id="@+id/tv_total_online"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="总时长：0分钟"
+            android:textColor="@color/mdr_white"
+            android:textSize="13dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -165,6 +165,7 @@ class MainActivity : BaseActivity() {
         headerBinding.tvTodayOnline.text = "今日在线：${formatOnlineDuration(info?.today_online_seconds ?: 0)}"
         headerBinding.tvLevel.text = levelName
         headerBinding.levelProgress.progress = progressPercent
+        headerBinding.tvTotalOnline.text = "总时长：${formatOnlineDuration(info?.total_online_seconds ?: 0)}"
     }
 
     private fun formatOnlineDuration(seconds: Int): String {
