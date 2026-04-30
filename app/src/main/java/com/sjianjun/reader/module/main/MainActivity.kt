@@ -22,6 +22,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
+import com.sjianjun.reader.mqtt.OnlineInfo
 import com.sjianjun.reader.mqtt.OnlineInfos
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
@@ -30,6 +31,7 @@ import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 
 class MainActivity : BaseActivity() {
@@ -94,14 +96,14 @@ class MainActivity : BaseActivity() {
     @SuppressLint("SetTextI18n")
     private fun initDrawerMenuWidget() {
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
-        ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { _, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             headerBinding.navHeaderContainer.setPadding(0, statusBars.top, 0, 0)
             insets
         }
         binding?.navUi?.getHeaderView(0)?.apply {
             if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
-                headerBinding?.dayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
+                headerBinding.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
             } else {
                 headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
             }
@@ -126,8 +128,9 @@ class MainActivity : BaseActivity() {
 
             }
         }
-        OnlineInfos.onlineCount.observe(this) {
-            headerBinding.tvOnline.text = "书友在线：${it}"
+        renderOnlineInfo(headerBinding, OnlineInfos.onlineInfo.value)
+        OnlineInfos.onlineInfo.observe(this) {
+            renderOnlineInfo(headerBinding, it)
         }
         binding?.drawerLayout?.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: android.view.View) {
@@ -138,6 +141,43 @@ class MainActivity : BaseActivity() {
         })
 
 
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun renderOnlineInfo(
+        headerBinding: MainMenuNavHeaderBinding,
+        info: OnlineInfo?,
+    ) {
+        val level = info?.level
+        val levelName = when {
+            level == null -> "--"
+            level.stage_name.isNotBlank() -> level.stage_name
+            level.major.isNotBlank() && level.stage > 0 -> "${level.major}${level.stage}层"
+            level.major.isNotBlank() -> level.major
+            else -> "Lv.${level.level_index}"
+        }
+        val progressPercent = when {
+            level == null -> 0
+            level.is_max_level -> 100
+            else -> (level.progress.coerceIn(0.0, 1.0) * 100).roundToInt()
+        }
+        headerBinding.tvOnline.text = "书友在线：${info?.online_count ?: 0}"
+        headerBinding.tvTodayOnline.text = "今日在线：${formatOnlineDuration(info?.today_online_seconds ?: 0)}"
+        headerBinding.tvLevel.text = levelName
+        headerBinding.levelProgress.progress = progressPercent
+    }
+
+    private fun formatOnlineDuration(seconds: Int): String {
+        val safeSeconds = seconds.coerceAtLeast(0)
+        val hours = safeSeconds / 3600
+        val minutes = (safeSeconds % 3600) / 60
+        val remainSeconds = safeSeconds % 60
+        return when {
+            hours > 0 && minutes > 0 -> "${hours}小时${minutes}分"
+            hours > 0 -> "${hours}小时"
+            minutes > 0 -> "${minutes}分钟"
+            else -> "${remainSeconds}秒"
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
