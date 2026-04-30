@@ -11,19 +11,19 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.PopupWindow
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
@@ -33,7 +33,10 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
+import com.sjianjun.reader.databinding.ItemReaderSettingPopupActionBinding
+import com.sjianjun.reader.databinding.ItemReaderSettingPopupDetailBinding
 import com.sjianjun.reader.databinding.ItemFontBinding
+import com.sjianjun.reader.databinding.PopupReaderSettingMenuBinding
 import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -54,12 +57,14 @@ import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
+import androidx.core.graphics.drawable.toDrawable
 
 /*
  * Created by shen jian jun on 2020-07-13
  */
 class BookReaderSettingFragment : BaseFragment() {
     var binding: ReaderFragmentSettingViewBinding? = null
+    private var settingPopupWindow: PopupWindow? = null
 
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
@@ -121,78 +126,114 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun showPopupMenu(anchor: View) {
-        val popupMenu = PopupMenu(anchor.context, anchor)
-        popupMenu.menuInflater.inflate(R.menu.reader_setting_menu, popupMenu.menu)
-        updatePopupMenuTitles(popupMenu.menu)
-        popupMenu.setOnMenuItemClickListener {
-            when (it.itemId) {
-                R.id.reader_setting_simplified_traditional_switch -> {
-                    val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
-                    val current = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
-                        .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("简繁转换")
-                        .setSingleChoiceItems(options, current) { dialog, which ->
-                            globalConfig.readerJianFanMode.postValue(which)
-                            dialog.dismiss()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-
-                R.id.reader_setting_text_layout -> {
-                    val options = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")
-                    val current = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
-                        .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("文字排版")
-                        .setSingleChoiceItems(options, current) { dialog, which ->
-                            globalConfig.readerTypesettingMode.postValue(which)
-                            dialog.dismiss()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-
-                R.id.reader_setting_cache_chapter -> {
-                    val vm = activity?.viewModels<BookReaderViewModel>()
-                    if (vm?.value?.chapterCache?.value == true) {
-                        EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                    } else {
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("缓存章节")
-                            .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
-                            .setPositiveButton(android.R.string.ok) { _, _ ->
-                                EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                            }.setNegativeButton(android.R.string.cancel, null)
-                            .show()
-                    }
-                }
-
-                R.id.reader_setting_click_area -> {
-                    hide()
-                    if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {
-                        ReaderClickAreaSettingDialogFragment().show(parentFragmentManager, ReaderClickAreaSettingDialogFragment.TAG)
-                    }
-                }
-
-                R.id.reader_setting_purify_replace -> {
-                    hide()
-                    if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
-                        ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
-                    }
-                }
-            }
-            true
+        if (settingPopupWindow?.isShowing == true) {
+            settingPopupWindow?.dismiss()
+            return
         }
-        popupMenu.show()
+        val popupAdapter = ReaderSettingPopupAdapter()
+        val popupBinding = PopupReaderSettingMenuBinding.inflate(layoutInflater)
+        popupBinding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        popupBinding.recyclerView.adapter = popupAdapter
+        val popupItems = buildPopupItems(popupAdapter)
+        popupAdapter.submitList(popupItems)
+
+
+        val contentHeight = popupItems.sumOf { 40.dp2Px } + 12.dp2Px
+        val popupWidth = maxOf(220.dp2Px, anchor.width)
+        val popupHeight = minOf(contentHeight, (resources.displayMetrics.heightPixels * 0.5f).toInt())
+        popupBinding.root.layoutParams = RecyclerView.LayoutParams(
+            popupWidth,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+        popupBinding.recyclerView.layoutParams = popupBinding.recyclerView.layoutParams.apply {
+            width = popupWidth
+            height = popupHeight
+        }
+        popupBinding.recyclerView.minimumHeight = popupHeight
+        popupBinding.recyclerView.requestLayout()
+
+        val popupWindow = PopupWindow(
+            popupBinding.root,
+            popupWidth,
+            popupHeight,
+            true,
+        ).apply {
+            isOutsideTouchable = true
+            isFocusable = true
+            setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+            elevation = 8.dp2Px.toFloat()
+        }
+        settingPopupWindow = popupWindow
+        val xOff = anchor.width - popupWidth
+        popupWindow.showAsDropDown(anchor, xOff, 8.dp2Px)
     }
 
-    private fun updatePopupMenuTitles(menu: Menu) {
+    private fun buildPopupItems(adapter: ReaderSettingPopupAdapter): List<ReaderSettingPopupItem> {
+        val jianFanMode = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
+            .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
+        val typesettingMode = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
+            .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
         val isCached = activity?.viewModels<BookReaderViewModel>()?.value?.chapterCache?.value == true
-        menu.findItem(R.id.reader_setting_cache_chapter)?.title = if (isCached) "缓存章节（缓存中）" else "缓存章节"
+        return listOf(
+            ReaderSettingPopupItem.Detail(title = "简繁转换", value = arrayOf("关闭", "简体转繁体", "繁体转简体")[jianFanMode]) { item ->
+                val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
+                val current = (globalConfig.readerJianFanMode.value ?: PageLoader.MODE_JIAN_FAN_OFF)
+                    .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("简繁转换")
+                    .setSingleChoiceItems(options, current) { dialog, which ->
+                        globalConfig.readerJianFanMode.postValue(which)
+                        dialog.dismiss()
+                        item.value = options[which]
+                        adapter.notifyDataSetChanged()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            },
+            ReaderSettingPopupItem.Detail(title = "文字排版", value = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")[typesettingMode]) { item ->
+                val options = arrayOf("横排左起", "横排右起", "竖排左起", "竖排右起")
+                val current = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
+                    .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("文字排版")
+                    .setSingleChoiceItems(options, current) { dialog, which ->
+                        globalConfig.readerTypesettingMode.postValue(which)
+                        dialog.dismiss()
+                        item.value = options[which]
+                        adapter.notifyDataSetChanged()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            },
+            ReaderSettingPopupItem.Detail(title = "缓存章节", value = if (isCached) "缓存中" else "") {
+                hide()
+                val vm = activity?.viewModels<BookReaderViewModel>()
+                if (vm?.value?.chapterCache?.value == true) {
+                    EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                } else {
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("缓存章节")
+                        .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                        }.setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+            },
+            ReaderSettingPopupItem.Action(title = "点击区域") {
+                hide()
+                if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {
+                    ReaderClickAreaSettingDialogFragment().show(parentFragmentManager, ReaderClickAreaSettingDialogFragment.TAG)
+                }
+            },
+            ReaderSettingPopupItem.Action(title = "净化替换") {
+                hide()
+                if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
+                    ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
+                }
+            },
+        )
     }
-
 
     fun initSettingMenu() {
         binding?.settingsMore?.click(100) {
@@ -410,7 +451,7 @@ class BookReaderSettingFragment : BaseFragment() {
             hide()
             DefaultPageStyleListFragment().show(parentFragmentManager, "DefaultPageStyleListFragment")
         }
-        val adapter = Adapter(this)
+        val adapter = PageStyleAdapter(this)
         adapter.itemLongClickListener = {
             val pageStyle = adapter.data[it]
             if (pageStyle is CustomPageStyle && binding?.pageStyleList?.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -459,7 +500,7 @@ class BookReaderSettingFragment : BaseFragment() {
                         if (file.exists()) {
                             file.delete()
                             initFontListData()
-                            if (globalConfig.readerFontFamily.value == fontInfo){
+                            if (globalConfig.readerFontFamily.value == fontInfo) {
                                 globalConfig.readerFontFamily.postValue(FontInfo.DEFAULT)
                             }
                         } else {
@@ -577,7 +618,94 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun hide() {
+        settingPopupWindow?.dismiss()
         parentFragmentManager.beginTransaction().hide(this).commitAllowingStateLoss()
+    }
+
+    override fun onDestroyView() {
+        settingPopupWindow?.dismiss()
+        settingPopupWindow = null
+        binding = null
+        super.onDestroyView()
+    }
+
+    private sealed class ReaderSettingPopupItem {
+        data class Action(
+            val title: String,
+            val onClick: (Action) -> Unit,
+        ) : ReaderSettingPopupItem()
+
+        data class Detail(
+            val title: String,
+            var value: String,
+            val onClick: (Detail) -> Unit,
+        ) : ReaderSettingPopupItem()
+    }
+
+    private class ReaderSettingPopupAdapter : RecyclerView.Adapter<ViewHolder>() {
+        private val data = mutableListOf<ReaderSettingPopupItem>()
+
+        fun submitList(items: List<ReaderSettingPopupItem>) {
+            data.clear()
+            data.addAll(items)
+            notifyDataSetChanged()
+        }
+
+        override fun getItemViewType(position: Int): Int {
+            return when (data[position]) {
+                is ReaderSettingPopupItem.Action -> 0
+                is ReaderSettingPopupItem.Detail -> 1
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            return when (viewType) {
+                1 -> DetailViewHolder(
+                    ItemReaderSettingPopupDetailBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false,
+                    ),
+                )
+
+                else -> ActionViewHolder(
+                    ItemReaderSettingPopupActionBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false,
+                    ),
+                )
+            }
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            when (val item = data[position]) {
+                is ReaderSettingPopupItem.Action -> (holder as ActionViewHolder).bind(item)
+                is ReaderSettingPopupItem.Detail -> (holder as DetailViewHolder).bind(item)
+            }
+        }
+
+        override fun getItemCount(): Int = data.size
+
+        private class ActionViewHolder(
+            private val binding: ItemReaderSettingPopupActionBinding,
+        ) : ViewHolder(binding.root) {
+            fun bind(item: ReaderSettingPopupItem.Action) {
+                binding.title.text = item.title
+                binding.root.setOnClickListener { item.onClick(item) }
+            }
+        }
+
+        private class DetailViewHolder(
+            private val binding: ItemReaderSettingPopupDetailBinding,
+        ) : ViewHolder(binding.root) {
+            fun bind(item: ReaderSettingPopupItem.Detail) {
+                binding.title.text = item.title
+                binding.value.text = item.value
+                binding.value.isVisible = item.value.isNotBlank()
+                binding.root.setOnClickListener { item.onClick(item) }
+            }
+        }
     }
 
     class FontAdapter : BaseAdapter<FontInfo>(R.layout.item_font) {
@@ -606,7 +734,7 @@ class BookReaderSettingFragment : BaseFragment() {
         }
     }
 
-    class Adapter(val fragment: BookReaderSettingFragment) : RecyclerView.Adapter<ViewHolder>() {
+    class PageStyleAdapter(val fragment: BookReaderSettingFragment) : RecyclerView.Adapter<ViewHolder>() {
 
         val data = mutableListOf<PageStyle>()
         var itemLongClickListener: ((Int) -> Unit)? = null
