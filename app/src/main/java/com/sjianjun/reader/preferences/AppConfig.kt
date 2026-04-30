@@ -68,6 +68,11 @@ class AppConfig(val name: String) :
     val readerOrientationMode by lazy { intLivedata("readerOrientationMode", 0) }
 
     /**
+     * 阅读器音量键翻页
+     */
+    val readerVolumeKeyPageTurn by lazy { boolLivedata("readerVolumeKeyPageTurn", false) }
+
+    /**
      * 阅读器排版模式:
      * 0=默认横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
      */

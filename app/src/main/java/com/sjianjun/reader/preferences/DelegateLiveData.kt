@@ -73,3 +73,19 @@ class FloatLivedata(private val pref: SharedPreferences, private val key: String
         pref.edit().putFloat(key, value).apply()
     }
 }
+
+fun SharedPreferences.boolLivedata(
+    key: String,
+    def: Boolean = false,
+): BoolLivedata {
+    return BoolLivedata(this, key, def)
+}
+
+class BoolLivedata(private val pref: SharedPreferences, private val key: String, def: Boolean = false) :
+    MutableLiveData<Boolean>(pref.getBoolean(key, def)) {
+
+    override fun setValue(value: Boolean) {
+        super.setValue(value)
+        pref.edit().putBoolean(key, value).apply()
+    }
+}

@@ -35,6 +35,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupActionBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupDetailBinding
+import com.sjianjun.reader.databinding.ItemReaderSettingPopupSwitchBinding
 import com.sjianjun.reader.databinding.ItemFontBinding
 import com.sjianjun.reader.databinding.PopupReaderSettingMenuBinding
 import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
@@ -138,7 +139,7 @@ class BookReaderSettingFragment : BaseFragment() {
         popupAdapter.submitList(popupItems)
 
 
-        val contentHeight = popupItems.sumOf { 40.dp2Px } + 12.dp2Px
+        val contentHeight = popupItems.size * 40.dp2Px + 12.dp2Px
         val popupWidth = maxOf(220.dp2Px, anchor.width)
         val popupHeight = minOf(contentHeight, (resources.displayMetrics.heightPixels * 0.5f).toInt())
         popupBinding.root.layoutParams = RecyclerView.LayoutParams(
@@ -231,6 +232,10 @@ class BookReaderSettingFragment : BaseFragment() {
                 if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
                     ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
                 }
+            },
+            ReaderSettingPopupItem.Switch(title = "音量键翻页", checked = globalConfig.readerVolumeKeyPageTurn.value == true) { item, checked ->
+                item.checked = checked
+                globalConfig.readerVolumeKeyPageTurn.postValue(checked)
             },
         )
     }
@@ -640,6 +645,13 @@ class BookReaderSettingFragment : BaseFragment() {
             var value: String,
             val onClick: (Detail) -> Unit,
         ) : ReaderSettingPopupItem()
+
+        data class Switch(
+            val title: String,
+            var checked: Boolean,
+            val onCheckedChange: (Switch, Boolean) -> Unit,
+        ) : ReaderSettingPopupItem()
+
     }
 
     private class ReaderSettingPopupAdapter : RecyclerView.Adapter<ViewHolder>() {
@@ -655,11 +667,20 @@ class BookReaderSettingFragment : BaseFragment() {
             return when (data[position]) {
                 is ReaderSettingPopupItem.Action -> 0
                 is ReaderSettingPopupItem.Detail -> 1
+                is ReaderSettingPopupItem.Switch -> 2
             }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return when (viewType) {
+                2 -> SwitchViewHolder(
+                    ItemReaderSettingPopupSwitchBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false,
+                    ),
+                )
+
                 1 -> DetailViewHolder(
                     ItemReaderSettingPopupDetailBinding.inflate(
                         LayoutInflater.from(parent.context),
@@ -682,6 +703,7 @@ class BookReaderSettingFragment : BaseFragment() {
             when (val item = data[position]) {
                 is ReaderSettingPopupItem.Action -> (holder as ActionViewHolder).bind(item)
                 is ReaderSettingPopupItem.Detail -> (holder as DetailViewHolder).bind(item)
+                is ReaderSettingPopupItem.Switch -> (holder as SwitchViewHolder).bind(item)
             }
         }
 
@@ -704,6 +726,22 @@ class BookReaderSettingFragment : BaseFragment() {
                 binding.value.text = item.value
                 binding.value.isVisible = item.value.isNotBlank()
                 binding.root.setOnClickListener { item.onClick(item) }
+            }
+        }
+
+        private class SwitchViewHolder(
+            private val binding: ItemReaderSettingPopupSwitchBinding,
+        ) : ViewHolder(binding.root) {
+            fun bind(item: ReaderSettingPopupItem.Switch) {
+                binding.title.text = item.title
+                binding.switchView.setOnCheckedChangeListener(null)
+                binding.switchView.isChecked = item.checked
+                binding.root.setOnClickListener {
+                    binding.switchView.isChecked = !binding.switchView.isChecked
+                }
+                binding.switchView.setOnCheckedChangeListener { _, isChecked ->
+                    item.onCheckedChange(item, isChecked)
+                }
             }
         }
     }

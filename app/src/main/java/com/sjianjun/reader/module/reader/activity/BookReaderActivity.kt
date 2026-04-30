@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -104,6 +105,23 @@ class BookReaderActivity : BaseActivity() {
         super.onNewIntent(intent)
         Log.i("onNewIntent: ${intent?.getStringExtra(BOOK_ID)}")
         initData()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (globalConfig.readerVolumeKeyPageTurn.value == true && ttsUtil.isSpeaking.value != true) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    handleReaderClickAction(ReaderClickAreaAction.PREV_PAGE)
+                    return true
+                }
+
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    handleReaderClickAction(ReaderClickAreaAction.NEXT_PAGE)
+                    return true
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     fun initBackPressed() {
