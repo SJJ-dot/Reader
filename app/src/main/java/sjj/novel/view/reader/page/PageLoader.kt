@@ -1336,7 +1336,7 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = clusterAdvance(paint, trimmed, s, e)
+                val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
                 if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
                     createLine(left, false)
                     sb.clear()
@@ -1403,7 +1403,7 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = clusterAdvance(paint, trimmed, s, e)
+                val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
                 if (right - letterSpacing - w < mDisplayParams.contentLeft && sb.isNotEmpty()) {
                     createLine(right, false)
                     sb.clear()
@@ -1432,11 +1432,11 @@ abstract class PageLoader : ViewModel() {
     private fun createTxtLineVTTB(lines: MutableList<TxtLine>, text: CharSequence, paint: TextPaint) {
         val charHeight = lineAdvance(paint)
         val letterSpacing = paint.textSize * mDisplayParams.letterSpacing
+        var currentLineWidth = clusterAdvance(paint, "啊", 0, 1)
         val sb = StringBuilder()
         val clusterLeft = FloatArray(1024)
         val clusterRight = FloatArray(1024)
         var lastExtY = 0f
-        var currentLineWidth = 0f
         val createLine = { top: Float, end: Boolean ->
             val line = TxtLine(sb.toString(), paint === mTitlePaint, mDisplayParams.contentHeight, currentLineWidth.coerceAtLeast(paint.textSize), end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
@@ -1453,7 +1453,7 @@ abstract class PageLoader : ViewModel() {
             }
             line.setLeftAndRight(clusterLeft, clusterRight, line.clusterBoundaries.size - 1)
             lines.add(line)
-            currentLineWidth = 0f
+            currentLineWidth = clusterAdvance(paint, "啊", 0, 1)
         }
 
         for (paragraph in text.lines()) {
