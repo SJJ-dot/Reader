@@ -85,10 +85,8 @@ class FeedbackAdapter(
         binding.btnDelete.setOnClickListener { onDelete(feedback) }
 
         if (canDelete(feedback)) {
-            binding.btnReply.show()
             binding.btnDelete.show()
         } else {
-            binding.btnReply.gone()
             binding.btnDelete.gone()
         }
 

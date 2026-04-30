@@ -12,13 +12,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="5dp">
 
         <TextView
             android:id="@+id/tv_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/mdr_black"
+            android:textColor="@color/dn_text_color_black"
             android:textSize="16sp" />
 
         <TextView
@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="4dp"
-            android:textColor="@color/mdr_grey_600"
+            android:textColor="@color/dn_text_color_black"
             android:textSize="12sp" />
 
         <TextView
@@ -34,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
-            android:textColor="@color/mdr_grey_800"
+            android:textColor="@color/dn_text_color_black"
             android:textSize="14sp"
             android:visibility="gone" />
 
@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="4dp"
-            android:textColor="@color/mdr_grey_600"
+            android:textColor="@color/dn_text_color_black"
             android:textSize="12sp" />
 
         <TextView
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
             android:text="展开回复"
-            android:textColor="@color/mdr_grey_600"
+            android:textColor="@color/dn_color_primary"
             android:textSize="14sp" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -69,20 +69,28 @@
             android:gravity="end"
             android:orientation="horizontal">
 
-            <Button
+            <TextView
                 android:id="@+id/btn_reply"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="回复" />
+                android:paddingStart="8dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="5dp"
+                android:text="回复"
+                android:textColor="@color/dn_color_primary" />
 
-            <Button
+            <TextView
                 android:id="@+id/btn_delete"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="删除" />
+                android:paddingStart="8dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="5dp"
+                android:text="删除"
+                android:textColor="@color/dn_color_primary" />
 
         </LinearLayout>
 
