@@ -48,7 +48,6 @@ class BookshelfFragment : BaseFragment() {
     private lateinit var adapter: Adapter
     private lateinit var bookShelfBinding: MainFragmentBookShelfBinding
     private val bookShelfTitle = BookShelfTitle()
-    private var welcomeDialog: Boolean = true
     private val viewModel by viewModels<BookShelfViewModel>()
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -175,7 +174,7 @@ class BookshelfFragment : BaseFragment() {
                     }
                 }
                 origin.text =
-                    "${book.bookSource?.group}：${book.bookSource?.name}共${book.javaScriptList?.size}个"
+                    "${book.bookSource?.group}：${book.bookSource?.name}共${book.bookSourceCount}个"
                 originClickableArea.click {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title

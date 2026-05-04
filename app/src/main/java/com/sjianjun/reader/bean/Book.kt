@@ -64,13 +64,6 @@ class Book {
     var record: ReadingRecord? = null
 
     /**
-     * 包含本书的书源
-     */
-    @Ignore
-    @Expose(serialize = false)
-    var javaScriptList: List<BookSource>? = null
-
-    /**
      * 未读章节数量
      */
     @Ignore

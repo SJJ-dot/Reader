@@ -76,9 +76,8 @@ class BookShelfViewModel : ViewModel() {
                         val chapterContent = chapterContentDao.getChapterContent(chapter.bookId, chapter.index)
                         chapter.content = chapterContent.toMutableList()
                     }
-                    val js = bookSourceDao.getBookBookSource(book.title)
-                    book.javaScriptList = js
-                    book.bookSource = js.find { it.id == book.bookSourceId }
+                    book.bookSourceCount = bookDao.getBookBookSourceNum(book.title)
+                    book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
                     book.unreadChapterCount = (book.lastChapter?.index ?: 0) - (book.readChapter?.index ?: 0)
                     if (book.record?.isEnd != true) {
                         book.unreadChapterCount += 1
