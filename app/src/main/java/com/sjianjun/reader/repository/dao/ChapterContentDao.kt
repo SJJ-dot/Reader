@@ -4,8 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChapterContentDao {
@@ -13,7 +13,7 @@ interface ChapterContentDao {
 
 
     @Query("select * from ChapterContent where bookId=:bookId and chapterIndex=:chapterIndex order by pageIndex")
-    fun getChapterContent(bookId: String, chapterIndex: Int): List<ChapterContent>
+    fun getChapterContent(bookId: String, chapterIndex: Int): Flow<List<ChapterContent>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(chapterContent: ChapterContent): Long

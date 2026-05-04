@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -65,7 +66,7 @@ class BookSourceListViewModel() : ViewModel() {
         if (book.readChapter != null) {
             if (book.readChapter?.isLoaded == true) {
                 val chapterContent = chapterContentDao.getChapterContent(book.readChapter!!.bookId, book.readChapter!!.index)
-                book.readChapter!!.content = chapterContent.toMutableList()
+                book.readChapter!!.content = chapterContent.first().toMutableList()
             }
 
             val lastChapterIndex = book.lastChapter?.index ?: 0

@@ -97,7 +97,7 @@ object BookUseCase {
             val chapterLikeName = readingChapter?.let {
                 chapterDao.getChapterLikeName(book.id, readingChapter.name()).minByOrNull { abs(readingChapter.index - it.index) }
             }
-            val content = contentDao.getChapterContent(book.id, chapterLikeName?.index ?: -1).firstOrNull()
+            val content = contentDao.getChapterContent(book.id, chapterLikeName?.index ?: -1).first().firstOrNull()
             if (content?.contentError == true) {
                 val chapter = chapterList[content.chapterIndex]
                 chapter.content = mutableListOf(content)
@@ -129,7 +129,7 @@ object BookUseCase {
      */
     suspend fun getChapterContent(chapter: Chapter, force: Int = 0): Chapter = withIo {
         if (chapter.isLoaded) {
-            val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.index)
+            val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.index).first()
             chapter.content = chapterContent.toMutableList()
             if (force != 1 && chapter.content?.firstOrNull()?.contentError == false) {
                 return@withIo chapter
