@@ -4,7 +4,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
-import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -181,6 +180,12 @@ class WebViewSettings @JvmOverloads constructor(
         val scheme = request.url?.scheme
         if (scheme != "http" && scheme != "https") {
             return true
+        }
+        if (!request.isForMainFrame) {
+            return false
+        }
+        if (request.hasGesture()) {
+            return false
         }
 
         // 若目标域与当前页主域不同，弹窗询问用户是否加载或加入黑名单
