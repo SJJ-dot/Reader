@@ -23,4 +23,13 @@
     <string name="replacement_rule_edit">编辑</string>
     <string name="replacement_rule_delete">删除</string>
 
+    <string name="directory_picker_title">选择目录</string>
+    <string name="directory_picker_new_folder">新建文件夹</string>
+    <string name="directory_picker_back_root">返回根目录</string>
+    <string name="directory_picker_cancel">取消</string>
+    <string name="directory_picker_select_current">选择当前目录</string>
+    <string name="directory_picker_folder_hint">文件夹名称</string>
+    <string name="directory_picker_create">创建</string>
+    <string name="directory_picker_folder_icon">📁</string>
+
 </resources>

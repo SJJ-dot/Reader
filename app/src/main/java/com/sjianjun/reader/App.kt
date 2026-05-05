@@ -33,6 +33,7 @@ class App : Application() {
         MqttUtil.connect()
     }
 
+
     companion object {
         lateinit var app: App
     }

@@ -107,5 +107,11 @@ class AppConfig(val name: String) :
 
     var readerSizeW by intPref("readerSizeW", 0)
     var readerSizeH by intPref("readerSizeH", 0)
+
+    /**
+     * 数据库存储目录。null表示内部存储默认目录。
+     * null表示内部存储默认目录。
+     */
+    var databaseStorageDir by strPref("databaseStorageDir", null)
 }
 
