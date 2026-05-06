@@ -113,5 +113,10 @@ class AppConfig(val name: String) :
      * null表示内部存储默认目录。
      */
     var databaseStorageDir by strPref("databaseStorageDir", null)
+
+    /**
+     * 书架布局类型：0=默认列表，1=网格
+     */
+    var shelfLayoutType by intPref("shelfLayoutType", 0)
 }
 

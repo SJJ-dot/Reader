@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="5dp"
+    android:layout_marginEnd="5dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraint_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/bookCover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintDimensionRatio="H,1:1.3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/bookName"
+            style="@style/text_body1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:autoSizeMinTextSize="14dp"
+            android:autoSizeTextType="uniform"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:maxLines="2"
+            android:textSize="18dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:layout_constraintStart_toStartOf="@+id/bookCover"
+            app:layout_constraintTop_toBottomOf="@+id/bookCover"
+            tools:text="标题" />
+
+        <View
+            android:id="@+id/detail_clickable_area"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?android:attr/selectableItemBackground"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/bookCover" />
+
+        <ImageView
+            android:id="@+id/origin_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_margin="5dp"
+            android:src="@mipmap/ic_change"
+            app:layout_constraintBottom_toBottomOf="@+id/bookCover"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:tint="@color/colorPrimary" />
+
+        <View
+            android:id="@+id/origin_clickable_area"
+            android:layout_width="0dp"
+            android:layout_height="24dp"
+            android:background="?android:attr/selectableItemBackground"
+            app:layout_constraintBottom_toBottomOf="@+id/origin_icon"
+            app:layout_constraintEnd_toEndOf="@+id/origin_icon"
+            app:layout_constraintStart_toStartOf="@+id/origin_icon"
+            app:layout_constraintTop_toTopOf="@+id/origin_icon" />
+
+        <com.sjianjun.reader.view.BadgeView
+            android:id="@+id/bv_unread"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:includeFontPadding="false"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:layout_constraintTop_toTopOf="@+id/bookCover"
+            tools:text="99" />
+
+        <com.sjianjun.reader.view.RotateLoading
+            android:id="@+id/loading"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_margin="5dp"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:layout_constraintTop_toTopOf="@+id/bookCover" />
+
+        <ImageView
+            android:id="@+id/sync_error"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:src="@mipmap/ic_sync_error"
+            app:layout_constraintBottom_toBottomOf="@+id/bookCover"
+            app:layout_constraintStart_toStartOf="@+id/bookCover"
+            app:tint="@color/mdr_red_100" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

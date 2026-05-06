@@ -79,6 +79,7 @@ class BookSourceListViewModel() : ViewModel() {
         } else {
             book.unreadChapterCount = 0
         }
+        book.record = record
         return book
     }
 

@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.main
 import android.app.Dialog
 import android.os.Bundle
 import android.view.View
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -14,6 +15,8 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
+import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.id
@@ -67,6 +70,23 @@ class BookSourceListFragment : BaseFragment() {
 //            holder.setRecyclable(!book.isLoading)
             val binding = MainItemFragmentBookSourceListBinding.bind(holder.itemView)
             holder.itemView.apply {
+                if (book.id == book.record?.bookId){
+                    binding.root.setCardBackgroundColor(R.color.dn_color_primary.color(fragment.context))
+                }else{
+                    binding.root.setCardBackgroundColor(R.color.dn_background_card.color(fragment.context))
+                }
+                val isNight = globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES
+                if (book.id == book.record?.bookId && !isNight){
+                    binding.bookName.setTextColor(R.color.mdr_white.color(fragment.context))
+                    binding.author.setTextColor(R.color.mdr_white.color(fragment.context))
+                    binding.lastChapter.setTextColor(R.color.mdr_white.color(fragment.context))
+                    binding.haveRead.setTextColor(R.color.mdr_white.color(fragment.context))
+                }else{
+                    binding.bookName.setTextColor(R.color.dn_text_color_black.color(fragment.context))
+                    binding.author.setTextColor(R.color.dn_text_color_black.color(fragment.context))
+                    binding.lastChapter.setTextColor(R.color.dn_text_color_black.color(fragment.context))
+                    binding.haveRead.setTextColor(R.color.dn_text_color_black.color(fragment.context))
+                }
                 binding.bookCover.glide(book.cover)
                 binding.bookName.text = book.title
                 binding.author.text = "作者：${book.author}"

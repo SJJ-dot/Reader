@@ -9,7 +9,8 @@
         android:id="@+id/rootRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingTop="5dp"
+        android:paddingStart="5dp"
+        android:paddingBottom="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -17,7 +18,9 @@
             android:id="@+id/recycle_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            tools:listitem="@layout/item_book_list_grid"
+            tools:spanCount="3" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 

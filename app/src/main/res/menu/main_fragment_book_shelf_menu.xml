@@ -9,4 +9,10 @@
         android:title="搜索"
         android:icon="@drawable/ic_search_material"
         app:showAsAction="always" />
+
+    <item
+        android:id="@+id/layout_book_shelf"
+        android:title="布局"
+        android:icon="@drawable/ic_shelf_layout_grid"
+        app:showAsAction="always" />
 </menu>

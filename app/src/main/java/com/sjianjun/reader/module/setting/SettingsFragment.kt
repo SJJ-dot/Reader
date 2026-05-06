@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
 import com.sjianjun.reader.preferences.globalConfig
@@ -139,7 +140,7 @@ class SettingsFragment : Fragment() {
         }
         val configuredPath = globalConfig.databaseStorageDir.orEmpty().trim()
         val dir = if (configuredPath.isBlank()) {
-            File(Environment.getExternalStorageDirectory(), "reader")
+            File(Environment.getExternalStorageDirectory(), if (BuildConfig.DEBUG) "reader_debug" else "reader")
         } else {
             File(configuredPath)
         }
