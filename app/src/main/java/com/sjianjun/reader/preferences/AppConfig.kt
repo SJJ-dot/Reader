@@ -30,11 +30,6 @@ class AppConfig(val name: String) :
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
 
     /**
-     * 阅读器亮度蒙层的颜色
-     */
-    val readerBrightnessMaskColor by lazy { intLivedata("readerBrightnessMaskColor") }
-
-    /**
      * 阅读器 内容字体大小 、章节名称+4
      */
     val readerFontSize by lazy { intLivedata("readerFontSize3", 30.dp2Px) }

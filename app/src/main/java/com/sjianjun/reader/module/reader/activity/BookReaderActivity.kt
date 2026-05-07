@@ -308,9 +308,6 @@ class BookReaderActivity : BaseActivity() {
         globalConfig.readerPageMode.observe(this) {
             mPageLoader?.setPageMode(PageMode.entries.getOrNull(it) ?: PageMode.SIMULATION)
         }
-        globalConfig.readerBrightnessMaskColor.observe(this) {
-            binding!!.brightnessMask.setBackgroundColor(it)
-        }
         val text = MediatorLiveData<Int>()
         text.addSource(globalConfig.readerFontSize) {
             text.value = it

@@ -11,7 +11,7 @@
     <color name="text_secondary_color">@color/mdr_textBlack_secondaryText</color>
 
     <color name="dark_background_color">#0D0D0D</color>
-    <color name="dark_text_primary_color">#808080</color>
+    <color name="dark_text_primary_color">#9E9E9E</color>
     <color name="dark_text_secondary_color">#717171</color>
     <color name="spacer_color">#55424242</color>
 

@@ -107,7 +107,6 @@ class BookReaderSettingFragment : BaseFragment() {
         initChapterError()
         initChapterSync()
         initDayNight()
-        initBrightness()
         initFontSize()
         initLineSpacing()
         initPageStyle()
@@ -384,27 +383,6 @@ class BookReaderSettingFragment : BaseFragment() {
             }
 
         }
-    }
-
-    private fun initBrightness() {
-        binding?.brightnessSeekBar?.progress = Color.alpha(globalConfig.readerBrightnessMaskColor.value!!)
-        binding?.brightnessSeekBar?.setOnSeekBarChangeListener(object :
-            SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(
-                seekBar: SeekBar?,
-                progress: Int,
-                fromUser: Boolean
-            ) {
-                globalConfig.readerBrightnessMaskColor.postValue(Color.argb(progress, 0, 0, 0))
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-            }
-        })
-
     }
 
     private fun initFontSize() {
