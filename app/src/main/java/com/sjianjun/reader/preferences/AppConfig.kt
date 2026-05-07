@@ -68,6 +68,11 @@ class AppConfig(val name: String) :
     val readerVolumeKeyPageTurn by lazy { boolLivedata("readerVolumeKeyPageTurn", false) }
 
     /**
+     * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
+     */
+    val readerBrightnessPercent by lazy { intLivedata("readerBrightnessPercent", -1) }
+
+    /**
      * 阅读器排版模式:
      * 0=默认横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
      */

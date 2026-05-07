@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.LayoutInflater
@@ -15,7 +16,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.PopupWindow
-import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -59,6 +59,7 @@ import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.graphics.drawable.toDrawable
+import kotlin.math.roundToInt
 
 /*
  * Created by shen jian jun on 2020-07-13
@@ -70,7 +71,6 @@ class BookReaderSettingFragment : BaseFragment() {
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
     private val REQUEST_CODE_PICK_FONT = 1111
-
     var pageLoader: PageLoader? = null
         get() {
             if (field == null) {
@@ -115,6 +115,7 @@ class BookReaderSettingFragment : BaseFragment() {
         initBrowser()
         initSettings()
         initScreenOrientationMode()
+        initBrightnessSetting()
         initSettingMenu()
     }
 
@@ -123,6 +124,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.settingContainerFirst?.isVisible = true
         binding?.settingContainerSecond?.isVisible = false
         refreshChapterProgress()
+        updateBrightnessUi(globalConfig.readerBrightnessPercent.value ?: -1)
     }
 
     private fun showPopupMenu(anchor: View) {
@@ -271,6 +273,43 @@ class BookReaderSettingFragment : BaseFragment() {
                 binding?.settingContainerSecond?.isVisible = false
             }
         }
+    }
+
+    private fun initBrightnessSetting() {
+        binding?.brightnessAuto?.click(10) {
+            if (globalConfig.readerBrightnessPercent.value == -1) {
+                globalConfig.readerBrightnessPercent.setValue(readSystemBrightnessPercent())
+            } else {
+                globalConfig.readerBrightnessPercent.setValue(-1)
+            }
+        }
+        binding?.brightnessSeek?.setOnSeekBarChangeListener { _, progress, fromUser ->
+            if (fromUser) {
+                globalConfig.readerBrightnessPercent.setValue(progress.coerceIn(1, 255))
+            }
+        }
+        globalConfig.readerBrightnessPercent.observe(viewLifecycleOwner) {
+            updateBrightnessUi(it)
+        }
+    }
+
+    private fun updateBrightnessUi(percent: Int) {
+        val useSystemBrightness = percent < 0
+        val accent = R.color.dn_colorAccent.color(requireContext())
+        val normal = R.color.dn_text_color_black.color(requireContext())
+        binding?.ivBrightnessAuto?.imageTintList = ColorStateList.valueOf(if (useSystemBrightness) accent else normal)
+        binding?.brightnessSeek?.progressTintList = ColorStateList.valueOf(if (useSystemBrightness) normal else accent)
+        binding?.brightnessSeek?.thumbTintList = ColorStateList.valueOf(if (useSystemBrightness) normal else accent)
+        val brightnessPercent = readSystemBrightnessPercent()
+        binding?.brightnessSeek?.progress = (if (useSystemBrightness) brightnessPercent else percent).coerceIn(1, 255)
+    }
+
+    private fun readSystemBrightnessPercent(): Int {
+        val context = context ?: return -1
+        return runCatching {
+            val brightness = Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+            (brightness / 200f * 255f).coerceIn(1f, 255f).roundToInt()
+        }.getOrElse { -1 }
     }
 
     private fun initBrowser() {

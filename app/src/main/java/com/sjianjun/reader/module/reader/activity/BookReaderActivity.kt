@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -99,6 +100,11 @@ class BookReaderActivity : BaseActivity() {
         initData()
         initView()
         initBackPressed()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyReaderBrightness()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -364,6 +370,10 @@ class BookReaderActivity : BaseActivity() {
             applyReaderOrientation(it)
         }
 
+        globalConfig.readerBrightnessPercent.observe(this) {
+            applyReaderBrightness()
+        }
+
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
                 //隐藏设置对话框
@@ -526,6 +536,17 @@ class BookReaderActivity : BaseActivity() {
             3 -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else -> ActivityInfo.SCREEN_ORIENTATION_USER
         }
+    }
+
+    private fun applyReaderBrightness() {
+        val attrs = window.attributes ?: return
+        val percent = globalConfig.readerBrightnessPercent.value ?: -1
+        attrs.screenBrightness = if (percent < 0) {
+            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        } else {
+            percent.coerceIn(1, 255) / 255f
+        }
+        window.attributes = attrs
     }
 
     private suspend fun getChapterContentPage(txtChapter: TxtChapter?, chapter: Chapter) = withMain {
