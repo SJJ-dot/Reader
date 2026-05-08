@@ -29,4 +29,7 @@ object EventKey {
 
     /** 阅读页净化替换规则变更 */
     val REPLACEMENT_RULES_CHANGED = "REPLACEMENT_RULES_CHANGED"
+
+    /** 书籍选中的书源变更 */
+    val BOOK_SOURCE_CHANGED = "BOOK_SOURCE_CHANGED"
 }

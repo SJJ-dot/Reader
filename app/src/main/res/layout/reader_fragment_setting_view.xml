@@ -16,7 +16,7 @@
         android:paddingBottom="8dp"
         app:layout_constraintBottom_toTopOf="@+id/setting_btn_container"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/top_bar">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/brightness_auto"
@@ -56,7 +56,6 @@
                 android:splitTrack="false"
                 android:thumbTint="@color/dn_colorAccent" />
         </com.google.android.material.card.MaterialCardView>
-
 
     </LinearLayout>
 
@@ -766,6 +765,18 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
+            android:id="@+id/cache_chapter"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="缓存章节"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_download_24"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageButton
             android:id="@+id/settings"
             android:layout_width="0dp"
             android:layout_height="40dp"
@@ -774,16 +785,197 @@
             android:src="@drawable/reader_setting"
             app:tint="@color/dn_text_color_black" />
 
-        <ImageButton
-            android:id="@+id/settings_more"
-            android:layout_width="0dp"
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/dn_background"
+        android:clickable="true"
+        android:paddingStart="8dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="5dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/top_bar_back"
+            android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
-            android:padding="9dp"
+            android:padding="8dp"
             android:scaleType="fitCenter"
-            android:src="@mipmap/ic_more_setting"
+            android:src="@drawable/ic_arrow_back_24"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 
-    </LinearLayout>
+        <ImageView
+            android:id="@+id/top_bar_settings_more"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_more_setting"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageView
+            android:id="@+id/book_source_change"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="5dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_change"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/colorPrimary" />
+
+        <TextView
+            android:id="@+id/book_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:autoSizeMaxTextSize="14dp"
+            android:autoSizeTextType="uniform"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:lines="1"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="18dp"
+            app:layout_constraintEnd_toStartOf="@+id/book_source_change"
+            app:layout_constraintStart_toEndOf="@+id/top_bar_back"
+            app:layout_constraintTop_toTopOf="@+id/top_bar_back"
+            tools:text="凡人修仙传" />
+
+        <TextView
+            android:id="@+id/tv_detail_label"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:text=" • 书籍详情 >"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/book_author"
+            app:layout_constraintStart_toEndOf="@+id/book_author"
+            app:layout_constraintTop_toTopOf="@+id/book_author" />
+
+        <TextView
+            android:id="@+id/book_author"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="12dp"
+            app:layout_constraintStart_toStartOf="@+id/book_title"
+            app:layout_constraintTop_toBottomOf="@+id/book_title"
+            tools:text="作者：忘语" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/book_detail_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/dn_background_card"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/book_author"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:id="@+id/ll_book_detail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+
+                <TextView
+                    android:id="@+id/count_chapter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:textColor="@color/dn_text_color_black"
+                    tools:text="共300章，已读50章，250章未读" />
+
+                <TextView
+                    android:id="@+id/last_chapter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:textColor="@color/dn_text_color_black"
+                    tools:text="最新：最新章节" />
+
+                <TextView
+                    android:id="@+id/read_chapter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:textColor="@color/dn_text_color_black"
+                    tools:text="已读：已读章节" />
+
+                <LinearLayout
+                    android:id="@+id/book_source_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="21dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/book_source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:lines="1"
+                        android:textColor="@color/dn_text_color_black"
+                        tools:text="书源：书源名称" />
+
+                    <ImageView
+                        android:layout_width="21dp"
+                        android:layout_height="21dp"
+                        android:scaleType="fitCenter"
+                        android:src="@mipmap/ic_change"
+                        app:tint="@color/colorPrimary" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/book_detail_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/dn_background_card"
+            app:layout_constraintEnd_toEndOf="@+id/book_detail_1"
+            app:layout_constraintStart_toStartOf="@+id/book_detail_1"
+            app:layout_constraintTop_toBottomOf="@+id/book_detail_1"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/book_intro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:autoSizeMaxTextSize="14dp"
+                android:autoSizeTextType="uniform"
+                android:maxHeight="200dp"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="14dp"
+                tools:text="暂无简介" />
+        </com.google.android.material.card.MaterialCardView>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

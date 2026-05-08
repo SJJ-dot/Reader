@@ -110,6 +110,9 @@ class BookReaderActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         Log.i("onNewIntent: ${intent?.getStringExtra(BOOK_ID)}")
+        if (intent != null) {
+            setIntent(intent)
+        }
         initData()
     }
 
@@ -309,6 +312,10 @@ class BookReaderActivity : BaseActivity() {
                 ChapterPageCache.reset()
                 mPageLoader?.reloadPages()
             }
+        }
+        observe<String>(EventKey.BOOK_SOURCE_CHANGED) {
+            intent.putExtra(BOOK_ID, it)
+            initData()
         }
 
         globalConfig.readerPageMode.observe(this) {

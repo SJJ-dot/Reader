@@ -5,6 +5,8 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
@@ -219,6 +221,7 @@ object BookUseCase {
             readingRecord.scrollOffset = 0
         }
         readingRecordDao.insertReadingRecord(readingRecord)
+        EventBus.post(EventKey.BOOK_SOURCE_CHANGED,book.id)
     }
 
 

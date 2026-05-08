@@ -111,7 +111,9 @@ class BookDetailsViewModel : ViewModel() {
                     val displayAuthor = author
                     writer.appendLine(book.title)
                     writer.appendLine("作者：$displayAuthor")
-                    writer.appendLine("简介：${book.intro ?: "无"}")
+                    val intro = book.intro.format(true)
+                    writer.appendLine("简介：")
+                    writer.appendLine(intro.ifBlank { "暂无简介" })
                     writer.appendLine("来源：${book.bookSource?.group} - ${book.bookSource?.name}")
                     writer.appendLine("网址：${book.url}")
                     writer.appendLine()

@@ -8,19 +8,20 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.PopupWindow
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,23 +30,27 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.FontInfo
+import com.sjianjun.reader.databinding.ItemFontBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupActionBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupDetailBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupSwitchBinding
-import com.sjianjun.reader.databinding.ItemFontBinding
 import com.sjianjun.reader.databinding.PopupReaderSettingMenuBinding
 import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
+import com.sjianjun.reader.utils.format
+import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import de.hdodenhof.circleimageview.CircleImageView
@@ -58,7 +63,6 @@ import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 import java.io.FileOutputStream
-import androidx.core.graphics.drawable.toDrawable
 import kotlin.math.roundToInt
 
 /*
@@ -71,13 +75,9 @@ class BookReaderSettingFragment : BaseFragment() {
     // 启动系统文件浏览器的请求码
     val adapter = FontAdapter()
     private val REQUEST_CODE_PICK_FONT = 1111
-    var pageLoader: PageLoader? = null
-        get() {
-            if (field == null) {
-                field = activity?.viewModels<NetPageLoader>()?.value
-            }
-            return field
-        }
+    private val pageLoader: PageLoader by activityViewModels<NetPageLoader>()
+    private val readerViewModel: BookReaderViewModel by activityViewModels<BookReaderViewModel>()
+    private val ttsUtil: TtsUtil? by activityViewModels<TtsUtil>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -89,8 +89,9 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = ReaderFragmentSettingViewBinding.bind(view)
-        val v = binding?.settingBottomContainer!!
+        val bottomSetting = binding?.settingBottomContainer!!
         val root = binding?.root!!
+        val topBar = binding?.topBar!!
         ViewCompat.setOnApplyWindowInsetsListener(view) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutout = insets.displayCutout
@@ -98,8 +99,9 @@ class BookReaderSettingFragment : BaseFragment() {
             val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
             val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
             val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, maxOf(safeBottom, v.paddingBottom))
-            root.setPadding(safeLeft, safeTop, safeRight, 0)
+            bottomSetting.setPadding(bottomSetting.paddingLeft, bottomSetting.paddingTop, bottomSetting.paddingRight, maxOf(safeBottom, bottomSetting.paddingBottom))
+            topBar.setPadding(topBar.paddingLeft, maxOf(topBar.paddingTop, safeTop), topBar.paddingRight, topBar.paddingBottom)
+            root.setPadding(safeLeft, 0, safeRight, 0)
             insets
         }
         initSpeak()
@@ -116,7 +118,8 @@ class BookReaderSettingFragment : BaseFragment() {
         initSettings()
         initScreenOrientationMode()
         initBrightnessSetting()
-        initSettingMenu()
+        initTopBar()
+        initCacheChapter()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -125,6 +128,8 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.settingContainerSecond?.isVisible = false
         refreshChapterProgress()
         updateBrightnessUi(globalConfig.readerBrightnessPercent.value ?: -1)
+        updateBookDetailExpanded(false)
+        refreshBookInfo()
     }
 
     private fun showPopupMenu(anchor: View) {
@@ -175,7 +180,6 @@ class BookReaderSettingFragment : BaseFragment() {
             .coerceIn(PageLoader.MODE_JIAN_FAN_OFF, PageLoader.MODE_FAN_TO_JIAN)
         val typesettingMode = (globalConfig.readerTypesettingMode.value ?: PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR)
             .coerceIn(PageLoader.MODE_TYPESETTING_HORIZONTAL_LTR, PageLoader.MODE_TYPESETTING_VERTICAL_RTL)
-        val isCached = activity?.viewModels<BookReaderViewModel>()?.value?.chapterCache?.value == true
         return listOf(
             ReaderSettingPopupItem.Detail(title = "简繁转换", value = arrayOf("关闭", "简体转繁体", "繁体转简体")[jianFanMode]) { item ->
                 val options = arrayOf("关闭", "简体转繁体", "繁体转简体")
@@ -207,21 +211,6 @@ class BookReaderSettingFragment : BaseFragment() {
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
             },
-            ReaderSettingPopupItem.Detail(title = "缓存章节", value = if (isCached) "缓存中" else "") {
-                hide()
-                val vm = activity?.viewModels<BookReaderViewModel>()
-                if (vm?.value?.chapterCache?.value == true) {
-                    EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                } else {
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("缓存章节")
-                        .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
-                        .setPositiveButton(android.R.string.ok) { _, _ ->
-                            EventBus.post(EventKey.CHAPTER_LIST_CAHE)
-                        }.setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-            },
             ReaderSettingPopupItem.Action(title = "点击区域") {
                 hide()
                 if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {
@@ -241,10 +230,78 @@ class BookReaderSettingFragment : BaseFragment() {
         )
     }
 
-    fun initSettingMenu() {
-        binding?.settingsMore?.click(100) {
+    private fun initTopBar() {
+        binding?.topBarBack?.click(10) {
+            activity?.finish()
+        }
+        binding?.topBarSettingsMore?.click(100) {
             showPopupMenu(it)
         }
+        readerViewModel.book.observe(viewLifecycleOwner) {
+            refreshBookInfo()
+        }
+        binding?.tvDetailLabel?.click {
+            updateBookDetailExpanded(binding?.bookDetail1?.isVisible != true)
+        }
+        binding?.bookDetail1?.click {
+            updateBookDetailExpanded(false)
+        }
+        binding?.bookDetail2?.click {
+            updateBookDetailExpanded(false)
+        }
+        binding?.bookSourceContainer?.click {
+            binding?.bookSourceChange?.performClick()
+        }
+        binding?.bookSourceChange?.click {
+            val book = readerViewModel.book.value ?: return@click
+            fragmentCreate<BookSourceListFragment>(
+                BOOK_TITLE to book.title
+            ).show(parentFragmentManager, "BookSourceListFragment")
+            hide()
+        }
+    }
+
+    private fun updateBookDetailExpanded(expanded: Boolean) {
+        binding?.bookDetail1?.isVisible = expanded
+        binding?.bookDetail2?.isVisible = expanded
+    }
+
+    private fun initCacheChapter() {
+        binding?.cacheChapter?.click(10) {
+            val isCaching = readerViewModel.chapterCache.value == true
+            if (isCaching) {
+                EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+            } else {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("缓存章节")
+                    .setMessage("确定缓存点击“确定”按钮，否则点击“取消”")
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        EventBus.post(EventKey.CHAPTER_LIST_CAHE)
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }
+        readerViewModel?.chapterCache?.observe(viewLifecycleOwner) {
+            val accent = R.color.dn_colorAccent.color(requireContext())
+            val normal = R.color.dn_text_color_black.color(requireContext())
+            binding?.cacheChapter?.imageTintList = ColorStateList.valueOf(if (it == true) accent else normal)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun refreshBookInfo() {
+        val book = readerViewModel.book.value
+        binding?.bookTitle?.text = book?.title?.ifBlank { "未知书籍" } ?: "未知书籍"
+        binding?.bookAuthor?.text = "作者：${book?.author?.ifBlank { "佚名" } ?: "佚名"}"
+        val chapterCount = book?.chapterList?.size ?: 0
+        val readCount = (book?.record?.chapterIndex ?: 0) + 1
+        binding?.countChapter?.text = "共${chapterCount}章，已读${readCount}章，${chapterCount - readCount}章未读"
+        binding?.lastChapter?.text = "最新：${book?.chapterList?.lastOrNull()?.title ?: "无"}"
+        binding?.readChapter?.text = "已读：${book?.chapterList?.getOrNull(book.record?.chapterIndex ?: 0)?.title ?: "无"}"
+        binding?.bookSource?.text = "书源：${book?.bookSource?.name ?: "未知"} 共${book?.bookSourceCount ?: 0}个书源"
+        val intro = book?.intro.format(true)
+        binding?.bookIntro?.text = "简介：\n${intro.ifBlank { "暂无简介" }}"
     }
 
     fun initScreenOrientationMode() {
@@ -320,7 +377,7 @@ class BookReaderSettingFragment : BaseFragment() {
 
     fun refreshChapterProgress() {
         binding?.chapterProgress?.max = pageLoader?.chapterCategory?.size ?: 0
-        binding?.chapterProgress?.progress = pageLoader?.chapterPos ?: 0
+        binding?.chapterProgress?.progress = (pageLoader?.chapterPos ?: 0) + 1
     }
 
     private fun initChapterList() {
@@ -339,8 +396,7 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initSpeak() {
-        val ttsUtil = activity?.viewModels<TtsUtil>()
-        ttsUtil?.value?.isSpeaking?.observe(viewLifecycleOwner, Observer { isSpeaking ->
+        ttsUtil?.isSpeaking?.observe(viewLifecycleOwner, Observer { isSpeaking ->
             if (isSpeaking) {
                 binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
             } else {

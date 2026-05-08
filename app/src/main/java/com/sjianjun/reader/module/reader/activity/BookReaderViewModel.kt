@@ -28,6 +28,7 @@ class BookReaderViewModel : ViewModel() {
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
+    private val bookSourceDao get() = DbFactory.db.bookSourceDao()
 
     suspend fun init(bookId: String): Book? = withIo {
         val book = bookDao.getBookById(bookId) ?: return@withIo null
@@ -35,6 +36,8 @@ class BookReaderViewModel : ViewModel() {
         book.record?.bookId = book.id
         val chapterList = chapterDao.getChapterListByBookId(book.id).first()
         book.chapterList = chapterList
+        book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
+        book.bookSourceCount = bookDao.getBookBookSourceNum(book.title)
         withMain {
             this@BookReaderViewModel.book.value = book
             this@BookReaderViewModel.chapterList.value = chapterList
