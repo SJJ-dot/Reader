@@ -15,7 +15,8 @@
         android:layout_margin="8dp"
         android:gravity="center_vertical"
         android:maxLines="2"
-        app:autoSizeMaxTextSize="14sp"
+        android:textSize="14dp"
+        app:autoSizeMaxTextSize="14dp"
         app:autoSizeMinTextSize="10dp"
         app:autoSizeTextType="uniform"
         tools:text="标题" />
