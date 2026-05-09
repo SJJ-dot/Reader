@@ -66,10 +66,20 @@ def getChapterContent(url):
 ### 机器人验证接口
 对于有机器人验证的网站使用下面的接口：
 ```python
+
 def web_get(url):
     """
     使用后台webview执行get请求
     :param url
+    :return: 返回json:{url:"",html:""}
+    """
+
+def web_post(url,postData,encoding):
+    """
+    使用后台webview执行post请求
+    :param url
+    :param postData body
+    :param encoding 传输时body编码默认utf-8
     :return: 返回json:{url:"",html:""}
     """
 
