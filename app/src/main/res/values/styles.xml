@@ -23,7 +23,7 @@
         <item name="materialButtonStyle">@style/dialog_button</item>
     </style>
 
-    <style name="dialog_NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="dialog_NoActionBar" parent="AppTheme.DayNight">
         <item name="android:windowBackground">?android:colorBackground</item>
         <item name="materialButtonStyle">@style/dialog_button</item>
     </style>
