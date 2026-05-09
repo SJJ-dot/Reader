@@ -43,4 +43,38 @@ object WebViewClient {
 
         return result ?: ""
     }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    @JvmStatic
+    fun post(
+        url: String,
+        postData: String = "",
+        javaScript: String = "document.documentElement.outerHTML",
+        timeout: Long = 20000L,
+        encoding: String = "UTF-8"
+    ): String {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            throw IllegalStateException("WebViewClient 必须在子线程中调用")
+        }
+        Log.i("WebViewClient post url: $url, timeout: $timeout")
+        var result: String? = null
+        GlobalScope.launch {
+            try {
+                result = BackstageWebView(
+                    url = url,
+                    javaScript = javaScript,
+                    timeout = timeout,
+                    postData = postData,
+                    encoding = encoding,
+                ).getResponse()
+            } catch (e: Exception) {
+                Log.e("WebViewClient post error", e)
+                result = ""
+            }
+        }
+        while (result == null) {
+            Thread.sleep(100)
+        }
+        return result ?: ""
+    }
 }

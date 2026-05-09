@@ -84,6 +84,18 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                     newFixedLengthResponse(res)
                 }
 
+                "/web_post" -> {
+                    val data = gson.fromJson<WebPost>(requestBody)!!
+                    val res = WebViewClient.post(
+                        url = data.url!!,
+                        postData = data.postData ?: "",
+                        javaScript = data.javaScript,
+                        timeout = data.timeout,
+                        encoding = data.encoding ?: "UTF_8"
+                    )
+                    newFixedLengthResponse(res)
+                }
+
                 "/verification_activity_get" -> {
                     val data = gson.fromJson<RobotVerify>(requestBody)!!
                     val res = WebViewVerificationActivity.startAndWaitResult(
@@ -150,6 +162,14 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         var headers: Map<String, String>? = null
         var javaScript: String = "document.documentElement.outerHTML"
         var timeout = 20000L
+    }
+
+    class WebPost {
+        var url: String? = null
+        var postData: String? = null
+        var javaScript: String = "document.documentElement.outerHTML"
+        var timeout = 20000L
+        var encoding: String? = null
     }
 
 }

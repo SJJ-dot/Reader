@@ -2,6 +2,7 @@ from java.util import HashMap
 from com.sjianjun.reader.http import CookieMgr
 from com.sjianjun.reader.http import WebViewClient
 
+
 def web_get(url,headers=None, javaScript="document.documentElement.outerHTML", timeout=20000):
     if headers is None:
         headers = {}
@@ -12,3 +13,15 @@ def web_get(url,headers=None, javaScript="document.documentElement.outerHTML", t
     for key, value in headers.items():
         java_headers.put(key, value)
     return WebViewClient.get(url, java_headers, javaScript,timeout)
+
+
+def web_post(url, postData=None, javaScript="document.documentElement.outerHTML", timeout=20000, encoding="UTF-8"):
+    if postData is None:
+        postData = ""
+    if headers is None:
+        headers = {}
+    if javaScript is None:
+        javaScript = "document.documentElement.outerHTML"
+    if encoding is None:
+        encoding = "UTF-8"
+    return WebViewClient.post(url, postData, javaScript, timeout, encoding)

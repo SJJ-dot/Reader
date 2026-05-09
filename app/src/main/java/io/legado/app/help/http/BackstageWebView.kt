@@ -34,6 +34,8 @@ class BackstageWebView(
     private val headerMap: Map<String, String>? = null,
     private val javaScript: String = "document.documentElement.outerHTML",
     private val timeout: Long = 20000L,
+    private val postData: String? = null,
+    private val encoding: String? = "UTF-8",
 ) {
 
     private val mHandler = Handler(Looper.getMainLooper())
@@ -75,11 +77,9 @@ class BackstageWebView(
         mWebView = webView
         try {
             when {
-                else -> if (headerMap == null) {
-                    webView.loadUrl(url!!)
-                } else {
-                    webView.loadUrl(url!!, headerMap)
-                }
+                postData != null -> webView.postUrl(url!!, postData.toByteArray(charset(encoding?.uppercase() ?: "UTF-8")))
+                headerMap == null -> webView.loadUrl(url!!)
+                else -> webView.loadUrl(url!!, headerMap)
             }
         } catch (e: Exception) {
             callback?.onError(e)
