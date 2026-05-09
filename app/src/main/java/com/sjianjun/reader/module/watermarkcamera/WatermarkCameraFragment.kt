@@ -1,11 +1,9 @@
 package com.sjianjun.reader.module.watermarkcamera
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.ContentValues
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -31,8 +29,11 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.viewModels
+import com.hjq.permissions.XXPermissions
+import com.hjq.permissions.permission.PermissionLists
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.databinding.FragmentWatermarkCameraBinding
+import com.sjianjun.reader.utils.toast
 import sjj.alog.Log
 import java.io.File
 import java.time.LocalDate
@@ -74,41 +75,34 @@ class WatermarkCameraFragment : BaseFragment() {
     // ======================== 权限 ========================
 
     private fun requestPermissionsAndStart() {
-        val permissions = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        @Suppress("DEPRECATION")
-        requestPermissions(permissions, REQUEST_CODE_PERMISSIONS)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        @Suppress("DEPRECATION")
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            val cameraGranted = grantResults.isNotEmpty()
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            if (cameraGranted) {
-                startCamera()
-            } else {
-                Toast.makeText(requireContext(), "需要相机权限才能使用水印相机", Toast.LENGTH_LONG).show()
+        XXPermissions.with(this).permissions(
+            listOf(
+                PermissionLists.getCameraPermission(),
+                PermissionLists.getAccessFineLocationPermission(),
+                PermissionLists.getAccessCoarseLocationPermission(),
+            )
+        ).request { grantedList, deniedList ->
+            val context = context ?: return@request
+            if (!PermissionLists.getCameraPermission().isGrantedPermission(context)) {
+                toast("需要相机权限才能使用水印相机")
+                return@request
             }
-            val locationGranted = grantResults.size > 1
-                    && grantResults[1] == PackageManager.PERMISSION_GRANTED
-            if (locationGranted) {
-                startLocationUpdates()
+            startCamera()
+            val permission = XXPermissions.isGrantedPermissions(
+                requireContext(), listOf(
+                    PermissionLists.getAccessFineLocationPermission(),
+                    PermissionLists.getAccessCoarseLocationPermission(),
+                )
+            )
+            if (!permission) {
+                toast("缺少位置权限，无法自动获取GPS信息，请手动输入")
+                return@request
             }
+            startLocationUpdates()
         }
     }
 
     // ======================== 相机 ========================
-
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener({
@@ -194,11 +188,13 @@ class WatermarkCameraFragment : BaseFragment() {
                     binding.layoutTimeRange.visibility = View.GONE
                     viewModel.refreshTime()
                 }
+
                 binding.rbTimeManual.id -> {
                     viewModel.timeMode = WatermarkCameraViewModel.TimeMode.MANUAL
                     binding.layoutTimeManual.visibility = View.VISIBLE
                     binding.layoutTimeRange.visibility = View.GONE
                 }
+
                 binding.rbTimeRange.id -> {
                     viewModel.timeMode = WatermarkCameraViewModel.TimeMode.RANGE
                     binding.layoutTimeManual.visibility = View.GONE
@@ -242,6 +238,7 @@ class WatermarkCameraFragment : BaseFragment() {
                     binding.etGps.isFocusableInTouchMode = false
                     startLocationUpdates()
                 }
+
                 binding.rbGpsManual.id -> {
                     viewModel.setGpsMode(true)
                     binding.etGps.isFocusable = true
@@ -283,6 +280,7 @@ class WatermarkCameraFragment : BaseFragment() {
                 binding.layoutTimeManual.visibility = View.GONE
                 binding.layoutTimeRange.visibility = View.GONE
             }
+
             WatermarkCameraViewModel.TimeMode.MANUAL -> {
                 binding.rbTimeManual.isChecked = true
                 binding.layoutTimeManual.visibility = View.VISIBLE
@@ -290,6 +288,7 @@ class WatermarkCameraFragment : BaseFragment() {
                 binding.etTimeHour.setText(viewModel.manualHour.toString())
                 binding.etTimeMinute.setText(viewModel.manualMinute.toString())
             }
+
             WatermarkCameraViewModel.TimeMode.RANGE -> {
                 binding.rbTimeRange.isChecked = true
                 binding.layoutTimeManual.visibility = View.GONE
@@ -362,6 +361,16 @@ class WatermarkCameraFragment : BaseFragment() {
 
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
+        val permission = XXPermissions.isGrantedPermissions(
+            requireContext(), listOf(
+                PermissionLists.getAccessFineLocationPermission(),
+                PermissionLists.getAccessCoarseLocationPermission(),
+            )
+        )
+        if (!permission) {
+            Log.e("缺少位置权限，无法获取GPS信息")
+            return
+        }
         // 手动模式下不需要定位
         if (viewModel.isGpsManual) return
 
@@ -392,8 +401,11 @@ class WatermarkCameraFragment : BaseFragment() {
             override fun onLocationChanged(location: Location) {
                 viewModel.updateLocation(location)
             }
+
             @Deprecated("Deprecated in Java")
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+            }
+
             override fun onProviderEnabled(provider: String) {}
             override fun onProviderDisabled(provider: String) {}
         }
@@ -405,7 +417,8 @@ class WatermarkCameraFragment : BaseFragment() {
                     LocationManager.GPS_PROVIDER, 3000L, 1f, locationListener!!
                 )
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         try {
             if (locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true) {
@@ -413,7 +426,8 @@ class WatermarkCameraFragment : BaseFragment() {
                     LocationManager.NETWORK_PROVIDER, 3000L, 1f, locationListener!!
                 )
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         // 被动定位（接收其他应用的定位结果，零功耗）
         try {
@@ -422,7 +436,8 @@ class WatermarkCameraFragment : BaseFragment() {
                     LocationManager.PASSIVE_PROVIDER, 3000L, 1f, locationListener!!
                 )
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     private fun stopLocationUpdates() {
@@ -455,6 +470,7 @@ class WatermarkCameraFragment : BaseFragment() {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     processAndSavePhoto(tempFile)
                 }
+
                 override fun onError(exception: ImageCaptureException) {
                     binding.captureProgress.visibility = View.GONE
                     binding.btnCapture.isEnabled = true
