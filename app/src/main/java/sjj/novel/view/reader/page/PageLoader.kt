@@ -397,7 +397,6 @@ abstract class PageLoader : ViewModel() {
         bookRecord.isEnd =
             curChapterPos == chapterList.size - 1 && curPageList.size == curPage.position + 1
 
-        Log.i("保存阅读记录:${bookRecord}")
         mPageChangeListener!!.onBookRecordChange(bookRecord)
     }
 
@@ -899,9 +898,14 @@ abstract class PageLoader : ViewModel() {
         TxtChapter.evict(chapter?.link)
         ChapterPageCache.remove(this.chapterPos)
         parseCurChapter()
-        // 重新设置文章指针的位置
-        mCurPage = getCurPage(mCurPage?.position ?: 0)
-        mPageView!!.drawCurPage()
+        if (mStatus == STATUS_FINISH) {
+            // 重新设置文章指针的位置
+            mCurPage = getCurPage(mCurPage?.position ?: 0)
+            mPageView!!.drawCurPage()
+        } else {
+            isChapterOpen = false
+        }
+
     }
 
     open fun parseCurChapter(): Boolean {

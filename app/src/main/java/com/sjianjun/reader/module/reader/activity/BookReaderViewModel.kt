@@ -23,6 +23,7 @@ class BookReaderViewModel : ViewModel() {
     val book = MutableLiveData<Book?>()
     val chapterList = MutableLiveData<List<Chapter>>()
     val chapterCache = MutableLiveData<Boolean>()
+    val contentError = MutableLiveData<Boolean>()
 
     private val bookDao get() = DbFactory.db.bookDao()
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()
@@ -54,6 +55,7 @@ class BookReaderViewModel : ViewModel() {
             txtChapter?.title = chapter.title + "(章节内容错误)"
         }
         chapter.content?.firstOrNull()?.let { chapterContentDao.insert(it) }
+        contentError.postValue(true)
     }
 
     suspend fun reloadBookFromNet() {
@@ -68,7 +70,6 @@ class BookReaderViewModel : ViewModel() {
             bean.isEnd != record.isEnd ||
             bean.scrollOffset != record.scrollOffset
         ) {
-            Log.i("保存阅读记录 $bean")
             viewModelScope.launch(Dispatchers.IO) {
                 record.chapterIndex = bean.chapter
                 record.offest = bean.pagePos

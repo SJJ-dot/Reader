@@ -69,11 +69,14 @@ val okClient = OkHttpClient.Builder()
             newBuilder.addHeader(t, u)
         }
         it.proceed(newBuilder.build())
-    }.addInterceptor(
-        HttpLoggingInterceptor { Log.i(it) }.setLevel(
-            HttpLoggingInterceptor.Level.BODY
-        )
-    ).build()
+    }
+//    网络日志
+//    .addInterceptor(
+//        HttpLoggingInterceptor { Log.i(it) }.setLevel(
+//            HttpLoggingInterceptor.Level.BODY
+//        )
+//    )
+    .build()
 
 val stringConverter = StringConverter()
 

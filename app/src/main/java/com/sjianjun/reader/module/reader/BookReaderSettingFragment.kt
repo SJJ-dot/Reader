@@ -258,6 +258,9 @@ class BookReaderSettingFragment : BaseFragment() {
             ).show(parentFragmentManager, "BookSourceListFragment")
             hide()
         }
+        readerViewModel.contentError.observe(viewLifecycleOwner){
+            refreshBookInfo()
+        }
     }
 
     private fun updateBookDetailExpanded(expanded: Boolean) {
