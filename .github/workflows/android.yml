@@ -86,6 +86,11 @@ jobs:
           echo "VERSION_NAME=$version_name"
           echo "TAG_NAME=$version_name"
 
+      - name: Upload to Pgyer
+        run: |
+          chmod +x ./pgyer_upload.sh
+          bash ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} -d ${{env.CHANGELOG}} "${{ env.APK_FILE }}"
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -108,8 +113,3 @@ jobs:
           asset_name: ${{ env.APK_NAME }}
           asset_content_type: application/vnd.android.package-archive
 
-
-      - name: Upload to Pgyer
-        run: |
-          chmod +x ./pgyer_upload.sh
-          bash ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} -d ${{env.CHANGELOG}} "${{ env.APK_FILE }}"
