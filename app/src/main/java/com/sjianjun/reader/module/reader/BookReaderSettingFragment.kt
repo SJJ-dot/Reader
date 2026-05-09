@@ -48,9 +48,11 @@ import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import de.hdodenhof.circleimageview.CircleImageView
@@ -240,7 +242,7 @@ class BookReaderSettingFragment : BaseFragment() {
         readerViewModel.book.observe(viewLifecycleOwner) {
             refreshBookInfo()
         }
-        binding?.tvDetailLabel?.click {
+        binding?.bookTitle?.click {
             updateBookDetailExpanded(binding?.bookDetail1?.isVisible != true)
         }
         binding?.bookDetail1?.click {
@@ -249,10 +251,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.bookDetail2?.click {
             updateBookDetailExpanded(false)
         }
-        binding?.bookSourceContainer?.click {
-            binding?.bookSourceChange?.performClick()
-        }
-        binding?.bookSourceChange?.click {
+        binding?.originClickableArea?.click {
             val book = readerViewModel.book.value ?: return@click
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to book.title
@@ -292,14 +291,19 @@ class BookReaderSettingFragment : BaseFragment() {
     @SuppressLint("SetTextI18n")
     private fun refreshBookInfo() {
         val book = readerViewModel.book.value
-        binding?.bookTitle?.text = book?.title?.ifBlank { "未知书籍" } ?: "未知书籍"
-        binding?.bookAuthor?.text = "作者：${book?.author?.ifBlank { "佚名" } ?: "佚名"}"
+        var bookTitle = book?.title?.ifBlank { "未知书籍" } ?: "未知书籍"
+        bookTitle += colorText(">", R.color.colorPrimary.color(context))
+        binding?.bookTitle?.text = bookTitle.htmlToSpanned()
+        binding?.bookAuthor?.text = book?.author?.ifBlank { "佚名" } ?: "佚名"
         val chapterCount = book?.chapterList?.size ?: 0
         val readCount = (book?.record?.chapterIndex ?: 0) + 1
+        val readChapter = book?.chapterList?.getOrNull(book.record?.chapterIndex ?: 0)
+        binding?.bvUnread?.badgeCount = chapterCount - readCount
+        binding?.bvUnread?.setHighlight(readChapter?.content?.firstOrNull()?.contentError != true)
         binding?.countChapter?.text = "共${chapterCount}章，已读${readCount}章，${chapterCount - readCount}章未读"
         binding?.lastChapter?.text = "最新：${book?.chapterList?.lastOrNull()?.title ?: "无"}"
-        binding?.readChapter?.text = "已读：${book?.chapterList?.getOrNull(book.record?.chapterIndex ?: 0)?.title ?: "无"}"
-        binding?.bookSource?.text = "书源：${book?.bookSource?.name ?: "未知"} 共${book?.bookSourceCount ?: 0}个书源"
+        binding?.readChapter?.text = "已读：${readChapter?.title ?: "无"}"
+        binding?.bookSource?.text = "${book?.bookSource?.name ?: "未知"}•共${book?.bookSourceCount ?: 0}个书源"
         val intro = book?.intro.format(true)
         binding?.bookIntro?.text = "简介：\n${intro.ifBlank { "暂无简介" }}"
     }

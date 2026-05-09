@@ -32,37 +32,42 @@
                 android:id="@+id/tvRuleState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/dn_text_color_black_secondary"
-                android:textSize="12dp" />
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="12dp"
+                tools:text="已启用" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:orientation="horizontal"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
             <TextView
                 android:id="@+id/tvRule"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/dn_text_color_black_secondary"
-                android:textSize="13dp" />
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:lines="1"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="12dp"
+                tools:text="替换规则：正则表达式" />
+
             <TextView
                 android:id="@+id/tvReplace"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/dn_text_color_black_secondary"
-                android:textSize="13dp" />
+                android:layout_weight="1"
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="12dp"
+                tools:text="替换规则：正则表达式" />
         </LinearLayout>
 
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
             android:gravity="end"
             android:orientation="horizontal">
 
@@ -70,8 +75,7 @@
                 android:id="@+id/btnMoveUp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:paddingHorizontal="16dp"
                 android:text="@string/replacement_rule_move_up"
                 android:textColor="@color/dn_text_color_black"
                 android:textSize="13dp" />
@@ -80,8 +84,7 @@
                 android:id="@+id/btnMoveDown"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:paddingHorizontal="16dp"
                 android:text="@string/replacement_rule_move_down"
                 android:textColor="@color/dn_text_color_black"
                 android:textSize="13dp" />
@@ -90,8 +93,7 @@
                 android:id="@+id/btnEdit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:paddingHorizontal="16dp"
                 android:text="@string/replacement_rule_edit"
                 android:textColor="@color/dn_color_primary"
                 android:textSize="13dp" />
@@ -100,8 +102,7 @@
                 android:id="@+id/btnDelete"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:paddingHorizontal="16dp"
                 android:text="@string/replacement_rule_delete"
                 android:textColor="@color/mdr_red_A200"
                 android:textSize="13dp" />

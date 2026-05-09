@@ -13,12 +13,17 @@ import kotlin.math.roundToInt
 /*
  * Created by shen jian jun on 2020-07-14
  */
-fun dpToPx(dp: Float): Float {
+fun dpToPx(dp: Float, context: Context? = null): Float {
+    val ctx = context ?: App.app
     return TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP,
         dp,
-        App.app.resources.displayMetrics
+        ctx.resources.displayMetrics
     )
+}
+
+fun Int.dp2Px(context: Context? = null): Int {
+    return dpToPx(this.toFloat(), context).roundToInt()
 }
 
 inline val Int.dp2Px: Int

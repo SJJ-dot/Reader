@@ -1,7 +1,5 @@
 package com.sjianjun.reader.event
 
-import android.media.AudioManager
-
 object EventKey {
     /** 阅读页刷新章节内容 */
     val CHAPTER_SYNC_FORCE = "CHAPTER_SYNC_FORCE"

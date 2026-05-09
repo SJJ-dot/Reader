@@ -823,61 +823,90 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 
-        <ImageView
-            android:id="@+id/book_source_change"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="5dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_change"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/colorPrimary" />
-
         <TextView
             android:id="@+id/book_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
-            android:autoSizeMaxTextSize="14dp"
+            android:autoSizeMaxTextSize="16dp"
             android:autoSizeTextType="uniform"
-            android:ellipsize="end"
+            android:background="?android:attr/selectableItemBackground"
+            android:ellipsize="middle"
             android:gravity="center_vertical"
             android:lines="1"
             android:textColor="@color/dn_text_color_black"
-            android:textSize="18dp"
-            app:layout_constraintEnd_toStartOf="@+id/book_source_change"
+            android:textSize="16dp"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
             app:layout_constraintStart_toEndOf="@+id/top_bar_back"
             app:layout_constraintTop_toTopOf="@+id/top_bar_back"
             tools:text="凡人修仙传" />
 
-        <TextView
-            android:id="@+id/tv_detail_label"
-            android:layout_width="80dp"
+        <com.sjianjun.reader.view.BadgeView
+            android:id="@+id/bv_unread"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:lines="1"
-            android:text=" • 书籍详情 >"
-            android:textColor="@color/colorPrimary"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="@+id/book_author"
-            app:layout_constraintStart_toEndOf="@+id/book_author"
-            app:layout_constraintTop_toTopOf="@+id/book_author" />
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toStartOf="@+id/book_title"
+            app:layout_constraintTop_toBottomOf="@+id/book_title"
+            tools:layout_height="17dp"
+            tools:layout_width="17dp" />
 
         <TextView
             android:id="@+id/book_author"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="5dp"
             android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
             android:lines="1"
             android:textColor="@color/dn_text_color_black"
-            android:textSize="12dp"
-            app:layout_constraintStart_toStartOf="@+id/book_title"
-            app:layout_constraintTop_toBottomOf="@+id/book_title"
-            tools:text="作者：忘语" />
+            android:textSize="11dp"
+            app:layout_constraintBottom_toBottomOf="@+id/bv_unread"
+            app:layout_constraintStart_toEndOf="@+id/bv_unread"
+            app:layout_constraintTop_toTopOf="@+id/bv_unread"
+            tools:text="忘语" />
+
+        <ImageView
+            android:id="@+id/origin_icon"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@mipmap/ic_change"
+            app:layout_constraintBottom_toBottomOf="@+id/bv_unread"
+            app:layout_constraintStart_toEndOf="@+id/book_source"
+            app:layout_constraintTop_toTopOf="@+id/bv_unread"
+            app:tint="@color/colorPrimary" />
+
+        <TextView
+            android:id="@+id/book_source"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="19dp"
+            android:ellipsize="middle"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:lines="1"
+            android:textColor="@color/dn_text_color_black"
+            android:textSize="11dp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@+id/bv_unread"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toEndOf="@+id/book_author"
+            app:layout_constraintTop_toTopOf="@+id/bv_unread"
+            tools:text="书源" />
+
+        <View
+            android:id="@+id/origin_clickable_area"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?android:attr/selectableItemBackground"
+            app:layout_constraintBottom_toBottomOf="@+id/book_source"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintStart_toStartOf="@+id/book_source"
+            app:layout_constraintTop_toTopOf="@+id/book_source" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/book_detail_1"
@@ -925,28 +954,6 @@
                     android:textColor="@color/dn_text_color_black"
                     tools:text="已读：已读章节" />
 
-                <LinearLayout
-                    android:id="@+id/book_source_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="21dp"
-                    android:background="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:id="@+id/book_source"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:lines="1"
-                        android:textColor="@color/dn_text_color_black"
-                        tools:text="书源：书源名称" />
-
-                    <ImageView
-                        android:layout_width="21dp"
-                        android:layout_height="21dp"
-                        android:scaleType="fitCenter"
-                        android:src="@mipmap/ic_change"
-                        app:tint="@color/colorPrimary" />
-                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
