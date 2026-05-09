@@ -18,6 +18,10 @@
     <string name="replacement_rule_apply_title">章节标题</string>
     <string name="replacement_rule_apply_content">章节内容</string>
     <string name="replacement_rule_save">保存规则</string>
+    <string name="replacement_rule_regex_help_entry">规则说明</string>
+    <string name="replacement_rule_regex_help_title">正则表达式规则说明</string>
+    <string name="replacement_rule_regex_help_confirm">我知道了</string>
+    <string name="replacement_rule_regex_help_content">1. 普通匹配（不勾选“正则匹配”）：按原文查找并替换，不识别正则语法。\n\n2. 正则匹配（勾选“正则匹配”）：\n- . 匹配任意单个字符\n- * 前一个表达式重复 0 次或多次\n- + 前一个表达式重复 1 次或多次\n- ? 前一个表达式重复 0 次或 1 次\n- [abc] 匹配 a/b/c 中任意一个\n- [^abc] 匹配除 a/b/c 外任意一个\n- ( ... ) 分组，可在替换内容中用 $1、$2 引用\n- \\d 数字，\\w 字母数字下划线，\\s 空白\n\n3. 常用示例：\n- 删除括号广告：\\[[^\\]]*广告[^\\]]*\\]\n- 合并多个空行：\\n{3,}  替换为 \\n\\n\n\n4. 注意事项：\n- 反斜杠需要写成 \\（例如数字用 \\d）\n- 表达式无效会在保存时提示</string>
     <string name="replacement_rule_move_up">上移</string>
     <string name="replacement_rule_move_down">下移</string>
     <string name="replacement_rule_edit">编辑</string>

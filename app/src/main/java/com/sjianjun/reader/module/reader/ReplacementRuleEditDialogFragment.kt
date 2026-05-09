@@ -14,6 +14,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.databinding.DialogReplacementRuleEditBinding
@@ -55,6 +56,7 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         binding?.rootOverlay?.setOnClickListener { dismissAllowingStateLoss() }
         binding?.panel?.setOnClickListener { }
         binding?.btnSave?.setOnClickListener { saveRule() }
+        binding?.tvHelp?.setOnClickListener { showRegexHelpDialog() }
         loadRule()
     }
 
@@ -140,6 +142,14 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
             parentFragmentManager.setFragmentResult(RESULT_KEY, bundleOf())
             toast("规则已保存")
         }
+    }
+
+    private fun showRegexHelpDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.replacement_rule_regex_help_title)
+            .setMessage(R.string.replacement_rule_regex_help_content)
+            .setPositiveButton(R.string.replacement_rule_regex_help_confirm, null)
+            .show()
     }
 
     override fun onDestroyView() {
