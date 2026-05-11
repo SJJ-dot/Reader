@@ -922,7 +922,7 @@
             app:layout_constraintTop_toBottomOf="@+id/book_author"
             tools:visibility="visible">
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/ll_book_detail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -930,32 +930,53 @@
                 android:padding="5dp">
 
 
+                <ImageView
+                    android:id="@+id/bookCover"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintDimensionRatio="W,1:1.3"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
                 <TextView
                     android:id="@+id/count_chapter"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
                     android:lines="1"
                     android:textColor="@color/dn_text_color_black"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/bookCover"
+                    app:layout_constraintTop_toTopOf="parent"
                     tools:text="共300章，已读50章，250章未读" />
 
                 <TextView
                     android:id="@+id/last_chapter"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
                     android:lines="1"
                     android:textColor="@color/dn_text_color_black"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/bookCover"
+                    app:layout_constraintTop_toBottomOf="@+id/count_chapter"
                     tools:text="最新：最新章节" />
 
                 <TextView
                     android:id="@+id/read_chapter"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
                     android:lines="1"
                     android:textColor="@color/dn_text_color_black"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/bookCover"
+                    app:layout_constraintTop_toBottomOf="@+id/last_chapter"
                     tools:text="已读：已读章节" />
 
 
-            </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView

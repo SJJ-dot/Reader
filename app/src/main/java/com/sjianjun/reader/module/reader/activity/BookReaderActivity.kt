@@ -134,9 +134,8 @@ class BookReaderActivity : BaseActivity() {
     }
 
     fun initBackPressed() {
-        var lastTime = 0L
         setOnBackPressed {
-            val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
+            val fragment = getSettingFragment()
             when {
                 binding?.drawerLayout!!.isDrawerOpen(GravityCompat.END) -> {
                     binding?.drawerLayout!!.closeDrawer(GravityCompat.END)
@@ -384,7 +383,7 @@ class BookReaderActivity : BaseActivity() {
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
                 //隐藏设置对话框
-                return supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
+                return getSettingFragment()?.let {
                     if (it.isVisible && event?.action == MotionEvent.ACTION_UP) {
                         supportFragmentManager.beginTransaction()
                             .hide(it)
@@ -409,34 +408,37 @@ class BookReaderActivity : BaseActivity() {
         when (action) {
             ReaderClickAreaAction.PREV_PAGE -> binding?.pageView?.performPageTap(false)
             ReaderClickAreaAction.NEXT_PAGE -> binding?.pageView?.performPageTap(true)
-            ReaderClickAreaAction.MENU -> showReaderSettingDialog()
+            ReaderClickAreaAction.MENU -> getSettingFragment(create = true)?.let {
+                supportFragmentManager.beginTransaction()
+                    .show(it)
+                    .commitAllowingStateLoss()
+            }
+
             ReaderClickAreaAction.PREV_CHAPTER -> mPageLoader?.skipPreChapter()
             ReaderClickAreaAction.NEXT_CHAPTER -> mPageLoader?.skipNextChapter()
             ReaderClickAreaAction.DIRECTORY -> binding?.drawerLayout?.openDrawer(GravityCompat.END)
-            ReaderClickAreaAction.NONE -> {
-                //无操作
-            }
+            ReaderClickAreaAction.NONE ->  /*无操作*/ {}
         }
     }
 
-    private fun showReaderSettingDialog() {
-        supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)?.let {
+    private fun getSettingFragment(create: Boolean = false): BookReaderSettingFragment? {
+        val fragment = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
+        if (fragment != null && fragment is BookReaderSettingFragment) {
+            return fragment
+        }
+        if (create) {
+            Log.i("创建设置对话框")
+            val newFragment = BookReaderSettingFragment()
             supportFragmentManager.beginTransaction()
-                .show(it)
+                .add(R.id.fl_setting_container, newFragment, TAG_SETTING_DIALOG)
+                .hide(newFragment)
                 .commitAllowingStateLoss()
+            return newFragment
         }
+        return null
     }
-
 
     private fun initView() {
-        val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG)
-        if (settingDialog == null) {
-            val fragment = BookReaderSettingFragment()
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fl_setting_container, fragment, TAG_SETTING_DIALOG)
-                .hide(fragment)
-                .commitAllowingStateLoss()
-        }
         viewModel.book.observe(this) { book ->
             book ?: return@observe
             Log.i("设置章节列表 ChapterListFragment")
@@ -530,8 +532,7 @@ class BookReaderActivity : BaseActivity() {
             Log.i("刷新章节信息，章节数：${book.chapterList?.size}")
             mPageLoader?.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
             mPageLoader?.refreshChapterList()
-            val settingDialog = supportFragmentManager.findFragmentByTag(TAG_SETTING_DIALOG) as? BookReaderSettingFragment
-            settingDialog?.refreshChapterProgress()
+            getSettingFragment()?.refreshChapterProgress()
         }
     }
 

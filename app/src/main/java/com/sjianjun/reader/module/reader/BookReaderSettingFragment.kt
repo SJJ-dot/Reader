@@ -52,6 +52,7 @@ import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.fragmentCreate
+import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.htmlToSpanned
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -261,6 +262,9 @@ class BookReaderSettingFragment : BaseFragment() {
         readerViewModel.contentError.observe(viewLifecycleOwner){
             refreshBookInfo()
         }
+        binding?.bookCover?.setOnLongClickListener {
+            true
+        }
     }
 
     private fun updateBookDetailExpanded(expanded: Boolean) {
@@ -309,6 +313,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.bookSource?.text = "${book?.bookSource?.name ?: "未知"}•共${book?.bookSourceCount ?: 0}个书源"
         val intro = book?.intro.format(true)
         binding?.bookIntro?.text = "简介：\n${intro.ifBlank { "暂无简介" }}"
+        binding?.bookCover?.glide(book?.cover)
     }
 
     fun initScreenOrientationMode() {
