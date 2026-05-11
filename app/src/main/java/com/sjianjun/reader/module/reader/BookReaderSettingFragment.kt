@@ -253,6 +253,14 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.bookIntro?.click {
             updateBookDetailExpanded(false)
         }
+        binding?.bookIntro?.setOnLongClickListener {
+            val book = readerViewModel.book.value ?: return@setOnLongClickListener true
+            if (parentFragmentManager.findFragmentByTag(BookIntroPickerDialogFragment.TAG) == null) {
+                BookIntroPickerDialogFragment.newInstance(book.title, book.id)
+                    .show(parentFragmentManager, BookIntroPickerDialogFragment.TAG)
+            }
+            true
+        }
         binding?.originClickableArea?.click {
             val book = readerViewModel.book.value ?: return@click
             fragmentCreate<BookSourceListFragment>(
@@ -264,6 +272,17 @@ class BookReaderSettingFragment : BaseFragment() {
             refreshBookInfo()
         }
         EventBus.observe(EventKey.BOOK_COVER_CHANGED, viewLifecycleOwner, Observer<String> {
+            if (it == readerViewModel.book.value?.id) {
+                lifecycleScope.launch {
+                    val book = readerViewModel.book.value ?: return@launch
+                    book.record = withIo {
+                        DbFactory.db.readingRecordDao().getReadingRecordSync(book.title)
+                    }
+                    refreshBookInfo()
+                }
+            }
+        })
+        EventBus.observe(EventKey.BOOK_INTRO_CHANGED, viewLifecycleOwner, Observer<String> {
             if (it == readerViewModel.book.value?.id) {
                 lifecycleScope.launch {
                     val book = readerViewModel.book.value ?: return@launch
@@ -328,7 +347,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.lastChapter?.text = "最新：${book?.chapterList?.lastOrNull()?.title ?: "无"}"
         binding?.readChapter?.text = "已读：${readChapter?.title ?: "无"}"
         binding?.bookSource?.text = "${book?.bookSource?.name ?: "未知"}•共${book?.bookSourceCount ?: 0}个书源"
-        val intro = book?.intro.format(true)
+        val intro = (book?.record?.bookIntro ?: book?.intro).format(true)
         binding?.bookIntro?.text = "简介：\n${intro.ifBlank { "暂无简介" }}"
         binding?.bookCover?.glide(book?.record?.bookCover ?: book?.cover)
     }

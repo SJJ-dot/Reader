@@ -18,6 +18,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
 import com.sjianjun.reader.module.reader.BookCoverPickerDialogFragment
+import com.sjianjun.reader.module.reader.BookIntroPickerDialogFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
@@ -81,6 +82,14 @@ class BookDetailsFragment : BaseAsyncFragment() {
             }
             true
         }
+        binding?.intro?.setOnLongClickListener {
+            val book = viewModel.bookLivedata.value ?: return@setOnLongClickListener true
+            if (parentFragmentManager.findFragmentByTag(BookIntroPickerDialogFragment.TAG) == null) {
+                BookIntroPickerDialogFragment.newInstance(book.title, book.id)
+                    .show(parentFragmentManager, BookIntroPickerDialogFragment.TAG)
+            }
+            true
+        }
         childFragmentManager.beginTransaction()
             .replace(
                 R.id.chapter_list,
@@ -100,7 +109,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
         binding?.bookCover?.glide(book?.record?.bookCover?: book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = "作者：${book?.author}"
-        val intro = book?.intro.format(true)
+        val intro = (book?.record?.bookIntro ?: book?.intro).format(true)
         binding?.intro?.text = intro.ifBlank { "暂无简介" }
         binding?.bookClickableArea?.click {
             //使用浏览器打开书籍链接

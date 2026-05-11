@@ -225,13 +225,14 @@
                             app:tint="@color/mdr_red_100"
                             tools:visibility="visible" />
 
-                        <ScrollView
-                            android:id="@+id/intro_container"
+                        <androidx.core.widget.NestedScrollView
+                            android:id="@+id/cv_intro_container"
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_marginTop="8dp"
                             android:layout_marginEnd="8dp"
                             android:layout_marginBottom="8dp"
+                            android:fillViewport="true"
                             app:layout_constraintBottom_toTopOf="@+id/reading"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="@+id/introTitle"
@@ -242,10 +243,10 @@
                                 android:id="@+id/intro"
                                 style="@style/text_body1"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                android:layout_height="match_parent"
                                 tools:text="intro" />
 
-                        </ScrollView>
+                        </androidx.core.widget.NestedScrollView>
 
 
                         <com.google.android.material.button.MaterialButton

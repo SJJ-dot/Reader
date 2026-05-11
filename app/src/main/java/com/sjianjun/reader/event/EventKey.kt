@@ -33,4 +33,7 @@ object EventKey {
 
     /** 书籍封面变更 */
     val BOOK_COVER_CHANGED = "BOOK_COVER_CHANGED"
+
+    /** 书籍简介变更 */
+    val BOOK_INTRO_CHANGED = "BOOK_INTRO_CHANGED"
 }

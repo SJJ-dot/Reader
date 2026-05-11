@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -80,6 +81,13 @@ class BookCoverPickerDialogFragment : DialogFragment() {
         }
 
         loadCoverSources()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val metrics = resources.displayMetrics
+        val width = (metrics.widthPixels * 0.96f).toInt()
+        dialog?.window?.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
     }
 
     private fun loadCoverSources() {
