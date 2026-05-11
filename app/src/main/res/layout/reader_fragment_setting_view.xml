@@ -912,9 +912,9 @@
             android:id="@+id/book_detail_1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="3dp"
             android:layout_marginTop="5dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="3dp"
             android:visibility="gone"
             app:cardBackgroundColor="@color/dn_background_card"
             app:layout_constraintEnd_toEndOf="parent"
@@ -970,18 +970,24 @@
             app:layout_constraintTop_toBottomOf="@+id/book_detail_1"
             tools:visibility="visible">
 
-            <TextView
-                android:id="@+id/book_intro"
+            <com.sjianjun.reader.view.MaxHeightScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                app:autoSizeMaxTextSize="14dp"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="12dp"
-                android:maxHeight="200dp"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="14dp"
-                tools:text="暂无简介" />
+                android:padding="5dp"
+                app:maxHeight="200dp">
+
+                <TextView
+                    android:id="@+id/book_intro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dn_text_color_black"
+                    android:textSize="14dp"
+                    app:autoSizeMaxTextSize="14dp"
+                    app:autoSizeMinTextSize="12dp"
+                    app:autoSizeTextType="uniform"
+                    tools:text="暂无简介" />
+            </com.sjianjun.reader.view.MaxHeightScrollView>
+
         </com.google.android.material.card.MaterialCardView>
 
 

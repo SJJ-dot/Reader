@@ -248,7 +248,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.bookDetail1?.click {
             updateBookDetailExpanded(false)
         }
-        binding?.bookDetail2?.click {
+        binding?.bookIntro?.click {
             updateBookDetailExpanded(false)
         }
         binding?.originClickableArea?.click {
