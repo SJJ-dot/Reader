@@ -268,7 +268,7 @@ class BookReaderSettingFragment : BaseFragment() {
             ).show(parentFragmentManager, "BookSourceListFragment")
             hide()
         }
-        readerViewModel.contentError.observe(viewLifecycleOwner){
+        readerViewModel.contentError.observe(viewLifecycleOwner) {
             refreshBookInfo()
         }
         EventBus.observe(EventKey.BOOK_COVER_CHANGED, viewLifecycleOwner, Observer<String> {
@@ -298,6 +298,14 @@ class BookReaderSettingFragment : BaseFragment() {
             if (parentFragmentManager.findFragmentByTag(BookCoverPickerDialogFragment.TAG) == null) {
                 BookCoverPickerDialogFragment.newInstance(book.title, book.id)
                     .show(parentFragmentManager, BookCoverPickerDialogFragment.TAG)
+            }
+            true
+        }
+        binding?.root?.click {
+            if (binding?.bookDetail1?.isVisible == true) {
+                updateBookDetailExpanded(false)
+            } else {
+                hide()
             }
             true
         }
