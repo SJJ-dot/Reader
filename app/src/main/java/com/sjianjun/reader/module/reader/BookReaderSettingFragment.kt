@@ -399,6 +399,7 @@ class BookReaderSettingFragment : BaseFragment() {
         refreshChapterProgress()
         binding?.chapterList?.click {
             EventBus.post(EventKey.CHAPTER_LIST)
+            hide()
         }
     }
 
