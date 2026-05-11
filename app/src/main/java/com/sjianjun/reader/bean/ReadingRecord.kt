@@ -24,6 +24,9 @@ class ReadingRecord(
      */
     var updateTime = System.currentTimeMillis()
 
+    var bookCover: String? = null
+
+    var bookIntro: String? = null
 
 
     override fun toString(): String {
