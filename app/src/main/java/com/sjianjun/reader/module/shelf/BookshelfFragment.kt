@@ -201,7 +201,7 @@ class BookshelfFragment : BaseFragment() {
             val binding = ItemBookListGridBinding.bind(holder.itemView)
             binding.apply {
                 val visibleSet = constraintLayout.visibleSet()
-                bookCover.glide(book.cover)
+                bookCover.glide(book.record?.bookCover ?: book.cover)
                 bookName.text = book.title
                 loading.isLoading = book.isLoading
                 val error = book.error
@@ -275,7 +275,7 @@ class BookshelfFragment : BaseFragment() {
             val binding = ItemBookListBinding.bind(holder.itemView)
             binding.apply {
                 val visibleSet = constraintLayout.visibleSet()
-                bookCover.glide(book.cover)
+                bookCover.glide(book.record?.bookCover ?: book.cover)
                 bookName.text = book.title
                 if (author.tag == null) {
                     author.post {

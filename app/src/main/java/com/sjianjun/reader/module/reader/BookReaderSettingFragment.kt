@@ -46,6 +46,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
@@ -262,7 +263,23 @@ class BookReaderSettingFragment : BaseFragment() {
         readerViewModel.contentError.observe(viewLifecycleOwner){
             refreshBookInfo()
         }
+        EventBus.observe(EventKey.BOOK_COVER_CHANGED, viewLifecycleOwner, Observer<String> {
+            if (it == readerViewModel.book.value?.id) {
+                lifecycleScope.launch {
+                    val book = readerViewModel.book.value ?: return@launch
+                    book.record = withIo {
+                        DbFactory.db.readingRecordDao().getReadingRecordSync(book.title)
+                    }
+                    refreshBookInfo()
+                }
+            }
+        })
         binding?.bookCover?.setOnLongClickListener {
+            val book = readerViewModel.book.value ?: return@setOnLongClickListener true
+            if (parentFragmentManager.findFragmentByTag(BookCoverPickerDialogFragment.TAG) == null) {
+                BookCoverPickerDialogFragment.newInstance(book.title, book.id)
+                    .show(parentFragmentManager, BookCoverPickerDialogFragment.TAG)
+            }
             true
         }
     }
@@ -313,7 +330,7 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.bookSource?.text = "${book?.bookSource?.name ?: "未知"}•共${book?.bookSourceCount ?: 0}个书源"
         val intro = book?.intro.format(true)
         binding?.bookIntro?.text = "简介：\n${intro.ifBlank { "暂无简介" }}"
-        binding?.bookCover?.glide(book?.cover)
+        binding?.bookCover?.glide(book?.record?.bookCover ?: book?.cover)
     }
 
     fun initScreenOrientationMode() {
@@ -374,7 +391,7 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun readSystemBrightnessPercent(): Int {
-        val context = context ?: return -1
+        val context = this.context ?: return -1
         return runCatching {
             val brightness = Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
             (brightness / 200f * 255f).coerceIn(1f, 255f).roundToInt()

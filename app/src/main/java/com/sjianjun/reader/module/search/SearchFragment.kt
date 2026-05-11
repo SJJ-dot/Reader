@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.coroutine.launch
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withMain
+import com.sjianjun.reader.BOOK_AUTO_REFRESH
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
@@ -246,7 +247,7 @@ class SearchFragment : BaseAsyncFragment() {
                     fragment.viewModel.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_TITLE to searchResult.bookTitle)
+                        bundle(BOOK_TITLE to searchResult.bookTitle, BOOK_AUTO_REFRESH to true)
                     )
                 }
             }

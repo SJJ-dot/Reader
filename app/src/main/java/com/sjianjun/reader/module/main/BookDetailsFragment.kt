@@ -10,12 +10,14 @@ import androidx.core.view.GravityCompat
 import androidx.fragment.app.viewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
+import com.sjianjun.reader.BOOK_AUTO_REFRESH
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
+import com.sjianjun.reader.module.reader.BookCoverPickerDialogFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
@@ -38,6 +40,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
     private var binding: MainFragmentBookDetailsBinding? = null
     private val bookTitle: String
         get() = requireArguments().getString(BOOK_TITLE)!!
+
+    private val autoRefresh: Boolean
+        get() = requireArguments().getString(BOOK_AUTO_REFRESH)?.toBoolean() ?: false
     private val viewModel: BookDetailsViewModel by viewModels()
 
     override fun getLayoutRes() = R.layout.main_fragment_book_details
@@ -68,6 +73,14 @@ class BookDetailsFragment : BaseAsyncFragment() {
     }
 
     private fun init() {
+        binding?.bookCover?.setOnLongClickListener {
+            val book = viewModel.bookLivedata.value ?: return@setOnLongClickListener true
+            if (parentFragmentManager.findFragmentByTag(BookCoverPickerDialogFragment.TAG) == null) {
+                BookCoverPickerDialogFragment.newInstance(book.title, book.id)
+                    .show(parentFragmentManager, BookCoverPickerDialogFragment.TAG)
+            }
+            true
+        }
         childFragmentManager.beginTransaction()
             .replace(
                 R.id.chapter_list,
@@ -76,7 +89,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 )
             )
             .commitNowAllowingStateLoss()
-        viewModel.init(bookTitle)
+        viewModel.init(bookTitle, autoRefresh)
         viewModel.bookLivedata.observeViewLifecycle {
             fillView(it)
         }
@@ -84,7 +97,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     @SuppressLint("SetTextI18n")
     private fun fillView(book: Book?) {
-        binding?.bookCover?.glide(book?.cover)
+        binding?.bookCover?.glide(book?.record?.bookCover?: book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = "作者：${book?.author}"
         val intro = book?.intro.format(true)

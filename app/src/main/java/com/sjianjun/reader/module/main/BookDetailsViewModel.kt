@@ -28,25 +28,32 @@ class BookDetailsViewModel : ViewModel() {
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()
 
     @OptIn(FlowPreview::class)
-    fun init(title: String) {
+    fun init(title: String, autoRefresh: Boolean) {
         launchIo {
+            var refresh = autoRefresh
             bookDao.getReadingBook(title).debounce(300).collectLatest {
                 it?.also {
                     val record = readingRecordDao.getReadingRecord(it.title).firstOrNull()
                     val chapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
+                    it.record = record
                     it.readChapter = chapter
                     it.bookSourceCount = bookDao.getBookBookSourceNum(it.title)
                     it.bookSource = bookSourceDao.getBookSourceById(it.bookSourceId)
                     it.lastChapter = chapterDao.getLastChapterByBookId(it.id)
                 }
                 bookLivedata.postValue(it)
+
+                if (refresh) {
+                    refresh = false
+                    reloadBookFromNet(it)
+                }
             }
         }
     }
 
-    fun reloadBookFromNet() {
+    fun reloadBookFromNet(book: Book? = null) {
         launchIo {
-            BookUseCase.reloadBookFromNet(bookLivedata.value ?: return@launchIo)
+            BookUseCase.reloadBookFromNet(bookLivedata.value ?: book ?: return@launchIo)
         }
     }
 
