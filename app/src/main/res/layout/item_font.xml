@@ -19,7 +19,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:stv_corner="5dp"
-        app:stv_solid="@color/dn_background"
+        app:stv_solid="@color/dn_background_dialog"
         app:stv_stroke_color="@color/dn_color_primary"
         app:stv_stroke_width="1dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

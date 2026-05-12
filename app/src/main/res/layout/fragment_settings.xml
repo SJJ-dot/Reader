@@ -91,7 +91,6 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/database_change_location"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:text="位置"
@@ -104,7 +103,6 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/database_export"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:text="导出"
@@ -116,7 +114,6 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/database_import"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:text="导入"

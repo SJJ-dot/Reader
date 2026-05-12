@@ -5,7 +5,7 @@
     android:id="@+id/rootOverlay"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/dn_background">
+    android:background="@color/dn_background_dialog">
 
     <ScrollView
         android:id="@+id/editScrollView"
@@ -19,7 +19,7 @@
             android:id="@+id/panel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/dn_background"
+            android:background="@color/dn_background_dialog"
             android:clickable="true"
             android:focusable="true"
             android:importantForAutofill="noExcludeDescendants"
@@ -67,11 +67,12 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="8dp"
                 android:hint="@string/replacement_rule_name_hint"
+                android:padding="0dp"
                 android:textColorHint="@color/dn_text_color_black_secondary"
-                app:boxBackgroundColor="@color/dn_background"
-                app:boxBackgroundMode="outline"
+                app:boxBackgroundColor="@color/dn_background_card"
+                app:boxBackgroundMode="filled"
                 app:boxStrokeColor="@color/dn_color_primary"
                 app:cursorColor="@color/dn_color_primary"
                 app:hintTextColor="@color/dn_text_color_black_secondary">
@@ -81,6 +82,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:lines="1"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="5dp"
                     android:textColor="@color/dn_text_color_black"
                     android:textColorHint="@color/dn_text_color_black_secondary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -88,11 +92,11 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="8dp"
                 android:hint="@string/replacement_rule_pattern_hint"
                 android:textColorHint="@color/dn_text_color_black_secondary"
-                app:boxBackgroundColor="@color/dn_background"
-                app:boxBackgroundMode="outline"
+                app:boxBackgroundColor="@color/dn_background_card"
+                app:boxBackgroundMode="filled"
                 app:boxStrokeColor="@color/dn_color_primary"
                 app:cursorColor="@color/dn_color_primary"
                 app:hintTextColor="@color/dn_text_color_black_secondary">
@@ -101,6 +105,9 @@
                     android:id="@+id/etRule"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="5dp"
                     android:textColor="@color/dn_text_color_black"
                     android:textColorHint="@color/dn_text_color_black_secondary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -108,11 +115,11 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="8dp"
                 android:hint="@string/replacement_rule_replacement_hint"
                 android:textColorHint="@color/dn_text_color_black_secondary"
-                app:boxBackgroundColor="@color/dn_background"
-                app:boxBackgroundMode="outline"
+                app:boxBackgroundColor="@color/dn_background_card"
+                app:boxBackgroundMode="filled"
                 app:boxStrokeColor="@color/dn_color_primary"
                 app:cursorColor="@color/dn_color_primary"
                 app:hintTextColor="@color/dn_text_color_black_secondary">
@@ -121,6 +128,9 @@
                     android:id="@+id/etReplacement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="5dp"
                     android:textColor="@color/dn_text_color_black"
                     android:textColorHint="@color/dn_text_color_black_secondary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -128,11 +138,11 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="8dp"
                 android:hint="@string/replacement_rule_scope_hint"
                 android:textColorHint="@color/dn_text_color_black_secondary"
-                app:boxBackgroundColor="@color/dn_background"
-                app:boxBackgroundMode="outline"
+                app:boxBackgroundColor="@color/dn_background_card"
+                app:boxBackgroundMode="filled"
                 app:boxStrokeColor="@color/dn_color_primary"
                 app:cursorColor="@color/dn_color_primary"
                 app:hintTextColor="@color/dn_text_color_black_secondary">
@@ -141,6 +151,9 @@
                     android:id="@+id/etScope"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="5dp"
                     android:textColor="@color/dn_text_color_black"
                     android:textColorHint="@color/dn_text_color_black_secondary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -148,11 +161,11 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="8dp"
                 android:hint="@string/replacement_rule_exclude_scope_hint"
                 android:textColorHint="@color/dn_text_color_black_secondary"
-                app:boxBackgroundColor="@color/dn_background"
-                app:boxBackgroundMode="outline"
+                app:boxBackgroundColor="@color/dn_background_card"
+                app:boxBackgroundMode="filled"
                 app:boxStrokeColor="@color/dn_color_primary"
                 app:cursorColor="@color/dn_color_primary"
                 app:hintTextColor="@color/dn_text_color_black_secondary">
@@ -161,6 +174,9 @@
                     android:id="@+id/etExcludeScope"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="5dp"
                     android:textColor="@color/dn_text_color_black"
                     android:textColorHint="@color/dn_text_color_black_secondary" />
             </com.google.android.material.textfield.TextInputLayout>

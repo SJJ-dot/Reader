@@ -189,7 +189,7 @@
         android:id="@+id/setting_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_dialog"
         android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/setting_bottom_container"
         app:layout_constraintEnd_toEndOf="parent"
@@ -238,7 +238,7 @@
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
                 app:layout_constraintTop_toTopOf="parent"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -271,7 +271,7 @@
                 app:layout_constraintStart_toEndOf="@+id/font_text"
                 app:layout_constraintTop_toTopOf="@+id/font_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -303,7 +303,7 @@
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
                 app:layout_constraintTop_toBottomOf="@+id/font_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -336,7 +336,7 @@
                 app:layout_constraintStart_toEndOf="@+id/line_spacing_text"
                 app:layout_constraintTop_toTopOf="@+id/line_spacing_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -369,7 +369,7 @@
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
                 app:layout_constraintTop_toBottomOf="@+id/line_spacing_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -402,7 +402,7 @@
                 app:layout_constraintStart_toEndOf="@+id/para_spacing_text"
                 app:layout_constraintTop_toTopOf="@+id/para_spacing_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -434,7 +434,7 @@
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
                 app:layout_constraintTop_toBottomOf="@+id/para_spacing_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -467,7 +467,7 @@
                 app:layout_constraintStart_toEndOf="@+id/letter_spacing_text"
                 app:layout_constraintTop_toTopOf="@+id/letter_spacing_decrease"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -513,7 +513,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/font_list"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -559,7 +559,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/page_style_list"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -592,7 +592,7 @@
                 app:layout_constraintStart_toEndOf="@+id/barrier2"
                 app:layout_constraintTop_toBottomOf="@+id/page_style_list"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -611,7 +611,7 @@
                 app:layout_constraintStart_toEndOf="@+id/page_model_simulation"
                 app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -630,7 +630,7 @@
                 app:layout_constraintStart_toEndOf="@+id/page_model_cover"
                 app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -649,7 +649,7 @@
                 app:layout_constraintStart_toEndOf="@+id/page_model_slide"
                 app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
 
@@ -667,7 +667,7 @@
                 app:layout_constraintStart_toEndOf="@+id/page_model_scroll"
                 app:layout_constraintTop_toTopOf="@+id/page_model_simulation"
                 app:stv_corner="5dp"
-                app:stv_solid="@color/dn_background"
+                app:stv_solid="@color/dn_background_dialog"
                 app:stv_stroke_color="@color/dn_color_primary"
                 app:stv_stroke_width="1dp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -731,7 +731,7 @@
         android:id="@+id/setting_bottom_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_dialog"
         android:orientation="horizontal"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
@@ -790,7 +790,7 @@
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_dialog"
         android:clickable="true"
         android:paddingStart="8dp"
         android:paddingTop="5dp"

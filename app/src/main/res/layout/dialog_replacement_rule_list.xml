@@ -4,14 +4,14 @@
     android:id="@+id/rootOverlay"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/dn_background">
+    android:background="@color/dn_background_dialog">
 
     <LinearLayout
         android:id="@+id/panel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/dn_background"
+        android:background="@color/dn_background_dialog"
         android:clickable="true"
         android:focusable="true"
         android:orientation="vertical"
