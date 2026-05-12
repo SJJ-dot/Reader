@@ -40,6 +40,9 @@ object MqttUtil {
     const val TOPIC_FEEDBACK_SET = "reader/feedback2/set/{clientId}/server"
     const val TOPIC_FEEDBACK_SET_RESP = "reader/feedback2/set/server/{clientId}"
 
+    const val TOPIC_ONLINE_LEADERBOARD_REQUEST = "reader/online2/leaderboard/{clientId}/server"
+    const val TOPIC_ONLINE_LEADERBOARD_RESP = "reader/online2/leaderboard/server/{clientId}"
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var onlineJob: Job? = null
     private var reconnectJob: Job? = null
@@ -47,6 +50,7 @@ object MqttUtil {
 
     @SuppressLint("StaticFieldLeak")
     private var mqttClient: MqttAsyncClient? = null
+
     @Volatile
     private var isConnecting = false
 
@@ -116,7 +120,7 @@ object MqttUtil {
     private fun buildConnectOptions(): MqttConnectOptions {
         return MqttConnectOptions().apply {
             isAutomaticReconnect = false
-            isCleanSession = false
+            isCleanSession = true
             connectionTimeout = 10
             keepAliveInterval = 30
             userName = BuildConfig.MQTT_USERNAME
