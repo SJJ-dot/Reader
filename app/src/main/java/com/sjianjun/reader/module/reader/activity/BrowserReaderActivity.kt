@@ -299,7 +299,6 @@ class BrowserReaderActivity : BaseActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                binding.webViewSettings.refresh()
                 if (needClearHistory && url == this@BrowserReaderActivity.url) {
                     needClearHistory = false
                     view?.clearHistory()

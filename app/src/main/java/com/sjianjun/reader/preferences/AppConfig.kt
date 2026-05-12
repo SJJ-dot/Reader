@@ -118,5 +118,10 @@ class AppConfig(val name: String) :
      * 书架布局类型：0=默认列表，1=网格
      */
     var shelfLayoutType by intPref("shelfLayoutType", 0)
+
+    /**
+     * 排行榜默认页签：online / recommend
+     */
+    var leaderboardTab by strPref("leaderboardTab", "online")
 }
 

@@ -61,7 +61,7 @@
 
     <fragment
         android:id="@+id/onlineLeaderboardFragment"
-        android:name="com.sjianjun.reader.module.bookcity.OnlineLeaderboardFragment"
+        android:name="com.sjianjun.reader.module.bookcity.LeaderboardFragment"
         android:label="排行"
-        tools:layout="@layout/fragment_online_leaderboard" />
+        tools:layout="@layout/fragment_leaderboard" />
 </navigation>

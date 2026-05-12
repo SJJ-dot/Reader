@@ -32,7 +32,7 @@ object OnlineInfos {
         val payload = mapOf(
             "clientId" to globalConfig.mqttClientId,
             "period" to period, //统计周期 day / week / month / year / total
-            "limit" to 20, //返回条数
+            "limit" to 250, //返回条数
             "offset" to 0 //分页偏移
         )
         val response = MqttUtil.request(TOPIC_ONLINE_LEADERBOARD_REQUEST, TOPIC_ONLINE_LEADERBOARD_RESP, gson.toJson(payload).toByteArray()) ?: return null

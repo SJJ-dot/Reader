@@ -314,7 +314,6 @@ class WebReaderActivity : BaseActivity() {
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                binding.webViewSettings.refresh()
                 book.lastUrl = url ?: ""
                 book.lastTitle = webView?.title ?: ""
                 book.updateTime = System.currentTimeMillis()

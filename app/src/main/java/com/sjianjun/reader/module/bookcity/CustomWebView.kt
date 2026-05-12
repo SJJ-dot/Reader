@@ -156,11 +156,9 @@ class CustomWebView @JvmOverloads constructor(
                 super.onPageStarted(view, url, favicon)
                 Log.i("onPageStarted:$url ")
                 adBlock?.markPage(url)
-                binding.webViewSettings.refresh()
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
-                binding.webViewSettings.refresh()
                 if (needClearHistory) {
                     needClearHistory = false
                     webView?.post {

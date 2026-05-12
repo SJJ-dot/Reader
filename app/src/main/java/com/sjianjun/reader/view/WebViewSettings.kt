@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -40,6 +41,14 @@ class WebViewSettings @JvmOverloads constructor(
         setBackgroundColor(R.color.translucent.color(context))
     }
 
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (visibility == View.VISIBLE) {
+            refresh()
+        } else {
+            titleJob?.cancel()
+        }
+    }
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         titleJob?.cancel()
