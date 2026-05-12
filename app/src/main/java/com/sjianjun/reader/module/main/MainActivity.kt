@@ -24,6 +24,7 @@ import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.mqtt.OnlineInfo
 import com.sjianjun.reader.mqtt.OnlineInfos
+import com.sjianjun.reader.mqtt.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
@@ -149,40 +150,21 @@ class MainActivity : BaseActivity() {
         info: OnlineInfo?,
     ) {
         val level = info?.level
-        val levelName = when {
-            level == null -> "--"
-            level.stage_name.isNotBlank() -> level.stage_name
-            level.major.isNotBlank() && level.stage > 0 -> "${level.major}${level.stage}层"
-            level.major.isNotBlank() -> level.major
-            else -> "Lv.${level.level_index}"
-        }
+
         val progressPercent = when {
             level == null -> 0
             level.is_max_level -> 100
             else -> (level.progress.coerceIn(0.0, 1.0) * 100).roundToInt()
         }
         headerBinding.tvOnline.text = "书友在线：${info?.online_count ?: 0}"
-        headerBinding.tvTodayOnline.text = "今日在线：${formatOnlineDuration(info?.today_online_seconds ?: 0)}"
-        headerBinding.tvLevel.text = levelName
+        headerBinding.tvTodayOnline.text = "今日在线：${info?.today_online_seconds?.formatDuration() ?: "--"}"
+        headerBinding.tvLevel.text = level?.levelName?:"--"
         headerBinding.levelProgress.progress = progressPercent
-        headerBinding.tvTotalOnline.text = "总时长：${formatOnlineDuration(info?.total_online_seconds ?: 0)}"
+        headerBinding.tvTotalOnline.text = "总时长：${info?.total_online_seconds?.formatDuration() ?: "--"}"
         headerBinding.tvNextLevel.text = if (level == null || level.is_max_level) {
             "已满级"
         } else {
-            "距升级：${formatOnlineDuration(level.next_level_need_seconds)}"
-        }
-    }
-
-    private fun formatOnlineDuration(seconds: Int): String {
-        val safeSeconds = seconds.coerceAtLeast(0)
-        val hours = safeSeconds / 3600
-        val minutes = (safeSeconds % 3600) / 60
-        val remainSeconds = safeSeconds % 60
-        return when {
-            hours > 0 && minutes > 0 -> "${hours}小时${minutes}分"
-            hours > 0 -> "${hours}小时"
-            minutes > 0 -> "${minutes}分钟"
-            else -> "${remainSeconds}秒"
+            "距升级：${level.next_level_need_seconds.formatDuration()}"
         }
     }
 

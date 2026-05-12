@@ -58,4 +58,10 @@
         android:name="com.sjianjun.reader.module.feedback.FeedbackFragment"
         android:label="意见反馈"
         tools:layout="@layout/fragment_feedback_fragment" />
+
+    <fragment
+        android:id="@+id/onlineLeaderboardFragment"
+        android:name="com.sjianjun.reader.module.bookcity.OnlineLeaderboardFragment"
+        android:label="排行"
+        tools:layout="@layout/fragment_online_leaderboard" />
 </navigation>

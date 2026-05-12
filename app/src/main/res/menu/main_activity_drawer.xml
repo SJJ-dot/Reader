@@ -12,6 +12,9 @@
     <item
         android:id="@+id/browserBookCityFragment"
         android:title="书城" />
+    <item
+        android:id="@+id/onlineLeaderboardFragment"
+        android:title="排行" />
 
     <item
         android:id="@+id/novelScriptFragment"
