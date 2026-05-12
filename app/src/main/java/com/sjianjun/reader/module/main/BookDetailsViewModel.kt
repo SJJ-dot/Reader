@@ -2,20 +2,25 @@ package com.sjianjun.reader.module.main
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.mqtt.Recommendations
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.launchIo
+import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.io.File
 
@@ -170,6 +175,22 @@ class BookDetailsViewModel : ViewModel() {
                     onError(e.message ?: "导出失败")
                 }
             }
+        }
+    }
+
+    fun setRecommendation(book: Book?) {
+        val book = book ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val isRecommendation = book.record?.isRecommendation != true
+            book?.record?.isRecommendation = isRecommendation
+            val success = Recommendations.setRecommendation(book.title, book.author, book.url, isRecommendation)
+            if (success) {
+                book?.record?.isRecommendation = isRecommendation
+            } else {
+                book?.record?.isRecommendation = !isRecommendation
+                toast("推荐设置失败")
+            }
+            readingRecordDao.insertReadingRecord(book.record ?: return@launch)
         }
     }
 }

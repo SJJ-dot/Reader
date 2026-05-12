@@ -28,6 +28,7 @@ class ReadingRecord(
 
     var bookIntro: String? = null
 
+    var isRecommendation = false
 
     override fun toString(): String {
         return "ReadingRecord(bookTitle='$bookTitle', chapterIndex=$chapterIndex, isEnd=$isEnd, scrollOffset=$scrollOffset)"

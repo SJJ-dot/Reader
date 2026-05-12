@@ -27,14 +27,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            app:autoSizeMaxTextSize="18dp"
-            app:autoSizeMinTextSize="14dp"
-            app:autoSizeTextType="uniform"
             android:ellipsize="end"
             android:gravity="center_vertical"
             android:includeFontPadding="false"
             android:maxLines="2"
             android:textSize="18dp"
+            app:autoSizeMaxTextSize="18dp"
+            app:autoSizeMinTextSize="14dp"
+            app:autoSizeTextType="uniform"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@+id/bookCover"
             app:layout_constraintStart_toStartOf="@+id/bookCover"
@@ -90,13 +90,25 @@
             app:layout_constraintTop_toTopOf="@+id/bookCover" />
 
         <ImageView
+            android:id="@+id/iv_recommend"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/bg_recommend_icon"
+            android:padding="3dp"
+            android:src="@mipmap/ic_recommendation"
+            app:layout_constraintBottom_toBottomOf="@+id/bookCover"
+            app:layout_constraintStart_toStartOf="@+id/bookCover"
+            app:tint="@color/mdr_white" />
+
+        <ImageView
             android:id="@+id/sync_error"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_margin="5dp"
             android:src="@mipmap/ic_sync_error"
             app:layout_constraintBottom_toBottomOf="@+id/bookCover"
-            app:layout_constraintStart_toStartOf="@+id/bookCover"
+            app:layout_constraintStart_toEndOf="@+id/iv_recommend"
             app:tint="@color/mdr_red_100" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

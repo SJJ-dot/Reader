@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
+import android.content.res.ColorStateList
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuInflater
@@ -24,6 +25,7 @@ import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.animFadeOut
+import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.fragmentCreate
@@ -106,7 +108,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
 
     @SuppressLint("SetTextI18n")
     private fun fillView(book: Book?) {
-        binding?.bookCover?.glide(book?.record?.bookCover?: book?.cover)
+        binding?.bookCover?.glide(book?.record?.bookCover ?: book?.cover)
         binding?.bookName?.text = book?.title
         binding?.author?.text = "作者：${book?.author}"
         val intro = (book?.record?.bookIntro ?: book?.intro).format(true)
@@ -161,8 +163,15 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 viewModel.setRecordToLastChapter()
                 startActivity<BookReaderActivity>(BOOK_ID to book.id)
             }
+        }
+        binding?.ivRecommend?.click {
+            viewModel.setRecommendation(book)
+        }
 
-
+        if (book?.record?.isRecommendation == true) {
+            binding?.ivRecommend?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(context))
+        } else {
+            binding?.ivRecommend?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black_disable.color(context))
         }
     }
 

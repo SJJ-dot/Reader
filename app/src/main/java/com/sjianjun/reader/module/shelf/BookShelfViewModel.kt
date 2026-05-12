@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.mqtt.Recommendations
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.asFlow
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.debounce
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -97,6 +99,21 @@ class BookShelfViewModel : ViewModel() {
     fun deleteBook(book: Book) {
         viewModelScope.launch {
             BookUseCase.delete(book)
+        }
+    }
+
+    fun setRecommendation(book: Book) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val isRecommendation = book.record?.isRecommendation != true
+            book.record?.isRecommendation = isRecommendation
+            val success = Recommendations.setRecommendation(book.title, book.author, book.url, isRecommendation)
+            if (success) {
+                book.record?.isRecommendation = isRecommendation
+            } else {
+                book.record?.isRecommendation = !isRecommendation
+                toast("推荐设置失败")
+            }
+            recordDao.insertReadingRecord(book.record ?: return@launch)
         }
     }
 

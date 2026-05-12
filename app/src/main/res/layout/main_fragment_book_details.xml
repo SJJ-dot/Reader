@@ -213,6 +213,18 @@
                             app:layout_constraintTop_toTopOf="parent" />
 
                         <ImageView
+                            android:id="@+id/iv_recommend"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="8dp"
+                            android:padding="3dp"
+                            android:src="@mipmap/ic_recommendation"
+                            app:layout_constraintBottom_toBottomOf="@+id/introTitle"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="@+id/introTitle"
+                            app:tint="@color/dn_text_color_black_disable" />
+
+                        <ImageView
                             android:id="@+id/sync_error"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -220,7 +232,7 @@
                             android:src="@mipmap/ic_sync_error"
                             android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="@+id/introTitle"
-                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintEnd_toStartOf="@+id/iv_recommend"
                             app:layout_constraintTop_toTopOf="@+id/introTitle"
                             app:tint="@color/mdr_red_100"
                             tools:visibility="visible" />

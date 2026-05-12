@@ -43,6 +43,11 @@ object MqttUtil {
     const val TOPIC_ONLINE_LEADERBOARD_REQUEST = "reader/online2/leaderboard/{clientId}/server"
     const val TOPIC_ONLINE_LEADERBOARD_RESP = "reader/online2/leaderboard/server/{clientId}"
 
+    const val TOPIC_RECOMMENDATION_SET = "reader/book_recommendation2/set/{clientId}/server"
+    const val TOPIC_RECOMMENDATION_SET_RESP = "reader/book_recommendation2/set/server/{clientId}"
+    const val TOPIC_RECOMMENDATION_LIST = "reader/book_recommendation2/list/{clientId}/server"
+    const val TOPIC_RECOMMENDATION_LIST_RESP = "reader/book_recommendation2/list/server/{clientId}"
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var onlineJob: Job? = null
     private var reconnectJob: Job? = null
