@@ -25,10 +25,6 @@
         android:title="设置" />
 
     <item
-        android:id="@+id/watermarkCameraFragment"
-        android:title="水印相机" />
-
-    <item
         android:id="@+id/feedbackFragment"
         android:title="意见反馈" />
     <item
