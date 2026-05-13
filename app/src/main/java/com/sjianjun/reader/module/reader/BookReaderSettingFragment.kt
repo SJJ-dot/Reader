@@ -349,7 +349,7 @@ class BookReaderSettingFragment : BaseFragment() {
         val chapterCount = book?.chapterList?.size ?: 0
         val readCount = (book?.record?.chapterIndex ?: 0) + 1
         val readChapter = book?.chapterList?.getOrNull(book.record?.chapterIndex ?: 0)
-        binding?.bvUnread?.badgeCount = chapterCount - readCount
+        binding?.bvUnread?.badgeCount = chapterCount - readCount + (if (book?.record?.isEnd == true) 0 else 1)
         binding?.bvUnread?.setHighlight(readChapter?.content?.firstOrNull()?.contentError != true)
         binding?.countChapter?.text = "共${chapterCount}章，已读${readCount}章，${chapterCount - readCount}章未读"
         binding?.lastChapter?.text = "最新：${book?.chapterList?.lastOrNull()?.title ?: "无"}"
