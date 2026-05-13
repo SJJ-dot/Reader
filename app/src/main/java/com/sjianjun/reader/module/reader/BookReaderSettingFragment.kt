@@ -895,7 +895,7 @@ class BookReaderSettingFragment : BaseFragment() {
                     binding.fontText.solid = R.color.dn_color_primary.color(context)
                     binding.fontText.setTextColor(R.color.mdr_grey_100.color(context))
                 } else {
-                    binding.fontText.solid = R.color.dn_background.color(context)
+                    binding.fontText.solid = R.color.dn_background_dialog.color(context)
                     binding.fontText.setTextColor(R.color.dn_text_color_black.color(context))
                 }
             }
