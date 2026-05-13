@@ -36,4 +36,15 @@
     <string name="directory_picker_create">创建</string>
     <string name="directory_picker_folder_icon">📁</string>
 
+    <string name="privacy_policy_dialog_title">隐私政策</string>
+    <string name="privacy_policy_agree">同意并继续</string>
+    <string name="privacy_policy_exit">拒绝并退出</string>
+    <string name="privacy_policy_dialog_message">为保障你的个人信息安全，请在继续使用前阅读以下说明：\n
+1. 我们收集的信息：\n
+• 应用崩溃日志：通过腾讯 Bugly 收集，用于问题定位与修复，仅包含崩溃堆栈信息。\n
+• 应用使用统计：通过 MQTT 的连接与断开事件进行统计，用于在线状态展示。\n
+2. 除上述信息外，本应用不会主动收集任何用户信息。\n
+3. 本应用代码已完全开源并在 GitHub 发布：%1$s\n
+4. 应用版本通过 GitHub 自动化流程完成构建与发布。\n
+点击“同意并继续”开始使用应用，点击“拒绝并退出”将立即退出。</string>
 </resources>

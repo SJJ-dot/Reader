@@ -123,5 +123,10 @@ class AppConfig(val name: String) :
      * 排行榜默认页签：online / recommend
      */
     var leaderboardTab by strPref("leaderboardTab", "online")
+
+    /**
+     * 用户是否已同意隐私政策
+     */
+    val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }
 }
 

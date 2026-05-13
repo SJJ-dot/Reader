@@ -4,31 +4,37 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.system.exitProcess
 
 /*
  * Created by shen jian jun on 2020-07-20
  */
 object ActivityManger {
 
-    val activityList = LinkedList<Activity>()
+    val activityList = ConcurrentLinkedQueue<Activity>()
 
     fun init(application: Application) {
         application.registerActivityLifecycleCallbacks(callback)
     }
 
-    val currentActivity:Activity get() = activityList.last
-
-    inline fun <reified T> finishAll() {
-        activityList.forEach {
-            if (it is T) {
-                it.finish()
+    fun exitApp() {
+        val activity = activityList.lastOrNull() ?: return
+        activity.runOnUiThread {
+            val snapshot = activityList.toList()
+            snapshot.forEach {
+                if (!it.isFinishing && !it.isDestroyed) {
+                    it.finish()
+                }
             }
+            activity.finishAffinity()
+            activity.finishAndRemoveTask()
         }
     }
 
     fun finishSameType(activity: Activity) {
         val target = activity::class.java
-        activityList.forEach {
+        activityList.toList().forEach {
             if (it::class.java == target && it != activity) {
                 it.finish()
             }

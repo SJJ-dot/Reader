@@ -13,16 +13,25 @@ import sjj.alog.Config
 import java.io.File
 
 class App : Application() {
+    private var first = true
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
     }
+
     override fun onCreate() {
         super.onCreate()
         app = this
         MMKV.initialize(this)
-        handleDefaultException(this)
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
+        initialize()
+    }
+
+    fun initialize() {
+        if (globalConfig.privacyPolicyAccepted.value != true) return
+        if (!first) return
+        first = false
+        handleDefaultException(this)
         Config.getDefaultConfig().apply {
             deleteOldLogFile = true
             consolePrintAllLog = true

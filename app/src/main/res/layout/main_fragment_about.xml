@@ -10,13 +10,12 @@
         android:layout_height="124dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
+        android:src="@mipmap/ic_xue_xi"
         app:layout_constraintBottom_toTopOf="@+id/declare"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed"
-        android:src="@mipmap/ic_xue_xi"
-        android:tint="@color/dn_dark_tint" />
+        app:layout_constraintVertical_chainStyle="packed" />
 
 
     <com.sjianjun.reader.view.LinksClickableTextView
@@ -57,6 +56,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/code" />
 
+
+    <TextView
+        android:id="@+id/tv_privacy_policy"
+        style="@style/text_body1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:text="隐私政策"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/versionCode"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <TextView
         android:id="@+id/versionCode"
         style="@style/text_body1"
@@ -70,6 +86,6 @@
         android:text="版本号：0.1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toEndOf="@+id/tv_privacy_policy" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

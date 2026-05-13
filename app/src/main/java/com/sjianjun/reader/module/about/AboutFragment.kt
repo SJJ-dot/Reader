@@ -24,6 +24,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 import androidx.core.content.FileProvider
+import com.sjianjun.reader.module.main.PrivacyPolicyDialogFragment
 import sjj.alog.Log
 import java.io.File
 
@@ -53,6 +54,9 @@ class AboutFragment : BaseAsyncFragment() {
 
             setVersionInfo(versionCode)
             versionCode.performClick()
+            tvPrivacyPolicy.click {
+                PrivacyPolicyDialogFragment().show(childFragmentManager, "PrivacyPolicyDialogFragment")
+            }
         }
     }
 
@@ -65,7 +69,7 @@ class AboutFragment : BaseAsyncFragment() {
             Log.i("数据库已导出到${exportedDbFile.absolutePath}")
             toast("数据库已导出到${exportedDbFile.absolutePath}", Toast.LENGTH_LONG)
         } catch (e: Exception) {
-            Log.e(e,e)
+            Log.e(e, e)
         }
     }
 

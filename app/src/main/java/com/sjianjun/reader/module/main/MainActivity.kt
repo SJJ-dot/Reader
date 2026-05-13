@@ -18,6 +18,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launchIo
+import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
@@ -53,14 +54,20 @@ class MainActivity : BaseActivity() {
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
         launchIo {
-            launchIo { checkUpdate(this@MainActivity, false) }
-            launchIo {
-                BookSourceUseCase.autoImport()
-            }
-//            com.sjianjun.reader.test.SourceTest.test()
+            checkUpdate(this@MainActivity, false)
         }
-        init()
         initBackPressed()
+        globalConfig.privacyPolicyAccepted.observe(this) {
+            if (it) {
+                App.app.initialize()
+                init()
+                launchIo {
+                    BookSourceUseCase.autoImport()
+                }
+            } else {
+                PrivacyPolicyDialogFragment().show(supportFragmentManager, "PrivacyPolicyDialogFragment")
+            }
+        }
     }
 
 
@@ -158,7 +165,7 @@ class MainActivity : BaseActivity() {
         }
         headerBinding.tvOnline.text = "书友在线：${info?.online_count ?: 0}"
         headerBinding.tvTodayOnline.text = "今日在线：${info?.today_online_seconds?.formatDuration() ?: "--"}"
-        headerBinding.tvLevel.text = level?.levelName?:"--"
+        headerBinding.tvLevel.text = level?.levelName ?: "--"
         headerBinding.levelProgress.progress = progressPercent
         headerBinding.tvTotalOnline.text = "总时长：${info?.total_online_seconds?.formatDuration() ?: "--"}"
         headerBinding.tvNextLevel.text = if (level == null || level.is_max_level) {
