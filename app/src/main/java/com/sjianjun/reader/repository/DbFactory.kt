@@ -69,7 +69,7 @@ object DbFactory {
 
     private fun buildDatabase(dbFile: String): Db {
         return Room.databaseBuilder(App.app, Db::class.java, dbFile)
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigration()
             .addMigrations(object : Migration(12, 13) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
