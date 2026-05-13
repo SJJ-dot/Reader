@@ -31,10 +31,8 @@ def update_json():
                 "source": item.replace(".py", ""),
                 "js": py,
                 "version": 1,
-                "original": False,
                 "enable": True,
                 "requestDelay": -1,
-                "website": ""
             })
         else:
             source = pySourceDict[item.replace(".py", "")]
