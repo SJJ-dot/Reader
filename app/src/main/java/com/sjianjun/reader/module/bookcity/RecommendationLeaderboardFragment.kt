@@ -20,6 +20,7 @@ import com.sjianjun.reader.mqtt.Recommendation
 import com.sjianjun.reader.mqtt.Recommendations
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
@@ -27,7 +28,7 @@ import kotlinx.coroutines.launch
 class RecommendationLeaderboardFragment : Fragment() {
     private var binding: FragmentRecommendationLeaderboardBinding? = null
     private val adapter = RecommendationListAdapter()
-    private var currentPeriod = "day"
+    private var currentPeriod = "total"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,11 +48,9 @@ class RecommendationLeaderboardFragment : Fragment() {
             tabPeriod.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
                     currentPeriod = when (tab?.position) {
-                        0 -> "day"
-                        1 -> "week"
-                        2 -> "month"
-                        3 -> "total"
-                        else -> "day"
+                        0 -> "total"
+                        1 -> "month"
+                        else -> "week"
                     }
                     loadLeaderboard()
                 }
@@ -106,6 +105,9 @@ class RecommendationLeaderboardFragment : Fragment() {
                 } else {
                     toast("暂无书籍链接")
                 }
+            }
+            binding.btnCopy.click {
+                item.book_title.copyToClipboard()
             }
 
             if (globalConfig.admin) {

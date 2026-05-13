@@ -18,6 +18,7 @@ import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
 import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
@@ -122,14 +123,6 @@ class WebViewSettings @JvmOverloads constructor(
         settings.apply {
             textZoom = textZoom + i
         }
-    }
-
-    private fun String?.copyToClipboard() {
-        val str = this ?: return
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        val clipData = android.content.ClipData.newPlainText("text", str)
-        clipboard?.setPrimaryClip(clipData)
-        toast("已复制：${str}")
     }
 
     private suspend fun WebView.getTitleFromMeta(): String {

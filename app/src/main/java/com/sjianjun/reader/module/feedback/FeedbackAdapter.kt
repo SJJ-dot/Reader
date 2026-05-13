@@ -22,6 +22,7 @@ import com.sjianjun.reader.mqtt.Feedback
 import com.sjianjun.reader.mqtt.Feedbacks
 import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
@@ -286,7 +287,7 @@ class FeedbackAdapter(
         MaterialAlertDialogBuilder(ctx)
             .setItems(arrayOf("复制内容")) { _, which ->
                 if (which == 0) {
-                    copyToClipboard(content, ctx)
+                    content.copyToClipboard()
                 }
             }
             .show()
@@ -308,17 +309,11 @@ class FeedbackAdapter(
         MaterialAlertDialogBuilder(ctx)
             .setItems(options.toTypedArray()) { _, which ->
                 when (options[which]) {
-                    "复制内容" -> copyToClipboard(content, ctx)
+                    "复制内容" -> content.copyToClipboard()
                     "删除回复" -> showDeleteDialog(reply, ctx)
                 }
             }
             .show()
-    }
-
-    private fun copyToClipboard(content: String, ctx: Context) {
-        val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        clipboard?.setPrimaryClip(ClipData.newPlainText("feedback", content))
-        toast("已复制")
     }
 
     override fun getItemCount(): Int = list.size

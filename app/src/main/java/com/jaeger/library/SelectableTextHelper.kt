@@ -19,6 +19,7 @@ import android.widget.PopupWindow
 import androidx.annotation.ColorInt
 import androidx.core.net.toUri
 import com.sjianjun.reader.R
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import sjj.alog.Log
@@ -208,10 +209,7 @@ class SelectableTextHelper(builder: Builder) {
                 try {
                     val str = mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end)
                     // 获取系统剪贴板服务
-                    val clipboard = context?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                    val clipData = android.content.ClipData.newPlainText("text", str)
-                    clipboard?.setPrimaryClip(clipData)
-                    toast("复制成功：${str}")
+                    str.copyToClipboard()
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
                     mSelectListener.onTextSelectedChange(mSelectionInfo)

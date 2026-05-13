@@ -12,6 +12,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.mqtt.Feedback
 import com.sjianjun.reader.mqtt.user
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.toast
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,17 +56,11 @@ class RepliesAdapter(
         MaterialAlertDialogBuilder(ctx)
             .setItems(options.toTypedArray()) { _, which ->
                 when (options[which]) {
-                    "复制内容" -> copyToClipboard(ctx, content)
+                    "复制内容" -> content.copyToClipboard()
                     "删除回复" -> onDelete?.invoke(reply)
                 }
             }
             .show()
-    }
-
-    private fun copyToClipboard(ctx: Context, content: String) {
-        val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        clipboard?.setPrimaryClip(ClipData.newPlainText("reply", content))
-        toast("已复制")
     }
 
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
