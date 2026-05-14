@@ -5,13 +5,9 @@ from bs4 import BeautifulSoup
 from log import log
 
 def verify():
-    try:
-        res = getDetails("https://www.min-yuan.com/txt/wk/")
-        res = getChapterContent(res["chapterList"][0]["url"])
-        return len(res) > 10
-    except Exception as e:
-        log(f"Error :{e}")
-        return False
+    res = getDetails("https://www.min-yuan.com/txt/wk/")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    return 0 if len(res) > 10 else 1
 
 def getSiteUrl():
     return "https://www.min-yuan.com"
