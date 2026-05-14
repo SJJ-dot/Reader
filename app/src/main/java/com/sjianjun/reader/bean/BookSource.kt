@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.sjianjun.coroutine.withIo
+import com.chaquo.python.Python
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
@@ -66,6 +67,54 @@ class BookSource {
         return when (lauanage) {
             Language.js -> throw IllegalStateException("不再支持js脚本")
             Language.py -> py(func.name, *params)
+        }
+    }
+
+    private fun hasFunction(func: Func): Boolean {
+        return when (lauanage) {
+            Language.js -> false
+            Language.py -> {
+                val py = Python.getInstance()
+                val exec = py.getModule("exec_script")
+                exec.callAttr("has_function", js, func.name).toString().toBoolean()
+            }
+        }
+    }
+
+    /**
+     * 校验成功返回true，校验失败返回false，不存在def verify()返回null
+     */
+    suspend fun verify(): Boolean? {
+        return withIo {
+            try {
+                if (!hasFunction(Func.verify)) {
+                    return@withIo null
+                }
+//                返回0、1、2 分别代表：验证通过，验证失败，不支持验证
+                val result = execute<Int?>(Func.verify)
+                when (result) {
+                    0 -> {
+                        checkResult = "校验成功"
+                        checkErrorMsg = null
+                        return@withIo true
+                    }
+                    1 -> {
+                        checkResult = "校验失败"
+                        checkErrorMsg = "书源自行校验未通过"
+                        return@withIo false
+                    }
+                    else -> {
+                        checkResult = "不支持校验"
+                        checkErrorMsg = "不支持校验"
+                        return@withIo true
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.e("$name 书源校验失败", t)
+                checkResult = "校验失败：${t.message}"
+                checkErrorMsg = t.message
+                false
+            }
         }
     }
 
@@ -177,7 +226,7 @@ class BookSource {
 
 
     enum class Func {
-        search, getDetails, getChapterContent, getSiteUrl
+        search, getDetails, getChapterContent, getSiteUrl, verify
     }
 
     enum class Language {

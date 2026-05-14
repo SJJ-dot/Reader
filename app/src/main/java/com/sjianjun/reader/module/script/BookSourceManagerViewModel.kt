@@ -13,6 +13,10 @@ import sjj.alog.Log
 class BookSourceManagerViewModel : ViewModel() {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     suspend fun check(js: BookSource, query: String) = withIo {
+        val very = js.verify()
+        if (very != null) {
+            return@withIo
+        }
         val search: SearchResult
         try {
             search = js.search(query)!!.first()
