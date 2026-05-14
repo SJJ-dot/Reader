@@ -112,8 +112,14 @@ object MqttUtil {
             }
 
             val serverURI = BuildConfig.MQTT_SERVER_URI
-            val clientId = globalConfig.mqttClientId ?: UUID.randomUUID().toString().replace("-", "").also {
-                globalConfig.mqttClientId = it
+            var clientId = globalConfig.mqttClientId
+            if (clientId == null){
+                clientId = if (BuildConfig.DEBUG){
+                    "debug_${UUID.randomUUID()}"
+                } else {
+                    UUID.randomUUID().toString().replace("-", "")
+                }
+                globalConfig.mqttClientId = clientId
             }
             return MqttAsyncClient(serverURI, clientId, MemoryPersistence()).also { client ->
                 client.setCallback(mqttCallback)

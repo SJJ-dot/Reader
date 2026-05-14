@@ -27,9 +27,9 @@ data class FeedbackListResponse(
 val String?.user: String
     get() {
         if (this == null) return "佚名"
-        if (globalConfig.mqttClientId == this) {
-            return "我"
-        }
         val id = (if (length >= 4) substring(0, 4) else this).uppercase()
+        if (globalConfig.mqttClientId == this) {
+            return "我(${id})"
+        }
         return "书友(${id})"
     }
