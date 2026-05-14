@@ -1,6 +1,7 @@
 package com.sjianjun.reader.mqtt
 
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.nickname
 import java.util.UUID
 
 
@@ -27,9 +28,9 @@ data class FeedbackListResponse(
 val String?.user: String
     get() {
         if (this == null) return "佚名"
-        val id = (if (length >= 4) substring(0, 4) else this).uppercase()
+        val nickname = nickname
         if (globalConfig.mqttClientId == this) {
-            return "我(${id})"
+            return "我(${nickname})"
         }
-        return "书友(${id})"
+        return "书友(${nickname})"
     }
