@@ -10,13 +10,14 @@
         android:id="@+id/brightness_container"
         android:layout_width="56dp"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         app:layout_constraintBottom_toTopOf="@+id/setting_btn_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/top_bar">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/brightness_auto"
@@ -55,6 +56,25 @@
                 android:progressTint="@color/dn_colorAccent"
                 android:splitTrack="false"
                 android:thumbTint="@color/dn_colorAccent" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/screen_keep_on"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_screen_keep_on"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:contentDescription="屏幕常亮"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_screen_keep_on"
+                app:tint="@color/dn_text_color_black_secondary" />
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>

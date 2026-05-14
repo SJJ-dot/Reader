@@ -71,6 +71,7 @@ class AppConfig(val name: String) :
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
     val readerBrightnessPercent by lazy { intLivedata("readerBrightnessPercent", -1) }
+    val readerScreenKeepOn by lazy { boolLivedata("readerScreenKeepOn", false) }
 
     /**
      * 阅读器排版模式:

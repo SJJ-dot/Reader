@@ -75,8 +75,6 @@ class BookReaderActivity : BaseActivity() {
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
         enableEdgeToEdge(pageStyle.isDark)
         setContentView(binding!!.root)
-        // 保持屏幕常亮（阅读时屏幕不自动关闭）
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutout = insets.displayCutout
@@ -375,7 +373,13 @@ class BookReaderActivity : BaseActivity() {
         globalConfig.readerOrientationMode.observe(this) {
             applyReaderOrientation(it)
         }
-
+        globalConfig.readerScreenKeepOn.observe(this) {
+            if (it == true) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
         globalConfig.readerBrightnessPercent.observe(this) {
             applyReaderBrightness()
         }

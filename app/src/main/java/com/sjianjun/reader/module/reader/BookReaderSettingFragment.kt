@@ -404,6 +404,17 @@ class BookReaderSettingFragment : BaseFragment() {
         globalConfig.readerBrightnessPercent.observe(viewLifecycleOwner) {
             updateBrightnessUi(it)
         }
+
+        binding?.screenKeepOn?.click(10) {
+            val keepOn = !(globalConfig.readerScreenKeepOn.value ?: false)
+            globalConfig.readerScreenKeepOn.postValue(keepOn)
+            toast(if (keepOn) "已开启阅读时屏幕常亮" else "已关闭阅读时屏幕常亮")
+        }
+        globalConfig.readerScreenKeepOn.observe(viewLifecycleOwner) {
+            val accent = R.color.dn_colorAccent.color(requireContext())
+            val normal = R.color.dn_text_color_black_secondary.color(requireContext())
+            binding?.ivScreenKeepOn?.imageTintList = ColorStateList.valueOf(if (it) accent else normal)
+        }
     }
 
     private fun updateBrightnessUi(percent: Int) {
