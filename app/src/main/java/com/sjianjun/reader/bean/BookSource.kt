@@ -3,12 +3,11 @@ package com.sjianjun.reader.bean
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import com.sjianjun.coroutine.withIo
 import com.chaquo.python.Python
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -39,7 +38,11 @@ class BookSource {
      * - 多余的参数从arguments取
      */
     var js: String = ""
-    var version: Int = -1
+
+    /**
+     * 阅读书源使用更新时间戳
+     */
+    var version: Long = -1
     var enable: Boolean = true
     var requestDelay: Long = 1000L
 
@@ -57,22 +60,22 @@ class BookSource {
     var selected = false
 
     /**
-     * 脚本引擎语言 js py
+     * 脚本引擎语言
      */
-    var lauanage: Language = Language.js
+    var lauanage: Language = Language.py
 
 
     private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         return when (lauanage) {
-            Language.js -> throw IllegalStateException("不再支持js脚本")
+            Language.yuedu -> throw IllegalStateException("不再支持js脚本")
             Language.py -> py(func.name, *params)
         }
     }
 
     private fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
-            Language.js -> false
+            Language.yuedu -> false
             Language.py -> {
                 val py = Python.getInstance()
                 val exec = py.getModule("exec_script")
@@ -213,10 +216,10 @@ class BookSource {
     }
 
     override fun hashCode(): Int {
-        var result = name.hashCode()
+        var result = version.hashCode()
+        result = 31 * result + name.hashCode()
         result = 31 * result + group.hashCode()
         result = 31 * result + js.hashCode()
-        result = 31 * result + version
         result = 31 * result + enable.hashCode()
         result = 31 * result + requestDelay.hashCode()
         result = 31 * result + (checkResult?.hashCode() ?: 0)
@@ -230,7 +233,7 @@ class BookSource {
     }
 
     enum class Language {
-        js, py
+        yuedu, py
     }
 
 }

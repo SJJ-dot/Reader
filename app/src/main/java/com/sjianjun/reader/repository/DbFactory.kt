@@ -35,7 +35,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -161,6 +161,12 @@ object DbFactory {
             .addMigrations(object : Migration(24, 25) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ReadingRecord' ADD COLUMN `isRecommendation` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(25, 26) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // js language value is no longer supported; delete js
+                    db.execSQL("DELETE from `BookSource` where `lauanage` = 'js' OR `lauanage` IS NULL OR TRIM(`lauanage`) = ''")
                 }
             })
             .build()

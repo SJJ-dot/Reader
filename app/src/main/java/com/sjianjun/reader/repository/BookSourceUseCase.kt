@@ -54,20 +54,6 @@ object BookSourceUseCase {
                     val bookSourceList = mutableListOf<BookSource>()
                     val groupName = source.optString("group")
 
-                    val bookSourceArray = source.getJSONArray("bookSource")
-                    (0 until bookSourceArray.length()).mapTo(bookSourceList) {
-                        val obj = bookSourceArray.getJSONObject(it)
-                        BookSource().apply {
-                            name = obj.getString("source")
-                            group = obj.optString("group", groupName)
-                            js = obj.getString("js")
-                            version = obj.optInt("version", -1)
-                            enable = obj.optBoolean("enable", true)
-                            requestDelay = obj.optLong("requestDelay", -1)
-                            lauanage = BookSource.Language.js
-                        }
-                    }
-
                     source.optJSONArray("pySource")?.also { pySourceArr ->
                         (0 until pySourceArr.length()).mapTo(bookSourceList) {
                             val obj = pySourceArr.getJSONObject(it)
@@ -75,7 +61,7 @@ object BookSourceUseCase {
                                 name = obj.getString("source")
                                 group = obj.optString("group", groupName)
                                 js = obj.getString("js")
-                                version = obj.optInt("version", -1)
+                                version = obj.optLong("version", -1)
                                 enable = obj.optBoolean("enable", true)
                                 requestDelay = obj.optLong("requestDelay", -1)
                                 lauanage = BookSource.Language.py
