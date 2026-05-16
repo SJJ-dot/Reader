@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.TypedValue
 import androidx.appcompat.widget.AppCompatTextView
-import sjj.alog.Log
 import kotlin.math.max
 
 

@@ -15,7 +15,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.TxtChapter
 

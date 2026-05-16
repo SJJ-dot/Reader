@@ -41,6 +41,10 @@ class ChapterContent {
         return result
     }
 
+    override fun toString(): String {
+        return "ChapterContent(content=$content, pageIndex=$pageIndex, nextPageUrl=$nextPageUrl, chapterIndex=$chapterIndex, bookId='$bookId', contentError=$contentError)"
+    }
+
 
     companion object {
         operator fun invoke(

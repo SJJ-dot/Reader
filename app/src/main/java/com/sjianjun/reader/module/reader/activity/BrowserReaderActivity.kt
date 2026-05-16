@@ -35,6 +35,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
+import com.sjianjun.reader.module.verification.WebViewLifecycleObserver
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
@@ -78,23 +79,6 @@ class BrowserReaderActivity : BaseActivity() {
         initAdBlock()
         initWebView()
         binding.webView.loadUrl(url)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        binding.webView.pauseTimers()
-        binding.webView.onPause()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        binding.webView.resumeTimers()
-        binding.webView.onResume()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        binding.webView.destroy()
     }
 
     private fun initCtrlBtn() {
@@ -281,6 +265,7 @@ class BrowserReaderActivity : BaseActivity() {
     }
 
     private fun initWebView() {
+        lifecycle.addObserver(WebViewLifecycleObserver(binding.webView))
         binding.webView.init()
         binding.webView.webViewClient = object : WebViewClient() {
 

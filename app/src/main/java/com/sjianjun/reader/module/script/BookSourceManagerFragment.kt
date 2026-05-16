@@ -1,7 +1,12 @@
 package com.sjianjun.reader.module.script
 
 import android.annotation.SuppressLint
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
@@ -16,31 +21,66 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.databinding.DialogEditTextBinding
+import com.sjianjun.reader.databinding.DialogEditTextSourceUrlBinding
 import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.utils.hideKeyboard
+import com.sjianjun.reader.utils.id
+import com.sjianjun.reader.utils.setTextColorRes
+import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.startActivity
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.util.concurrent.Executors
 
 class BookSourceManagerFragment : BaseAsyncFragment() {
     private val viewModel by viewModels<BookSourceManagerViewModel>()
     private var binding: MainFragmentBookScriptManagerBinding? = null
+    private var linksAdapter = LinkAdapter(this)
     private val dispatcher by lazy { Executors.newFixedThreadPool(8).asCoroutineDispatcher() }
     private val adapter = Adapter(this@BookSourceManagerFragment)
-    private lateinit var searchView: SearchView
+    private var searchView: SearchView? = null
     private lateinit var popupMenu: PopupMenu
     override fun getLayoutRes() = R.layout.main_fragment_book_script_manager
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         binding = MainFragmentBookScriptManagerBinding.bind(it)
         binding!!.recycleView.adapter = adapter
+        binding!!.recycleViewLinks.adapter = linksAdapter
+        // setup tabs
+        binding!!.tabLayout.addTab(binding!!.tabLayout.newTab().setText("订阅链接"))
+        binding!!.tabLayout.addTab(binding!!.tabLayout.newTab().setText("书源规则"))
+        binding!!.tabLayout.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                val pos = tab?.position ?: 0
+                if (pos == 0) {
+                    binding!!.recycleViewLinks.visibility = View.VISIBLE
+                    binding!!.recycleView.visibility = View.GONE
+                    binding!!.bottomBar.visibility = View.GONE
+                    initLinksData()
+                    activity?.invalidateOptionsMenu()
+                } else {
+                    binding!!.recycleViewLinks.visibility = View.GONE
+                    binding!!.recycleView.visibility = View.VISIBLE
+                    binding!!.bottomBar.visibility = View.VISIBLE
+                    initData()
+                    activity?.invalidateOptionsMenu()
+                }
+            }
+
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+        })
         adapter.onSelectSource = {
             refreshSelectAll()
         }
@@ -84,7 +124,30 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
-        initData()
+        setOnBackPressed {
+            if (binding?.tabLayout?.selectedTabPosition == 0) {
+                // 书源链接页，直接返回
+                return@setOnBackPressed false
+            }
+            val query = searchView?.query.toString().trim()
+            if (query.isNotBlank()) {
+                searchView?.setQuery("", false)
+                query()
+                return@setOnBackPressed true
+            }
+            false
+        }
+        initLinksData()
+        // default select rules tab
+        binding!!.tabLayout.getTabAt(0)?.select()
+    }
+
+    private fun initLinksData() {
+        val list = globalConfig.bookSourceListUser.toMutableList()
+        if (list.isEmpty()) list.add(URL_BOOK_SOURCE_DEF)
+        linksAdapter.data.clear()
+        linksAdapter.data.addAll(list)
+        linksAdapter.notifyDataSetChanged()
     }
 
     override fun onDestroyView() {
@@ -93,34 +156,40 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.main_fragment_book_source_menu, menu)
-        val searchView = menu.findItem(R.id.search_view)?.actionView as SearchView
-        searchView.queryHint = "书源搜索"
-        searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
-        searchView.isIconified = false
-        searchView.clearFocus()
-//        searchView.isSubmitButtonEnabled = true
-        this.searchView = searchView
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                query()
-                return true
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                query()
-                return false
-            }
-        })
-        searchView.setOnCloseListener {
-            searchView.hideKeyboard()
-            searchView.clearFocus()
-            true
+        if (binding?.tabLayout?.selectedTabPosition == 0) {
+            inflater.inflate(R.menu.main_fragment_book_source_menu1, menu)
+        } else {
+            inflater.inflate(R.menu.main_fragment_book_source_menu, menu)
         }
-        searchView.setOnQueryTextFocusChangeListener { view, b ->
-            if (!b) {
+
+        val searchView = menu.findItem(R.id.search_view)?.actionView as? SearchView
+        this.searchView = searchView
+        if (searchView != null) {
+            searchView.queryHint = "书源搜索"
+            searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
+            searchView.isIconified = true
+            searchView.clearFocus()
+            searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    query()
+                    return true
+                }
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    query()
+                    return false
+                }
+            })
+            searchView.setOnCloseListener {
                 searchView.hideKeyboard()
+                searchView.clearFocus()
+                false
+            }
+            searchView.setOnQueryTextFocusChangeListener { view, b ->
+                if (!b) {
+                    searchView.hideKeyboard()
+                }
             }
         }
     }
@@ -129,65 +198,32 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         searchView.hideKeyboard()
     }
 
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.source_import -> {
-                val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
-                bindingDialog.editView.apply {
-                    val urls = mutableListOf<String>()
-
-                    val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
-                    urls.addAll(bookSourceListUser)
-
-                    val urlDef = globalConfig.bookSourceDef
-                    if (urlDef.isNotBlank() || urls.isEmpty()) {
-                        urls.add(URL_BOOK_SOURCE_DEF)
-                    }
-                    setFilterValues(urls)
-                    delCallBack = {
-                        if (it == urlDef) {
-                            globalConfig.bookSourceDef = ""
-                        }
-                        if (bookSourceListUser.remove(it)) {
-                            globalConfig.bookSourceListUser = bookSourceListUser
-                        }
-                    }
-                }
+                val bindingDialog = DialogEditTextSourceUrlBinding.inflate(LayoutInflater.from(requireContext()))
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("书源导入")
                     .setView(bindingDialog.root)
                     .setPositiveButton(android.R.string.ok) { dialog, _ ->
                         bindingDialog.editView.hideKeyboard()
                         val url = bindingDialog.editView.text.toString().trim()
-                        if (url.isBlank()) {
+                        if (url.toHttpUrlOrNull() == null) {
                             toast("请输入书源地址")
                             return@setPositiveButton
                         }
-                        launch {
-                            try {
-                                showSnackbar(binding!!.recycleView, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
-                                val import = viewModel.import(listOf(url))
-                                if (import > 0) {
-                                    initData()
-                                    showSnackbar(binding!!.recycleView, "书源导入成功")
-                                    if (url == URL_BOOK_SOURCE_DEF) {
-                                        globalConfig.bookSourceDef = url
-                                    } else {
-                                        val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
-                                        if (!bookSourceListUser.contains(url)) {
-                                            bookSourceListUser.add(0, url)
-                                            globalConfig.bookSourceListUser = bookSourceListUser
-                                        }
-                                    }
-                                } else {
-                                    showSnackbar(binding!!.recycleView, "书源导入失败")
-                                }
-
-                            } catch (e: Exception) {
-                                Log.e("书源导入失败", e)
-                                showSnackbar(binding!!.recycleView, "书源导入失败：${e.message}")
-                            }
+                        val group = bindingDialog.etGroup.text.toString().trim()
+                        if (group.isBlank()) {
+                            toast("请输入书源分组")
+                            return@setPositiveButton
                         }
+                        val sourceUrl = SourceUrl(url.trim(), group)
+                        val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
+                        bookSourceListUser.removeAll { it.url == sourceUrl.url }
+                        bookSourceListUser.add(0, sourceUrl)
+                        globalConfig.bookSourceListUser = bookSourceListUser
+                        initLinksData()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
@@ -195,19 +231,19 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             }
 
             R.id.source_enable -> {
-                searchView.setQuery("已启用", false)
+                searchView?.setQuery("已启用", false)
                 query()
                 true
             }
 
             R.id.source_disable -> {
-                searchView.setQuery("已禁用", false)
+                searchView?.setQuery("已禁用", false)
                 query()
                 true
             }
 
             R.id.source_all -> {
-                searchView.setQuery("", false)
+                searchView?.setQuery("", false)
                 query()
                 true
             }
@@ -230,21 +266,28 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
     private fun query() {
         launch {
-            val query = searchView.query.toString().trim()
+            val query = searchView?.query.toString().trim()
             val allJs = viewModel.getAllBookSource()
             adapter.data.clear()
             if (query.isBlank()) {
                 adapter.data.addAll(allJs)
             } else {
-                adapter.data.addAll(allJs.filter {
-                    if (query == "已启用") {
-                        it.enable
-                    } else if (query == "已禁用") {
-                        !it.enable
-                    } else {
-                        it.id.contains(query) || it.checkResult?.contains(query) == true
+                val querys = query.split(" ").filter { !it.isBlank() }
+                val allJs = allJs.toMutableList()
+                querys.forEach { query ->
+                    allJs.removeAll { js ->
+                        when (query) {
+                            "已启用" -> !js.enable
+                            "已禁用" -> js.enable
+                            else -> !(js.id.contains(query, true)
+                                    || js.name.contains(query, true)
+                                    || js.group.contains(query, true)
+                                    || js.comment.contains(query, true)
+                                    || js.checkResult?.contains(query, true) == true)
+                        }
                     }
-                })
+                }
+                adapter.data.addAll(allJs)
             }
             adapter.data.forEach {
                 it.selected = true
@@ -269,7 +312,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
     private fun showPopupMenu(anchor: View) {
         if (this::popupMenu.isInitialized) {
-            searchView.clearFocus()
+            searchView?.clearFocus()
             popupMenu.show()
             return
         }
@@ -340,14 +383,14 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                                                 }
                                             }
                                         }
-                                        deferreds.awaitAll()
+                                        viewModel.saveJs(deferreds.awaitAll())
                                         withMain {
                                             dismissSnackbar()
                                             val errorList = adapter.data.filter {
                                                 it.checkResult?.contains("失败") == true
                                             }
                                             if (errorList.isNotEmpty()) {
-                                                searchView.setQuery("校验失败", true)
+                                                searchView?.setQuery("校验失败", true)
                                                 query()
                                             }
                                         }
@@ -364,7 +407,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
             true
         }
-        searchView.clearFocus()
+        searchView?.clearFocus()
         popupMenu.show()
         this.popupMenu = popupMenu
     }
@@ -392,11 +435,17 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     script.selected = b
                     onSelectSource()
                 }
-                if (script.checkResult.isNullOrBlank()) {
+                val str = "${script.comment.trim()}\n${script.checkResult?.trim() ?: ""}".trim()
+                if (str.isBlank()) {
                     binding.ivSourceCheckRes.gone()
                 } else {
                     binding.ivSourceCheckRes.show()
-                    binding.ivSourceCheckRes.text = "${script.checkResult}"
+                    binding.ivSourceCheckRes.text = str
+                    if (script.checkResult?.contains("失败") == true) {
+                        binding.ivSourceCheckRes.setTextColorRes(R.color.dn_colorAccent)
+                    } else {
+                        binding.ivSourceCheckRes.setTextColorRes(R.color.colorPrimary)
+                    }
                 }
                 binding.swSourceEnable.setOnCheckedChangeListener(null)
                 binding.swSourceEnable.isChecked = script.enable
@@ -422,6 +471,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                 binding.ivEditSource.click {
                     fragment.startActivity<EditJavaScriptActivity>(BOOK_SOURCE_ID, script.id)
                 }
+                binding.root.click { binding.cbBookSource.isChecked = !binding.cbBookSource.isChecked }
             }
         }
 
@@ -429,4 +479,72 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             return data[position].id.id
         }
     }
+
+    class LinkAdapter(val fragment: BookSourceManagerFragment) : BaseAdapter<SourceUrl>(R.layout.item_book_source_link) {
+        override fun itemLayoutRes(viewType: Int): Int {
+            return R.layout.item_book_source_link
+        }
+
+        override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, p1: Int) {
+            val view = holder.itemView
+            val tvGroup = view.findViewById<android.widget.TextView>(R.id.tv_group)
+            val tvUrl = view.findViewById<android.widget.TextView>(R.id.tv_url)
+            val cbAuto = view.findViewById<android.widget.CheckBox>(R.id.cb_auto_check)
+            val btnCheck = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_check)
+            val btnDelete = view.findViewById<android.widget.ImageView>(R.id.btn_delete)
+            val item = data[p1]
+            tvGroup.text = item.group
+            tvUrl.text = item.url
+            cbAuto.setOnCheckedChangeListener(null)
+            cbAuto.isChecked = item.autoUpdate
+            cbAuto.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    item.autoUpdate = true
+                    globalConfig.bookSourceListUser = (globalConfig.bookSourceListUser.toMutableList().apply {
+                        find { it.url == item.url }?.autoUpdate = true
+                    })
+                } else {
+                    item.autoUpdate = false
+                    globalConfig.bookSourceListUser = (globalConfig.bookSourceListUser.toMutableList().apply {
+                        find { it.url == item.url }?.autoUpdate = false
+                    })
+                }
+            }
+
+            btnDelete.click {
+                MaterialAlertDialogBuilder(fragment.requireContext())
+                    .setTitle("确定要删除“${item.group}”吗？")
+                    .setMessage("地址：${item.url}")
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        val list = globalConfig.bookSourceListUser.toMutableList()
+                        list.removeAll { it.url == item.url }
+                        globalConfig.bookSourceListUser = list
+                        fragment.initLinksData()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+
+            btnCheck.click { view ->
+                fragment.launch {
+                    try {
+                        fragment.showSnackbar(view, "正在更新书源", Snackbar.LENGTH_INDEFINITE)
+                        val import = fragment.viewModel.import(listOf(item))
+                        if (import > 0) {
+                            //书源更新刷新
+                            fragment.initData()
+                            fragment.showSnackbar(view, "书源更新成功")
+                        } else {
+                            fragment.showSnackbar(view, "书源更新失败")
+                        }
+
+                    } catch (e: Exception) {
+                        Log.e("书源导入失败", e)
+                        fragment.showSnackbar(view, "书源导入失败：${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
 }

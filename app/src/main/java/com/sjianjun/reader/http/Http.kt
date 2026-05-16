@@ -7,7 +7,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import sjj.alog.Log
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -82,7 +81,7 @@ val stringConverter = StringConverter()
 
 val http = Http()
 
-class Resp(val url: String, val body: String)
+class Resp(val code: Int, val url: String, val body: String)
 
 class Http {
 
@@ -107,6 +106,7 @@ class Http {
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
+            response.code,
             response.request.url.toString(),
             stringConverter.stringConverter(response.body)
         )
@@ -134,6 +134,7 @@ class Http {
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
+            response.code,
             response.request.url.toString(),
             stringConverter.stringConverter(response.body)
         )
@@ -155,6 +156,7 @@ class Http {
         }
         val response = okClient.newCall(builder.build()).execute()
         return Resp(
+            response.code,
             response.request.url.toString(),
             stringConverter.stringConverter(response.body)
         )

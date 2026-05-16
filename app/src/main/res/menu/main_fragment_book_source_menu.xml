@@ -8,10 +8,6 @@
         android:title="搜索"
         app:actionViewClass="com.sjianjun.reader.view.SearchView"
         app:showAsAction="always" />
-    <item
-        android:id="@+id/source_import"
-        android:title="导入书源"
-        app:showAsAction="never" />
 
     <item
         android:id="@+id/source_enable"

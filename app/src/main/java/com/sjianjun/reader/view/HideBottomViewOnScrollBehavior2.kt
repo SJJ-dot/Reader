@@ -9,7 +9,7 @@ import com.google.android.material.behavior.HideBottomViewOnScrollBehavior
 import kotlin.math.abs
 
 /*
- * Created by shen jian jun on 2020-07-10
+ * Created by sjj on 2020-07-10
  */
 class HideBottomViewOnScrollBehavior2<V : View> : HideBottomViewOnScrollBehavior<V> {
     constructor()

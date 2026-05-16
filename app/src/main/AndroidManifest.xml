@@ -25,7 +25,7 @@
         android:requestLegacyExternalStorage="true"
         android:theme="@style/AppTheme.DayNight"
         android:usesCleartextTraffic="true"
-        tools:replace="android:label">
+        tools:replace="android:label,android:icon,android:name,android:theme">
         <activity
             android:name=".module.shelf.WebReaderActivity"
             android:exported="false" />
@@ -61,7 +61,8 @@
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
-            android:grantUriPermissions="true">
+            android:grantUriPermissions="true"
+            tools:replace="android:authorities">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />

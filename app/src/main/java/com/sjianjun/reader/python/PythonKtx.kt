@@ -7,13 +7,12 @@ import com.sjianjun.reader.utils.gson
 import sjj.alog.Log
 
 
-inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
+inline fun <reified T> BookSource.py(func: String, param: String?): T? {
     val py = Python.getInstance()
     val exec = py.getModule("exec_script")
-    val result = if (params.isEmpty()) {
+    val result = if (param.isNullOrBlank()) {
         exec.callAttr("exec_script", js, func).toString()
     } else {
-        val param = params.map { "$it" }.reduce { acc, s -> "$acc,$s" }
         exec.callAttr("exec_script", js, func, param).toString()
     }
     if (T::class.java == String::class.java) {
@@ -22,11 +21,14 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     if (T::class.java == Boolean::class.java) {
         return result.toBoolean() as T
     }
+    if (T::class.java == Int::class.java) {
+        return result.toInt() as T
+    }
 
     return try {
         gson.fromJson<T>(result)
     } catch (e: Exception) {
-        Log.i("调用脚本方法：$func, 参数：$params, 返回结果：$result")
+        Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
         throw e
     }
 }

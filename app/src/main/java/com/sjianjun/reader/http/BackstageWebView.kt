@@ -1,11 +1,10 @@
-package io.legado.app.help.http
+package com.sjianjun.reader.http
 
 import android.annotation.SuppressLint
 import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
 import android.util.AndroidRuntimeException
-import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -14,7 +13,6 @@ import android.webkit.WebViewClient
 import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
-import io.legado.app.exception.NoStackTraceException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Runnable
@@ -88,7 +86,7 @@ class BackstageWebView(
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun createWebView(): WebView {
-        val webView = WebView(App.app)
+        val webView = WebView(App.Companion.app)
         webView.init(headerMap)
         webView.webViewClient = HtmlWebViewClient()
         return webView
@@ -161,7 +159,7 @@ class BackstageWebView(
                     return@launch
                 }
                 if (retry > 30) {
-                    callback?.onError(NoStackTraceException("js执行超时"))
+                    callback?.onError(Exception("js执行超时"))
                     mHandler.post {
                         destroy()
                     }

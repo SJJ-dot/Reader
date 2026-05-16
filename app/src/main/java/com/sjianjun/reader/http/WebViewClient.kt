@@ -1,7 +1,6 @@
 package com.sjianjun.reader.http
 
 import android.os.Looper
-import io.legado.app.help.http.BackstageWebView
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

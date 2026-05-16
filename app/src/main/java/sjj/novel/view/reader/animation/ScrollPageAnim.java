@@ -14,7 +14,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import sjj.alog.Log;
 import sjj.novel.view.reader.bean.BookRecordBean;
 
 public class ScrollPageAnim extends PageAnimation {

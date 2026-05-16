@@ -4,7 +4,6 @@
     <color name="dn_background">@color/dark_background_color</color>
     <color name="dn_background_dialog">#262626</color>
     <color name="dn_background_card">#383838</color>
-    <color name="dn_background_1">#121212</color>
     <color name="dn_reader_setting_btn">#383838</color>
     <color name="dn_icon_tint_color">@color/mdr_white</color>
     <color name="dn_text_color_black">@color/dark_text_primary_color</color>
@@ -14,12 +13,8 @@
     <color name="dn_dark_tint">#55000000</color>
     <color name="dn_color_primary">#550F9D58</color>
     <!--阅读器-->
-    <color name="dn_reader_content_background">#1a1a1a</color>
     <color name="dn_reader_chapter_title_text_color">#80ffffff</color>
-    <color name="dn_reader_chapter_content_text_color">#80ffffff</color>
-    <color name="dn_reader_chapter_caption_text_color">#80ffffff</color>
     <!--  书城  -->
-    <color name="dn_bookcity_indicator_selected_text">?attr/colorOnSurface</color>
 
     <color name="dn_pop_error_background">?attr/colorSurface</color>
     <color name="dn_pop_error_text">@color/dark_text_primary_color</color>

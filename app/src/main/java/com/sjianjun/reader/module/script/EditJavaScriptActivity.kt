@@ -13,6 +13,7 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.databinding.ActivityEditJavaScriptBinding
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import org.json.JSONObject
 
 class EditJavaScriptActivity : BaseActivity() {
     private val viewModel by viewModels<EditJavaScriptViewModel>()
@@ -35,7 +36,18 @@ class EditJavaScriptActivity : BaseActivity() {
         launch {
             val sourceId = intent.getStringExtra(BOOK_SOURCE_ID) ?: return@launch
             bookSource = viewModel.getBookSource(sourceId)
-            binding!!.script.setText(bookSource?.js)
+            if (bookSource?.lauanage == BookSource.Language.yuedu) {
+                //阅读书源是json，格式化
+                val json = bookSource?.js ?: ""
+                val formatJson = try {
+                    JSONObject(json).toString(2)
+                } catch (e: Exception) {
+                    json
+                }
+                binding!!.script.setText(formatJson)
+            } else {
+                binding!!.script.setText(bookSource?.js)
+            }
 
 
         }

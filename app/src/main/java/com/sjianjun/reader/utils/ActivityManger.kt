@@ -3,12 +3,10 @@ package com.sjianjun.reader.utils
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.system.exitProcess
 
 /*
- * Created by shen jian jun on 2020-07-20
+ * Created by sjj on 2020-07-20
  */
 object ActivityManger {
 

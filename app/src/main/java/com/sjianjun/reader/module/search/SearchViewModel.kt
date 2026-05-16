@@ -2,11 +2,9 @@ package com.sjianjun.reader.module.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Transaction
 import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.bean.SearchHistory
@@ -16,7 +14,6 @@ import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.key
-import com.sjianjun.reader.utils.name
 import com.sjianjun.reader.utils.toBookList
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +22,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf

@@ -136,6 +136,7 @@ class WebViewVerificationActivity : BaseActivity() {
 
     private fun initWebView(url: String, headerMap: Map<String, String>) {
         CookieMgr.clearCookiesForUrl(url)
+        lifecycle.addObserver(WebViewLifecycleObserver(binding.webView))
         binding.webView.init(headerMap)
         binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {

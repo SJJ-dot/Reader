@@ -70,7 +70,7 @@ import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 /*
- * Created by shen jian jun on 2020-07-13
+ * Created by sjj on 2020-07-13
  */
 class BookReaderSettingFragment : BaseFragment() {
     var binding: ReaderFragmentSettingViewBinding? = null

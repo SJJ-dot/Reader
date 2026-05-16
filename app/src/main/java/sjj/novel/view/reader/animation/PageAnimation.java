@@ -1,6 +1,5 @@
 package sjj.novel.view.reader.animation;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.view.MotionEvent;
 import android.view.View;

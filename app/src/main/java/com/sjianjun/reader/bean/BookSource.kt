@@ -3,12 +3,11 @@ package com.sjianjun.reader.bean
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import com.sjianjun.coroutine.withIo
 import com.chaquo.python.Python
+import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -39,7 +38,11 @@ class BookSource {
      * - 多余的参数从arguments取
      */
     var js: String = ""
-    var version: Int = -1
+
+    /**
+     * 阅读书源使用更新时间戳
+     */
+    var version: Long = -1
     var enable: Boolean = true
     var requestDelay: Long = 1000L
 
@@ -57,22 +60,27 @@ class BookSource {
     var selected = false
 
     /**
-     * 脚本引擎语言 js py
+     * 书源备注信息
      */
-    var lauanage: Language = Language.js
+    var comment: String = ""
+
+    /**
+     * 脚本引擎语言
+     */
+    var lauanage: Language = Language.py
 
 
-    private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
+    private suspend inline fun <reified T> execute(func: Func, param: String?): T? {
         Log.i("调用脚本方法：${func}")
-        return when (lauanage) {
-            Language.js -> throw IllegalStateException("不再支持js脚本")
-            Language.py -> py(func.name, *params)
+        if (lauanage == Language.yuedu) {
+            throw UnsupportedOperationException("暂不支持yuedu书源")
         }
+        return py(func.name, param)
     }
 
     private fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
-            Language.js -> false
+            Language.yuedu -> true
             Language.py -> {
                 val py = Python.getInstance()
                 val exec = py.getModule("exec_script")
@@ -84,25 +92,27 @@ class BookSource {
     /**
      * 校验成功返回true，校验失败返回false，不存在def verify()返回null
      */
-    suspend fun verify(): Boolean? {
+    suspend fun verify(query: String): Boolean? {
         return withIo {
             try {
                 if (!hasFunction(Func.verify)) {
                     return@withIo null
                 }
 //                返回0、1、2 分别代表：验证通过，验证失败，不支持验证
-                val result = execute<Int?>(Func.verify)
+                val result = execute<Int?>(Func.verify, query)
                 when (result) {
                     0 -> {
                         checkResult = "校验成功"
                         checkErrorMsg = null
                         return@withIo true
                     }
+
                     1 -> {
                         checkResult = "校验失败"
                         checkErrorMsg = "书源自行校验未通过"
                         return@withIo false
                     }
+
                     else -> {
                         checkResult = "不支持校验"
                         checkErrorMsg = "不支持校验"
@@ -121,7 +131,7 @@ class BookSource {
     suspend fun getSiteUrl(): String? {
         return withIo {
             try {
-                execute<String>(Func.getSiteUrl)
+                execute<String>(Func.getSiteUrl, null)
             } catch (t: Throwable) {
                 Log.e("$name 书源网站地址获取失败", t)
                 null
@@ -189,10 +199,6 @@ class BookSource {
     }
 
 
-    override fun toString(): String {
-        return "BookSource(name='$name', group='$group', version=$version, enable=$enable)"
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -204,24 +210,24 @@ class BookSource {
         if (group != other.group) return false
         if (js != other.js) return false
         if (version != other.version) return false
-        if (enable != other.enable) return false
         if (requestDelay != other.requestDelay) return false
-        if (checkResult != other.checkResult) return false
-        if (checkErrorMsg != other.checkErrorMsg) return false
+        if (comment != other.comment) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = name.hashCode()
+        var result = version.hashCode()
+        result = 31 * result + name.hashCode()
         result = 31 * result + group.hashCode()
         result = 31 * result + js.hashCode()
-        result = 31 * result + version
-        result = 31 * result + enable.hashCode()
         result = 31 * result + requestDelay.hashCode()
-        result = 31 * result + (checkResult?.hashCode() ?: 0)
-        result = 31 * result + (checkErrorMsg?.hashCode() ?: 0)
+        result = 31 * result + (comment.hashCode() ?: 0)
         return result
+    }
+
+    override fun toString(): String {
+        return "BookSource(id='$id', name='$name', group='$group', js='$js', version=$version, enable=$enable, requestDelay=$requestDelay, checkResult=$checkResult, checkErrorMsg=$checkErrorMsg, comment=$comment, lauanage=$lauanage)"
     }
 
 
@@ -230,7 +236,7 @@ class BookSource {
     }
 
     enum class Language {
-        js, py
+        yuedu, py
     }
 
 }

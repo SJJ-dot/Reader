@@ -11,7 +11,7 @@ import com.sjianjun.reader.App
 import kotlin.math.roundToInt
 
 /*
- * Created by shen jian jun on 2020-07-14
+ * Created by sjj on 2020-07-14
  */
 fun dpToPx(dp: Float, context: Context? = null): Float {
     val ctx = context ?: App.app

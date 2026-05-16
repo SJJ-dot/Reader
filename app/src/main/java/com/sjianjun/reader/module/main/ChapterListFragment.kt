@@ -7,14 +7,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.*
+import com.sjianjun.reader.BOOK_ID
+import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.BaseFragment
+import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ItemTextTextBinding
 import com.sjianjun.reader.databinding.MainFragmentBookChapterListBinding
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
-import com.sjianjun.reader.utils.*
+import com.sjianjun.reader.utils.color
+import com.sjianjun.reader.utils.setTextColorRes
+import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.view.click
 
 

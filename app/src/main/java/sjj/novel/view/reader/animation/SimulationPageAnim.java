@@ -11,7 +11,6 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Region;
 import android.graphics.drawable.GradientDrawable;
-
 import android.view.View;
 
 

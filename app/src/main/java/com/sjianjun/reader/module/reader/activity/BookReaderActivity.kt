@@ -105,12 +105,10 @@ class BookReaderActivity : BaseActivity() {
         applyReaderBrightness()
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.i("onNewIntent: ${intent?.getStringExtra(BOOK_ID)}")
-        if (intent != null) {
-            setIntent(intent)
-        }
+        Log.i("onNewIntent: ${intent.getStringExtra(BOOK_ID)}")
+        setIntent(intent)
         initData()
     }
 

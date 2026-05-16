@@ -1,6 +1,8 @@
 package com.sjianjun.reader.http;
 
 
+import static okhttp3.internal.platform.Platform.INFO;
+
 import com.sjianjun.charset.CharsetDetector;
 
 import org.jetbrains.annotations.Nullable;
@@ -27,8 +29,6 @@ import okhttp3.internal.http.HttpHeaders;
 import okhttp3.internal.platform.Platform;
 import okio.Buffer;
 import okio.BufferedSource;
-
-import static okhttp3.internal.platform.Platform.INFO;
 
 /**
  * An OkHttp interceptor which logs request and response information. Can be applied as an

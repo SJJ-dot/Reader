@@ -22,7 +22,6 @@ import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import kotlinx.coroutines.launch
-import sjj.alog.Log
 
 class OnlineLeaderboardFragment : Fragment() {
     private var binding: FragmentOnlineLeaderboardBinding? = null

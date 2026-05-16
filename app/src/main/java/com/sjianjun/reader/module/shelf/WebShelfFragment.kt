@@ -1,17 +1,13 @@
 package com.sjianjun.reader.module.shelf
 
 import android.annotation.SuppressLint
-import androidx.fragment.app.viewModels
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.navigation.fragment.NavHostFragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -20,12 +16,9 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.WebBook
-import com.sjianjun.reader.databinding.BookShelfTitleBinding
 import com.sjianjun.reader.databinding.DialogWebBookInputBinding
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemWebBookListBinding
-import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.toast

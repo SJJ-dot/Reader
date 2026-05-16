@@ -1,6 +1,5 @@
 package com.jaeger.library
 
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
@@ -20,7 +19,6 @@ import androidx.annotation.ColorInt
 import androidx.core.net.toUri
 import com.sjianjun.reader.R
 import com.sjianjun.reader.utils.copyToClipboard
-import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import sjj.alog.Log
 import java.net.URLEncoder

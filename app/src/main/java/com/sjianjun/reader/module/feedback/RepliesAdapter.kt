@@ -1,7 +1,5 @@
 package com.sjianjun.reader.module.feedback
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +11,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.mqtt.Feedback
 import com.sjianjun.reader.mqtt.user
 import com.sjianjun.reader.utils.copyToClipboard
-import com.sjianjun.reader.utils.toast
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

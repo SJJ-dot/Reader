@@ -5,15 +5,15 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SearchResult
+import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.repository.DbFactory
-import kotlinx.coroutines.flow.first
 import sjj.alog.Log
 
 class BookSourceManagerViewModel : ViewModel() {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     suspend fun check(js: BookSource, query: String) = withIo {
-        val very = js.verify()
+        val very = js.verify(query)
         if (very != null) {
             return@withIo
         }
@@ -62,7 +62,7 @@ class BookSourceManagerViewModel : ViewModel() {
         bookSourceDao.deleteBookSource(list)
     }
 
-    suspend fun import(list: List<String>): Int {
+    suspend fun import(list: List<SourceUrl>): Int {
         return BookSourceUseCase.import(list)
     }
 

@@ -11,7 +11,13 @@ import android.speech.tts.UtteranceProgressListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.sjianjun.reader.App
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import sjj.alog.Log
 import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage

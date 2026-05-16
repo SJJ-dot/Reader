@@ -1,8 +1,6 @@
 package com.sjianjun.reader.module.feedback
 
 import android.annotation.SuppressLint
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
@@ -25,7 +23,6 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.show
-import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date

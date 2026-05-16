@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.net.http.SslError
 import android.util.AttributeSet
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -16,10 +15,10 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.databinding.CustomWebViewBinding
+import com.sjianjun.reader.module.verification.WebViewLifecycleObserver
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.utils.hide
@@ -32,14 +31,14 @@ import sjj.alog.Log
 import java.io.ByteArrayInputStream
 
 /*
- * Created by shen jian jun on 2020-07-10
+ * Created by sjj on 2020-07-10
  */
 class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
     val binding: CustomWebViewBinding =
         CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
-    private val lifecycleObserver by lazy { LifecycleObserver(this) }
+    private val lifecycleObserver by lazy { WebViewLifecycleObserver(binding.webView) }
     private var webView: WebView? = null
     private var homeUrl: String? = null
     var adBlock: AdBlock? = null
@@ -253,30 +252,6 @@ class CustomWebView @JvmOverloads constructor(
         History.list = list
         Log.i("markHistory:$list")
         history.postValue(list)
-    }
-
-    class LifecycleObserver(private val customWebView: CustomWebView) :
-        DefaultLifecycleObserver {
-
-        private val webView
-            get() = customWebView.webView
-
-        override fun onPause(owner: LifecycleOwner) {
-            webView?.pauseTimers()
-            webView?.onPause()
-        }
-
-        override fun onResume(owner: LifecycleOwner) {
-            webView?.resumeTimers()
-            webView?.onResume()
-        }
-
-
-        override fun onDestroy(owner: LifecycleOwner) {
-            val parent = webView?.parent as? ViewGroup
-            parent?.removeView(webView)
-            webView?.destroy()
-        }
     }
 
     object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {

@@ -3,7 +3,6 @@ package sjj.novel.view.reader.page
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -16,7 +15,7 @@ import com.sjianjun.reader.utils.color
 import java.lang.ref.WeakReference
 
 /*
- * Created by shen jian jun on 2020-07-13
+ * Created by sjj on 2020-07-13
  */
 abstract class PageStyle(val id: String) {
     protected val cache get() = lruCache

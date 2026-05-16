@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:overScrollMode="ifContentScrolls"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.sjianjun.reader.view.AutoCompleteTextView
+            android:id="@+id/et_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="书源分组名称" />
+
+        <com.sjianjun.reader.view.AutoCompleteTextView
+            android:id="@+id/edit_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="书源地址"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+    </LinearLayout>
+
+
+</androidx.core.widget.NestedScrollView>

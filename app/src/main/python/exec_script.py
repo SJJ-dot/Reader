@@ -16,7 +16,7 @@ def has_function(script, func):
 
 
 def exec_script(script, func, arg=None):
-    # 1. 准备安全环境
+    # 1. 准备一个感觉的运行环境
     namespace = _build_namespace(script)
     if arg is None:
         result = namespace[func]()

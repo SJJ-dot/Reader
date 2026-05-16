@@ -1,6 +1,5 @@
 package com.sjianjun.reader.view
 
-import android.content.ClipboardManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater

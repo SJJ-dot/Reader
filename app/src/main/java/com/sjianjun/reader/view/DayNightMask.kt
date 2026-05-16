@@ -13,7 +13,7 @@ import com.sjianjun.reader.utils.act
 import com.sjianjun.reader.utils.color
 
 /*
- * Created by shen jian jun on 2020-07-08
+ * Created by sjj on 2020-07-08
  */
 class DayNightMask @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0

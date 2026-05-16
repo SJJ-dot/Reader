@@ -9,7 +9,6 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import kotlinx.coroutines.DelicateCoroutinesApi
-import sjj.alog.Log
 
 @OptIn(DelicateCoroutinesApi::class)
 object OnlineInfos {

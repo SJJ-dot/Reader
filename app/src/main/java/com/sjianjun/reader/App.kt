@@ -5,16 +5,18 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.reader.mqtt.MqttUtil
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.mmkv.MMKV
+import com.sjianjun.reader.utils.ChineseUtils
 import sjj.alog.Config
 import java.io.File
 
 class App : Application() {
     private var first = true
-    override fun attachBaseContext(base: Context?) {
+    override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
     }
 
@@ -40,6 +42,14 @@ class App : Application() {
         }
         Python.start(AndroidPlatform(this))
         MqttUtil.connect()
+        when (globalConfig.readerJianFanMode.value) {
+            1 -> {
+                ChineseUtils.fixT2sDict()
+                ChineseUtils.preLoad(true, TransType.SIMPLE_TO_TRADITIONAL)
+            }
+
+            2 -> ChineseUtils.preLoad(true, TransType.TRADITIONAL_TO_SIMPLE)
+        }
     }
 
 

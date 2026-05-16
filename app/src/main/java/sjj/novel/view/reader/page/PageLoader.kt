@@ -18,8 +18,7 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.dp2Px
-import com.zqc.opencc.android.lib.ChineseConverter
-import com.zqc.opencc.android.lib.ConversionType
+import com.sjianjun.reader.utils.ChineseUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -1261,8 +1260,8 @@ abstract class PageLoader : ViewModel() {
     private fun convertByJianFanMode(text: String): String {
         val context = mPageView?.context ?: return text
         return when (mJianFanMode) {
-            MODE_JIAN_TO_FAN -> ChineseConverter.convert(text, ConversionType.S2T, context)
-            MODE_FAN_TO_JIAN -> ChineseConverter.convert(text, ConversionType.T2S, context)
+            MODE_JIAN_TO_FAN -> ChineseUtils.s2t(text)
+            MODE_FAN_TO_JIAN -> ChineseUtils.t2s(text)
             else -> text
         }
     }

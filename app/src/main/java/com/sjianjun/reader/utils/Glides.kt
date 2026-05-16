@@ -11,7 +11,6 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
-import com.sjianjun.reader.App
 import com.sjianjun.reader.GlideApp
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.globalConfig

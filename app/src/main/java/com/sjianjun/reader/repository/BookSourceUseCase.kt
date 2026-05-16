@@ -4,109 +4,78 @@ import android.util.Base64
 import android.widget.Toast
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
-import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
-import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.http.http
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.name
+import com.sjianjun.reader.utils.fromJson
+import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import org.json.JSONObject
+import org.json.JSONArray
 import sjj.alog.Log
 import java.util.zip.GZIPInputStream
-import kotlin.math.abs
 
 object BookSourceUseCase {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
-    private val readingRecordDao get() = DbFactory.db.readingRecordDao()
-    private val chapterDao get() = DbFactory.db.chapterDao()
-
     suspend fun autoImport() = withIo {
-        val list = globalConfig.bookSourceListUser.toMutableList()
-        val def = globalConfig.bookSourceDef
-        if (def.isNotBlank() || list.isEmpty()) {
-            list.add(URL_BOOK_SOURCE_DEF)
-        }
+        val list = globalConfig.bookSourceListUser.filter { it.autoUpdate }
         import(list)
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun import(urls: List<String>): Int = withIo {
+    suspend fun import(urls: List<SourceUrl>): Int = withIo {
 
-        val sources = urls.map { url ->
+        val sources = urls.map { sourceUrl ->
             async {
                 try {
-                    val header = mapOf("Cache-Control" to "no-cache", "Pragma" to "no-cache")
-                    val query = mapOf("_" to System.currentTimeMillis().toString())
-                    var body = http.get(url, queryMap = query, header = header).body
+                    val url = sourceUrl.url.trim()
+                    val resp = http.get(url)
+                    if (resp.code != 200) {
+                        Log.i("书源下载失败:${sourceUrl.group}:${sourceUrl.url}:HTTP${resp.code}")
+                        return@async emptyList<BookSource>()
+                    }
+                    var body = resp.body
                     if (url.endsWith("gzip")) {
-                        body = GZIPInputStream(
-                            Base64.decode(body, Base64.NO_WRAP).inputStream()
-                        ).reader().readText()
+                        body = GZIPInputStream(Base64.decode(body, Base64.NO_WRAP).inputStream()).reader().readText()
                     }
-                    val source = JSONObject(body)
-
-                    val bookSourceList = mutableListOf<BookSource>()
-                    val groupName = source.optString("group")
-
-                    val bookSourceArray = source.getJSONArray("bookSource")
-                    (0 until bookSourceArray.length()).mapTo(bookSourceList) {
-                        val obj = bookSourceArray.getJSONObject(it)
-                        BookSource().apply {
-                            name = obj.getString("source")
-                            group = obj.optString("group", groupName)
-                            js = obj.getString("js")
-                            version = obj.optInt("version", -1)
-                            enable = obj.optBoolean("enable", true)
-                            requestDelay = obj.optLong("requestDelay", -1)
-                            lauanage = BookSource.Language.js
-                        }
+                    val dest = mutableListOf<BookSource>()
+                    if (!parseYuDuSource(sourceUrl, body, dest)) {
+                        parsePySource(sourceUrl, body, dest)
                     }
-
-                    source.optJSONArray("pySource")?.also { pySourceArr ->
-                        (0 until pySourceArr.length()).mapTo(bookSourceList) {
-                            val obj = pySourceArr.getJSONObject(it)
-                            BookSource().apply {
-                                name = obj.getString("source")
-                                group = obj.optString("group", groupName)
-                                js = obj.getString("js")
-                                version = obj.optInt("version", -1)
-                                enable = obj.optBoolean("enable", true)
-                                requestDelay = obj.optLong("requestDelay", -1)
-                                lauanage = BookSource.Language.py
-                            }
-                        }
-                    }
-                    bookSourceList
+                    dest
                 } catch (e: Exception) {
-                    Log.i("书源导入失败:${url}:${e.message}")
+                    Log.i("书源导入失败:${sourceUrl}:${e.message}")
                     emptyList()
                 }
             }
-        }.awaitAll().flatten()
-
-
+        }.awaitAll().flatten().toMutableList()
+        val total = sources.size
+        val countInvalid = sources.count { it.comment.contains("无效书源") }
+        sources.removeAll { it.comment.contains("无效书源") }
         val allJs = bookSourceDao.getAllBookSource()
         val updates = sources.filter { s ->
             val local = allJs.find { it.id == s.id }
-            local != null && local.version < s.version
+            if (local != null && local.version <= s.version && local != s || (local?.enable == true && !s.enable)) {
+                s.checkResult = local.checkResult
+                s.checkErrorMsg = local.checkErrorMsg
+                return@filter true
+            } else {
+                return@filter false
+            }
         }
         val newSource = sources.filter { s ->
             val local = allJs.find { it.id == s.id }
             local == null
         }
         if (updates.isEmpty() && newSource.isEmpty()) {
-            Log.i("书源无变化")
+            Log.i("书源无变化：${total}个书源,跳过${countInvalid}个无效书源")
             return@withIo sources.size
         }
         bookSourceDao.insertBookSource(listOf(*updates.toTypedArray(), *newSource.toTypedArray()))
         toast(
-            "${sources.first().group}：新增${newSource.size}、更新${updates.size}",
+            "新增${newSource.size}、更新${updates.size},跳过${countInvalid}个无效书源",
             Toast.LENGTH_LONG
         )
         Log.i("${sources.first().group}：新增${newSource.size}、更新${updates.size}")
@@ -114,4 +83,97 @@ object BookSourceUseCase {
     }
 
 
+}
+
+fun parsePySource(sourceUrl: SourceUrl, body: String, dest: MutableList<BookSource>): Boolean {
+    try {
+        if (!body.contains("pySource")) {
+            Log.i("不是修仙py书源")
+            return false
+        }
+        val source = gson.fromJson<Source>(body)
+        source?.pySource?.forEach { pySource ->
+            dest.add(
+                BookSource().apply {
+                    name = pySource.source!!
+                    group = sourceUrl.group
+                    js = pySource.js!!
+                    version = pySource.version
+                    enable = pySource.enable
+                    requestDelay = pySource.requestDelay
+                    lauanage = BookSource.Language.py
+                    comment = pySource.comment ?: ""
+                    if (sourceUrl.url == URL_BOOK_SOURCE_DEF.url) {
+                        id = "默认书源:${name.trim()}"
+                    }
+                }
+            )
+
+        }
+        Log.i("解析书源成功：${sourceUrl.group}，共${dest.size}个书源")
+        return true
+    } catch (e: Exception) {
+        Log.e("解析书源失败", e)
+        return false
+    }
+}
+
+
+fun parseYuDuSource(sourceUrl: SourceUrl, body: String, dest: MutableList<BookSource>): Boolean {
+    try {
+        if (!body.contains("bookSourceUrl")) {
+            Log.i("不是阅读书源")
+            return false
+        }
+        val bookSourceArray = JSONArray(body)
+        for (i in 0 until bookSourceArray.length()) {
+            val item = bookSourceArray.getJSONObject(i)
+            try {
+                //删除发现
+                item.remove("exploreUrl")
+                item.remove("exploreScreen")
+                item.remove("ruleReview")
+                item.remove("bookSourceComment")
+                dest.add(
+                    BookSource().apply {
+                        id = item.getString("bookSourceUrl").trim()
+                        name = item.getString("bookSourceName").trim()
+                        group = sourceUrl.group
+                        js = item.toString()
+                        version = item.optLong("lastUpdateTime", -1)
+                        enable = item.optBoolean("enable", true)
+                        requestDelay = item.optLong("requestDelay", 100L)
+                        lauanage = BookSource.Language.yuedu
+                        comment = item.optString("bookSourceGroup", "")
+                    }
+                )
+                val ruleBookInfo = item.optJSONObject("ruleBookInfo")
+                val ruleToc = item.optJSONObject("ruleToc")
+                val ruleContent = item.optJSONObject("ruleContent")
+                if ((ruleBookInfo?.length() ?: 0) == 0 || (ruleToc?.length() ?: 0) == 0 || (ruleContent?.length() ?: 0) == 0) {
+                    dest.last().comment = "无效书源：缺少必要的规则"
+                }
+            } catch (e: Exception) {
+                Log.e("解析书源失败", e)
+            }
+        }
+        Log.i("解析书源成功：${sourceUrl.group}，共${dest.size}个书源")
+        return true
+    } catch (e: Exception) {
+        Log.e("解析书源失败", e)
+        return false
+    }
+}
+
+class Source {
+    var pySource: List<PySource>? = null
+
+    class PySource {
+        var comment: String? = null
+        var source: String? = null
+        var js: String? = null
+        var version: Long = -1
+        var enable: Boolean = true
+        var requestDelay: Long = -1
+    }
 }

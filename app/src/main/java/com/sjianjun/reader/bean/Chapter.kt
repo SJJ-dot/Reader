@@ -2,8 +2,6 @@ package com.sjianjun.reader.bean
 
 import androidx.room.Entity
 import androidx.room.Ignore
-import androidx.room.Index
-import androidx.room.PrimaryKey
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Entity(primaryKeys = ["bookId", "index"])

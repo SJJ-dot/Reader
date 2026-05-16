@@ -7,11 +7,11 @@ import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import androidx.core.graphics.toColorInt
 import com.sjianjun.reader.utils.hex
 import sjj.alog.Log
 import java.lang.ref.WeakReference
 import java.util.UUID
-import androidx.core.graphics.toColorInt
 
 class CustomPageStyleInfo {
     var id: String = UUID.randomUUID().toString().replace("-", "")
