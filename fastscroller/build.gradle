@@ -1,10 +1,12 @@
-apply plugin: 'com.android.library'
+plugins {
+    alias(libs.plugins.androidLibrary)
+}
 
 android {
-    compileSdk TARGET_SDK_VERSION
+    compileSdk = libs.versions.androidCompileSdk.get().toInteger()
     defaultConfig {
-        minSdkVersion MIN_SDK_VERSION
-        targetSdkVersion TARGET_SDK_VERSION
+        minSdk = libs.versions.androidMinSdk.get().toInteger()
+        targetSdk = libs.versions.androidTargetSdk.get().toInteger()
 
     }
 
@@ -26,7 +28,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compileOnly 'androidx.recyclerview:recyclerview:1.3.2'
-    compileOnly 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    compileOnly libs.androidxRecyclerview
+    compileOnly libs.androidxConstraintlayout
+    implementation libs.androidxCoordinatorlayout
 }

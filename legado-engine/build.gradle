@@ -1,33 +1,36 @@
 plugins {
-    id 'com.android.library'
-    id 'org.jetbrains.kotlin.android'
+    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlinAndroid)
 }
 
 android {
     namespace 'sjj.legado.engine'
-    compileSdk 36
+    compileSdk = libs.versions.androidCompileSdk.get().toInteger()
 
     defaultConfig {
-        minSdk 25
+        minSdk = libs.versions.androidMinSdk.get().toInteger()
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlin {
+        jvmToolchain(17)
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '1.8'
     }
 
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'androidx.core:core-ktx:1.18.0'
-    implementation 'com.google.android.material:material:1.14.0'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    implementation libs.androidxAppcompat
+    implementation libs.androidxCoreKtx
+    implementation libs.material
+    testImplementation libs.junit
+    androidTestImplementation libs.androidxTestEspresso
+    androidTestImplementation libs.androidxTestExtJunit
 }

@@ -1,0 +1,109 @@
+[versions]
+agp = "8.13.2"
+kotlin = "2.2.0"
+ksp = "2.3.6"
+chaquoPython = "16.0.0"
+androidCompileSdk = "36"
+androidMinSdk = "25"
+androidTargetSdk = "36"
+
+androidxAppcompat = "1.7.1"
+androidxCoreKtx = "1.18.0"
+androidxConstraintlayout = "2.1.4"
+androidxRecyclerview = "1.3.2"
+androidxCoordinatorlayout = "1.2.0"
+androidxNavigation = "2.8.3"
+androidxRoom = "2.6.1"
+androidxLegacySupportV4 = "1.0.0"
+androidxWebkit = "1.13.0"
+
+kotlinxCoroutines = "1.9.0"
+googleGson = "2.10.1"
+jsoup = "1.13.1"
+charsetDetector = "1.0.1"
+alog = "1.2.14"
+okhttp = "4.12.0"
+coroutineKtx = "0.0.5"
+asyncView = "1.1.5"
+basePopup = "3.2.1"
+persistentCookieJar = "v1.0.1"
+glide = "4.16.0"
+flexbox = "3.0.0"
+material = "1.14.0"
+zxing = "3.5.3"
+bugly = "latest.release"
+superTextView = "v3.2.6.99"
+circleimageview = "3.1.0"
+mmkvStatic = "1.2.10"
+deviceCompat = "2.6"
+xxpermissions = "28.2"
+appupdate = "4.3.6"
+desugarJdkLibs = "2.1.3"
+liveEventBus = "1.8.1"
+nanohttpd = "2.3.1"
+commonsText = "1.13.1"
+mqttv3 = "1.2.5"
+opencc = "1.2.0"
+junit = "4.13.2"
+androidxTestEspresso = "3.5.1"
+androidxTestExtJunit = "1.1.5"
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinKapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kspPlugin = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+chaquoPython = { id = "com.chaquo.python", version.ref = "chaquoPython" }
+
+[libraries]
+androidxAppcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
+androidxCoreKtx = { module = "androidx.core:core-ktx", version.ref = "androidxCoreKtx" }
+androidxConstraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintlayout" }
+androidxRecyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidxRecyclerview" }
+androidxCoordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "androidxCoordinatorlayout" }
+androidxNavigationFragmentKtx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidxNavigation" }
+androidxNavigationUiKtx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidxNavigation" }
+androidxRoomRuntime = { module = "androidx.room:room-runtime", version.ref = "androidxRoom" }
+androidxRoomKtx = { module = "androidx.room:room-ktx", version.ref = "androidxRoom" }
+androidxRoomCompiler = { module = "androidx.room:room-compiler", version.ref = "androidxRoom" }
+androidxLegacySupportV4 = { module = "androidx.legacy:legacy-support-v4", version.ref = "androidxLegacySupportV4" }
+androidxWebkit = { module = "androidx.webkit:webkit", version.ref = "androidxWebkit" }
+
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinxCoroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+googleGson = { module = "com.google.code.gson:gson", version.ref = "googleGson" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+charsetDetector = { module = "com.github.SJJ-dot.retrofit-ext:charset-detector", version.ref = "charsetDetector" }
+alog = { module = "com.github.SJJ-dot:ALOG", version.ref = "alog" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttpDnsOverHttps = { module = "com.squareup.okhttp3:okhttp-dnsoverhttps", version.ref = "okhttp" }
+coroutineKtx = { module = "com.github.SJJ-dot:CoroutineKtx", version.ref = "coroutineKtx" }
+asyncView = { module = "com.github.SJJ-dot:AsyncView", version.ref = "asyncView" }
+basePopup = { module = "io.github.razerdp:BasePopup", version.ref = "basePopup" }
+persistentCookieJar = { module = "com.github.franmontiel:PersistentCookieJar", version.ref = "persistentCookieJar" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+zxingCore = { module = "com.google.zxing:core", version.ref = "zxing" }
+buglyCrashreport = { module = "com.tencent.bugly:crashreport", version.ref = "bugly" }
+superTextView = { module = "com.github.chenBingX:SuperTextView", version.ref = "superTextView" }
+circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
+mmkvStatic = { module = "com.tencent:mmkv-static", version.ref = "mmkvStatic" }
+deviceCompat = { module = "com.github.getActivity:DeviceCompat", version.ref = "deviceCompat" }
+xxpermissions = { module = "com.github.getActivity:XXPermissions", version.ref = "xxpermissions" }
+appupdate = { module = "io.github.azhon:appupdate", version.ref = "appupdate" }
+desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+liveEventBus = { module = "com.github.neo-turak:LiveEventBus", version.ref = "liveEventBus" }
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
+commonsText = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
+mqttv3 = { module = "org.eclipse.paho:org.eclipse.paho.client.mqttv3", version.ref = "mqttv3" }
+opencc = { module = "com.github.qichuan:android-opencc", version.ref = "opencc" }
+junit = { module = "junit:junit", version.ref = "junit" }
+androidxTestEspresso = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxTestEspresso" }
+androidxTestExtJunit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+
+[bundles]
+androidxCommon = ["androidxAppcompat", "androidxCoreKtx", "androidxConstraintlayout", "androidxRecyclerview", "androidxLegacySupportV4"]
+

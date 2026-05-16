@@ -10,6 +10,7 @@ import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import sjj.legado.engine.YueduEngine
 
 @Entity
 class BookSource {
@@ -64,18 +65,47 @@ class BookSource {
      */
     var lauanage: Language = Language.py
 
+    private val yueduEngine by lazy {
+        YueduEngine(js)
+    }
 
-    private inline fun <reified T> execute(func: Func, vararg params: String?): T? {
+
+    private suspend inline fun <reified T> execute(func: Func, vararg params: String?): T? {
         Log.i("调用脚本方法：${func}")
         return when (lauanage) {
-            Language.yuedu -> throw IllegalStateException("不再支持js脚本")
+            Language.yuedu -> {
+                val result = when (func) {
+                    Func.search -> yueduEngine.search(params[0] ?: "")
+                    Func.getDetails -> yueduEngine.getDetails(params[0] ?: "")
+                    Func.getChapterContent -> yueduEngine.getChapterContent(params[0] ?: "")
+                    Func.getSiteUrl -> yueduEngine.getSiteUrl()
+                    Func.verify -> yueduEngine.verify().toString()
+                }
+                if (T::class.java == String::class.java) {
+                    return result as T?
+                }
+                if (T::class.java == Boolean::class.java) {
+                    return result.toBoolean() as T
+                }
+                if (T::class.java == Int::class.java) {
+                    return result?.toInt() as T?
+                }
+
+                try {
+                    gson.fromJson<T>(result)
+                } catch (e: Exception) {
+                    Log.i("调用脚本方法：$func, 参数：$params, 返回结果：$result")
+                    throw e
+                }
+            }
+
             Language.py -> py(func.name, *params)
         }
     }
 
     private fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
-            Language.yuedu -> false
+            Language.yuedu -> true
             Language.py -> {
                 val py = Python.getInstance()
                 val exec = py.getModule("exec_script")
@@ -101,11 +131,13 @@ class BookSource {
                         checkErrorMsg = null
                         return@withIo true
                     }
+
                     1 -> {
                         checkResult = "校验失败"
                         checkErrorMsg = "书源自行校验未通过"
                         return@withIo false
                     }
+
                     else -> {
                         checkResult = "不支持校验"
                         checkErrorMsg = "不支持校验"

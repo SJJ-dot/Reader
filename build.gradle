@@ -1,24 +1,10 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
-buildscript {
-    ext.kotlin_version = '2.2.0'
-    repositories {
-        maven { url 'https://repo1.maven.org/maven2/' }
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-    }
-}
 plugins {
-    id 'com.chaquo.python' version '16.0.0' apply false
-    id 'com.google.devtools.ksp' version "2.3.6" apply false
+    alias(libs.plugins.androidApplication) apply false
+    alias(libs.plugins.androidLibrary) apply false
+    alias(libs.plugins.kotlinAndroid) apply false
+    alias(libs.plugins.kotlinKapt) apply false
+    alias(libs.plugins.kspPlugin) apply false
+    alias(libs.plugins.chaquoPython) apply false
 }
 
 allprojects {
@@ -31,10 +17,6 @@ allprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }
-
-ext.MIN_SDK_VERSION = 25
-ext.TARGET_SDK_VERSION = 36
-

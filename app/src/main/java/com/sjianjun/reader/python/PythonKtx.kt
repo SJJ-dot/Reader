@@ -22,6 +22,9 @@ inline fun <reified T> BookSource.py(func: String, vararg params: String?): T? {
     if (T::class.java == Boolean::class.java) {
         return result.toBoolean() as T
     }
+    if (T::class.java == Int::class.java) {
+        return result.toInt() as T
+    }
 
     return try {
         gson.fromJson<T>(result)
