@@ -3,3 +3,4 @@ plugins {
 }
 rootProject.name = 'Reader'
 include ':app', ':fastscroller'
+include ':legado-engine'
