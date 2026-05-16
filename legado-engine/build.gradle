@@ -30,7 +30,11 @@ dependencies {
     implementation libs.androidxAppcompat
     implementation libs.androidxCoreKtx
     implementation libs.material
+    implementation libs.googleGson
+    implementation libs.jsoup
+    implementation libs.okhttp
     testImplementation libs.junit
+    testImplementation libs.kotlinxCoroutinesCore
     androidTestImplementation libs.androidxTestEspresso
     androidTestImplementation libs.androidxTestExtJunit
 }
