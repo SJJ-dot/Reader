@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'sjj.legado.engine'
+    namespace = 'io.legado.app'
     compileSdk = libs.versions.androidCompileSdk.get().toInteger()
 
     defaultConfig {
@@ -23,7 +23,10 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
 }
 
 dependencies {
@@ -37,4 +40,8 @@ dependencies {
     testImplementation libs.kotlinxCoroutinesCore
     androidTestImplementation libs.androidxTestEspresso
     androidTestImplementation libs.androidxTestExtJunit
+    //Splitties
+    implementation(libs.splitties.appctx)
+    implementation(libs.splitties.systemservices)
+    implementation(libs.splitties.views)
 }
