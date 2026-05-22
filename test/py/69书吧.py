@@ -7,7 +7,7 @@ from WebViewClient import web_get
 from SessionManager import verification_activity_get
 from log import log
 
-def verify():
+def verify(query):
     res = getDetails("https://www.69shuba.com/book/90442.htm")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1

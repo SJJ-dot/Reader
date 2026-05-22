@@ -253,7 +253,7 @@ def _supports_search():
     search_url = yuedu_source.get("searchUrl", "")
     return bool(search_url and rule_search.get("bookList"))
 
-def verify():
+def verify(query):
     """
     校验书源是否可用。
     返回0、1、2 分别代表：验证通过，验证失败，不支持验证
@@ -261,7 +261,7 @@ def verify():
     if not _supports_search():
         return 0
 
-    books = search("我的")
+    books = search(query)
     if not books or len(books) == 0:
         raise Exception("搜索失败")
 

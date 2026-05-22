@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from log import log
 
-def verify():
+def verify(query):
     res = getDetails("https://www.22sq.net/b/1643/1643570/")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
