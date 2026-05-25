@@ -72,6 +72,12 @@ class Book {
     @Ignore
     @Expose(serialize = false)
     var bookSource: BookSource? = null
+        get() {
+            if (field == null && bookSourceId == BookSource.fileImportBookSource.id) {
+                field = BookSource.fileImportBookSource
+            }
+            return field
+        }
 
     /**
      * 有多少个书源包含本书

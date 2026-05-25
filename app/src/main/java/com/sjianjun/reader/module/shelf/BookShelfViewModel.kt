@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
@@ -86,8 +87,12 @@ class BookShelfViewModel : ViewModel() {
                     }
                 }
 
-                combine(flows) {
-                    it.toList()
+                if (flows.isEmpty()) {
+                    flowOf(emptyList())
+                } else {
+                    combine(flows) {
+                        it.toList()
+                    }
                 }
 
             }.debounce(300).collectLatest { books ->

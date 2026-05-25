@@ -10,6 +10,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
@@ -29,6 +30,7 @@ import com.sjianjun.reader.databinding.ItemBookListGridBinding
 import com.sjianjun.reader.databinding.MainFragmentBookShelfBinding
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.module.reader.activity.FileImportActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.bundle
@@ -43,11 +45,13 @@ import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.clickWithDouble
 import com.sjianjun.reader.view.isLoading
 import kotlinx.coroutines.FlowPreview
-import java.util.concurrent.ConcurrentHashMap
 
 @FlowPreview
 class BookshelfFragment : BaseFragment() {
-    private val bookList = ConcurrentHashMap<String, Book>()
+    private val importTxt = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@registerForActivityResult
+        FileImportActivity.start(activity ?: return@registerForActivityResult, uri)
+    }
     private var adapter: BaseAdapter<Book>? = null
     private var bookShelfBinding: MainFragmentBookShelfBinding? = null
     private val bookShelfTitle = BookShelfTitle()
@@ -129,6 +133,11 @@ class BookshelfFragment : BaseFragment() {
                 true
             }
 
+            R.id.import_txt -> {
+                importTxt.launch(arrayOf("text/plain"))
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -184,7 +193,7 @@ class BookshelfFragment : BaseFragment() {
         item ?: return
         val isListLayout = globalConfig.shelfLayoutType == 0
         item.setIcon(if (isListLayout) R.drawable.ic_shelf_layout_grid else R.drawable.ic_shelf_layout_list)
-        item.title = if (isListLayout) "切换为网格" else "切换为列表"
+        item.title = if (isListLayout) "网格布局" else "列表布局"
     }
 
     private class GridAdapter(val fragment: BookshelfFragment, var longClickListener: ((Book) -> Unit)) : BaseAdapter<Book>(R.layout.item_book_list_grid) {

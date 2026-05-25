@@ -36,6 +36,9 @@ interface ChapterDao {
     @Query("delete from Chapter where bookId in (select id from Book where title=:bookTitle)")
     fun deleteChapterByBookTitleAndAuthor(bookTitle: String): Int
 
+    /**
+     * 存在章节内容的标记为已加载
+     */
     @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent where bookId=:bookId)")
     fun markChaptersAsLoadedByBookId(bookId: String)
 

@@ -5,6 +5,7 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.chaquo.python.Python
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
@@ -75,11 +76,15 @@ class BookSource {
         if (lauanage == Language.yuedu) {
             throw UnsupportedOperationException("暂不支持yuedu书源")
         }
+        if (lauanage == Language.file) {
+            throw UnsupportedOperationException("文件导入书源不支持执行脚本")
+        }
         return py(func.name, param)
     }
 
     private fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
+            Language.file -> false
             Language.yuedu -> true
             Language.py -> {
                 val py = Python.getInstance()
@@ -236,7 +241,34 @@ class BookSource {
     }
 
     enum class Language {
-        yuedu, py
+        /**
+         * 阅读书源
+         */
+        yuedu,
+
+        /**
+         * Python书源
+         */
+        py,
+
+        /**
+         * 文件导入书源，什么都不做，仅作为标识使用
+         */
+        file
+    }
+
+    companion object {
+        val fileImportBookSource = BookSource().apply {
+            id = "文件导入"
+            name = "文件导入"
+            group = URL_BOOK_SOURCE_DEF.group
+            js = ""
+            version = 1L
+            enable = true
+            requestDelay = 0L
+            comment = "文件导入书源，什么都不做，仅作为标识使用"
+            lauanage = Language.file
+        }
     }
 
 }

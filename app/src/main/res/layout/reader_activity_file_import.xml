@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dn_background">
+
+    <androidx.core.widget.ContentLoadingProgressBar
+        android:id="@+id/progress_bar"
+        style="@style/ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/status"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:max="100"
+        tools:progress="50" />
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+
+        android:textColor="@color/dn_text_color_black"
+        android:textSize="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/tilName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progress_bar"
+        tools:text="解析章节" />
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="书名"
+        android:padding="0dp"
+        android:textColorHint="@color/dn_text_color_black_secondary"
+        app:boxBackgroundColor="@color/dn_background_card"
+        app:boxBackgroundMode="filled"
+        app:boxStrokeColor="@color/dn_color_primary"
+        app:cursorColor="@color/dn_color_primary"
+        app:hintTextColor="@color/dn_text_color_black_secondary"
+        app:layout_constraintBottom_toTopOf="@+id/tilAuthor"
+        app:layout_constraintTop_toBottomOf="@+id/status">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingBottom="5dp"
+            android:textColor="@color/dn_text_color_black"
+            android:textColorHint="@color/dn_text_color_black_secondary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilAuthor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="作者"
+        android:padding="0dp"
+        android:textColorHint="@color/dn_text_color_black_secondary"
+        app:boxBackgroundColor="@color/dn_background_card"
+        app:boxBackgroundMode="filled"
+        app:boxStrokeColor="@color/dn_color_primary"
+        app:cursorColor="@color/dn_color_primary"
+        app:hintTextColor="@color/dn_text_color_black_secondary"
+        app:layout_constraintBottom_toTopOf="@+id/tilIntro"
+        app:layout_constraintTop_toBottomOf="@+id/tilName">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAuthor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingBottom="5dp"
+            android:textColor="@color/dn_text_color_black"
+            android:textColorHint="@color/dn_text_color_black_secondary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilIntro"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="简介"
+        android:padding="0dp"
+        android:textColorHint="@color/dn_text_color_black_secondary"
+        app:boxBackgroundColor="@color/dn_background_card"
+        app:boxBackgroundMode="filled"
+        app:boxStrokeColor="@color/dn_color_primary"
+        app:cursorColor="@color/dn_color_primary"
+        app:hintTextColor="@color/dn_text_color_black_secondary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tilAuthor">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etIntro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="left|top"
+            android:lines="10"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingBottom="5dp"
+            android:textColor="@color/dn_text_color_black"
+            android:textColorHint="@color/dn_text_color_black_secondary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/mbCancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/dn_colorAccent"
+        android:text="取消"
+        android:textColor="@color/mdr_white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/mbConfirm"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tilIntro" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/mbConfirm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="确定"
+        app:layout_constraintBottom_toBottomOf="@+id/mbCancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/mbCancel"
+        app:layout_constraintTop_toTopOf="@+id/mbCancel" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
