@@ -11,7 +11,9 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:tabIndicatorFullWidth="false"
-        app:tabMode="fixed" />
+        app:tabMode="fixed"
+        app:tabSelectedTextColor="@color/dn_color_primary"
+        app:tabTextColor="@color/dn_text_color_black_secondary" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycle_view_links"

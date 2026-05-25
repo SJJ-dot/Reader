@@ -1,0 +1,57 @@
+<resources>
+    <!--App-->
+    <string name="app_name">阅读</string>
+
+    <!--Other-->
+
+    <string name="delete">删除</string>
+    <string name="action_download">下载</string>
+    <string name="search">搜索</string>
+    <string name="ok">确认</string>
+    <string name="cancel">取消</string>
+    <string name="chapter_list">目录</string>
+    <string name="refresh">刷新</string>
+    <string name="can_not_open">无法打开</string>
+    <string name="share">分享</string>
+    <string name="data_loading">加载数据中…</string>
+    <string name="loading">加载中…</string>
+    <string name="copy_complete">已拷贝</string>
+    <string name="no_prev_page">没有上一页</string>
+    <string name="no_next_page">没有下一页</string>
+
+    <!-- source start-->
+
+    <!-- source end-->
+
+    <!--error string start-->
+    <string name="error_get_web_content">访问网站失败：%s</string>
+    <!--error string end-->
+
+    <string name="share_selected_source">分享选中源</string>
+    <string name="discovery">发现</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="chapter_list_empty">目录列表为空</string>
+
+    <string name="source_tab_info">详情</string>
+
+    <string name="chinese_converter">中文简繁体转换</string>
+    <string name="main_body">正文</string>
+
+    <!--color-->
+    <string name="show">显示</string>
+    <string name="hide">隐藏</string>
+    <string name="hide_when_status_bar_show">状态栏显示时隐藏</string>
+    <string name="open_in_browser">浏览器打开</string>
+    <string name="copy_url">拷贝 URL</string>
+    <string name="full_screen">全屏</string>
+
+    <!-- check source config string -->
+    <string name="check_source_config_summary">校验超时：%1$s秒\n校验项目：%2$s</string>
+    <string name="input_verification_code">输入验证码</string>
+    <string name="verification_code">验证码</string>
+    <!-- string end -->
+    <string name="confirm">确认</string>
+    <string name="jump_to_another_app">跳转其它应用</string>
+    <string name="keep_swipe_tip">继续滑动以加载下一章…</string>
+</resources>

@@ -1,6 +1,5 @@
 package com.sjianjun.reader
 
-import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
@@ -9,12 +8,12 @@ import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.reader.mqtt.MqttUtil
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
-import com.tencent.mmkv.MMKV
 import com.sjianjun.reader.utils.ChineseUtils
+import com.tencent.mmkv.MMKV
 import sjj.alog.Config
 import java.io.File
 
-class App : Application() {
+class App : io.legado.app.App() {
     private var first = true
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)

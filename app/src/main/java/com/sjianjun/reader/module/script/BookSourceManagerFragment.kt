@@ -167,7 +167,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         if (searchView != null) {
             searchView.queryHint = "书源搜索"
             searchView.imeOptions = EditorInfo.IME_ACTION_SEARCH
-            searchView.isIconified = true
+            searchView.isIconified = false
             searchView.clearFocus()
             searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
@@ -184,7 +184,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             searchView.setOnCloseListener {
                 searchView.hideKeyboard()
                 searchView.clearFocus()
-                false
+                true
             }
             searchView.setOnQueryTextFocusChangeListener { view, b ->
                 if (!b) {

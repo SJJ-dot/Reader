@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Google's Material Design colors from
+    https://www.google.com/design/spec/style/color.html#color-color-palette -->
+
+    <!-- Items Light -->
+    <!-- 12% -->
+    <!-- 38% -->
+    <color name="md_light_disabled">#61000000</color>
+    <!-- 54% -->
+    <color name="md_light_secondary">#8A000000</color>
+    <!-- 87% -->
+    <color name="md_light_primary_text">#DE000000</color>
+    <!-- other specifications -->
+
+    <!-- Items Dark -->
+    <!-- 12% -->
+    <!-- 30% -->
+    <color name="md_dark_disabled">#4DFFFFFF</color>
+    <!-- 70% -->
+    <!-- 100% -->
+    <color name="md_dark_primary_text">#FFFFFFFF</color>
+    <!-- other specifications -->
+
+    <!-- Red -->
+    <color name="md_red_600">#E53935</color>
+
+    <!-- Pink -->
+    <color name="md_pink_800">#AD1457</color>
+
+    <!-- Purple -->
+
+    <!-- Deep Purple -->
+
+    <!-- Indigo -->
+
+    <!-- Blue -->
+    <color name="md_blue_800">#1565C0</color>
+
+    <!-- Light Blue -->
+    <color name="md_light_blue_600">#039BE5</color>
+    <color name="md_light_blue_700">#0288D1</color>
+
+    <!-- Cyan -->
+
+    <!-- Teal -->
+
+    <!-- Green -->
+
+    <!-- Light Green -->
+
+    <!-- Lime -->
+
+    <!-- Yellow -->
+
+    <!-- Amber -->
+
+    <!-- Orange -->
+    <color name="md_orange_900">#E65100</color>
+
+    <!-- Deep Orange -->
+    <color name="md_deep_orange_800">#D84315</color>
+
+    <!-- Brown -->
+    <color name="md_brown_500">#795548</color>
+
+    <!-- Grey -->
+    <color name="md_grey_50">#FAFAFA</color>
+    <color name="md_grey_100">#F5F5F5</color>
+    <color name="md_grey_200">#EEEEEE</color>
+    <color name="md_grey_500">#9E9E9E</color>
+    <color name="md_grey_850">#303030</color>
+    <color name="md_grey_900">#212121</color>
+
+    <!-- Blue Grey -->
+    <color name="md_blue_grey_500">#607D8B</color>
+    <color name="md_blue_grey_600">#546E7A</color>
+
+    <!-- Black & White -->
+    <color name="md_black_1000">#000000</color>
+    <color name="md_white_1000">#FFFFFF</color>
+
+</resources>

@@ -24,6 +24,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = 'Reader'
 include ':app', ':fastscroller'
-//include ':legado-engine'
-//include ':modules:rhino'
+include ':legado-engine'
+include ':modules:rhino'
 //include ':modules:book'

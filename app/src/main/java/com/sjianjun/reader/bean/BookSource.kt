@@ -10,6 +10,7 @@ import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import sjj.legado.engine.YueduEngine
 
 @Entity
 class BookSource {
@@ -69,13 +70,42 @@ class BookSource {
      */
     var lauanage: Language = Language.py
 
+    private val yueduEngine by lazy {
+        YueduEngine(js)
+    }
+
 
     private suspend inline fun <reified T> execute(func: Func, param: String?): T? {
         Log.i("调用脚本方法：${func}")
-        if (lauanage == Language.yuedu) {
-            throw UnsupportedOperationException("暂不支持yuedu书源")
+        return when (lauanage) {
+            Language.yuedu -> {
+                val result = when (func) {
+                    Func.search -> yueduEngine.search(param!!)
+                    Func.getDetails -> yueduEngine.getDetails(param!!)
+                    Func.getChapterContent -> yueduEngine.getChapterContent(param!!)
+                    Func.getSiteUrl -> yueduEngine.getSiteUrl()
+                    Func.verify -> yueduEngine.verify(param!!).toString()
+                }
+                if (T::class.java == String::class.java) {
+                    return result as T?
+                }
+                if (T::class.java == Boolean::class.java) {
+                    return result.toBoolean() as T
+                }
+                if (T::class.java == Int::class.java) {
+                    return result?.toInt() as T?
+                }
+
+                try {
+                    gson.fromJson<T>(result)
+                } catch (e: Exception) {
+                    Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
+                    throw e
+                }
+            }
+
+            Language.py -> py(func.name, param)
         }
-        return py(func.name, param)
     }
 
     private fun hasFunction(func: Func): Boolean {
