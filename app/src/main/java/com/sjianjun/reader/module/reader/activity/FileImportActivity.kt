@@ -150,7 +150,7 @@ class FileImportActivity : BaseActivity() {
                         }
 
                         val lastChapterName = chapterName
-                        val matchName = match(line, chapterNamePattern, book.tocRule)
+                        val matchName = match(line, chapterNamePattern, 0, book.tocRule)
 
                         if (matchName.isNullOrBlank()) {
                             chapterContent.append(line)
@@ -264,7 +264,7 @@ class FileImportActivity : BaseActivity() {
                 val readLine = reader.readLine()
 
                 if (!matchTitle) {
-                    val title = match(readLine, bookNamePattern)
+                    val title = match(readLine, bookNamePattern, 1)
                     if (!title.isNullOrBlank()) {
                         matchTitle = true
                         book.book.title = title
@@ -272,7 +272,7 @@ class FileImportActivity : BaseActivity() {
                     }
                 }
                 if (!matchAuthor) {
-                    val author = match(readLine, bookAuthorPattern)
+                    val author = match(readLine, bookAuthorPattern, 1)
                     if (!author.isNullOrBlank()) {
                         matchAuthor = true
                         book.book.author = author
@@ -281,7 +281,7 @@ class FileImportActivity : BaseActivity() {
                 }
 
                 if (!matchIntro) {
-                    val intro = match(readLine, chapterNamePattern, book.tocRule)
+                    val intro = match(readLine, chapterNamePattern, 0, book.tocRule)
                     if (!intro.isNullOrBlank()) {
                         matchIntro = true
                     } else {
@@ -323,7 +323,7 @@ class FileImportActivity : BaseActivity() {
     /**
      * 匹配章节名。找到则返回章节名否则返回空字符串
      */
-    private fun match(content: String?, pattern: List<Pattern>, pattern0: Pattern? = null): String? {
+    private fun match(content: String?, pattern: List<Pattern>, group: Int, pattern0: Pattern? = null): String? {
         val content = content ?: return null
         if (content.isBlank()) {
             return null
@@ -340,10 +340,10 @@ class FileImportActivity : BaseActivity() {
             val matcher = it.matcher(contentTrim)
 
             if (matcher.find()) {
-                return if (matcher.groupCount() < 1) {
+                return try {
+                    matcher.group(group)?.trim() ?: contentTrim
+                } catch (e: Exception) {
                     contentTrim
-                } else {
-                    matcher.group().trim()
                 }
             }
         }
