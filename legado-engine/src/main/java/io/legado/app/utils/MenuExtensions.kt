@@ -62,16 +62,6 @@ fun Menu.applyOpenTint(context: Context) {
     }
 }
 
-@SuppressLint("RestrictedApi")
-inline fun Menu.transaction(block: (Menu) -> Unit) {
-    val menuBuilder = this as? MenuBuilder
-    menuBuilder?.stopDispatchingItemsChanged()
-    try {
-        block(this)
-    } finally {
-        menuBuilder?.startDispatchingItemsChanged()
-    }
-}
 
 object MenuExtensions {
 

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.graphics.Color
 import android.os.Build
-import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
@@ -20,55 +19,10 @@ import androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_B
 import androidx.fragment.app.DialogFragment
 import io.legado.app.R
 
-inline fun <reified T : DialogFragment> AppCompatActivity.showDialogFragment(
-    arguments: Bundle.() -> Unit = {}
-) {
-    @Suppress("DEPRECATION")
-    val dialog = T::class.java.newInstance()
-    val bundle = Bundle()
-    bundle.apply(arguments)
-    dialog.arguments = bundle
-    dialog.show(supportFragmentManager, T::class.simpleName)
-}
-
-inline fun <reified T : DialogFragment> AppCompatActivity.dismissDialogFragment() {
-    supportFragmentManager.fragments.forEach {
-        if (it is T) {
-            it.dismissAllowingStateLoss()
-        }
-    }
-}
 
 fun AppCompatActivity.showDialogFragment(dialogFragment: DialogFragment) {
     dialogFragment.show(supportFragmentManager, dialogFragment::class.simpleName)
 }
-
-val WindowManager.windowSize: DisplayMetrics
-    get() {
-        val displayMetrics = DisplayMetrics()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val windowMetrics: WindowMetrics = currentWindowMetrics
-            val insets = windowMetrics.windowInsets
-                .getInsetsIgnoringVisibility(
-                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
-                )
-            val windowWidth = windowMetrics.bounds.width()
-            val windowHeight = windowMetrics.bounds.height()
-            var insetsWidth = insets.left + insets.right
-            var insetsHeight = insets.top + insets.bottom
-            if (windowWidth > windowHeight) {
-                val tmp = insetsWidth
-                insetsWidth = insetsHeight
-                insetsHeight = tmp
-            }
-            displayMetrics.widthPixels = windowWidth - insetsWidth
-            displayMetrics.heightPixels = windowHeight - insetsHeight
-        } else {
-            @Suppress("DEPRECATION")
-            defaultDisplay.getMetrics(displayMetrics)
-        }
-        return displayMetrics
-    }
 
 @Suppress("DEPRECATION")
 fun Activity.fullScreen() {
@@ -193,29 +147,3 @@ fun Activity.toggleSystemBar(show: Boolean) {
         }
     }
 }
-
-/////以下方法需要在View完全被绘制出来之后调用，否则判断不了,在比如 onWindowFocusChanged（）方法中可以得到正确的结果/////
-
-/**
- * 返回NavigationBar
- */
-val Activity.navigationBar: View?
-    get() {
-        val viewGroup = (window.decorView as? ViewGroup) ?: return null
-        for (i in 0 until viewGroup.childCount) {
-            val child = viewGroup.getChildAt(i)
-            val childId = child.id
-            if (childId != View.NO_ID
-                && resources.getResourceEntryName(childId) == "navigationBarBackground"
-            ) {
-                return child
-            }
-        }
-        return null
-    }
-
-/**
- * 返回NavigationBar是否存在
- */
-val Activity.isNavigationBarExist: Boolean
-    get() = navigationBar != null

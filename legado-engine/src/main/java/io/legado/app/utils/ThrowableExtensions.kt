@@ -1,7 +1,5 @@
 package io.legado.app.utils
 
-import java.io.IOException
-
 val Throwable.stackTraceStr: String
     get() {
         val stackTrace = stackTraceToString()
@@ -11,9 +9,3 @@ val Throwable.stackTraceStr: String
             else -> lMsg
         }
     }
-
-fun Throwable.asIOException(): IOException {
-    val newException = IOException(this.message)
-    newException.initCause(this)
-    return newException
-}

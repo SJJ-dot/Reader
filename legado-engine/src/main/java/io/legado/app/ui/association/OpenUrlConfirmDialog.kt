@@ -82,7 +82,7 @@ class OpenUrlConfirmDialog() : BaseDialogFragment(R.layout.dialog_open_url_confi
             if (targetIntent.resolveActivity(appCtx.packageManager) != null) {
                 startActivity(targetIntent)
             } else {
-                toastOnUi(R.string.can_not_open)
+                context?.toastOnUi(R.string.can_not_open)
             }
         } catch (e: Exception) {
             AppLog.put("打开链接失败", e, true)

@@ -1,12 +1,8 @@
 package io.legado.app.help
 
-import io.legado.app.data.appDb
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.MD5Utils
 import io.legado.app.utils.externalFiles
-import io.legado.app.utils.getFile
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 import java.io.File
 

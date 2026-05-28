@@ -67,29 +67,6 @@ object ArchiveUtils {
 
     }
 
-    /* 遍历目录获取文件名 */
-    fun getArchiveFilesName(fileUri: Uri, filter: ((String) -> Boolean)? = null): List<String> =
-        getArchiveFilesName(FileDoc.fromUri(fileUri, false), filter)
-
-
-    fun getArchiveFilesName(
-        fileDoc: FileDoc,
-        filter: ((String) -> Boolean)? = null
-    ): List<String> {
-        val name = fileDoc.name
-        checkAchieve(name)
-
-        return fileDoc.openReadPfd().getOrThrow().use {
-            try {
-                LibArchiveUtils.getFilesName(it, filter)
-            } catch (e: Exception) {
-                emptyList()
-            }
-
-        }
-
-
-    }
 
     fun isArchive(name: String): Boolean {
         return archiveFileRegex.matches(name)

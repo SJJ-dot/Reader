@@ -44,9 +44,6 @@ object AppConst {
         appInfo
     }
 
-    val charsets =
-        arrayListOf("UTF-8", "GB2312", "GB18030", "GBK", "Unicode", "UTF-16", "UTF-16LE", "ASCII")
-
     @Keep
     data class AppInfo(
         var versionCode: Long = 0L,

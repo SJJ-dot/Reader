@@ -75,7 +75,7 @@ object BookSourceUseCase {
         }
         bookSourceDao.insertBookSource(listOf(*updates.toTypedArray(), *newSource.toTypedArray()))
         toast(
-            "新增${newSource.size}、更新${updates.size},跳过${countInvalid}个无效书源",
+            "新增${newSource.size}、更新${updates.size},跳过${countInvalid}个",
             Toast.LENGTH_LONG
         )
         Log.i("${sources.first().group}：新增${newSource.size}、更新${updates.size}")

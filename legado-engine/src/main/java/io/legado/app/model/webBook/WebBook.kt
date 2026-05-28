@@ -4,12 +4,10 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
-import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.removeAllBookType
-import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.source.getBookType
 import io.legado.app.model.Debug
@@ -17,12 +15,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.sync.Semaphore
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 @Suppress("MemberVisibilityCanBePrivate")

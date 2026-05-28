@@ -92,41 +92,6 @@ inline fun <reified T> Gson.fromJsonObject(inputStream: InputStream?): Result<T>
     }
 }
 
-inline fun <reified T> Gson.fromJsonArray(inputStream: InputStream?): Result<List<T>> {
-    return kotlin.runCatching {
-        if (inputStream == null) {
-            throw JsonSyntaxException("解析流为空")
-        }
-        val reader = InputStreamReader(inputStream)
-        val type = TypeToken.getParameterized(List::class.java, T::class.java).type
-        val list = fromJson(reader, type) as List<T?>
-        if (list.contains(null)) {
-            throw JsonSyntaxException(
-                "列表不能存在null元素，可能是json格式错误，通常为列表存在多余的逗号所致"
-            )
-        }
-        @Suppress("UNCHECKED_CAST")
-        list as List<T>
-    }
-}
-
-fun Gson.writeToOutputStream(out: OutputStream, any: Any) {
-    val writer = JsonWriter(OutputStreamWriter(out, "UTF-8"))
-    writer.setIndent("  ")
-    if (any is List<*>) {
-        writer.beginArray()
-        any.forEach {
-            it?.let {
-                toJson(it, it::class.java, writer)
-            }
-        }
-        writer.endArray()
-    } else {
-        toJson(any, any::class.java, writer)
-    }
-    writer.close()
-}
-
 /**
  *
  */

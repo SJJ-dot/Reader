@@ -49,84 +49,6 @@ inline fun <reified A : Activity> Context.startActivity(configIntent: Intent.() 
 }
 
 
-inline fun <reified T : Service> Context.startService(configIntent: Intent.() -> Unit = {}) {
-    startService(Intent(this, T::class.java).apply(configIntent))
-}
-
-inline fun <reified T : Service> Context.stopService() {
-    stopService(Intent(this, T::class.java))
-}
-
-@SuppressLint("UnspecifiedImmutableFlag")
-inline fun <reified T : Service> Context.servicePendingIntent(
-    action: String,
-    requestCode: Int = 0,
-    configIntent: Intent.() -> Unit = {},
-): PendingIntent? {
-    val intent = Intent(this, T::class.java)
-    intent.action = action
-    configIntent.invoke(intent)
-    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        FLAG_UPDATE_CURRENT or FLAG_MUTABLE
-    } else {
-        FLAG_UPDATE_CURRENT
-    }
-    return getService(this, requestCode, intent, flags)
-}
-
-@SuppressLint("UnspecifiedImmutableFlag")
-fun Context.activityPendingIntent(
-    intent: Intent,
-    action: String,
-): PendingIntent? {
-    intent.action = action
-    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        FLAG_UPDATE_CURRENT or FLAG_MUTABLE
-    } else {
-        FLAG_UPDATE_CURRENT
-    }
-    return getActivity(this, 0, intent, flags)
-}
-
-@SuppressLint("UnspecifiedImmutableFlag")
-inline fun <reified T : Activity> Context.activityPendingIntent(
-    action: String,
-    configIntent: Intent.() -> Unit = {},
-): PendingIntent? {
-    val intent = Intent(this, T::class.java)
-    intent.action = action
-    configIntent.invoke(intent)
-    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        FLAG_UPDATE_CURRENT or FLAG_MUTABLE
-    } else {
-        FLAG_UPDATE_CURRENT
-    }
-    return getActivity(this, 0, intent, flags)
-}
-
-@SuppressLint("UnspecifiedImmutableFlag")
-inline fun <reified T : BroadcastReceiver> Context.broadcastPendingIntent(
-    action: String,
-    configIntent: Intent.() -> Unit = {},
-): PendingIntent? {
-    val intent = Intent(this, T::class.java)
-    intent.action = action
-    configIntent.invoke(intent)
-    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        FLAG_UPDATE_CURRENT or FLAG_MUTABLE
-    } else {
-        FLAG_UPDATE_CURRENT
-    }
-    return getBroadcast(this, 0, intent, flags)
-}
-
-fun Context.startForegroundServiceCompat(intent: Intent) {
-    try {
-        startService(intent)
-    } catch (e: IllegalStateException) {
-        ContextCompat.startForegroundService(this, intent)
-    }
-}
 
 val Context.defaultSharedPreferences: SharedPreferences
     get() = PreferenceManager.getDefaultSharedPreferences(this)
@@ -134,45 +56,13 @@ val Context.defaultSharedPreferences: SharedPreferences
 fun Context.getPrefBoolean(key: String, defValue: Boolean = false) =
     defaultSharedPreferences.getBoolean(key, defValue)
 
-fun Context.putPrefBoolean(key: String, value: Boolean = false) =
-    defaultSharedPreferences.edit { putBoolean(key, value) }
-
-fun Context.getPrefInt(key: String, defValue: Int = 0) =
-    defaultSharedPreferences.getInt(key, defValue)
-
-fun Context.putPrefInt(key: String, value: Int) =
-    defaultSharedPreferences.edit { putInt(key, value) }
-
-fun Context.getPrefLong(key: String, defValue: Long = 0L) =
-    defaultSharedPreferences.getLong(key, defValue)
-
-fun Context.putPrefLong(key: String, value: Long) =
-    defaultSharedPreferences.edit { putLong(key, value) }
 
 fun Context.getPrefString(key: String, defValue: String? = null) =
     defaultSharedPreferences.getString(key, defValue)
 
-fun Context.putPrefString(key: String, value: String?) =
-    defaultSharedPreferences.edit { putString(key, value) }
-
-fun Context.getPrefStringSet(
-    key: String,
-    defValue: MutableSet<String>? = null,
-): MutableSet<String>? = defaultSharedPreferences.getStringSet(key, defValue)
-
-fun Context.putPrefStringSet(key: String, value: MutableSet<String>) =
-    defaultSharedPreferences.edit { putStringSet(key, value) }
-
-fun Context.removePref(key: String) =
-    defaultSharedPreferences.edit { remove(key) }
 
 
 fun Context.getCompatColor(@ColorRes id: Int): Int = ContextCompat.getColor(this, id)
-
-fun Context.getCompatDrawable(@DrawableRes id: Int): Drawable? = ContextCompat.getDrawable(this, id)
-
-fun Context.getCompatColorStateList(@ColorRes id: Int): ColorStateList? =
-    ContextCompat.getColorStateList(this, id)
 
 fun Context.checkSelfUriPermission(uri: Uri, modeFlags: Int): Int =
     checkUriPermission(uri, Process.myPid(), Process.myUid(), modeFlags)

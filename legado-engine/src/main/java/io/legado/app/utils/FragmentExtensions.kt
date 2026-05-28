@@ -67,12 +67,6 @@ fun Fragment.removePref(key: String) =
 
 fun Fragment.getCompatColor(@ColorRes id: Int): Int = requireContext().getCompatColor(id)
 
-fun Fragment.getCompatDrawable(@DrawableRes id: Int): Drawable? =
-    requireContext().getCompatDrawable(id)
-
-fun Fragment.getCompatColorStateList(@ColorRes id: Int): ColorStateList? =
-    requireContext().getCompatColorStateList(id)
-
 inline fun <reified T : Activity> Fragment.startActivity(
     configIntent: Intent.() -> Unit = {}
 ) {

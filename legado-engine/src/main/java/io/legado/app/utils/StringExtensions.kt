@@ -5,33 +5,16 @@ package io.legado.app.utils
 import android.annotation.SuppressLint
 import android.icu.text.Collator
 import android.icu.util.ULocale
-import android.net.Uri
-import android.text.Editable
 import cn.hutool.core.net.URLEncodeUtil
 import io.legado.app.constant.AppPattern
 import io.legado.app.constant.AppPattern.dataUriRegex
-import java.io.File
 import java.lang.Character.codePointCount
 import java.lang.Character.offsetByCodePoints
 import java.util.Locale
 import java.util.regex.Pattern
 
-fun String?.safeTrim() = if (this.isNullOrBlank()) null else this.trim()
-
 fun String?.isContentScheme(): Boolean = this?.startsWith("content://") == true
 
-fun String.toEditable(): Editable = Editable.Factory.getInstance().newEditable(this)
-
-fun String.parseToUri(): Uri {
-    return if (isUri()) Uri.parse(this) else {
-        Uri.fromFile(File(this))
-    }
-}
-
-fun String?.isUri(): Boolean {
-    this ?: return false
-    return this.startsWith("file://", true) || isContentScheme()
-}
 
 fun String?.isAbsUrl() =
     this?.let {
@@ -79,7 +62,7 @@ fun String?.isTrue(nullIsTrue: Boolean = false): Boolean {
 }
 
 fun String.isHex(): Boolean {
-    return all {c ->
+    return all { c ->
         c in '0'..'9' || c in 'A'..'F' || c in 'a'..'f'
     }
 }
@@ -111,15 +94,6 @@ fun String?.memorySize(): Int {
 }
 
 /**
- * 是否中文
- */
-fun String.isChinese(): Boolean {
-    val p = Pattern.compile("[\u4e00-\u9fa5]")
-    val m = p.matcher(this)
-    return m.find()
-}
-
-/**
  * 将字符串拆分为单个字符,包含emoji
  */
 fun CharSequence.toStringArray(): Array<String> {
@@ -133,14 +107,4 @@ fun CharSequence.toStringArray(): Array<String> {
     } catch (e: Exception) {
         split("").toTypedArray()
     }
-}
-
-fun String.escapeRegex(): String {
-    return replace(AppPattern.regexCharRegex, "\\\\$0")
-}
-
-fun String.encodeURI(): String = URLEncodeUtil.encodeQuery(this)
-
-fun String.normalizeFileName(): String {
-    return replace(AppPattern.fileNameRegex2, "_")
 }

@@ -50,83 +50,7 @@ object StringUtils {
             return map
         }
 
-    /**
-     * 将日期转换成昨天、今天、明天
-     */
-    fun dateConvert(source: String, pattern: String): String {
-        val format = SimpleDateFormat(pattern, Locale.getDefault())
-        val calendar = Calendar.getInstance()
-        kotlin.runCatching {
-            val date = format.parse(source) ?: return ""
-            val curTime = calendar.timeInMillis
-            calendar.time = date
-            //将MISC 转换成 sec
-            val difSec = abs((curTime - date.time) / 1000)
-            val difMin = difSec / 60
-            val difHour = difMin / 60
-            val difDate = difHour / 60
-            val oldHour = calendar.get(Calendar.HOUR)
-            //如果没有时间
-            if (oldHour == 0) {
-                //比日期:昨天今天和明天
-                return when {
-                    difDate == 0L -> "今天"
-                    difDate < DAY_OF_YESTERDAY -> "昨天"
-                    else -> {
-                        @SuppressLint("SimpleDateFormat")
-                        val convertFormat = SimpleDateFormat("yyyy-MM-dd")
-                        convertFormat.format(date)
-                    }
-                }
-            }
 
-            return when {
-                difSec < TIME_UNIT -> difSec.toString() + "秒前"
-                difMin < TIME_UNIT -> difMin.toString() + "分钟前"
-                difHour < HOUR_OF_DAY -> difHour.toString() + "小时前"
-                difDate < DAY_OF_YESTERDAY -> "昨天"
-                else -> {
-                    @SuppressLint("SimpleDateFormat")
-                    val convertFormat = SimpleDateFormat("yyyy-MM-dd")
-                    convertFormat.format(date)
-                }
-            }
-        }.onFailure {
-            it.printOnDebug()
-        }
-        return ""
-    }
-
-    /**
-     * 首字母大写
-     */
-    @SuppressLint("DefaultLocale")
-    fun toFirstCapital(str: String): String {
-        return str.substring(0, 1).uppercase(Locale.getDefault()) + str.substring(1)
-    }
-
-    /**
-     * 将文本中的半角字符，转换成全角字符
-     */
-    fun halfToFull(input: String): String {
-        val c = input.toCharArray()
-        for (i in c.indices) {
-            if (c[i].code == 32)
-            //半角空格
-            {
-                c[i] = 12288.toChar()
-                continue
-            }
-            //根据实际情况，过滤不需要转换的符号
-            //if (c[i] == 46) //半角点号，不转换
-            // continue;
-
-            if (c[i].code in 33..126)
-            //其他符号都转换为全角
-                c[i] = (c[i].code + 65248).toChar()
-        }
-        return String(c)
-    }
 
     /**
      * 字符串全角转换为半角
@@ -218,14 +142,6 @@ object StringUtils {
         return -1
     }
 
-    /**
-     * 是否包含数字
-     */
-    fun isContainNumber(company: String): Boolean {
-        val p = Pattern.compile("[0-9]+")
-        val m = p.matcher(company)
-        return m.find()
-    }
 
     /**
      * 是否数字

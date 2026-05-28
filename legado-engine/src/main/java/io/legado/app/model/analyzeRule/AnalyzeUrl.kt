@@ -336,7 +336,7 @@ class AnalyzeUrl(
         } else if (charset == null) {
             append(EncoderUtils.escape(value))
         } else {
-            append(URLEncoder.encode(value, charset))
+            append(URLEncoder.encode(value, charset.name()))
         }
     }
 

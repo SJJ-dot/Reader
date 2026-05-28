@@ -40,8 +40,7 @@ object FileUtils {
         if (!file.exists()) {
             file.mkdirs()
         }
-        return file
-    }
+        return file    }
 
     @Synchronized
     fun createFileIfNotExist(filePath: String): File {
@@ -57,22 +56,6 @@ object FileUtils {
             }
         } catch (e: IOException) {
             e.printOnDebug()
-        }
-        return file
-    }
-
-    fun createFileWithReplace(filePath: String): File {
-        val file = File(filePath)
-        if (!file.exists()) {
-            //创建父类文件夹
-            file.parent?.let {
-                createFolderIfNotExist(it)
-            }
-            //创建文件
-            file.createNewFile()
-        } else {
-            file.delete()
-            file.createNewFile()
         }
         return file
     }
@@ -104,16 +87,6 @@ object FileUtils {
         return appCtx.externalCache.absolutePath
     }
 
-    fun getSdCardPath(): String {
-        var sdCardDirectory = Environment.getExternalStorageDirectory().absolutePath
-        try {
-            sdCardDirectory = File(sdCardDirectory).canonicalPath
-        } catch (e: IOException) {
-            e.printOnDebug()
-        }
-        return sdCardDirectory
-    }
-
     const val BY_NAME_ASC = 0
     const val BY_NAME_DESC = 1
     const val BY_TIME_ASC = 2
@@ -127,19 +100,6 @@ object FileUtils {
     @Retention(AnnotationRetention.SOURCE)
     annotation class SortType
 
-    /**
-     * 将目录分隔符统一为平台默认的分隔符，并为目录结尾添加分隔符
-     */
-    fun separator(path: String): String {
-        var path1 = path
-        val separator = File.separator
-        path1 = path1.replace("\\", separator)
-        if (!path1.endsWith(separator)) {
-            path1 += separator
-        }
-        return path1
-    }
-
     fun closeSilently(c: Closeable?) {
         if (c == null) {
             return
@@ -149,164 +109,6 @@ object FileUtils {
         } catch (ignored: IOException) {
         }
 
-    }
-
-    /**
-     * 列出指定目录下的所有子目录
-     */
-    @JvmOverloads
-    fun listDirs(
-        startDirPath: String,
-        excludeDirs: Array<String>? = null, @SortType sortType: Int = BY_NAME_ASC
-    ): Array<File> {
-        var excludeDirs1 = excludeDirs
-        val dirList = ArrayList<File>()
-        val startDir = File(startDirPath)
-        if (!startDir.isDirectory) {
-            return arrayOf()
-        }
-        val dirs = startDir.listFiles(FileFilter { f ->
-            if (f == null) {
-                return@FileFilter false
-            }
-            f.isDirectory
-        }) ?: return arrayOf()
-        if (excludeDirs1 == null) {
-            excludeDirs1 = arrayOf()
-        }
-        for (dir in dirs) {
-            val file = dir.absoluteFile
-            if (!excludeDirs1.contentDeepToString().contains(file.name)) {
-                dirList.add(file)
-            }
-        }
-        when (sortType) {
-            BY_NAME_ASC -> Collections.sort(dirList, SortByName())
-            BY_NAME_DESC -> {
-                Collections.sort(dirList, SortByName())
-                dirList.reverse()
-            }
-            BY_TIME_ASC -> Collections.sort(dirList, SortByTime())
-            BY_TIME_DESC -> {
-                Collections.sort(dirList, SortByTime())
-                dirList.reverse()
-            }
-            BY_SIZE_ASC -> Collections.sort(dirList, SortBySize())
-            BY_SIZE_DESC -> {
-                Collections.sort(dirList, SortBySize())
-                dirList.reverse()
-            }
-            BY_EXTENSION_ASC -> Collections.sort(dirList, SortByExtension())
-            BY_EXTENSION_DESC -> {
-                Collections.sort(dirList, SortByExtension())
-                dirList.reverse()
-            }
-        }
-        return dirList.toTypedArray()
-    }
-
-    /**
-     * 列出指定目录下的所有子目录及所有文件
-     */
-    @JvmOverloads
-    fun listDirsAndFiles(
-        startDirPath: String,
-        allowExtensions: Array<String>? = null
-    ): Array<File>? {
-        val dirs: Array<File>?
-        val files: Array<File>? = if (allowExtensions == null) {
-            listFiles(startDirPath)
-        } else {
-            listFiles(startDirPath, allowExtensions)
-        }
-        dirs = listDirs(startDirPath)
-        if (files == null) {
-            return null
-        }
-        return dirs + files
-    }
-
-    /**
-     * 列出指定目录下的所有文件
-     */
-    @JvmOverloads
-    fun listFiles(
-        startDirPath: String,
-        filterPattern: Pattern? = null, @SortType sortType: Int = BY_NAME_ASC
-    ): Array<File> {
-        val fileList = ArrayList<File>()
-        val f = File(startDirPath)
-        if (!f.isDirectory) {
-            return arrayOf()
-        }
-        val files = f.listFiles(FileFilter { file ->
-            if (file == null) {
-                return@FileFilter false
-            }
-            if (file.isDirectory) {
-                return@FileFilter false
-            }
-
-            filterPattern?.matcher(file.name)?.find() ?: true
-        })
-            ?: return arrayOf()
-        for (file in files) {
-            fileList.add(file.absoluteFile)
-        }
-        when (sortType) {
-            BY_NAME_ASC -> Collections.sort(fileList, SortByName())
-            BY_NAME_DESC -> {
-                Collections.sort(fileList, SortByName())
-                fileList.reverse()
-            }
-            BY_TIME_ASC -> Collections.sort(fileList, SortByTime())
-            BY_TIME_DESC -> {
-                Collections.sort(fileList, SortByTime())
-                fileList.reverse()
-            }
-            BY_SIZE_ASC -> Collections.sort(fileList, SortBySize())
-            BY_SIZE_DESC -> {
-                Collections.sort(fileList, SortBySize())
-                fileList.reverse()
-            }
-            BY_EXTENSION_ASC -> Collections.sort(fileList, SortByExtension())
-            BY_EXTENSION_DESC -> {
-                Collections.sort(fileList, SortByExtension())
-                fileList.reverse()
-            }
-        }
-        return fileList.toTypedArray()
-    }
-
-    /**
-     * 列出指定目录下的所有文件
-     */
-    fun listFiles(startDirPath: String, allowExtensions: Array<String>?): Array<File>? {
-        val file = File(startDirPath)
-        return file.listFiles { _, name ->
-            //返回当前目录所有以某些扩展名结尾的文件
-            val extension = getExtension(name)
-            allowExtensions?.contentDeepToString()?.contains(extension) == true
-                    || allowExtensions == null
-        }
-    }
-
-    /**
-     * 列出指定目录下的所有文件
-     */
-    fun listFiles(startDirPath: String, allowExtension: String?): Array<File>? {
-        return if (allowExtension == null)
-            listFiles(startDirPath, allowExtension = null)
-        else
-            listFiles(startDirPath, arrayOf(allowExtension))
-    }
-
-    /**
-     * 判断文件或目录是否存在
-     */
-    fun exist(path: String): Boolean {
-        val file = File(path)
-        return file.exists()
     }
 
     /**
@@ -395,89 +197,6 @@ object FileUtils {
 
     }
 
-    /**
-     * 移动文件或目录
-     */
-    fun move(src: String, tar: String): Boolean {
-        return move(File(src), File(tar))
-    }
-
-    /**
-     * 移动文件或目录
-     */
-    fun move(src: File, tar: File): Boolean {
-        return rename(src, tar)
-    }
-
-    /**
-     * 文件重命名
-     */
-    fun rename(oldPath: String, newPath: String): Boolean {
-        return rename(File(oldPath), File(newPath))
-    }
-
-    /**
-     * 文件重命名
-     */
-    fun rename(src: File, tar: File): Boolean {
-        return src.renameTo(tar)
-    }
-
-    /**
-     * 读取文本文件, 失败将返回空串
-     */
-    @JvmOverloads
-    fun readText(filepath: String, charset: String = "utf-8"): String {
-        try {
-            val data = readBytes(filepath)
-            if (data != null) {
-                return String(data, Charset.forName(charset)).trim { it <= ' ' }
-            }
-        } catch (ignored: UnsupportedEncodingException) {
-        }
-
-        return ""
-    }
-
-    /**
-     * 读取文件内容, 失败将返回空串
-     */
-    fun readBytes(filepath: String): ByteArray? {
-        var fis: FileInputStream? = null
-        try {
-            fis = FileInputStream(filepath)
-            val outputStream = ByteArrayOutputStream()
-            val buffer = ByteArray(1024)
-            while (true) {
-                val len = fis.read(buffer, 0, buffer.size)
-                if (len == -1) {
-                    break
-                } else {
-                    outputStream.write(buffer, 0, len)
-                }
-            }
-            val data = outputStream.toByteArray()
-            outputStream.close()
-            return data
-        } catch (e: IOException) {
-            return null
-        } finally {
-            closeSilently(fis)
-        }
-    }
-
-    /**
-     * 保存文本内容
-     */
-    @JvmOverloads
-    fun writeText(filepath: String, content: String, charset: String = "utf-8"): Boolean {
-        return try {
-            writeBytes(filepath, content.toByteArray(charset(charset)))
-        } catch (e: UnsupportedEncodingException) {
-            false
-        }
-
-    }
 
     /**
      * 保存文件内容
@@ -529,75 +248,6 @@ object FileUtils {
         }
     }
 
-    /**
-     * 追加文本内容
-     */
-    fun appendText(path: String, content: String): Boolean {
-        val file = File(path)
-        var writer: FileWriter? = null
-        return try {
-            if (!file.exists()) {
-                file.createNewFile()
-            }
-            writer = FileWriter(file, true)
-            writer.write(content)
-            true
-        } catch (e: IOException) {
-            false
-        } finally {
-            closeSilently(writer)
-        }
-    }
-
-    /**
-     * 获取文件大小
-     */
-    fun getLength(path: String): Long {
-        val file = File(path)
-        return if (!file.isFile || !file.exists()) {
-            0
-        } else file.length()
-    }
-
-    /**
-     * 获取文件或网址的名称（包括后缀）
-     */
-    fun getName(path: String?): String {
-        if (path == null) {
-            return ""
-        }
-        val pos = path.lastIndexOf(File.separator)
-        return if (0 <= pos) {
-            path.substring(pos + 1)
-        } else {
-            path
-        }
-    }
-
-    /**
-     * 获取文件名（不包括扩展名）
-     */
-    fun getNameExcludeExtension(path: String): String {
-        return try {
-            var fileName = File(path).name
-            val lastIndexOf = fileName.lastIndexOf(".")
-            if (lastIndexOf != -1) {
-                fileName = fileName.substring(0, lastIndexOf)
-            }
-            fileName
-        } catch (e: Exception) {
-            ""
-        }
-
-    }
-
-    /**
-     * 获取格式化后的文件大小
-     */
-    fun getSize(path: String): String {
-        val fileSize = getLength(path)
-        return ConvertUtils.formatFileSize(fileSize)
-    }
 
     /**
      * 获取文件后缀,不包括“.”

@@ -25,13 +25,6 @@ fun Context.toastOnUi(message: CharSequence?, duration: Int = Toast.LENGTH_SHORT
     }
 }
 
-fun Context.toastOnUiLegacy(message: CharSequence) {
-    if (message.isNullOrBlank()) return
-    runOnUI {
-        Toast.makeText(appCtx, message, Toast.LENGTH_SHORT).show()
-    }
-}
-
 fun Context.longToastOnUi(message: Int) {
     toastOnUi(message, Toast.LENGTH_LONG)
 }
@@ -40,17 +33,4 @@ fun Context.longToastOnUi(message: CharSequence?) {
     toastOnUi(message, Toast.LENGTH_LONG)
 }
 
-fun Context.longToastOnUiLegacy(message: CharSequence) {
-    if (message.isNullOrBlank()) return
-    runOnUI {
-        Toast.makeText(appCtx, message, Toast.LENGTH_SHORT).show()
-    }
-}
 
-fun Fragment.toastOnUi(message: Int) = requireActivity().toastOnUi(message)
-
-fun Fragment.toastOnUi(message: CharSequence) = requireActivity().toastOnUi(message)
-
-fun Fragment.longToast(message: Int) = requireContext().longToastOnUi(message)
-
-fun Fragment.longToast(message: CharSequence) = requireContext().longToastOnUi(message)

@@ -5,9 +5,6 @@ package io.legado.app.utils
 import android.os.Build.VERSION.SDK_INT
 import android.os.Handler
 import android.os.Looper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.launch
 
 /** This main looper cache avoids synchronization overhead when accessed repeatedly. */
 private val mainLooper: Looper = Looper.getMainLooper()
@@ -36,15 +33,5 @@ fun runOnUI(function: () -> Unit) {
         function()
     } else {
         mainHandler.post(function)
-    }
-}
-
-fun CoroutineScope.runOnIO(function: () -> Unit) {
-    if (isMainThread) {
-        launch(IO) {
-            function()
-        }
-    } else {
-        function()
     }
 }
