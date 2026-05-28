@@ -3,8 +3,6 @@ package com.sjianjun.reader.http;
 
 import static okhttp3.internal.platform.Platform.INFO;
 
-import com.sjianjun.charset.CharsetDetector;
-
 import org.jetbrains.annotations.Nullable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,8 +12,11 @@ import org.jsoup.select.Elements;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import io.legado.app.lib.icu4j.CharsetDetector;
+import io.legado.app.lib.icu4j.CharsetMatch;
 import okhttp3.Connection;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
@@ -330,8 +331,11 @@ public final class HttpLoggingInterceptor implements Interceptor {
             }
         }
         //根据内容判断
-        charsetStr = CharsetDetector.detectCharset(buffer.inputStream());
-        return Charset.forName(charsetStr);
+        CharsetMatch match = new CharsetDetector().setText(buffer.inputStream()).detect();
+        if (match == null) {
+            return UTF8;
+        }
+        return Charset.forName(match.getName());
     }
 
     private boolean isEmpty(@Nullable CharSequence sequence) {

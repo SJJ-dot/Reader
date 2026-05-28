@@ -1,7 +1,5 @@
 package com.sjianjun.reader.http;
 
-import com.sjianjun.charset.CharsetDetector;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,6 +10,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
+import io.legado.app.lib.icu4j.CharsetDetector;
+import io.legado.app.lib.icu4j.CharsetMatch;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import okio.BufferedSource;
@@ -22,7 +22,7 @@ public class StringConverter {
         MediaType mediaType = value.contentType();
         BufferedSource source = value.source();
         source.request(Long.MAX_VALUE);
-        byte[] responseBytes = source.buffer().readByteArray();
+        byte[] responseBytes = source.getBuffer().readByteArray();
 
         //根据http头判断
         if (mediaType != null) {
@@ -63,7 +63,12 @@ public class StringConverter {
             }
         }
         //根据内容判断
-        charsetStr = CharsetDetector.detectCharset(new ByteArrayInputStream(responseBytes));
+        CharsetMatch match = new CharsetDetector().setText(responseBytes).detect();
+        if (match == null) {
+            charsetStr = "UTF-8";
+        } else {
+            charsetStr = match.getName();
+        }
         return new String(responseBytes, Charset.forName(charsetStr));
     }
 

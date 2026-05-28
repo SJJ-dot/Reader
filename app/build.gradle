@@ -132,7 +132,7 @@ dependencies {
 //    implementation "org.mozilla:rhino-runtime:1.7.15"
     implementation(libs.jsoup)
 
-    implementation(libs.charsetDetector)
+//    implementation(libs.charsetDetector)
     implementation(libs.alog)
 //    implementation 'com.github.SJJ-dot:Simple-Http:0.0.4'
     implementation(libs.okhttp)
