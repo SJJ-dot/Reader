@@ -10,6 +10,6 @@ const val BOOK_AUTO_REFRESH = "BOOK_AUTO_REFRESH"
 
 const val URL_REPO = "https://github.com/SJJ-dot/Reader"
 val URL_BOOK_SOURCE_DEF = SourceUrl(
-    "https://raw.githubusercontent.com/SJJ-dot/Reader/BookSource/test/BookSource/default.json.gzip",
+    "https://cdn.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip",
     "修仙书源"
 )
