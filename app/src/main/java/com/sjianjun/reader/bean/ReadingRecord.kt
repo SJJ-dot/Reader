@@ -30,6 +30,11 @@ class ReadingRecord(
 
     var isRecommendation = false
 
+    /**
+     * 排序
+     */
+    var order = 0
+
     override fun toString(): String {
         return "ReadingRecord(bookTitle='$bookTitle', chapterIndex=$chapterIndex, isEnd=$isEnd, scrollOffset=$scrollOffset)"
     }

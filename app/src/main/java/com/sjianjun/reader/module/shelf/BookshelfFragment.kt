@@ -38,12 +38,16 @@ import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.glide
+import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.id
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.visibleSet
 import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.clickWithDouble
 import com.sjianjun.reader.view.isLoading
+import io.legado.app.utils.invisible
+import io.legado.app.utils.visible
 import kotlinx.coroutines.FlowPreview
 
 @FlowPreview
@@ -147,7 +151,7 @@ class BookshelfFragment : BaseFragment() {
         val longClickListener: (Book) -> Unit = { book: Book ->
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("书籍操作")
-                .setItems(arrayOf("详情页", "重新加载", "删除")) { _, which ->
+                .setItems(arrayOf("详情页", "重新加载", "排序", "删除")) { _, which ->
                     when (which) {
                         0 -> findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title))
 
@@ -158,6 +162,21 @@ class BookshelfFragment : BaseFragment() {
                         }
 
                         2 -> {
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle("选择排序模式")
+                                .setItems(arrayOf("置顶", "默认", "置底")) { _, subWhich ->
+                                    val newOrder = when (subWhich) {
+                                        0 -> -1
+                                        1 -> 0
+                                        else -> 10000
+                                    }
+                                    // 更新排序并持久化
+                                    viewModel.updateOrder(book, newOrder)
+                                }
+                                .show()
+                        }
+
+                        3 -> {
                             MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("确认删除")
                                 .setMessage("确定要删除《${book.title}》吗?")
@@ -209,17 +228,31 @@ class BookshelfFragment : BaseFragment() {
             val book = data[position]
             val binding = ItemBookListGridBinding.bind(holder.itemView)
             binding.apply {
-                val visibleSet = constraintLayout.visibleSet()
                 bookCover.glide(book.record?.bookCover ?: book.cover)
+                // 显示置顶/置底标签
+                val order = book.record?.order ?: 0
+                when (order) {
+                    -1 -> {
+                        tvOrderTag.visible()
+                        tvOrderTag.rotation = 180f
+                    }
+
+                    10000 -> {
+                        tvOrderTag.show()
+                        tvOrderTag.rotation = 0f
+                    }
+
+                    else -> tvOrderTag.gone()
+                }
                 bookName.text = book.title
                 loading.isLoading = book.isLoading
                 val error = book.error
                 if (error == null) {
-                    visibleSet.invisible(syncError)
+                    syncError.invisible()
                     syncError.isClickable = false
                 } else {
                     syncError.imageTintList = ColorStateList.valueOf(R.color.mdr_red_100.color(root.context))
-                    visibleSet.visible(syncError)
+                    syncError.visible()
                     syncError.click {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
@@ -236,9 +269,9 @@ class BookshelfFragment : BaseFragment() {
                     bvUnread.setHighlight(true)
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0)) {
-                    visibleSet.invisible(bvUnread)
+                    bvUnread.invisible()
                 } else {
-                    visibleSet.visible(bvUnread)
+                    bvUnread.visible()
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
                 originClickableArea.click {
@@ -255,7 +288,6 @@ class BookshelfFragment : BaseFragment() {
                     }
                 })
 
-                visibleSet.apply()
                 detailClickableArea.setOnClickListener {
                     fragment.findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title))
                 }
@@ -293,9 +325,23 @@ class BookshelfFragment : BaseFragment() {
             val book = data[position]
             val binding = ItemBookListBinding.bind(holder.itemView)
             binding.apply {
-                val visibleSet = constraintLayout.visibleSet()
                 bookCover.glide(book.record?.bookCover ?: book.cover)
                 bookName.text = book.title
+                // 显示置顶/置底标签
+                val order = book.record?.order ?: 0
+                when (order) {
+                    -1 -> {
+                        tvOrderTag.visible()
+                        tvOrderTag.rotation = 180f
+                    }
+
+                    10000 -> {
+                        tvOrderTag.show()
+                        tvOrderTag.rotation = 0f
+                    }
+
+                    else -> tvOrderTag.gone()
+                }
                 if (author.tag == null) {
                     author.post {
                         author.maxWidth = bookName.measuredWidth - 85.dp2Px
@@ -308,11 +354,11 @@ class BookshelfFragment : BaseFragment() {
                 loading.isLoading = book.isLoading
                 val error = book.error
                 if (error == null) {
-                    visibleSet.invisible(syncError)
+                    syncError.invisible()
                     syncError.isClickable = false
                 } else {
                     syncError.imageTintList = ColorStateList.valueOf(R.color.mdr_red_100.color(root.context))
-                    visibleSet.visible(syncError)
+                    syncError.visible()
                     syncError.click {
                         fragment.launch {
                             val popup = ErrorMsgPopup(fragment.context)
@@ -329,9 +375,9 @@ class BookshelfFragment : BaseFragment() {
                     bvUnread.setHighlight(true)
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0)) {
-                    visibleSet.invisible(bvUnread)
+                    bvUnread.invisible()
                 } else {
-                    visibleSet.visible(bvUnread)
+                    bvUnread.visible()
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
                 if (origin.tag == null) {
@@ -363,8 +409,6 @@ class BookshelfFragment : BaseFragment() {
                         fragment.viewModel.reloadBookFromNet(book)
                     }
                 })
-
-                visibleSet.apply()
 
                 root.setOnLongClickListener {
                     longClickListener?.invoke(book)

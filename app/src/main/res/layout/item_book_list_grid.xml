@@ -21,6 +21,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- 置顶/置底 标签 -->
+        <ImageView
+            android:id="@+id/tv_order_tag"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_order_tag"
+            android:padding="3dp"
+            android:src="@mipmap/ic_bottom"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="@id/bookCover"
+            app:layout_constraintTop_toTopOf="@id/bookCover"
+            app:tint="@color/mdr_white"
+            tools:visibility="visible" />
+
         <TextView
             android:id="@+id/bookName"
             style="@style/text_body1"

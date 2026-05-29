@@ -122,4 +122,17 @@ class BookShelfViewModel : ViewModel() {
         }
     }
 
+    /**
+     * 更新书籍排序值（保存到 ReadingRecord.order）
+     */
+    fun updateOrder(book: Book, order: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 如果内存中已有 record，直接更新；否则尝试从数据库读取或新建记录
+            book.record?.let {
+                it.order = order
+                recordDao.insertReadingRecord(it)
+            }
+        }
+    }
+
 }
