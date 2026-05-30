@@ -1,0 +1,69 @@
+name: Sync default.json.gzip to target repo
+
+on:
+  push:
+    branches:
+      - BookSource
+
+jobs:
+  sync-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if file missing
+        run: |
+          if [ ! -f "test/BookSource/default.json.gzip" ]; then
+            echo "File test/BookSource/default.json.gzip not found; nothing to do."
+            exit 0
+          fi
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone target repo
+        env:
+          TARGET_REPO: SJJ-dot/Reader         # example "org-or-user/target-repo"
+          TARGET_TOKEN: ${{ secrets.GITHUBTOKEN }}  # PAT with repo permissions
+        run: |
+          if [ -z "$TARGET_REPO" ] || [ -z "$TARGET_TOKEN" ]; then
+            echo "TARGET_REPO or TARGET_REPO_TOKEN secret not set"
+            exit 1
+          fi
+          git clone "https://x-access-token:${TARGET_TOKEN}@github.com/${TARGET_REPO}.git" target-repo
+          ls -la target-repo || (echo "Clone failed" && exit 1)
+
+      - name: Copy file into target repo and commit
+        env:
+          TARGET_BRANCH: "BookSource"   # 改为目标分支
+          TARGET_PATH: "test/BookSource/default.json.gzip"  # 目标仓库内存放路径
+        run: |
+          # Enter target repo, fetch remote branches and checkout existing target branch if present
+          cd target-repo
+          git fetch origin
+          # If the target branch exists on remote, check it out to track origin/<branch>
+          if git rev-parse --verify "origin/${TARGET_BRANCH}" >/dev/null 2>&1; then
+            git checkout --track "origin/${TARGET_BRANCH}" || git checkout "${TARGET_BRANCH}"
+          else
+            # create a new branch if remote doesn't have it
+            git checkout -b "${TARGET_BRANCH}"
+          fi
+          # make sure destination directory exists
+          mkdir -p "$(dirname "${TARGET_PATH}")"
+          # copy from workspace root (one level up) into target repo
+          cp ../test/BookSource/default.json.gzip "${TARGET_PATH}"
+          # only commit if changed
+          if git status --porcelain | grep -q .; then
+            git add "${TARGET_PATH}"
+            git commit -m "Sync default.json.gzip from source repo (BookSource branch) [ci skip]" || true
+            # push branch, force if needed (place --force outside the refspec)
+            git push origin "${TARGET_BRANCH}" --force
+            echo "File pushed to ${TARGET_BRANCH} in target repo."
+          else
+            echo "No changes to commit."
+          fi
