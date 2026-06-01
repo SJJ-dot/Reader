@@ -172,7 +172,8 @@
         android:background="#E0000000"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -564,13 +565,34 @@
                             android:textColorHint="#80FFFFFF"
                             android:textSize="14sp" />
 
-                        <Button
-                            android:id="@+id/btn_reset_address"
+                        <RadioGroup
+                            android:id="@+id/rg_address_mode"
                             android:layout_width="wrap_content"
-                            android:layout_height="40dp"
-                            android:layout_marginStart="8dp"
-                            android:text="清空"
-                            android:textSize="12sp" />
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <RadioButton
+                                android:id="@+id/rb_address_auto"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@android:color/white"
+                                android:checked="true"
+                                android:text="自动"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp" />
+
+                            <RadioButton
+                                android:id="@+id/rb_address_manual"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:buttonTint="@android:color/white"
+                                android:text="手动"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp" />
+
+                        </RadioGroup>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

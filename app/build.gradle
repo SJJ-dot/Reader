@@ -37,6 +37,7 @@ android {
         versionCode commitCont
         versionName "1.0.${commitCont}"
         resConfigs("zh")
+        buildConfigField "String", "GEO_KEY", "\"${properties.getProperty('geo.key')}\""
     }
     buildFeatures {
         viewBinding true

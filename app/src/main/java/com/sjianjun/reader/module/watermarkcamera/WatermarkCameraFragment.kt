@@ -35,6 +35,7 @@ import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.databinding.FragmentWatermarkCameraBinding
+import com.sjianjun.reader.utils.GeoUtil
 import com.sjianjun.reader.utils.toast
 import sjj.alog.Log
 import java.io.File
@@ -69,14 +70,16 @@ class WatermarkCameraFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val cutout = insets.displayCutout
             val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
             val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
             val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
             val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
-            binding.rootLayout.setPadding(safeLeft, safeTop, safeRight, safeBottom)
+            val bottomInset = maxOf(safeBottom, imeInsets.bottom)
+            binding.rootLayout.setPadding(safeLeft, safeTop, safeRight, bottomInset)
             insets
         }
         requestPermissionsAndStart()
@@ -271,9 +274,22 @@ class WatermarkCameraFragment : BaseFragment() {
                 viewModel.saveAddress(binding.etAddress.text.toString())
             }
         }
-        binding.btnResetAddress.setOnClickListener {
-            viewModel.saveAddress("")
-            binding.etAddress.setText("")
+        binding.rgAddressMode.setOnCheckedChangeListener { group, i ->
+            if (i == binding.rbAddressManual.id) {
+                binding.etAddress.isFocusable = true
+                binding.etAddress.isFocusableInTouchMode = true
+            } else {
+                binding.etAddress.isFocusable = false
+                binding.etAddress.isFocusableInTouchMode = false
+            }
+        }
+        GeoUtil.geoAddress.observe(this) {
+            if (binding.rgAddressMode.checkedRadioButtonId == binding.rbAddressAuto.id) {
+                val locationKey = GeoUtil.locationKey(viewModel.latitude, viewModel.longitude)
+                val addr = it[locationKey]?.formatted_address
+                binding.etAddress.setText(addr)
+                viewModel.saveAddress(addr ?: "")
+            }
         }
 
         // ---- 恢复已保存的设置 ----

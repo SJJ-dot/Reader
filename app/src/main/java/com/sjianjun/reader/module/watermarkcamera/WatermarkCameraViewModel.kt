@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.watermarkcamera
 import android.location.Location
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.sjianjun.reader.utils.GeoUtil
 import com.tencent.mmkv.MMKV
 import java.time.LocalDate
 import java.time.LocalTime
@@ -91,7 +92,7 @@ class WatermarkCameraViewModel : ViewModel() {
         }
         latitude = prefs.decodeDouble("latitude", 0.0)
         longitude = prefs.decodeDouble("longitude", 0.0)
-
+        GeoUtil.getLocationText(latitude, longitude)
         refreshDate(LocalDate.now())
         refreshTime()
     }
@@ -146,6 +147,7 @@ class WatermarkCameraViewModel : ViewModel() {
         prefs.encode("gpsText", text)
         prefs.encode("latitude", latitude)
         prefs.encode("longitude", longitude)
+        GeoUtil.getLocationText(latitude, longitude)
     }
 
     /** 格式化经纬度文本 */
@@ -177,10 +179,11 @@ class WatermarkCameraViewModel : ViewModel() {
         parseGpsText(gps)
         prefs.encode("latitude", latitude)
         prefs.encode("longitude", longitude)
+        GeoUtil.getLocationText(latitude, longitude)
     }
 
     /** 从GPS文本中解析经纬度值 */
-    private fun parseGpsText(gps: String) {
+    fun parseGpsText(gps: String) {
         try {
             val regex = Regex("""([NS])(\d+\.?\d*)°?\s*([EW])(\d+\.?\d*)°?""")
             val match = regex.find(gps) ?: return
