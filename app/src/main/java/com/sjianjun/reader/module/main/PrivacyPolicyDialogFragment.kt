@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.DialogFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.URL_REPO
 import com.sjianjun.reader.databinding.FragmentPrivacyPolicyDialogBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.ActivityManger
@@ -25,7 +24,7 @@ class PrivacyPolicyDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         isCancelable = false
         binding?.apply {
-            val htmlMessage = getString(R.string.privacy_policy_dialog_message, URL_REPO)
+            val htmlMessage = getString(R.string.privacy_policy_dialog_message)
                 .replace("\n", "<br/>")
                 .colorText("同意并继续", "#0F9D58".toColorInt())
                 .colorText("拒绝并退出", "#DB4437".toColorInt())

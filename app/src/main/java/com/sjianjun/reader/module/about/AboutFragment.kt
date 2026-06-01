@@ -18,7 +18,6 @@ import com.google.zxing.MultiFormatWriter
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.URL_REPO
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.module.main.PrivacyPolicyDialogFragment
 import com.sjianjun.reader.preferences.globalConfig
@@ -32,15 +31,13 @@ import java.io.File
 
 class AboutFragment : BaseAsyncFragment() {
     private val apkUrl: String
-        get() = globalConfig.releasesInfo?.downloadApkUrl?.takeIf { it.isNotBlank() }
-            ?: "https://www.pgyer.com/SJJ-dot-reader"
+        get() = globalConfig.releasesInfo?.downloadApkUrl?.takeIf { it.isNotBlank() } ?: ""
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         MainFragmentAboutBinding.bind(it).apply {
-            declare.text = getString(R.string.about_app, URL_REPO)
             renderQrCode(code)
             code.setOnLongClickListener {
                 shareQrCode()

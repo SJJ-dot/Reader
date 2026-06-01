@@ -1,5 +1,5 @@
 <resources>
-    <string name="about_app">欢迎前往github提交建议，或者直接联系我。\n<a href="%1$s">项目地址：%1$s</a></string>
+    <string name="about_app">「修仙」是为学习和研究编程而开发的小说阅读器，仅用于内部测试，严禁用于商业用途。</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="feedback_title">提交反馈</string>
     <string name="replacement_rule_title">净化替换规则</string>
@@ -42,7 +42,6 @@
 • 应用崩溃日志：通过腾讯 Bugly 收集，用于问题定位与修复，仅包含崩溃堆栈信息。\n
 • 应用使用统计：通过 MQTT 的连接与断开事件进行统计，用于在线状态展示。\n
 2. 除上述信息外，本应用不会主动收集任何用户信息。\n
-3. 本应用代码已完全开源并在 GitHub 发布：%1$s\n
-4. 应用版本通过 GitHub 自动化流程完成构建与发布。\n
+3. 应用版本通过 GitHub 自动化流程完成构建与发布。\n
 点击“同意并继续”开始使用应用，点击“拒绝并退出”将立即退出。</string>
 </resources>

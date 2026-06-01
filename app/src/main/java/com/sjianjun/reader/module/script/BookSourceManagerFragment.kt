@@ -26,6 +26,7 @@ import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.DialogEditTextSourceUrlBinding
 import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
+import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
@@ -144,7 +145,6 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
     private fun initLinksData() {
         val list = globalConfig.bookSourceListUser.toMutableList()
-        if (list.isEmpty()) list.add(URL_BOOK_SOURCE_DEF)
         linksAdapter.data.clear()
         linksAdapter.data.addAll(list)
         linksAdapter.notifyDataSetChanged()
@@ -201,8 +201,26 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.source_help -> {
+                val sourceHelp = "https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD"
+                BrowserReaderActivity.startActivity(requireContext(), sourceHelp)
+                true
+            }
+
             R.id.source_import -> {
                 val bindingDialog = DialogEditTextSourceUrlBinding.inflate(LayoutInflater.from(requireContext()))
+                bindingDialog.etGroup.apply {
+                    val urls = mutableListOf<String>()
+                    urls.add(URL_BOOK_SOURCE_DEF.group)
+                    setFilterValues(urls)
+                    setOnItemClickListener { parent, _, position, id ->
+                        Log.e("onItemClick position=$position, id=$id")
+                        val group = parent?.getItemAtPosition(position) as? String
+                        if (group == URL_BOOK_SOURCE_DEF.group) {
+                            bindingDialog.editView.setText(URL_BOOK_SOURCE_DEF.url)
+                        }
+                    }
+                }
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("书源导入")
                     .setView(bindingDialog.root)

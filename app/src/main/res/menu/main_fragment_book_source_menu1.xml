@@ -8,4 +8,9 @@
         android:title="导入书源"
         app:showAsAction="always" />
 
+
+    <item
+        android:id="@+id/source_help"
+        android:title="编写教程"
+        app:showAsAction="always" />
 </menu>

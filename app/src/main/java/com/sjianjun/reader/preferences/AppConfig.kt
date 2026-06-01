@@ -1,9 +1,9 @@
 package com.sjianjun.reader.preferences
 
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.bean.ReleasesInfo
+import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.utils.dp2Px
@@ -88,7 +88,7 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme by lazy { strLivedata("lastLightThemeStr", PageStyle.defDay.id) }
 
-    var bookSourceListUser by dataPref("bookSourceListUser2", listOf(URL_BOOK_SOURCE_DEF))
+    var bookSourceListUser by dataPref("bookSourceListUser2", emptyList<SourceUrl>())
 
     val customPageStyleInfoList by lazy {
         dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr2", emptyList())

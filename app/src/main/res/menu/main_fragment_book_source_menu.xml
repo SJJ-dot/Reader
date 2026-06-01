@@ -23,4 +23,10 @@
         android:id="@+id/source_all"
         android:title="全部书源"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/source_help"
+        android:title="编写教程"
+        app:showAsAction="never" />
+
 </menu>
