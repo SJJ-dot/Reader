@@ -5,7 +5,7 @@
 - 除python基础库外的内置库：requests、beautifulsoup4、pycryptodome
 ### 2、书源开发步骤
 1. 将存储库下载到本地，并切换到BookSource分支
-2. 使用PyCharm打开目录纯出库目录：Reader\test
+2. 使用PyCharm打开存储库目录：Reader\test
 3. 按下方的书源函数接口要求编辑临时书源测试文件Reader/test/source.py（也可以直接在Reader/test/py目录下创建对应书源的py脚本）。Reader/test/source.py测试通过后，在Reader/test/py目录下创建对应的书源文件或者是覆盖已有的脚本（如果是更新或者修复BUG）
 4. Reader/test/py目录下文件更新后，运行脚本Reader/test/update_source.py；脚本会将Reader/test/py目录下的脚本打包更新到Reader/test/BookSource目录下。到这里脚本就制作完成了。
 5. 在APP书源管理页面填写BookSource目录下的文件链接，推荐gzip文件优先
@@ -16,21 +16,21 @@
 def verify():
     """
     可选，部分书籍不支持搜索功能时提供，避免验证书源失败
-    验证书源是否可用，返回0、1、2 分别代表：验证通过，验证失败，不支持验证
+    验证书源是否可用，返回数字或字符串：0、1、2 分别代表：验证通过，验证失败，不支持验证
     """
     pass
 
 def getSiteUrl():
     """
     可选，如果不包含该函数，书源无法使用链接直接导入，也无法在书城进行导入
-    :return: 书源网址，例如：https://www.69shuba.com，用于直接导入书籍详情页链接
+    :return: 字符串，书源网址，例如：https://www.69shuba.com，用于直接导入书籍详情页链接
     """
     pass
 
 def search(query):
     """
     :param query: 搜索关键词
-    :return: 书籍列表，包含以下字段：
+    :return: json书籍列表，包含以下字段：
         - bookTitle: 书籍标题
         - bookUrl: 书籍详情链接
         - bookAuthor: 书籍作者(可选)
@@ -43,7 +43,7 @@ def search(query):
 def getDetails(url):
     """
     :param url: 书籍详情链接
-    :return: 书籍详情字典，包含以下字段：
+    :return: json书籍详情字典，包含以下字段：
         - url: 书籍详情链接
         - title: 书籍标题
         - author: 书籍作者
@@ -59,7 +59,7 @@ def getDetails(url):
 def getChapterContent(url):
     """
     :param url: 章节链接
-    :return: 章节内容字符串
+    :return: 字符串，章节内容
     """
     pass
 ```
