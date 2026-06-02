@@ -3,6 +3,7 @@ package com.sjianjun.reader.repository
 import androidx.annotation.WorkerThread
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.event.EventBus
@@ -80,6 +81,13 @@ object BookUseCase {
     suspend fun reloadBookFromNet(book: Book?) = withIo {
         book ?: return@withIo
         try {
+            if (book.bookSourceId == BookSource.fileImportBookSource.id){
+                //本地导入的书籍所有内容都在本地
+                book.isLoading = false
+                book.error = null
+                bookDao.updateBook(book)
+                return@withIo
+            }
             val script = bookSourceDao.getBookSourceById(book.bookSourceId) ?: throw MessageException("未找到对应书籍书源")
             book.isLoading = true
             bookDao.updateBook(book)

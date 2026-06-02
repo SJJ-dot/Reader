@@ -8,6 +8,7 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
+import com.sjianjun.reader.utils.trimExt
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import sjj.legado.engine.YueduEngine
@@ -215,6 +216,7 @@ class BookSource {
                         this.content = text
                     }
                 }
+                content.content = content.content?.trimExt()
                 if (content.content.isNullOrBlank()) {
                     content.content = "章节内容加载失败"
                     content.contentError = true

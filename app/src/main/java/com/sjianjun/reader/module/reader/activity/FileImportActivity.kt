@@ -27,6 +27,7 @@ import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.utils.trimExt
 import com.sjianjun.reader.view.click
 import io.legado.app.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.delay
@@ -104,9 +105,9 @@ class FileImportActivity : BaseActivity() {
             }
         }
 
-        book.title = binding.etName.text.toString().trim()
-        book.author = binding.etAuthor.text.toString().trim()
-        book.intro = binding.etIntro.text.toString().trim()
+        book.title = binding.etName.text.toString().trimExt()
+        book.author = binding.etAuthor.text.toString().trimExt()
+        book.intro = binding.etIntro.text.toString().trimExt()
     }
 
     private fun readTxt(uri: Uri?) {
@@ -130,14 +131,13 @@ class FileImportActivity : BaseActivity() {
                 val chapterList = mutableListOf<Chapter>()
                 //单章最大字数
                 val CHAPTER_CONTENT_MAX_LENGTH = 20000
-                Log.e("读取章节内容")
                 setStatus("解析章节信息……")
                 contentResolver.openInputStream(uri).use {
                     val reader = BufferedReader(InputStreamReader(it, book.charset))
                     binding.progressBar.max = it?.available() ?: 0
                     val chapterContent = StringBuilder()
                     var line: String? = reader.readLine()
-                    var chapterName: String = book.book.title
+                    var chapterName: String? = null
                     while (line != null) {
                         binding.progressBar.progress += line.length * 2
                         if (line.isBlank()) {
@@ -145,18 +145,25 @@ class FileImportActivity : BaseActivity() {
                             continue
                         }
 
+                        line = line.trimExt()
                         val lastChapterName = chapterName
                         val matchName = match(line, chapterNamePattern, 0, book.tocRule)
 
                         if (matchName.isNullOrBlank()) {
-                            chapterContent.append(line)
-                            chapterContent.append("<br/>")
+                            if (line.isNotBlank()) {
+                                chapterContent.append(line)
+                                chapterContent.append("\n")
+                            }
                         } else {
                             chapterName = matchName
                         }
                         //章节内容不为空 并且匹配到章节名或者章节字数超过限制
                         if (!matchName.isNullOrBlank() || chapterContent.length > CHAPTER_CONTENT_MAX_LENGTH) {
-                            createChapter(book, chapterList, lastChapterName, if (chapterContent.isEmpty()) lastChapterName else chapterContent.toString())
+                            if (!lastChapterName.isNullOrBlank() || chapterContent.isNotBlank()) {
+                                val chapterContentStr = if (chapterContent.isBlank()) lastChapterName else chapterContent.toString()
+                                createChapter(book, chapterList, lastChapterName, chapterContentStr)
+                            }
+
                             chapterContent.clear()
                         }
                         line = reader.readLine()
@@ -195,12 +202,12 @@ class FileImportActivity : BaseActivity() {
         book: TxtBook,
         chapterList: MutableList<Chapter>,
         chapterName: String?,
-        chapterContent: String
+        chapterContent: String?
     ) {
         val chapter = Chapter()
         chapter.url = "${book.book.url}_${chapterList.size}"
         chapter.bookId = book.book.id
-        chapter.title = chapterName?.trim() ?: ""
+        chapter.title = if (chapterName.isNullOrBlank()) "第${chapterList.size + 1}章" else chapterName.trimExt()
         chapter.index = chapterList.size
         chapterList.add(chapter)
 
@@ -208,7 +215,7 @@ class FileImportActivity : BaseActivity() {
             ChapterContent(
                 chapter.bookId,
                 chapter.index,
-                chapterContent
+                chapterContent ?: chapter.title!!
             )
         )
     }
@@ -232,10 +239,10 @@ class FileImportActivity : BaseActivity() {
 
         for (pattern in nameAuthorPatterns) {
             pattern.matcher(fileName).takeIf { it.find() }?.run {
-                val title = group(2)!!.replace(nameRegex, "").trim()
+                val title = group(2)!!.replace(nameRegex, "").trimExt()
                 val group1 = group(1) ?: ""
                 val group3 = group(3) ?: ""
-                val author = (group1 + group3).replace(authorRegex, "").trim()
+                val author = (group1 + group3).replace(authorRegex, "").trimExt()
                 if (title.isNotBlank()) {
                     book.book.title = title
                     matchTitle = true
@@ -251,7 +258,7 @@ class FileImportActivity : BaseActivity() {
         if (!matchTitle) {
             var title = match(fileName, bookNamePattern, 1)
             if (title.isNullOrBlank()) {
-                title = fileName.replace(nameRegex, "").trim()
+                title = fileName.replace(nameRegex, "").trimExt()
             }
             if (title.isNotBlank()) {
                 book.book.title = title
@@ -261,9 +268,9 @@ class FileImportActivity : BaseActivity() {
         if (!matchAuthor) {
             var author = match(fileName, bookAuthorPattern, 1)
             if (author.isNullOrBlank()) {
-                val title = fileName.replace(nameRegex, "").trim()
+                val title = fileName.replace(nameRegex, "").trimExt()
                 author = fileName.replace(title, "")
-                    .replace(authorRegex, "").trim()
+                    .replace(authorRegex, "").trimExt()
                     .takeIf { it.length != fileName.length } ?: "佚名"
             }
             if (author.isNotBlank()) {
@@ -356,17 +363,17 @@ class FileImportActivity : BaseActivity() {
         if (pattern0 != null) {
             val matcher = pattern0.matcher("\n" + content + "\n")
             if (matcher.find()) {
-                return matcher.group().trim()
+                return matcher.group().trimExt()
             }
             return null
         }
-        val contentTrim = content.trim()
+        val contentTrim = content.trimExt()
         pattern.forEach {
             val matcher = it.matcher(contentTrim)
 
             if (matcher.find()) {
                 return try {
-                    matcher.group(group)?.trim() ?: contentTrim
+                    matcher.group(group)?.trimExt() ?: contentTrim
                 } catch (e: Exception) {
                     contentTrim
                 }
@@ -401,7 +408,7 @@ class FileImportActivity : BaseActivity() {
             val tocTemp = mutableListOf<String>()
             while (matcher.find()) {
                 num++
-                tocTemp.add(matcher.group().trim())
+                tocTemp.add(matcher.group().trimExt())
             }
             if (num >= maxNum) {
                 maxNum = num
