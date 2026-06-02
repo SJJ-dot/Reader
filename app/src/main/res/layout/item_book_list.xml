@@ -176,19 +176,8 @@
             android:layout_marginBottom="5dp"
             android:src="@mipmap/ic_sync_error"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/iv_recommend"
+            app:layout_constraintEnd_toEndOf="parent"
             app:tint="@color/mdr_red_100" />
 
-        <ImageView
-            android:id="@+id/iv_recommend"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="5dp"
-            android:layout_marginBottom="5dp"
-            android:padding="3dp"
-            android:src="@mipmap/ic_recommendation"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:tint="@color/dn_text_color_black_disable" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

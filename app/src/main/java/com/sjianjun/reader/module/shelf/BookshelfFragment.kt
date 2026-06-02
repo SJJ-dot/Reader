@@ -295,15 +295,6 @@ class BookshelfFragment : BaseFragment() {
                     longClickListener?.invoke(book)
                     true
                 }
-                ivRecommend.click {
-                    fragment.viewModel.setRecommendation(book)
-                }
-
-                if (book?.record?.isRecommendation == true) {
-                    ivRecommend.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(root.context))
-                } else {
-                    ivRecommend.imageTintList = ColorStateList.valueOf(R.color.mdr_white.color(root.context))
-                }
 
             }
         }
@@ -413,16 +404,6 @@ class BookshelfFragment : BaseFragment() {
                 root.setOnLongClickListener {
                     longClickListener?.invoke(book)
                     true
-                }
-
-                ivRecommend.click {
-                    fragment.viewModel.setRecommendation(book)
-                }
-
-                if (book?.record?.isRecommendation == true) {
-                    ivRecommend.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(root.context))
-                } else {
-                    ivRecommend.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black_disable.color(root.context))
                 }
             }
 

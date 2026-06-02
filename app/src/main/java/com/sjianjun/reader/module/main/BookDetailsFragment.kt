@@ -164,15 +164,6 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 startActivity<BookReaderActivity>(BOOK_ID to book.id)
             }
         }
-        binding?.ivRecommend?.click {
-            viewModel.setRecommendation(book)
-        }
-
-        if (book?.record?.isRecommendation == true) {
-            binding?.ivRecommend?.imageTintList = ColorStateList.valueOf(R.color.dn_color_primary.color(context))
-        } else {
-            binding?.ivRecommend?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black_disable.color(context))
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

@@ -104,25 +104,13 @@
             app:layout_constraintTop_toTopOf="@+id/bookCover" />
 
         <ImageView
-            android:id="@+id/iv_recommend"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="5dp"
-            android:background="@drawable/bg_recommend_icon"
-            android:padding="3dp"
-            android:src="@mipmap/ic_recommendation"
-            app:layout_constraintBottom_toBottomOf="@+id/bookCover"
-            app:layout_constraintStart_toStartOf="@+id/bookCover"
-            app:tint="@color/mdr_white" />
-
-        <ImageView
             android:id="@+id/sync_error"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_margin="5dp"
             android:src="@mipmap/ic_sync_error"
             app:layout_constraintBottom_toBottomOf="@+id/bookCover"
-            app:layout_constraintStart_toEndOf="@+id/iv_recommend"
+            app:layout_constraintStart_toStartOf="@+id/bookCover"
             app:tint="@color/mdr_red_100" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

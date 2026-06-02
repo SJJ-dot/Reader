@@ -9,6 +9,16 @@
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@mipmap/ic_xue_xi" />
+
+    <ImageView
         android:id="@+id/day_night"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -18,81 +28,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <FrameLayout
-        android:id="@+id/fl_progress_container"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:layout_margin="16dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/level_progress"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:max="100"
-            android:progress="0"
-            app:indicatorColor="@color/mdr_white"
-            app:indicatorInset="0dp"
-            app:indicatorSize="72dp"
-            app:trackColor="#33FFFFFF"
-            app:trackThickness="6dp" />
-
-        <TextView
-            android:id="@+id/tv_level"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="0%"
-            android:textColor="@color/mdr_white"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-    </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="@+id/fl_progress_container"
-        app:layout_constraintStart_toEndOf="@+id/fl_progress_container"
-        app:layout_constraintTop_toTopOf="@+id/fl_progress_container">
-
-        <TextView
-            android:id="@+id/tv_online"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="书友在线：0"
-            android:textColor="@color/mdr_white"
-            android:textSize="13dp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tv_today_online"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="今日在线：0分钟"
-            android:textColor="@color/mdr_white"
-            android:textSize="13dp" />
-
-        <TextView
-            android:id="@+id/tv_next_level"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="距升级：0分钟"
-            android:textColor="@color/mdr_white"
-            android:textSize="13dp" />
-
-        <TextView
-            android:id="@+id/tv_total_online"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="总时长：0分钟"
-            android:textColor="@color/mdr_white"
-            android:textSize="13dp" />
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -53,9 +53,4 @@
         android:label="意见反馈"
         tools:layout="@layout/fragment_feedback_fragment" />
 
-    <fragment
-        android:id="@+id/onlineLeaderboardFragment"
-        android:name="com.sjianjun.reader.module.bookcity.LeaderboardFragment"
-        android:label="排行"
-        tools:layout="@layout/fragment_leaderboard" />
 </navigation>

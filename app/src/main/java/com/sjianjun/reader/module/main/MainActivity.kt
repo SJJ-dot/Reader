@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -23,17 +22,12 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
-import com.sjianjun.reader.mqtt.OnlineInfo
-import com.sjianjun.reader.mqtt.OnlineInfos
-import com.sjianjun.reader.mqtt.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 
 class MainActivity : BaseActivity() {
@@ -136,43 +130,7 @@ class MainActivity : BaseActivity() {
 
             }
         }
-        renderOnlineInfo(headerBinding, OnlineInfos.onlineInfo.value)
-        OnlineInfos.onlineInfo.observe(this) {
-            renderOnlineInfo(headerBinding, it)
-        }
-        binding?.drawerLayout?.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
-            override fun onDrawerOpened(drawerView: android.view.View) {
-                lifecycleScope.launch {
-                    OnlineInfos.refresh()
-                }
-            }
-        })
 
-
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun renderOnlineInfo(
-        headerBinding: MainMenuNavHeaderBinding,
-        info: OnlineInfo?,
-    ) {
-        val level = info?.level
-
-        val progressPercent = when {
-            level == null -> 0
-            level.is_max_level -> 100
-            else -> (level.progress.coerceIn(0.0, 1.0) * 100).roundToInt()
-        }
-        headerBinding.tvOnline.text = "书友在线：${info?.online_count ?: 0}"
-        headerBinding.tvTodayOnline.text = "今日在线：${info?.today_online_seconds?.formatDuration() ?: "--"}"
-        headerBinding.tvLevel.text = level?.levelName ?: "--"
-        headerBinding.levelProgress.progress = progressPercent
-        headerBinding.tvTotalOnline.text = "总时长：${info?.total_online_seconds?.formatDuration() ?: "--"}"
-        headerBinding.tvNextLevel.text = if (level == null || level.is_max_level) {
-            "已满级"
-        } else {
-            "距升级：${level.next_level_need_seconds.formatDuration()}"
-        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
