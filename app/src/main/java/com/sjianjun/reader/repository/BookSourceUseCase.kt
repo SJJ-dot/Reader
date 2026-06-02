@@ -2,8 +2,9 @@ package com.sjianjun.reader.repository
 
 import android.util.Base64
 import android.widget.Toast
+import androidx.core.net.toUri
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
+import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.http.http
@@ -11,10 +12,12 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
+import io.legado.app.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import org.json.JSONArray
 import sjj.alog.Log
+import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
 
 object BookSourceUseCase {
@@ -31,12 +34,20 @@ object BookSourceUseCase {
             async {
                 try {
                     val url = sourceUrl.url.trim()
-                    val resp = http.get(url)
-                    if (resp.code != 200) {
-                        Log.i("书源下载失败:${sourceUrl.group}:${sourceUrl.url}:HTTP${resp.code}")
-                        return@async emptyList<BookSource>()
+                    var body = if (url.startsWith("http")) {
+                        val resp = http.get(url)
+                        if (resp.code != 200) {
+                            Log.i("书源下载失败:${sourceUrl.group}:${sourceUrl.url}:HTTP${resp.code}")
+                            return@async emptyList<BookSource>()
+                        }
+                        resp.body
+                    } else {
+                        val buffer = App.app.contentResolver.openInputStream(url.toUri())!!.readBytes()
+                        val name = CharsetDetector().setText(buffer).detect()?.name ?: "UTF_8"
+                        val charset = Charset.forName(name)
+                        String(buffer, charset)
                     }
-                    var body = resp.body
+
                     if (url.endsWith("gzip")) {
                         body = GZIPInputStream(Base64.decode(body, Base64.NO_WRAP).inputStream()).reader().readText()
                     }
@@ -103,9 +114,6 @@ fun parsePySource(sourceUrl: SourceUrl, body: String, dest: MutableList<BookSour
                     requestDelay = pySource.requestDelay
                     lauanage = BookSource.Language.py
                     comment = pySource.comment ?: ""
-                    if (sourceUrl.url == URL_BOOK_SOURCE_DEF.url) {
-                        id = "默认书源:${name.trim()}"
-                    }
                 }
             )
 

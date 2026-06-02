@@ -1,30 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:overScrollMode="ifContentScrolls"
     android:paddingLeft="16dp"
+    android:paddingTop="16dp"
     android:paddingRight="16dp">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:text="书源导入"
+        android:textColor="@color/dn_text_color_black"
+        android:textSize="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_import_local"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="从本地文件导入"
+        android:textColor="@color/dn_color_primary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tv_title" />
+
+    <EditText
+        android:id="@+id/et_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_marginTop="8dp"
+        android:hint="书源分组名称"
+        android:maxLines="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_title" />
 
-        <com.sjianjun.reader.view.AutoCompleteTextView
-            android:id="@+id/et_group"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="书源分组名称" />
+    <EditText
+        android:id="@+id/edit_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="书源地址"
+        android:maxLines="4"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/et_group" />
 
-        <com.sjianjun.reader.view.AutoCompleteTextView
-            android:id="@+id/edit_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="书源地址"
-            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
-    </LinearLayout>
+    <TextView
+        android:id="@+id/tv_hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:text="兼容阅读3.0书源"
+        android:textColor="@color/dn_colorAccent"
+        android:textSize="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edit_view" />
 
 
-</androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

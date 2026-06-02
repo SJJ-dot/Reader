@@ -5,7 +5,6 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.chaquo.python.Python
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.python.py
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
@@ -289,7 +288,7 @@ class BookSource {
         val fileImportBookSource = BookSource().apply {
             id = "文件导入"
             name = "文件导入"
-            group = URL_BOOK_SOURCE_DEF.group
+            group = "本地"
             js = ""
             version = 1L
             enable = true

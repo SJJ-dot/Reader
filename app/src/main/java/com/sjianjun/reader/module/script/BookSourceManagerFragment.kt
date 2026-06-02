@@ -8,9 +8,12 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.sjianjun.coroutine.launch
@@ -18,7 +21,6 @@ import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.BOOK_SOURCE_ID
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
-import com.sjianjun.reader.URL_BOOK_SOURCE_DEF
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SourceUrl
@@ -40,11 +42,15 @@ import com.sjianjun.reader.view.click
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.util.concurrent.Executors
 
 class BookSourceManagerFragment : BaseAsyncFragment() {
+    private val sourceUri = MutableLiveData<String>()
+    private val importSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@registerForActivityResult
+        sourceUri.postValue(uri.toString())
+    }
     private val viewModel by viewModels<BookSourceManagerViewModel>()
     private var binding: MainFragmentBookScriptManagerBinding? = null
     private var linksAdapter = LinkAdapter(this)
@@ -209,42 +215,46 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
             R.id.source_import -> {
                 val bindingDialog = DialogEditTextSourceUrlBinding.inflate(LayoutInflater.from(requireContext()))
-                bindingDialog.etGroup.apply {
-                    val urls = mutableListOf<String>()
-                    urls.add(URL_BOOK_SOURCE_DEF.group)
-                    setFilterValues(urls)
-                    setOnItemClickListener { parent, _, position, id ->
-                        Log.e("onItemClick position=$position, id=$id")
-                        val group = parent?.getItemAtPosition(position) as? String
-                        if (group == URL_BOOK_SOURCE_DEF.group) {
-                            bindingDialog.editView.setText(URL_BOOK_SOURCE_DEF.url)
-                        }
-                    }
+                sourceUri.observe(viewLifecycleOwner) {
+                    if (it.isNullOrBlank()) return@observe
+                    bindingDialog.editView.setText(it)
                 }
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("书源导入")
+                bindingDialog.tvImportLocal.click {
+                    importSource.launch(arrayOf("*/*"))
+                }
+                val dialog = MaterialAlertDialogBuilder(requireContext())
+                    .setOnDismissListener {
+                        sourceUri.removeObservers(viewLifecycleOwner)
+                        sourceUri.postValue("")
+                    }
                     .setView(bindingDialog.root)
-                    .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        bindingDialog.editView.hideKeyboard()
-                        val url = bindingDialog.editView.text.toString().trim()
-                        if (url.toHttpUrlOrNull() == null) {
-                            toast("请输入书源地址")
-                            return@setPositiveButton
-                        }
-                        val group = bindingDialog.etGroup.text.toString().trim()
-                        if (group.isBlank()) {
-                            toast("请输入书源分组")
-                            return@setPositiveButton
-                        }
-                        val sourceUrl = SourceUrl(url.trim(), group)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    bindingDialog.editView.hideKeyboard()
+                    val url = bindingDialog.editView.text.toString().trim()
+                    if (url.isBlank()) {
+                        toast("请输入书源地址")
+                        return@setOnClickListener
+                    }
+                    val group = bindingDialog.etGroup.text.toString().trim()
+                    if (group.isBlank()) {
+                        toast("请输入书源分组")
+                        return@setOnClickListener
+                    }
+                    val sourceUrl = SourceUrl(url, group)
+                    if (sourceUrl.url.startsWith("http")) {
                         val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
                         bookSourceListUser.removeAll { it.url == sourceUrl.url }
                         bookSourceListUser.add(0, sourceUrl)
                         globalConfig.bookSourceListUser = bookSourceListUser
                         initLinksData()
+                    } else {
+                        import(listOf(sourceUrl))
                     }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
+                    dialog.dismiss()
+                }
                 true
             }
 
@@ -281,6 +291,24 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         }
     }
 
+    private fun import(sourceList: List<SourceUrl>) {
+        launch {
+            try {
+                showSnackbar(view, "正在导入书源", Snackbar.LENGTH_INDEFINITE)
+                val import = viewModel.import(sourceList)
+                if (import > 0) {
+                    //书源更新刷新
+                    initData()
+                    showSnackbar(view, "书源导入成功")
+                } else {
+                    showSnackbar(view, "书源导入失败")
+                }
+            } catch (e: Exception) {
+                Log.e("书源导入失败", e)
+                showSnackbar(view, "书源导入失败：${e.message}")
+            }
+        }
+    }
 
     private fun query() {
         launch {
@@ -544,23 +572,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             }
 
             btnCheck.click { view ->
-                fragment.launch {
-                    try {
-                        fragment.showSnackbar(view, "正在更新书源", Snackbar.LENGTH_INDEFINITE)
-                        val import = fragment.viewModel.import(listOf(item))
-                        if (import > 0) {
-                            //书源更新刷新
-                            fragment.initData()
-                            fragment.showSnackbar(view, "书源更新成功")
-                        } else {
-                            fragment.showSnackbar(view, "书源更新失败")
-                        }
-
-                    } catch (e: Exception) {
-                        Log.e("书源导入失败", e)
-                        fragment.showSnackbar(view, "书源导入失败：${e.message}")
-                    }
-                }
+                fragment.import(listOf(item))
             }
         }
     }
