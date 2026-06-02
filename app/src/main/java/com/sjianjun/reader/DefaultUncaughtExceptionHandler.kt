@@ -3,14 +3,17 @@ package com.sjianjun.reader
 import android.content.Context
 import com.sjianjun.reader.preferences.globalConfig
 import com.tencent.bugly.crashreport.CrashReport
-import com.tencent.bugly.crashreport.CrashReport.UserStrategy
-
+import java.util.UUID
 
 
 fun handleDefaultException(context: Context) {
     //
-    val strategy = UserStrategy(context)
-    strategy.deviceID = globalConfig.mqttClientId
-    CrashReport.initCrashReport(context, "d3d6da5bd7", BuildConfig.DEBUG,strategy)
+    var deviceID = globalConfig.deviceID
+    if (deviceID == null){
+        deviceID = UUID.randomUUID().toString().replace("-", "")
+        globalConfig.deviceID = deviceID
+    }
+    CrashReport.initCrashReport(context, "d3d6da5bd7", BuildConfig.DEBUG)
+    CrashReport.setDeviceId(context,deviceID)
 
 }
