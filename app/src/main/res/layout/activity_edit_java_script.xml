@@ -1,43 +1,224 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/dn_background">
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
+
+    <com.sjianjun.reader.view.HorizontalScrollView2
+        android:id="@+id/script_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/save_script"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <EditText
+            android:id="@+id/script"
+            style="@style/text_body1"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="top|start"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:overScrollMode="always"
+            android:scrollHorizontally="true" />
+    </com.sjianjun.reader.view.HorizontalScrollView2>
+
+
+    <FrameLayout
+        android:id="@+id/settings_panel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="com.sjianjun.reader.module.script.EditJavaScriptActivity">
+        android:background="@color/translucent"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintBottom_toTopOf="@+id/save_script"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1">
 
-
-        <com.sjianjun.reader.view.HorizontalScrollView2
-            android:id="@+id/script_container"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/test"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <EditText
-                android:id="@+id/script"
-                style="@style/text_body1"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="top|start" />
-        </com.sjianjun.reader.view.HorizontalScrollView2>
-
-        <Button
-            android:id="@+id/test"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="保存"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            android:layout_gravity="bottom">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-</FrameLayout>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:hint="书源名称"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="分组"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/til_book_source_name">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_id"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="书源ID（ID存在则覆盖、不存在则新建）"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/til_book_source_group">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_id"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_version"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="版本号"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/til_book_source_id">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_version"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_request_delay"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="请求延迟(ms)"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/til_book_source_version">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_request_delay"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Spinner
+                        android:id="@+id/book_source_language"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/til_book_source_request_delay" />
+
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_book_source_comment"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="备注"
+                        app:boxBackgroundColor="@color/dn_background_card"
+                        app:boxBackgroundMode="filled"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/book_source_language">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/book_source_comment"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lines="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </ScrollView>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
+
+
+    <Button
+        android:id="@+id/save_script"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="保存"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/edit_info"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/edit_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="折叠"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/save_script" />
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,6 +9,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
+import android.content.Intent
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.SearchView
@@ -50,6 +52,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     private val importSource = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
         sourceUri.postValue(uri.toString())
+    }
+    private val editLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // refresh list after returning from edit activity
+            initData()
+        }
     }
     private val viewModel by viewModels<BookSourceManagerViewModel>()
     private var binding: MainFragmentBookScriptManagerBinding? = null
@@ -391,6 +399,9 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                         }
                     }
                 }
+                R.id.source_create->{
+                    openEditScript("")
+                }
 
                 R.id.source_check_select -> {
                     val list = adapter.data.filter { it.selected }
@@ -515,7 +526,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     }
                 }
                 binding.ivEditSource.click {
-                    fragment.startActivity<EditJavaScriptActivity>(BOOK_SOURCE_ID, script.id)
+                    fragment.openEditScript(script.id)
                 }
                 binding.root.click { binding.cbBookSource.isChecked = !binding.cbBookSource.isChecked }
             }
@@ -524,6 +535,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         override fun getItemId(position: Int): Long {
             return data[position].id.id
         }
+    }
+
+    fun openEditScript(id: String) {
+        val intent = Intent(requireContext(), EditJavaScriptActivity::class.java)
+        intent.putExtra(BOOK_SOURCE_ID, id)
+        editLauncher.launch(intent)
     }
 
     class LinkAdapter(val fragment: BookSourceManagerFragment) : BaseAdapter<SourceUrl>(R.layout.item_book_source_link) {

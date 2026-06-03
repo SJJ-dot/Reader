@@ -4,6 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
     <item
+        android:id="@+id/source_create"
+        android:title="新建书源"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/source_enable_select"
         android:title="启用书源"
         app:showAsAction="never" />
