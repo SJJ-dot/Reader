@@ -41,6 +41,12 @@
         android:text="(Edge TTS 需要网络合成，可能会有延迟)"
         android:textSize="12sp" />
 
+    <Spinner
+        android:id="@+id/spinner_tts_voice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

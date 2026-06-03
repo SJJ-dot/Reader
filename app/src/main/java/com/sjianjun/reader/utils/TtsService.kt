@@ -46,11 +46,20 @@ object TtsService : BaseTts {
 
     override suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
         try {
-            val impl = current()
-            // propagate callbacks
-            impl.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
-            impl.onCompleted = { onCompleted?.invoke() }
-            impl.start(pages, pagePos)
+            val engine = globalConfig.readerTtsEngine.value ?: "default"
+            if (engine == "edge") {
+                // delegate to Edge manager with voice param
+                val voice = globalConfig.readerTtsVoice.value ?: "zh-CN-XiaoxiaoNeural"
+                // propagate callbacks
+                edge.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
+                edge.onCompleted = { onCompleted?.invoke() }
+                edge.start(pages, pagePos, rate = 12, voice = voice)
+            } else {
+                // system
+                system.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
+                system.onCompleted = { onCompleted?.invoke() }
+                system.start(pages, pagePos)
+            }
         } catch (e: Exception) {
             Log.e("TtsService start error: ${e.message}")
         }

@@ -73,6 +73,11 @@ class AppConfig(val name: String) :
     val readerTtsEngine by lazy { strLivedata("readerTtsEngine", "default") }
 
     /**
+     * Edge TTS 选择的音色参数（例如 "zh-CN-XiaoxiaoNeural"）
+     */
+    val readerTtsVoice by lazy { strLivedata("readerTtsVoice", "zh-CN-XiaoxiaoNeural") }
+
+    /**
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
     val readerBrightnessPercent by lazy { intLivedata("readerBrightnessPercent", -1) }
