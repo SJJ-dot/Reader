@@ -33,7 +33,6 @@ import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
-import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
@@ -61,7 +60,8 @@ class BookReaderActivity : BaseActivity() {
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
     private val bookId get() = intent.getStringExtra(BOOK_ID)!!
 
-    private val ttsUtil by viewModels<TtsUtil>()
+    // delegate TTS operations through TtsService which picks the engine by config
+    private val ttsService = com.sjianjun.reader.utils.TtsService
     private val mPageLoader get() = binding?.pageView?.pageLoader
     private val viewModel by viewModels<BookReaderViewModel>()
 
@@ -113,7 +113,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (globalConfig.readerVolumeKeyPageTurn.value == true && ttsUtil.isSpeaking.value != true) {
+        if (globalConfig.readerVolumeKeyPageTurn.value == true && ttsService.isSpeaking.value != true) {
             when (keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP -> {
                     handleReaderClickAction(ReaderClickAreaAction.PREV_PAGE)
@@ -165,9 +165,12 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
-        ttsUtil.progressChangeCallback = { textLine ->
+        ttsService.progressChangeCallback = { textLine ->
             launch {
                 val loader = mPageLoader ?: return@launch
+                if (loader.chapterPos != ttsService.chapterPos) {
+                    loader.skipToChapter(ttsService.chapterPos)
+                }
                 val page = loader.curPageList?.find { page ->
                     page.lines.find { textLine == it } != null
                 }
@@ -177,18 +180,20 @@ class BookReaderActivity : BaseActivity() {
                 }
             }
         }
-        ttsUtil.onCompleted = {
+        ttsService.onCompleted = {
 //            播放下一个段落
             mPageLoader?.setTtsSpeakLine(null)
             if (mPageLoader?.skipNextChapter() == true) {
+                Log.i("章节切换，继续朗读")
                 EventBus.post(EventKey.CHAPTER_SPEAK)
             }
         }
         observe<String>(EventKey.CHAPTER_SPEAK) {
             launch {
-                if (ttsUtil.isSpeaking.value == true) {
-                    ttsUtil.stop()
+                if (ttsService.isSpeaking.value == true) {
+                    ttsService.stop()
                     mPageLoader?.setTtsSpeakLine(null)
+                    Log.i("停止朗读")
                     return@launch
                 }
                 if (mPageLoader?.pageStatus == STATUS_LOADING) {
@@ -209,7 +214,8 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节内容错误 $chapter")
                     return@launch
                 }
-                ttsUtil.start(mPageLoader?.curPageList, mPageLoader?.pagePos ?: 0)
+                Log.i("开始朗读章节${mPageLoader?.chapterPos} ${chapter.title}")
+                ttsService.start(mPageLoader?.chapterPos ?: 0, mPageLoader?.curPageList, mPageLoader?.pagePos ?: 0)
             }
         }
 

@@ -10,6 +10,7 @@ import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.sjianjun.reader.utils.BaseTts
 import com.sjianjun.reader.App
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -25,17 +26,17 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.coroutines.resume
 import kotlin.math.abs
 
-class TtsUtil() : ViewModel() {
+class TtsUtil() : ViewModel(), BaseTts {
 
 
     private val paragraphs = ConcurrentLinkedDeque<List<TxtLine>>()
 
-    lateinit var progressChangeCallback: (TxtLine) -> Unit
+    override var progressChangeCallback: ((TxtLine) -> Unit)? = null
 
-    lateinit var onCompleted: () -> Unit
+    override var onCompleted: (() -> Unit)? = null
 
     private var textToSpeech: TextToSpeech? = null
-    val isSpeaking = MutableLiveData(false)
+    override val isSpeaking = MutableLiveData(false)
     private var speakTime = 0L
     private var estimateJob: Job? = null
     private var baseMsPerWeight: Long = 200L
@@ -90,7 +91,7 @@ class TtsUtil() : ViewModel() {
     }
 
 
-    suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
+    override suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
         if (pages.isNullOrEmpty() || pagePos < 0 || pagePos >= pages.size) {
             return
         }
@@ -133,7 +134,7 @@ class TtsUtil() : ViewModel() {
         speakNext()
     }
 
-    fun stop() {
+    override fun stop() {
         textToSpeech?.stop()
         paragraphs.clear()
         // cancel any running estimator
@@ -151,7 +152,7 @@ class TtsUtil() : ViewModel() {
             val paragraph = paragraphs.peek()
             if (paragraph == null) {
                 isSpeaking.value = false
-                onCompleted.invoke()
+                onCompleted?.invoke()
                 return@launch
             }
             val txt = paragraph.joinToString(separator = "") { line -> line.txt }
@@ -163,7 +164,7 @@ class TtsUtil() : ViewModel() {
     private fun startEstimateForParagraph() {
         val paragraph = paragraphs.peek() ?: return
         // build simple weight model per character
-        val expectedLineMs = mutableListOf<Pair<Long, TxtLine> >()
+        val expectedLineMs = mutableListOf<Pair<Long, TxtLine>>()
         for (line in paragraph) {
             var lineWeight = 0f
             line.txt.forEach {
@@ -192,11 +193,11 @@ class TtsUtil() : ViewModel() {
                     }
                     val elapsed = System.currentTimeMillis() - startTime
                     var elapsedLine = 0L
-                    for ((time,line) in expectedLineMs) {
+                    for ((time, line) in expectedLineMs) {
                         elapsedLine += time
                         if (elapsed < elapsedLine) {
                             if (line != lastTextLine) {
-                                progressChangeCallback.invoke(line)
+                                progressChangeCallback?.invoke(line)
                                 lastTextLine = line
                             }
                             break
@@ -219,7 +220,7 @@ class TtsUtil() : ViewModel() {
             override fun onDone(utteranceId: String?) {
                 speakTime = System.currentTimeMillis() - speakStartTime
                 paragraphs.poll()?.let {
-                    progressChangeCallback.invoke(it.last())
+                    progressChangeCallback?.invoke(it.last())
                 }
                 speakNext()
             }
@@ -231,7 +232,7 @@ class TtsUtil() : ViewModel() {
 
             override fun onStart(utteranceId: String?) {
                 paragraphs.peek()?.let {
-                    progressChangeCallback.invoke(it.first())
+                    progressChangeCallback?.invoke(it.first())
                 }
                 startEstimateForParagraph()
                 speakStartTime = System.currentTimeMillis()

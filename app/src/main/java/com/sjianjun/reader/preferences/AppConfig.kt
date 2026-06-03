@@ -68,6 +68,11 @@ class AppConfig(val name: String) :
     val readerVolumeKeyPageTurn by lazy { boolLivedata("readerVolumeKeyPageTurn", false) }
 
     /**
+     * 阅读器 TTS 引擎选择: "default" 或 "edge"
+     */
+    val readerTtsEngine by lazy { strLivedata("readerTtsEngine", "default") }
+
+    /**
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
     val readerBrightnessPercent by lazy { intLivedata("readerBrightnessPercent", -1) }

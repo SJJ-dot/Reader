@@ -216,7 +216,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/setting_container_second"
+            android:id="@+id/setting_detail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="gone">
@@ -694,7 +694,7 @@
 
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/setting_container_first"
+            android:id="@+id/setting_sample"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 

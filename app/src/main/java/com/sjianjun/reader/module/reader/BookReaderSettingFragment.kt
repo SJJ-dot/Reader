@@ -47,7 +47,6 @@ import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DbFactory
-import com.sjianjun.reader.utils.TtsUtil
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.colorText
 import com.sjianjun.reader.utils.dp2Px
@@ -81,7 +80,8 @@ class BookReaderSettingFragment : BaseFragment() {
     private val REQUEST_CODE_PICK_FONT = 1111
     private val pageLoader: PageLoader by activityViewModels<NetPageLoader>()
     private val readerViewModel: BookReaderViewModel by activityViewModels<BookReaderViewModel>()
-    private val ttsUtil: TtsUtil? by activityViewModels<TtsUtil>()
+    // use TtsService delegator instead of ViewModel instance
+    // private val ttsUtil: TtsUtil? by activityViewModels<TtsUtil]()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -128,8 +128,8 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        binding?.settingContainerFirst?.isVisible = true
-        binding?.settingContainerSecond?.isVisible = false
+        binding?.settingSample?.isVisible = true
+        binding?.settingDetail?.isVisible = false
         refreshChapterProgress()
         updateBrightnessUi(globalConfig.readerBrightnessPercent.value ?: -1)
         updateBookDetailExpanded(false)
@@ -378,12 +378,12 @@ class BookReaderSettingFragment : BaseFragment() {
 
     private fun initSettings() {
         binding?.settings?.click(10) {
-            if (binding?.settingContainerFirst?.isVisible == true) {
-                binding?.settingContainerFirst?.isVisible = false
-                binding?.settingContainerSecond?.isVisible = true
+            if (binding?.settingSample?.isVisible == true) {
+                binding?.settingSample?.isVisible = false
+                binding?.settingDetail?.isVisible = true
             } else {
-                binding?.settingContainerFirst?.isVisible = true
-                binding?.settingContainerSecond?.isVisible = false
+                binding?.settingSample?.isVisible = true
+                binding?.settingDetail?.isVisible = false
             }
         }
     }
@@ -464,7 +464,8 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initSpeak() {
-        ttsUtil?.isSpeaking?.observe(viewLifecycleOwner, Observer { isSpeaking ->
+        // observe TTS speaking status from delegating service
+        com.sjianjun.reader.utils.TtsService.isSpeaking.observe(viewLifecycleOwner, Observer { isSpeaking ->
             if (isSpeaking) {
                 binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
             } else {
@@ -472,7 +473,15 @@ class BookReaderSettingFragment : BaseFragment() {
             }
         })
         binding?.speak?.click {
-            EventBus.post(EventKey.CHAPTER_SPEAK)
+            if (com.sjianjun.reader.utils.TtsService.isSpeaking.value == true) {
+                EventBus.post(EventKey.CHAPTER_SPEAK)
+                return@click
+            }
+            // open TTS setting page where user can choose engine and trigger play
+            if (parentFragmentManager.findFragmentByTag(SettingTtsDialogFragment.TAG) == null) {
+                SettingTtsDialogFragment().show(parentFragmentManager, SettingTtsDialogFragment.TAG)
+                hide()
+            }
         }
     }
 
