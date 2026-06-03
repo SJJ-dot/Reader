@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.about
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.Intent
 import android.graphics.Bitmap
@@ -12,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
@@ -20,12 +22,15 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.module.main.PrivacyPolicyDialogFragment
+import com.sjianjun.reader.mqtt.OnlineInfos
+import com.sjianjun.reader.mqtt.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.AppInfoUtil
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.io.File
 
@@ -35,6 +40,7 @@ class AboutFragment : BaseAsyncFragment() {
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
+    @SuppressLint("SetTextI18n")
     override val onLoadedView: (View) -> Unit = {
         setHasOptionsMenu(true)
         MainFragmentAboutBinding.bind(it).apply {
@@ -55,6 +61,11 @@ class AboutFragment : BaseAsyncFragment() {
             versionCode.performClick()
             tvPrivacyPolicy.click {
                 PrivacyPolicyDialogFragment().show(childFragmentManager, "PrivacyPolicyDialogFragment")
+            }
+            lifecycleScope.launch { OnlineInfos.refresh() }
+            OnlineInfos.onlineInfo.observe(viewLifecycleOwner) { info ->
+                tvOnline.text = "今日阅读时长：${info?.today_online_seconds?.formatDuration() ?: "--"}\n" +
+                        "书友在线：${info.online_count}"
             }
         }
     }
