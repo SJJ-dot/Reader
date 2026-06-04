@@ -18,7 +18,7 @@ def log(arg):
         for key, value in arg.headers.items():
             print(f"{key}: {value}")
         print("")
-        print(arg.text)
+        print(arg.text.replace('\r', '\\r').replace('\n', '\\n'))
         print("")
     else:
         print(arg)
