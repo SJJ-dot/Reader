@@ -31,11 +31,9 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 object TtsEdgeManager : BaseTts {
     private val audioCache = HashMap<String, ByteArray>()
-    private val audioKeys = CopyOnWriteArrayList<String>()
-    // mapping from cached key to paragraph lines (used to notify progress)
     private val keyParagraphMap = HashMap<String, List<TxtLine>>()
     private var mediaPlayer: MediaPlayer? = null
-    private val playQueue = ConcurrentLinkedDeque<String>()
+    private var playQueue = ConcurrentLinkedDeque<String>()
     private var currentKey: String? = null
     var playbackRate = 1.0f
     private val playerLock = Any()
@@ -54,18 +52,13 @@ object TtsEdgeManager : BaseTts {
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
 
-    fun cacheAudio(key: String, bytes: ByteArray) {
-        audioCache[key] = bytes
-        if (!audioKeys.contains(key)) audioKeys.add(key)
-    }
-
     /**
      * Synthesize the given text using EdgeSpeakFetch and cache the resulting mp3 bytes.
      * Returns the cache key (md5 of text+rate).
      */
     fun synthesizeAndCache(text: String, rate: Int, voice: String = "zh-CN-XiaoxiaoNeural", paragraphLines: List<TxtLine>? = null): String {
         val key = MD5Utils.md5Encode(text + "_" + rate + "_" + voice)
-        if (isCached(key)) {
+        if (audioCache.containsKey(key)) {
             paragraphLines?.let { keyParagraphMap[key] = it }
             return key
         }
@@ -79,8 +72,7 @@ object TtsEdgeManager : BaseTts {
                 if (read > 0) baos.write(buffer, 0, read)
                 read = input.read(buffer)
             }
-            val bytes = baos.toByteArray()
-            cacheAudio(key, bytes)
+            audioCache[key] = baos.toByteArray()
             paragraphLines?.let { keyParagraphMap[key] = it }
         } catch (e: Exception) {
             // synthesis failed; leave uncached
@@ -88,11 +80,8 @@ object TtsEdgeManager : BaseTts {
         return key
     }
 
-    fun isCached(key: String): Boolean = audioCache.containsKey(key)
-
     fun removeCache(key: String) {
         audioCache.remove(key)
-        audioKeys.remove(key)
         // remove any temp file if exists
         try {
             val f = File(App.app.cacheDir, "tts_$key.mp3")
@@ -102,7 +91,6 @@ object TtsEdgeManager : BaseTts {
 
     fun removeAllCache() {
         audioCache.clear()
-        audioKeys.clear()
         // clear temp files
         try {
             App.app.cacheDir.listFiles()?.forEach { f -> if (f.name.startsWith("tts_") ) f.delete() }
@@ -305,6 +293,7 @@ object TtsEdgeManager : BaseTts {
         try { mediaPlayer?.release() } catch (_: Throwable) {}
         mediaPlayer = null
         playQueue.clear()
+        playQueue = ConcurrentLinkedDeque()
         currentKey = null
         if (isSpeaking.value != false) {
             isSpeaking.postValue(false)
@@ -356,12 +345,16 @@ object TtsEdgeManager : BaseTts {
         }
         if (paragraphLines.isNotEmpty()) paragraphs.add(paragraphLines)
 
+        val playQueue = this.playQueue
         // synthesize and enqueue sequentially. Start playback as soon as the first paragraph is ready.
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 for (para in paragraphs) {
                     val text = para.joinToString(separator = "") { line -> line.txt }
                     val key = synthesizeAndCache(text, rate, voice, para)
+                    if (stopped.get()) {
+                        return@launch
+                    }
                     // enqueue for playback
                     playQueue.add(key)
                     // if nothing is playing yet, start
