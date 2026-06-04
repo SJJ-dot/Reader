@@ -1,27 +1,24 @@
 package io.legado.app.service
 
 import android.media.MediaPlayer
-import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.utils.BaseTts
 import com.sjianjun.reader.App
+import com.sjianjun.reader.utils.BaseTts
 import io.legado.app.utils.MD5Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
-import android.os.Handler
-import android.os.Looper
 import sjj.alog.Log
 import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 简化的 Edge TTS 播放管理器：
@@ -74,7 +71,7 @@ object TtsEdgeManager : BaseTts {
             }
             audioCache[key] = baos.toByteArray()
             paragraphLines?.let { keyParagraphMap[key] = it }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // synthesis failed; leave uncached
         }
         return key
@@ -82,11 +79,6 @@ object TtsEdgeManager : BaseTts {
 
     fun removeCache(key: String) {
         audioCache.remove(key)
-        // remove any temp file if exists
-        try {
-            val f = File(App.app.cacheDir, "tts_$key.mp3")
-            if (f.exists()) f.delete()
-        } catch (_: Throwable) {}
     }
 
     fun removeAllCache() {
@@ -204,16 +196,12 @@ object TtsEdgeManager : BaseTts {
             return
         }
 
-        // write temp file off-main then prepare MediaPlayer on main thread
+         // Prefer in-memory playback using MediaDataSource (API 23+). Fallback to temp file for older devices.
+        try { currentWriteJob?.cancel() } catch (_: Throwable) {}
         currentWriteJob = GlobalScope.launch(Dispatchers.IO) {
             try {
-                val tmp = File(App.app.cacheDir, "tts_$key.mp3")
-                tmp.writeBytes(bytes)
-
-                // now prepare player on main thread
-                if (stopped.get()) {
-                    return@launch
-                }
+                // prepare player on main thread using in-memory MediaDataSource
+                if (stopped.get()) return@launch
                 mainHandler.post {
                     synchronized(playerLock) {
                         if (stopped.get()) return@post
@@ -227,7 +215,22 @@ object TtsEdgeManager : BaseTts {
 
                             val mp = MediaPlayer()
                             mediaPlayer = mp
-                            mp.setDataSource(tmp.absolutePath)
+
+                            // MediaDataSource reads directly from the cached byte[]
+                            mp.setDataSource(object : android.media.MediaDataSource() {
+                                override fun close() {}
+                                override fun getSize(): Long = bytes.size.toLong()
+                                @Throws(IOException::class)
+                                override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
+                                    val pos = position.toInt()
+                                    if (pos >= bytes.size) return -1
+                                    val avail = bytes.size - pos
+                                    val toRead = if (size > avail) avail else size
+                                    System.arraycopy(bytes, pos, buffer, offset, toRead)
+                                    return toRead
+                                }
+                            })
+
                             mp.setOnPreparedListener { player ->
                                 try {
                                     player.playbackParams = player.playbackParams.setSpeed(playbackRate)
@@ -246,11 +249,12 @@ object TtsEdgeManager : BaseTts {
                                 isSpeaking.postValue(true)
                                 try { player.start() } catch (_: Throwable) { cancelEstimate(); playNext() }
                             }
+
                             mp.setOnCompletionListener { _ ->
-                                // cancel estimator and schedule next on main thread
                                 cancelEstimate()
                                 mainHandler.post { playNext() }
                             }
+
                             mp.setOnErrorListener { _, _, _ ->
                                 cancelEstimate()
                                 mainHandler.post { playNext() }
@@ -265,17 +269,14 @@ object TtsEdgeManager : BaseTts {
                                 mediaPlayer = null
                                 playNext()
                             }
-                        } catch (e: Exception) {
-                            // fallback: try next
+                        } catch (_: Exception) {
                             try { mediaPlayer?.release() } catch (_: Throwable) {}
                             mediaPlayer = null
                             playNext()
                         }
                     }
                 }
-
-            } catch (e: IOException) {
-                // skip and play next
+            } catch (_: IOException) {
                 playNext()
             }
         }
@@ -371,6 +372,3 @@ object TtsEdgeManager : BaseTts {
     }
 
 }
-
-
-
