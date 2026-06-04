@@ -214,7 +214,7 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节内容错误 $chapter")
                     return@launch
                 }
-                Log.i("开始朗读章节${mPageLoader?.chapterPos} ${chapter.title}")
+                Log.i("开始朗读章节${mPageLoader?.chapterPos} ${chapter.title} pageSize:${mPageLoader?.curPageList?.size}")
                 ttsService.start(mPageLoader?.chapterPos ?: 0, mPageLoader?.curPageList, mPageLoader?.pagePos ?: 0)
             }
         }

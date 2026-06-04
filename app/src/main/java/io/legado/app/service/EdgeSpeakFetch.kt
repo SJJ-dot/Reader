@@ -325,7 +325,7 @@ class EdgeSpeakFetch {
 
     // 生成带符号的百分比字符串
     private fun processRate(rate: Int): String {
-        val rateOffset = rate - 12
+        val rateOffset = rate - 50
         val customRate = if (rateOffset > 0) {
             "+$rateOffset%"
         } else {

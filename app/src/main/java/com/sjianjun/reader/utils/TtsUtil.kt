@@ -19,12 +19,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import com.sjianjun.reader.preferences.globalConfig
 import sjj.alog.Log
 import sjj.novel.view.reader.page.TxtLine
 import sjj.novel.view.reader.page.TxtPage
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.coroutines.resume
 import kotlin.math.abs
+import kotlin.math.max
 
 class TtsUtil() : ViewModel(), BaseTts {
 
@@ -77,6 +79,15 @@ class TtsUtil() : ViewModel(), BaseTts {
                     return@TextToSpeech
                 }
                 textToSpeech?.setOnUtteranceProgressListener(listener)
+                // apply configured system TTS rate (percent stored as int, default 100)
+                try {
+                    var systemRate = globalConfig.readerTtsRate.value ?: 50
+                    if (systemRate > 50){
+                        systemRate = 50 + (systemRate - 50) * 3 // amplify rates above 50 to make max 100 more distinguishable
+                    }
+                    textToSpeech?.setSpeechRate(max(systemRate / 50.0f, 0.01f))
+                } catch (_: Throwable) {
+                }
                 if (continuation.isActive) {
                     continuation.resume(textToSpeech)
                 } else {
@@ -156,6 +167,15 @@ class TtsUtil() : ViewModel(), BaseTts {
                 return@launch
             }
             val txt = paragraph.joinToString(separator = "") { line -> line.txt }
+            // ensure speech rate is up-to-date before speaking
+            try {
+                var systemRate = globalConfig.readerTtsRate.value ?: 50
+                if (systemRate > 50){
+                    systemRate = 50 + (systemRate - 50) * 3 // amplify rates above 50 to make max 100 more distinguishable
+                }
+                textToSpeech?.setSpeechRate(max(systemRate / 50.0f, 0.01f))
+            } catch (_: Throwable) {
+            }
             textToSpeech?.speak(txt, QUEUE_ADD, null, txt.md5)
         }
     }

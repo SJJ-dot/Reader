@@ -2,28 +2,38 @@ package com.sjianjun.reader.module.reader
 
 import android.app.Dialog
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.RadioButton
+import android.widget.SeekBar
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.FragmentSettingTtsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.view.click
 
 class SettingTtsDialogFragment : DialogFragment() {
     companion object {
         const val TAG = "SettingTtsDialogFragment"
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view: View = layoutInflater.inflate(R.layout.fragment_setting_tts, null)
-        val rbDefault = view.findViewById<RadioButton>(R.id.rb_tts_default)
-        val rbEdge = view.findViewById<RadioButton>(R.id.rb_tts_edge)
-        val spinner = view.findViewById<Spinner>(R.id.spinner_tts_voice)
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val binding = FragmentSettingTtsBinding.inflate(layoutInflater) // ensure view binding is generated
+        val rbDefault = binding.rbTtsDefault
+        val rbEdge = binding.rbTtsEdge
+        val spinner = binding.spinnerTtsVoice
+        val seekEdge = binding.seekbarEdgeRate
+        val tvEdge = binding.tvEdgeRateValue
 
         // restore selection from globalConfig
         val current = globalConfig.readerTtsEngine.value ?: "default"
@@ -49,6 +59,11 @@ class SettingTtsDialogFragment : DialogFragment() {
         val currentVoice = globalConfig.readerTtsVoice.value ?: "zh-CN-XiaoxiaoNeural"
         val sel = voiceParams.indexOf(currentVoice).coerceAtLeast(0)
         spinner.setSelection(sel)
+        // restore system and edge rate settings
+        val edgeRate = globalConfig.readerTtsRate.value ?: 50
+        // ensure seekbar progress within bounds
+        seekEdge.progress = edgeRate.coerceIn(0, 100)
+        tvEdge.text = edgeRate.toString()
         // only show spinner when Edge is selected
         spinner.visibility = if (rbEdge.isChecked) View.VISIBLE else View.GONE
         rbEdge.setOnCheckedChangeListener { _, isChecked ->
@@ -58,16 +73,15 @@ class SettingTtsDialogFragment : DialogFragment() {
             if (isChecked) spinner.visibility = View.GONE
         }
 
-        val btnCancel = view.findViewById<Button>(R.id.btn_tts_cancel)
-        val btnPlay = view.findViewById<Button>(R.id.btn_tts_play)
+        val btnCancel = binding.btnTtsCancel
+        val btnPlay = binding.btnTtsPlay
 
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setView(view)
-
-        val dialog = builder.create()
 
         btnCancel.setOnClickListener {
-            dialog.dismiss()
+            dismissAllowingStateLoss()
+        }
+        binding.tvRate.click {
+            seekEdge.progress = 50
         }
 
         btnPlay.setOnClickListener {
@@ -78,13 +92,34 @@ class SettingTtsDialogFragment : DialogFragment() {
             val selIdx = spinner.selectedItemPosition.coerceAtLeast(0)
             val voiceParam = voiceParams.getOrNull(selIdx) ?: "zh-CN-XiaoxiaoNeural"
             globalConfig.readerTtsVoice.postValue(voiceParam)
+            // save rate settings
+            val newEdge = seekEdge.progress.coerceIn(0, 100)
+            globalConfig.readerTtsRate.postValue(newEdge)
 
             // notify to start reading
             EventBus.post(EventKey.CHAPTER_SPEAK)
-            dialog.dismiss()
+            dismissAllowingStateLoss()
         }
 
-        return dialog
+        // SeekBar listeners
+        seekEdge.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val p = progress.coerceIn(0, 100)
+                tvEdge.text = p.toString()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        return binding.root
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val metrics = resources.displayMetrics
+        val width = (metrics.widthPixels * 0.96f).toInt()
+        dialog?.window?.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
     }
 }
 

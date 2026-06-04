@@ -31,12 +31,14 @@ object TtsEdgeManager : BaseTts {
     private val keyParagraphMap = HashMap<String, List<TxtLine>>()
     private var mediaPlayer: MediaPlayer? = null
     private var playQueue = ConcurrentLinkedDeque<String>()
+    private var ttsConversionJob: Job? = null
     private var currentKey: String? = null
     var playbackRate = 1.0f
     private val playerLock = Any()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var currentWriteJob: Job? = null
     private val stopped = AtomicBoolean(false)
+
     // estimator for per-line progress callbacks
     private var estimateRunnable: Runnable? = null
     private var estimateStartTime = 0L
@@ -85,14 +87,16 @@ object TtsEdgeManager : BaseTts {
         audioCache.clear()
         // clear temp files
         try {
-            App.app.cacheDir.listFiles()?.forEach { f -> if (f.name.startsWith("tts_") ) f.delete() }
-        } catch (_: Throwable) {}
+            App.app.cacheDir.listFiles()?.forEach { f -> if (f.name.startsWith("tts_")) f.delete() }
+        } catch (_: Throwable) {
+        }
     }
 
     private fun cancelEstimate() {
         try {
             estimateRunnable?.let { mainHandler.removeCallbacks(it) }
-        } catch (_: Throwable) {}
+        } catch (_: Throwable) {
+        }
         estimateRunnable = null
         estimateStartTime = 0L
         estimateLines = null
@@ -153,10 +157,12 @@ object TtsEdgeManager : BaseTts {
                         lastIndex = idx
                         try {
                             progressChangeCallback?.invoke(linesNow[idx])
-                        } catch (_: Throwable) {}
+                        } catch (_: Throwable) {
+                        }
                     }
                     mainHandler.postDelayed(this, 150)
-                } catch (_: Throwable) {}
+                } catch (_: Throwable) {
+                }
             }
         }
         mainHandler.postDelayed(estimateRunnable!!, 150)
@@ -166,22 +172,40 @@ object TtsEdgeManager : BaseTts {
         if (stopped.get()) {
             return
         }
+        // release previous player
+        mediaPlayer?.let {
+            try {
+                it.stop()
+            } catch (_: Throwable) {
+            }
+            try {
+                it.release()
+            } catch (_: Throwable) {
+            }
+        }
+        mediaPlayer = null
         val prevKey = currentKey
         val key = playQueue.pollFirst()
         // remove cache for the previously played segment
         prevKey?.let {
             try {
                 removeCache(it)
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
 
         if (key == null) {
+            if (ttsConversionJob?.isActive == true) {
+                // still synthesizing, wait for next playKey
+                return
+            }
             // finished
             stop()
             try {
                 isSpeaking.value = false
                 onCompleted?.invoke()
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
             return
         }
         // playKey will handle background file write and ensure player is prepared on main thread
@@ -196,8 +220,11 @@ object TtsEdgeManager : BaseTts {
             return
         }
 
-         // Prefer in-memory playback using MediaDataSource (API 23+). Fallback to temp file for older devices.
-        try { currentWriteJob?.cancel() } catch (_: Throwable) {}
+        // Prefer in-memory playback using MediaDataSource (API 23+). Fallback to temp file for older devices.
+        try {
+            currentWriteJob?.cancel()
+        } catch (_: Throwable) {
+        }
         currentWriteJob = GlobalScope.launch(Dispatchers.IO) {
             try {
                 // prepare player on main thread using in-memory MediaDataSource
@@ -208,8 +235,14 @@ object TtsEdgeManager : BaseTts {
                         try {
                             // release previous player
                             mediaPlayer?.let {
-                                try { it.stop() } catch (_: Throwable) {}
-                                try { it.release() } catch (_: Throwable) {}
+                                try {
+                                    it.stop()
+                                } catch (_: Throwable) {
+                                }
+                                try {
+                                    it.release()
+                                } catch (_: Throwable) {
+                                }
                             }
                             mediaPlayer = null
 
@@ -220,6 +253,7 @@ object TtsEdgeManager : BaseTts {
                             mp.setDataSource(object : android.media.MediaDataSource() {
                                 override fun close() {}
                                 override fun getSize(): Long = bytes.size.toLong()
+
                                 @Throws(IOException::class)
                                 override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
                                     val pos = position.toInt()
@@ -234,7 +268,8 @@ object TtsEdgeManager : BaseTts {
                             mp.setOnPreparedListener { player ->
                                 try {
                                     player.playbackParams = player.playbackParams.setSpeed(playbackRate)
-                                } catch (_: Throwable) {}
+                                } catch (_: Throwable) {
+                                }
                                 // start per-line estimator based on audio duration
                                 try {
                                     val lines = keyParagraphMap[key]
@@ -247,7 +282,11 @@ object TtsEdgeManager : BaseTts {
                                     cancelEstimate()
                                 }
                                 isSpeaking.postValue(true)
-                                try { player.start() } catch (_: Throwable) { cancelEstimate(); playNext() }
+                                try {
+                                    player.start()
+                                } catch (_: Throwable) {
+                                    cancelEstimate(); playNext()
+                                }
                             }
 
                             mp.setOnCompletionListener { _ ->
@@ -265,12 +304,18 @@ object TtsEdgeManager : BaseTts {
                                 mp.prepareAsync()
                             } catch (e: IllegalStateException) {
                                 Log.e("TtsEdgeManager prepareAsync IllegalState: ${e.message}")
-                                try { mp.release() } catch (_: Throwable) {}
+                                try {
+                                    mp.release()
+                                } catch (_: Throwable) {
+                                }
                                 mediaPlayer = null
                                 playNext()
                             }
                         } catch (_: Exception) {
-                            try { mediaPlayer?.release() } catch (_: Throwable) {}
+                            try {
+                                mediaPlayer?.release()
+                            } catch (_: Throwable) {
+                            }
                             mediaPlayer = null
                             playNext()
                         }
@@ -286,12 +331,19 @@ object TtsEdgeManager : BaseTts {
         try {
             stopped.set(true)
             // cancel any pending write job
-            try { currentWriteJob?.cancel() } catch (_: Throwable) {}
+            try {
+                currentWriteJob?.cancel()
+            } catch (_: Throwable) {
+            }
             currentWriteJob = null
             cancelEstimate()
             mediaPlayer?.stop()
-        } catch (_: Throwable) {}
-        try { mediaPlayer?.release() } catch (_: Throwable) {}
+        } catch (_: Throwable) {
+        }
+        try {
+            mediaPlayer?.release()
+        } catch (_: Throwable) {
+        }
         mediaPlayer = null
         playQueue.clear()
         playQueue = ConcurrentLinkedDeque()
@@ -302,14 +354,15 @@ object TtsEdgeManager : BaseTts {
         // clear all cached audio when explicitly stopping
         try {
             removeAllCache()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     /**
      * Start speaking pages from pagePos using Edge TTS.
      * This will synthesize paragraphs in background and enqueue them for playback.
      */
-    fun start(pages: List<TxtPage>?, pagePos: Int, rate: Int = 12, voice: String = "zh-CN-XiaoxiaoNeural") {
+    fun start(pages: List<TxtPage>?, pagePos: Int, rate: Int, voice: String = "zh-CN-XiaoxiaoNeural") {
         if (pages.isNullOrEmpty() || pagePos < 0 || pagePos >= pages.size) return
         stop()
         // allow new plays
@@ -345,10 +398,10 @@ object TtsEdgeManager : BaseTts {
             }
         }
         if (paragraphLines.isNotEmpty()) paragraphs.add(paragraphLines)
-
+        ttsConversionJob?.cancel()
         val playQueue = this.playQueue
         // synthesize and enqueue sequentially. Start playback as soon as the first paragraph is ready.
-        GlobalScope.launch(Dispatchers.IO) {
+        ttsConversionJob = GlobalScope.launch(Dispatchers.IO) {
             try {
                 for (para in paragraphs) {
                     val text = para.joinToString(separator = "") { line -> line.txt }

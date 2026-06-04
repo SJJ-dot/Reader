@@ -53,7 +53,8 @@ object TtsService : BaseTts {
                 // propagate callbacks
                 edge.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
                 edge.onCompleted = { onCompleted?.invoke() }
-                edge.start(pages, pagePos, rate = 12, voice = voice)
+                val edgeRate = globalConfig.readerTtsRate.value ?: 50
+                edge.start(pages, pagePos, rate = edgeRate, voice = voice)
             } else {
                 // system
                 system.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }

@@ -77,6 +77,8 @@ class AppConfig(val name: String) :
      */
     val readerTtsVoice by lazy { strLivedata("readerTtsVoice", "zh-CN-XiaoxiaoNeural") }
 
+    val readerTtsRate by lazy { intLivedata("readerTtsRate", 50) }
+
     /**
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
