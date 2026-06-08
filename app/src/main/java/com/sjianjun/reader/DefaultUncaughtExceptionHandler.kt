@@ -2,6 +2,7 @@ package com.sjianjun.reader
 
 import android.content.Context
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.nickname
 import com.tencent.bugly.crashreport.CrashReport
 import java.util.UUID
 
@@ -14,7 +15,7 @@ fun handleDefaultException(context: Context) {
         globalConfig.deviceID = deviceID
     }
     CrashReport.initCrashReport(context, "d3d6da5bd7", BuildConfig.DEBUG)
-    CrashReport.setUserId(context, deviceID)
-    CrashReport.setDeviceId(context, deviceID)
+    CrashReport.setUserId(context, deviceID.nickname)
+    CrashReport.setDeviceId(context, deviceID.nickname)
 
 }
