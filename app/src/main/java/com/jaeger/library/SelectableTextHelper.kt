@@ -197,7 +197,7 @@ class SelectableTextHelper(builder: Builder) {
                     if (txt.isBlank()) return@click
                     if (txt.length == 1) {
                         val code = txt[0].code.toString(16).lowercase()
-                        val uri = ("https://www.zidian.com.cn/zi/$code")
+                        val uri = ("https://www.zidian.com.cn/zi/u$code")
                         BrowserReaderActivity.startActivity(mView.context, uri)
                     } else {
                         val encode = URLEncoder.encode(txt, "utf-8")
