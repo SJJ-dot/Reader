@@ -18,6 +18,7 @@ import android.widget.PopupWindow
 import androidx.annotation.ColorInt
 import androidx.core.net.toUri
 import com.sjianjun.reader.R
+import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.view.click
 import sjj.alog.Log
@@ -79,7 +80,6 @@ class SelectableTextHelper(builder: Builder) {
             }
         }
     }
-
 
 
     fun hideSelectView() {
@@ -193,9 +193,18 @@ class SelectableTextHelper(builder: Builder) {
             }
             contentView.findViewById<View>(R.id.txt_dict).click {
                 try {
-                    val encode = URLEncoder.encode(mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
-                    val uri = ("https://hanyu.baidu.com/s?wd=$encode").toUri()
-                    mView.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    val txt = mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end).trim()
+                    if (txt.isBlank()) return@click
+                    if (txt.length == 1) {
+                        val code = txt[0].code.toString(16).lowercase()
+                        val uri = ("https://www.zidian.com.cn/zi/$code")
+                        BrowserReaderActivity.startActivity(mView.context, uri)
+                    } else {
+                        val encode = URLEncoder.encode(txt, "utf-8")
+                        val uri = ("https://www.zidian.com.cn/search?keyword=$encode")
+                        BrowserReaderActivity.startActivity(mView.context, uri)
+                    }
+
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
                     mSelectListener.onTextSelectedChange(mSelectionInfo)
@@ -420,6 +429,7 @@ class SelectableTextHelper(builder: Builder) {
                     performClick()
                     mOperateWindow!!.show()
                 }
+
                 MotionEvent.ACTION_MOVE -> {
                     mOperateWindow!!.dismiss()
                     val rawX = event.getRawX()
