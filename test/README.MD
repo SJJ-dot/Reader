@@ -11,7 +11,9 @@
 4. 按下方的书源函数接口要求编辑临时书源测试文件Reader/test/source.py（也可以直接在Reader/test/py目录下创建对应书源的py脚本）。Reader/test/source.py测试通过后，在Reader/test/py目录下创建对应的书源文件或者是覆盖已有的脚本（如果是更新或者修复BUG）
 5. Reader/test/py目录下文件更新后，运行脚本Reader/test/update_source.py；脚本会将Reader/test/py目录下的脚本打包更新到Reader/test/BookSource目录下。到这里脚本就制作完成了。
 6. 在APP书源管理页面填写BookSource目录下的文件链接，推荐gzip文件优先
-
+### 3、书源文件链接
+例如本教程书源文件示例：https://raw.githubusercontent.com/SJJ-dot/Reader/refs/heads/BookSource/test/BookSource/default.json.gzip
+或者使用jsdelivr加速：https://cdn.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip
 
 ### 书源函数接口（具体编写参考已有的脚本：Reader/test/py）
 ```python
