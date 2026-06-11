@@ -1,4 +1,5 @@
 ## 书源制作教程
+- 如果不会编程也不会使用AI辅助编程，那我建议你使用「开源阅读」的书源。
 ### 1、开发环境
 - 语言：Python3.12 
 - 推荐ide：PyCharm
@@ -6,9 +7,10 @@
 ### 2、书源开发步骤
 1. 将存储库下载到本地，并切换到BookSource分支
 2. 使用PyCharm打开存储库目录：Reader\test
-3. 按下方的书源函数接口要求编辑临时书源测试文件Reader/test/source.py（也可以直接在Reader/test/py目录下创建对应书源的py脚本）。Reader/test/source.py测试通过后，在Reader/test/py目录下创建对应的书源文件或者是覆盖已有的脚本（如果是更新或者修复BUG）
-4. Reader/test/py目录下文件更新后，运行脚本Reader/test/update_source.py；脚本会将Reader/test/py目录下的脚本打包更新到Reader/test/BookSource目录下。到这里脚本就制作完成了。
-5. 在APP书源管理页面填写BookSource目录下的文件链接，推荐gzip文件优先
+3. 模版选择：网站有人机验证选择“顶点小说.py”、不需要人机验证选择“小原文学网.py”。
+4. 按下方的书源函数接口要求编辑临时书源测试文件Reader/test/source.py（也可以直接在Reader/test/py目录下创建对应书源的py脚本）。Reader/test/source.py测试通过后，在Reader/test/py目录下创建对应的书源文件或者是覆盖已有的脚本（如果是更新或者修复BUG）
+5. Reader/test/py目录下文件更新后，运行脚本Reader/test/update_source.py；脚本会将Reader/test/py目录下的脚本打包更新到Reader/test/BookSource目录下。到这里脚本就制作完成了。
+6. 在APP书源管理页面填写BookSource目录下的文件链接，推荐gzip文件优先
 
 
 ### 书源函数接口（具体编写参考已有的脚本：Reader/test/py）
