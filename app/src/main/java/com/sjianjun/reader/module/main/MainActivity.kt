@@ -47,8 +47,10 @@ class MainActivity : BaseActivity() {
         ActivityManger.finishSameType(this)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
-        launchIo {
-            checkUpdate(this@MainActivity, false)
+        if (globalConfig.autoCheckUpdate.value == true) {
+            launchIo {
+                checkUpdate(this@MainActivity, false)
+            }
         }
         initBackPressed()
         globalConfig.privacyPolicyAccepted.observe(this) {

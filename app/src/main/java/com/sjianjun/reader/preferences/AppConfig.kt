@@ -137,8 +137,12 @@ class AppConfig(val name: String) :
     var leaderboardTab by strPref("leaderboardTab", "online")
 
     /**
+     * 是否自动检查更新
+     */
+    val autoCheckUpdate by lazy { boolLivedata("autoCheckUpdate", true) }
+
+    /**
      * 用户是否已同意隐私政策
      */
     val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }
 }
-

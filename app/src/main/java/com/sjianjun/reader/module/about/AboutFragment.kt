@@ -58,7 +58,9 @@ class AboutFragment : BaseAsyncFragment() {
             }
 
             setVersionInfo(versionCode)
-            versionCode.performClick()
+            if (globalConfig.autoCheckUpdate.value == true) {
+                versionCode.performClick()
+            }
             tvPrivacyPolicy.click {
                 PrivacyPolicyDialogFragment().show(childFragmentManager, "PrivacyPolicyDialogFragment")
             }
@@ -112,7 +114,7 @@ class AboutFragment : BaseAsyncFragment() {
             versionCode.text =
                 "当前版本：${AppInfoUtil.versionName()}->${releaseInfo.lastVersion}"
         } else {
-            versionCode.text = "当前版本：${AppInfoUtil.versionName()}"
+            versionCode.text = "当前版本：${AppInfoUtil.versionName()} • 检查更新"
         }
     }
 

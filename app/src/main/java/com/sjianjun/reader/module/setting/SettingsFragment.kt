@@ -95,6 +95,12 @@ class SettingsFragment : Fragment() {
                 importDatabaseFileLauncher.launch(arrayOf("application/octet-stream", "application/x-sqlite3", "application/vnd.sqlite3", "*/*"))
             }
 
+            globalConfig.autoCheckUpdate.observe(viewLifecycleOwner) {
+                autoCheckUpdateSwitch.isChecked = it
+            }
+            autoCheckUpdateSwitch.setOnCheckedChangeListener { _, isChecked ->
+                globalConfig.autoCheckUpdate.postValue(isChecked)
+            }
         }
     }
 
