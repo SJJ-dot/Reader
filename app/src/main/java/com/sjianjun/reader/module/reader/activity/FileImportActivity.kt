@@ -38,6 +38,7 @@ import java.nio.charset.Charset
 import java.util.regex.Pattern
 import kotlin.coroutines.resume
 import kotlin.math.max
+import kotlin.time.Duration.Companion.milliseconds
 
 /*
  * Created by shen jian jun on 2020-07-20
@@ -78,8 +79,8 @@ class FileImportActivity : BaseActivity() {
 
     //状态刷新至少间隔1秒。给用户看看
     private var lastStatusTime = 0L
-    private suspend fun setStatus(status: String) {
-        delay(max(1000 - (System.currentTimeMillis() - lastStatusTime), 0))
+    private suspend fun setStatus(status: String, delayTime: Long = 0) {
+        delay(max(delayTime - (System.currentTimeMillis() - lastStatusTime), 0).milliseconds)
         lastStatusTime = System.currentTimeMillis()
         withMain { binding.status.text = status }
     }
@@ -178,7 +179,6 @@ class FileImportActivity : BaseActivity() {
                 chapterDao.insertChapter(chapterList)
                 chapterDao.markChaptersAsLoadedByBookId(book.book.id)
                 setStatus("小说导入成功")
-                delay(2000)
                 withMain {
                     //导入小说创建成功
                     //
