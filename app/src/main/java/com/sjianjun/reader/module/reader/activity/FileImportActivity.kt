@@ -132,7 +132,7 @@ class FileImportActivity : BaseActivity() {
                 //保存章节信息
                 val chapterList = mutableListOf<Chapter>()
                 //单章最大字数
-                val CHAPTER_CONTENT_MAX_LENGTH = 20000
+                val CHAPTER_CONTENT_MAX_LENGTH = 70000
                 setStatus("解析章节信息……")
                 contentResolver.openInputStream(uri).use {
                     val reader = BufferedReader(InputStreamReader(it, book.charset))
