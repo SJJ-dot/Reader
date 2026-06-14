@@ -21,6 +21,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
+import com.sjianjun.reader.URL
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
@@ -41,8 +42,6 @@ import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
-private const val ARG_URL = "ARG_URL"
-
 class BookCityPageFragment : BaseFragment() {
     private val vm by viewModels<BookCityViewModel>()
     private var url: String? = null
@@ -57,7 +56,7 @@ class BookCityPageFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         FragmentBookCityPageBinding.bind(view).apply {
-            url = globalConfig.bookCityUrl
+            url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             customWebView.init(viewLifecycleOwner, adBlock)
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
@@ -356,7 +355,7 @@ class BookCityPageFragment : BaseFragment() {
         fun newInstance(url: String) =
             BookCityPageFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_URL, url)
+                    putString(URL, url)
                 }
             }
     }
