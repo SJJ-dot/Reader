@@ -9,6 +9,7 @@ import com.sjianjun.coroutine.launchIo
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.App
+import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
@@ -16,7 +17,6 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ReaderActivityFileImportBinding
-import com.sjianjun.reader.module.main.MainActivity
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.repository.DbFactory.db
@@ -33,7 +33,9 @@ import io.legado.app.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import sjj.alog.Log
-import java.io.*
+import java.io.BufferedReader
+import java.io.File
+import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.util.regex.Pattern
 import kotlin.coroutines.resume
@@ -62,7 +64,6 @@ class FileImportActivity : BaseActivity() {
         binding.mbConfirm.gone()
         binding.progressBar.show()
         binding.mbCancel.click {
-            startActivity<MainActivity>()
             finish()
         }
         val intent: Intent = intent
@@ -183,7 +184,7 @@ class FileImportActivity : BaseActivity() {
                     //导入小说创建成功
                     //
                     Log.e("小说导入成功")
-                    startActivity<MainActivity>()
+                    startActivity<BookReaderActivity>(BOOK_ID to book.book.id)
                     toast("小说导入成功")
                     finish()
                 }

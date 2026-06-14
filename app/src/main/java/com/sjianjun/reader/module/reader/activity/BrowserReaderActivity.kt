@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.URL
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
@@ -343,7 +344,6 @@ class BrowserReaderActivity : BaseActivity() {
     }
 
     companion object {
-        private const val URL = "url"
         fun startActivity(ctx: Context, url: String) {
             if (url.isEmpty()) {
                 Log.e("URL is empty, cannot start BrowserReaderActivity")
