@@ -30,7 +30,7 @@ import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.DialogEditTextSourceUrlBinding
 import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
-import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
+import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
@@ -38,7 +38,6 @@ import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
-import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -217,7 +216,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
         return when (item.itemId) {
             R.id.source_help -> {
                 val sourceHelp = "https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD"
-                BrowserReaderActivity.startActivity(requireContext(), sourceHelp)
+                WebViewBrowserActivity.startActivity(requireContext(), sourceHelp)
                 true
             }
 

@@ -19,6 +19,7 @@ import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.DialogWebBookInputBinding
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemWebBookListBinding
+import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.toast
@@ -65,7 +66,7 @@ class WebShelfFragment : BaseFragment() {
     private fun init() {
         binding?.recycleView?.adapter = adapter
         adapter.onClickListener = { webBook ->
-            WebReaderActivity.startActivity(requireContext(), webBook.id)
+            WebViewBrowserActivity.startActivity(requireContext(), id = webBook.id)
         }
         adapter.onLongClickListener = { webBook ->
             MaterialAlertDialogBuilder(requireContext())

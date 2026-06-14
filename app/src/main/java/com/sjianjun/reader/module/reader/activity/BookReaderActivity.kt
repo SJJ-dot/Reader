@@ -28,6 +28,7 @@ import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.event.observe
+import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.module.main.ChapterListFragment
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.ReaderClickAreaAction
@@ -255,7 +256,7 @@ class BookReaderActivity : BaseActivity() {
                 toast("书籍链接为空")
                 return@observe
             }
-            BrowserReaderActivity.startActivity(this, url)
+            WebViewBrowserActivity.startActivity(this, url)
         }
         observe<String>(EventKey.CHAPTER_SYNC_FORCE) {
             launch("CHAPTER_SYNC_FORCE") {

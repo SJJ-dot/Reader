@@ -22,7 +22,9 @@ import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
+import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
@@ -38,6 +40,7 @@ import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -46,6 +49,7 @@ class BookCityPageFragment : BaseFragment() {
     private val vm by viewModels<BookCityViewModel>()
     private var url: String? = null
     private val adBlock: AdBlock = AdBlock()
+    private var webBook: WebBook? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -55,9 +59,23 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        FragmentBookCityPageBinding.bind(view).apply {
-            url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
-            customWebView.init(viewLifecycleOwner, adBlock)
+        lifecycleScope.launch {
+            init(FragmentBookCityPageBinding.bind(view))
+        }
+    }
+
+    private suspend fun init(bind: FragmentBookCityPageBinding) {
+        bind.apply {
+            val webId = arguments?.getString(WEB_ID)
+            if (webId?.isNotBlank() == true) {
+                webBook = vm.getWebBookById(webId).firstOrNull()
+                url = webBook?.lastUrl ?: webBook?.url
+            }
+            if (url == null) {
+                url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
+            }
+
+            customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
             })
@@ -93,7 +111,6 @@ class BookCityPageFragment : BaseFragment() {
                     true
                 }
             }
-
         }
     }
 
@@ -352,10 +369,11 @@ class BookCityPageFragment : BaseFragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(url: String) =
+        fun newInstance(url: String, webId: String = "") =
             BookCityPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
+                    putString(WEB_ID, webId)
                 }
             }
     }

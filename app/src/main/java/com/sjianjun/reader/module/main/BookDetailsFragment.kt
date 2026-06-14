@@ -1,7 +1,6 @@
 package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
-import android.content.res.ColorStateList
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuInflater
@@ -18,14 +17,13 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookDetailsBinding
+import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.module.reader.BookCoverPickerDialogFragment
 import com.sjianjun.reader.module.reader.BookIntroPickerDialogFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
-import com.sjianjun.reader.module.reader.activity.BrowserReaderActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.utils.animFadeIn
 import com.sjianjun.reader.utils.animFadeOut
-import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.fragmentCreate
@@ -117,7 +115,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             //使用浏览器打开书籍链接
             val url = book?.readChapter?.url
             if (url != null) {
-                BrowserReaderActivity.startActivity(requireActivity(), url)
+                WebViewBrowserActivity.startActivity(requireActivity(), url)
                 return@click
             }
             val bookUrl = book?.url
@@ -125,7 +123,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
                 toast("书籍链接为空")
                 return@click
             }
-            BrowserReaderActivity.startActivity(requireActivity(), bookUrl)
+            WebViewBrowserActivity.startActivity(requireActivity(), bookUrl)
         }
 
         binding?.originWebsite?.text = "${book?.bookSource?.group}：${book?.bookSource?.name}共${book?.bookSourceCount}个"

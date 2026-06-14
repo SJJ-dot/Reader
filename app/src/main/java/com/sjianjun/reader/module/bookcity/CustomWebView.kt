@@ -15,8 +15,11 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
+import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.verification.WebViewLifecycleObserver
 import com.sjianjun.reader.preferences.DelegateSharedPref
@@ -26,6 +29,7 @@ import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
@@ -36,22 +40,27 @@ import java.io.ByteArrayInputStream
 class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-    val binding: CustomWebViewBinding =
-        CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
+    private var lifecycleScope: LifecycleCoroutineScope? = null
+    private var webBook: WebBook? = null
+    private var vm: BookCityViewModel? = null
+    val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     private val lifecycleObserver by lazy { WebViewLifecycleObserver(binding.webView) }
     private var webView: WebView? = null
     private var homeUrl: String? = null
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
     private var needClearHistory = false
-    fun init(owner: LifecycleOwner, adBlock: AdBlock) {
+    fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?, vm: BookCityViewModel) {
+        this.webBook = webBook
         this.adBlock = adBlock
+        this.vm = vm
         webView = binding.webView
 
         initWebView(binding.webView)
         initView()
         owner.lifecycle.addObserver(lifecycleObserver)
         history.value = History.list.toMutableList()
+        this.lifecycleScope = owner.lifecycleScope
     }
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
@@ -132,7 +141,7 @@ class CustomWebView @JvmOverloads constructor(
         binding.home.click {
             Log.i("回到首页")
             webView?.stopLoading()
-            webView?.loadUrl(this.homeUrl ?: "https://www.baidu.com")
+            binding.webView.loadUrl(webBook?.url ?: this.homeUrl ?: "https://www.baidu.com")
             needClearHistory = true
         }
     }
@@ -158,6 +167,15 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
+                webBook?.apply {
+                    lastUrl = url ?: ""
+                    lastTitle = webView?.title ?: ""
+                    updateTime = System.currentTimeMillis()
+                    lifecycleScope?.launch {
+                        vm?.insertWebBook(this@apply)
+                    }
+                }
+
                 if (needClearHistory) {
                     needClearHistory = false
                     webView?.post {

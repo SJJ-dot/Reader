@@ -27,10 +27,7 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label,android:icon,android:name,android:theme">
         <activity
-            android:name=".module.shelf.WebReaderActivity"
-            android:exported="false" />
-        <activity
-            android:name=".module.reader.activity.BrowserReaderActivity"
+            android:name=".module.bookcity.WebViewBrowserActivity"
             android:exported="false" />
         <activity
             android:name=".module.verification.WebViewVerificationActivity"
