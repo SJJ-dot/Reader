@@ -64,12 +64,14 @@ fun WebView.init(headerMap: Map<String, String>? = null){
         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         domStorageEnabled = true
         allowContentAccess = true
+        allowFileAccess = false // 禁止访问文件系统，安全最佳实践
         useWideViewPort = true
         loadWithOverviewMode = true
         javaScriptEnabled = true
         setSupportZoom(true)
         builtInZoomControls = true
         displayZoomControls = false
+        setSupportMultipleWindows(true) // 支持 window.open()
         headerMap?.get("User-Agent")?.let {
             userAgentString = it
         }

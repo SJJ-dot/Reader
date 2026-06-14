@@ -30,6 +30,7 @@ import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
+import io.legado.app.utils.activity
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
@@ -51,8 +52,24 @@ class CustomWebView @JvmOverloads constructor(
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
     private var needClearHistory = false
+
     @Volatile
     private var currentUrl: String? = null
+
+    /**
+     * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
+     * 当用户在设置页修改跨域配置后，此值被重置为-1
+     */
+    @Volatile
+    var crossOriginOverride: Int = -1
+
+    var exitWebView = false
+
+    /** 获取当前生效的跨域模式 */
+    private fun effectiveCrossOriginMode(): Int {
+        return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
+    }
+
     fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?, vm: BookCityViewModel) {
         this.webBook = webBook
         this.adBlock = adBlock
@@ -76,7 +93,7 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun back(): Boolean {
-        if (webView?.canGoBack() != true) {
+        if (exitWebView || webView?.canGoBack() != true) {
             return false
         }
         val wv = webView ?: return false
@@ -115,7 +132,9 @@ class CustomWebView @JvmOverloads constructor(
 
             insets
         }
-        binding.webViewSettings.bind(binding.webView)
+        binding.webViewSettings.bind(binding.webView, effectiveCrossOriginMode()) {
+            crossOriginOverride = -1
+        }
         binding.refresh.click {
 
             if (binding.refresh.isSelected) {
@@ -126,7 +145,8 @@ class CustomWebView @JvmOverloads constructor(
             }
         }
         binding.backward.click {
-            back()
+            exitWebView = true
+            activity?.onBackPressedDispatcher?.onBackPressed()
         }
         binding.forward.click {
             Log.i("前进")
@@ -163,7 +183,7 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): Boolean {
                 // 返回 true 表示我们处理了该事件（等待用户选择）
-                return binding.webViewSettings.showBlockDialog(view, request, adBlock)
+                return binding.webViewSettings.showBlockDialog(view, request, adBlock, effectiveCrossOriginMode())
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -188,7 +208,6 @@ class CustomWebView @JvmOverloads constructor(
                     webView?.post {
                         Log.i("清除历史记录完成")
                         webView.clearHistory()
-                        binding.backward.isEnabled = webView.canGoBack()
                         binding.forward.isEnabled = webView.canGoForward()
                     }
                 }
@@ -233,7 +252,7 @@ class CustomWebView @JvmOverloads constructor(
                 val currentHost = currentUrl?.toHttpUrlOrNull()?.topPrivateDomain()
                 val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
                 if (isCrossOrigin) {
-                    when (globalConfig.crossOriginMode) {
+                    when (effectiveCrossOriginMode()) {
                         2 -> {
                             // 拒绝：拦截非同域子资源，记录到hostList
                             Log.i("跨域拦截请求：${request.url}")
@@ -264,6 +283,15 @@ class CustomWebView @JvmOverloads constructor(
                 handler?.proceed()
             }
 
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest,
+                errorResponse: WebResourceResponse
+            ) {
+                Log.e("HTTP Error: ${errorResponse.statusCode} ${request.url}")
+                // 仅记录日志，不拦截，让 WebView 自行处理错误页面
+            }
+
 
         }
         webView?.webChromeClient =
@@ -271,7 +299,6 @@ class CustomWebView @JvmOverloads constructor(
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
                     Log.i("progress:${newProgress} ")
                     binding.searchRefresh.progress = newProgress
-                    binding.backward.isEnabled = webView.canGoBack()
                     binding.forward.isEnabled = webView.canGoForward()
                     if (newProgress == 100) {
                         binding.refresh.isSelected = false
@@ -280,6 +307,19 @@ class CustomWebView @JvmOverloads constructor(
                         binding.refresh.isSelected = true
                         binding.searchRefresh.visibility = VISIBLE
                     }
+                }
+
+                override fun onCreateWindow(
+                    view: WebView?,
+                    isDialog: Boolean,
+                    isUserGesture: Boolean,
+                    resultMsg: android.os.Message?
+                ): Boolean {
+                    // window.open() 在当前 WebView 中加载，不创建新窗口
+                    val transport = resultMsg?.obj as? WebView.WebViewTransport
+                    transport?.webView = view
+                    resultMsg?.sendToTarget()
+                    return true
                 }
             }
     }

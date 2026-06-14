@@ -48,9 +48,8 @@
                 android:layout_height="match_parent"
                 android:background="?android:attr/selectableItemBackground"
                 android:padding="12dp"
-                android:rotation="180"
                 android:scaleType="centerInside"
-                android:src="@drawable/browser_navigation_forward"
+                android:src="@mipmap/icon_exit"
                 app:layout_constraintEnd_toStartOf="@+id/forward"
                 app:layout_constraintStart_toStartOf="parent" />
 

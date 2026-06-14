@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
+import com.sjianjun.reader.CROSS_ORIGIN_MODE
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
@@ -50,6 +51,7 @@ class BookCityPageFragment : BaseFragment() {
     private var url: String? = null
     private val adBlock: AdBlock = AdBlock()
     private var webBook: WebBook? = null
+    private var crossOriginMode: Int = -1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -74,7 +76,9 @@ class BookCityPageFragment : BaseFragment() {
             if (url == null) {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
+            crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
 
+            customWebView.crossOriginOverride = crossOriginMode
             customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
@@ -100,7 +104,7 @@ class BookCityPageFragment : BaseFragment() {
                     return@setOnBackPressed true
                 }
                 if (!customWebView.back()) {
-                    if (System.currentTimeMillis() - lastTime > 1000) {
+                    if (!customWebView.exitWebView && System.currentTimeMillis() - lastTime > 1000) {
                         toast("双击退出")
                         lastTime = System.currentTimeMillis()
                         return@setOnBackPressed true
@@ -412,11 +416,12 @@ class BookCityPageFragment : BaseFragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(url: String, webId: String = "") =
+        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1) =
             BookCityPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
                     putString(WEB_ID, webId)
+                    putInt(CROSS_ORIGIN_MODE, crossOriginMode)
                 }
             }
     }

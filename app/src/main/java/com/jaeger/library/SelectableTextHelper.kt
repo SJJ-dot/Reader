@@ -197,7 +197,7 @@ class SelectableTextHelper(builder: Builder) {
                     if (txt.isBlank()) return@click
                     val encode = URLEncoder.encode(txt, "utf-8")
                     val uri = ("https://www.hanyuguoxue.com/zidian/search?words=${encode}&type=all")
-                    WebViewBrowserActivity.startActivity(mView.context, uri)
+                    WebViewBrowserActivity.startActivity(mView.context, uri, crossOriginMode = 2)
 
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()

@@ -40,6 +40,9 @@ class WebViewSettings @JvmOverloads constructor(
     private var webView: WebView? = null
     private var titleJob: Job? = null
 
+    /** 当用户在设置中修改跨域配置时回调，用于清除临时覆盖 */
+    var onCrossOriginModeChanged: (() -> Unit)? = null
+
     init {
         setBackgroundColor(R.color.translucent.color(context))
     }
@@ -52,13 +55,15 @@ class WebViewSettings @JvmOverloads constructor(
             titleJob?.cancel()
         }
     }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         titleJob?.cancel()
     }
 
-    fun bind(webView: WebView) {
+    fun bind(webView: WebView, crossOriginMode: Int, onCrossOriginModeChanged: () -> Unit) {
         this.webView = webView
+        this.onCrossOriginModeChanged = onCrossOriginModeChanged
         binding.btnCopyUrl.setOnClickListener {
             if (binding.btnCopyUrl.text == "复制") {
                 binding.urlInput.text.toString().trim().copyToClipboard()
@@ -115,11 +120,13 @@ class WebViewSettings @JvmOverloads constructor(
         )
         crossOriginAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerCrossOrigin.adapter = crossOriginAdapter
-        binding.spinnerCrossOrigin.setSelection(globalConfig.crossOriginMode)
+        binding.spinnerCrossOrigin.setSelection(crossOriginMode)
         binding.spinnerCrossOrigin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 globalConfig.crossOriginMode = position
+                onCrossOriginModeChanged?.invoke()
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
@@ -187,7 +194,7 @@ class WebViewSettings @JvmOverloads constructor(
      * - 拒绝：直接拦截
      * - 询问：弹窗让用户选择（允许一次 / 加入黑名单 / 加入白名单）
      */
-    fun showBlockDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?): Boolean {
+    fun showBlockDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?, crossOriginMode: Int): Boolean {
         val url = request.url.toString()
         if (url.endsWith(".apk")) {
             return true
@@ -207,6 +214,11 @@ class WebViewSettings @JvmOverloads constructor(
         // 仅对 http/https 链接处理，其他 scheme 拦截
         val scheme = request.url?.scheme
         if (scheme != "http" && scheme != "https") {
+            // 浏览器内部 scheme 放行
+            if (scheme in setOf("javascript", "about", "data", "blob", "file")) {
+                return false
+            }
+            // 其他 scheme（intent://, market://, tel:, mailto: 等）拦截
             return true
         }
         if (!request.isForMainFrame) {
@@ -229,15 +241,17 @@ class WebViewSettings @JvmOverloads constructor(
         }
 
         // 根据跨域配置决定行为
-        return when (globalConfig.crossOriginMode) {
+        return when (crossOriginMode) {
             1 -> {
                 // 允许：直接放行
                 false
             }
+
             2 -> {
                 // 拒绝：直接拦截
                 true
             }
+
             else -> {
                 // 询问：弹窗让用户选择
                 showCrossOriginDialog(view, url, targetTop, adBlock)
