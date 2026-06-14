@@ -55,6 +55,7 @@ class MainActivity : BaseActivity() {
         initBackPressed()
         globalConfig.privacyPolicyAccepted.observe(this) {
             if (it) {
+                globalConfig.privacyPolicyAccepted.removeObservers(this)
                 App.app.initialize()
                 init()
                 launchIo {
