@@ -195,15 +195,9 @@ class SelectableTextHelper(builder: Builder) {
                 try {
                     val txt = mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end).trim()
                     if (txt.isBlank()) return@click
-                    if (txt.length == 1) {
-                        val code = txt[0].code.toString(16).lowercase()
-                        val uri = ("https://www.zidian.com.cn/zi/u$code")
-                        WebViewBrowserActivity.startActivity(mView.context, uri)
-                    } else {
-                        val encode = URLEncoder.encode(txt, "utf-8")
-                        val uri = ("https://www.zidian.com.cn/search?keyword=$encode")
-                        WebViewBrowserActivity.startActivity(mView.context, uri)
-                    }
+                    val encode = URLEncoder.encode(txt, "utf-8")
+                    val uri = ("https://www.hanyuguoxue.com/zidian/search?words=${encode}&type=all")
+                    WebViewBrowserActivity.startActivity(mView.context, uri)
 
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
