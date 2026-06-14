@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -16,6 +18,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.bookcity.contains
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.hide
@@ -103,6 +106,22 @@ class WebViewSettings @JvmOverloads constructor(
                 binding.btnCopyUrl.text = "跳转"
             }
         }
+
+        // 跨域配置 Spinner
+        val crossOriginAdapter = ArrayAdapter.createFromResource(
+            context,
+            R.array.cross_origin_options,
+            android.R.layout.simple_spinner_item
+        )
+        crossOriginAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerCrossOrigin.adapter = crossOriginAdapter
+        binding.spinnerCrossOrigin.setSelection(globalConfig.crossOriginMode)
+        binding.spinnerCrossOrigin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                globalConfig.crossOriginMode = position
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     fun refresh() {
@@ -163,15 +182,23 @@ class WebViewSettings @JvmOverloads constructor(
     }
 
     /**
-     * 显示拦截提示
+     * 显示拦截提示。根据跨域配置决定行为：
+     * - 允许：直接放行
+     * - 拒绝：直接拦截
+     * - 询问：弹窗让用户选择（允许一次 / 加入黑名单 / 加入白名单）
      */
     fun showBlockDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?): Boolean {
         val url = request.url.toString()
-//        Log.i("shouldOverrideUrlLoading:$url ")
         if (url.endsWith(".apk")) {
             return true
         }
         val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
+
+        // 白名单域名直接放行
+        if (targetTop != null && adBlock?.whitelist.contains(targetTop)) {
+            return false
+        }
+
         // 若为广告黑名单，直接拦截
         if (targetTop != null && adBlock?.blacklist.contains(targetTop)) {
             return true
@@ -189,7 +216,7 @@ class WebViewSettings @JvmOverloads constructor(
             return false
         }
 
-        // 若目标域与当前页主域不同，弹窗询问用户是否加载或加入黑名单
+        // 若目标域与当前页主域不同，根据跨域配置处理
         val currentTop = view?.url?.toHttpUrlOrNull()?.topPrivateDomain()
         val differentSite = when {
             currentTop == null || targetTop == null -> true
@@ -201,16 +228,47 @@ class WebViewSettings @JvmOverloads constructor(
             return false
         }
 
-        // 弹窗询问：拦截并加入黑名单 / 继续加载
+        // 根据跨域配置决定行为
+        return when (globalConfig.crossOriginMode) {
+            1 -> {
+                // 允许：直接放行
+                false
+            }
+            2 -> {
+                // 拒绝：直接拦截
+                true
+            }
+            else -> {
+                // 询问：弹窗让用户选择
+                showCrossOriginDialog(view, url, targetTop, adBlock)
+            }
+        }
+    }
+
+    /**
+     * 显示跨域询问弹窗：允许一次 / 加入黑名单 / 加入白名单
+     */
+    private fun showCrossOriginDialog(
+        view: WebView?,
+        url: String,
+        targetTop: String?,
+        adBlock: AdBlock?
+    ): Boolean {
         try {
             MaterialAlertDialogBuilder(context)
                 .setTitle("外部链接")
                 .setMessage(url)
-                .setPositiveButton("继续加载") { _, _ ->
+                .setPositiveButton("允许一次") { _, _ ->
                     view?.post { view.loadUrl(url) }
                 }
+                .setNeutralButton("加入白名单") { dialog, _ ->
+                    if (targetTop != null) {
+                        adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
+                    }
+                    view?.post { view.loadUrl(url) }
+                    dialog.dismiss()
+                }
                 .setNegativeButton("加入黑名单") { dialog, _ ->
-                    // 将目标主域加入黑名单（保持现有黑名单实现）
                     if (targetTop != null) {
                         adBlock?.addBlackHost(HostStr(targetTop, listOf()))
                     }
@@ -220,10 +278,8 @@ class WebViewSettings @JvmOverloads constructor(
                 .show()
         } catch (t: Throwable) {
             Log.e("show confirm dialog error", t)
-            // 若弹窗失败，默认允许加载
             return false
         }
-        // 返回 true 表示我们处理了该事件（等待用户选择）
         return true
     }
 }

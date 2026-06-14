@@ -24,6 +24,7 @@ import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.module.verification.WebViewLifecycleObserver
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
@@ -50,6 +51,8 @@ class CustomWebView @JvmOverloads constructor(
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
     private var needClearHistory = false
+    @Volatile
+    private var currentUrl: String? = null
     fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?, vm: BookCityViewModel) {
         this.webBook = webBook
         this.adBlock = adBlock
@@ -65,6 +68,7 @@ class CustomWebView @JvmOverloads constructor(
 
     fun loadUrl(url: String, clearHistory: Boolean = false) {
         this.homeUrl = url
+        currentUrl = url
         Log.i("loadUrl:${url} ")
         webView?.stopLoading()
         webView?.loadUrl(url)
@@ -78,12 +82,14 @@ class CustomWebView @JvmOverloads constructor(
         val wv = webView ?: return false
         val list = wv.copyBackForwardList()
         val currentIndex = list.currentIndex
-        // 向前（更早）查找第一个非广告页面
+        // 向前（更早）查找第一个非广告页面（不在黑名单中或在白名单中）
         var targetIndex = -1
         for (i in currentIndex - 1 downTo 0) {
             val itemUrl = list.getItemAtIndex(i).url
             val host = itemUrl.toHttpUrlOrNull()?.topPrivateDomain()
-            if (adBlock?.blacklist?.contains(host) != true) {
+            val isBlacklisted = adBlock?.blacklist?.contains(host) == true
+            val isWhitelisted = adBlock?.whitelist?.contains(host) == true
+            if (!isBlacklisted || isWhitelisted) {
                 targetIndex = i
                 break
             }
@@ -163,6 +169,7 @@ class CustomWebView @JvmOverloads constructor(
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 Log.i("onPageStarted:$url ")
+                currentUrl = url
                 adBlock?.markPage(url)
             }
 
@@ -207,7 +214,13 @@ class CustomWebView @JvmOverloads constructor(
                 request: WebResourceRequest
             ): WebResourceResponse? {
 //                Log.i("shouldInterceptRequest:${request.url} ")
-                if (adBlock?.blacklist.contains(request.url.toString().toHttpUrlOrNull()?.topPrivateDomain())) {
+                val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
+                // 白名单域名不拦截
+                if (requestHost != null && adBlock?.whitelist.contains(requestHost) == true) {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                // 黑名单域名直接拦截
+                if (adBlock?.blacklist.contains(requestHost) == true) {
                     Log.i("拦截请求：${request.url}")
                     return WebResourceResponse(
                         "text/plain",
@@ -215,6 +228,28 @@ class CustomWebView @JvmOverloads constructor(
                         ByteArrayInputStream("".toByteArray())
                     )
                 }
+
+                // 跨域检查：非同域名子资源根据跨域配置处理
+                val currentHost = currentUrl?.toHttpUrlOrNull()?.topPrivateDomain()
+                val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
+                if (isCrossOrigin) {
+                    when (globalConfig.crossOriginMode) {
+                        2 -> {
+                            // 拒绝：拦截非同域子资源，记录到hostList
+                            Log.i("跨域拦截请求：${request.url}")
+                            adBlock?.addUrl(request.url.toString())
+                            return WebResourceResponse(
+                                "text/plain",
+                                "UTF-8",
+                                ByteArrayInputStream("".toByteArray())
+                            )
+                        }
+                        // 1=允许, 0=询问（子资源无法弹窗，默认放行）
+                        else -> { /* 放行 */
+                        }
+                    }
+                }
+
                 adBlock?.addUrl(request.url.toString())
                 return super.shouldInterceptRequest(view, request)
             }

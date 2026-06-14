@@ -33,12 +33,14 @@ class AdBlock() {
     private val config = AppConfig("ad-blacklist1")
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
+    val whitelist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
     // 记录所有的url
     val hostList = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
     init {
         blacklist.postValue(CopyOnWriteArrayList(config.hostBlacklist))
+        whitelist.postValue(CopyOnWriteArrayList(config.hostWhitelist))
     }
 
     fun addBlackHost(host: HostStr) {
@@ -63,6 +65,30 @@ class AdBlock() {
         list.removeAll { it.host == host.host }
         blacklist.postValue(list)
         config.hostBlacklist = blacklist.value ?: mutableListOf()
+    }
+
+    fun addWhiteHost(host: HostStr) {
+        if (whitelist.value?.contains(host) == false) {
+            whitelist.value?.add(0, host)
+            whitelist.postValue(whitelist.value)
+            config.hostWhitelist = whitelist.value ?: mutableListOf()
+        }
+
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.removeAll { it.host == host.host }
+        hostList.postValue(mutableList)
+    }
+
+    fun removeWhiteHost(host: HostStr) {
+        val mutableList = hostList.value as CopyOnWriteArrayList
+        mutableList.add(host)
+        mutableList.sortByDescending { it.time }
+        hostList.postValue(mutableList)
+
+        val list = whitelist.value as CopyOnWriteArrayList
+        list.removeAll { it.host == host.host }
+        whitelist.postValue(list)
+        config.hostWhitelist = whitelist.value ?: mutableListOf()
     }
 
     fun addUrl(url: String) {

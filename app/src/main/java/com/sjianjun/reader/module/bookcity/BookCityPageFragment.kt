@@ -146,12 +146,13 @@ class BookCityPageFragment : BaseFragment() {
         }
         val hostListAdapter = HostListAdapter(adBlock)
         val blackListAdapter = BlackListAdapter(adBlock)
+        val whiteListAdapter = WhiteListAdapter(adBlock)
         val homeAdapter = HomeListAdapter {
             url = it
             view.loadUrl(it, true)
             drawer.closeDrawer(GravityCompat.END)
             view.adBlock = adBlock
-            initAdBlockList(hostListAdapter, blackListAdapter)
+            initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
         }
         homeAdapter.onLongClickListener = {
             MaterialAlertDialogBuilder(requireActivity())
@@ -210,7 +211,8 @@ class BookCityPageFragment : BaseFragment() {
                     0 -> homeAdapter
                     1 -> hostListAdapter
                     2 -> blackListAdapter
-                    3 -> historyAdapter
+                    3 -> whiteListAdapter
+                    4 -> historyAdapter
                     else -> hostListAdapter
                 }
             }
@@ -221,18 +223,21 @@ class BookCityPageFragment : BaseFragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {
             }
         })
-        initAdBlockList(hostListAdapter, blackListAdapter)
+        initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
     }
 
     private fun initAdBlockList(
         hostListAdapter: HostListAdapter,
-        blackListAdapter: BlackListAdapter
+        blackListAdapter: BlackListAdapter,
+        whiteListAdapter: WhiteListAdapter
     ) {
         hostListAdapter.adBlock.hostList.removeObservers(viewLifecycleOwner)
         hostListAdapter.adBlock.blacklist.removeObservers(viewLifecycleOwner)
+        hostListAdapter.adBlock.whitelist.removeObservers(viewLifecycleOwner)
 
         hostListAdapter.adBlock = adBlock
         blackListAdapter.adBlock = adBlock
+        whiteListAdapter.adBlock = adBlock
         adBlock.hostList.observe(viewLifecycleOwner) {
             hostListAdapter.data = it
             hostListAdapter.notifyDataSetChanged()
@@ -240,6 +245,10 @@ class BookCityPageFragment : BaseFragment() {
         adBlock.blacklist.observe(viewLifecycleOwner) {
             blackListAdapter.data = it
             blackListAdapter.notifyDataSetChanged()
+        }
+        adBlock.whitelist.observe(viewLifecycleOwner) {
+            whiteListAdapter.data = it
+            whiteListAdapter.notifyDataSetChanged()
         }
     }
 
@@ -284,6 +293,10 @@ class BookCityPageFragment : BaseFragment() {
                 binding.btnMarkBlack.setTextColorRes(R.color.mdr_white)
                 binding.btnMarkBlack.setSolid(R.color.colorPrimary.color(holder.itemView.context))
             }
+            binding.btnMarkWhite.show()
+            binding.btnMarkWhite.click {
+                adBlock.addWhiteHost(host)
+            }
             binding.tvType.text = host.type.joinToString(",")
             binding.tvHost.text = host.host
             binding.tvTime.text = host.time
@@ -320,6 +333,36 @@ class BookCityPageFragment : BaseFragment() {
             binding.btnMarkBlack.text = "-移除"
             binding.btnMarkBlack.click {
                 adBlock.removeBlackHost(data[position])
+            }
+        }
+    }
+
+    class WhiteListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {
+        @SuppressLint("SetTextI18n")
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val binding = FragmentBookCityPageHostItemBinding.bind(holder.itemView)
+            val host = data[position]
+            if (host.isPage) {
+                binding.root.setCardBackgroundColor(R.color.colorPrimary.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.mdr_white)
+                binding.tvType.setTextColorRes(R.color.mdr_white)
+                binding.tvTime.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setTextColorRes(R.color.colorPrimary)
+                binding.btnMarkBlack.setSolid(R.color.mdr_white.color(holder.itemView.context))
+            } else {
+                binding.root.setCardBackgroundColor(R.color.dn_bookcity_host_item_background.color(holder.itemView.context))
+                binding.tvHost.setTextColorRes(R.color.dn_text_color_black)
+                binding.tvType.setTextColorRes(R.color.colorPrimary)
+                binding.tvTime.setTextColorRes(R.color.dn_text_color_black)
+                binding.btnMarkBlack.setTextColorRes(R.color.mdr_white)
+                binding.btnMarkBlack.setSolid(R.color.colorPrimary.color(holder.itemView.context))
+            }
+            binding.tvType.text = host.type.joinToString(",")
+            binding.tvHost.text = host.host
+            binding.tvTime.text = host.time
+            binding.btnMarkBlack.text = "-移除"
+            binding.btnMarkBlack.click {
+                adBlock.removeWhiteHost(data[position])
             }
         }
     }

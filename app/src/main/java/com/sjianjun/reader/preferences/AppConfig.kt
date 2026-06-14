@@ -112,6 +112,13 @@ class AppConfig(val name: String) :
     //本次启动之后书城访问的所有的URL
     var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
 
+    var hostWhitelist by dataPref("hostWhitelistHostStr", mutableListOf<HostStr>())
+
+    /**
+     * 跨域配置: 0=询问, 1=允许, 2=拒绝
+     */
+    var crossOriginMode by intPref("crossOriginMode", 0)
+
     var mqttClientId by strPref("mqtt_client_id", null)
     var deviceID by strPref("deviceID", null)
 
