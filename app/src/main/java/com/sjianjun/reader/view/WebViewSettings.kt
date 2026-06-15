@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
+import com.sjianjun.reader.databinding.DialogCrossOriginBinding
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -32,6 +33,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import kotlin.coroutines.resume
+import kotlin.text.contains
 
 class WebViewSettings @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
@@ -229,10 +231,11 @@ class WebViewSettings @JvmOverloads constructor(
         }
 
         // 若目标域与当前页主域不同，根据跨域配置处理
-        val currentTop = view?.url?.toHttpUrlOrNull()?.topPrivateDomain()
+        val currentUrl = view?.url
+        val currentTop = currentUrl?.toHttpUrlOrNull()?.topPrivateDomain()
         val differentSite = when {
             currentTop == null || targetTop == null -> true
-            else -> currentTop != targetTop
+            else -> currentTop != targetTop && !currentUrl.contains(targetTop)
         }
 
         if (!differentSite) {
@@ -253,14 +256,15 @@ class WebViewSettings @JvmOverloads constructor(
             }
 
             else -> {
-                // 询问：弹窗让用户选择
-                showCrossOriginDialog(view, url, targetTop, adBlock)
+                // 询问：延迟弹窗，避免阻塞 shouldOverrideUrlLoading 导致 WebView 卡死
+                view?.post { showCrossOriginDialog(view, url, targetTop, adBlock) }
+                true
             }
         }
     }
 
     /**
-     * 显示跨域询问弹窗：允许一次 / 加入黑名单 / 加入白名单
+     * 显示跨域询问弹窗：允许一次 / +黑名单 / +白名单
      */
     private fun showCrossOriginDialog(
         view: WebView?,
@@ -269,27 +273,33 @@ class WebViewSettings @JvmOverloads constructor(
         adBlock: AdBlock?
     ): Boolean {
         try {
-            MaterialAlertDialogBuilder(context)
-                .setTitle("外部链接")
-                .setMessage(url)
-                .setPositiveButton("允许一次") { _, _ ->
-                    view?.post { view.loadUrl(url) }
-                }
-                .setNeutralButton("加入白名单") { dialog, _ ->
-                    if (targetTop != null) {
-                        adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
-                    }
-                    view?.post { view.loadUrl(url) }
-                    dialog.dismiss()
-                }
-                .setNegativeButton("加入黑名单") { dialog, _ ->
-                    if (targetTop != null) {
-                        adBlock?.addBlackHost(HostStr(targetTop, listOf()))
-                    }
-                    dialog.dismiss()
-                }
+            val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
+            originBinding.tvDialogUrl.text = url
+
+            val dialog = MaterialAlertDialogBuilder(context)
+                .setView(originBinding.root)
                 .setCancelable(true)
-                .show()
+                .create()
+
+            originBinding.btnAllowOnce.setOnClickListener {
+                view?.post { view.loadUrl(url) }
+                dialog.dismiss()
+            }
+            originBinding.btnWhitelist.setOnClickListener {
+                if (targetTop != null) {
+                    adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
+                }
+                view?.post { view.loadUrl(url) }
+                dialog.dismiss()
+            }
+            originBinding.btnBlacklist.setOnClickListener {
+                if (targetTop != null) {
+                    adBlock?.addBlackHost(HostStr(targetTop, listOf()))
+                }
+                dialog.dismiss()
+            }
+
+            dialog.show()
         } catch (t: Throwable) {
             Log.e("show confirm dialog error", t)
             return false

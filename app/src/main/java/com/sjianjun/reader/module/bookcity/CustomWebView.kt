@@ -56,6 +56,9 @@ class CustomWebView @JvmOverloads constructor(
     @Volatile
     private var currentUrl: String? = null
 
+    // 记录最后一个正常加载的页面 URL，用于拦截后恢复（避免空页面中转导致 goBack 回到空白页）
+    private var lastGoodUrl: String? = null
+
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
      * 当用户在设置页修改跨域配置后，此值被重置为-1
@@ -182,8 +185,34 @@ class CustomWebView @JvmOverloads constructor(
                 view: WebView?,
                 request: WebResourceRequest
             ): Boolean {
-                // 返回 true 表示我们处理了该事件（等待用户选择）
-                return binding.webViewSettings.showBlockDialog(view, request, adBlock, effectiveCrossOriginMode())
+                Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
+                val showBlockDialog = binding.webViewSettings.showBlockDialog(view, request, adBlock, effectiveCrossOriginMode())
+                if (!showBlockDialog) {
+                    currentUrl = request.url.toString()
+                } else {
+                    // 拦截后 WebView 内部历史栈已推入被拦截的 URL 但未加载，状态机卡死。
+                    // 在返回栈中查找 lastGoodUrl，如果在当前位置就不处理，否则后退到它。
+                    view?.post {
+                        val fallbackUrl = lastGoodUrl ?: homeUrl
+                        Log.i("lastGoodUrl:${lastGoodUrl}")
+                        if (!fallbackUrl.isNullOrBlank()) {
+                            val list = view.copyBackForwardList()
+                            val currentIndex = list.currentIndex
+                            val targetIndex = (currentIndex downTo 0).firstOrNull { i ->
+                                list.getItemAtIndex(i).url == fallbackUrl
+                            }
+                            if (targetIndex != null && targetIndex < currentIndex) {
+                                view.goBackOrForward(targetIndex - currentIndex)
+                            } else {
+                                Log.i("targetIndex:${targetIndex}")
+                                if (targetIndex == null && view.canGoBack()) {
+                                    view.goBack()
+                                }
+                            }
+                        }
+                    }
+                }
+                return showBlockDialog
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -194,6 +223,20 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             override fun onPageFinished(webView: WebView?, url: String?) {
+                // 记录最后一个正常加载的页面（非空页面），用于拦截后恢复
+                if (!url.isNullOrBlank() && url != "about:blank") {
+                    // 延迟检查页面是否有实际内容，避免把空 HTML 中转页记为正常页面
+                    webView?.postDelayed({
+                        webView.evaluateJavascript(
+                            "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
+                        ) { result ->
+                            Log.i("html:${result}")
+                            if (result.length > 10) {
+                                lastGoodUrl = url
+                            }
+                        }
+                    }, 300)
+                }
                 webBook?.apply {
                     lastUrl = url ?: ""
                     lastTitle = webView?.title ?: ""
