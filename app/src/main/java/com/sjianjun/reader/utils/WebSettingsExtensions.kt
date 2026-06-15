@@ -48,8 +48,10 @@ fun WebSettings.setDarkening() {
 
 @OptIn(WebSettingsCompat.ExperimentalBackForwardCache::class)
 fun WebSettings.setBackForwardCacheEnabled() {
+    // 禁用 BFCache：反复前进/后退后缓存状态可能损坏导致页面渲染空白
+    // 前进/后退历史仍然保留，只是改为重新加载页面而非从缓存恢复
     if (WebViewFeature.isFeatureSupported(WebViewFeature.BACK_FORWARD_CACHE)) {
-        WebSettingsCompat.setBackForwardCacheEnabled(this, true);
+        WebSettingsCompat.setBackForwardCacheEnabled(this, false)
     }
 }
 
