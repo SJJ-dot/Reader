@@ -237,12 +237,15 @@ class CustomWebView @JvmOverloads constructor(
                         }
                     }, 300)
                 }
-                webBook?.apply {
-                    lastUrl = url ?: ""
-                    lastTitle = webView?.title ?: ""
-                    updateTime = System.currentTimeMillis()
-                    lifecycleScope?.launch {
-                        vm?.insertWebBook(this@apply)
+                webBook?.also { book ->
+                    val urlHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
+                    if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
+                        book.lastUrl = url ?: ""
+                        book.lastTitle = webView?.title ?: ""
+                        book.updateTime = System.currentTimeMillis()
+                        lifecycleScope?.launch {
+                            vm?.insertWebBook(book)
+                        }
                     }
                 }
 
