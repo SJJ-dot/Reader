@@ -6,8 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+
 import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -114,22 +113,21 @@ class WebViewSettings @JvmOverloads constructor(
             }
         }
 
-        // 跨域配置 Spinner
-        val crossOriginAdapter = ArrayAdapter.createFromResource(
-            context,
-            R.array.cross_origin_options,
-            android.R.layout.simple_spinner_item
-        )
-        crossOriginAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerCrossOrigin.adapter = crossOriginAdapter
-        binding.spinnerCrossOrigin.setSelection(crossOriginMode)
-        binding.spinnerCrossOrigin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                globalConfig.crossOriginMode = position
-                onCrossOriginModeChanged?.invoke()
+        // 跨域配置 RadioGroup
+        when (crossOriginMode) {
+            0 -> binding.rbAsk.isChecked = true
+            1 -> binding.rbAllow.isChecked = true
+            2 -> binding.rbDeny.isChecked = true
+        }
+        binding.rgCrossOrigin.setOnCheckedChangeListener { _, checkedId ->
+            val mode = when (checkedId) {
+                R.id.rb_ask -> 0
+                R.id.rb_allow -> 1
+                R.id.rb_deny -> 2
+                else -> return@setOnCheckedChangeListener
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            globalConfig.crossOriginMode = mode
+            onCrossOriginModeChanged?.invoke()
         }
     }
 

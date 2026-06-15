@@ -160,20 +160,48 @@
             android:text="跨域："
             android:textColor="@color/dn_reader_chapter_title_text_color"
             android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="@+id/spinner_cross_origin"
+            app:layout_constraintBottom_toBottomOf="@+id/rg_cross_origin"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/spinner_cross_origin" />
+            app:layout_constraintTop_toTopOf="@+id/rg_cross_origin" />
 
-        <Spinner
-            android:id="@+id/spinner_cross_origin"
+        <RadioGroup
+            android:id="@+id/rg_cross_origin"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:entries="@array/cross_origin_options"
-            android:minHeight="32dp"
+            android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/tv_cross_origin"
-            app:layout_constraintTop_toBottomOf="@+id/btn_font_subtract" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_font_subtract">
+
+            <RadioButton
+                android:id="@+id/rb_ask"
+                style="@style/Widget.Material3.CompoundButton.RadioButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="询问"
+                android:textSize="13sp" />
+
+            <RadioButton
+                android:id="@+id/rb_allow"
+                style="@style/Widget.Material3.CompoundButton.RadioButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="允许"
+                android:textSize="13sp" />
+
+            <RadioButton
+                android:id="@+id/rb_deny"
+                style="@style/Widget.Material3.CompoundButton.RadioButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="拒绝"
+                android:textSize="13sp" />
+
+        </RadioGroup>
 
         <TextView
             android:id="@+id/tv_ad_block"
@@ -198,7 +226,7 @@
             android:src="@mipmap/ic_ad_block"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/tv_ad_block"
-            app:layout_constraintTop_toBottomOf="@+id/spinner_cross_origin"
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
             app:tint="@color/colorPrimary" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
