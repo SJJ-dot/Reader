@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.preferences.DelegateSharedPref
@@ -50,9 +51,6 @@ class CustomWebView @JvmOverloads constructor(
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
 
-    @Volatile
-    private var currentUrl: String? = null
-
     /** WebView 栈：最后一个元素是当前可见的 WebView */
     private val webViewStack = mutableListOf<WebView>()
 
@@ -67,8 +65,6 @@ class CustomWebView @JvmOverloads constructor(
      */
     @Volatile
     var crossOriginOverride: Int = -1
-
-    var exitWebView = false
 
     private fun effectiveCrossOriginMode(): Int {
         return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
@@ -86,7 +82,6 @@ class CustomWebView @JvmOverloads constructor(
 
     fun loadUrl(url: String) {
         this.homeUrl = url
-        currentUrl = url
         Log.i("loadUrl:${url} ")
 
         // 销毁前进栈
@@ -99,7 +94,6 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun back(): Boolean {
-        if (exitWebView) return false
         if (webViewStack.size <= 1) return false
 
         // 当前 WebView 移到前进栈
@@ -110,12 +104,9 @@ class CustomWebView @JvmOverloads constructor(
         // 显示上一个 WebView
         val previous = webViewStack.last()
         showWebView(previous)
-        currentUrl = previous.url
         updateForwardButton()
         return true
     }
-
-    fun canGoForward(): Boolean = forwardStack.isNotEmpty()
 
     fun goForward(): Boolean {
         if (forwardStack.isEmpty()) return false
@@ -127,21 +118,18 @@ class CustomWebView @JvmOverloads constructor(
         val next = forwardStack.removeAt(forwardStack.lastIndex)
         webViewStack.add(next)
         showWebView(next)
-        currentUrl = next.url
         updateForwardButton()
         return true
     }
 
     private fun createWebView(url: String): WebView {
         val webView = WebView(context).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
         }
+        webView.currentHost = url
         webView.loadUrl(url)
         return webView
     }
@@ -195,7 +183,7 @@ class CustomWebView @JvmOverloads constructor(
             if (!showBlockDialog) {
                 // 放行：创建新 WebView 压入栈，后退时直接切换无需重新加载
                 val url = request.url.toString()
-                currentUrl = url
+                view?.currentHost = url
                 lifecycleScope?.launch {
                     forwardStack.forEach { destroyWebView(it) }
                     forwardStack.clear()
@@ -209,7 +197,7 @@ class CustomWebView @JvmOverloads constructor(
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             Log.i("onPageStarted:$url ")
-            currentUrl = url
+            view?.currentHost = url
             adBlock?.markPage(url)
         }
 
@@ -259,7 +247,7 @@ class CustomWebView @JvmOverloads constructor(
                 )
             }
 
-            val currentHost = currentUrl?.toHttpUrlOrNull()?.topPrivateDomain()
+            val currentHost = view?.currentHost
             val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
             if (isCrossOrigin) {
                 when (effectiveCrossOriginMode()) {
@@ -272,7 +260,9 @@ class CustomWebView @JvmOverloads constructor(
                             ByteArrayInputStream("".toByteArray())
                         )
                     }
-                    else -> { /* 放行 */ }
+
+                    else -> { /* 放行 */
+                    }
                 }
             }
 
@@ -345,7 +335,7 @@ class CustomWebView @JvmOverloads constructor(
             }
         }
         binding.backward.click {
-            exitWebView = true
+            destroyAllWebViews()
             activity?.onBackPressedDispatcher?.onBackPressed()
         }
         binding.forward.click {
@@ -399,35 +389,44 @@ class CustomWebView @JvmOverloads constructor(
         forwardStack.clear()
     }
 
-    object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
-        var list by dataPref("History", listOf<HistoryItem>())
+
+}
+
+
+object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
+    var list by dataPref("History", listOf<HistoryItem>())
+}
+
+class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false) : Comparable<HistoryItem> {
+    override fun compareTo(other: HistoryItem): Int {
+        if (isMark != other.isMark) return if (isMark) 1 else -1
+        return time.compareTo(other.time)
     }
 
-    class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false) : Comparable<HistoryItem> {
-        override fun compareTo(other: HistoryItem): Int {
-            if (isMark != other.isMark) return if (isMark) 1 else -1
-            return time.compareTo(other.time)
-        }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as HistoryItem
+        if (time != other.time) return false
+        if (title != other.title) return false
+        if (url != other.url) return false
+        return true
+    }
 
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            other as HistoryItem
-            if (time != other.time) return false
-            if (title != other.title) return false
-            if (url != other.url) return false
-            return true
-        }
+    override fun hashCode(): Int {
+        var result = time.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + url.hashCode()
+        return result
+    }
 
-        override fun hashCode(): Int {
-            var result = time.hashCode()
-            result = 31 * result + title.hashCode()
-            result = 31 * result + url.hashCode()
-            return result
-        }
-
-        override fun toString(): String {
-            return "HistoryItem(title='$title', isMark=$isMark, time=$time, url='$url')"
-        }
+    override fun toString(): String {
+        return "HistoryItem(title='$title', isMark=$isMark, time=$time, url='$url')"
     }
 }
+
+var WebView.currentHost: String?
+    get() = getTag(R.id.web_view_host) as? String
+    set(url) {
+        setTag(R.id.web_view_host, url?.toHttpUrlOrNull()?.topPrivateDomain())
+    }
