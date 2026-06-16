@@ -20,9 +20,11 @@ import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.CustomWebViewBinding
+import com.sjianjun.reader.databinding.DialogCrossOriginBinding
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.preferences.globalConfig
@@ -32,10 +34,12 @@ import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
 import io.legado.app.utils.activity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
+import kotlin.time.Duration.Companion.milliseconds
 
 /*
  * Created by sjj on 2020-07-10
@@ -58,7 +62,7 @@ class CustomWebView @JvmOverloads constructor(
     private val forwardStack = mutableListOf<WebView>()
 
     /** 当前可见的 WebView */
-    private val currentWebView: WebView? get() = webViewStack.lastOrNull()
+    val currentWebView: WebView? get() = webViewStack.lastOrNull()
 
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
@@ -66,7 +70,7 @@ class CustomWebView @JvmOverloads constructor(
     @Volatile
     var crossOriginOverride: Int = -1
 
-    private fun effectiveCrossOriginMode(): Int {
+    fun effectiveCrossOriginMode(): Int {
         return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
     }
 
@@ -93,17 +97,52 @@ class CustomWebView @JvmOverloads constructor(
         pushWebView(newWebView)
     }
 
+    fun removeBlankWebView() {
+        // 先清理前进栈中的空白页
+        val forwardIterator = forwardStack.iterator()
+        while (forwardIterator.hasNext()) {
+            val webView = forwardIterator.next()
+            if (webView.isBlank == true) {
+                destroyWebView(webView)
+                forwardIterator.remove()
+            }
+        }
+
+        // 清理栈中的空白页，但保留最后一个非空白页可见
+        val iterator = webViewStack.iterator()
+        while (iterator.hasNext()) {
+            val webView = iterator.next()
+            if (webView.isBlank == true) {
+                destroyWebView(webView)
+                iterator.remove()
+            }
+        }
+
+        // 确保至少有一个可见的 WebView
+        if (webViewStack.isNotEmpty() && currentWebView?.visibility != VISIBLE) {
+            showWebView(webViewStack.last())
+        }
+        updateForwardButton()
+    }
+
     fun back(): Boolean {
         if (webViewStack.size <= 1) return false
 
-        // 当前 WebView 移到前进栈
+        // 当前 WebView 弹出栈
         val current = webViewStack.removeAt(webViewStack.lastIndex)
-        forwardStack.add(current)
         hideWebView(current)
 
         // 显示上一个 WebView
         val previous = webViewStack.last()
         showWebView(previous)
+
+        // 如果当前页面为空（中转空白页），直接销毁，不放入前进栈
+        if (current.isBlank == true) {
+            destroyWebView(current)
+            // 继续跳过前面连续的空页面
+            return back()
+        }
+        forwardStack.add(current)
         updateForwardButton()
         return true
     }
@@ -143,10 +182,6 @@ class CustomWebView @JvmOverloads constructor(
         showWebView(webView)
         updateForwardButton()
 
-        // 重新绑定 WebViewSettings 到当前 WebView
-        binding.webViewSettings.bind(webView, effectiveCrossOriginMode()) {
-            crossOriginOverride = -1
-        }
     }
 
     private fun hideWebView(webView: WebView) {
@@ -170,6 +205,7 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun updateForwardButton() {
         binding.forward.isEnabled = forwardStack.isNotEmpty()
+        binding.refresh.isSelected = currentWebView?.isBlank == false && (currentWebView?.progress ?: 100) < 100
     }
 
     private fun createWebViewClient() = object : WebViewClient() {
@@ -179,16 +215,22 @@ class CustomWebView @JvmOverloads constructor(
             request: WebResourceRequest
         ): Boolean {
             Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
-            val showBlockDialog = binding.webViewSettings.showBlockDialog(view, request, adBlock, effectiveCrossOriginMode())
+            val showBlockDialog = showBlockDialog(view, request)
             if (!showBlockDialog) {
                 // 放行：创建新 WebView 压入栈，后退时直接切换无需重新加载
                 val url = request.url.toString()
                 view?.currentHost = url
                 lifecycleScope?.launch {
+                    val lastWebView = currentWebView
                     forwardStack.forEach { destroyWebView(it) }
                     forwardStack.clear()
                     val newWebView = createWebView(url)
                     pushWebView(newWebView)
+                    if (request.isRedirect) {
+                        // 如果是重定向，销毁上一个 WebView，避免前进栈中出现空白页
+                        lastWebView?.let { destroyWebView(it) }
+                        webViewStack.remove(lastWebView)
+                    }
                 }
             }
             return true
@@ -202,6 +244,17 @@ class CustomWebView @JvmOverloads constructor(
         }
 
         override fun onPageFinished(webView: WebView?, url: String?) {
+            webView?.isBlank = url.isNullOrBlank() || url == "about:blank"
+            if (webView?.isBlank == false) {
+                lifecycleScope?.launch {
+                    delay(100.milliseconds)
+                    webView.evaluateJavascript(
+                        "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
+                    ) { result ->
+                        webView.isBlank = result.length < 10
+                    }
+                }
+            }
             webBook?.also { book ->
                 val urlHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
                 if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
@@ -235,10 +288,10 @@ class CustomWebView @JvmOverloads constructor(
             request: WebResourceRequest
         ): WebResourceResponse? {
             val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-            if (requestHost != null && adBlock?.whitelist.contains(requestHost) == true) {
+            if (requestHost != null && adBlock?.whitelist.contains(requestHost)) {
                 return super.shouldInterceptRequest(view, request)
             }
-            if (adBlock?.blacklist.contains(requestHost) == true) {
+            if (adBlock?.blacklist.contains(requestHost)) {
                 Log.i("拦截请求：${request.url}")
                 return WebResourceResponse(
                     "text/plain",
@@ -323,9 +376,7 @@ class CustomWebView @JvmOverloads constructor(
             binding.webViewSettings.translationY = -offset.toFloat()
             insets
         }
-        binding.webViewSettings.bind(currentWebView ?: WebView(context), effectiveCrossOriginMode()) {
-            crossOriginOverride = -1
-        }
+
         binding.refresh.click {
             if (binding.refresh.isSelected) {
                 currentWebView?.stopLoading()
@@ -358,6 +409,9 @@ class CustomWebView @JvmOverloads constructor(
             forwardStack.clear()
             loadUrl(home)
         }
+        binding.webViewSettings.init(this) {
+            crossOriginOverride = -1
+        }
     }
 
     fun clearHistory() {
@@ -389,6 +443,108 @@ class CustomWebView @JvmOverloads constructor(
         forwardStack.clear()
     }
 
+    /**
+     * 显示拦截提示。根据跨域配置决定行为：
+     * - 允许：直接放行
+     * - 拒绝：直接拦截
+     * - 询问：弹窗让用户选择（允许一次 / 加入黑名单 / 加入白名单）
+     */
+    fun showBlockDialog(view: WebView?, request: WebResourceRequest): Boolean {
+        val url = request.url.toString()
+        if (url.endsWith(".apk")) {
+            return true
+        }
+        val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
+
+        // 白名单域名直接放行
+        if (targetTop != null && adBlock?.whitelist.contains(targetTop)) {
+            return false
+        }
+
+        // 若为广告黑名单，直接拦截
+        if (targetTop != null && adBlock?.blacklist.contains(targetTop)) {
+            return true
+        }
+
+        // 仅对 http/https 链接处理，其他 scheme 拦截
+        val scheme = request.url?.scheme
+        if (scheme != "http" && scheme != "https") {
+            // 浏览器内部 scheme 放行
+            if (scheme in setOf("javascript", "about", "data", "blob", "file")) {
+                return false
+            }
+            // 其他 scheme（intent://, market://, tel:, mailto: 等）拦截
+            return true
+        }
+
+        // 若目标域与当前页主域不同，根据跨域配置处理
+        val currentHost = view?.currentHost
+        val differentSite = when {
+            currentHost == null || targetTop == null -> true
+            else -> currentHost != targetTop
+        }
+
+        if (!differentSite) {
+            // 同主域，允许加载
+            return false
+        }
+
+        // 根据跨域配置决定行为
+        return when (effectiveCrossOriginMode()) {
+            1 -> false
+            2 -> true
+            else -> {
+                // 询问：延迟弹窗，避免阻塞 shouldOverrideUrlLoading 导致 WebView 卡死
+                lifecycleScope?.launch {
+                    showCrossOriginDialog(view, url, targetTop, adBlock)
+                }
+                true
+            }
+        }
+    }
+
+    /**
+     * 显示跨域询问弹窗：允许一次 / +黑名单 / +白名单
+     */
+    private fun showCrossOriginDialog(view: WebView?, url: String, targetTop: String?, adBlock: AdBlock?): Boolean {
+        try {
+            val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
+            originBinding.tvDialogUrl.text = url
+
+            val dialog = MaterialAlertDialogBuilder(context)
+                .setView(originBinding.root)
+                .setCancelable(true)
+                .setOnCancelListener {
+                    removeBlankWebView()
+                }
+                .create()
+
+            originBinding.btnAllowOnce.setOnClickListener {
+                view?.loadUrl(url)
+                dialog.dismiss()
+            }
+            originBinding.btnWhitelist.setOnClickListener {
+                if (targetTop != null) {
+                    adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
+                }
+                view?.loadUrl(url)
+                dialog.dismiss()
+            }
+            originBinding.btnBlacklist.setOnClickListener {
+                if (targetTop != null) {
+                    adBlock?.addBlackHost(HostStr(targetTop, listOf()))
+                }
+                dialog.dismiss()
+                removeBlankWebView()
+            }
+
+            dialog.show()
+        } catch (t: Throwable) {
+            Log.e("show confirm dialog error", t)
+            return false
+        }
+        return true
+    }
 
 }
 
@@ -429,4 +585,10 @@ var WebView.currentHost: String?
     get() = getTag(R.id.web_view_host) as? String
     set(url) {
         setTag(R.id.web_view_host, url?.toHttpUrlOrNull()?.topPrivateDomain())
+    }
+
+var WebView.isBlank: Boolean?
+    get() = getTag(R.id.web_view_blank) as? Boolean
+    set(value) {
+        setTag(R.id.web_view_blank, value)
     }

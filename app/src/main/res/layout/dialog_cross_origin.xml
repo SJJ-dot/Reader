@@ -24,8 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:ellipsize="middle"
-        android:maxLines="2"
-        android:textIsSelectable="true" />
+        android:maxLines="3" />
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -104,7 +104,7 @@ class BookCityPageFragment : BaseFragment() {
                     return@setOnBackPressed true
                 }
                 if (!customWebView.back()) {
-                    if (!customWebView.exitWebView && System.currentTimeMillis() - lastTime > 1000) {
+                    if (customWebView.currentWebView != null && System.currentTimeMillis() - lastTime > 1000) {
                         toast("双击退出")
                         lastTime = System.currentTimeMillis()
                         return@setOnBackPressed true
@@ -371,10 +371,10 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class HistoryListAdapter : BaseAdapter<CustomWebView.HistoryItem>(R.layout.fragment_book_city_page_history_item) {
+    class HistoryListAdapter : BaseAdapter<HistoryItem>(R.layout.fragment_book_city_page_history_item) {
         var onClick: ((url: String) -> Unit)? = null
-        var onDeleteHistory: ((item: CustomWebView.HistoryItem?) -> Unit)? = null
-        var onMark: ((item: CustomWebView.HistoryItem) -> Unit)? = null
+        var onDeleteHistory: ((item: HistoryItem?) -> Unit)? = null
+        var onMark: ((item: HistoryItem) -> Unit)? = null
         private val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
 
         @SuppressLint("SetTextI18n")

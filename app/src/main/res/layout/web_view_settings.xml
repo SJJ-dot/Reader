@@ -36,10 +36,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/web_title"
             app:layout_constraintEnd_toEndOf="@+id/web_title"
             app:layout_constraintStart_toStartOf="@+id/web_title"
-            app:layout_constraintTop_toTopOf="@+id/web_title"
-            app:stv_corner="5dp"
-            app:stv_stroke_color="@color/dn_color_primary"
-            app:stv_stroke_width="1dp" />
+            app:layout_constraintTop_toTopOf="@+id/web_title" />
 
         <com.coorchice.library.SuperTextView
             android:id="@+id/btn_copy_title"
@@ -176,7 +173,6 @@
 
             <RadioButton
                 android:id="@+id/rb_ask"
-                style="@style/Widget.Material3.CompoundButton.RadioButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -185,7 +181,6 @@
 
             <RadioButton
                 android:id="@+id/rb_allow"
-                style="@style/Widget.Material3.CompoundButton.RadioButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -194,7 +189,6 @@
 
             <RadioButton
                 android:id="@+id/rb_deny"
-                style="@style/Widget.Material3.CompoundButton.RadioButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

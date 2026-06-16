@@ -4,20 +4,14 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
-import android.webkit.WebResourceRequest
 import android.webkit.WebView
-
 import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
-import com.sjianjun.reader.databinding.DialogCrossOriginBinding
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
-import com.sjianjun.reader.module.bookcity.AdBlock
-import com.sjianjun.reader.module.bookcity.HostStr
-import com.sjianjun.reader.module.bookcity.contains
+import com.sjianjun.reader.module.bookcity.CustomWebView
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.copyToClipboard
@@ -32,13 +26,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import kotlin.coroutines.resume
-import kotlin.text.contains
 
 class WebViewSettings @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
     val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
-    private var webView: WebView? = null
+    private var customWebView: CustomWebView? = null
     private var titleJob: Job? = null
 
     /** 当用户在设置中修改跨域配置时回调，用于清除临时覆盖 */
@@ -62,8 +55,8 @@ class WebViewSettings @JvmOverloads constructor(
         titleJob?.cancel()
     }
 
-    fun bind(webView: WebView, crossOriginMode: Int, onCrossOriginModeChanged: () -> Unit) {
-        this.webView = webView
+    fun init(customWebView: CustomWebView, onCrossOriginModeChanged: () -> Unit) {
+        this.customWebView = customWebView
         this.onCrossOriginModeChanged = onCrossOriginModeChanged
         binding.btnCopyUrl.setOnClickListener {
             if (binding.btnCopyUrl.text == "复制") {
@@ -77,20 +70,22 @@ class WebViewSettings @JvmOverloads constructor(
                     toast("请输入正确的网址")
                     return@setOnClickListener
                 }
-                webView.loadUrl(url)
                 hide()
-                //隐藏输入法
                 binding.urlInput.hideKeyboard()
+                val webView = customWebView.currentWebView ?: return@setOnClickListener
+                webView.loadUrl(url)
             }
         }
         binding.btnCopyTitle.setOnClickListener {
             binding.webTitle.text.toString().trim().copyToClipboard()
         }
         binding.btnFontAdd.setOnClickListener {
+            val webView = customWebView.currentWebView ?: return@setOnClickListener
             webView.setFontSize(2)
             binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.btnFontSubtract.setOnClickListener {
+            val webView = customWebView.currentWebView ?: return@setOnClickListener
             webView.setFontSize(-2)
             binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
@@ -102,10 +97,12 @@ class WebViewSettings @JvmOverloads constructor(
             hide()
         }
         binding.tvFontSizeValue.setOnClickListener {
+            val webView = customWebView.currentWebView ?: return@setOnClickListener
             webView.setFontSize(-(webView.settings.textZoom - 100))
             binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
         }
         binding.urlInput.addTextChangedListener {
+            val webView = customWebView.currentWebView ?: return@addTextChangedListener
             if (webView.url == it.toString()) {
                 binding.btnCopyUrl.text = "复制"
             } else {
@@ -114,7 +111,7 @@ class WebViewSettings @JvmOverloads constructor(
         }
 
         // 跨域配置 RadioGroup
-        when (crossOriginMode) {
+        when (customWebView.effectiveCrossOriginMode()) {
             0 -> binding.rbAsk.isChecked = true
             1 -> binding.rbAllow.isChecked = true
             2 -> binding.rbDeny.isChecked = true
@@ -132,16 +129,19 @@ class WebViewSettings @JvmOverloads constructor(
     }
 
     fun refresh() {
+        val wv = customWebView?.currentWebView ?: return
+        // 检查 WebView 是否已被销毁
+        if (!wv.isAttachedToWindow || wv.windowToken == null) return
         titleJob?.cancel()
         titleJob = GlobalScope.launch(Dispatchers.Main) {
-            val title = webView?.getTitleFromMeta()
+            val title = wv.getTitleFromMeta()
             if (!title.isNullOrBlank()) {
                 binding.webTitle.text = title
             } else {
-                binding.webTitle.text = webView?.title ?: "~"
+                binding.webTitle.text = wv.title ?: "~"
             }
         }
-        binding.urlInput.setText(webView?.url ?: "")
+        binding.urlInput.setText(wv.url ?: "")
     }
 
     private fun WebView.setFontSize(i: Int) {
@@ -186,116 +186,5 @@ class WebViewSettings @JvmOverloads constructor(
             }
 
         }
-    }
-
-    /**
-     * 显示拦截提示。根据跨域配置决定行为：
-     * - 允许：直接放行
-     * - 拒绝：直接拦截
-     * - 询问：弹窗让用户选择（允许一次 / 加入黑名单 / 加入白名单）
-     */
-    fun showBlockDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?, crossOriginMode: Int): Boolean {
-        val url = request.url.toString()
-        if (url.endsWith(".apk")) {
-            return true
-        }
-        val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
-
-        // 白名单域名直接放行
-        if (targetTop != null && adBlock?.whitelist.contains(targetTop)) {
-            return false
-        }
-
-        // 若为广告黑名单，直接拦截
-        if (targetTop != null && adBlock?.blacklist.contains(targetTop)) {
-            return true
-        }
-
-        // 仅对 http/https 链接处理，其他 scheme 拦截
-        val scheme = request.url?.scheme
-        if (scheme != "http" && scheme != "https") {
-            // 浏览器内部 scheme 放行
-            if (scheme in setOf("javascript", "about", "data", "blob", "file")) {
-                return false
-            }
-            // 其他 scheme（intent://, market://, tel:, mailto: 等）拦截
-            return true
-        }
-
-        // 若目标域与当前页主域不同，根据跨域配置处理
-        val currentUrl = view?.url
-        val currentTop = currentUrl?.toHttpUrlOrNull()?.topPrivateDomain()
-        val differentSite = when {
-            currentTop == null || targetTop == null -> true
-            else -> currentTop != targetTop && !currentUrl.contains(targetTop)
-        }
-
-        if (!differentSite) {
-            // 同主域，允许加载
-            return false
-        }
-
-        // 根据跨域配置决定行为
-        return when (crossOriginMode) {
-            1 -> {
-                // 允许：直接放行
-                false
-            }
-
-            2 -> {
-                // 拒绝：直接拦截
-                true
-            }
-
-            else -> {
-                // 询问：延迟弹窗，避免阻塞 shouldOverrideUrlLoading 导致 WebView 卡死
-                view?.post { showCrossOriginDialog(view, url, targetTop, adBlock) }
-                true
-            }
-        }
-    }
-
-    /**
-     * 显示跨域询问弹窗：允许一次 / +黑名单 / +白名单
-     */
-    private fun showCrossOriginDialog(
-        view: WebView?,
-        url: String,
-        targetTop: String?,
-        adBlock: AdBlock?
-    ): Boolean {
-        try {
-            val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
-            originBinding.tvDialogUrl.text = url
-
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setView(originBinding.root)
-                .setCancelable(true)
-                .create()
-
-            originBinding.btnAllowOnce.setOnClickListener {
-                view?.post { view.loadUrl(url) }
-                dialog.dismiss()
-            }
-            originBinding.btnWhitelist.setOnClickListener {
-                if (targetTop != null) {
-                    adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
-                }
-                view?.post { view.loadUrl(url) }
-                dialog.dismiss()
-            }
-            originBinding.btnBlacklist.setOnClickListener {
-                if (targetTop != null) {
-                    adBlock?.addBlackHost(HostStr(targetTop, listOf()))
-                }
-                dialog.dismiss()
-            }
-
-            dialog.show()
-        } catch (t: Throwable) {
-            Log.e("show confirm dialog error", t)
-            return false
-        }
-        return true
     }
 }
