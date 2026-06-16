@@ -221,12 +221,6 @@ class WebViewSettings @JvmOverloads constructor(
             // 其他 scheme（intent://, market://, tel:, mailto: 等）拦截
             return true
         }
-        if (!request.isForMainFrame) {
-            return false
-        }
-        if (request.hasGesture()) {
-            return false
-        }
 
         // 若目标域与当前页主域不同，根据跨域配置处理
         val currentUrl = view?.url
