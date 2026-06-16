@@ -51,7 +51,6 @@ class CustomWebView @JvmOverloads constructor(
     private var homeUrl: String? = null
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
-    private var needClearHistory = false
 
     @Volatile
     private var currentUrl: String? = null
@@ -90,11 +89,10 @@ class CustomWebView @JvmOverloads constructor(
         this.lifecycleScope = owner.lifecycleScope
     }
 
-    fun loadUrl(url: String, clearHistory: Boolean = false) {
+    fun loadUrl(url: String) {
         this.homeUrl = url
         currentUrl = url
         Log.i("loadUrl:${url} ")
-        needClearHistory = clearHistory
 
         // 销毁前进栈
         forwardStack.forEach { destroyWebView(it) }
@@ -262,13 +260,6 @@ class CustomWebView @JvmOverloads constructor(
                 }
             }
 
-            if (needClearHistory) {
-                needClearHistory = false
-                webView?.post {
-                    webView.clearHistory()
-                    updateForwardButton()
-                }
-            }
             Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
             val list = history.value!!.toMutableList()
             webView?.url?.let { url ->
@@ -409,7 +400,7 @@ class CustomWebView @JvmOverloads constructor(
             webViewStack.clear()
             forwardStack.forEach { destroyWebView(it) }
             forwardStack.clear()
-            loadUrl(home, clearHistory = true)
+            loadUrl(home)
         }
     }
 

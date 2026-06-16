@@ -83,7 +83,7 @@ class BookCityPageFragment : BaseFragment() {
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
             })
-            customWebView.loadUrl(url!!, true)
+            customWebView.loadUrl(url!!)
 
             initDrawer(drawerLayout, customWebView, this@apply)
             var lastTime = 0L
@@ -132,7 +132,7 @@ class BookCityPageFragment : BaseFragment() {
     private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
         val historyAdapter = HistoryListAdapter()
         historyAdapter.onClick = {
-            view.loadUrl(it, false)
+            view.loadUrl(it)
         }
         historyAdapter.onDeleteHistory = { item ->
             if (item == null) {
@@ -153,7 +153,7 @@ class BookCityPageFragment : BaseFragment() {
         val whiteListAdapter = WhiteListAdapter(adBlock)
         val homeAdapter = HomeListAdapter {
             url = it
-            view.loadUrl(it, true)
+            view.loadUrl(it)
             drawer.closeDrawer(GravityCompat.END)
             view.adBlock = adBlock
             initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
