@@ -34,11 +34,14 @@ import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
 import io.legado.app.utils.activity
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
+import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
 
 /*
@@ -48,6 +51,7 @@ class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
     internal var lifecycleScope: LifecycleCoroutineScope? = null
+    private var updateWebBookJob: Job? = null
     private var webBook: WebBook? = null
     private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
@@ -55,13 +59,13 @@ class CustomWebView @JvmOverloads constructor(
     val history = MutableLiveData<List<HistoryItem>>()
 
     /** WebView 栈：最后一个元素是当前可见的 WebView */
-    private val webViewStack = mutableListOf<WebView>()
+    private val webViewStack = mutableListOf<MyWebView>()
 
     /** 前进栈：后退时弹出的 WebView 暂存于此 */
-    private val forwardStack = mutableListOf<WebView>()
+    private val forwardStack = mutableListOf<MyWebView>()
 
     /** 当前可见的 WebView */
-    val currentWebView: WebView? get() = webViewStack.lastOrNull()
+    val currentWebView: MyWebView? get() = webViewStack.lastOrNull()
 
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
@@ -159,8 +163,8 @@ class CustomWebView @JvmOverloads constructor(
         return true
     }
 
-    private fun createWebView(url: String): WebView {
-        val webView = WebView(context).apply {
+    private fun createWebView(url: String): MyWebView {
+        val webView = MyWebView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
             webViewClient = createWebViewClient()
@@ -171,7 +175,7 @@ class CustomWebView @JvmOverloads constructor(
         return webView
     }
 
-    private fun pushWebView(webView: WebView) {
+    private fun pushWebView(webView: MyWebView) {
         // 隐藏当前 WebView
         currentWebView?.let { hideWebView(it) }
 
@@ -206,7 +210,49 @@ class CustomWebView @JvmOverloads constructor(
         binding.refresh.isSelected = currentWebView?.isBlank == false && (currentWebView?.progress ?: 100) < 100
     }
 
+    // 抽取更新 webBook 的逻辑：在同一主域下更新 lastUrl/lastTitle/updateTime 并持久化
+    private fun updateWebBookIfSameDomain(view: WebView?, url: String?, updateTitle: Boolean) {
+        if (url == null) return
+        val book = webBook ?: return
+        val view = view as? MyWebView ?: return
+        updateWebBookJob?.cancel()
+        updateWebBookJob = lifecycleScope?.launch {
+            val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
+            if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
+                book.lastUrl = url
+                if (updateTitle) {
+                    book.lastTitle = view.getTitleFromMeta().ifBlank { view.title ?: "无标题" }
+                } else {
+                    view.post {
+                        if (book.lastUrl == url) {
+                            updateWebBookIfSameDomain(view, url, true)
+                        }
+                    }
+                }
+                book.updateTime = System.currentTimeMillis()
+                lifecycleScope?.launch {
+                    vm?.insertWebBook(book)
+                }
+
+            }
+        }
+    }
+
     private fun createWebViewClient() = object : WebViewClient() {
+
+        /**
+         * 捕获所有 URL 变化（包括 SPA pushState/replaceState 和 shouldOverrideUrlLoading 返回 true 的情况），
+         * 这些场景不会触发 onPageStarted/onPageFinished。
+         */
+        override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+            super.doUpdateVisitedHistory(view, url, isReload)
+            Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
+            if (url != null) {
+                view?.currentHost = url
+                // 在 URL 变化时先记录 url（title 可能尚未可用）
+                updateWebBookIfSameDomain(view, url, updateTitle = false)
+            }
+        }
 
         override fun shouldOverrideUrlLoading(
             view: WebView?,
@@ -253,17 +299,8 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
             }
-            webBook?.also { book ->
-                val urlHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
-                if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
-                    book.lastUrl = url ?: ""
-                    book.lastTitle = webView?.title ?: ""
-                    book.updateTime = System.currentTimeMillis()
-                    lifecycleScope?.launch {
-                        vm?.insertWebBook(book)
-                    }
-                }
-            }
+            // 页面加载完成后再更新 title（如果可用）并持久化
+            updateWebBookIfSameDomain(webView, url, updateTitle = true)
 
             Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
             val list = history.value!!.toMutableList()
@@ -580,13 +617,82 @@ class HistoryItem(var title: String, val url: String, val time: Long = System.cu
 }
 
 var WebView.currentHost: String?
-    get() = getTag(R.id.web_view_host) as? String
+    get() = (this as? MyWebView)?.currentHost
     set(url) {
-        setTag(R.id.web_view_host, url?.toHttpUrlOrNull()?.topPrivateDomain())
+        if (this is MyWebView) {
+            currentHost = url
+        }
     }
 
 var WebView.isBlank: Boolean?
-    get() = getTag(R.id.web_view_blank) as? Boolean
+    get() = (this as? MyWebView)?.isBlank
     set(value) {
-        setTag(R.id.web_view_blank, value)
+        if (this is MyWebView) {
+            isBlank = value
+        }
     }
+
+class MyWebView(context: Context) : WebView(context) {
+    var currentHost: String? = null
+        set(url) {
+            field = url?.toHttpUrlOrNull()?.topPrivateDomain()
+        }
+
+    var isBlank: Boolean? = null
+
+    var isDestroyed = false
+        private set
+
+    override fun destroy() {
+        super.destroy()
+        isDestroyed = true
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        // 避免 WebView 内存泄漏
+        stopLoading()
+        settings.javaScriptEnabled = false
+        clearHistory()
+        removeAllViews()
+        destroy()
+    }
+}
+
+suspend fun WebView.getTitleFromMeta(): String {
+    return suspendCancellableCoroutine { continuation ->
+        evaluateJavascript(
+            """
+                javascript:(function() {
+                    // 尝试获取 og:title 的内容
+                    let ogTitle = document.querySelector('meta[property="og:title"]');
+
+                    // 如果 og:title 存在，获取其 content 属性
+                    if (ogTitle) {
+                        return ogTitle.getAttribute('content')
+                    } else {
+                        // 如果 og:title 不存在，获取 keywords 的内容
+                        let keywords = document.querySelector('meta[name="keywords"]');
+                        if (keywords) {
+                            return keywords.getAttribute('content')
+                        } else {
+                            return ""
+                        }
+                    }
+                })()
+            """.trimIndent()
+        ) {
+            Log.i("title:$it")
+            if (continuation.isActive) {
+                val str = it?.replace("\"", "")?.split(",")?.first()
+                if (str.isNullOrBlank() || str == "null") {
+                    continuation.resume("")
+                } else {
+                    continuation.resume(str)
+                }
+            }
+
+        }
+
+    }
+}

@@ -2,7 +2,5 @@
 <resources>
     <item name="visibility" type="id" />
     <item name="recyclable" type="id" />
-    <item name="web_view_host" type="id" />
-    <item name="web_view_blank" type="id" />
     <item name="snackbar" type="id" />
 </resources>

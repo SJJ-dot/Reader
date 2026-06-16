@@ -14,6 +14,7 @@ import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.bookcity.CustomWebView
+import com.sjianjun.reader.module.bookcity.getTitleFromMeta
 import com.sjianjun.reader.module.search.SearchViewModel
 import com.sjianjun.reader.module.shelf.WebShelfViewModel
 import com.sjianjun.reader.preferences.globalConfig
@@ -150,14 +151,13 @@ class WebViewSettings @JvmOverloads constructor(
     private fun addToShelf() {
         val wv = customWebView?.currentWebView ?: return
         val url = wv.url ?: return
-        val title = wv.title ?: ""
 
         MaterialAlertDialogBuilder(context)
             .setTitle("加入书架")
             .setItems(arrayOf("导入书源书架", "导入网页书架")) { _, which ->
                 when (which) {
                     0 -> importToBookSourceShelf(url)
-                    1 -> importToWebShelf(wv, url, title)
+                    1 -> importToWebShelf(wv, url)
                 }
             }
             .show()
@@ -187,11 +187,12 @@ class WebViewSettings @JvmOverloads constructor(
     }
 
     /** 导入网页书架：直接从 WebView 获取 HTML，解析封面后保存 */
-    private fun importToWebShelf(wv: WebView, url: String, title: String) {
+    private fun importToWebShelf(wv: WebView, url: String) {
         val scope = customWebView?.lifecycleScope ?: return
         scope.launch {
             try {
                 val html = wv.getHtml() ?: return@launch
+                val title = wv.getTitleFromMeta().ifBlank { wv.title ?: "无标题" }
                 val webBook = WebBook().apply {
                     this.url = url
                     this.title = title.ifBlank { "未命名" }
@@ -258,7 +259,7 @@ class WebViewSettings @JvmOverloads constructor(
         titleJob?.cancel()
         titleJob = GlobalScope.launch(Dispatchers.Main) {
             val title = wv.getTitleFromMeta()
-            if (!title.isNullOrBlank()) {
+            if (title.isNotBlank()) {
                 binding.webTitle.text = title
             } else {
                 binding.webTitle.text = wv.title ?: "~"
@@ -273,41 +274,5 @@ class WebViewSettings @JvmOverloads constructor(
         }
     }
 
-    private suspend fun WebView.getTitleFromMeta(): String {
-        return suspendCancellableCoroutine { continuation ->
-            evaluateJavascript(
-                """
-                javascript:(function() {
-                    // 尝试获取 og:title 的内容
-                    let ogTitle = document.querySelector('meta[property="og:title"]');
 
-                    // 如果 og:title 存在，获取其 content 属性
-                    if (ogTitle) {
-                        return ogTitle.getAttribute('content')
-                    } else {
-                        // 如果 og:title 不存在，获取 keywords 的内容
-                        let keywords = document.querySelector('meta[name="keywords"]');
-                        if (keywords) {
-                            return keywords.getAttribute('content')
-                        } else {
-                            return ""
-                        }
-                    }
-                })()
-            """.trimIndent()
-            ) {
-                Log.i("title:$it")
-                if (continuation.isActive) {
-                    val str = it?.replace("\"", "")?.split(",")?.first()
-                    if (str.isNullOrBlank() || str == "null") {
-                        continuation.resume("")
-                    } else {
-                        continuation.resume(str)
-                    }
-                }
-
-            }
-
-        }
-    }
 }
