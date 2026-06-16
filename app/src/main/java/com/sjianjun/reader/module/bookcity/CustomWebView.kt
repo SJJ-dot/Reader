@@ -22,7 +22,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.CustomWebViewBinding
-import com.sjianjun.reader.module.verification.WebViewLifecycleObserver
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.preferences.globalConfig
@@ -47,16 +46,12 @@ class CustomWebView @JvmOverloads constructor(
     private var webBook: WebBook? = null
     private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
-    private var lifecycleObserver: WebViewLifecycleObserver? = null
     private var homeUrl: String? = null
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
 
     @Volatile
     private var currentUrl: String? = null
-
-    // 记录最后一个正常加载的页面 URL，用于拦截后恢复
-    private var lastGoodUrl: String? = null
 
     /** WebView 栈：最后一个元素是当前可见的 WebView */
     private val webViewStack = mutableListOf<WebView>()
@@ -201,32 +196,14 @@ class CustomWebView @JvmOverloads constructor(
                 // 放行：创建新 WebView 压入栈，后退时直接切换无需重新加载
                 val url = request.url.toString()
                 currentUrl = url
-                view?.post {
+                lifecycleScope?.launch {
                     forwardStack.forEach { destroyWebView(it) }
                     forwardStack.clear()
                     val newWebView = createWebView(url)
                     pushWebView(newWebView)
                 }
-                return true
-            } else {
-                // 拦截后 WebView 内部历史栈已推入被拦截的 URL 但未加载，状态机卡死。
-                view?.post {
-                    val fallbackUrl = lastGoodUrl ?: homeUrl
-                    if (!fallbackUrl.isNullOrBlank()) {
-                        val list = view.copyBackForwardList()
-                        val currentIndex = list.currentIndex
-                        val targetIndex = (currentIndex downTo 0).firstOrNull { i ->
-                            list.getItemAtIndex(i).url == fallbackUrl
-                        }
-                        if (targetIndex != null && targetIndex < currentIndex) {
-                            view.goBackOrForward(targetIndex - currentIndex)
-                        } else if (targetIndex == null && view.canGoBack()) {
-                            view.goBack()
-                        }
-                    }
-                }
-                return true
             }
+            return true
         }
 
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -237,17 +214,6 @@ class CustomWebView @JvmOverloads constructor(
         }
 
         override fun onPageFinished(webView: WebView?, url: String?) {
-            if (!url.isNullOrBlank() && url != "about:blank") {
-                webView?.postDelayed({
-                    webView.evaluateJavascript(
-                        "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
-                    ) { result ->
-                        if (result.length > 10) {
-                            lastGoodUrl = url
-                        }
-                    }
-                }, 300)
-            }
             webBook?.also { book ->
                 val urlHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
                 if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
