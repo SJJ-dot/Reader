@@ -222,5 +222,25 @@
             app:layout_constraintStart_toEndOf="@+id/tv_ad_block"
             app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
             app:tint="@color/colorPrimary" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/btn_add_to_shelf"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:paddingLeft="12dp"
+            android:paddingTop="4dp"
+            android:paddingRight="12dp"
+            android:paddingBottom="4dp"
+            android:text="加入书架"
+            android:textColor="@color/mdr_white"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/menu"
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
+            app:stv_corner="5dp"
+            app:stv_solid="@color/colorPrimary" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

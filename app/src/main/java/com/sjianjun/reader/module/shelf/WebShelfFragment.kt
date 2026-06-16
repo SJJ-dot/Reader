@@ -70,20 +70,13 @@ class WebShelfFragment : BaseFragment() {
         }
         adapter.onLongClickListener = { webBook ->
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("删除书籍")
-                .setMessage("确定要删除书籍 ${webBook.title} 吗？")
-                .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                    launch {
-                        try {
-                            viewModel.deleteWebBook(webBook)
-                            toast("书籍已删除")
-                        } catch (e: Exception) {
-                            Log.e("删除书籍失败", e)
-                            toast("删除书籍失败: ${e.message ?: "未知错误"}")
-                        }
+                .setTitle(webBook.title)
+                .setItems(arrayOf("修改标题", "删除")) { _, which ->
+                    when (which) {
+                        0 -> showEditTitleDialog(webBook)
+                        1 -> showDeleteDialog(webBook)
                     }
                 }
-                .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
         binding?.fab?.click {
@@ -136,6 +129,54 @@ class WebShelfFragment : BaseFragment() {
             }
         }
 
+    }
+
+    private fun showEditTitleDialog(webBook: WebBook) {
+        val input = android.widget.EditText(requireContext()).apply {
+            setText(webBook.title)
+            setSelection(webBook.title.length)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("修改标题")
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val newTitle = input.text.toString().trim()
+                if (newTitle.isEmpty()) {
+                    toast("标题不能为空")
+                    return@setPositiveButton
+                }
+                webBook.title = newTitle
+                launch {
+                    try {
+                        viewModel.updateWebBook(webBook)
+                        toast("标题已修改")
+                    } catch (e: Exception) {
+                        Log.e("修改标题失败", e)
+                        toast("修改失败: ${e.message}")
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showDeleteDialog(webBook: WebBook) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("删除书籍")
+            .setMessage("确定要删除「${webBook.title}」吗？")
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                launch {
+                    try {
+                        viewModel.deleteWebBook(webBook)
+                        toast("已删除")
+                    } catch (e: Exception) {
+                        Log.e("删除书籍失败", e)
+                        toast("删除失败: ${e.message}")
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     class Adapter : BaseAdapter<WebBook>(R.layout.item_web_book_list) {

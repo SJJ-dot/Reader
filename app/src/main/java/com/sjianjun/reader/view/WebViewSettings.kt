@@ -7,11 +7,15 @@ import android.view.View
 import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.core.widget.addTextChangedListener
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
+import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.bookcity.CustomWebView
+import com.sjianjun.reader.module.search.SearchViewModel
+import com.sjianjun.reader.module.shelf.WebShelfViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.copyToClipboard
@@ -24,6 +28,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.jsoup.Jsoup
 import sjj.alog.Log
 import kotlin.coroutines.resume
 
@@ -126,6 +131,114 @@ class WebViewSettings @JvmOverloads constructor(
             globalConfig.crossOriginMode = mode
             onCrossOriginModeChanged?.invoke()
         }
+
+        binding.btnAddToShelf.setOnClickListener {
+            addToShelf()
+        }
+    }
+
+    private fun addToShelf() {
+        val wv = customWebView?.currentWebView ?: return
+        val url = wv.url ?: return
+        val title = wv.title ?: ""
+
+        MaterialAlertDialogBuilder(context)
+            .setTitle("加入书架")
+            .setItems(arrayOf("导入书源书架", "导入网页书架")) { _, which ->
+                when (which) {
+                    0 -> importToBookSourceShelf(url)
+                    1 -> importToWebShelf(wv, url, title)
+                }
+            }
+            .show()
+    }
+
+    /** 导入书源书架：通过 SearchViewModel.searchUrl 搜索并保存 */
+    private fun importToBookSourceShelf(url: String) {
+        val scope = customWebView?.lifecycleScope ?: return
+        scope.launch {
+            try {
+                val vm = SearchViewModel()
+                val results = vm.searchUrl(url)
+                results.collect { groups ->
+                    if (groups.isNotEmpty()) {
+                        val allResults = groups.flatten()
+                        vm.saveSearchResult(allResults)
+                        toast("已导入书源书架")
+                    } else {
+                        toast("导入失败")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("导入书源书架失败", e)
+                toast("导入失败: ${e.message}")
+            }
+        }
+    }
+
+    /** 导入网页书架：直接从 WebView 获取 HTML，解析封面后保存 */
+    private fun importToWebShelf(wv: WebView, url: String, title: String) {
+        val scope = customWebView?.lifecycleScope ?: return
+        scope.launch {
+            try {
+                val html = wv.getHtml() ?: return@launch
+                val webBook = WebBook().apply {
+                    this.url = url
+                    this.title = title.ifBlank { "未命名" }
+                    this.lastUrl = url
+                    this.lastTitle = title
+                }
+                // 从 HTML 解析封面
+                val document = Jsoup.parse(html, url)
+                var cover = document.select("meta[property='og:image']").firstOrNull()?.attr("content")
+                if (cover.isNullOrEmpty()) {
+                    cover = document.select("#fmimg").firstOrNull()?.absUrl("src")
+                }
+                if (cover.isNullOrEmpty()) {
+                    cover = document.select("img").firstOrNull {
+                        it.attr("alt").contains(title) || it.attr("title").contains(title) || it.attr("src").contains("cover")
+                    }?.absUrl("src")
+                }
+                if (cover.isNullOrEmpty()) {
+                    cover = url.toHttpUrlOrNull()?.let { "${it.scheme}://${it.host}/favicon.ico" }
+                }
+                webBook.cover = cover
+
+                val vm = WebShelfViewModel()
+                vm.insertWebBook(webBook)
+                toast("已导入网页书架")
+            } catch (e: Exception) {
+                Log.e("导入网页书架失败", e)
+                toast("导入失败: ${e.message}")
+            }
+        }
+    }
+
+    /** 从 WebView 获取当前页面 HTML */
+    private suspend fun WebView.getHtml(): String? {
+        return suspendCancellableCoroutine { cont ->
+            evaluateJavascript(
+                "(function(){return document.documentElement.outerHTML})()"
+            ) { result ->
+                if (cont.isActive) {
+                    val html = result?.trim('"')?.unescapeJava()
+                    cont.resume(html)
+                }
+            }
+        }
+    }
+
+    /** 处理 evaluateJavascript 返回的转义字符串 */
+    private fun String.unescapeJava(): String {
+        return this
+            .replace("\\/", "/")
+            .replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace("\\t", "\t")
+            .replace("\\\"", "\"")
+            .replace("\\\\", "\\")
+            .replace("\\u003C", "<")
+            .replace("\\u003E", ">")
     }
 
     fun refresh() {

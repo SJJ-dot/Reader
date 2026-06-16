@@ -47,7 +47,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-    private var lifecycleScope: LifecycleCoroutineScope? = null
+    internal var lifecycleScope: LifecycleCoroutineScope? = null
     private var webBook: WebBook? = null
     private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)

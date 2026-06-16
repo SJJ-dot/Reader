@@ -29,6 +29,11 @@ class WebShelfViewModel : ViewModel() {
         dao.insertWebBook(webBook)
     }
 
+    suspend fun updateWebBook(webBook: WebBook) = withIo {
+        // insertWebBook 使用 REPLACE 策略，可直接用于更新
+        dao.insertWebBook(webBook)
+    }
+
     suspend fun getWebBookById(id: String): Flow<WebBook> = withIo {
         dao.getWebBookById(id)
     }
