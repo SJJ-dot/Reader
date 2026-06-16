@@ -57,6 +57,7 @@ class AppConfig(val name: String) :
      * 阅读器简繁转换模式: 0=关闭, 1=简体转繁体, 2=繁体转简体
      */
     val readerJianFanMode by lazy { intLivedata("readerJianFanMode", 0) }
+
     /**
      * 阅读器横竖屏切换: 0=跟随系统, 1=竖屏, 2=横屏，3=横屏自动
      */
@@ -90,6 +91,7 @@ class AppConfig(val name: String) :
      * 0=默认横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
      */
     val readerTypesettingMode by lazy { intLivedata("readerTypesettingMode", 0) }
+
     /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
@@ -106,7 +108,7 @@ class AppConfig(val name: String) :
         dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr2", emptyList())
     }
 
-    var bookCityUrlHistoryList by dataPref("bookCityUrlHistoryList", mutableListOf("https://m.qidian.com"))
+    val bookCityUrlHistoryList by lazy { dataLivedata<List<String>>("bookCityUrlHistoryList2", mutableListOf("https://m.qidian.com")) }
     var bookCityUrl by dataPref("bookCityUrl", "https://m.qidian.com")
 
     //本次启动之后书城访问的所有的URL

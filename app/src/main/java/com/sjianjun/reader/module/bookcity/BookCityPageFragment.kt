@@ -121,7 +121,7 @@ class BookCityPageFragment : BaseFragment() {
     private fun initHomeListAdapterData(homeAdapter: HomeListAdapter) {
         lifecycleScope.launch {
             val sites = vm.getAllBookSourceSite().distinct().toMutableList()
-            val list = globalConfig.bookCityUrlHistoryList.toMutableList()
+            val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
             homeAdapter.data.clear()
             homeAdapter.data.addAll(list.map { it to false })
             homeAdapter.data.addAll(sites.map { it to true })
@@ -163,23 +163,24 @@ class BookCityPageFragment : BaseFragment() {
                 .setTitle("删除")
                 .setMessage("确定删除吗？\n${it.first}")
                 .setPositiveButton("删除") { _, _ ->
-                    val list = globalConfig.bookCityUrlHistoryList.toMutableList()
+                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
                     list.remove(it.first)
-                    globalConfig.bookCityUrlHistoryList = list
-                    initHomeListAdapterData(homeAdapter)
+                    globalConfig.bookCityUrlHistoryList.postValue(list)
                 }
                 .setNegativeButton("取消") { _, _ -> }
                 .show()
         }
-        initHomeListAdapterData(homeAdapter)
+        globalConfig.bookCityUrlHistoryList.observe(viewLifecycleOwner) {
+            initHomeListAdapterData(homeAdapter)
+        }
         binding.fab.click {
             val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
             bindingDialog.editView.apply {
-                val historyList = globalConfig.bookCityUrlHistoryList
+                val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
                 setFilterValues(historyList)
                 delCallBack = {
                     if (historyList.remove(it)) {
-                        globalConfig.bookCityUrlHistoryList = historyList
+                        globalConfig.bookCityUrlHistoryList.postValue(historyList)
                     }
                 }
             }
@@ -192,11 +193,10 @@ class BookCityPageFragment : BaseFragment() {
                         url = "https://$url"
                     }
                     if (url.toHttpUrlOrNull() != null) {
-                        val historyList = globalConfig.bookCityUrlHistoryList
+                        val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
                         historyList.remove(url)
                         historyList.add(0, url)
-                        globalConfig.bookCityUrlHistoryList = historyList
-                        globalConfig.bookCityUrl = url
+                        globalConfig.bookCityUrlHistoryList.postValue(historyList)
                         toast("设置成功")
                         initHomeListAdapterData(homeAdapter)
                     } else {
@@ -273,6 +273,14 @@ class BookCityPageFragment : BaseFragment() {
             binding.root.setOnLongClickListener {
                 onLongClickListener(data[position])
                 true
+            }
+            val isMark = globalConfig.bookCityUrl == data[position].first
+            binding.ivMark.imageTintList = ColorStateList.valueOf(if (isMark) R.color.colorPrimary.color() else R.color.mdr_grey_500.color())
+
+            binding.ivMark.setOnClickListener {
+                globalConfig.bookCityUrl = data[position].first
+                toast("设置成功")
+                notifyDataSetChanged()
             }
         }
     }

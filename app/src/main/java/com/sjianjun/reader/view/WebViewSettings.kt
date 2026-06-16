@@ -135,6 +135,16 @@ class WebViewSettings @JvmOverloads constructor(
         binding.btnAddToShelf.setOnClickListener {
             addToShelf()
         }
+
+        binding.btnAddToHome.setOnClickListener {
+            val wv = customWebView?.currentWebView ?: return@setOnClickListener
+            val url = wv.url ?: return@setOnClickListener
+            val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
+            historyList.remove(url)
+            historyList.add(0, url)
+            globalConfig.bookCityUrlHistoryList.postValue(historyList)
+            toast("添加成功")
+        }
     }
 
     private fun addToShelf() {
