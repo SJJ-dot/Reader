@@ -158,16 +158,49 @@ class BookCityPageFragment : BaseFragment() {
             view.adBlock = adBlock
             initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
         }
-        homeAdapter.onLongClickListener = {
+        homeAdapter.onLongClickListener = { item ->
             MaterialAlertDialogBuilder(requireActivity())
-                .setTitle("删除")
-                .setMessage("确定删除吗？\n${it.first}")
-                .setPositiveButton("删除") { _, _ ->
-                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                    list.remove(it.first)
-                    globalConfig.bookCityUrlHistoryList.postValue(list)
+                .setTitle(item.first)
+                .setItems(arrayOf("编辑", "删除")) { _, which ->
+                    when (which) {
+                        0 -> {
+                            // 编辑：弹出输入框修改 URL
+                            val input = android.widget.EditText(requireContext()).apply {
+                                setText(item.first)
+                                setSelection(item.first.length)
+                            }
+                            MaterialAlertDialogBuilder(requireActivity())
+                                .setTitle("编辑网址")
+                                .setView(input)
+                                .setPositiveButton(android.R.string.ok) { _, _ ->
+                                    val newUrl = input.text.toString().trim()
+                                    if (newUrl.isBlank()) return@setPositiveButton
+                                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
+                                    val idx = list.indexOf(item.first)
+                                    if (idx >= 0) {
+                                        list[idx] = newUrl
+                                        globalConfig.bookCityUrlHistoryList.postValue(list)
+                                    }
+                                }
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show()
+                        }
+
+                        1 -> {
+                            // 删除
+                            MaterialAlertDialogBuilder(requireActivity())
+                                .setTitle("删除")
+                                .setMessage("确定删除吗？\n${item.first}")
+                                .setPositiveButton("删除") { _, _ ->
+                                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
+                                    list.remove(item.first)
+                                    globalConfig.bookCityUrlHistoryList.postValue(list)
+                                }
+                                .setNegativeButton("取消", null)
+                                .show()
+                        }
+                    }
                 }
-                .setNegativeButton("取消") { _, _ -> }
                 .show()
         }
         globalConfig.bookCityUrlHistoryList.observe(viewLifecycleOwner) {
@@ -271,6 +304,10 @@ class BookCityPageFragment : BaseFragment() {
                 onClick(data[position].first)
             }
             binding.root.setOnLongClickListener {
+                if (data[position].second) {
+                    toast("书源地址无法编辑或删除")
+                    return@setOnLongClickListener true
+                }
                 onLongClickListener(data[position])
                 true
             }

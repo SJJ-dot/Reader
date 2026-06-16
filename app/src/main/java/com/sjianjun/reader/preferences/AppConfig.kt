@@ -108,7 +108,7 @@ class AppConfig(val name: String) :
         dataLivedata<List<CustomPageStyleInfo>>("customPageStyleInfosStr2", emptyList())
     }
 
-    val bookCityUrlHistoryList by lazy { dataLivedata<List<String>>("bookCityUrlHistoryList2", mutableListOf("https://m.qidian.com")) }
+    val bookCityUrlHistoryList by lazy { dataLivedata<List<String>>("bookCityUrlHistoryList", mutableListOf("https://m.qidian.com")) }
     var bookCityUrl by dataPref("bookCityUrl", "https://m.qidian.com")
 
     //本次启动之后书城访问的所有的URL

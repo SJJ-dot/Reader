@@ -51,7 +51,6 @@ class CustomWebView @JvmOverloads constructor(
     private var webBook: WebBook? = null
     private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
-    private var homeUrl: String? = null
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
 
@@ -85,7 +84,6 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     fun loadUrl(url: String) {
-        this.homeUrl = url
         Log.i("loadUrl:${url} ")
 
         // 销毁前进栈
@@ -401,7 +399,7 @@ class CustomWebView @JvmOverloads constructor(
         }
         binding.home.click {
             Log.i("回到首页")
-            val home = webBook?.url ?: this.homeUrl ?: "https://www.baidu.com"
+            val home = webBook?.url ?: globalConfig.bookCityUrl
             // 销毁所有 WebView，重新开始
             webViewStack.forEach { destroyWebView(it) }
             webViewStack.clear()
