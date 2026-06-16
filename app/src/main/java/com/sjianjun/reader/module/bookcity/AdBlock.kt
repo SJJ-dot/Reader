@@ -45,7 +45,7 @@ class AdBlock() {
 
     fun addBlackHost(host: HostStr) {
         if (blacklist.value?.contains(host) == false) {
-            blacklist.value?.add(0,host)
+            blacklist.value?.add(0, host)
             blacklist.postValue(blacklist.value)
             config.hostBlacklist = blacklist.value ?: mutableListOf()
         }
@@ -91,16 +91,18 @@ class AdBlock() {
         config.hostWhitelist = whitelist.value ?: mutableListOf()
     }
 
+    @Synchronized
     fun addUrl(url: String) {
         val topHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        if (topHost.isBlank() || blacklist.contains(topHost)) {
+        if (topHost.isBlank() || blacklist.contains(topHost) || whitelist.contains(topHost)) {
             return
         }
+
         val type = url.split("?")[0].split("/").last().split(".").last()
         var hostStr = hostList.value?.firstOrNull { it.host == topHost }
         if (hostStr == null) {
             hostStr = HostStr(topHost, listOf())
-            hostList.value?.add(0,hostStr)
+            hostList.value?.add(0, hostStr)
             hostList.postValue(hostList.value)
         }
         if (type.isNotBlank() && type !in hostStr.type) {
@@ -111,7 +113,7 @@ class AdBlock() {
 
     fun markPage(url: String?) {
         val topHost = url?.toHttpUrlOrNull()?.topPrivateDomain() ?: return
-        val hostStr = hostList.value?.firstOrNull { it.host == topHost }?:return
+        val hostStr = hostList.value?.firstOrNull { it.host == topHost } ?: return
         hostStr.isPage = true
         hostList.postValue(hostList.value)
     }
