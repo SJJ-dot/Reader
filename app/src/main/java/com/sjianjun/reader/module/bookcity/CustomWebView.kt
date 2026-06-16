@@ -138,14 +138,17 @@ class CustomWebView @JvmOverloads constructor(
         val previous = webViewStack.last()
         showWebView(previous)
 
-        // 如果当前页面为空（中转空白页），直接销毁，不放入前进栈
+        // 如果当前页面为空，直接销毁，不放入前进栈
         if (current.isBlank == true) {
             destroyWebView(current)
-            // 继续跳过前面连续的空页面
+        } else {
+            forwardStack.add(current)
+        }
+        updateForwardButton()
+        // 如果切换到的上一个页面也是空白页，继续后退跳过它
+        if (previous.isBlank == true) {
             return back()
         }
-        forwardStack.add(current)
-        updateForwardButton()
         return true
     }
 
@@ -230,10 +233,7 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
                 book.updateTime = System.currentTimeMillis()
-                lifecycleScope?.launch {
-                    vm?.insertWebBook(book)
-                }
-
+                vm?.insertWebBook(book)
             }
         }
     }
