@@ -223,48 +223,73 @@
             app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
             app:tint="@color/colorPrimary" />
 
-        <com.coorchice.library.SuperTextView
+        <LinearLayout
             android:id="@+id/btn_add_to_shelf"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:paddingLeft="12dp"
-            android:paddingTop="4dp"
-            android:paddingRight="12dp"
-            android:paddingBottom="4dp"
-            android:text="加入书架"
-            android:textColor="@color/mdr_white"
-            android:textSize="13sp"
+            android:background="@drawable/bg_primary_button"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_add_to_home"
             app:layout_constraintStart_toEndOf="@+id/menu"
-            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
-            app:stv_corner="5dp"
-            app:stv_solid="@color/colorPrimary" />
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
 
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginEnd="6dp"
+                android:src="@mipmap/ic_shelf"
+                app:tint="@color/white" />
 
-        <com.coorchice.library.SuperTextView
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+书架"
+                android:textColor="@color/mdr_white"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_add_to_home"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:paddingLeft="12dp"
-            android:paddingTop="4dp"
-            android:paddingRight="12dp"
-            android:paddingBottom="4dp"
-            android:text="加入主页"
-            android:textColor="@color/mdr_white"
-            android:textSize="13sp"
+            android:background="@drawable/bg_primary_button"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/btn_add_to_shelf"
-            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
-            app:stv_corner="5dp"
-            app:stv_solid="@color/colorPrimary" />
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginEnd="6dp"
+                android:src="@mipmap/ic_home"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+主页"
+                android:textColor="@color/mdr_white"
+                android:textSize="14sp" />
+        </LinearLayout>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
