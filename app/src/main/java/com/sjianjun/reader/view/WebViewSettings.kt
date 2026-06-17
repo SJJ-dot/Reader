@@ -4,8 +4,12 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebView
+import android.widget.ArrayAdapter
 import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
@@ -152,9 +156,30 @@ class WebViewSettings @JvmOverloads constructor(
         val wv = customWebView?.currentWebView ?: return
         val url = wv.url ?: return
 
+        val items = arrayOf(
+            Pair("导入书源书架", R.mipmap.ic_shelf),
+            Pair("导入网页书架", R.mipmap.ic_browser)
+        )
+
+        val adapter = object : ArrayAdapter<Pair<String, Int>>(
+            context,
+            R.layout.item_import_shelf_type,
+            items
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_import_shelf_type, parent, false)
+                val tvName = view.findViewById<TextView>(R.id.tv_name)
+                val ivIcon = view.findViewById<ImageView>(R.id.iv_icon)
+                val item = getItem(position)
+                tvName.text = item?.first
+                item?.second?.let { ivIcon.setImageResource(it) }
+                return view
+            }
+        }
+
         MaterialAlertDialogBuilder(context)
-            .setTitle("加入书架")
-            .setItems(arrayOf("导入书源书架", "导入网页书架")) { _, which ->
+            .setTitle("选择")
+            .setAdapter(adapter) { _, which ->
                 when (which) {
                     0 -> importToBookSourceShelf(url)
                     1 -> importToWebShelf(wv, url)

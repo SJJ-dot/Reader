@@ -280,7 +280,7 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_marginEnd="6dp"
-                android:src="@mipmap/ic_home"
+                android:src="@drawable/ic_browser_home"
                 app:tint="@color/white" />
 
             <TextView

@@ -47,11 +47,12 @@ class SearchViewModel : ViewModel() {
             val book = bookList.first()
             val readingRecord = readingRecordDao.getReadingRecordSync(book.title)
             Log.i("保存搜索结果记录：$readingRecord $bookList")
-            if (bookList.find { it.id == readingRecord?.bookId } == null) {
+            val readingBook = readingRecord?.let { bookDao.getBookById(it.bookId) }
+            if (readingBook == null) {
                 readingRecordDao.insertReadingRecord(ReadingRecord(book.title, book.id))
                 book.id
             } else {
-                readingRecord!!.bookId
+                readingBook.id
             }
         }
     }

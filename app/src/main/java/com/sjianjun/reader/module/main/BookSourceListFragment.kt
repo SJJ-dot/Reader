@@ -15,6 +15,7 @@ import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
+import com.sjianjun.reader.module.search.SearchViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.glide
@@ -31,6 +32,7 @@ class BookSourceListFragment : BaseFragment() {
     private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE) ?: "" }
     var binding: MainFragmentBookSourceListBinding? = null
     private val vm by viewModels<BookSourceListViewModel>()
+    private val searchVm by viewModels<SearchViewModel>()
 
     private val adapter by lazy { BookListAdapter(this) }
 
@@ -54,6 +56,20 @@ class BookSourceListFragment : BaseFragment() {
             launch {
                 vm.reloadAllBookFromNet()
                 binding?.swipeRefresh?.isRefreshing = false
+            }
+        }
+        binding?.ivSearch?.click {
+            launch {
+                binding?.swipeRefresh?.isRefreshing = true
+                searchVm.search(bookTitle).collect { results ->
+                    results.forEach { resultGroup ->
+                        if (resultGroup.firstOrNull()?.bookTitle == bookTitle) {
+                            searchVm.saveSearchResult(resultGroup)
+                        }
+                    }
+                }
+                binding?.swipeRefresh?.isRefreshing = false
+                toast("搜索并保存完成")
             }
         }
     }
