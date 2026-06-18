@@ -110,7 +110,7 @@ class BookSource {
         }
     }
 
-    private fun hasFunction(func: Func): Boolean {
+    fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
             Language.file -> false
             Language.yuedu -> true

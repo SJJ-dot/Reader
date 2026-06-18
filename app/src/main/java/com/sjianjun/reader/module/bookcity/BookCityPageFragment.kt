@@ -25,6 +25,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.adapter.BaseAdapter
+import com.sjianjun.reader.bean.HomeUrl
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
@@ -120,11 +121,11 @@ class BookCityPageFragment : BaseFragment() {
 
     private fun initHomeListAdapterData(homeAdapter: HomeListAdapter) {
         lifecycleScope.launch {
-            val sites = vm.getAllBookSourceSite().distinct().toMutableList()
-            val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
+            val sites = vm.getAllBookSourceSite().distinct()
+            val list = globalConfig.bookCityUrlHistoryList.value ?: emptyList()
             homeAdapter.data.clear()
-            homeAdapter.data.addAll(list.map { it to false })
-            homeAdapter.data.addAll(sites.map { it to true })
+            homeAdapter.data.addAll(list.map { HomeUrl(url = it) })
+            homeAdapter.data.addAll(sites)
             homeAdapter.notifyDataSetChanged()
         }
     }
@@ -152,22 +153,22 @@ class BookCityPageFragment : BaseFragment() {
         val blackListAdapter = BlackListAdapter(adBlock)
         val whiteListAdapter = WhiteListAdapter(adBlock)
         val homeAdapter = HomeListAdapter {
-            url = it
-            view.loadUrl(it)
+            url = it.url
+            view.loadUrl(it.url)
             drawer.closeDrawer(GravityCompat.END)
             view.adBlock = adBlock
             initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
         }
         homeAdapter.onLongClickListener = { item ->
             MaterialAlertDialogBuilder(requireActivity())
-                .setTitle(item.first)
+                .setTitle(item.url)
                 .setItems(arrayOf("编辑", "删除")) { _, which ->
                     when (which) {
                         0 -> {
                             // 编辑：弹出输入框修改 URL
                             val input = android.widget.EditText(requireContext()).apply {
-                                setText(item.first)
-                                setSelection(item.first.length)
+                                setText(item.url)
+                                setSelection(item.url.length)
                             }
                             MaterialAlertDialogBuilder(requireActivity())
                                 .setTitle("编辑网址")
@@ -176,7 +177,7 @@ class BookCityPageFragment : BaseFragment() {
                                     val newUrl = input.text.toString().trim()
                                     if (newUrl.isBlank()) return@setPositiveButton
                                     val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                                    val idx = list.indexOf(item.first)
+                                    val idx = list.indexOf(item.url)
                                     if (idx >= 0) {
                                         list[idx] = newUrl
                                         globalConfig.bookCityUrlHistoryList.postValue(list)
@@ -190,10 +191,10 @@ class BookCityPageFragment : BaseFragment() {
                             // 删除
                             MaterialAlertDialogBuilder(requireActivity())
                                 .setTitle("删除")
-                                .setMessage("确定删除吗？\n${item.first}")
+                                .setMessage("确定删除吗？\n${item.url}")
                                 .setPositiveButton("删除") { _, _ ->
                                     val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                                    list.remove(item.first)
+                                    list.remove(item.url)
                                     globalConfig.bookCityUrlHistoryList.postValue(list)
                                 }
                                 .setNegativeButton("取消", null)
@@ -289,33 +290,44 @@ class BookCityPageFragment : BaseFragment() {
         }
     }
 
-    class HomeListAdapter(val onClick: (url: String) -> Unit) : BaseAdapter<Pair<String, Boolean>>(R.layout.fragment_book_city_home_item) {
-        var onLongClickListener: (Pair<String, Boolean>) -> Unit = {}
+    class HomeListAdapter(val onClick: (url: HomeUrl) -> Unit) : BaseAdapter<HomeUrl>(R.layout.fragment_book_city_home_item) {
+        var onLongClickListener: (HomeUrl) -> Unit = {}
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
-            binding.tvHost.text = data[position].first
-            if (data[position].second) {
+            val homeUrl = data[position]
+            binding.tvHost.text = homeUrl.title ?: homeUrl.url
+            if (homeUrl.supportSearch == true) {
                 binding.tvHostFlag.show()
+                binding.tvHostFlag.setColorFilter(
+                    R.color.colorPrimary.color(binding.root.context),
+                    android.graphics.PorterDuff.Mode.SRC_IN
+                )
+            } else if (homeUrl.supportSearch == false) {
+                binding.tvHostFlag.show()
+                binding.tvHostFlag.setColorFilter(
+                    R.color.mdr_grey_500.color(binding.root.context),
+                    android.graphics.PorterDuff.Mode.SRC_IN
+                )
             } else {
                 binding.tvHostFlag.gone()
             }
             binding.root.click {
-                onClick(data[position].first)
+                onClick(homeUrl)
             }
             binding.root.setOnLongClickListener {
-                if (data[position].second) {
+                if (homeUrl.supportSearch != null) {
                     toast("书源地址无法编辑或删除")
                     return@setOnLongClickListener true
                 }
-                onLongClickListener(data[position])
+                onLongClickListener(homeUrl)
                 true
             }
-            val isMark = globalConfig.bookCityUrl == data[position].first
+            val isMark = globalConfig.bookCityUrl == homeUrl.url
             binding.ivMark.imageTintList = ColorStateList.valueOf(if (isMark) R.color.colorPrimary.color() else R.color.mdr_grey_500.color())
 
             binding.ivMark.setOnClickListener {
-                globalConfig.bookCityUrl = data[position].first
+                globalConfig.bookCityUrl = homeUrl.url
                 toast("设置成功")
                 notifyDataSetChanged()
             }
