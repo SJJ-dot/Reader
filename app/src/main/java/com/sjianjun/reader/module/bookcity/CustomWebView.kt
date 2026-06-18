@@ -41,6 +41,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.io.ByteArrayInputStream
+import kotlin.collections.remove
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -87,9 +88,13 @@ class CustomWebView @JvmOverloads constructor(
         this.lifecycleScope = owner.lifecycleScope
     }
 
-    fun loadUrl(url: String) {
+    fun loadUrl(url: String, request: WebResourceRequest? = null) {
         Log.i("loadUrl:${url} ")
-
+        if (request?.isRedirect == true) {
+            // 如果是重定向，销毁上一个 WebView，避免前进栈中出现空白页
+            currentWebView?.let { destroyWebView(it) }
+            webViewStack.remove(currentWebView)
+        }
         // 销毁前进栈
         forwardStack.forEach { destroyWebView(it) }
         forwardStack.clear()
@@ -97,6 +102,7 @@ class CustomWebView @JvmOverloads constructor(
         // 创建新 WebView 压入栈
         val newWebView = createWebView(url)
         pushWebView(newWebView)
+
     }
 
     fun removeBlankWebView() {
@@ -206,6 +212,7 @@ class CustomWebView @JvmOverloads constructor(
         webView.removeAllViews()
         (webView.parent as? ViewGroup)?.removeView(webView)
         webView.destroy()
+        Log.i("销毁 WebView: ${webView.currentHost} isBlank:${webView.isBlank}")
     }
 
     private fun updateForwardButton() {
@@ -265,16 +272,7 @@ class CustomWebView @JvmOverloads constructor(
                 val url = request.url.toString()
                 view?.currentHost = url
                 lifecycleScope?.launch {
-                    val lastWebView = currentWebView
-                    forwardStack.forEach { destroyWebView(it) }
-                    forwardStack.clear()
-                    val newWebView = createWebView(url)
-                    pushWebView(newWebView)
-                    if (request.isRedirect) {
-                        // 如果是重定向，销毁上一个 WebView，避免前进栈中出现空白页
-                        lastWebView?.let { destroyWebView(it) }
-                        webViewStack.remove(lastWebView)
-                    }
+                    loadUrl(url, request)
                 }
             }
             return true
@@ -282,8 +280,8 @@ class CustomWebView @JvmOverloads constructor(
 
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
-            Log.i("onPageStarted:$url ")
             view?.currentHost = url
+            Log.i("onPageStarted:${view?.currentHost} ")
             adBlock?.markPage(url)
         }
 
@@ -296,13 +294,16 @@ class CustomWebView @JvmOverloads constructor(
                         "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
                     ) { result ->
                         webView.isBlank = result.length < 10
+                        Log.i("js ${webView?.currentHost} isBlank:${webView.isBlank} ${url}")
                     }
                 }
+            } else {
+                Log.i("aa ${webView?.currentHost} isBlank:${webView?.isBlank} ${url}")
             }
             // 页面加载完成后再更新 title（如果可用）并持久化
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
 
-            Log.i("onPageFinished ${webView?.url} title:${webView?.title}")
+            Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")
             val list = history.value!!.toMutableList()
             webView?.url?.let { url ->
                 val item = HistoryItem(webView.title ?: "无标题", url)
@@ -388,18 +389,6 @@ class CustomWebView @JvmOverloads constructor(
                 binding.searchRefresh.visibility = VISIBLE
             }
         }
-
-        override fun onCreateWindow(
-            view: WebView?,
-            isDialog: Boolean,
-            isUserGesture: Boolean,
-            resultMsg: android.os.Message?
-        ): Boolean {
-            val transport = resultMsg?.obj as? WebView.WebViewTransport
-            transport?.webView = view
-            resultMsg?.sendToTarget()
-            return true
-        }
     }
 
     private fun initView() {
@@ -438,10 +427,7 @@ class CustomWebView @JvmOverloads constructor(
             Log.i("回到首页")
             val home = webBook?.url ?: globalConfig.bookCityUrl
             // 销毁所有 WebView，重新开始
-            webViewStack.forEach { destroyWebView(it) }
-            webViewStack.clear()
-            forwardStack.forEach { destroyWebView(it) }
-            forwardStack.clear()
+            destroyAllWebViews()
             loadUrl(home)
         }
         binding.webViewSettings.init(this) {
@@ -531,7 +517,8 @@ class CustomWebView @JvmOverloads constructor(
             else -> {
                 // 询问：延迟弹窗，避免阻塞 shouldOverrideUrlLoading 导致 WebView 卡死
                 lifecycleScope?.launch {
-                    showCrossOriginDialog(view, url, targetTop, adBlock)
+                    Log.i("跨域请求：from ${currentHost} to ${targetTop} ${request.url}")
+                    showCrossOriginDialog(view, request, adBlock)
                 }
                 true
             }
@@ -541,10 +528,12 @@ class CustomWebView @JvmOverloads constructor(
     /**
      * 显示跨域询问弹窗：允许一次 / +黑名单 / +白名单
      */
-    private fun showCrossOriginDialog(view: WebView?, url: String, targetTop: String?, adBlock: AdBlock?): Boolean {
+    private fun showCrossOriginDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?): Boolean {
         try {
+            val url = request.url.toString()
+            val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
             val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
-            originBinding.tvDialogUrl.text = url
+            originBinding.tvDialogUrl.text = targetTop
 
             val dialog = MaterialAlertDialogBuilder(context)
                 .setView(originBinding.root)
@@ -555,14 +544,14 @@ class CustomWebView @JvmOverloads constructor(
                 .create()
 
             originBinding.btnAllowOnce.setOnClickListener {
-                view?.loadUrl(url)
+                loadUrl(url, request)
                 dialog.dismiss()
             }
             originBinding.btnWhitelist.setOnClickListener {
                 if (targetTop != null) {
                     adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
                 }
-                view?.loadUrl(url)
+                loadUrl(url, request)
                 dialog.dismiss()
             }
             originBinding.btnBlacklist.setOnClickListener {
