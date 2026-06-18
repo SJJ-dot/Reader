@@ -14,9 +14,9 @@ def getSiteUrl():
     return "https://www.22sq.net/"
 
 
-def search(query):
-    # 搜索需要验证码 可以调用 verification_activity_get 函数
-    return []
+# def search(query):
+#     # 搜索需要验证码 可以调用 verification_activity_get 函数
+#     return []
 
 
 headers = {

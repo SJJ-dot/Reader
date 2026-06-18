@@ -15,9 +15,9 @@ def verify(query):
 def getSiteUrl():
     return "https://www.69shuba.com"
 
-def search(query):
-    # 不支持搜索，太麻烦了
-    return []
+# 不支持搜索，太麻烦了
+# def search(query):
+#     return []
 
 
 def getDetails(url):
