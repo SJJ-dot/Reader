@@ -89,15 +89,18 @@ class WebViewSettings @JvmOverloads constructor(
         binding.btnCopyTitle.setOnClickListener {
             binding.webTitle.text.toString().trim().copyToClipboard()
         }
+        binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         binding.btnFontAdd.setOnClickListener {
             val webView = customWebView.currentWebView ?: return@setOnClickListener
-            webView.setFontSize(2)
-            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
+            webView.settings.textZoom = globalConfig.webFontZoomSize + 4
+            globalConfig.webFontZoomSize = webView.settings.textZoom
+            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
         binding.btnFontSubtract.setOnClickListener {
             val webView = customWebView.currentWebView ?: return@setOnClickListener
-            webView.setFontSize(-2)
-            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
+            webView.settings.textZoom = globalConfig.webFontZoomSize - 4
+            globalConfig.webFontZoomSize = webView.settings.textZoom
+            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
         binding.menu.setOnClickListener {
             EventBus.post(EventKey.WEB_VIEW_SETTINGS)
@@ -108,8 +111,9 @@ class WebViewSettings @JvmOverloads constructor(
         }
         binding.tvFontSizeValue.setOnClickListener {
             val webView = customWebView.currentWebView ?: return@setOnClickListener
-            webView.setFontSize(-(webView.settings.textZoom - 100))
-            binding.tvFontSizeValue.text = webView.settings.textZoom.toString()
+            globalConfig.webFontZoomSize = 100
+            webView.settings.textZoom = globalConfig.webFontZoomSize
+            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
         binding.urlInput.addTextChangedListener {
             val webView = customWebView.currentWebView ?: return@addTextChangedListener
@@ -292,12 +296,5 @@ class WebViewSettings @JvmOverloads constructor(
         }
         binding.urlInput.setText(wv.url ?: "")
     }
-
-    private fun WebView.setFontSize(i: Int) {
-        settings.apply {
-            textZoom = textZoom + i
-        }
-    }
-
 
 }

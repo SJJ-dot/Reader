@@ -29,6 +29,8 @@ class WebBook {
 
     // 书籍更新时间
     var updateTime = System.currentTimeMillis()
+    // 是否选中当前来源
+    var isSelected: Boolean = false
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -41,6 +43,7 @@ class WebBook {
         if (lastUrl != other.lastUrl) return false
         if (title != other.title) return false
         if (lastTitle != other.lastTitle) return false
+        if (isSelected != other.isSelected) return false
 
         return true
     }
@@ -52,6 +55,7 @@ class WebBook {
         result = 31 * result + (lastUrl?.hashCode() ?: 0)
         result = 31 * result + title.hashCode()
         result = 31 * result + lastTitle.hashCode()
+        result = 31 * result + isSelected.hashCode()
         return result
     }
 

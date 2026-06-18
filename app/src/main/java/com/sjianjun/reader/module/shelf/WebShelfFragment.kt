@@ -68,12 +68,15 @@ class WebShelfFragment : BaseFragment() {
         adapter.onClickListener = { webBook ->
             WebViewBrowserActivity.startActivity(requireContext(), id = webBook.id)
         }
+        adapter.onSwitchSourceClickListener = { grouped ->
+            showSwitchSourceDialog(grouped)
+        }
         adapter.onLongClickListener = { webBook ->
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(webBook.title)
                 .setItems(arrayOf("修改标题", "删除")) { _, which ->
                     when (which) {
-                        0 -> showEditTitleDialog(webBook)
+                        0 -> showEditTitleDialog(webBook.currentSelected)
                         1 -> showDeleteDialog(webBook)
                     }
                 }
@@ -102,7 +105,11 @@ class WebShelfFragment : BaseFragment() {
                         this.title = title
                         this.url = url
                     }
-                    if (adapter.data.contains(webBook)) {
+                    // 检查是否已存在相同url的书籍
+                    val exists = adapter.data.any { grouped ->
+                        grouped.webBooks.any { it.url == webBook.url }
+                    }
+                    if (exists) {
                         toast("书籍已存在")
                         return@setPositiveButton
                     }
@@ -124,8 +131,16 @@ class WebShelfFragment : BaseFragment() {
         }
         launch {
             viewModel.getWebBook().collectLatest { webBooks ->
-                delay(100)
-                adapter.notifyDataSetDiff(webBooks, { o, n -> o.id == n.id }, { o, n -> o == n })
+                Log.i("WebBooks updated: ${webBooks} items")
+                // 按书名分组
+                val groupedList = webBooks.groupBy { it.title }
+                    .map { entry ->
+                        val list = entry.value.toMutableList()
+                        val selected = list.find { it.isSelected } ?: list.first()
+                        GroupedWebBook(entry.key, list, selected)
+                    }
+                Log.i(groupedList)
+                adapter.notifyDataSetDiff(groupedList, { o, n -> o.title == n.title }, { o, n -> o == n })
             }
         }
 
@@ -160,14 +175,14 @@ class WebShelfFragment : BaseFragment() {
             .show()
     }
 
-    private fun showDeleteDialog(webBook: WebBook) {
+    private fun showDeleteDialog(webBook: GroupedWebBook) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("删除书籍")
             .setMessage("确定要删除「${webBook.title}」吗？")
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 launch {
                     try {
-                        viewModel.deleteWebBook(webBook)
+                        viewModel.deleteWebBook(webBook.currentSelected)
                         toast("已删除")
                     } catch (e: Exception) {
                         Log.e("删除书籍失败", e)
@@ -179,40 +194,88 @@ class WebShelfFragment : BaseFragment() {
             .show()
     }
 
-    class Adapter : BaseAdapter<WebBook>(R.layout.item_web_book_list) {
+    private fun showSwitchSourceDialog(grouped: GroupedWebBook) {
+        val items = grouped.webBooks.map { webBook ->
+            val domain = webBook.url.toHttpUrlOrNull()?.topPrivateDomain()
+            if (webBook.isSelected) "✓ $domain" else domain
+        }.toTypedArray()
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("切换来源 - ${grouped.title}")
+            .setItems(items) { _, which ->
+                val selectedWebBook = grouped.webBooks[which]
+                // 更新所有书籍选中状态
+                grouped.webBooks.forEach { it.isSelected = (it == selectedWebBook) }
+                grouped.currentSelected = selectedWebBook
+                // 更新数据库
+                launch {
+                    grouped.webBooks.forEach { webBook ->
+                        viewModel.updateWebBook(webBook)
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    data class GroupedWebBook(
+        val title: String,
+        val webBooks: MutableList<WebBook>,
+        var currentSelected: WebBook
+    )
+
+    class Adapter : BaseAdapter<GroupedWebBook>(R.layout.item_web_book_list) {
         private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA)
         var onClickListener: ((WebBook) -> Unit)? = null
-        var onLongClickListener: ((WebBook) -> Unit)? = null
+        var onLongClickListener: ((GroupedWebBook) -> Unit)? = null
+        var onSwitchSourceClickListener: ((GroupedWebBook) -> Unit)? = null
 
         init {
             setHasStableIds(true)
         }
 
         override fun getItemId(position: Int): Long {
-            return data[position].id.id
+            return data[position].title.id
         }
 
         @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val webBook = data[position]
+            val grouped = data[position]
+            val currentSelected = grouped.currentSelected
             val binding = ItemWebBookListBinding.bind(holder.itemView)
-            binding.title.text = webBook.title
-            binding.lastRead.text = if (webBook.lastTitle.isNotEmpty()) {
-                "最近阅读: ${webBook.lastTitle}"
+            binding.title.text = currentSelected.title
+            binding.lastRead.text = if (currentSelected.lastTitle.isNotEmpty()) {
+                "最近阅读: ${currentSelected.lastTitle}"
             } else {
                 "最近阅读: 未阅读"
             }
-            binding.lastUpdateTime.text = "更新时间: ${sdf.format(webBook.updateTime)}"
-            binding.ivWebSite.glide(webBook.cover)
+            binding.lastUpdateTime.text = "更新时间: ${sdf.format(currentSelected.updateTime)}"
+            binding.ivWebSite.glide(currentSelected.cover)
+
+            // 显示来源信息
+            val sourceCount = grouped.webBooks.size
+            val currentDomain = currentSelected.url.toHttpUrlOrNull()?.topPrivateDomain()
+            binding.tvSourceInfo.text = "来源: $sourceCount ($currentDomain)"
+
+            // 只有当来源数量大于1时才显示切换按钮
+            if (sourceCount > 1) {
+                binding.ivSwitchSource.visibility = View.VISIBLE
+                binding.ivSwitchSource.click {
+                    onSwitchSourceClickListener?.invoke(grouped)
+                }
+            } else {
+                binding.ivSwitchSource.visibility = View.GONE
+            }
+
             binding.root.click {
-                onClickListener?.invoke(webBook)
+                onClickListener?.invoke(currentSelected)
             }
             binding.root.setOnLongClickListener {
-                onLongClickListener?.invoke(webBook)
+                onLongClickListener?.invoke(grouped)
                 true
             }
         }
     }
-
 
 }

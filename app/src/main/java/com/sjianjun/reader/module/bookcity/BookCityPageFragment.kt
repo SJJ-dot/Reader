@@ -297,18 +297,8 @@ class BookCityPageFragment : BaseFragment() {
             val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
             val homeUrl = data[position]
             binding.tvHost.text = homeUrl.title ?: homeUrl.url
-            if (homeUrl.supportSearch == true) {
+            if (homeUrl.supportSearch == false) {
                 binding.tvHostFlag.show()
-                binding.tvHostFlag.setColorFilter(
-                    R.color.colorPrimary.color(binding.root.context),
-                    android.graphics.PorterDuff.Mode.SRC_IN
-                )
-            } else if (homeUrl.supportSearch == false) {
-                binding.tvHostFlag.show()
-                binding.tvHostFlag.setColorFilter(
-                    R.color.mdr_grey_500.color(binding.root.context),
-                    android.graphics.PorterDuff.Mode.SRC_IN
-                )
             } else {
                 binding.tvHostFlag.gone()
             }
@@ -323,8 +313,11 @@ class BookCityPageFragment : BaseFragment() {
                 onLongClickListener(homeUrl)
                 true
             }
-            val isMark = globalConfig.bookCityUrl == homeUrl.url
-            binding.ivMark.imageTintList = ColorStateList.valueOf(if (isMark) R.color.colorPrimary.color() else R.color.mdr_grey_500.color())
+            if (globalConfig.bookCityUrl == homeUrl.url){
+                binding.ivMark.show()
+            } else {
+                binding.ivMark.gone()
+            }
 
             binding.ivMark.setOnClickListener {
                 globalConfig.bookCityUrl = homeUrl.url

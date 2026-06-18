@@ -56,12 +56,13 @@ fun WebSettings.setBackForwardCacheEnabled() {
 }
 
 
-fun WebView.init(headerMap: Map<String, String>? = null){
+fun WebView.init(headerMap: Map<String, String>? = null) {
     val cookieManager = CookieManager.getInstance();
     cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
     cookieManager.setAcceptThirdPartyCookies(this, true) // 启用第三方 Cookie
     scrollBarStyle = SCROLLBARS_INSIDE_OVERLAY
     settings.apply {
+        textZoom = globalConfig.webFontZoomSize
         setDarkening()
         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         domStorageEnabled = true

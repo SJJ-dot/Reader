@@ -154,4 +154,6 @@ class AppConfig(val name: String) :
      * 用户是否已同意隐私政策
      */
     val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }
+
+    var webFontZoomSize by intPref("webFontZoomSize", 100)
 }

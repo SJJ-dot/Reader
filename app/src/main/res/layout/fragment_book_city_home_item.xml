@@ -33,11 +33,11 @@
             android:layout_height="30dp"
             android:layout_margin="5dp"
             android:padding="5dp"
-            android:src="@mipmap/ic_thumbtack"
+            android:src="@drawable/ic_browser_home"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/tvHostFlag"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/mdr_grey_700"
+            app:tint="@color/colorPrimary"
             tools:ignore="RtlSymmetry" />
 
         <ImageView
@@ -48,7 +48,8 @@
             android:src="@drawable/ic_search_material"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/mdr_grey_500" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
