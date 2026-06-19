@@ -784,7 +784,7 @@ class BookReaderSettingFragment : BaseFragment() {
         super.onDestroyView()
     }
 
-    private sealed class ReaderSettingPopupItem {
+    sealed class ReaderSettingPopupItem {
         data class Action(
             val title: String,
             val onClick: (Action) -> Unit,
@@ -804,7 +804,7 @@ class BookReaderSettingFragment : BaseFragment() {
 
     }
 
-    private class ReaderSettingPopupAdapter : RecyclerView.Adapter<ViewHolder>() {
+    class ReaderSettingPopupAdapter : RecyclerView.Adapter<ViewHolder>() {
         private val data = mutableListOf<ReaderSettingPopupItem>()
 
         fun submitList(items: List<ReaderSettingPopupItem>) {
@@ -859,7 +859,7 @@ class BookReaderSettingFragment : BaseFragment() {
 
         override fun getItemCount(): Int = data.size
 
-        private class ActionViewHolder(
+        class ActionViewHolder(
             private val binding: ItemReaderSettingPopupActionBinding,
         ) : ViewHolder(binding.root) {
             fun bind(item: ReaderSettingPopupItem.Action) {
@@ -868,7 +868,7 @@ class BookReaderSettingFragment : BaseFragment() {
             }
         }
 
-        private class DetailViewHolder(
+        class DetailViewHolder(
             private val binding: ItemReaderSettingPopupDetailBinding,
         ) : ViewHolder(binding.root) {
             fun bind(item: ReaderSettingPopupItem.Detail) {
@@ -879,7 +879,7 @@ class BookReaderSettingFragment : BaseFragment() {
             }
         }
 
-        private class SwitchViewHolder(
+        class SwitchViewHolder(
             private val binding: ItemReaderSettingPopupSwitchBinding,
         ) : ViewHolder(binding.root) {
             fun bind(item: ReaderSettingPopupItem.Switch) {
@@ -922,7 +922,7 @@ class BookReaderSettingFragment : BaseFragment() {
         }
     }
 
-    class PageStyleAdapter(val fragment: BookReaderSettingFragment) : RecyclerView.Adapter<ViewHolder>() {
+    class PageStyleAdapter(val fragment: androidx.fragment.app.Fragment) : RecyclerView.Adapter<ViewHolder>() {
 
         val data = mutableListOf<PageStyle>()
         var itemLongClickListener: ((Int) -> Unit)? = null

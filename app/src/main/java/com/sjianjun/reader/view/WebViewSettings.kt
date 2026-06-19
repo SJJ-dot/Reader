@@ -17,6 +17,7 @@ import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
 import com.sjianjun.reader.module.bookcity.CustomWebView
 import com.sjianjun.reader.module.bookcity.getTitleFromMeta
 import com.sjianjun.reader.module.search.SearchViewModel
@@ -102,7 +103,7 @@ class WebViewSettings @JvmOverloads constructor(
             globalConfig.webFontZoomSize = webView.settings.textZoom
             binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
-        binding.menu.setOnClickListener {
+        binding.tvAdBlock.setOnClickListener {
             EventBus.post(EventKey.WEB_VIEW_SETTINGS)
             hide()
         }
@@ -153,6 +154,12 @@ class WebViewSettings @JvmOverloads constructor(
             historyList.add(0, url)
             globalConfig.bookCityUrlHistoryList.postValue(historyList)
             toast("添加成功")
+        }
+
+        binding.btnReadMode.setOnClickListener {
+            hide()
+            val url = customWebView?.currentWebView?.url ?: return@setOnClickListener
+            BrowserReadModeActivity.startActivity(context, url)
         }
     }
 

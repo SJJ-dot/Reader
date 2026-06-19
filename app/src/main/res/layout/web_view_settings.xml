@@ -197,31 +197,34 @@
 
         </RadioGroup>
 
-        <TextView
+        <LinearLayout
             android:id="@+id/tv_ad_block"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="广告拦截："
-            android:textColor="@color/dn_reader_chapter_title_text_color"
-            android:textSize="14dp"
-            app:layout_constraintBottom_toBottomOf="@+id/menu"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/menu" />
-
-        <ImageView
-            android:id="@+id/menu"
-            android:layout_width="wrap_content"
-            android:layout_height="25dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:scaleType="centerInside"
-            android:src="@mipmap/ic_ad_block"
+            android:background="@drawable/bg_primary_button"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tv_ad_block"
-            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin"
-            app:tint="@color/colorPrimary" />
+            app:layout_constraintEnd_toStartOf="@+id/btn_add_to_shelf"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="广告拦截"
+                android:textColor="@color/mdr_white"
+                android:textSize="14sp" />
+
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btn_add_to_shelf"
@@ -231,7 +234,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:background="@drawable/bg_primary_button"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:orientation="horizontal"
             android:paddingStart="12dp"
             android:paddingTop="6dp"
@@ -239,7 +242,7 @@
             android:paddingBottom="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_add_to_home"
-            app:layout_constraintStart_toEndOf="@+id/menu"
+            app:layout_constraintStart_toEndOf="@+id/tv_ad_block"
             app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
 
             <ImageView
@@ -265,14 +268,14 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:background="@drawable/bg_primary_button"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:orientation="horizontal"
             android:paddingStart="12dp"
             android:paddingTop="6dp"
             android:paddingEnd="16dp"
             android:paddingBottom="6dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btn_read_mode"
             app:layout_constraintStart_toEndOf="@+id/btn_add_to_shelf"
             app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
 
@@ -287,6 +290,34 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="+主页"
+                android:textColor="@color/mdr_white"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_read_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_primary_button"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/btn_add_to_home"
+            app:layout_constraintTop_toBottomOf="@+id/rg_cross_origin">
+
+            <TextView
+                android:id="@+id/tv_read_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="阅读模式"
                 android:textColor="@color/mdr_white"
                 android:textSize="14sp" />
         </LinearLayout>
