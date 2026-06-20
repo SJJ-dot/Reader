@@ -159,7 +159,7 @@ class WebViewSettings @JvmOverloads constructor(
         binding.btnReadMode.setOnClickListener {
             hide()
             val url = customWebView?.currentWebView?.url ?: return@setOnClickListener
-            BrowserReadModeActivity.startActivity(context, url)
+            BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
         }
     }
 

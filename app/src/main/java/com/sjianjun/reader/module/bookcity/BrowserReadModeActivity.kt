@@ -21,7 +21,9 @@ import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
+import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.ActivityBrowserReadModeBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -34,8 +36,10 @@ import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
@@ -54,6 +58,9 @@ import kotlin.time.Duration.Companion.milliseconds
 class BrowserReadModeActivity : BaseActivity() {
 
     private val startUrl by lazy { intent.getStringExtra(URL) ?: "" }
+    private val webBookId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
+
+    private var webBook: WebBook? = null
 
     private lateinit var binding: ActivityBrowserReadModeBinding
     private lateinit var hiddenWebView: WebView
@@ -62,6 +69,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private var currentUrl: String? = null
     private var prevChapterUrl: String? = null
     private var nextChapterUrl: String? = null
+    private var updateWebBookJob: Job? = null
+
+    private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
     val pageLoader: NetPageLoader get() = _pageLoader
     private lateinit var _pageLoader: NetPageLoader
@@ -93,6 +103,8 @@ class BrowserReadModeActivity : BaseActivity() {
 
         applyPageStyle()
         applyTextSize()
+        // 加载关联的 WebBook
+        loadWebBook()
         val cached = extractCache.get(startUrl)
         if (cached != null) {
             // 从内存缓存恢复，不重新加载
@@ -303,6 +315,36 @@ class BrowserReadModeActivity : BaseActivity() {
 
     // ==================== Content Extraction ====================
 
+    private fun loadWebBook() {
+        if (webBookId.isBlank()) return
+        lifecycleScope.launch {
+            try {
+                webBook = webDao.getWebBookById(webBookId).firstOrNull()
+            } catch (e: Exception) {
+                Log.e("loadWebBook error", e)
+            }
+        }
+    }
+
+    /** 如果当前 URL 与 WebBook 同域名，更新阅读进度（lastUrl/lastTitle/updateTime） */
+    private fun updateWebBookProgress(url: String, title: String) {
+        val book = webBook ?: return
+        val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
+        val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
+        if (urlHost == null || bookHost == null || urlHost != bookHost) return
+        updateWebBookJob?.cancel()
+        updateWebBookJob = lifecycleScope.launch {
+            book.lastUrl = url
+            book.lastTitle = title.ifBlank { book.lastTitle }
+            book.updateTime = System.currentTimeMillis()
+            try {
+                webDao.insertWebBook(book)
+            } catch (e: Exception) {
+                Log.e("updateWebBookProgress error", e)
+            }
+        }
+    }
+
     private fun loadUrlForReadMode(url: String) {
         currentUrl = url
         showLoadingChapter()
@@ -377,6 +419,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private fun showChapter(title: String, content: String, url: String) {
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
         extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl))
+
+        // 更新 WebBook 阅读进度（同域名时）
+        updateWebBookProgress(url, title)
 
         val book = Book().apply {
             this.url = url.ifBlank { "browser://reader" }
@@ -558,10 +603,13 @@ class BrowserReadModeActivity : BaseActivity() {
             return text
         }
 
-        fun startActivity(ctx: Context, url: String) {
+        fun startActivity(ctx: Context, url: String, webBookId: String? = null) {
             ctx.startActivity(
                 android.content.Intent(ctx, BrowserReadModeActivity::class.java).apply {
                     putExtra(URL, url)
+                    if (!webBookId.isNullOrBlank()) {
+                        putExtra(WEB_ID, webBookId)
+                    }
                 }
             )
         }

@@ -53,7 +53,7 @@ class CustomWebView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
     internal var lifecycleScope: LifecycleCoroutineScope? = null
     private var updateWebBookJob: Job? = null
-    private var webBook: WebBook? = null
+    var webBook: WebBook? = null
     private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     var adBlock: AdBlock? = null
