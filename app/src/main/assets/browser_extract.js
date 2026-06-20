@@ -103,12 +103,32 @@
         if (prev && next) break;
     }
 
+    // 4. 目录链接
+    var directory = '';
+    var dirKeys = ['目录', '章节列表', '返回目录', '回目录', 'Index', 'Table of Contents'];
+    for (var k = 0; k < anchors.length; k++) {
+        var a = anchors[k];
+        var t = (a.innerText || a.textContent || '').trim();
+        var id = (a.id || '').toLowerCase();
+        var cls = (a.className || '').toString().toLowerCase();
+        var href = a.getAttribute('href') || '';
+        if (!href || href === '#' || /^javascript:/i.test(href)) continue;
+        for (var d = 0; d < dirKeys.length; d++) {
+            if (t === dirKeys[d] || id.indexOf('chapterlist') >= 0 || id.indexOf('directory') >= 0) {
+                directory = abs(href);
+                break;
+            }
+        }
+        if (directory) break;
+    }
+
     return JSON.stringify({
         title: title,
         content: content,
         prev: prev,
         prevText: prevText,
         next: next,
-        nextText: nextText
+        nextText: nextText,
+        directory: directory
     });
 })();

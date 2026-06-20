@@ -490,18 +490,34 @@
             android:layout_height="wrap_content">
 
             <TextView
+                android:id="@+id/chapter_directory"
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="16dp"
+                android:text="目录"
+                android:textColor="@color/dn_text_color_black"
+                app:layout_constraintEnd_toStartOf="@+id/chapter_last"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
                 android:id="@+id/chapter_last"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?android:attr/selectableItemBackground"
-                android:paddingStart="32dp"
+                android:paddingStart="8dp"
                 android:paddingTop="16dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="16dp"
                 android:text="上一章"
                 android:textColor="@color/dn_text_color_black"
                 app:layout_constraintEnd_toStartOf="@+id/chapter_progress"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/chapter_directory"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ProgressBar

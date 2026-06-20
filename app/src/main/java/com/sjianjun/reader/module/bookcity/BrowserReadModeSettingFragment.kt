@@ -173,6 +173,10 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
     private fun initChapterNav() {
         val b = binding ?: return
+        b.chapterDirectory.click {
+            (activity as? BrowserReadModeActivity)?.openDrawer()
+            hideSelf()
+        }
         b.chapterLast.click {
             (activity as? BrowserReadModeActivity)?.gotoPrevChapter()
             hideSelf()
@@ -188,6 +192,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val activity = activity as? BrowserReadModeActivity ?: return
         val loader = pageLoader ?: return
 
+        b.chapterDirectory.visibility = if (activity.directoryUrl.isNullOrBlank()) View.GONE else View.VISIBLE
         b.chapterLast.text = activity.prevChapterText?.takeIf { it.isNotBlank() } ?: "上一章"
         b.chapterNext.text = activity.nextChapterText?.takeIf { it.isNotBlank() } ?: "下一章"
 

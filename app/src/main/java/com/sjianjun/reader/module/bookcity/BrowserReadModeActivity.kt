@@ -17,6 +17,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.GravityCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -74,6 +76,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private var nextChapterUrl: String? = null
     var nextChapterText: String? = null
         private set
+    var directoryUrl: String? = null
+    private var chapterList = mutableListOf<ChapterLink>()
+    private var directoryNextPageUrl: String? = null
     private var updateWebBookJob: Job? = null
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
@@ -101,6 +106,7 @@ class BrowserReadModeActivity : BaseActivity() {
         setupInsets()
         setupPageLoader()
         setupTouchListener()
+        setupChapterList()
         setupSettingsObserver()
         setupTts()
         initBackPressed()
@@ -117,9 +123,85 @@ class BrowserReadModeActivity : BaseActivity() {
             prevChapterText = cached.prevText
             nextChapterUrl = cached.nextUrl
             nextChapterText = cached.nextText
+            directoryUrl = cached.directory
             showChapter(cached.title, cached.content, startUrl)
         } else {
             loadUrlForReadMode(startUrl)
+        }
+    }
+
+    private fun setupChapterList() {
+        binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        binding.chapterListRv.adapter = ChapterListAdapter { link ->
+            loadUrlForReadMode(link.url)
+            binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END)
+        }
+        binding.btnChapterListNextPage.setOnClickListener {
+            val next = directoryNextPageUrl
+            if (!next.isNullOrBlank()) {
+                loadChapterList(next)
+            }
+        }
+        binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: View) {
+                if (chapterList.isEmpty() && !directoryUrl.isNullOrBlank()) {
+                    loadChapterList(directoryUrl!!)
+                }
+            }
+        })
+    }
+
+    fun openDrawer() {
+        binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END)
+        if (chapterList.isEmpty() && !directoryUrl.isNullOrBlank()) {
+            loadChapterList(directoryUrl!!)
+        }
+    }
+
+    private fun loadChapterList(url: String) {
+        lifecycleScope.launch {
+            if (url == directoryUrl && chapterList.isNotEmpty()) {
+                // Already loading or loaded
+                return@launch
+            }
+            binding.btnChapterListNextPage.text = "正在加载..."
+            binding.btnChapterListNextPage.visibility = View.VISIBLE
+
+            hiddenWebView.loadUrl(url)
+            var retry = 0
+            while (retry < 50) {
+                delay(200.milliseconds)
+                if (hiddenWebView.url == url && hiddenWebView.progress >= 100) break
+                retry++
+            }
+            delay(300.milliseconds)
+
+            val js = loadDirectoryExtractJs(this@BrowserReadModeActivity)
+            hiddenWebView.evaluateJavascript(js) { raw ->
+                try {
+                    val jsonStr = unwrapJsString(raw)
+                    val obj = JSONObject(jsonStr)
+                    val chapters = obj.optJSONArray("chapters")
+                    if (chapters != null) {
+                        val list = mutableListOf<ChapterLink>()
+                        for (i in 0 until chapters.length()) {
+                            val c = chapters.getJSONObject(i)
+                            list.add(ChapterLink(c.optString("title"), c.optString("url")))
+                        }
+                        if (url == directoryUrl) {
+                            chapterList.clear()
+                        }
+                        chapterList.addAll(list)
+                        (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(chapterList.toList())
+                    }
+                    directoryNextPageUrl = obj.optString("nextPage", "").takeIf { it.isNotBlank() }
+                    binding.btnChapterListNextPage.text = "下一页"
+                    binding.btnChapterListNextPage.visibility = if (directoryNextPageUrl.isNullOrBlank()) View.GONE else View.VISIBLE
+                } catch (e: Exception) {
+                    Log.e("loadChapterList err", e)
+                    binding.btnChapterListNextPage.text = "加载失败，点击重试"
+                }
+            }
         }
     }
 
@@ -154,6 +236,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 right = params.insetRight + safeRight,
                 bottom = params.insetBottom + safeBottom,
             )
+            binding.chapterListDrawer.setPadding(0, safeTop, 0, safeBottom)
             insets
         }
     }
@@ -364,6 +447,11 @@ class BrowserReadModeActivity : BaseActivity() {
                 showErrorChapter()
                 return@launch
             }
+            if (directoryUrl != data.directory) {
+                chapterList.clear()
+                (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
+            }
+            directoryUrl = data.directory
             prevChapterUrl = data.prevUrl
             prevChapterText = data.prevText
             nextChapterUrl = data.nextUrl
@@ -429,7 +517,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun showChapter(title: String, content: String, url: String) {
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
-        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl, prevChapterText, nextChapterText))
+        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl, prevChapterText, nextChapterText, directoryUrl))
 
         // 更新 WebBook 阅读进度（同域名时）
         updateWebBookProgress(url, title)
@@ -571,6 +659,7 @@ class BrowserReadModeActivity : BaseActivity() {
         val nextUrl: String?,
         val prevText: String? = null,
         val nextText: String? = null,
+        val directory: String? = null,
     )
 
     private suspend fun WebView.extractContent(): ExtractResult {
@@ -586,7 +675,8 @@ class BrowserReadModeActivity : BaseActivity() {
                     val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
                     val next = obj.optString("next", "").takeIf { it.isNotBlank() }
                     val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
-                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText))
+                    val directory = obj.optString("directory", "").takeIf { it.isNotBlank() }
+                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, directory))
                 } catch (t: Throwable) {
                     Log.e("extractContent err", t)
                     if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
@@ -604,6 +694,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     companion object {
         @Volatile private var cachedJs: String? = null
+        @Volatile private var cachedDirectoryJs: String? = null
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult>(10)
@@ -618,6 +709,16 @@ class BrowserReadModeActivity : BaseActivity() {
             return text
         }
 
+        private fun loadDirectoryExtractJs(context: Context): String {
+            cachedDirectoryJs?.let { return it }
+            val text = context.applicationContext.assets
+                .open("browser_extract_directory.js")
+                .bufferedReader()
+                .use { it.readText() }
+            cachedDirectoryJs = text
+            return text
+        }
+
         fun startActivity(ctx: Context, url: String, webBookId: String? = null) {
             ctx.startActivity(
                 android.content.Intent(ctx, BrowserReadModeActivity::class.java).apply {
@@ -627,6 +728,28 @@ class BrowserReadModeActivity : BaseActivity() {
                     }
                 }
             )
+        }
+    }
+
+    data class ChapterLink(val title: String, val url: String)
+
+    class ChapterListAdapter(private val onClick: (ChapterLink) -> Unit) : androidx.recyclerview.widget.ListAdapter<ChapterLink, ChapterListAdapter.ViewHolder>(
+        object : androidx.recyclerview.widget.DiffUtil.ItemCallback<ChapterLink>() {
+            override fun areItemsTheSame(oldItem: ChapterLink, newItem: ChapterLink) = oldItem.url == newItem.url
+            override fun areContentsTheSame(oldItem: ChapterLink, newItem: ChapterLink) = oldItem == newItem
+        }
+    ) {
+        class ViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+            val textView: android.widget.TextView = view.findViewById(R.id.chapter_title)
+        }
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
+            val view = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_browser_chapter, parent, false)
+            return ViewHolder(view)
+        }
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = getItem(position)
+            holder.textView.text = item.title
+            holder.itemView.setOnClickListener { onClick(item) }
         }
     }
 }
