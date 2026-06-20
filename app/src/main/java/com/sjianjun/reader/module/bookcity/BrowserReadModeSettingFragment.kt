@@ -45,6 +45,7 @@ import sjj.novel.view.reader.page.PageStyle
 import java.io.File
 
 class BrowserReadModeSettingFragment : BaseFragment() {
+    private var settingPopupWindow: android.widget.PopupWindow? = null
     private var binding: BrowserReadModeSettingsBinding? = null
     private var onExit: (() -> Unit)? = null
     private var titleText: String = ""
@@ -59,6 +60,12 @@ class BrowserReadModeSettingFragment : BaseFragment() {
     fun setArgs(title: String, onExit: () -> Unit) {
         this.titleText = title
         this.onExit = onExit
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        binding?.settingSample?.isVisible = true
+        binding?.settingDetail?.isVisible = false
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -84,9 +91,15 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             insets
         }
 
-        // --- Top bar ---
+        // 恢复标题：夜间模式切换导致 Activity 重建后 titleText 丢失，从 pageLoader 恢复
+        if (titleText.isBlank()) {
+            titleText = pageLoader?.chapterCategory?.getOrNull(pageLoader?.chapterPos ?: 0)?.title ?: ""
+        }
         b.bookTitle.text = titleText
-        b.topBarBack.click(10) { onExit?.invoke() }
+        b.topBarBack.click(10) {
+            onExit?.invoke()
+            (activity as? BrowserReadModeActivity)?.finish()
+        }
         b.topBarSettingsMore.click(100) { v -> showPopupMenu(v) }
 
         // --- Bottom buttons ---
@@ -130,7 +143,14 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
         b.root.click { hideSelf() }
 
-        setOnBackPressed { hideSelf(); true }
+        setOnBackPressed {
+            if (isVisible) {
+                hideSelf()
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun applyAllSettings() {
@@ -170,6 +190,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                     globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value!!)
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 }
+
                 else -> {
                     globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
                     globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value!!)
@@ -300,12 +321,27 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                             if (globalConfig.readerFontFamily.value == fontInfo) {
                                 globalConfig.readerFontFamily.postValue(FontInfo.DEFAULT)
                             }
+                        } else {
+                            toast("字体文件不存在，无法删除:${fontInfo.name}")
                         }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
+            } else {
+                toast("内置字体无法删除:${fontInfo.name}")
             }
         }
+        fontAdapter.data = mutableListOf(
+            FontInfo.DEFAULT,
+            FontInfo("楷体", resId = R.font.fangzhengkaiti, isAsset = true)
+        )
+        val fontFiles = File(requireContext().filesDir, "font").listFiles()
+        fontFiles?.forEach {
+            if (it.isFile) {
+                fontAdapter.data.add(FontInfo(it.nameWithoutExtension, it.path))
+            }
+        }
+        fontAdapter.notifyDataSetChanged()
     }
 
     private val REQUEST_CODE_PICK_FONT = 10001
@@ -367,6 +403,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                 globalConfig.readerFontFamily.postValue(
                     FontInfo(name = fontName, path = destFile.absolutePath, isAsset = false, resId = 0)
                 )
+                initFontListData()
                 toast("字体导入成功")
             } catch (e: Exception) {
                 Log.e("字体导入失败", e)
@@ -399,6 +436,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         }
         val xOff = anchor.width - popupWidth
         popupWindow.showAsDropDown(anchor, xOff, 8.dp2Px)
+        settingPopupWindow = popupWindow
     }
 
     private fun buildPopupItems(adapter: BookReaderSettingFragment.ReaderSettingPopupAdapter): List<BookReaderSettingFragment.ReaderSettingPopupItem> {
@@ -453,6 +491,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
     }
 
     private fun hideSelf() {
+        settingPopupWindow?.dismiss()
         parentFragmentManager.beginTransaction().hide(this).commitAllowingStateLoss()
     }
 

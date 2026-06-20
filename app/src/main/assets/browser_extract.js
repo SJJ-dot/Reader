@@ -71,8 +71,8 @@
 
     // 3. 上一章 / 下一章 链接：扫描 a 标签，根据文本与常见 id/class
     var prev = '', next = '';
-    var prevKeys = ['上一章', '上一頁', '上页', '上一页', '上一节', 'prev', 'previous', '\u4e0a\u7ae0'];
-    var nextKeys = ['下一章', '下一頁', '下页', '下一页', '下一节', 'next', '\u4e0b\u7ae0'];
+    var prevKeys = ['上一章', '上一頁','上章', '上頁', '上页', '上一页', '上一节', 'prev', 'previous', '\u4e0a\u7ae0'];
+    var nextKeys = ['下一章', '下一頁','下章', '下頁', '下页', '下一页', '下一节', 'next', '\u4e0b\u7ae0'];
     var anchors = document.querySelectorAll('a[href]');
     for (var k = 0; k < anchors.length; k++) {
         var a = anchors[k];

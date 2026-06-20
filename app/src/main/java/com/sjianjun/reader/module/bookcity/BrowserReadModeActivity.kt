@@ -2,15 +2,21 @@ package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
+import android.util.LruCache
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -19,9 +25,13 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.databinding.ActivityBrowserReadModeBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.event.observe
+import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.TtsService
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,12 +39,15 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
+import sjj.novel.view.reader.page.DisplayParams
 import sjj.novel.view.reader.page.NetPageLoader
 import sjj.novel.view.reader.page.PageLoader
+import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
 import sjj.novel.view.reader.page.PageMode
 import sjj.novel.view.reader.page.PageStyle
 import sjj.novel.view.reader.page.PageView
 import sjj.novel.view.reader.page.TxtChapter
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -49,7 +62,6 @@ class BrowserReadModeActivity : BaseActivity() {
     private var currentUrl: String? = null
     private var prevChapterUrl: String? = null
     private var nextChapterUrl: String? = null
-    private var settingsVisible = false
 
     val pageLoader: NetPageLoader get() = _pageLoader
     private lateinit var _pageLoader: NetPageLoader
@@ -63,6 +75,8 @@ class BrowserReadModeActivity : BaseActivity() {
             return
         }
         binding = ActivityBrowserReadModeBinding.inflate(layoutInflater)
+        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        enableEdgeToEdge(pageStyle.isDark)
         setContentView(binding.root)
 
         hiddenWebView = binding.hiddenWebView
@@ -74,20 +88,53 @@ class BrowserReadModeActivity : BaseActivity() {
         setupTouchListener()
         setupButtons()
         setupSettingsObserver()
+        setupTts()
+        initBackPressed()
 
-        enterImmersiveMode()
         applyPageStyle()
         applyTextSize()
-        loadUrlForReadMode(startUrl)
+        val cached = extractCache.get(startUrl)
+        if (cached != null) {
+            // 从内存缓存恢复，不重新加载
+            currentUrl = startUrl
+            prevChapterUrl = cached.prevUrl
+            nextChapterUrl = cached.nextUrl
+            showChapter(cached.title, cached.content, startUrl)
+        } else {
+            loadUrlForReadMode(startUrl)
+        }
     }
 
     // ==================== Setup ====================
 
+    private fun enableEdgeToEdge(isDark: Boolean) {
+        if (isDark) {
+            enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+                navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+            )
+        } else {
+            enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+                navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+            )
+        }
+    }
+
     private fun setupInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.readModeSettingContainer.setPadding(
-                systemBars.left, systemBars.top, systemBars.right, systemBars.bottom
+            val cutout = insets.displayCutout
+            val safeLeft = maxOf(systemBars.left, cutout?.safeInsetLeft ?: 0)
+            val safeTop = maxOf(systemBars.top, cutout?.safeInsetTop ?: 0)
+            val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
+            val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
+            val params = DisplayParams()
+            _pageLoader.mDisplayParams.setInsets(
+                left = params.insetLeft + safeLeft,
+                top = params.insetTop + safeTop,
+                right = params.insetRight + safeRight,
+                bottom = params.insetBottom + safeBottom,
             )
             insets
         }
@@ -98,30 +145,92 @@ class BrowserReadModeActivity : BaseActivity() {
             binding.readModePageView.pageLoader = loader
             loader.initPageView(binding.readModePageView)
             loader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
-                override fun requestChapters(requestChapters: MutableList<TxtChapter>) {}
+                override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
+                    // 用 LruCache 中对应 URL 的缓存填充章节内容
+                    var filled = false
+                    requestChapters.forEach { ch ->
+                        if (ch.content.isNullOrBlank()) {
+                            val link = ch.link ?: return@forEach
+                            val cached = extractCache.get(link)
+                            if (cached != null && cached.content.isNotBlank()) {
+                                ch.content = cached.content
+                                ch.title = cached.title
+                                filled = true
+                            }
+                        }
+                    }
+                    if (filled && loader.pageStatus == STATUS_LOADING) {
+                        loader.openChapter()
+                    }
+                }
                 override fun onBookRecordChange(bean: BookRecordBean) {}
             })
+        }
+        // 初始化净化替换规则
+        lifecycleScope.launch {
+            pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
         }
     }
 
     private fun setupTouchListener() {
         binding.readModePageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
-                if (settingsVisible && event?.action == MotionEvent.ACTION_UP) {
-                    hideSettings()
-                    return true
-                }
-                return false
+                // 隐藏设置对话框
+                return getSettingFragment()?.let {
+                    if (it.isVisible && event?.action == MotionEvent.ACTION_UP) {
+                        supportFragmentManager.beginTransaction()
+                            .hide(it)
+                            .commitAllowingStateLoss()
+                    }
+                    it.isVisible
+                } ?: false
             }
 
             override fun onTap(x: Float, y: Float, viewWidth: Int, viewHeight: Int) {
-                val cx = viewWidth / 3f
-                val cy = viewHeight / 3f
-                if (x > cx && x < cx * 2 && y > cy && y < cy * 2) {
-                    if (settingsVisible) hideSettings() else showSettings()
-                }
+                val actions = ReaderClickAreaAction.normalize(globalConfig.readerClickAreaActions.value)
+                val cellIndex = ReaderClickAreaAction.cellIndexOf(x, y, viewWidth, viewHeight)
+                val action = actions.getOrElse(cellIndex) { ReaderClickAreaAction.MENU }
+                handleReaderClickAction(action)
             }
         })
+    }
+
+    private fun handleReaderClickAction(action: Int) {
+        when (action) {
+            ReaderClickAreaAction.PREV_PAGE -> binding.readModePageView.performPageTap(false)
+            ReaderClickAreaAction.NEXT_PAGE -> binding.readModePageView.performPageTap(true)
+            ReaderClickAreaAction.MENU -> {
+                binding.readModeSettingContainer.visibility = View.VISIBLE
+                getSettingFragment(create = true)?.let {
+                    supportFragmentManager.beginTransaction()
+                        .show(it)
+                        .commitAllowingStateLoss()
+                }
+            }
+            ReaderClickAreaAction.PREV_CHAPTER -> gotoPrevChapter()
+            ReaderClickAreaAction.NEXT_CHAPTER -> gotoNextChapter()
+            ReaderClickAreaAction.NONE -> {}
+        }
+    }
+
+    private fun getSettingFragment(create: Boolean = false): BrowserReadModeSettingFragment? {
+        val fm = supportFragmentManager
+        val fragment = fm.findFragmentByTag(BrowserReadModeSettingFragment.TAG)
+        if (fragment != null && fragment is BrowserReadModeSettingFragment) {
+            return fragment
+        }
+        if (create) {
+            val title = pageLoader.chapterCategory?.getOrNull(pageLoader.chapterPos)?.title ?: ""
+            val newFragment = BrowserReadModeSettingFragment().apply {
+                setArgs(title) { finish() }
+            }
+            fm.beginTransaction()
+                .add(R.id.read_mode_setting_container, newFragment, BrowserReadModeSettingFragment.TAG)
+                .hide(newFragment)
+                .commitAllowingStateLoss()
+            return newFragment
+        }
+        return null
     }
 
     private fun setupButtons() {
@@ -154,40 +263,42 @@ class BrowserReadModeActivity : BaseActivity() {
         globalConfig.readerTypesettingMode.observe(this) {
             pageLoader.setTypesettingMode(it)
         }
-    }
-
-    // ==================== Settings Show/Hide ====================
-
-    private fun showSettings() {
-        settingsVisible = true
-        binding.btnReadModePrevChapter.visibility = View.VISIBLE
-        binding.btnReadModeNextChapter.visibility = View.VISIBLE
-        binding.readModeSettingContainer.visibility = View.VISIBLE
-
-        val title = pageLoader.chapterCategory?.getOrNull(pageLoader.chapterPos)?.title ?: ""
-        val fm = supportFragmentManager
-        var fragment = fm.findFragmentByTag(BrowserReadModeSettingFragment.TAG) as? BrowserReadModeSettingFragment
-        if (fragment == null) {
-            fragment = BrowserReadModeSettingFragment().apply {
-                setArgs(title) { finish() }
+        globalConfig.readerFontFamily.observe(this) {
+            if (it.isAsset) {
+                if (it.resId == 0) {
+                    pageLoader.setTypeface(null)
+                } else {
+                    val typeface = ResourcesCompat.getFont(this, it.resId)
+                    pageLoader.setTypeface(typeface)
+                }
+            } else {
+                val typeface = Typeface.createFromFile(File(it.path!!))
+                pageLoader.setTypeface(typeface)
             }
-            fm.beginTransaction()
-                .add(R.id.read_mode_setting_container, fragment, BrowserReadModeSettingFragment.TAG)
-                .commitNowAllowingStateLoss()
-        } else {
-            fragment.setArgs(title) { finish() }
         }
-        fm.beginTransaction().show(fragment).commitAllowingStateLoss()
+        // 净化替换规则变更
+        observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
+            lifecycleScope.launch {
+                pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
+                // reloadPages() 会触发 requestChapters() 回调，
+                pageLoader.reloadPages()
+            }
+        }
     }
 
-    private fun hideSettings() {
-        settingsVisible = false
-        val fm = supportFragmentManager
-        val fragment = fm.findFragmentByTag(BrowserReadModeSettingFragment.TAG) as? BrowserReadModeSettingFragment
-        if (fragment != null && fragment.isVisible) {
-            fm.beginTransaction().hide(fragment).commitAllowingStateLoss()
+    private fun initBackPressed() {
+        setOnBackPressed {
+            val fragment = getSettingFragment()
+            when {
+                fragment?.isVisible == true -> {
+                    supportFragmentManager.beginTransaction()
+                        .hide(fragment)
+                        .commitAllowingStateLoss()
+                    true
+                }
+                else -> false
+            }
         }
-        binding.readModeSettingContainer.visibility = View.GONE
     }
 
     // ==================== Content Extraction ====================
@@ -217,19 +328,12 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun refresh() {
-        val url = currentUrl ?: return
-        showLoadingChapter()
-        extractJob?.cancel()
-        extractJob = lifecycleScope.launch {
-            val data = extractWithRetry(hiddenWebView)
-            if (data == null || data.content.isBlank()) {
-                showErrorChapter()
-                return@launch
-            }
-            prevChapterUrl = data.prevUrl
-            nextChapterUrl = data.nextUrl
-            showChapter(data.title, data.content, url)
+        val url = currentUrl
+        if (url.isNullOrBlank()) {
+            toast("当前没有加载的页面，无法刷新")
+            return
         }
+        loadUrlForReadMode(url)
     }
 
     private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
@@ -271,6 +375,9 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     private fun showChapter(title: String, content: String, url: String) {
+        // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
+        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl))
+
         val book = Book().apply {
             this.url = url.ifBlank { "browser://reader" }
             this.title = title.ifBlank { "Reader" }
@@ -292,6 +399,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun applyPageStyle() {
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        enableEdgeToEdge(pageStyle.isDark)
         pageLoader.setPageStyle(pageStyle)
         val mode = PageMode.entries.getOrNull(globalConfig.readerPageMode.value ?: 0) ?: PageMode.SIMULATION
         pageLoader.setPageMode(mode)
@@ -305,13 +413,6 @@ class BrowserReadModeActivity : BaseActivity() {
         if (ts > 0f) pageLoader.setTextSize(ts, ls, ps, lts / 100f)
     }
 
-    private fun enterImmersiveMode() {
-        WindowInsetsControllerCompat(window, binding.root).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
-
     private fun applyReaderOrientation(mode: Int) {
         requestedOrientation = when (mode) {
             1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -323,17 +424,91 @@ class BrowserReadModeActivity : BaseActivity() {
 
     // ==================== Lifecycle ====================
 
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (globalConfig.readerVolumeKeyPageTurn.value == true) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    handleReaderClickAction(ReaderClickAreaAction.PREV_PAGE)
+                    return true
+                }
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    handleReaderClickAction(ReaderClickAreaAction.NEXT_PAGE)
+                    return true
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        TtsService.stop()
+        TtsService.progressChangeCallback = null
+        TtsService.onCompleted = null
         extractJob?.cancel()
         hiddenWebView.destroy()
     }
 
     // ==================== TTS ====================
 
+    private fun setupTts() {
+        TtsService.progressChangeCallback = { textLine ->
+            lifecycleScope.launch {
+                val loader = pageLoader
+                if (loader.chapterPos != TtsService.chapterPos) {
+                    loader.skipToChapter(TtsService.chapterPos)
+                }
+                val page = loader.curPageList?.find { page ->
+                    page.lines.find { textLine == it } != null
+                }
+                loader.setTtsSpeakLine(textLine)
+                if (page != null && page.position != loader.pagePos) {
+                    loader.skipToPage(page.position)
+                }
+            }
+        }
+        TtsService.onCompleted = {
+            pageLoader.setTtsSpeakLine(null)
+            // 浏览器阅读模式只有一章，朗读完成后自动跳转下一章
+            val url = nextChapterUrl
+            if (!url.isNullOrBlank()) {
+                Log.i("TTS 章节切换，继续朗读")
+                loadUrlForReadMode(url)
+                // 页面加载完成后自动开始朗读
+                extractJob?.invokeOnCompletion {
+                    if (TtsService.isSpeaking.value != true && pageLoader.curPageList?.isNotEmpty() == true) {
+                        EventBus.post(EventKey.CHAPTER_SPEAK)
+                    }
+                }
+            } else {
+                Log.i("TTS 没有下一章，朗读结束")
+            }
+        }
+        observe<String>(EventKey.CHAPTER_SPEAK) {
+            lifecycleScope.launch {
+                if (TtsService.isSpeaking.value == true) {
+                    TtsService.stop()
+                    pageLoader.setTtsSpeakLine(null)
+                    Log.i("停止朗读")
+                    return@launch
+                }
+                if (pageLoader.pageStatus == STATUS_LOADING) {
+                    toast("正在加载中")
+                    return@launch
+                }
+                if (pageLoader.curPageList.isNullOrEmpty()) {
+                    toast("章节内容为空")
+                    return@launch
+                }
+                Log.i("开始朗读 chapterPos:${pageLoader.chapterPos} pageSize:${pageLoader.curPageList?.size}")
+                TtsService.start(pageLoader.chapterPos, pageLoader.curPageList, pageLoader.pagePos)
+            }
+        }
+    }
+
     // ==================== Extract helpers ====================
 
-    private data class ExtractResult(
+    data class ExtractResult(
         val title: String,
         val content: String,
         val prevUrl: String?,
@@ -369,6 +544,9 @@ class BrowserReadModeActivity : BaseActivity() {
 
     companion object {
         @Volatile private var cachedJs: String? = null
+
+        /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
+        val extractCache = LruCache<String, ExtractResult>(10)
 
         private fun loadExtractJs(context: Context): String {
             cachedJs?.let { return it }

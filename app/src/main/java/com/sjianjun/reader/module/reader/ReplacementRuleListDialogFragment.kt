@@ -35,6 +35,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         onMoveDown = { rule -> moveRule(rule, false) },
         onEdit = { rule -> openEditor(rule.id) },
         onDelete = { rule -> deleteRule(rule) },
+        onToggleEnabled = { rule -> toggleRule(rule) },
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,6 +99,15 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         }
     }
 
+    private fun toggleRule(rule: ReplacementRule) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            rule.isEnabled = !rule.isEnabled
+            ReplacementRuleUseCase.saveRule(rule)
+            loadRules()
+            EventBus.post(EventKey.REPLACEMENT_RULES_CHANGED)
+        }
+    }
+
     private fun moveRule(rule: ReplacementRule, moveUp: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
             val rules = ReplacementRuleUseCase.moveRule(rule.id, moveUp)
@@ -136,6 +146,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         private val onMoveDown: (ReplacementRule) -> Unit,
         private val onEdit: (ReplacementRule) -> Unit,
         private val onDelete: (ReplacementRule) -> Unit,
+        private val onToggleEnabled: (ReplacementRule) -> Unit,
     ) : RecyclerView.Adapter<RuleAdapter.RuleViewHolder>() {
         private val data = mutableListOf<ReplacementRule>()
 
@@ -171,6 +182,8 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
                 binding.btnMoveDown.setOnClickListener { if (position < lastIndex) onMoveDown(rule) }
                 binding.btnEdit.setOnClickListener { onEdit(rule) }
                 binding.btnDelete.setOnClickListener { onDelete(rule) }
+                // 点击 item 切换启用/禁用
+                binding.root.setOnClickListener { onToggleEnabled(rule) }
             }
         }
     }
