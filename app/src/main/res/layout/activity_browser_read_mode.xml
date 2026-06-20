@@ -17,42 +17,6 @@
         android:layout_height="0dp"
         android:visibility="gone" />
 
-    <!-- 上一章按钮 -->
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/btn_read_mode_prev_chapter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginBottom="12dp"
-        android:paddingStart="12dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="6dp"
-        android:text="上一章"
-        android:textColor="@color/mdr_white"
-        android:textSize="13sp"
-        android:visibility="gone"
-        app:stv_corner="16dp"
-        app:stv_solid="@color/colorPrimary" />
-
-    <!-- 下一章按钮 -->
-    <com.coorchice.library.SuperTextView
-        android:id="@+id/btn_read_mode_next_chapter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="12dp"
-        android:paddingStart="12dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="6dp"
-        android:text="下一章"
-        android:textColor="@color/mdr_white"
-        android:textSize="13sp"
-        android:visibility="gone"
-        app:stv_corner="16dp"
-        app:stv_solid="@color/colorPrimary" />
-
     <!-- 设置面板容器 -->
     <FrameLayout
         android:id="@+id/read_mode_setting_container"

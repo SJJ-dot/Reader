@@ -639,6 +639,18 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 
+        <ImageView
+            android:id="@+id/top_bar_browser"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_browser_home"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/dn_text_color_black" />
+
         <TextView
             android:id="@+id/book_title"
             android:layout_width="0dp"
@@ -648,14 +660,14 @@
             android:background="?android:attr/selectableItemBackground"
             android:ellipsize="end"
             android:gravity="center_vertical"
-            android:lines="1"
+            android:maxLines="2"
             android:textColor="@color/dn_text_color_black"
             android:textSize="20dp"
             app:autoSizeMaxTextSize="20dp"
-            app:layout_constraintBottom_toBottomOf="@+id/top_bar_back"
             app:autoSizeMinTextSize="14dp"
             app:autoSizeTextType="uniform"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintBottom_toBottomOf="@+id/top_bar_back"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_browser"
             app:layout_constraintStart_toEndOf="@+id/top_bar_back"
             app:layout_constraintTop_toTopOf="@+id/top_bar_back"
             tools:text="阅读模式" />

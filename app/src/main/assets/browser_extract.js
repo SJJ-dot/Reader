@@ -70,7 +70,7 @@
     }
 
     // 3. 上一章 / 下一章 链接：扫描 a 标签，根据文本与常见 id/class
-    var prev = '', next = '';
+    var prev = '', next = '', prevText = '', nextText = '';
     var prevKeys = ['上一章', '上一頁','上章', '上頁', '上页', '上一页', '上一节', 'prev', 'previous', '\u4e0a\u7ae0'];
     var nextKeys = ['下一章', '下一頁','下章', '下頁', '下页', '下一页', '下一节', 'next', '\u4e0b\u7ae0'];
     var anchors = document.querySelectorAll('a[href]');
@@ -92,8 +92,14 @@
                 matchNext = true; break;
             }
         }
-        if (matchPrev && !prev) prev = abs(href);
-        if (matchNext && !next) next = abs(href);
+        if (matchPrev && !prev) {
+            prev = abs(href);
+            prevText = t;
+        }
+        if (matchNext && !next) {
+            next = abs(href);
+            nextText = t;
+        }
         if (prev && next) break;
     }
 
@@ -101,6 +107,8 @@
         title: title,
         content: content,
         prev: prev,
-        next: next
+        prevText: prevText,
+        next: next,
+        nextText: nextText
     });
 })();

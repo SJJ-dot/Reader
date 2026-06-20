@@ -64,8 +64,11 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        binding?.settingSample?.isVisible = true
-        binding?.settingDetail?.isVisible = false
+        if (!hidden) {
+            binding?.settingSample?.isVisible = true
+            binding?.settingDetail?.isVisible = false
+            refreshNavAndProgress()
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -101,6 +104,9 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             (activity as? BrowserReadModeActivity)?.finish()
         }
         b.topBarSettingsMore.click(100) { v -> showPopupMenu(v) }
+        b.topBarBrowser.click(10) {
+            (activity as? BrowserReadModeActivity)?.openInBrowser()
+        }
 
         // --- Bottom buttons ---
         // TTS
@@ -140,6 +146,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         initFontList()
         initChapterNav()
         applyAllSettings()
+        refreshNavAndProgress()
 
         b.root.click { hideSelf() }
 
@@ -174,6 +181,20 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             (activity as? BrowserReadModeActivity)?.gotoNextChapter()
             hideSelf()
         }
+    }
+
+    private fun refreshNavAndProgress() {
+        val b = binding ?: return
+        val activity = activity as? BrowserReadModeActivity ?: return
+        val loader = pageLoader ?: return
+
+        b.chapterLast.text = activity.prevChapterText?.takeIf { it.isNotBlank() } ?: "上一章"
+        b.chapterNext.text = activity.nextChapterText?.takeIf { it.isNotBlank() } ?: "下一章"
+
+        val curPage = loader.pagePos + 1
+        val totalPages = loader.curPageList?.size ?: 0
+        b.chapterProgress.max = totalPages
+        b.chapterProgress.progress = curPage
     }
 
     private fun initDayNight() {

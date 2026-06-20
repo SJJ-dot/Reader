@@ -101,6 +101,13 @@ class SettingsFragment : Fragment() {
             autoCheckUpdateSwitch.setOnCheckedChangeListener { _, isChecked ->
                 globalConfig.autoCheckUpdate.postValue(isChecked)
             }
+
+            globalConfig.autoBrowserReadMode.observe(viewLifecycleOwner) {
+                autoBrowserReadModeSwitch.isChecked = it
+            }
+            autoBrowserReadModeSwitch.setOnCheckedChangeListener { _, isChecked ->
+                globalConfig.autoBrowserReadMode.postValue(isChecked)
+            }
         }
     }
 

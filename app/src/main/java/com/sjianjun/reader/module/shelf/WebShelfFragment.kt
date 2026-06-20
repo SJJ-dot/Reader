@@ -19,7 +19,9 @@ import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.DialogWebBookInputBinding
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemWebBookListBinding
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.id
 import com.sjianjun.reader.utils.toast
@@ -66,7 +68,12 @@ class WebShelfFragment : BaseFragment() {
     private fun init() {
         binding?.recycleView?.adapter = adapter
         adapter.onClickListener = { webBook ->
-            WebViewBrowserActivity.startActivity(requireContext(), id = webBook.id)
+            if (globalConfig.autoBrowserReadMode.value == true) {
+                val url = webBook.lastUrl ?: webBook.url
+                BrowserReadModeActivity.startActivity(requireContext(), url, webBook.id)
+            } else {
+                WebViewBrowserActivity.startActivity(requireContext(), id = webBook.id)
+            }
         }
         adapter.onSwitchSourceClickListener = { grouped ->
             showSwitchSourceDialog(grouped)
@@ -83,7 +90,8 @@ class WebShelfFragment : BaseFragment() {
                 .show()
         }
         binding?.fab?.click {
-            val bindingDialog = DialogWebBookInputBinding.inflate(LayoutInflater.from(requireContext()))
+            val bindingDialog =
+                DialogWebBookInputBinding.inflate(LayoutInflater.from(requireContext()))
             MaterialAlertDialogBuilder(requireContext())
 //                .setTitle("导入书籍")
                 .setView(bindingDialog.root)
@@ -140,7 +148,10 @@ class WebShelfFragment : BaseFragment() {
                         GroupedWebBook(entry.key, list, selected)
                     }
                 Log.i(groupedList)
-                adapter.notifyDataSetDiff(groupedList, { o, n -> o.title == n.title }, { o, n -> o == n })
+                adapter.notifyDataSetDiff(
+                    groupedList,
+                    { o, n -> o.title == n.title },
+                    { o, n -> o == n })
             }
         }
 

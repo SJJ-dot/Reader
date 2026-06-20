@@ -34,6 +34,7 @@ import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.TtsService
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
@@ -68,7 +69,11 @@ class BrowserReadModeActivity : BaseActivity() {
     private var extractJob: Job? = null
     private var currentUrl: String? = null
     private var prevChapterUrl: String? = null
+    var prevChapterText: String? = null
+        private set
     private var nextChapterUrl: String? = null
+    var nextChapterText: String? = null
+        private set
     private var updateWebBookJob: Job? = null
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
@@ -96,7 +101,6 @@ class BrowserReadModeActivity : BaseActivity() {
         setupInsets()
         setupPageLoader()
         setupTouchListener()
-        setupButtons()
         setupSettingsObserver()
         setupTts()
         initBackPressed()
@@ -110,7 +114,9 @@ class BrowserReadModeActivity : BaseActivity() {
             // 从内存缓存恢复，不重新加载
             currentUrl = startUrl
             prevChapterUrl = cached.prevUrl
+            prevChapterText = cached.prevText
             nextChapterUrl = cached.nextUrl
+            nextChapterText = cached.nextText
             showChapter(cached.title, cached.content, startUrl)
         } else {
             loadUrlForReadMode(startUrl)
@@ -245,11 +251,6 @@ class BrowserReadModeActivity : BaseActivity() {
         return null
     }
 
-    private fun setupButtons() {
-        binding.btnReadModePrevChapter.setOnClickListener { gotoPrevChapter() }
-        binding.btnReadModeNextChapter.setOnClickListener { gotoNextChapter() }
-    }
-
     private fun setupSettingsObserver() {
         // observe reader config changes and apply to pageLoader
         val text = androidx.lifecycle.MediatorLiveData<Int>()
@@ -333,7 +334,7 @@ class BrowserReadModeActivity : BaseActivity() {
         val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
         if (urlHost == null || bookHost == null || urlHost != bookHost) return
         updateWebBookJob?.cancel()
-        updateWebBookJob = lifecycleScope.launch {
+        updateWebBookJob = lifecycleScope.launch(Dispatchers.IO) {
             book.lastUrl = url
             book.lastTitle = title.ifBlank { book.lastTitle }
             book.updateTime = System.currentTimeMillis()
@@ -364,7 +365,9 @@ class BrowserReadModeActivity : BaseActivity() {
                 return@launch
             }
             prevChapterUrl = data.prevUrl
+            prevChapterText = data.prevText
             nextChapterUrl = data.nextUrl
+            nextChapterText = data.nextText
             showChapter(data.title, data.content, url)
         }
     }
@@ -376,6 +379,14 @@ class BrowserReadModeActivity : BaseActivity() {
             return
         }
         loadUrlForReadMode(url)
+    }
+
+    /** 退出阅读模式，在浏览器中打开当前页面 */
+    fun openInBrowser() {
+        val url = currentUrl ?: startUrl
+        val id = webBookId.ifBlank { null }
+        WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
+        finish()
     }
 
     private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
@@ -418,7 +429,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun showChapter(title: String, content: String, url: String) {
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
-        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl))
+        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl, prevChapterText, nextChapterText))
 
         // 更新 WebBook 阅读进度（同域名时）
         updateWebBookProgress(url, title)
@@ -558,6 +569,8 @@ class BrowserReadModeActivity : BaseActivity() {
         val content: String,
         val prevUrl: String?,
         val nextUrl: String?,
+        val prevText: String? = null,
+        val nextText: String? = null,
     )
 
     private suspend fun WebView.extractContent(): ExtractResult {
@@ -570,8 +583,10 @@ class BrowserReadModeActivity : BaseActivity() {
                     val title = obj.optString("title", "")
                     val content = obj.optString("content", "")
                     val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
+                    val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
                     val next = obj.optString("next", "").takeIf { it.isNotBlank() }
-                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next))
+                    val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
+                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText))
                 } catch (t: Throwable) {
                     Log.e("extractContent err", t)
                     if (cont.isActive) cont.resume(ExtractResult("", "", null, null))

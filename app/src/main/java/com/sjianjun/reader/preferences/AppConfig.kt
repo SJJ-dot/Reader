@@ -151,6 +151,11 @@ class AppConfig(val name: String) :
     val autoCheckUpdate by lazy { boolLivedata("autoCheckUpdate", true) }
 
     /**
+     * 是否默认使用阅读模式打开网页书籍
+     */
+    val autoBrowserReadMode by lazy { boolLivedata("autoBrowserReadMode", false) }
+
+    /**
      * 用户是否已同意隐私政策
      */
     val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }
