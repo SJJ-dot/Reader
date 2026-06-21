@@ -77,7 +77,16 @@ class MainActivity : BaseActivity() {
         setSupportActionBar(binding?.toolbar)
 
         navController = findNavController(R.id.nav_host_fragment_main)
-        appBarConfiguration = AppBarConfiguration.Builder(navController!!.graph)
+        appBarConfiguration = AppBarConfiguration.Builder(
+            R.id.bookShelfFragment,
+            R.id.webShelfFragment,
+            R.id.searchFragment,
+            R.id.browserBookCityFragment,
+            R.id.novelScriptFragment,
+            R.id.settingsFragment,
+            R.id.feedbackFragment,
+            R.id.aboutFragment
+        )
             .setOpenableLayout(binding?.drawerLayout)
             .build()
 

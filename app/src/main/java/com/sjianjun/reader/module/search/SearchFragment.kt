@@ -7,6 +7,7 @@ import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.MutableLiveData
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -228,6 +229,11 @@ class SearchFragment : BaseAsyncFragment() {
 
     private class SearchResultBookAdapter(val fragment: SearchFragment) :
         BaseAdapter<List<SearchResult>>() {
+        private val navOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setRestoreState(true)
+            .setPopUpTo(NavHostFragment.findNavController(fragment).graph.startDestinationId, inclusive = false, saveState = true)
+            .build()
 
         override fun itemLayoutRes(viewType: Int): Int {
             return R.layout.main_item_fragment_search_result
@@ -246,7 +252,8 @@ class SearchFragment : BaseAsyncFragment() {
                     fragment.viewModel.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_TITLE to searchResult.bookTitle, BOOK_AUTO_REFRESH to true)
+                        bundle(BOOK_TITLE to searchResult.bookTitle, BOOK_AUTO_REFRESH to true),
+                        navOptions
                     )
                 }
             }

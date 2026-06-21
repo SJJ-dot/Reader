@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
@@ -60,6 +61,13 @@ class BookshelfFragment : BaseFragment() {
     private var bookShelfBinding: MainFragmentBookShelfBinding? = null
     private val bookShelfTitle = BookShelfTitle()
     private val viewModel by viewModels<BookShelfViewModel>()
+    private val navOptions: NavOptions
+        get() = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setRestoreState(true)
+            .setPopUpTo(findNavController().graph.startDestinationId, inclusive = false, saveState = true)
+            .build()
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -126,7 +134,7 @@ class BookshelfFragment : BaseFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.search_book_shelf -> {
-                NavHostFragment.findNavController(this).navigate(R.id.searchFragment)
+                findNavController().navigate(R.id.searchFragment, null, navOptions)
                 true
             }
 
@@ -153,7 +161,7 @@ class BookshelfFragment : BaseFragment() {
                 .setTitle("书籍操作")
                 .setItems(arrayOf("详情页", "重新加载", "排序", "删除")) { _, which ->
                     when (which) {
-                        0 -> findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title))
+                        0 -> findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title), navOptions)
 
                         1 -> {
                             if (!book.isLoading) {
@@ -191,9 +199,9 @@ class BookshelfFragment : BaseFragment() {
         }
 
         val newAdapter = if (globalConfig.shelfLayoutType == 0) {
-            Adapter(this, longClickListener)
+            Adapter(this, longClickListener, navOptions)
         } else {
-            GridAdapter(this, longClickListener)
+            GridAdapter(this, longClickListener, navOptions)
         }
         adapter = newAdapter
         binding.recycleView.layoutManager = if (globalConfig.shelfLayoutType == 0) {
@@ -215,7 +223,11 @@ class BookshelfFragment : BaseFragment() {
         item.title = if (isListLayout) "网格布局" else "列表布局"
     }
 
-    private class GridAdapter(val fragment: BookshelfFragment, var longClickListener: ((Book) -> Unit)) : BaseAdapter<Book>(R.layout.item_book_list_grid) {
+    private class GridAdapter(
+        val fragment: BookshelfFragment,
+        var longClickListener: ((Book) -> Unit),
+        private val navOptions: NavOptions
+    ) : BaseAdapter<Book>(R.layout.item_book_list_grid) {
         init {
             setHasStableIds(true)
         }
@@ -289,7 +301,7 @@ class BookshelfFragment : BaseFragment() {
                 })
 
                 detailClickableArea.setOnClickListener {
-                    fragment.findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title))
+                    fragment.findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title), navOptions)
                 }
                 root.setOnLongClickListener {
                     longClickListener?.invoke(book)
@@ -300,7 +312,11 @@ class BookshelfFragment : BaseFragment() {
         }
     }
 
-    private class Adapter(val fragment: BookshelfFragment, var longClickListener: ((Book) -> Unit)) : BaseAdapter<Book>(R.layout.item_book_list) {
+    private class Adapter(
+        val fragment: BookshelfFragment,
+        var longClickListener: ((Book) -> Unit),
+        private val navOptions: NavOptions
+    ) : BaseAdapter<Book>(R.layout.item_book_list) {
         init {
             setHasStableIds(true)
         }
@@ -389,7 +405,8 @@ class BookshelfFragment : BaseFragment() {
                     fragment.findNavController()
                         .navigate(
                             R.id.bookDetailsFragment,
-                            bundle(BOOK_TITLE to book.title)
+                            bundle(BOOK_TITLE to book.title),
+                            navOptions
                         )
                 }
 

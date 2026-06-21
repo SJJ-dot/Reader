@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.shelf
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -34,16 +35,21 @@ class BookShelfTitle() {
             titleBinding = BookShelfTitleBinding.inflate(activity!!.layoutInflater, this, true)
         }
         val controller = NavHostFragment.findNavController(fragment)
+        val navOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setRestoreState(true)
+            .setPopUpTo(controller.graph.startDestinationId, inclusive = false, saveState = true)
+            .build()
         titleBinding?.tvShelfSource?.click {
             showSourceData(true)
             if (controller.currentDestination?.id != R.id.bookShelfFragment) {
-                controller.navigate(R.id.bookShelfFragment)
+                controller.navigate(R.id.bookShelfFragment, null, navOptions)
             }
         }
         titleBinding?.tvShelfWeb?.click {
             showSourceData(false)
             if (controller.currentDestination?.id != R.id.webShelfFragment) {
-                controller.navigate(R.id.webShelfFragment)
+                controller.navigate(R.id.webShelfFragment, null, navOptions)
             }
         }
     }
