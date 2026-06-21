@@ -17,8 +17,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.GravityCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -46,6 +44,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
+import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.DisplayParams
 import sjj.novel.view.reader.page.NetPageLoader
 import sjj.novel.view.reader.page.PageLoader
@@ -64,12 +63,12 @@ class BrowserReadModeActivity : BaseActivity() {
     private val webBookId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
 
     private var webBook: WebBook? = null
+    private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
     private lateinit var hiddenWebView: WebView
 
     private var extractJob: Job? = null
-    private var currentUrl: String? = null
     private var prevChapterUrl: String? = null
     var prevChapterText: String? = null
         private set
@@ -113,20 +112,22 @@ class BrowserReadModeActivity : BaseActivity() {
 
         applyPageStyle()
         applyTextSize()
-        // 加载关联的 WebBook
-        loadWebBook()
-        val cached = extractCache.get(startUrl)
-        if (cached != null) {
-            // 从内存缓存恢复，不重新加载
-            currentUrl = startUrl
-            prevChapterUrl = cached.prevUrl
-            prevChapterText = cached.prevText
-            nextChapterUrl = cached.nextUrl
-            nextChapterText = cached.nextText
-            directoryUrl = cached.directory
-            showChapter(cached.title, cached.content, startUrl)
-        } else {
-            loadUrlForReadMode(startUrl)
+        lifecycleScope.launch {
+            // 加载关联的 WebBook
+            loadWebBook()
+            Log.i("恢复阅读记录 Loaded webBook: offest:${webBook?.offest}")
+            val cached = extractCache.get(startUrl)
+            if (cached != null) {
+                // 从内存缓存恢复，不重新加载
+                prevChapterUrl = cached.prevUrl
+                prevChapterText = cached.prevText
+                nextChapterUrl = cached.nextUrl
+                nextChapterText = cached.nextText
+                directoryUrl = cached.directory
+                showChapter(cached.title, cached.content, startUrl)
+            } else {
+                loadUrlForReadMode(startUrl)
+            }
         }
     }
 
@@ -264,7 +265,19 @@ class BrowserReadModeActivity : BaseActivity() {
                         loader.openChapter()
                     }
                 }
-                override fun onBookRecordChange(bean: BookRecordBean) {}
+
+                override fun onBookRecordChange(bean: BookRecordBean) {
+                    val book = webBook ?: return
+                    val title = loader.curChapter?.title ?: return
+                    if (book.lastUrl == pageLoader.curChapter?.link && title != "加载中" && title != "错误") {
+                        book.offest = bean.pagePos
+                        book.scrollOffset = bean.scrollOffset
+                        Log.i("currentUrl:${pageLoader.curChapter?.link}")
+                        Log.i("lastUrl:${book.lastUrl}")
+                        Log.i("onBookRecordChange: update offset=${bean.pagePos} scrollOffset=${bean.scrollOffset} ${pageLoader.curPageList?.size}")
+                        updateWebBookProgress(book.lastUrl!!, book.lastTitle)
+                    }
+                }
             })
         }
         // 初始化净化替换规则
@@ -308,6 +321,7 @@ class BrowserReadModeActivity : BaseActivity() {
                         .commitAllowingStateLoss()
                 }
             }
+
             ReaderClickAreaAction.PREV_CHAPTER -> gotoPrevChapter()
             ReaderClickAreaAction.NEXT_CHAPTER -> gotoNextChapter()
             ReaderClickAreaAction.NONE -> {}
@@ -392,6 +406,7 @@ class BrowserReadModeActivity : BaseActivity() {
                         .commitAllowingStateLoss()
                     true
                 }
+
                 else -> false
             }
         }
@@ -399,26 +414,30 @@ class BrowserReadModeActivity : BaseActivity() {
 
     // ==================== Content Extraction ====================
 
-    private fun loadWebBook() {
+    private suspend fun loadWebBook() {
         if (webBookId.isBlank()) return
-        lifecycleScope.launch {
-            try {
-                webBook = webDao.getWebBookById(webBookId).firstOrNull()
-            } catch (e: Exception) {
-                Log.e("loadWebBook error", e)
-            }
+        try {
+            webBook = webDao.getWebBookById(webBookId).firstOrNull()
+        } catch (e: Exception) {
+            Log.e("loadWebBook error", e)
         }
     }
 
     /** 如果当前 URL 与 WebBook 同域名，更新阅读进度（lastUrl/lastTitle/updateTime） */
     private fun updateWebBookProgress(url: String, title: String) {
         val book = webBook ?: return
+        if (title == "加载中" || title == "错误") return
         val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
         val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
         if (urlHost == null || bookHost == null || urlHost != bookHost) return
         updateWebBookJob?.cancel()
         updateWebBookJob = lifecycleScope.launch(Dispatchers.IO) {
-            book.lastUrl = url
+            if (book.lastUrl != url) {
+                book.lastUrl = url
+                book.offest = 0
+                book.scrollOffset = 0
+                Log.i("updateWebBookProgress: url changed, reset offset and scrollOffset")
+            }
             book.lastTitle = title.ifBlank { book.lastTitle }
             book.updateTime = System.currentTimeMillis()
             try {
@@ -430,8 +449,7 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     private fun loadUrlForReadMode(url: String) {
-        currentUrl = url
-        showLoadingChapter()
+        showLoadingChapter(url)
         hiddenWebView.loadUrl(url)
         extractJob?.cancel()
         extractJob = lifecycleScope.launch {
@@ -444,7 +462,7 @@ class BrowserReadModeActivity : BaseActivity() {
             delay(300.milliseconds)
             val data = extractWithRetry(hiddenWebView)
             if (data == null || data.content.isBlank()) {
-                showErrorChapter()
+                showErrorChapter(url)
                 return@launch
             }
             if (directoryUrl != data.directory) {
@@ -461,7 +479,7 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun refresh() {
-        val url = currentUrl
+        val url = pageLoader.curChapter?.link
         if (url.isNullOrBlank()) {
             toast("当前没有加载的页面，无法刷新")
             return
@@ -471,7 +489,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /** 退出阅读模式，在浏览器中打开当前页面 */
     fun openInBrowser() {
-        val url = currentUrl ?: startUrl
+        val url = pageLoader.curChapter?.link ?: startUrl
         val id = webBookId.ifBlank { null }
         WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
         finish()
@@ -507,18 +525,17 @@ class BrowserReadModeActivity : BaseActivity() {
         loadUrlForReadMode(url)
     }
 
-    private fun showLoadingChapter() {
-        showChapter("加载中", "正在加载...", currentUrl ?: "")
+    private fun showLoadingChapter(url: String) {
+        showChapter("加载中", "正在加载...", url)
     }
 
-    private fun showErrorChapter() {
-        showChapter("错误", "无法提取页面内容", currentUrl ?: "")
+    private fun showErrorChapter(url: String) {
+        showChapter("错误", "无法提取页面内容", url)
     }
 
     private fun showChapter(title: String, content: String, url: String) {
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
         extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl, prevChapterText, nextChapterText, directoryUrl))
-
         // 更新 WebBook 阅读进度（同域名时）
         updateWebBookProgress(url, title)
 
@@ -526,17 +543,37 @@ class BrowserReadModeActivity : BaseActivity() {
             this.url = url.ifBlank { "browser://reader" }
             this.title = title.ifBlank { "Reader" }
         }
-        val txt = TxtChapter().apply {
+
+        val wb = webBook
+        var record: BookRecordBean? = null
+        if (wb != null && wb.lastUrl == url && needRestore && title != "加载中" && title != "错误") {
+            needRestore = false
+            record = BookRecordBean().apply {
+                this.bookId = book.id
+                this.chapter = 0
+                this.pagePos = wb.offest
+                this.scrollOffset = wb.scrollOffset
+            }
+
+        } else {
+            if (title != "加载中" && title != "错误") {
+                needRestore = false
+            }
+        }
+
+        ChapterPageCache.resetId(book.id)
+        TxtChapter.evictAll()
+        pageLoader.closeBook()
+        record?.let { pageLoader.setBookRecord(it) }
+        pageLoader.mCollBook = book
+        pageLoader.chapterCategory = listOf(TxtChapter().apply {
             this.bookId = book.id
             this.link = url.ifBlank { "browser://reader" }
             this.title = title.ifBlank { "Reader" }
             this.chapterIndex = 0
             this.content = content
-        }
-        pageLoader.mCollBook = book
-        pageLoader.chapterCategory = listOf(txt)
+        })
         pageLoader.refreshChapterList()
-        pageLoader.openChapter()
     }
 
     // ==================== Style / Immersive ====================
@@ -575,6 +612,7 @@ class BrowserReadModeActivity : BaseActivity() {
                     handleReaderClickAction(ReaderClickAreaAction.PREV_PAGE)
                     return true
                 }
+
                 KeyEvent.KEYCODE_VOLUME_DOWN -> {
                     handleReaderClickAction(ReaderClickAreaAction.NEXT_PAGE)
                     return true
@@ -693,8 +731,11 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     companion object {
-        @Volatile private var cachedJs: String? = null
-        @Volatile private var cachedDirectoryJs: String? = null
+        @Volatile
+        private var cachedJs: String? = null
+
+        @Volatile
+        private var cachedDirectoryJs: String? = null
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult>(10)
@@ -742,10 +783,12 @@ class BrowserReadModeActivity : BaseActivity() {
         class ViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
             val textView: android.widget.TextView = view.findViewById(R.id.chapter_title)
         }
+
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
             val view = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_browser_chapter, parent, false)
             return ViewHolder(view)
         }
+
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = getItem(position)
             holder.textView.text = item.title

@@ -35,7 +35,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class],
-    version = 29,
+    version = 30,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -182,6 +182,12 @@ object DbFactory {
             .addMigrations(object : Migration(28, 29) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `isSelected` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(29, 30) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `offest` INTEGER NOT NULL default 0")
+                    db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `scrollOffset` INTEGER NOT NULL default 0")
                 }
             })
             .build()

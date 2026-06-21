@@ -229,7 +229,11 @@ class CustomWebView @JvmOverloads constructor(
         updateWebBookJob = lifecycleScope?.launch {
             val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
             if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
-                book.lastUrl = url
+                if (book.lastUrl != url) {
+                    book.lastUrl = url
+                    book.offest = 0
+                    book.scrollOffset = 0
+                }
                 if (updateTitle) {
                     book.lastTitle = view.getTitleFromMeta().ifBlank { view.title ?: "无标题" }
                 } else {
