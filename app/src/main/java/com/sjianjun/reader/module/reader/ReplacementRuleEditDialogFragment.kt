@@ -145,10 +145,28 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
     }
 
     private fun showRegexHelpDialog() {
+        val examples = arrayOf(
+            "示例1：替换“开始”到“结束”之间的文字(包括换行)",
+            "示例2：替换“开始”...“中间”...“结束”之间的文字(包括换行)"
+        )
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.replacement_rule_regex_help_title)
-            .setMessage(R.string.replacement_rule_regex_help_content)
-            .setPositiveButton(R.string.replacement_rule_regex_help_confirm, null)
+            .setTitle("常用正则模板（点击填充）")
+            .setItems(examples) { _, which ->
+                val binding = binding ?: return@setItems
+                when (which) {
+                    0 -> {
+                        binding.etRule.setText("(?s)开始.*?结束")
+                        binding.etReplacement.setText("测试1")
+                        binding.cbRegex.isChecked = true
+                    }
+                    1 -> {
+                        binding.etRule.setText("(?s)开始.*?中间.*?结束")
+                        binding.etReplacement.setText("测试2")
+                        binding.cbRegex.isChecked = true
+                    }
+                }
+            }
+            .setNegativeButton("取消", null)
             .show()
     }
 
@@ -169,4 +187,3 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         }
     }
 }
-

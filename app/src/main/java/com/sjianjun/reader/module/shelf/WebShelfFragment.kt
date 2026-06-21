@@ -139,7 +139,7 @@ class WebShelfFragment : BaseFragment() {
         }
         launch {
             viewModel.getWebBook().collectLatest { webBooks ->
-                Log.i("WebBooks updated: ${webBooks} items")
+//                Log.i("WebBooks updated: ${webBooks} items")
                 // 按书名分组
                 val groupedList = webBooks.groupBy { it.title }
                     .map { entry ->
@@ -147,7 +147,7 @@ class WebShelfFragment : BaseFragment() {
                         val selected = list.find { it.isSelected } ?: list.first()
                         GroupedWebBook(entry.key, list, selected)
                     }
-                Log.i(groupedList)
+//                Log.i(groupedList)
                 adapter.notifyDataSetDiff(
                     groupedList,
                     { o, n -> o.title == n.title },

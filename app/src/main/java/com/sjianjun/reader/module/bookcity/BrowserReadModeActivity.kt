@@ -18,6 +18,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
@@ -248,21 +249,23 @@ class BrowserReadModeActivity : BaseActivity() {
             loader.initPageView(binding.readModePageView)
             loader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
-                    // 用 LruCache 中对应 URL 的缓存填充章节内容
-                    var filled = false
-                    requestChapters.forEach { ch ->
-                        if (ch.content.isNullOrBlank()) {
-                            val link = ch.link ?: return@forEach
-                            val cached = extractCache.get(link)
-                            if (cached != null && cached.content.isNotBlank()) {
-                                ch.content = cached.content
-                                ch.title = cached.title
-                                filled = true
+                    launch("requestChapters"){
+                        // 用 LruCache 中对应 URL 的缓存填充章节内容
+                        var filled = false
+                        requestChapters.forEach { ch ->
+                            if (ch.content.isNullOrBlank()) {
+                                val link = ch.link ?: return@forEach
+                                val cached = extractCache.get(link)
+                                if (cached != null && cached.content.isNotBlank()) {
+                                    ch.content = cached.content
+                                    ch.title = cached.title
+                                    filled = true
+                                }
                             }
                         }
-                    }
-                    if (filled && loader.pageStatus == STATUS_LOADING) {
-                        loader.openChapter()
+                        if (filled && loader.pageStatus == STATUS_LOADING) {
+                            loader.openChapter()
+                        }
                     }
                 }
 
@@ -272,9 +275,9 @@ class BrowserReadModeActivity : BaseActivity() {
                     if (book.lastUrl == pageLoader.curChapter?.link && title != "加载中" && title != "错误") {
                         book.offest = bean.pagePos
                         book.scrollOffset = bean.scrollOffset
-                        Log.i("currentUrl:${pageLoader.curChapter?.link}")
-                        Log.i("lastUrl:${book.lastUrl}")
-                        Log.i("onBookRecordChange: update offset=${bean.pagePos} scrollOffset=${bean.scrollOffset} ${pageLoader.curPageList?.size}")
+//                        Log.i("currentUrl:${pageLoader.curChapter?.link}")
+//                        Log.i("lastUrl:${book.lastUrl}")
+//                        Log.i("onBookRecordChange: update offset=${bean.pagePos} scrollOffset=${bean.scrollOffset} ${pageLoader.curPageList?.size}")
                         updateWebBookProgress(book.lastUrl!!, book.lastTitle)
                     }
                 }
@@ -390,7 +393,7 @@ class BrowserReadModeActivity : BaseActivity() {
         observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
             lifecycleScope.launch {
                 pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
-                // reloadPages() 会触发 requestChapters() 回调，
+                ChapterPageCache.reset()
                 pageLoader.reloadPages()
             }
         }

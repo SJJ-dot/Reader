@@ -311,7 +311,7 @@ abstract class PageLoader : ViewModel() {
      * @param pageStyle:页面样式
      */
     fun setPageStyle(pageStyle: PageStyle, selectedColorTest: Boolean = false) {
-        Log.i("设置页面样式:$pageStyle")
+//        Log.i("设置页面样式:$pageStyle")
         // 设置当前颜色样式
         mBackground = BgDrawable(pageStyle.getBackground(mPageView!!.context, 0, 0))
 
@@ -364,7 +364,7 @@ abstract class PageLoader : ViewModel() {
 
     val curChapter: TxtChapter?
         get() {
-            Log.i("getCurChapter mCurChapterPos:" + this.chapterPos)
+//            Log.i("getCurChapter mCurChapterPos:" + this.chapterPos)
             return chapterCategory?.getOrNull(chapterPos)
         }
 
@@ -400,7 +400,7 @@ abstract class PageLoader : ViewModel() {
     }
 
     fun setBookRecord(record: BookRecordBean) {
-        Log.i("恢复阅读记录:${record}")
+//        Log.i("恢复阅读记录:${record}")
         mBookRecord = record
         mPageView?.setBookRecord(record)
         this.chapterPos = record.chapter
@@ -1059,7 +1059,7 @@ abstract class PageLoader : ViewModel() {
      * @return
      */
     private fun loadPages(chapter: TxtChapter): MutableList<TxtPage> {
-        Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
+//        Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
         val lines: MutableList<TxtLine> = ArrayList()
         val titleText = applyRulesToTitle(convertByJianFanMode(chapter.title.orEmpty()), chapter)
         val contentText = applyRulesToContent(convertByJianFanMode(chapter.content?.toString().orEmpty()), chapter)
