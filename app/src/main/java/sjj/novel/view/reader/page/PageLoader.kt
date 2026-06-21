@@ -547,7 +547,6 @@ abstract class PageLoader : ViewModel() {
 
     private fun drawBackground(bitmap: Bitmap) {
         val canvas = Canvas(bitmap)
-        val tipMarginHeight = 3.dp2Px
         /****绘制背景 */
         mBackground?.draw(canvas)
         val chapters = chapterCategory
@@ -569,7 +568,7 @@ abstract class PageLoader : ViewModel() {
                 val percent = (curPage.position + 1).toString() + "/" + pageList.size
                 canvas.drawText(percent, mDisplayParams.contentRight - tipPaint.measureText(percent), tipTop, tipPaint)
 
-                val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - tipMarginHeight, null)
+                val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - 16.dp2Px, null)
                 canvas.drawText(curPage.title, 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
             }
         }
