@@ -32,7 +32,7 @@
     </FrameLayout>
 
     <!-- 章节目录抽屉 -->
-    <FrameLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chapter_list_drawer"
         android:layout_width="280dp"
         android:layout_height="match_parent"
@@ -41,25 +41,37 @@
         android:clickable="true"
         android:focusable="true">
 
-        <androidx.recyclerview.widget.RecyclerView
+        <sjj.novel.view.scroller.FastScrollRecyclerView
             android:id="@+id/chapter_list_rv"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="60dp" />
+            android:layout_height="0dp"
+            android:layout_marginBottom="5dp"
+            android:background="@color/dn_background_dialog"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toTopOf="@+id/btn_chapter_list_next_page"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:listitem="@layout/item_browser_chapter" />
 
         <com.coorchice.library.SuperTextView
             android:id="@+id/btn_chapter_list_next_page"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_gravity="bottom"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginVertical="4dp"
             android:gravity="center"
             android:text="下一页"
             android:textColor="@color/mdr_white"
             android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:stv_corner="4dp"
             app:stv_solid="@color/colorPrimary" />
 
-    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>
 
