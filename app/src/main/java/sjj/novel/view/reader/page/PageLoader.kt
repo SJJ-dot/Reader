@@ -400,7 +400,7 @@ abstract class PageLoader : ViewModel() {
     }
 
     fun setBookRecord(record: BookRecordBean) {
-//        Log.i("恢复阅读记录:${record}")
+        Log.i("恢复阅读记录:${record}")
         mBookRecord = record
         mPageView?.setBookRecord(record)
         this.chapterPos = record.chapter
@@ -463,7 +463,7 @@ abstract class PageLoader : ViewModel() {
         } else {
             mCurPage = TxtPage()
         }
-
+        Log.i("openChapter mCurPage:${mCurPage?.position}")
         mPageView!!.drawCurPage()
     }
 
@@ -585,6 +585,7 @@ abstract class PageLoader : ViewModel() {
             canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
         }
         /******绘制内容 */
+        Log.i("drawContent mStatus:$mStatus mCurPage:${mCurPage?.position} ${mCurPage?.lines?.size}")
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {
             //绘制字体

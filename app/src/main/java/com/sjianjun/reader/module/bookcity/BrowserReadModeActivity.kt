@@ -236,8 +236,9 @@ class BrowserReadModeActivity : BaseActivity() {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                     val idx = requestChapters.indexOf(loader.curChapter ?: return)
                     val curChapter = requestChapters.getOrNull(idx) ?: return
-                    lifecycleScope.launch {
-                        loadUrlForReadMode(curChapter.link)
+                    val isPrev = loader.chapterPos == 0 && (loader.chapterCategory?.size ?: 0) > 1
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        loadUrlForReadMode(curChapter.link, pagePos = if (isPrev) 10000 else null)
                     }
                 }
 
@@ -420,22 +421,22 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private fun loadUrlForReadMode(url: String, force: Boolean = false) {
+    private fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
         loadUrlQueue.removeAll { it.url == url }
-        loadUrlQueue.addLast(LoadUrlRequest(url, force))
+        loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos))
         if (loadUrlQueueJob?.isActive == true) return
         loadUrlQueueJob = lifecycleScope.launch {
             while (loadUrlQueue.isNotEmpty()) {
                 val request = loadUrlQueue.removeFirst()
-                loadUrlForReadModeInternal(request.url, request.force)
+                loadUrlForReadModeInternal(request.url, request.force, request.pagePos)
             }
         }
     }
 
-    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false) {
+    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null) {
         var data = extractCache.get(url)
+        Log.i("loadUrlForReadMode: loading url = $url, force = $force")
         if (data == null || force) {
-            Log.i("loadUrlForReadMode: loading url = $url, force = $force")
             hiddenWebView.loadUrl(url)
             var retry = 0
             while (retry < 50) {
@@ -455,7 +456,7 @@ class BrowserReadModeActivity : BaseActivity() {
             (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
         }
         if (pageLoader.curChapter?.link == url) {
-            showChapter(url)
+            showChapter(url, pagePos)
         }
     }
 
@@ -494,7 +495,7 @@ class BrowserReadModeActivity : BaseActivity() {
             Toast.makeText(this, "没有上一章", Toast.LENGTH_SHORT).show()
             return
         }
-        showChapter(url)
+        showChapter(url, pagePos = 10000)
     }
 
     fun gotoNextChapter() {
@@ -503,10 +504,10 @@ class BrowserReadModeActivity : BaseActivity() {
             Toast.makeText(this, "没有下一章", Toast.LENGTH_SHORT).show()
             return
         }
-        showChapter(url)
+        showChapter(url, pagePos = 0)
     }
 
-    private fun showChapter(url: String) {
+    private fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
 
@@ -526,6 +527,15 @@ class BrowserReadModeActivity : BaseActivity() {
                 this.bookId = book.id
                 this.pagePos = wb.offest
                 this.scrollOffset = wb.scrollOffset
+            }
+        } else if (pagePos != null) {
+            if (data != null) {
+                needRestore = false
+            }
+            record.apply {
+                this.bookId = book.id
+                this.pagePos = pagePos
+                this.scrollOffset = 0
             }
         } else {
             if (data != null) {
@@ -689,6 +699,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private data class LoadUrlRequest(
         val url: String,
         val force: Boolean,
+        val pagePos: Int? = null,
     )
 
     data class ExtractResult(
