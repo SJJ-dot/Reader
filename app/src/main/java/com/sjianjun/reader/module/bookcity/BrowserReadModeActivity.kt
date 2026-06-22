@@ -78,6 +78,13 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
+    private fun updateNextToPrevMap(url: String, data: ExtractResult?) {
+        val next = data?.nextUrl
+        if (!next.isNullOrBlank() && url.isNotBlank()) {
+            nextToPrevMap.put(next, url)
+        }
+    }
+
     val pageLoader get() = binding.readModePageView.pageLoader!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -451,6 +458,7 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             extractCache.put(url, data)
         }
+        updateNextToPrevMap(url, data)
         if (pageLoader.curChapterData?.directory != data.directory) {
             chapterList.clear()
             (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
@@ -490,7 +498,8 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun gotoPrevChapter() {
-        val url = pageLoader.curChapterData?.prevUrl
+        val curUrl = pageLoader.curChapter?.link
+        val url = (if (curUrl != null) nextToPrevMap.get(curUrl) else null) ?: pageLoader.curChapterData?.prevUrl
         if (url.isNullOrBlank()) {
             Toast.makeText(this, "没有上一章", Toast.LENGTH_SHORT).show()
             return
@@ -509,6 +518,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
+        updateNextToPrevMap(url, data)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
 
         // 更新 WebBook 阅读进度（同域名时）
@@ -547,11 +557,12 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         val chapters = mutableListOf<TxtChapter>()
-        data?.prevUrl?.let {
+        val prevUrl = (if (url.isNotBlank()) nextToPrevMap.get(url) else null) ?: data?.prevUrl
+        prevUrl?.let {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = it
-                this.title = data.prevText ?: "加载中"
+                this.title = (if (it == data?.prevUrl) data.prevText else extractCache.get(it)?.title) ?: "上一页"
                 this.chapterIndex = 0
             })
         }
@@ -751,6 +762,8 @@ class BrowserReadModeActivity : BaseActivity() {
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult?>(100)
+        /** 阅读模式下一页链接往往比上一页准确，利用下一页链接自行维护一个反向映射 */
+        val nextToPrevMap = LruCache<String, String>(200)
 
         val PageLoader.curChapterData: ExtractResult?
             get() {
