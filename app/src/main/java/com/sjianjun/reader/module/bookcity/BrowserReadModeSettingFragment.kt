@@ -106,7 +106,10 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         }
         b.topBarSettingsMore.click(100) { v -> showPopupMenu(v) }
         b.topBarBrowser.click(10) {
-            (activity as? BrowserReadModeActivity)?.openInBrowser()
+            (activity as? BrowserReadModeActivity)?.openInBrowser(false)
+        }
+        b.topBarHome.click(10) {
+            (activity as? BrowserReadModeActivity)?.openInBrowser(true)
         }
 
         // --- Bottom buttons ---

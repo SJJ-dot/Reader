@@ -470,8 +470,8 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     /** 退出阅读模式，在浏览器中打开当前页面 */
-    fun openInBrowser() {
-        val url = pageLoader.curChapter?.link ?: startUrl
+    fun openInBrowser(home: Boolean) {
+        val url =if (home) startUrl else pageLoader.curChapter?.link ?: startUrl
         val id = webBookId.ifBlank { null }
         WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
         finish()

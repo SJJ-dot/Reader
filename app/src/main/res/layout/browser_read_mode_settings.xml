@@ -656,7 +656,7 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageView
-            android:id="@+id/top_bar_browser"
+            android:id="@+id/top_bar_home"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackground"
@@ -664,6 +664,18 @@
             android:scaleType="fitCenter"
             android:src="@drawable/ic_browser_home"
             app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/dn_text_color_black" />
+
+        <ImageView
+            android:id="@+id/top_bar_browser"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_browser"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_home"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 
@@ -678,7 +690,7 @@
             android:gravity="center_vertical"
             android:maxLines="2"
             android:textColor="@color/dn_text_color_black"
-            android:textSize="20dp"
+            android:textSize="16dp"
             app:autoSizeMaxTextSize="20dp"
             app:autoSizeMinTextSize="14dp"
             app:autoSizeTextType="uniform"
