@@ -41,11 +41,10 @@ public class TxtChapter {
     }
 
     public void setContent(CharSequence content) {
-        if (TextUtils.isEmpty(content)){
-            content = "章节内容为空";
+        if (!TextUtils.isEmpty(content)){
+            contents.put(link, content);
+            ChapterPageCache.remove(chapterIndex);
         }
-        contents.put(link, content);
-        ChapterPageCache.remove(chapterIndex);
     }
 
 

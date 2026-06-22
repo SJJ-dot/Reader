@@ -62,7 +62,6 @@ class NetPageLoader() : PageLoader() {
     }
 
     private fun requestChapters(start: Int, end: Int, first: Int) {
-        Log.i("requestChapters: start = $start, end = $end")
         val listener = mPageChangeListener ?: return
         val chapterCategory = chapterCategory ?: return
 
@@ -89,6 +88,7 @@ class NetPageLoader() : PageLoader() {
             if (chapters.remove(firstChapter)) {
                 chapters.add(0, firstChapter)
             }
+            Log.i("requestChapters:${chapters.map { it.chapterIndex }}")
             listener.requestChapters(chapters)
         }
     }

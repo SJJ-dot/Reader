@@ -439,7 +439,7 @@ abstract class PageLoader : ViewModel() {
         }
 
         if (parseCurChapter()) {
-            Log.e("章节解析完成 page size:${curPageList?.size} title:${curPageList?.firstOrNull()?.title}")
+            Log.e("章节解析完成 pageSize:${curPageList?.size} chapterIndex:${curChapter?.chapterIndex}")
             // 如果章节从未打开
             if (!isChapterOpen) {
                 var position = mBookRecord.pagePos
@@ -484,6 +484,7 @@ abstract class PageLoader : ViewModel() {
         this.chapterCategory = null
         this.curPageList = null
         mCurPage = null
+        mLastChapterPos = 0
     }
 
     /**
@@ -502,7 +503,7 @@ abstract class PageLoader : ViewModel() {
         }
         // 判断章节是否存在
         if (!hasChapterData(chapter)) {
-            Log.e("章节数据不存在 chapterPos:" + chapterPos + " title:" + chapter.title)
+            Log.e("章节数据不存在 chapterPos:$chapterPos")
             return null
         }
         val txtPages = ChapterPageCache.get(chapterPos)

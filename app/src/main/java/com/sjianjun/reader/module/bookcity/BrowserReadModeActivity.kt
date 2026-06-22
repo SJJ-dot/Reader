@@ -47,8 +47,8 @@ import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.DisplayParams
-import sjj.novel.view.reader.page.NetPageLoader
 import sjj.novel.view.reader.page.PageLoader
+import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_FINISH
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
 import sjj.novel.view.reader.page.PageMode
 import sjj.novel.view.reader.page.PageStyle
@@ -70,22 +70,15 @@ class BrowserReadModeActivity : BaseActivity() {
     private lateinit var hiddenWebView: WebView
 
     private var extractJob: Job? = null
-    private var loadingUrl: String? = null
-    private var prevChapterUrl: String? = null
-    var prevChapterText: String? = null
-        private set
-    private var nextChapterUrl: String? = null
-    var nextChapterText: String? = null
-        private set
-    var directoryUrl: String? = null
+    private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
+    private var loadUrlQueueJob: Job? = null
     private var chapterList = mutableListOf<ChapterLink>()
     private var directoryNextPageUrl: String? = null
     private var updateWebBookJob: Job? = null
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
-    val pageLoader: NetPageLoader get() = _pageLoader
-    private lateinit var _pageLoader: NetPageLoader
+    val pageLoader get() = binding.readModePageView.pageLoader!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyReaderOrientation(globalConfig.readerOrientationMode.value ?: 0)
@@ -117,26 +110,14 @@ class BrowserReadModeActivity : BaseActivity() {
         lifecycleScope.launch {
             // 加载关联的 WebBook
             loadWebBook()
-            Log.i("恢复阅读记录 Loaded webBook: offest:${webBook?.offest}")
-            val cached = extractCache.get(startUrl)
-            if (cached != null) {
-                // 从内存缓存恢复，不重新加载
-                prevChapterUrl = cached.prevUrl
-                prevChapterText = cached.prevText
-                nextChapterUrl = cached.nextUrl
-                nextChapterText = cached.nextText
-                directoryUrl = cached.directory
-                showChapter(cached.title, cached.content, startUrl)
-            } else {
-                loadUrlForReadMode(startUrl)
-            }
+            showChapter(startUrl)
         }
     }
 
     private fun setupChapterList() {
         binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
         binding.chapterListRv.adapter = ChapterListAdapter { link ->
-            loadUrlForReadMode(link.url)
+            showChapter(link.url)
             binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END)
         }
         binding.btnChapterListNextPage.setOnClickListener {
@@ -147,8 +128,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: View) {
-                if (chapterList.isEmpty() && !directoryUrl.isNullOrBlank()) {
-                    loadChapterList(directoryUrl!!)
+                val directoryUrl = pageLoader.curChapterData?.directory ?: return
+                if (chapterList.isEmpty() && directoryUrl.isNotBlank()) {
+                    loadChapterList(directoryUrl)
                 }
             }
         })
@@ -156,13 +138,15 @@ class BrowserReadModeActivity : BaseActivity() {
 
     fun openDrawer() {
         binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END)
-        if (chapterList.isEmpty() && !directoryUrl.isNullOrBlank()) {
-            loadChapterList(directoryUrl!!)
+        val directoryUrl = pageLoader.curChapterData?.directory ?: return
+        if (chapterList.isEmpty() && directoryUrl.isNotBlank()) {
+            loadChapterList(directoryUrl)
         }
     }
 
     private fun loadChapterList(url: String) {
         lifecycleScope.launch {
+            val directoryUrl = pageLoader.curChapterData?.directory ?: return@launch
             if (url == directoryUrl && chapterList.isNotEmpty()) {
                 // Already loading or loaded
                 return@launch
@@ -233,7 +217,7 @@ class BrowserReadModeActivity : BaseActivity() {
             val safeRight = maxOf(systemBars.right, cutout?.safeInsetRight ?: 0)
             val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
             val params = DisplayParams()
-            _pageLoader.mDisplayParams.setInsets(
+            pageLoader.mDisplayParams.setInsets(
                 left = params.insetLeft + safeLeft,
                 top = params.insetTop + safeTop,
                 right = params.insetRight + safeRight,
@@ -245,39 +229,25 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     private fun setupPageLoader() {
-        _pageLoader = NetPageLoader().also { loader ->
+        pageLoader.also { loader ->
             binding.readModePageView.pageLoader = loader
             loader.initPageView(binding.readModePageView)
             loader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
-                    launch("requestChapters") {
-                        // 用 LruCache 中对应 URL 的缓存填充章节内容
-                        var filled = false
-                        requestChapters.forEach { ch ->
-                            if (ch.content.isNullOrBlank()) {
-                                val link = ch.link ?: return@forEach
-                                val cached = extractCache.get(link)
-                                if (cached != null && cached.content.isNotBlank()) {
-                                    ch.content = cached.content
-                                    ch.title = cached.title
-                                    filled = true
-                                }
-                            }
-                        }
-                        if (filled && loader.pageStatus == STATUS_LOADING) {
-                            loader.openChapter()
-                        }
+                    val idx = requestChapters.indexOf(loader.curChapter ?: return)
+                    val curChapter = requestChapters.getOrNull(idx) ?: return
+                    lifecycleScope.launch {
+                        loadUrlForReadMode(curChapter.link)
                     }
                 }
 
                 override fun onBookRecordChange(bean: BookRecordBean) {
-                    val book = webBook ?: return
                     val curChapter = loader.curChapter ?: return
-                    val title = curChapter.title
-                    if (book.lastUrl == curChapter.link && title != "加载中" && title != "错误") {
+                    val book = webBook ?: return
+                    if (book.lastUrl == curChapter.link) {
                         book.offest = bean.pagePos
                         book.scrollOffset = bean.scrollOffset
-                        updateWebBookProgress(book.lastUrl!!, book.lastTitle)
+                        updateWebBookProgress(book.lastUrl ?: "")
                     }
                 }
             })
@@ -426,9 +396,9 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     /** 如果当前 URL 与 WebBook 同域名，更新阅读进度（lastUrl/lastTitle/updateTime） */
-    private fun updateWebBookProgress(url: String, title: String) {
+    private fun updateWebBookProgress(url: String) {
         val book = webBook ?: return
-        if (title == "加载中" || title == "错误") return
+        val data = extractCache.get(url) ?: return
         val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
         val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
         if (urlHost == null || bookHost == null || urlHost != bookHost) return
@@ -440,7 +410,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 book.scrollOffset = 0
                 Log.i("updateWebBookProgress: url changed, reset offset and scrollOffset")
             }
-            book.lastTitle = title.ifBlank { book.lastTitle }
+            book.lastTitle = data.title.ifBlank { book.lastTitle }
             book.updateTime = System.currentTimeMillis()
             try {
                 webDao.insertWebBook(book)
@@ -450,49 +420,42 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private fun loadUrlForReadMode(url: String) {
-        val cached = extractCache.get(url)
-        if (cached != null) {
-            directoryUrl = cached.directory
-            prevChapterUrl = cached.prevUrl
-            prevChapterText = cached.prevText
-            nextChapterUrl = cached.nextUrl
-            nextChapterText = cached.nextText
-            showChapter(cached.title, cached.content, url)
-            return
-        }
-        if (loadingUrl == url) return
-        showLoadingChapter(url)
-        hiddenWebView.loadUrl(url)
-        extractJob?.cancel()
-        extractJob = lifecycleScope.launch {
-            loadingUrl = url
-            try {
-                var retry = 0
-                while (retry < 50) {
-                    delay(200.milliseconds)
-                    if (hiddenWebView.url == url && hiddenWebView.progress >= 100) break
-                    retry++
-                }
-                delay(300.milliseconds)
-                val data = extractWithRetry(hiddenWebView)
-                if (data == null || data.content.isBlank()) {
-                    showErrorChapter(url)
-                    return@launch
-                }
-                if (directoryUrl != data.directory) {
-                    chapterList.clear()
-                    (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
-                }
-                directoryUrl = data.directory
-                prevChapterUrl = data.prevUrl
-                prevChapterText = data.prevText
-                nextChapterUrl = data.nextUrl
-                nextChapterText = data.nextText
-                showChapter(data.title, data.content, url)
-            } finally {
-                loadingUrl = null
+    private fun loadUrlForReadMode(url: String, force: Boolean = false) {
+        loadUrlQueue.removeAll { it.url == url }
+        loadUrlQueue.addLast(LoadUrlRequest(url, force))
+        if (loadUrlQueueJob?.isActive == true) return
+        loadUrlQueueJob = lifecycleScope.launch {
+            while (loadUrlQueue.isNotEmpty()) {
+                val request = loadUrlQueue.removeFirst()
+                loadUrlForReadModeInternal(request.url, request.force)
             }
+        }
+    }
+
+    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false) {
+        var data = extractCache.get(url)
+        if (data == null || force) {
+            Log.i("loadUrlForReadMode: loading url = $url, force = $force")
+            hiddenWebView.loadUrl(url)
+            var retry = 0
+            while (retry < 50) {
+                delay(200.milliseconds)
+                if (hiddenWebView.url == url && hiddenWebView.progress >= 100) break
+                retry++
+            }
+            delay(300.milliseconds)
+            data = extractWithRetry(hiddenWebView) ?: ExtractResult("加载失败", "加载失败")
+            if (data.content.isBlank()) {
+                data.content = "加载失败"
+            }
+            extractCache.put(url, data)
+        }
+        if (pageLoader.curChapterData?.directory != data.directory) {
+            chapterList.clear()
+            (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
+        }
+        if (pageLoader.curChapter?.link == url) {
+            showChapter(url)
         }
     }
 
@@ -502,7 +465,7 @@ class BrowserReadModeActivity : BaseActivity() {
             toast("当前没有加载的页面，无法刷新")
             return
         }
-        loadUrlForReadMode(url)
+        loadUrlForReadMode(url, true)
     }
 
     /** 退出阅读模式，在浏览器中打开当前页面 */
@@ -526,89 +489,85 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun gotoPrevChapter() {
-        val url = prevChapterUrl
+        val url = pageLoader.curChapterData?.prevUrl
         if (url.isNullOrBlank()) {
             Toast.makeText(this, "没有上一章", Toast.LENGTH_SHORT).show()
             return
         }
-        loadUrlForReadMode(url)
+        showChapter(url)
     }
 
     fun gotoNextChapter() {
-        val url = nextChapterUrl
+        val url = pageLoader.curChapterData?.nextUrl
         if (url.isNullOrBlank()) {
             Toast.makeText(this, "没有下一章", Toast.LENGTH_SHORT).show()
             return
         }
-        loadUrlForReadMode(url)
+        showChapter(url)
     }
 
-    private fun showLoadingChapter(url: String) {
-        showChapter("加载中", "正在加载...", url)
-    }
-
-    private fun showErrorChapter(url: String) {
-        showChapter("错误", "无法提取页面内容", url)
-    }
-
-    private fun showChapter(title: String, content: String, url: String) {
+    private fun showChapter(url: String) {
+        val data: ExtractResult? = extractCache.get(url)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
-        extractCache.put(url, ExtractResult(title, content, prevChapterUrl, nextChapterUrl, prevChapterText, nextChapterText, directoryUrl))
+
         // 更新 WebBook 阅读进度（同域名时）
-        updateWebBookProgress(url, title)
+        updateWebBookProgress(url)
 
         val book = Book().apply {
-            this.url = url.ifBlank { "browser://reader" }
-            this.title = title.ifBlank { "Reader" }
+            this.url = webBook?.url ?: url.ifBlank { "browser://reader" }
+            this.title = webBook?.title ?: "浏览器阅读模式"
         }
 
         val wb = webBook
         var record: BookRecordBean? = null
-        if (wb != null && wb.lastUrl == url && needRestore && title != "加载中" && title != "错误") {
+        if (wb?.lastUrl == url && needRestore && data != null) {
             needRestore = false
             record = BookRecordBean().apply {
                 this.bookId = book.id
-                this.chapter = 0
                 this.pagePos = wb.offest
                 this.scrollOffset = wb.scrollOffset
             }
         } else {
-            if (title != "加载中" && title != "错误") {
+            if (data != null) {
                 needRestore = false
             }
         }
 
-        ChapterPageCache.resetId(book.id)
+        ChapterPageCache.reset()
         TxtChapter.evictAll()
-        pageLoader.closeBook()
-        record?.let { pageLoader.setBookRecord(it) }
-        pageLoader.mCollBook = book
+
         val chapters = mutableListOf<TxtChapter>()
-        prevChapterUrl?.let {
+        data?.prevUrl?.let {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = it
-                this.title = prevChapterText ?: "加载中"
+                this.title = data.prevText ?: "加载中"
                 this.chapterIndex = 0
-                this.content = null
             })
         }
         chapters.add(TxtChapter().apply {
             this.bookId = book.id
             this.link = url
-            this.title = title
+            this.title = data?.title ?: "加载中"
             this.chapterIndex = chapters.size
-            this.content = content
+            this.content = data?.content
         })
-        nextChapterUrl?.let {
+        data?.nextUrl?.let {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = it
-                this.title = nextChapterText ?: "加载中"
+                this.title = data.nextText ?: "加载中"
                 this.chapterIndex = chapters.size
-                this.content = null
             })
         }
+
+        pageLoader.closeBook()
+        record = record?:BookRecordBean()
+        val chapter = chapters.indexOfFirst { it.link == url }
+        record.chapter = chapter
+        pageLoader.setBookRecord(record)
+        pageLoader.skipToChapter(chapter)
+        pageLoader.mCollBook = book
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
     }
@@ -665,6 +624,8 @@ class BrowserReadModeActivity : BaseActivity() {
         TtsService.progressChangeCallback = null
         TtsService.onCompleted = null
         extractJob?.cancel()
+        loadUrlQueueJob?.cancel()
+        loadUrlQueue.clear()
         hiddenWebView.destroy()
     }
 
@@ -689,10 +650,10 @@ class BrowserReadModeActivity : BaseActivity() {
         TtsService.onCompleted = {
             pageLoader.setTtsSpeakLine(null)
             // 浏览器阅读模式只有一章，朗读完成后自动跳转下一章
-            val url = nextChapterUrl
+            val url = pageLoader.curChapterData?.nextUrl
             if (!url.isNullOrBlank()) {
                 Log.i("TTS 章节切换，继续朗读")
-                loadUrlForReadMode(url)
+                showChapter(url)
                 // 页面加载完成后自动开始朗读
                 extractJob?.invokeOnCompletion {
                     if (TtsService.isSpeaking.value != true && pageLoader.curPageList?.isNotEmpty() == true) {
@@ -727,11 +688,16 @@ class BrowserReadModeActivity : BaseActivity() {
 
     // ==================== Extract helpers ====================
 
+    private data class LoadUrlRequest(
+        val url: String,
+        val force: Boolean,
+    )
+
     data class ExtractResult(
         val title: String,
-        val content: String,
-        val prevUrl: String?,
-        val nextUrl: String?,
+        var content: String,
+        val prevUrl: String? = null,
+        val nextUrl: String? = null,
         val prevText: String? = null,
         val nextText: String? = null,
         val directory: String? = null,
@@ -775,7 +741,13 @@ class BrowserReadModeActivity : BaseActivity() {
         private var cachedDirectoryJs: String? = null
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
-        val extractCache = LruCache<String, ExtractResult>(10)
+        val extractCache = LruCache<String, ExtractResult?>(100)
+
+        val PageLoader.curChapterData: ExtractResult?
+            get() {
+                val url = this.curChapter?.link ?: return null
+                return extractCache.get(url)
+            }
 
         private fun loadExtractJs(context: Context): String {
             cachedJs?.let { return it }

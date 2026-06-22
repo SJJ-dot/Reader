@@ -24,6 +24,7 @@ import com.sjianjun.reader.databinding.BrowserReadModeSettingsBinding
 import com.sjianjun.reader.databinding.PopupReaderSettingMenuBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.curChapterData
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.CustomPageStyleFragment
 import com.sjianjun.reader.module.reader.DefaultPageStyleListFragment
@@ -191,10 +192,9 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val b = binding ?: return
         val activity = activity as? BrowserReadModeActivity ?: return
         val loader = pageLoader ?: return
-
-        b.chapterDirectory.visibility = if (activity.directoryUrl.isNullOrBlank()) View.GONE else View.VISIBLE
-        b.chapterLast.text = activity.prevChapterText?.takeIf { it.isNotBlank() } ?: "上一章"
-        b.chapterNext.text = activity.nextChapterText?.takeIf { it.isNotBlank() } ?: "下一章"
+        val curChapterData = loader.curChapterData
+        b.chapterLast.text = curChapterData?.prevText?.takeIf { it.isNotBlank() } ?: "上一章"
+        b.chapterNext.text = curChapterData?.nextText?.takeIf { it.isNotBlank() } ?: "下一章"
 
         val curPage = loader.pagePos + 1
         val totalPages = loader.curPageList?.size ?: 0

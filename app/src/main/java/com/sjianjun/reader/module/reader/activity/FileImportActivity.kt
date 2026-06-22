@@ -203,7 +203,7 @@ class FileImportActivity : BaseActivity() {
         book: TxtBook,
         chapterList: MutableList<Chapter>,
         chapterName: String?,
-        chapterContent: String?
+        chapterContent: String?,
     ) {
         val chapter = Chapter()
         chapter.url = "${book.book.url}_${chapterList.size}"
@@ -216,7 +216,7 @@ class FileImportActivity : BaseActivity() {
             ChapterContent(
                 chapter.bookId,
                 chapter.index,
-                chapterContent ?: chapter.title!!
+                if (chapterContent.isNullOrBlank()) chapter.title!! else chapterContent
             )
         )
     }
