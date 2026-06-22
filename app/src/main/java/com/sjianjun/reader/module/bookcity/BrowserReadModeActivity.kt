@@ -519,10 +519,10 @@ class BrowserReadModeActivity : BaseActivity() {
         }
 
         val wb = webBook
-        var record: BookRecordBean? = null
+        val record = BookRecordBean()
         if (wb?.lastUrl == url && needRestore && data != null) {
             needRestore = false
-            record = BookRecordBean().apply {
+            record.apply {
                 this.bookId = book.id
                 this.pagePos = wb.offest
                 this.scrollOffset = wb.scrollOffset
@@ -562,11 +562,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
 
         pageLoader.closeBook()
-        record = record?:BookRecordBean()
         val chapter = chapters.indexOfFirst { it.link == url }
         record.chapter = chapter
         pageLoader.setBookRecord(record)
-        pageLoader.skipToChapter(chapter)
         pageLoader.mCollBook = book
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
