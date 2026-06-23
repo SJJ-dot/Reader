@@ -18,7 +18,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import com.sjianjun.coroutine.launch
+import com.google.android.flexbox.FlexboxLayoutManager
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
@@ -51,7 +51,6 @@ import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.ChapterPageCache
 import sjj.novel.view.reader.page.DisplayParams
 import sjj.novel.view.reader.page.PageLoader
-import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_FINISH
 import sjj.novel.view.reader.page.PageLoader.Companion.STATUS_LOADING
 import sjj.novel.view.reader.page.PageMode
 import sjj.novel.view.reader.page.PageStyle
@@ -130,7 +129,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun setupChapterList() {
         binding.chapterListRv.itemAnimator = null
-        binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        binding.chapterListRv.layoutManager = FlexboxLayoutManager(this)
         binding.chapterListRv.adapter = ChapterListAdapter { link ->
             showChapter(link.url)
         }
