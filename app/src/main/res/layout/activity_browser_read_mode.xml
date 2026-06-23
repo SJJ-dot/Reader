@@ -34,14 +34,45 @@
     <!-- 章节目录抽屉 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chapter_list_drawer"
-        android:layout_width="280dp"
+        android:layout_width="300dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
         android:background="@color/dn_background_dialog"
         android:clickable="true"
         android:focusable="true">
 
-        <!-- 顶部筛选栏：跨域过滤 -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/chapter_list_tab"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tabMode="scrollable"
+            app:tabSelectedTextColor="@color/colorPrimary">
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="链接" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="未标记" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="黑名单" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="白名单" />
+        </com.google.android.material.tabs.TabLayout>
+
+        <!-- 底部筛选栏：跨域过滤 -->
         <LinearLayout
             android:id="@+id/chapter_list_filter_bar"
             android:layout_width="match_parent"
@@ -67,13 +98,12 @@
             android:id="@+id/chapter_list_rv"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginBottom="5dp"
             android:background="@color/dn_background_dialog"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toTopOf="@+id/chapter_list_filter_bar"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/chapter_list_filter_bar"
+            app:layout_constraintTop_toBottomOf="@+id/chapter_list_tab"
             tools:listitem="@layout/item_browser_chapter" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

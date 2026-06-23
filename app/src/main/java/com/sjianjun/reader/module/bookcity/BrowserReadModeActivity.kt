@@ -71,6 +71,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private lateinit var binding: ActivityBrowserReadModeBinding
     private lateinit var hiddenWebView: WebView
 
+    /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
+    private val adBlock: AdBlock = AdBlock()
+
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
     private var loadUrlQueueJob: Job? = null
@@ -107,6 +110,8 @@ class BrowserReadModeActivity : BaseActivity() {
         hiddenWebView = binding.hiddenWebView
         hiddenWebView.init()
         hiddenWebView.webChromeClient = WebChromeClient()
+        // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
+        hiddenWebView.webViewClient = ReadModeWebViewClient()
 
         setupInsets()
         setupPageLoader()
@@ -129,11 +134,45 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun setupChapterList() {
         binding.chapterListRv.itemAnimator = null
-        binding.chapterListRv.layoutManager = FlexboxLayoutManager(this)
-        binding.chapterListRv.adapter = ChapterListAdapter { link ->
-            showChapter(link.url)
+
+        // 复用 BookCityPageFragment 中的三个 host adapter 显示 AdBlock 信息
+        val chapterAdapter = ChapterListAdapter { link ->
+            navigateChecked(
+                url = link.url,
+                baseHost = currentBaseHost(),
+                onAllow = { showChapter(link.url) },
+                onBlock = { toast("链接已被阻止") },
+            )
         }
-        // 跨域筛选
+        val hostListAdapter = BookCityPageFragment.HostListAdapter(adBlock)
+        val blackListAdapter = BookCityPageFragment.BlackListAdapter(adBlock)
+        val whiteListAdapter = BookCityPageFragment.WhiteListAdapter(adBlock)
+
+        // 观察 AdBlock 数据
+        adBlock.hostList.observe(this) {
+            hostListAdapter.data = it
+            hostListAdapter.notifyDataSetChanged()
+        }
+        adBlock.blacklist.observe(this) {
+            blackListAdapter.data = it
+            blackListAdapter.notifyDataSetChanged()
+        }
+        adBlock.whitelist.observe(this) {
+            whiteListAdapter.data = it
+            whiteListAdapter.notifyDataSetChanged()
+        }
+
+        // 默认 Tab 0：本页链接
+        applyChapterDrawerTab(0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter)
+        binding.chapterListTab.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                applyChapterDrawerTab(tab?.position ?: 0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter)
+            }
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+        })
+
+        // 跨域筛选（仅对"本页链接"Tab 有效）
         binding.chapterListIncludeCrossDomain.setOnCheckedChangeListener { _, checked ->
             includeCrossDomain = checked
             renderChapterList()
@@ -150,13 +189,50 @@ class BrowserReadModeActivity : BaseActivity() {
         })
     }
 
+    /**
+     * 切换抽屉中的 Tab。Tab 0 = 本页链接（FlexboxLayoutManager + chapterAdapter + 跨域过滤）；
+     * Tab 1/2/3 = 未标记/黑名单/白名单（LinearLayoutManager + host item adapter）
+     */
+    private fun applyChapterDrawerTab(
+        position: Int,
+        chapterAdapter: ChapterListAdapter,
+        hostListAdapter: BookCityPageFragment.HostListAdapter,
+        blackListAdapter: BookCityPageFragment.BlackListAdapter,
+        whiteListAdapter: BookCityPageFragment.WhiteListAdapter,
+    ) {
+        when (position) {
+            0 -> {
+                binding.chapterListRv.layoutManager = FlexboxLayoutManager(this)
+                binding.chapterListRv.adapter = chapterAdapter
+                binding.chapterListIncludeCrossDomain.visibility = View.VISIBLE
+                renderChapterList()
+            }
+            1 -> {
+                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                binding.chapterListRv.adapter = hostListAdapter
+                binding.chapterListIncludeCrossDomain.visibility = View.GONE
+            }
+            2 -> {
+                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                binding.chapterListRv.adapter = blackListAdapter
+                binding.chapterListIncludeCrossDomain.visibility = View.GONE
+            }
+            3 -> {
+                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                binding.chapterListRv.adapter = whiteListAdapter
+                binding.chapterListIncludeCrossDomain.visibility = View.GONE
+            }
+        }
+    }
+
     /** 抽屉是否处于打开状态 */
     private fun isChapterDrawerOpen(): Boolean {
         return binding.drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.END)
     }
 
-    /** 根据当前页缓存渲染抽屉列表，按 includeCrossDomain 过滤跨域 */
+    /** 根据当前页缓存渲染抽屉的"本页链接"列表，按 includeCrossDomain 过滤跨域 */
     private fun renderChapterList() {
+        val adapter = binding.chapterListRv.adapter as? ChapterListAdapter ?: return
         val curUrl = pageLoader.curChapter?.link
         val links = curUrl?.let { extractCache.get(it)?.allLinks } ?: emptyList()
         val baseHost = curUrl?.toHttpUrlOrNull()?.topPrivateDomain()
@@ -169,7 +245,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 host == null || host == baseHost
             }
         }
-        (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(filtered.toList())
+        adapter.submitList(filtered.toList())
     }
 
     fun openDrawer() {
@@ -976,6 +1052,173 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     data class ChapterLink(val title: String, val url: String)
+
+    /**
+     * 阅读模式专用 WebViewClient。
+     * 主动导航走 Activity 的 navigateChecked；资源请求直接在 shouldInterceptRequest 内做同步判断。
+     */
+    private inner class ReadModeWebViewClient : android.webkit.WebViewClient() {
+
+        /**
+         * 当前主页面的顶级私有域。shouldInterceptRequest 在 WebView 工作线程上回调，
+         * 不能直接调 view.url（必须主线程）；这里在 onPageStarted/doUpdateVisitedHistory
+         * 自维护，资源拦截时直接读字段。
+         */
+        @Volatile
+        private var currentHost: String? = null
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            currentHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
+            adBlock.markPage(url)
+        }
+
+        override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+            super.doUpdateVisitedHistory(view, url, isReload)
+            // SPA pushState/replaceState 等不会触发 onPageStarted 的场景
+            if (url != null) currentHost = url.toHttpUrlOrNull()?.topPrivateDomain()
+        }
+
+        override fun shouldOverrideUrlLoading(
+            view: WebView?,
+            request: android.webkit.WebResourceRequest
+        ): Boolean {
+            val url = request.url.toString()
+            navigateChecked(url, currentHost, onAllow = { view?.loadUrl(url) })
+            return true
+        }
+
+        @Suppress("DEPRECATION")
+        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+            url ?: return false
+            navigateChecked(url, currentHost, onAllow = { view?.loadUrl(url) })
+            return true
+        }
+
+        override fun shouldInterceptRequest(
+            view: WebView?,
+            request: android.webkit.WebResourceRequest
+        ): android.webkit.WebResourceResponse? {
+            val url = request.url.toString()
+            adBlock.addUrl(url)
+            val target = url.toHttpUrlOrNull()?.topPrivateDomain()
+            val isCross = currentHost != null && target != null && currentHost != target
+
+            val block = when {
+                target != null && adBlock.whitelist.contains(target) -> false
+                adBlock.blacklist.contains(target) -> true
+                isLikelyDownload(url) -> true
+                isCross && crossOriginMode() == 2 -> true
+                else -> false
+            }
+            return if (block) blockedResponse() else null
+        }
+
+        override fun onReceivedSslError(
+            view: WebView?,
+            handler: android.webkit.SslErrorHandler?,
+            error: android.net.http.SslError?
+        ) {
+            Log.e("ReadMode SSL: ${error?.toString()}")
+            handler?.proceed()
+        }
+
+        private fun blockedResponse() = android.webkit.WebResourceResponse(
+            "text/plain", "UTF-8",
+            java.io.ByteArrayInputStream(ByteArray(0))
+        )
+    }
+
+    // ==================== 广告拦截 / 跨域决策 ====================
+
+    /** 跨域临时配置: -1=使用 globalConfig, 0=询问, 1=允许, 2=拒绝 */
+    @Volatile
+    private var crossOriginOverride: Int = -1
+
+    private fun crossOriginMode(): Int =
+        if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
+
+    /** 当前阅读章节所在的主域，用作跨域比较基准 */
+    private fun currentBaseHost(): String? =
+        pageLoader.curChapter?.link?.toHttpUrlOrNull()?.topPrivateDomain()
+            ?: webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
+
+    /** 简单按扩展名判断是否疑似下载链接 */
+    private fun isLikelyDownload(url: String): Boolean {
+        val lower = url.substringBefore('?').lowercase()
+        val exts = arrayOf(
+            ".apk", ".ipa", ".exe", ".msi", ".dmg",
+            ".zip", ".rar", ".7z", ".tar", ".gz",
+            ".mp3", ".mp4", ".mkv", ".avi", ".flv", ".m4a",
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+            ".epub", ".mobi", ".azw3"
+        )
+        return exts.any { lower.endsWith(it) }
+    }
+
+    /**
+     * 主动导航的统一拦截入口：
+     *  - 下载资源 / 黑名单 / 外部 scheme → onBlock
+     *  - 白名单 / 同主域 / 跨域允许 → onAllow
+     *  - 跨域+拒绝 → onBlock
+     *  - 跨域+询问 → 弹窗，用户点"允许一次"或"+白名单"会触发 onAllow；选"+黑名单"或取消则均不回调
+     */
+    private fun navigateChecked(
+        url: String,
+        baseHost: String?,
+        onAllow: () -> Unit,
+        onBlock: () -> Unit = {},
+    ) {
+        if (isLikelyDownload(url)) { onBlock(); return }
+
+        val target = url.toHttpUrlOrNull()?.topPrivateDomain()
+        if (target != null && adBlock.whitelist.contains(target)) { onAllow(); return }
+        if (target != null && adBlock.blacklist.contains(target)) { onBlock(); return }
+
+        val scheme = url.substringBefore(':', "").lowercase()
+        if (scheme != "http" && scheme != "https") {
+            if (scheme in setOf("about", "data", "blob", "javascript", "file")) onAllow() else onBlock()
+            return
+        }
+
+        val isCross = baseHost != null && target != null && baseHost != target
+        if (!isCross) { onAllow(); return }
+
+        when (crossOriginMode()) {
+            1 -> onAllow()
+            2 -> onBlock()
+            else -> askCrossOrigin(url, target, onAllow)
+        }
+    }
+
+    /** 跨域询问弹窗（DialogCrossOriginBinding 三选一） */
+    private fun askCrossOrigin(url: String, targetTop: String?, onAllow: () -> Unit) {
+        try {
+            val b = com.sjianjun.reader.databinding.DialogCrossOriginBinding
+                .inflate(layoutInflater, null, false)
+            b.tvDialogUrl.text = targetTop ?: url
+            val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setView(b.root)
+                .setCancelable(true)
+                .create()
+            b.btnAllowOnce.setOnClickListener {
+                dialog.dismiss()
+                onAllow()
+            }
+            b.btnWhitelist.setOnClickListener {
+                if (targetTop != null) adBlock.addWhiteHost(HostStr(targetTop, listOf()))
+                dialog.dismiss()
+                onAllow()
+            }
+            b.btnBlacklist.setOnClickListener {
+                if (targetTop != null) adBlock.addBlackHost(HostStr(targetTop, listOf()))
+                dialog.dismiss()
+            }
+            dialog.show()
+        } catch (t: Throwable) {
+            Log.e("ReadMode askCrossOrigin err", t)
+        }
+    }
 
     class ChapterListAdapter(private val onClick: (ChapterLink) -> Unit) : androidx.recyclerview.widget.ListAdapter<ChapterLink, ChapterListAdapter.ViewHolder>(
         object : androidx.recyclerview.widget.DiffUtil.ItemCallback<ChapterLink>() {

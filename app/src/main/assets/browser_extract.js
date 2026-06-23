@@ -135,22 +135,24 @@
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
-            var t = (a.innerText || a.textContent || '').trim();
+            var t = ((a.innerText || a.textContent || '').trim()).toLowerCase();
             var id = (a.id || '').toLowerCase();
             var cls = (a.className || '').toString().toLowerCase();
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
             if (!prev) {
                 for (var p = 0; p < prevKeys.length; p++) {
-                    if (t.indexOf(prevKeys[p]) >= 0 || id.indexOf(prevKeys[p]) >= 0 || cls.indexOf(prevKeys[p]) >= 0) {
-                        prev = abs(href); prevText = t; break;
+                    var pk = prevKeys[p].toLowerCase();
+                    if (t.indexOf(pk) >= 0 || id.indexOf(pk) >= 0 || cls.indexOf(pk) >= 0) {
+                        prev = abs(href); prevText = (a.innerText || a.textContent || '').trim(); break;
                     }
                 }
             }
             if (!next) {
                 for (var n = 0; n < nextKeys.length; n++) {
-                    if (t.indexOf(nextKeys[n]) >= 0 || id.indexOf(nextKeys[n]) >= 0 || cls.indexOf(nextKeys[n]) >= 0) {
-                        next = abs(href); nextText = t; break;
+                    var nk = nextKeys[n].toLowerCase();
+                    if (t.indexOf(nk) >= 0 || id.indexOf(nk) >= 0 || cls.indexOf(nk) >= 0) {
+                        next = abs(href); nextText = (a.innerText || a.textContent || '').trim(); break;
                     }
                 }
             }
@@ -194,6 +196,29 @@
         urlSeen.add(labs);
         titleSeen.add(ltext);
         allLinks.push({ title: ltext, url: labs });
+    }
+
+    // 6. prev/next 兜底：如果前面没找到，再从 allLinks 里做一次大小写不敏感匹配
+    if (!prev || !next) {
+        for (var ai = 0; ai < allLinks.length; ai++) {
+            var item = allLinks[ai];
+            var t = (item.title || '').toLowerCase();
+            if (!prev) {
+                for (var pi = 0; pi < prevKeys.length; pi++) {
+                    if (t.indexOf(prevKeys[pi].toLowerCase()) >= 0) {
+                        prev = item.url; prevText = item.title; break;
+                    }
+                }
+            }
+            if (!next) {
+                for (var ni = 0; ni < nextKeys.length; ni++) {
+                    if (t.indexOf(nextKeys[ni].toLowerCase()) >= 0) {
+                        next = item.url; nextText = item.title; break;
+                    }
+                }
+            }
+            if (prev && next) break;
+        }
     }
 
     return JSON.stringify({
