@@ -23,67 +23,13 @@
         if (!visible(a)) continue;
         var href = abs(a.getAttribute('href'));
         if (!href || href === '#' || /^javascript:/i.test(href) || seen.has(href)) continue;
+        var t = (a.innerText || a.textContent || '').trim();
+        if (!t) continue;
         seen.add(href);
-        var t = (a.innerText || a.textContent || '').trim();
-        allLinks.push({
-            title: t,
-            url: href
-        });
-    }
-
-    // 3. 启发式寻找章节列表容器
-    var containers = document.querySelectorAll('div, ul, section, dl');
-    var bestContainer = null;
-    var maxLinks = 0;
-
-    for (var i = 0; i < containers.length; i++) {
-        var c = containers[i];
-        if (!visible(c)) continue;
-        var links = c.querySelectorAll('a[href]');
-        var count = 0;
-        for (var j = 0; j < links.length; j++) {
-            var t = (links[j].innerText || links[j].textContent || '').trim();
-            if (t.length > 1 && (/\d+/.test(t) || t.indexOf('第') >= 0 || t.indexOf('章') >= 0)) {
-                count++;
-            }
-        }
-        if (count > maxLinks) {
-            maxLinks = count;
-            bestContainer = c;
-        }
-    }
-
-    // 4. 提取章节列表（去重）
-    var chapters = [];
-    var seenChapter = new Set();
-    var targetLinks = bestContainer ? bestContainer.querySelectorAll('a[href]') : anchors;
-    for (var i = 0; i < targetLinks.length; i++) {
-        var a = targetLinks[i];
-        var t = (a.innerText || a.textContent || '').trim();
-        var href = abs(a.getAttribute('href'));
-        if (!href || href === '#' || /^javascript:/i.test(href) || seenChapter.has(href)) continue;
-
-        if (t.length > 1) {
-            chapters.push({ title: t, url: href });
-            seenChapter.add(href);
-        }
-    }
-
-    // 5. 目录下一页
-    var nextPage = '';
-    var nextKeys = ['下一页', '下一頁', '下一页>', '下页', '下頁', '下页>', '下一页 »', 'Next', 'Next Page'];
-    for (var k = 0; k < anchors.length; k++) {
-        var a = anchors[k];
-        var t = (a.innerText || a.textContent || '').trim();
-        if (nextKeys.indexOf(t) >= 0 || t.endsWith('下一页')) {
-            nextPage = abs(a.getAttribute('href'));
-            break;
-        }
+        allLinks.push({ title: t, url: href });
     }
 
     return JSON.stringify({
-        allLinks: allLinks,
-        chapters: chapters,
-        nextPage: nextPage
+        allLinks: allLinks
     });
 })();

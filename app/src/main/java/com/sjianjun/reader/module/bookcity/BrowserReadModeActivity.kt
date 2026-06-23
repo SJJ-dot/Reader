@@ -72,8 +72,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
     private var loadUrlQueueJob: Job? = null
-    private var chapterList = mutableListOf<ChapterLink>()
-    private var directoryNextPageUrl: String? = null
+    private var allLinkList = mutableListOf<ChapterLink>()
+    /** 是否包含跨域链接 */
+    private var includeCrossDomain = false
     private var updateWebBookJob: Job? = null
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
@@ -127,39 +128,50 @@ class BrowserReadModeActivity : BaseActivity() {
             showChapter(link.url)
             binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END)
         }
-        binding.btnChapterListNextPage.setOnClickListener {
-            val next = directoryNextPageUrl
-            if (!next.isNullOrBlank()) {
-                loadChapterList(next)
-            }
+        // 跨域筛选
+        binding.chapterListIncludeCrossDomain.setOnCheckedChangeListener { _, checked ->
+            includeCrossDomain = checked
+            renderChapterList()
         }
         binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: View) {
-                val directoryUrl = pageLoader.curChapterData?.directory ?: return
-                if (chapterList.isEmpty() && directoryUrl.isNotBlank()) {
-                    loadChapterList(directoryUrl)
+                val curUrl = pageLoader.curChapter?.link
+                if (allLinkList.isEmpty() && !curUrl.isNullOrBlank()) {
+                    loadChapterList(curUrl)
                 }
             }
         })
     }
 
+    /** 根据 includeCrossDomain 渲染当前列表，相对当前章节链接判断跨域 */
+    private fun renderChapterList() {
+        val base = pageLoader.curChapter?.link ?: webBook?.url
+        val baseHost = base?.toHttpUrlOrNull()?.topPrivateDomain()
+        val filtered = if (includeCrossDomain || baseHost == null) {
+            allLinkList
+        } else {
+            allLinkList.filter { link ->
+                val host = link.url.toHttpUrlOrNull()?.topPrivateDomain()
+                host == null || host == baseHost
+            }
+        }
+        (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(filtered.toList())
+    }
+
     fun openDrawer() {
         binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END)
-        val directoryUrl = pageLoader.curChapterData?.directory ?: return
-        if (chapterList.isEmpty() && directoryUrl.isNotBlank()) {
-            loadChapterList(directoryUrl)
+        val curUrl = pageLoader.curChapter?.link
+        if (allLinkList.isEmpty() && !curUrl.isNullOrBlank()) {
+            loadChapterList(curUrl)
         }
     }
 
     private fun loadChapterList(url: String) {
         lifecycleScope.launch {
-            val directoryUrl = pageLoader.curChapterData?.directory ?: return@launch
-            if (url == directoryUrl && chapterList.isNotEmpty()) {
-                // Already loading or loaded
+            if (allLinkList.isNotEmpty()) {
+                // Already loaded
                 return@launch
             }
-            binding.btnChapterListNextPage.text = "正在加载..."
-            binding.btnChapterListNextPage.visibility = View.VISIBLE
 
             hiddenWebView.loadUrl(url)
             var retry = 0
@@ -175,25 +187,17 @@ class BrowserReadModeActivity : BaseActivity() {
                 try {
                     val jsonStr = unwrapJsString(raw)
                     val obj = JSONObject(jsonStr)
-                    val chapters = obj.optJSONArray("chapters")
-                    if (chapters != null) {
-                        val list = mutableListOf<ChapterLink>()
-                        for (i in 0 until chapters.length()) {
-                            val c = chapters.getJSONObject(i)
-                            list.add(ChapterLink(c.optString("title"), c.optString("url")))
+                    allLinkList.clear()
+                    val allLinks = obj.optJSONArray("allLinks")
+                    if (allLinks != null) {
+                        for (i in 0 until allLinks.length()) {
+                            val c = allLinks.getJSONObject(i)
+                            allLinkList.add(ChapterLink(c.optString("title"), c.optString("url")))
                         }
-                        if (url == directoryUrl) {
-                            chapterList.clear()
-                        }
-                        chapterList.addAll(list)
-                        (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(chapterList.toList())
                     }
-                    directoryNextPageUrl = obj.optString("nextPage", "").takeIf { it.isNotBlank() }
-                    binding.btnChapterListNextPage.text = "下一页"
-                    binding.btnChapterListNextPage.visibility = if (directoryNextPageUrl.isNullOrBlank()) View.GONE else View.VISIBLE
+                    renderChapterList()
                 } catch (e: Exception) {
                     Log.e("loadChapterList err", e)
-                    binding.btnChapterListNextPage.text = "加载失败，点击重试"
                 }
             }
         }
@@ -459,10 +463,6 @@ class BrowserReadModeActivity : BaseActivity() {
             extractCache.put(url, data)
         }
         updateNextToPrevMap(url, data)
-        if (pageLoader.curChapterData?.directory != data.directory) {
-            chapterList.clear()
-            (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
-        }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
         }
@@ -520,6 +520,12 @@ class BrowserReadModeActivity : BaseActivity() {
         val data: ExtractResult? = extractCache.get(url)
         updateNextToPrevMap(url, data)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
+
+        // 切换到不同的页面时清空抽屉里基于上一页提取的链接
+        if (pageLoader.curChapter?.link != url) {
+            allLinkList.clear()
+            (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
+        }
 
         // 更新 WebBook 阅读进度（同域名时）
         updateWebBookProgress(url)
