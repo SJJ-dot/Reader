@@ -153,7 +153,7 @@ class AppConfig(val name: String) :
     /**
      * 是否默认使用阅读模式打开网页书籍
      */
-    val autoBrowserReadMode by lazy { boolLivedata("autoBrowserReadMode", false) }
+    val autoBrowserReadMode by lazy { boolLivedata("autoBrowserReadMode", true) }
 
     /**
      * 浏览器阅读模式磁盘缓存大小（单位 MB），默认 50MB
