@@ -26,6 +26,17 @@
         return t.trim();
     }
 
+    /**
+     * \u7528\u4E8E\u5173\u952E\u5B57\u5339\u914D\u7684\u5F52\u4E00\u5316\uFF1A\u5C0F\u5199\u5316 + \u628A\u5BB9\u6613\u88AB\u7AD9\u70B9\u66FF\u6362\u7684\u5B57\u7B26\u56DE\u5199\u5230\u6807\u51C6\u5F62\u5F0F\u3002
+     * \u771F\u5B9E\u7AD9\u70B9\u91CC\u5E38\u89C1 "\u4E0B\u2014\u9875"/"\u4E0B\uFF0D\u9875"/"\u4E0B_\u9875" \u7B49\u7528\u7834\u6298\u53F7/\u8FDE\u5B57\u7B26\u5192\u5145"\u4E00"\u7684\u5199\u6CD5\u3002
+     */
+    function normalize(s) {
+        if (!s) return '';
+        return s.toLowerCase()
+            // \u5404\u79CD dash / \u8FDE\u5B57\u7B26 / \u4E0B\u5212\u7EBF / \u7A7A\u767D \u2192 \u4E00
+            .replace(/[\u2010-\u2015\uFF0D\-_\s]/g, '\u4E00');
+    }
+
     // 1. 标题
     var title = '';
     // 优先尝试获取 og:title
@@ -135,24 +146,25 @@
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
-            var t = ((a.innerText || a.textContent || '').trim()).toLowerCase();
-            var id = (a.id || '').toLowerCase();
-            var cls = (a.className || '').toString().toLowerCase();
+            var rawText = (a.innerText || a.textContent || '').trim();
+            var t = normalize(rawText);
+            var id = normalize(a.id || '');
+            var cls = normalize((a.className || '').toString());
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
             if (!prev) {
                 for (var p = 0; p < prevKeys.length; p++) {
-                    var pk = prevKeys[p].toLowerCase();
+                    var pk = normalize(prevKeys[p]);
                     if (t.indexOf(pk) >= 0 || id.indexOf(pk) >= 0 || cls.indexOf(pk) >= 0) {
-                        prev = abs(href); prevText = (a.innerText || a.textContent || '').trim(); break;
+                        prev = abs(href); prevText = rawText; break;
                     }
                 }
             }
             if (!next) {
                 for (var n = 0; n < nextKeys.length; n++) {
-                    var nk = nextKeys[n].toLowerCase();
+                    var nk = normalize(nextKeys[n]);
                     if (t.indexOf(nk) >= 0 || id.indexOf(nk) >= 0 || cls.indexOf(nk) >= 0) {
-                        next = abs(href); nextText = (a.innerText || a.textContent || '').trim(); break;
+                        next = abs(href); nextText = rawText; break;
                     }
                 }
             }
@@ -198,21 +210,21 @@
         allLinks.push({ title: ltext, url: labs });
     }
 
-    // 6. prev/next 兜底：如果前面没找到，再从 allLinks 里做一次大小写不敏感匹配
+    // 6. prev/next 兜底：如果前面没找到，再从 allLinks 里做一次归一化匹配
     if (!prev || !next) {
         for (var ai = 0; ai < allLinks.length; ai++) {
             var item = allLinks[ai];
-            var t = (item.title || '').toLowerCase();
+            var t = normalize(item.title || '');
             if (!prev) {
                 for (var pi = 0; pi < prevKeys.length; pi++) {
-                    if (t.indexOf(prevKeys[pi].toLowerCase()) >= 0) {
+                    if (t.indexOf(normalize(prevKeys[pi])) >= 0) {
                         prev = item.url; prevText = item.title; break;
                     }
                 }
             }
             if (!next) {
                 for (var ni = 0; ni < nextKeys.length; ni++) {
-                    if (t.indexOf(nextKeys[ni].toLowerCase()) >= 0) {
+                    if (t.indexOf(normalize(nextKeys[ni])) >= 0) {
                         next = item.url; nextText = item.title; break;
                     }
                 }

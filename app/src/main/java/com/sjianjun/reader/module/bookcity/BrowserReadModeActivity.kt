@@ -810,7 +810,6 @@ class BrowserReadModeActivity : BaseActivity() {
         val nextUrl: String? = null,
         val prevText: String? = null,
         val nextText: String? = null,
-        val directory: String? = null,
         val allLinks: List<ChapterLink> = emptyList(),
     )
 
@@ -827,7 +826,6 @@ class BrowserReadModeActivity : BaseActivity() {
                     val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
                     val next = obj.optString("next", "").takeIf { it.isNotBlank() }
                     val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
-                    val directory = obj.optString("directory", "").takeIf { it.isNotBlank() }
                     val linksArr = obj.optJSONArray("allLinks")
                     val allLinks = mutableListOf<ChapterLink>()
                     if (linksArr != null) {
@@ -836,7 +834,7 @@ class BrowserReadModeActivity : BaseActivity() {
                             allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
                         }
                     }
-                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, directory, allLinks))
+                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
                 } catch (t: Throwable) {
                     Log.e("extractContent err", t)
                     if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
