@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.reader
 
+import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -8,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
@@ -53,11 +56,21 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
             root.setPadding(safeLeft, 0, safeRight, safeBottom + offset)
             insets
         }
-        binding?.rootOverlay?.setOnClickListener { dismissAllowingStateLoss() }
-        binding?.panel?.setOnClickListener { }
+        binding?.rootOverlay?.setOnClickListener { hideKeyboard() }
+        // 点击 ScrollView 或 panel 的空白处隐藏输入法（panel clickable 会拦截 ScrollView 的事件，需要两边都绑定）
+        val hideKeyboard = View.OnClickListener { hideKeyboard() }
+        binding?.editScrollView?.setOnClickListener(hideKeyboard)
+        binding?.panel?.setOnClickListener(hideKeyboard)
         binding?.btnSave?.setOnClickListener { saveRule() }
         binding?.tvHelp?.setOnClickListener { showRegexHelpDialog() }
         loadRule()
+    }
+
+    private fun hideKeyboard() {
+        val focus = dialog?.currentFocus ?: binding?.root ?: return
+        val imm = focus.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(focus.windowToken, 0)
+        focus.clearFocus()
     }
 
     override fun onStart() {
@@ -144,10 +157,13 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun showRegexHelpDialog() {
         val examples = arrayOf(
-            "示例1：替换“开始”到“结束”之间的文字(包括换行)",
-            "示例2：替换“开始”...“中间”...“结束”之间的文字(包括换行)"
+            "模板1：替换“关键字1”到“关键字2”之间的文字(含换行)",
+            "模板2：替换“关键字1”...“关键字2”...“关键字3”之间的文字(含换行)",
+            "模板3：替换章节开始到“关键字”第一次出现之间的文字(含换行)",
+            "模板4：替换最后一个“关键字”到文本结束之间的文字(含换行)"
         )
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("常用正则模板（点击填充）")
@@ -155,13 +171,23 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
                 val binding = binding ?: return@setItems
                 when (which) {
                     0 -> {
-                        binding.etRule.setText("(?s)开始.*?结束")
+                        binding.etRule.setText("(?s)关键字1.*?关键字2")
                         binding.etReplacement.setText("测试1")
                         binding.cbRegex.isChecked = true
                     }
                     1 -> {
-                        binding.etRule.setText("(?s)开始.*?中间.*?结束")
+                        binding.etRule.setText("(?s)关键字1.*?关键字2.*?关键字3")
                         binding.etReplacement.setText("测试2")
+                        binding.cbRegex.isChecked = true
+                    }
+                    2 -> {
+                        binding.etRule.setText("(?s)\\A.*?关键字")
+                        binding.etReplacement.setText("")
+                        binding.cbRegex.isChecked = true
+                    }
+                    3 -> {
+                        binding.etRule.setText("(?s)关键字(?!.*关键字).*")
+                        binding.etReplacement.setText("")
                         binding.cbRegex.isChecked = true
                     }
                 }

@@ -48,7 +48,7 @@
                     android:background="?android:attr/selectableItemBackground"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="8dp"
-                    android:text="?"
+                    android:text="使用模板填充"
                     android:textColor="@color/dn_color_primary"
                     android:textSize="14dp"
                     android:textStyle="bold" />
