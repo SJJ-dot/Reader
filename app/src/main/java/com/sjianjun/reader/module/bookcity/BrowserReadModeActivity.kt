@@ -72,7 +72,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
     private var loadUrlQueueJob: Job? = null
-    private var allLinkList = mutableListOf<ChapterLink>()
+
     /** 是否包含跨域链接 */
     private var includeCrossDomain = false
     private var updateWebBookJob: Job? = null
@@ -123,10 +123,10 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     private fun setupChapterList() {
+        binding.chapterListRv.itemAnimator = null
         binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
         binding.chapterListRv.adapter = ChapterListAdapter { link ->
             showChapter(link.url)
-            binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END)
         }
         // 跨域筛选
         binding.chapterListIncludeCrossDomain.setOnCheckedChangeListener { _, checked ->
@@ -135,22 +135,31 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: View) {
+                renderChapterList()
+                // 若当前页尚未提取，触发一次正文加载；加载完成后会自动 renderChapterList()
                 val curUrl = pageLoader.curChapter?.link
-                if (allLinkList.isEmpty() && !curUrl.isNullOrBlank()) {
-                    loadChapterList(curUrl)
+                if (!curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
+                    loadUrlForReadMode(curUrl)
                 }
             }
         })
     }
 
-    /** 根据 includeCrossDomain 渲染当前列表，相对当前章节链接判断跨域 */
+    /** 抽屉是否处于打开状态 */
+    private fun isChapterDrawerOpen(): Boolean {
+        return binding.drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.END)
+    }
+
+    /** 根据当前页缓存渲染抽屉列表，按 includeCrossDomain 过滤跨域 */
     private fun renderChapterList() {
-        val base = pageLoader.curChapter?.link ?: webBook?.url
-        val baseHost = base?.toHttpUrlOrNull()?.topPrivateDomain()
+        val curUrl = pageLoader.curChapter?.link
+        val links = curUrl?.let { extractCache.get(it)?.allLinks } ?: emptyList()
+        val baseHost = curUrl?.toHttpUrlOrNull()?.topPrivateDomain()
+            ?: webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
         val filtered = if (includeCrossDomain || baseHost == null) {
-            allLinkList
+            links
         } else {
-            allLinkList.filter { link ->
+            links.filter { link ->
                 val host = link.url.toHttpUrlOrNull()?.topPrivateDomain()
                 host == null || host == baseHost
             }
@@ -160,46 +169,10 @@ class BrowserReadModeActivity : BaseActivity() {
 
     fun openDrawer() {
         binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END)
+        renderChapterList()
         val curUrl = pageLoader.curChapter?.link
-        if (allLinkList.isEmpty() && !curUrl.isNullOrBlank()) {
-            loadChapterList(curUrl)
-        }
-    }
-
-    private fun loadChapterList(url: String) {
-        lifecycleScope.launch {
-            if (allLinkList.isNotEmpty()) {
-                // Already loaded
-                return@launch
-            }
-
-            hiddenWebView.loadUrl(url)
-            var retry = 0
-            while (retry < 50) {
-                delay(200.milliseconds)
-                if (hiddenWebView.url == url && hiddenWebView.progress >= 100) break
-                retry++
-            }
-            delay(300.milliseconds)
-
-            val js = loadDirectoryExtractJs(this@BrowserReadModeActivity)
-            hiddenWebView.evaluateJavascript(js) { raw ->
-                try {
-                    val jsonStr = unwrapJsString(raw)
-                    val obj = JSONObject(jsonStr)
-                    allLinkList.clear()
-                    val allLinks = obj.optJSONArray("allLinks")
-                    if (allLinks != null) {
-                        for (i in 0 until allLinks.length()) {
-                            val c = allLinks.getJSONObject(i)
-                            allLinkList.add(ChapterLink(c.optString("title"), c.optString("url")))
-                        }
-                    }
-                    renderChapterList()
-                } catch (e: Exception) {
-                    Log.e("loadChapterList err", e)
-                }
-            }
+        if (!curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
+            loadUrlForReadMode(curUrl)
         }
     }
 
@@ -463,6 +436,10 @@ class BrowserReadModeActivity : BaseActivity() {
             extractCache.put(url, data)
         }
         updateNextToPrevMap(url, data)
+        // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新抽屉链接列表
+        if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
+            renderChapterList()
+        }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
         }
@@ -477,12 +454,15 @@ class BrowserReadModeActivity : BaseActivity() {
         loadUrlForReadMode(url, true)
     }
 
-    /** 退出阅读模式，在浏览器中打开当前页面 */
     fun openInBrowser(home: Boolean) {
-        val url =if (home) startUrl else pageLoader.curChapter?.link ?: startUrl
-        val id = webBookId.ifBlank { null }
-        WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
-        finish()
+        if (home) {
+            showChapter(webBook?.url ?: startUrl)
+        } else {
+            val url = pageLoader.curChapter?.link ?: startUrl
+            val id = webBookId.ifBlank { null }
+            WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
+            finish()
+        }
     }
 
     private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
@@ -521,11 +501,8 @@ class BrowserReadModeActivity : BaseActivity() {
         updateNextToPrevMap(url, data)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
 
-        // 切换到不同的页面时清空抽屉里基于上一页提取的链接
-        if (pageLoader.curChapter?.link != url) {
-            allLinkList.clear()
-            (binding.chapterListRv.adapter as? ChapterListAdapter)?.submitList(emptyList())
-        }
+        // 切换到不同的页面时，如抽屉打开则自动刷新；否则会在下次打开时根据当前 url 渲染
+        val pageChanged = pageLoader.curChapter?.link != url
 
         // 更新 WebBook 阅读进度（同域名时）
         updateWebBookProgress(url)
@@ -595,6 +572,11 @@ class BrowserReadModeActivity : BaseActivity() {
         pageLoader.mCollBook = book
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
+
+        // 切到了新页面，若抽屉打开则立刻刷新链接；尚未提取时正文加载完成后会再次刷新
+        if (pageChanged && isChapterDrawerOpen()) {
+            renderChapterList()
+        }
     }
 
     // ==================== Style / Immersive ====================
@@ -727,6 +709,7 @@ class BrowserReadModeActivity : BaseActivity() {
         val prevText: String? = null,
         val nextText: String? = null,
         val directory: String? = null,
+        val allLinks: List<ChapterLink> = emptyList(),
     )
 
     private suspend fun WebView.extractContent(): ExtractResult {
@@ -743,7 +726,15 @@ class BrowserReadModeActivity : BaseActivity() {
                     val next = obj.optString("next", "").takeIf { it.isNotBlank() }
                     val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
                     val directory = obj.optString("directory", "").takeIf { it.isNotBlank() }
-                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, directory))
+                    val linksArr = obj.optJSONArray("allLinks")
+                    val allLinks = mutableListOf<ChapterLink>()
+                    if (linksArr != null) {
+                        for (i in 0 until linksArr.length()) {
+                            val c = linksArr.getJSONObject(i)
+                            allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
+                        }
+                    }
+                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, directory, allLinks))
                 } catch (t: Throwable) {
                     Log.e("extractContent err", t)
                     if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
@@ -763,11 +754,9 @@ class BrowserReadModeActivity : BaseActivity() {
         @Volatile
         private var cachedJs: String? = null
 
-        @Volatile
-        private var cachedDirectoryJs: String? = null
-
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult?>(100)
+
         /** 阅读模式下一页链接往往比上一页准确，利用下一页链接自行维护一个反向映射 */
         val nextToPrevMap = LruCache<String, String>(200)
 
@@ -784,16 +773,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 .bufferedReader()
                 .use { it.readText() }
             cachedJs = text
-            return text
-        }
-
-        private fun loadDirectoryExtractJs(context: Context): String {
-            cachedDirectoryJs?.let { return it }
-            val text = context.applicationContext.assets
-                .open("browser_extract_directory.js")
-                .bufferedReader()
-                .use { it.readText() }
-            cachedDirectoryJs = text
             return text
         }
 

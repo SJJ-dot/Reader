@@ -176,6 +176,25 @@
         if (directory) break;
     }
 
+    // 5. 全部超链接（用于章节抽屉，过滤无标题与失效，按目标 URL 与标题分别去重）
+    var allLinks = [];
+    var urlSeen = new Set();
+    var titleSeen = new Set();
+    for (var li = 0; li < anchors.length; li++) {
+        var la = anchors[li];
+        if (!visible(la)) continue;
+        var lhref = la.getAttribute('href') || '';
+        if (!lhref || lhref === '#' || /^javascript:/i.test(lhref)) continue;
+        var labs = abs(lhref);
+        if (urlSeen.has(labs)) continue;
+        var ltext = (la.innerText || la.textContent || '').trim();
+        if (!ltext) continue;
+        if (titleSeen.has(ltext)) continue;
+        urlSeen.add(labs);
+        titleSeen.add(ltext);
+        allLinks.push({ title: ltext, url: labs });
+    }
+
     return JSON.stringify({
         title: title,
         content: content,
@@ -183,6 +202,7 @@
         prevText: prevText,
         next: next,
         nextText: nextText,
-        directory: directory
+        directory: directory,
+        allLinks: allLinks
     });
 })();
