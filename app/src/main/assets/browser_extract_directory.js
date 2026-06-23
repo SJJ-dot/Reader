@@ -16,10 +16,22 @@
     }
 
     var anchors = document.querySelectorAll('a[href]');
-    var chapters = [];
+    var allLinks = [];
     var seen = new Set();
+    for (var i = 0; i < anchors.length; i++) {
+        var a = anchors[i];
+        if (!visible(a)) continue;
+        var href = abs(a.getAttribute('href'));
+        if (!href || href === '#' || /^javascript:/i.test(href) || seen.has(href)) continue;
+        seen.add(href);
+        var t = (a.innerText || a.textContent || '').trim();
+        allLinks.push({
+            title: t,
+            url: href
+        });
+    }
 
-    // 启发式寻找章节列表容器
+    // 3. 启发式寻找章节列表容器
     var containers = document.querySelectorAll('div, ul, section, dl');
     var bestContainer = null;
     var maxLinks = 0;
@@ -41,22 +53,25 @@
         }
     }
 
+    // 4. 提取章节列表（去重）
+    var chapters = [];
+    var seenChapter = new Set();
     var targetLinks = bestContainer ? bestContainer.querySelectorAll('a[href]') : anchors;
     for (var i = 0; i < targetLinks.length; i++) {
         var a = targetLinks[i];
         var t = (a.innerText || a.textContent || '').trim();
         var href = abs(a.getAttribute('href'));
-        if (!href || href === '#' || /^javascript:/i.test(href) || seen.has(href)) continue;
+        if (!href || href === '#' || /^javascript:/i.test(href) || seenChapter.has(href)) continue;
 
         if (t.length > 1) {
             chapters.push({ title: t, url: href });
-            seen.add(href);
+            seenChapter.add(href);
         }
     }
 
-    // 目录下一页
+    // 5. 目录下一页
     var nextPage = '';
-    var nextKeys = ['下一页', '下一頁', '下一页>', '下一页 »', 'Next', 'Next Page'];
+    var nextKeys = ['下一页', '下一頁', '下一页>', '下页', '下頁', '下页>', '下一页 »', 'Next', 'Next Page'];
     for (var k = 0; k < anchors.length; k++) {
         var a = anchors[k];
         var t = (a.innerText || a.textContent || '').trim();
@@ -67,8 +82,8 @@
     }
 
     return JSON.stringify({
+        allLinks: allLinks,
         chapters: chapters,
         nextPage: nextPage
     });
 })();
-
