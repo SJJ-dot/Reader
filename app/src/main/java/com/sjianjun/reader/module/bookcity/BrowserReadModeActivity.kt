@@ -421,6 +421,17 @@ class BrowserReadModeActivity : BaseActivity() {
         var data = extractCache.get(url)
         Log.i("loadUrlForReadMode: loading url = $url, force = $force")
         if (data == null || force) {
+            if (force) {
+                // 强制刷新：WebView 可能已经停在同一个 url 且 progress==100，
+                // 直接 loadUrl 会让等待循环立即通过、提取到旧内容；先清空状态再加载
+                hiddenWebView.loadUrl("about:blank")
+                var blank = 0
+                while (blank < 25) {
+                    delay(100.milliseconds)
+                    if (hiddenWebView.progress >= 100) break
+                    blank++
+                }
+            }
             hiddenWebView.loadUrl(url)
             var retry = 0
             while (retry < 50) {
@@ -451,7 +462,9 @@ class BrowserReadModeActivity : BaseActivity() {
             toast("当前没有加载的页面，无法刷新")
             return
         }
-        loadUrlForReadMode(url, true)
+        // 同时清除提取缓存，确保走完整的重新加载路径
+        extractCache.remove(url)
+        loadUrlForReadMode(url, true, pagePos = pageLoader.pagePos)
     }
 
     fun openInBrowser(home: Boolean) {
@@ -755,7 +768,7 @@ class BrowserReadModeActivity : BaseActivity() {
         private var cachedJs: String? = null
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
-        val extractCache = LruCache<String, ExtractResult?>(100)
+        val extractCache = LruCache<String, ExtractResult?>(10)
 
         /** 阅读模式下一页链接往往比上一页准确，利用下一页链接自行维护一个反向映射 */
         val nextToPrevMap = LruCache<String, String>(200)

@@ -49,7 +49,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * Created by sjj on 2020-07-10
  */
 class CustomWebView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0,
 ) : FrameLayout(context, attrs, defStyleAttr) {
     internal var lifecycleScope: LifecycleCoroutineScope? = null
     private var updateWebBookJob: Job? = null
@@ -267,7 +267,7 @@ class CustomWebView @JvmOverloads constructor(
 
         override fun shouldOverrideUrlLoading(
             view: WebView?,
-            request: WebResourceRequest
+            request: WebResourceRequest,
         ): Boolean {
             Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
             val showBlockDialog = showBlockDialog(view, request)
@@ -325,7 +325,7 @@ class CustomWebView @JvmOverloads constructor(
 
         override fun shouldInterceptRequest(
             view: WebView?,
-            request: WebResourceRequest
+            request: WebResourceRequest,
         ): WebResourceResponse? {
             val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
             if (requestHost != null && adBlock?.whitelist.contains(requestHost)) {
@@ -366,7 +366,7 @@ class CustomWebView @JvmOverloads constructor(
         override fun onReceivedSslError(
             view: WebView?,
             handler: SslErrorHandler?,
-            error: SslError?
+            error: SslError?,
         ) {
             Log.e("SSL Error: ${error?.toString()}")
             handler?.proceed()
@@ -375,7 +375,7 @@ class CustomWebView @JvmOverloads constructor(
         override fun onReceivedHttpError(
             view: WebView?,
             request: WebResourceRequest,
-            errorResponse: WebResourceResponse
+            errorResponse: WebResourceResponse,
         ) {
             Log.e("HTTP Error: ${errorResponse.statusCode} ${request.url}")
         }
@@ -406,13 +406,19 @@ class CustomWebView @JvmOverloads constructor(
         }
 
         binding.refresh.click {
+            val wv = currentWebView ?: return@click
             if (binding.refresh.isSelected) {
-                currentWebView?.stopLoading()
-            } else {
-                currentWebView?.stopLoading()
-                currentWebView?.reload()
+                // 当前正在加载 → 停止
+                wv.stopLoading()
+                binding.refresh.isSelected = false
+                return@click
             }
+            val url = wv.url ?: return@click
+            if (url.isBlank() || url == "about:blank") return@click
+
+            wv.reload()
         }
+
         binding.backward.click {
             destroyAllWebViews()
             activity?.onBackPressedDispatcher?.onBackPressed()
