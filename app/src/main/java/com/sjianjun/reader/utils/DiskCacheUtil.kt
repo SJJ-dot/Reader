@@ -5,10 +5,10 @@ import com.sjianjun.coroutine.withIo
 import java.io.File
 import java.io.FileOutputStream
 
-class DiskCacheUtil(private val root: File) {
+class DiskCacheUtil(private val root: File, maxSize: Long = 50 * 1024 * 1024) {
     private val diskCache by lazy {
         try {
-            DiskLruCache.open(root, 1, 1, 500 * 1024 * 1024)
+            DiskLruCache.open(root, 1, 1, maxSize)
         } catch (e: Exception) {
             null
         }
@@ -41,7 +41,7 @@ class DiskCacheUtil(private val root: File) {
     }
 
 
-    suspend fun put(key: String, value: Any)= withIo  {
+    suspend fun put(key: String, value: Any) = withIo {
         put(key, gson.toJson(value))
     }
 
@@ -49,8 +49,8 @@ class DiskCacheUtil(private val root: File) {
         diskCache?.delete()
     }
 
-    suspend inline fun <reified T> getObj(key: String): T? {
-        val str = get(key) ?: return null
-        return gson.fromJson<T>(str)
+    suspend inline fun <reified T> getObj(key: String): T? = withIo {
+        val str = get(key) ?: return@withIo null
+        return@withIo gson.fromJson<T>(str)
     }
 }

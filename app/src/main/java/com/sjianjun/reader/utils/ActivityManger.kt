@@ -32,9 +32,15 @@ object ActivityManger {
 
     fun finishSameType(activity: Activity) {
         val target = activity::class.java
+        var find = false
         activityList.toList().forEach {
             if (it::class.java == target && it != activity) {
-                it.finish()
+                find = true
+            }
+            if (find) {
+                if (!it.isFinishing && !it.isDestroyed && it != activity) {
+                    it.finish()
+                }
             }
         }
     }

@@ -54,6 +54,7 @@
     }
     // 最后使用 document.title
     if (!title) title = document.title || '';
+    if(title) title = title.split(/[-|_,]/)[0].trim(); // 去掉网站名等后缀
 
     // 2. 正文：常见小说网站容器优先，支持单元素与多元素（如 p 列表），最后启发式选择 textLength 最大的可见块
     var content = '';
@@ -128,8 +129,8 @@
         if (pp) { prev = pp.href; prevText = pp.text; break; }
     }
 
-    var prevKeys = ['上一章', '上一頁', '上章', '上頁', '上页', '上一页', '上一节', 'prev', 'previous'];
-    var nextKeys = ['下一章', '下一頁', '下章', '下頁', '下页', '下一页', '下一节', 'next'];
+    var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', 'prev', 'previous','上一章', '上章'];
+    var nextKeys = [ '下頁', '下页', '下一页', '下一节', '下一頁', 'next', '下一章','下章'];
     var anchors = document.querySelectorAll('a[href]');
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {

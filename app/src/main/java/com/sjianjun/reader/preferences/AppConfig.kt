@@ -156,6 +156,11 @@ class AppConfig(val name: String) :
     val autoBrowserReadMode by lazy { boolLivedata("autoBrowserReadMode", false) }
 
     /**
+     * 浏览器阅读模式磁盘缓存大小（单位 MB），默认 50MB
+     */
+    var browserReadModeCacheSizeMB by intPref("browserReadModeCacheSizeMB", 50)
+
+    /**
      * 用户是否已同意隐私政策
      */
     val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }

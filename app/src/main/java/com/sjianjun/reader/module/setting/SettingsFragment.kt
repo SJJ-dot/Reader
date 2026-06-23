@@ -108,6 +108,51 @@ class SettingsFragment : Fragment() {
             autoBrowserReadModeSwitch.setOnCheckedChangeListener { _, isChecked ->
                 globalConfig.autoBrowserReadMode.postValue(isChecked)
             }
+
+            // 浏览器阅读模式缓存
+            browserReadCacheSizeInput.setText(globalConfig.browserReadModeCacheSizeMB.toString())
+            browserReadCacheSizeInput.setOnFocusChangeListener { _, hasFocus ->
+                if (!hasFocus) commitBrowserReadCacheSize()
+            }
+            browserReadCacheClear.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("清除阅读模式缓存")
+                    .setMessage("将清空已离线的阅读模式提取内容，下次打开需要重新加载。是否继续？")
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("清除") { _, _ ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            runCatching {
+                                com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.clearDiskCache()
+                            }.onSuccess {
+                                toast("已清除")
+                            }.onFailure {
+                                Log.e("清除阅读模式缓存失败", it)
+                                toast("清除失败：${it.message ?: "未知错误"}")
+                            }
+                        }
+                    }
+                    .show()
+            }
+        }
+    }
+
+    private fun FragmentSettingsBinding.commitBrowserReadCacheSize() {
+        val raw = browserReadCacheSizeInput.text?.toString()?.trim().orEmpty()
+        val value = raw.toIntOrNull()
+        val current = globalConfig.browserReadModeCacheSizeMB
+        if (value == null || value < 1) {
+            toast("请输入有效的缓存大小（MB）")
+            browserReadCacheSizeInput.setText(current.toString())
+            return
+        }
+        val clamped = value.coerceIn(1, 10240)
+        if (clamped != value) {
+            browserReadCacheSizeInput.setText(clamped.toString())
+        }
+        if (clamped != current) {
+            globalConfig.browserReadModeCacheSizeMB = clamped
+            com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.resetDiskCache()
+            toast("已保存")
         }
     }
 

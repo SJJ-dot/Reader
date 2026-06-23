@@ -48,7 +48,6 @@ import java.io.File
 class BrowserReadModeSettingFragment : BaseFragment() {
     private var settingPopupWindow: android.widget.PopupWindow? = null
     private var binding: BrowserReadModeSettingsBinding? = null
-    private var onExit: (() -> Unit)? = null
     private var titleText: String = ""
 
     private val pageLoader
@@ -58,9 +57,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         const val TAG = "BrowserReadModeSettingFragment"
     }
 
-    fun setArgs(title: String, onExit: () -> Unit) {
+    fun setArgs(title: String) {
         this.titleText = title
-        this.onExit = onExit
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -69,6 +67,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             binding?.settingSample?.isVisible = true
             binding?.settingDetail?.isVisible = false
             refreshNavAndProgress()
+            titleText = pageLoader?.curChapter?.title ?: titleText
+            binding?.bookTitle?.text = titleText
         }
     }
 
@@ -96,12 +96,9 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         }
 
         // 恢复标题：夜间模式切换导致 Activity 重建后 titleText 丢失，从 pageLoader 恢复
-        if (titleText.isBlank()) {
-            titleText = pageLoader?.chapterCategory?.getOrNull(pageLoader?.chapterPos ?: 0)?.title ?: ""
-        }
+        titleText = pageLoader?.curChapter?.title ?: titleText
         b.bookTitle.text = titleText
         b.topBarBack.click(10) {
-            onExit?.invoke()
             (activity as? BrowserReadModeActivity)?.finish()
         }
         b.topBarSettingsMore.click(100) { v -> showPopupMenu(v) }
