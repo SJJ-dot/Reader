@@ -311,8 +311,6 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
             launch {
                 mPageLoader?.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
-                ChapterPageCache.reset()
-                mPageLoader?.reloadPages()
             }
         }
         observe<String>(EventKey.BOOK_SOURCE_CHANGED) {

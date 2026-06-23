@@ -353,8 +353,6 @@ class BrowserReadModeActivity : BaseActivity() {
         observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
             lifecycleScope.launch {
                 pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
-                ChapterPageCache.reset()
-                pageLoader.reloadPages()
             }
         }
     }

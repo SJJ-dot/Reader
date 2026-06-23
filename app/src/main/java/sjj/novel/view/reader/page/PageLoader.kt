@@ -1884,6 +1884,17 @@ abstract class PageLoader : ViewModel() {
 
     fun setReplacementRules(rules: List<ReplacementRule>) {
         mReplacementRules = rules.sortedBy { it.order }
+        ChapterPageCache.reset()
+
+        // 如果当前已经显示数据
+        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
+            // 重新计算当前页面
+            dealLoadPageList(this.chapterPos)
+            // 重新获取指定页面
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
+        }
+
+        mPageView!!.drawCurPage()
     }
 
     fun setTypesettingMode(mode: Int) {
