@@ -34,9 +34,10 @@ class App : io.legado.app.App() {
         first = false
         handleDefaultException(this)
         Config.getDefaultConfig().apply {
+            consolePrintEnable = BuildConfig.DEBUG
             deleteOldLogFile = true
             consolePrintAllLog = true
-            writeToFile = true
+            writeToFile = false
             writeToFileDir = File(externalCacheDir, "alog")
         }
         Python.start(AndroidPlatform(this))

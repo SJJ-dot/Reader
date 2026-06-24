@@ -586,14 +586,29 @@ class BrowserReadModeActivity : BaseActivity() {
     private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
         var retry = 0
         var data: ExtractResult? = null
+        val pageUrl = wv.url
         while (retry < 10) {
             data = wv.extractContent()
             val contentOk = data.content.isNotBlank()
-            val nav = data.prevUrl.isNullOrBlank() || data.nextUrl.isNullOrBlank()
-            if (contentOk && !nav) return data
+            val hasNav = !data.nextUrl.isNullOrBlank()
+            Log.i(
+                "extractWithRetry url=$pageUrl retry=$retry " +
+                    "contentLen=${data.content.length} " +
+                    "prev=${data.prevUrl} prevText=${data.prevText} " +
+                    "next=${data.nextUrl} nextText=${data.nextText} " +
+                    "allLinks=${data.allLinks.size}"
+            )
+            if (contentOk && hasNav) return data
             delay(300.milliseconds)
             retry++
         }
+        Log.w(
+            "extractWithRetry 失败 url=$pageUrl " +
+                "contentLen=${data?.content?.length} " +
+                "prev=${data?.prevUrl} prevText=${data?.prevText} " +
+                "next=${data?.nextUrl} nextText=${data?.nextText} " +
+                "allLinks=${data?.allLinks?.size}"
+        )
         return data
     }
 
@@ -865,6 +880,7 @@ class BrowserReadModeActivity : BaseActivity() {
          */
         suspend fun WebView.extractContent(): ExtractResult {
             val js = loadExtractJs(context)
+            val pageUrl = this.url
             return suspendCancellableCoroutine { cont ->
                 evaluateJavascript(js) { raw ->
                     try {
@@ -884,9 +900,31 @@ class BrowserReadModeActivity : BaseActivity() {
                                 allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
                             }
                         }
+                        Log.i(
+                            "extractContent url=$pageUrl title=$title contentLen=${content.length} " +
+                                "prev=$prev prevText=$prevText next=$next nextText=$nextText " +
+                                "allLinks=${allLinks.size}"
+                        )
+                        val debugArr = obj.optJSONArray("_debug")
+                        if (debugArr != null) {
+                            for (i in 0 until debugArr.length()) {
+                                Log.i("extractContent debug ${i + 1}/${debugArr.length()}: ${debugArr.optString(i)}")
+                            }
+                        } else {
+                            val debugObj = obj.optJSONObject("_debug")
+                            if (debugObj != null) {
+                                Log.i("extractContent _debug=$debugObj")
+                            }
+                        }
+                        if (prev.isNullOrBlank() || next.isNullOrBlank()) {
+                            Log.w(
+                                "extractContent 缺少导航 url=$pageUrl prev=$prev next=$next " +
+                                    "allLinks前20=${allLinks.take(20).joinToString { "${it.title}->${it.url}" }}"
+                            )
+                        }
                         if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
                     } catch (t: Throwable) {
-                        Log.e("extractContent err", t)
+                        Log.e("extractContent err raw=$raw", t)
                         if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
                     }
                 }
