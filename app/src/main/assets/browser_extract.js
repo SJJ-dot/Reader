@@ -122,13 +122,15 @@
     }
 
     var nextSelectors = [
-        '#next_url', '#chapternext',
-        '.next_url', '.chapternext',
+        '#next_url', '#chapternext', '#pb_next', '#pn_next', '#nextLink',
+        '.next_url', '.chapternext', '.url_next', '.pb_next',
+        'li.next > a[href]', 'a.next[href]',
         "a[rel='next']", "a[rel*='next']"
     ];
     var prevSelectors = [
-      '#prev_url', '#chapterprev','#prenext',
-      '.prev_url', '.chapterprev','.prenext',
+        '#prev_url', '#chapterprev', '#prenext', '#pb_prev', '#pn_prev', '#prevLink',
+        '.prev_url', '.chapterprev', '.prenext', '.url_prev', '.url_pre', '.pb_prev',
+        'li.prev > a[href]', 'li.pre > a[href]', 'a.prev[href]', 'a.pre[href]',
         "a[rel='prev']", "a[rel*='prev']"
     ];
     for (var ns = 0; ns < nextSelectors.length; ns++) {
@@ -140,9 +142,24 @@
         if (pp) { prev = pp.href; prevText = pp.text; break; }
     }
 
-    var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', 'prev', 'previous','上一章', '上章'];
-    var nextKeys = [ '下頁', '下页', '下一页', '下一节', '下一頁', 'next', '下一章','下章'];
+    // 同时覆盖单数形式 ("pre"/"nxt") 与中文常见词
+    var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', '上一章', '上章', 'previous', 'prev', 'pre'];
+    var nextKeys = ['下頁', '下页', '下一页', '下一节', '下一頁', '下一章', '下章', 'next', 'nxt'];
     var anchors = document.querySelectorAll('a[href]');
+    // 同时把 a 的祖先（li/span/div 等）类名 / id 也纳入匹配，覆盖
+    // <li class="prev"><a class="url_pre" id="pb_prev"> 这种把语义放在父节点上的写法。
+    function ancestorTokens(el) {
+        var tokens = '';
+        var cur = el && el.parentElement;
+        var depth = 0;
+        while (cur && depth < 3) {
+            tokens += ' ' + (cur.id || '') + ' ' + ((cur.className || '').toString());
+            cur = cur.parentElement;
+            depth++;
+        }
+        return normalize(tokens);
+    }
+
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
@@ -150,12 +167,15 @@
             var t = normalize(rawText);
             var id = normalize(a.id || '');
             var cls = normalize((a.className || '').toString());
+            var aria = normalize(a.getAttribute('aria-label') || a.getAttribute('title') || '');
+            var anc = ancestorTokens(a);
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
             if (!prev) {
                 for (var p = 0; p < prevKeys.length; p++) {
                     var pk = normalize(prevKeys[p]);
-                    if (t.indexOf(pk) >= 0 || id.indexOf(pk) >= 0 || cls.indexOf(pk) >= 0) {
+                    if (t.indexOf(pk) >= 0 || id.indexOf(pk) >= 0 || cls.indexOf(pk) >= 0
+                        || aria.indexOf(pk) >= 0 || anc.indexOf(pk) >= 0) {
                         prev = abs(href); prevText = rawText; break;
                     }
                 }
@@ -163,7 +183,8 @@
             if (!next) {
                 for (var n = 0; n < nextKeys.length; n++) {
                     var nk = normalize(nextKeys[n]);
-                    if (t.indexOf(nk) >= 0 || id.indexOf(nk) >= 0 || cls.indexOf(nk) >= 0) {
+                    if (t.indexOf(nk) >= 0 || id.indexOf(nk) >= 0 || cls.indexOf(nk) >= 0
+                        || aria.indexOf(nk) >= 0 || anc.indexOf(nk) >= 0) {
                         next = abs(href); nextText = rawText; break;
                     }
                 }
@@ -202,7 +223,16 @@
         if (!lhref || lhref === '#' || /^javascript:/i.test(lhref)) continue;
         var labs = abs(lhref);
         if (urlSeen.has(labs)) continue;
+        // 标题兜底：innerText → aria-label/title → 父节点纯文本 → href 末段
         var ltext = (la.innerText || la.textContent || '').trim();
+        if (!ltext) ltext = (la.getAttribute('aria-label') || la.getAttribute('title') || '').trim();
+        if (!ltext && la.parentElement) ltext = (la.parentElement.innerText || la.parentElement.textContent || '').trim();
+        if (!ltext) {
+            try {
+                var u = new URL(labs);
+                ltext = u.pathname.split('/').filter(Boolean).pop() || u.host;
+            } catch (e) { ltext = labs; }
+        }
         if (!ltext) continue;
         if (titleSeen.has(ltext)) continue;
         urlSeen.add(labs);
