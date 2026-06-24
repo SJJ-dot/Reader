@@ -248,7 +248,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                 act.stopHiddenLoading()
             } else {
                 act.refresh()
-                hideSelf()
+//                hideSelf()
             }
         }
         (activity as? BrowserReadModeActivity)?.isHiddenLoading?.observe(viewLifecycleOwner) { loading ->
