@@ -7,6 +7,79 @@
     tools:background="@color/dn_text_color_black">
 
     <LinearLayout
+        android:id="@+id/brightness_container"
+        android:layout_width="56dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/brightness_auto"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_brightness_auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:contentDescription="跟随系统亮度"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_brightness_auto_24"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn">
+
+            <com.sjianjun.reader.view.VerticalSeekBar
+                android:id="@+id/brightness_seek"
+                android:layout_width="36dp"
+                android:layout_height="180dp"
+                android:max="255"
+                android:min="1"
+                android:progress="50"
+                android:progressBackgroundTint="@color/mdr_black"
+                android:progressTint="@color/dn_colorAccent"
+                android:splitTrack="false"
+                android:thumbTint="@color/dn_colorAccent" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/screen_keep_on"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_screen_keep_on"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:contentDescription="屏幕常亮"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_screen_keep_on"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/setting_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

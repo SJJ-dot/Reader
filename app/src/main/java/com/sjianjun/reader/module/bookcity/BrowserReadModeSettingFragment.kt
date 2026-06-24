@@ -45,6 +45,7 @@ import sjj.novel.view.reader.page.PageLoader
 import sjj.novel.view.reader.page.PageMode
 import sjj.novel.view.reader.page.PageStyle
 import java.io.File
+import kotlin.math.roundToInt
 
 class BrowserReadModeSettingFragment : BaseFragment() {
     private var settingPopupWindow: android.widget.PopupWindow? = null
@@ -147,6 +148,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         initPageModel()
         initFontList()
         initChapterNav()
+        initBrightnessSetting()
         applyAllSettings()
         refreshNavAndProgress()
 
@@ -233,6 +235,57 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             (activity as? BrowserReadModeActivity)?.refresh()
             hideSelf()
         }
+    }
+
+    private fun initBrightnessSetting() {
+        val b = binding ?: return
+        b.brightnessAuto.click(10) {
+            if (globalConfig.readerBrightnessPercent.value == -1) {
+                globalConfig.readerBrightnessPercent.setValue(readSystemBrightnessPercent())
+            } else {
+                globalConfig.readerBrightnessPercent.setValue(-1)
+            }
+        }
+        b.brightnessSeek.setOnSeekBarChangeListener { _, progress, fromUser ->
+            if (fromUser) {
+                globalConfig.readerBrightnessPercent.setValue(progress.coerceIn(1, 255))
+            }
+        }
+        globalConfig.readerBrightnessPercent.observe(viewLifecycleOwner) {
+            updateBrightnessUi(it)
+        }
+        updateBrightnessUi(globalConfig.readerBrightnessPercent.value ?: -1)
+
+        b.screenKeepOn.click(10) {
+            val keepOn = !(globalConfig.readerScreenKeepOn.value ?: false)
+            globalConfig.readerScreenKeepOn.postValue(keepOn)
+            toast(if (keepOn) "已开启阅读时屏幕常亮" else "已关闭阅读时屏幕常亮")
+        }
+        globalConfig.readerScreenKeepOn.observe(viewLifecycleOwner) {
+            val accent = R.color.dn_colorAccent.color(requireContext())
+            val normal = R.color.dn_text_color_black_secondary.color(requireContext())
+            b.ivScreenKeepOn.imageTintList = android.content.res.ColorStateList.valueOf(if (it) accent else normal)
+        }
+    }
+
+    private fun updateBrightnessUi(percent: Int) {
+        val b = binding ?: return
+        val useSystemBrightness = percent < 0
+        val accent = R.color.dn_colorAccent.color(requireContext())
+        val normal = R.color.dn_text_color_black.color(requireContext())
+        b.ivBrightnessAuto.imageTintList = android.content.res.ColorStateList.valueOf(if (useSystemBrightness) accent else normal)
+        b.brightnessSeek.progressTintList = android.content.res.ColorStateList.valueOf(if (useSystemBrightness) normal else accent)
+        b.brightnessSeek.thumbTintList = android.content.res.ColorStateList.valueOf(if (useSystemBrightness) normal else accent)
+        val brightnessPercent = readSystemBrightnessPercent()
+        b.brightnessSeek.progress = (if (useSystemBrightness) brightnessPercent else percent).coerceIn(1, 255)
+    }
+
+    private fun readSystemBrightnessPercent(): Int {
+        val context = this.context ?: return -1
+        return runCatching {
+            val brightness = android.provider.Settings.System.getInt(context.contentResolver, android.provider.Settings.System.SCREEN_BRIGHTNESS)
+            (brightness / 200f * 255f).coerceIn(1f, 255f).roundToInt()
+        }.getOrElse { -1 }
     }
 
     private fun initScreenOrientationMode() {

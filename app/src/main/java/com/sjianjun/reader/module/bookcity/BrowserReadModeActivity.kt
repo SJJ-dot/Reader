@@ -400,6 +400,16 @@ class BrowserReadModeActivity : BaseActivity() {
         globalConfig.readerOrientationMode.observe(this) {
             applyReaderOrientation(it)
         }
+        globalConfig.readerBrightnessPercent.observe(this) {
+            applyReaderBrightness()
+        }
+        globalConfig.readerScreenKeepOn.observe(this) {
+            if (it == true) {
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
         globalConfig.readerJianFanMode.observe(this) {
             pageLoader.setJianFanMode(it)
         }
@@ -701,6 +711,18 @@ class BrowserReadModeActivity : BaseActivity() {
             3 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
+    }
+
+    /** 应用阅读器亮度设置（-1 跟随系统，1..255 映射到 0..1）。与 BookReaderActivity 行为一致。 */
+    private fun applyReaderBrightness() {
+        val attrs = window.attributes ?: return
+        val percent = globalConfig.readerBrightnessPercent.value ?: -1
+        attrs.screenBrightness = if (percent < 0) {
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        } else {
+            percent.coerceIn(1, 255) / 255f
+        }
+        window.attributes = attrs
     }
 
     // ==================== Lifecycle ====================
