@@ -84,13 +84,6 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
-    private fun updateNextToPrevMap(url: String, data: ExtractResult?) {
-        val next = data?.nextUrl
-        if (!next.isNullOrBlank() && url.isNotBlank()) {
-            nextToPrevMap.put(next, url)
-        }
-    }
-
     val pageLoader get() = binding.readModePageView.pageLoader!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,8 +117,6 @@ class BrowserReadModeActivity : BaseActivity() {
         applyPageStyle()
         applyTextSize()
         lifecycleScope.launch {
-            // 启动时一次性恢复 next→prev 反向映射，对长程向后翻页（回退到旧章节）友好
-            NextToPrevStore.ensureLoaded()
             // 加载关联的 WebBook
             loadWebBook()
             showChapter(startUrl)
@@ -525,7 +516,6 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             putExtractResult(url, data)
         }
-        updateNextToPrevMap(url, data)
         // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新抽屉链接列表
         if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
             renderChapterList()
@@ -569,8 +559,7 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun gotoPrevChapter() {
-        val curUrl = pageLoader.curChapter?.link
-        val url = (if (curUrl != null) nextToPrevMap.get(curUrl) else null) ?: pageLoader.curChapterData?.prevUrl
+        val url = pageLoader.curChapterData?.prevUrl
         if (url.isNullOrBlank()) {
             Toast.makeText(this, "没有上一章", Toast.LENGTH_SHORT).show()
             return
@@ -598,7 +587,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 }
             }
         }
-        updateNextToPrevMap(url, data)
         // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
 
         // 切换到不同的页面时，如抽屉打开则自动刷新；否则会在下次打开时根据当前 url 渲染
@@ -640,12 +628,11 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         val chapters = mutableListOf<TxtChapter>()
-        val prevUrl = (if (url.isNotBlank()) nextToPrevMap.get(url) else null) ?: data?.prevUrl
-        prevUrl?.let {
+        data?.prevUrl?.let {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = it
-                this.title = (if (it == data?.prevUrl) data.prevText else extractCache.get(it)?.title) ?: "上一页"
+                this.title = data.prevText ?: "上一页"
                 this.chapterIndex = 0
             })
         }
@@ -734,8 +721,6 @@ class BrowserReadModeActivity : BaseActivity() {
         loadUrlQueueJob?.cancel()
         loadUrlQueue.clear()
         hiddenWebView.destroy()
-        // 强制把待落盘的 next→prev 立刻写出
-        NextToPrevStore.flushNow()
     }
 
     // ==================== TTS ====================
@@ -857,15 +842,6 @@ class BrowserReadModeActivity : BaseActivity() {
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult?>(10)
 
-        /**
-         * 阅读模式下一页链接往往比上一页准确，自行维护 next→prev 反向映射。
-         * - 按插入顺序 FIFO 淘汰：超过 MAX 时移除最早添加的记录
-         * - 写时防抖落盘，整张表以一个 JSON 条目存入 DiskCacheUtil
-         * - 启动时一次性恢复，对长程向后翻页（重启后回退到旧章节）友好
-         */
-        val nextToPrevMap = NextToPrevStore
-
-
         /** 磁盘缓存：序列化 ExtractResult 到 cacheDir/browser_read_mode/，大小由用户配置 */
         @Volatile
         private var _diskCache: DiskCacheUtil? = null
@@ -887,13 +863,11 @@ class BrowserReadModeActivity : BaseActivity() {
             synchronized(this) { _diskCache = null }
         }
 
-        /** 写入提取结果到内存 + 磁盘；同时回填 next→prev 反向映射 */
+        /** 写入提取结果到内存 + 磁盘 */
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
         fun putExtractResult(url: String, data: ExtractResult) {
             if (url.isBlank()) return
             extractCache.put(url, data)
-            val next = data.nextUrl
-            if (!next.isNullOrBlank()) nextToPrevMap.put(next, url)
             GlobalScope.launch(Dispatchers.IO) {
                 try {
                     diskCache.put(url, data)
@@ -903,15 +877,13 @@ class BrowserReadModeActivity : BaseActivity() {
             }
         }
 
-        /** 从磁盘读取提取结果；命中后回填内存与反向映射，已有更新则跳过避免覆盖 */
+        /** 从磁盘读取提取结果；命中后回填内存，已有更新则跳过避免覆盖 */
         suspend fun loadExtractFromDisk(url: String): ExtractResult? {
             if (url.isBlank()) return null
             return try {
                 val data = diskCache.getObj<ExtractResult>(url) ?: return null
                 if (extractCache.get(url) == null) {
                     extractCache.put(url, data)
-                    val next = data.nextUrl
-                    if (!next.isNullOrBlank()) nextToPrevMap.put(next, url)
                 }
                 extractCache.get(url) ?: data
             } catch (e: Exception) {
@@ -929,102 +901,7 @@ class BrowserReadModeActivity : BaseActivity() {
         /** 清除磁盘缓存（同时丢弃内存缓存） */
         suspend fun clearDiskCache() {
             extractCache.evictAll()
-            nextToPrevMap.clear()
             diskCache.delete()
-        }
-
-        /**
-         * next→prev 反向映射存储：
-         * - 内存用 LinkedHashMap 保持插入顺序，超出 MAX 时淘汰最早添加的（FIFO）
-         * - 用同一个 DiskCacheUtil（key = NEXT_TO_PREV_KEY）整张表存一个 JSON 条目
-         * - 写入采用 2s 防抖，避免连续翻页频繁 IO
-         */
-        object NextToPrevStore {
-            private const val MAX = 5000
-            private const val KEY = "__next_to_prev_map__"
-            private const val FLUSH_DELAY_MS = 2000L
-
-            private val map = object : LinkedHashMap<String, String>(256, 0.75f, false) {
-                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean {
-                    return size > MAX
-                }
-            }
-
-            @Volatile
-            private var loaded = false
-            @Volatile
-            private var dirty = false
-            @Volatile
-            private var flushJob: Job? = null
-
-            fun get(key: String): String? = synchronized(map) { map[key] }
-
-            fun put(key: String, value: String) {
-                if (key.isBlank() || value.isBlank()) return
-                synchronized(map) {
-                    // LinkedHashMap 的 put 不会调整既有 key 的顺序（accessOrder=false 也不重排插入顺序），
-                    // 这里手动 remove 再 put，让最新写入的 key 排到末尾，
-                    // 触发 removeEldestEntry 时优先淘汰真正最早添加且未再被更新的记录。
-                    map.remove(key)
-                    map[key] = value
-                }
-                dirty = true
-                scheduleFlush()
-            }
-
-            fun clear() {
-                synchronized(map) { map.clear() }
-                dirty = true
-                scheduleFlush()
-            }
-
-            /** 启动时调用：从磁盘恢复一次 */
-            suspend fun ensureLoaded() {
-                if (loaded) return
-                kotlinx.coroutines.withContext(Dispatchers.IO) {
-                    if (loaded) return@withContext
-                    try {
-                        val snapshot: LinkedHashMap<String, String>? = diskCache.getObj(KEY)
-                        if (snapshot != null) {
-                            synchronized(map) {
-                                snapshot.forEach { (k, v) -> if (!map.containsKey(k)) map[k] = v }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e("NextToPrevStore load err", e)
-                    }
-                    loaded = true
-                }
-            }
-
-            @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-            private fun scheduleFlush() {
-                if (flushJob?.isActive == true) return
-                flushJob = GlobalScope.launch(Dispatchers.IO) {
-                    delay(FLUSH_DELAY_MS)
-                    flushNow()
-                }
-            }
-
-            /** 立刻落盘待写入数据，供 onDestroy 调用 */
-            @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-            fun flushNow() {
-                if (!dirty) return
-                dirty = false
-                try {
-                    val snapshot = synchronized(map) { LinkedHashMap(map) }
-                    // DiskCacheUtil.put(Any) 是 suspend，这里直接走 IO 协程
-                    GlobalScope.launch(Dispatchers.IO) {
-                        try {
-                            diskCache.put(KEY, snapshot)
-                        } catch (e: Exception) {
-                            Log.e("NextToPrevStore flush err", e)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("NextToPrevStore flush err", e)
-                }
-            }
         }
 
         private fun loadExtractJs(context: Context): String {
