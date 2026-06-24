@@ -33,6 +33,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.Jsoup
 import sjj.alog.Log
@@ -158,8 +159,30 @@ class WebViewSettings @JvmOverloads constructor(
 
         binding.btnReadMode.setOnClickListener {
             hide()
-            val url = customWebView?.currentWebView?.url ?: return@setOnClickListener
-            BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
+            val wv = customWebView?.currentWebView ?: return@setOnClickListener
+            val url = wv.url ?: return@setOnClickListener
+            // 先尝试用当前 WebView 提取一次正文并写入缓存（内存 + 磁盘），
+            // 阅读模式启动后命中缓存可跳过 hiddenWebView 的重新加载与提取。
+            // 提取失败/超时不阻塞跳转，阅读模式仍会按原逻辑重新加载。
+            val scope = customWebView?.lifecycleScope
+            if (scope == null) {
+                BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
+                return@setOnClickListener
+            }
+            scope.launch {
+                try {
+                    val data = withTimeoutOrNull(2_000L) {
+                        with(BrowserReadModeActivity.Companion) { wv.extractContent() }
+                    }
+                    if (data != null && data.content.isNotBlank()) {
+                        BrowserReadModeActivity.putExtractResult(url, data)
+                    }
+                } catch (t: Throwable) {
+                    Log.e("预提取阅读模式正文失败", t)
+                } finally {
+                    BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
+                }
+            }
         }
     }
 

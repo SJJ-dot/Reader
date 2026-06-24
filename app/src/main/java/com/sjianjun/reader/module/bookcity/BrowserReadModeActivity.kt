@@ -830,46 +830,50 @@ class BrowserReadModeActivity : BaseActivity() {
         val allLinks: List<ChapterLink> = emptyList(),
     )
 
-    private suspend fun WebView.extractContent(): ExtractResult {
-        val js = loadExtractJs(context)
-        return suspendCancellableCoroutine { cont ->
-            evaluateJavascript(js) { raw ->
-                try {
-                    val jsonStr = unwrapJsString(raw)
-                    val obj = JSONObject(jsonStr)
-                    val title = obj.optString("title", "")
-                    val content = obj.optString("content", "")
-                    val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
-                    val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
-                    val next = obj.optString("next", "").takeIf { it.isNotBlank() }
-                    val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
-                    val linksArr = obj.optJSONArray("allLinks")
-                    val allLinks = mutableListOf<ChapterLink>()
-                    if (linksArr != null) {
-                        for (i in 0 until linksArr.length()) {
-                            val c = linksArr.getJSONObject(i)
-                            allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
-                        }
-                    }
-                    if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
-                } catch (t: Throwable) {
-                    Log.e("extractContent err", t)
-                    if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
-                }
-            }
-        }
-    }
-
-    private fun unwrapJsString(raw: String?): String {
-        if (raw.isNullOrBlank() || raw == "null") return "{}"
-        return if (raw.startsWith("\"") && raw.endsWith("\"")) {
-            JSONObject("{\"v\":$raw}").optString("v", "{}")
-        } else raw
-    }
-
     companion object {
         @Volatile
         private var cachedJs: String? = null
+
+        /**
+         * 给外部（如浏览器切换阅读模式时的预提取）使用。
+         * 复用同一份 browser_extract.js + JSON 解析逻辑。
+         */
+        suspend fun WebView.extractContent(): ExtractResult {
+            val js = loadExtractJs(context)
+            return suspendCancellableCoroutine { cont ->
+                evaluateJavascript(js) { raw ->
+                    try {
+                        val jsonStr = unwrapJsString(raw)
+                        val obj = JSONObject(jsonStr)
+                        val title = obj.optString("title", "")
+                        val content = obj.optString("content", "")
+                        val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
+                        val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
+                        val next = obj.optString("next", "").takeIf { it.isNotBlank() }
+                        val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
+                        val linksArr = obj.optJSONArray("allLinks")
+                        val allLinks = mutableListOf<ChapterLink>()
+                        if (linksArr != null) {
+                            for (i in 0 until linksArr.length()) {
+                                val c = linksArr.getJSONObject(i)
+                                allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
+                            }
+                        }
+                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
+                    } catch (t: Throwable) {
+                        Log.e("extractContent err", t)
+                        if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
+                    }
+                }
+            }
+        }
+
+        private fun unwrapJsString(raw: String?): String {
+            if (raw.isNullOrBlank() || raw == "null") return "{}"
+            return if (raw.startsWith("\"") && raw.endsWith("\"")) {
+                JSONObject("{\"v\":$raw}").optString("v", "{}")
+            } else raw
+        }
 
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult?>(10)
