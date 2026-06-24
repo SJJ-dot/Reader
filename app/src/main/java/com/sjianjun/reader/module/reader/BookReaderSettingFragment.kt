@@ -224,7 +224,16 @@ class BookReaderSettingFragment : BaseFragment() {
             ReaderSettingPopupItem.Action(title = "净化替换") {
                 hide()
                 if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
-                    ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
+                    val book = pageLoader.mCollBook
+                    val chapter = pageLoader.curChapter
+                    val activeScopeText = listOf(
+                        book?.title.orEmpty(),
+                        book?.url.orEmpty(),
+                        chapter?.link.orEmpty(),
+                        chapter?.title.orEmpty(),
+                    ).joinToString("\n")
+                    ReplacementRuleListDialogFragment.newInstance(activeScopeText = activeScopeText)
+                        .show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
                 }
             },
             ReaderSettingPopupItem.Switch(title = "音量键翻页", checked = globalConfig.readerVolumeKeyPageTurn.value == true) { item, checked ->

@@ -77,7 +77,7 @@ class BookSource {
 
 
     private suspend inline fun <reified T> execute(func: Func, param: String?): T? {
-        Log.i("调用脚本方法：${func}")
+//        Log.i("调用脚本方法：${func}")
         return when (lauanage) {
             Language.yuedu -> {
                 val result = when (func) {

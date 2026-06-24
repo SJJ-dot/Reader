@@ -95,7 +95,9 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         val ruleId = arguments?.getString(ARG_RULE_ID)
         viewLifecycleOwner.lifecycleScope.launch {
             editingRule = if (ruleId.isNullOrBlank()) {
-                ReplacementRule()
+                ReplacementRule().apply {
+                    arguments?.getString(ARG_DEFAULT_SCOPE)?.takeIf { it.isNotBlank() }?.let { scope = it }
+                }
             } else {
                 ReplacementRuleUseCase.getAllRules().firstOrNull { it.id == ruleId } ?: ReplacementRule()
             }
@@ -203,12 +205,16 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
 
     companion object {
         private const val ARG_RULE_ID = "ruleId"
+        private const val ARG_DEFAULT_SCOPE = "defaultScope"
         const val TAG = "ReplacementRuleEditDialogFragment"
         const val RESULT_KEY = "replacement_rule_saved"
 
-        fun newInstance(ruleId: String?): ReplacementRuleEditDialogFragment {
+        fun newInstance(ruleId: String?, defaultScope: String? = null): ReplacementRuleEditDialogFragment {
             return ReplacementRuleEditDialogFragment().apply {
-                arguments = bundleOf(ARG_RULE_ID to ruleId)
+                arguments = bundleOf(
+                    ARG_RULE_ID to ruleId,
+                    ARG_DEFAULT_SCOPE to defaultScope,
+                )
             }
         }
     }

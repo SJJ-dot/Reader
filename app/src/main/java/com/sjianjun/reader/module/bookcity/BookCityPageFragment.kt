@@ -105,13 +105,7 @@ class BookCityPageFragment : BaseFragment() {
                     return@setOnBackPressed true
                 }
                 if (!customWebView.back()) {
-                    if (customWebView.currentWebView != null && System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
-                        lastTime = System.currentTimeMillis()
-                        return@setOnBackPressed true
-                    } else {
-                        return@setOnBackPressed false
-                    }
+                    false
                 } else {
                     true
                 }
@@ -267,7 +261,7 @@ class BookCityPageFragment : BaseFragment() {
     private fun initAdBlockList(
         hostListAdapter: HostListAdapter,
         blackListAdapter: BlackListAdapter,
-        whiteListAdapter: WhiteListAdapter
+        whiteListAdapter: WhiteListAdapter,
     ) {
         hostListAdapter.adBlock.hostList.removeObservers(viewLifecycleOwner)
         hostListAdapter.adBlock.blacklist.removeObservers(viewLifecycleOwner)
@@ -313,7 +307,7 @@ class BookCityPageFragment : BaseFragment() {
                 onLongClickListener(homeUrl)
                 true
             }
-            if (globalConfig.bookCityUrl == homeUrl.url){
+            if (globalConfig.bookCityUrl == homeUrl.url) {
                 binding.ivMark.show()
             } else {
                 binding.ivMark.gone()

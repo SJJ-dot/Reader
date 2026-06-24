@@ -38,6 +38,7 @@ import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.PageLoader
@@ -506,7 +507,18 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             BookReaderSettingFragment.ReaderSettingPopupItem.Action(title = "净化替换") {
                 hideSelf()
                 if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
-                    ReplacementRuleListDialogFragment().show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
+                    // 默认作用域：当前阅读页的主域名（缺省时回退到 WebBook.url 主域）
+                    val curUrl = pageLoader?.curChapter?.link
+                    val defaultScope = curUrl?.toHttpUrlOrNull()?.topPrivateDomain()
+                    // 当前阅读上下文：书名 + URL + 章节标题，用于在列表里识别作用域是否命中
+                    val activeScopeText = listOf(
+                        pageLoader?.mCollBook?.title.orEmpty(),
+                        pageLoader?.mCollBook?.url.orEmpty(),
+                        curUrl.orEmpty(),
+                        pageLoader?.curChapter?.title.orEmpty(),
+                    ).joinToString("\n")
+                    ReplacementRuleListDialogFragment.newInstance(defaultScope, activeScopeText)
+                        .show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
                 }
             },
             BookReaderSettingFragment.ReaderSettingPopupItem.Switch(title = "音量键翻页", checked = globalConfig.readerVolumeKeyPageTurn.value == true) { item, checked ->

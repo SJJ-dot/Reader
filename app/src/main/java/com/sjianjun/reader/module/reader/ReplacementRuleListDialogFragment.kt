@@ -30,13 +30,23 @@ import sjj.novel.view.reader.page.PageStyle
 
 class ReplacementRuleListDialogFragment : DialogFragment() {
     private var binding: DialogReplacementRuleListBinding? = null
-    private val adapter = RuleAdapter(
-        onMoveUp = { rule -> moveRule(rule, true) },
-        onMoveDown = { rule -> moveRule(rule, false) },
-        onEdit = { rule -> openEditor(rule.id) },
-        onDelete = { rule -> deleteRule(rule) },
-        onToggleEnabled = { rule -> toggleRule(rule) },
-    )
+    /** 新建规则时的默认作用域（书籍主域名等）；由调用方通过 [newInstance] 传入 */
+    private val defaultScope: String? get() = arguments?.getString(ARG_DEFAULT_SCOPE)
+    /**
+     * 当前阅读上下文（书名、URL、章节标题拼接而成）。
+     * 列表中 scope 不包含 / excludeScope 命中的规则将显示为禁用态。
+     */
+    private val activeScopeText: String? get() = arguments?.getString(ARG_ACTIVE_SCOPE_TEXT)
+    private val adapter by lazy {
+        RuleAdapter(
+            onMoveUp = { rule -> moveRule(rule, true) },
+            onMoveDown = { rule -> moveRule(rule, false) },
+            onEdit = { rule -> openEditor(rule.id) },
+            onDelete = { rule -> deleteRule(rule) },
+            onToggleEnabled = { rule -> toggleRule(rule) },
+            activeScopeText = activeScopeText,
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,7 +142,9 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
     }
 
     private fun openEditor(ruleId: String?) {
-        ReplacementRuleEditDialogFragment.newInstance(ruleId)
+        // 新建规则时把默认作用域（如阅读模式当前页面的主域名）填入；编辑已有规则时不覆盖。
+        val scope = if (ruleId.isNullOrBlank()) defaultScope else null
+        ReplacementRuleEditDialogFragment.newInstance(ruleId, scope)
             .show(parentFragmentManager, ReplacementRuleEditDialogFragment.TAG)
     }
 
@@ -147,6 +159,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         private val onEdit: (ReplacementRule) -> Unit,
         private val onDelete: (ReplacementRule) -> Unit,
         private val onToggleEnabled: (ReplacementRule) -> Unit,
+        private val activeScopeText: String?,
     ) : RecyclerView.Adapter<RuleAdapter.RuleViewHolder>() {
         private val data = mutableListOf<ReplacementRule>()
 
@@ -169,13 +182,19 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
 
         inner class RuleViewHolder(private val binding: ItemReplacementRuleBinding) : RecyclerView.ViewHolder(binding.root) {
             fun bind(rule: ReplacementRule, position: Int, lastIndex: Int) {
+                // 作用域命中检测：仅当调用方提供了 activeScopeText 时生效。
+                val outOfScope = activeScopeText?.let { !ReplacementRuleUseCase.matchesScope(rule, it) } == true
                 binding.tvRuleName.text = rule.name.ifBlank { rule.rule }
                 binding.tvRuleState.text = buildString {
                     append(if (rule.isEnabled) "已启用" else "已禁用")
                     if (rule.isRegex) append(" · 正则匹配")
+                    if (outOfScope) append(" · 作用域不匹配")
                 }
                 binding.tvRule.text = "规则：${rule.rule}"
                 binding.tvReplace.text = "替换：${rule.replacement}"
+                // 不在当前作用域内的规则视觉上置灰，但仍可编辑/删除/移动；点击切换启用照常生效，
+                // 让用户能在排查时把它启用再修改 scope。
+                binding.root.alpha = if (outOfScope) 0.5f else 1f
                 binding.btnMoveUp.alpha = if (position == 0) 0.4f else 1f
                 binding.btnMoveDown.alpha = if (position == lastIndex) 0.4f else 1f
                 binding.btnMoveUp.setOnClickListener { if (position > 0) onMoveUp(rule) }
@@ -190,6 +209,22 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
 
     companion object {
         const val TAG = "ReplacementRuleListDialogFragment"
+        private const val ARG_DEFAULT_SCOPE = "defaultScope"
+        private const val ARG_ACTIVE_SCOPE_TEXT = "activeScopeText"
+
+        /**
+         * @param defaultScope 新建规则时预填的作用域（通常是书籍主域名）
+         * @param activeScopeText 当前阅读上下文（书名 + URL + 章节标题），用于在列表中把
+         *   作用域不匹配的规则置灰显示。两个参数通常一并提供。
+         */
+        fun newInstance(defaultScope: String? = null, activeScopeText: String? = null): ReplacementRuleListDialogFragment {
+            return ReplacementRuleListDialogFragment().apply {
+                arguments = android.os.Bundle().apply {
+                    if (!defaultScope.isNullOrBlank()) putString(ARG_DEFAULT_SCOPE, defaultScope)
+                    if (!activeScopeText.isNullOrBlank()) putString(ARG_ACTIVE_SCOPE_TEXT, activeScopeText)
+                }
+            }
+        }
     }
 }
 

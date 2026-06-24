@@ -99,13 +99,18 @@ object ReplacementRuleUseCase {
         val title = book?.title.orEmpty()
         val url = book?.url.orEmpty()
         val chapterTitle = chapter?.title.orEmpty()
-        val searchText = listOf(title, url, chapterTitle).joinToString("\n")
+        return matchesScope(rule, listOf(title, url, chapterTitle).joinToString("\n"))
+    }
 
+    /**
+     * 给规则列表使用：判断 [rule] 的 scope/excludeScope 是否命中 [searchText]。
+     * 调用方负责拼接 searchText（通常是 书名 + URL + 章节标题）。
+     */
+    fun matchesScope(rule: ReplacementRule, searchText: String): Boolean {
         val scope = rule.scope?.trim().orEmpty()
         if (scope.isNotEmpty() && !searchText.contains(scope, ignoreCase = true)) {
             return false
         }
-
         val excludeScope = rule.excludeScope?.trim().orEmpty()
         if (excludeScope.isNotEmpty() && searchText.contains(excludeScope, ignoreCase = true)) {
             return false
