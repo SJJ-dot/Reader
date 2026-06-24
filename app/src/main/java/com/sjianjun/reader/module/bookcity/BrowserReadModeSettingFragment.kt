@@ -182,12 +182,16 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             hideSelf()
         }
         b.chapterLast.click {
-            (activity as? BrowserReadModeActivity)?.gotoPrevChapter()
-            hideSelf()
+            if (b.chapterLast.isEnabled) {
+                (activity as? BrowserReadModeActivity)?.gotoPrevChapter()
+                hideSelf()
+            }
         }
         b.chapterNext.click {
-            (activity as? BrowserReadModeActivity)?.gotoNextChapter()
-            hideSelf()
+            if (b.chapterNext.isEnabled) {
+                (activity as? BrowserReadModeActivity)?.gotoNextChapter()
+                hideSelf()
+            }
         }
     }
 
@@ -196,8 +200,14 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val activity = activity as? BrowserReadModeActivity ?: return
         val loader = pageLoader ?: return
         val curChapterData = loader.curChapterData
+        val hasPrev = !curChapterData?.prevUrl.isNullOrBlank()
+        val hasNext = !curChapterData?.nextUrl.isNullOrBlank()
         b.chapterLast.text = curChapterData?.prevText?.takeIf { it.isNotBlank() } ?: "上一章"
         b.chapterNext.text = curChapterData?.nextText?.takeIf { it.isNotBlank() } ?: "下一章"
+        b.chapterLast.isEnabled = hasPrev
+        b.chapterNext.isEnabled = hasNext
+        b.chapterLast.alpha = if (hasPrev) 1f else 0.4f
+        b.chapterNext.alpha = if (hasNext) 1f else 0.4f
 
         val curPage = loader.pagePos + 1
         val totalPages = loader.curPageList?.size ?: 0
