@@ -586,10 +586,12 @@ class BrowserReadModeActivity : BaseActivity() {
     private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
         var retry = 0
         var data: ExtractResult? = null
-        while (retry < 5) {
+        while (retry < 10) {
             data = wv.extractContent()
-            if (data.content.isNotBlank()) return data
-            delay(200.milliseconds)
+            val contentOk = data.content.isNotBlank()
+            val nav = data.prevUrl.isNullOrBlank() || data.nextUrl.isNullOrBlank()
+            if (contentOk && !nav) return data
+            delay(300.milliseconds)
             retry++
         }
         return data
@@ -882,14 +884,6 @@ class BrowserReadModeActivity : BaseActivity() {
                                 allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
                             }
                         }
-                        // 临时调试：把 JS 端收集的诊断信息打印出来，定位为什么 prev/next 没匹配
-                        val dbg = obj.optJSONArray("_debug")
-                        if (dbg != null) {
-                            for (i in 0 until dbg.length()) {
-                                Log.i("extract dbg: ${dbg.optString(i)}")
-                            }
-                        }
-                        Log.i("extract result: title=$title prev=$prev prevText=$prevText next=$next nextText=$nextText links=${allLinks.size}")
                         if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
                     } catch (t: Throwable) {
                         Log.e("extractContent err", t)

@@ -585,7 +585,7 @@ abstract class PageLoader : ViewModel() {
             canvas.drawLine(0f, mDisplayParams.contentBottom, mDisplayParams.width.toFloat(), mDisplayParams.contentBottom, mTitlePaint!!)
         }
         /******绘制内容 */
-        Log.i("drawContent mStatus:$mStatus mCurPage:${mCurPage?.position} ${mCurPage?.lines?.size}")
+//        Log.i("drawContent mStatus:$mStatus mCurPage:${mCurPage?.position} ${mCurPage?.lines?.size}")
         val curPage = mCurPage
         if (mStatus != STATUS_FINISH || curPage == null) {
             //绘制字体
