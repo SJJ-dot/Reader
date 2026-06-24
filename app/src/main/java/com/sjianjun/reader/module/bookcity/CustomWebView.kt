@@ -587,6 +587,10 @@ object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
     var list by dataPref("History", listOf<HistoryItem>())
 }
 
+object ReadModeHistory : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_ReadModeHistory")) {
+    var list by dataPref("History", listOf<HistoryItem>())
+}
+
 class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false) : Comparable<HistoryItem> {
     override fun compareTo(other: HistoryItem): Int {
         if (isMark != other.isMark) return if (isMark) 1 else -1

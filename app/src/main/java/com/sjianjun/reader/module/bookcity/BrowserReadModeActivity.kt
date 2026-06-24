@@ -161,6 +161,36 @@ class BrowserReadModeActivity : BaseActivity() {
         val hostListAdapter = BookCityPageFragment.HostListAdapter(adBlock)
         val blackListAdapter = BookCityPageFragment.BlackListAdapter(adBlock)
         val whiteListAdapter = BookCityPageFragment.WhiteListAdapter(adBlock)
+        val historyAdapter = BookCityPageFragment.HistoryListAdapter()
+        historyAdapter.onClick = { url ->
+            navigateChecked(
+                url = url,
+                baseHost = null,
+                onAllow = {
+                    binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END)
+                    showChapter(url)
+                },
+                onBlock = { toast("链接已被阻止") },
+            )
+        }
+        historyAdapter.onDeleteHistory = { item ->
+            if (item == null) {
+                ReadModeHistory.list = emptyList()
+            } else {
+                ReadModeHistory.list = ReadModeHistory.list.toMutableList().apply { removeAll { it.url == item.url } }
+            }
+            renderReadModeHistory()
+        }
+        historyAdapter.onMark = { item ->
+            val list = ReadModeHistory.list.toMutableList()
+            val index = list.indexOfFirst { it.url == item.url }
+            if (index >= 0) {
+                list[index].isMark = !list[index].isMark
+                list.sortDescending()
+                ReadModeHistory.list = list
+                renderReadModeHistory()
+            }
+        }
 
         // 观察 AdBlock 数据
         adBlock.hostList.observe(this) {
@@ -177,10 +207,10 @@ class BrowserReadModeActivity : BaseActivity() {
         }
 
         // 默认 Tab 0：本页链接
-        applyChapterDrawerTab(0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter)
+        applyChapterDrawerTab(0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter, historyAdapter)
         binding.chapterListTab.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
-                applyChapterDrawerTab(tab?.position ?: 0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter)
+                applyChapterDrawerTab(tab?.position ?: 0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter, historyAdapter)
             }
 
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
@@ -194,10 +224,10 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: View) {
-                renderChapterList()
-                // 若当前页尚未提取，触发一次正文加载；加载完成后会自动 renderChapterList()
+                refreshCurrentDrawerTab()
+                // 若当前页尚未提取，触发一次正文加载；加载完成后会自动刷新链接列表
                 val curUrl = pageLoader.curChapter?.link
-                if (!curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
+                if (binding.chapterListTab.selectedTabPosition == 0 && !curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
                     loadUrlForReadMode(curUrl)
                 }
             }
@@ -206,7 +236,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /**
      * 切换抽屉中的 Tab。Tab 0 = 本页链接（FlexboxLayoutManager + chapterAdapter + 跨域过滤）；
-     * Tab 1/2/3 = 未标记/黑名单/白名单（LinearLayoutManager + host item adapter）
+     * Tab 1/2/3 = 未标记/黑名单/白名单（LinearLayoutManager + host item adapter）；Tab 4 = 历史。
      */
     private fun applyChapterDrawerTab(
         position: Int,
@@ -214,6 +244,7 @@ class BrowserReadModeActivity : BaseActivity() {
         hostListAdapter: BookCityPageFragment.HostListAdapter,
         blackListAdapter: BookCityPageFragment.BlackListAdapter,
         whiteListAdapter: BookCityPageFragment.WhiteListAdapter,
+        historyAdapter: BookCityPageFragment.HistoryListAdapter,
     ) {
         when (position) {
             0 -> {
@@ -239,6 +270,13 @@ class BrowserReadModeActivity : BaseActivity() {
                 binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
                 binding.chapterListRv.adapter = whiteListAdapter
                 binding.chapterListIncludeCrossDomain.visibility = View.GONE
+            }
+
+            4 -> {
+                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                binding.chapterListRv.adapter = historyAdapter
+                binding.chapterListIncludeCrossDomain.visibility = View.GONE
+                renderReadModeHistory()
             }
         }
     }
@@ -266,11 +304,43 @@ class BrowserReadModeActivity : BaseActivity() {
         adapter.submitList(filtered.toList())
     }
 
+    private fun renderReadModeHistory() {
+        val adapter = binding.chapterListRv.adapter as? BookCityPageFragment.HistoryListAdapter ?: return
+        adapter.data = ReadModeHistory.list.toMutableList()
+        adapter.notifyDataSetChanged()
+    }
+
+    private fun recordReadModeHistory(url: String, data: ExtractResult?) {
+        if (url.toHttpUrlOrNull() == null || data == null || data.content.isBlank() || data.content == "加载失败") {
+            return
+        }
+        val list = ReadModeHistory.list.toMutableList()
+        val isMark = list.firstOrNull { it.url == url }?.isMark ?: false
+        list.removeAll { it.url == url }
+        val title = data.title.ifBlank { webBook?.title ?: url }
+        list.add(HistoryItem(title, url, isMark = isMark))
+        list.sortDescending()
+        while (list.size > 100) {
+            list.removeAt(list.lastIndex)
+        }
+        ReadModeHistory.list = list
+        if (binding.chapterListTab.selectedTabPosition == 4) {
+            renderReadModeHistory()
+        }
+    }
+
+    private fun refreshCurrentDrawerTab() {
+        when (binding.chapterListTab.selectedTabPosition) {
+            0 -> renderChapterList()
+            4 -> renderReadModeHistory()
+        }
+    }
+
     fun openDrawer() {
         binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END)
-        renderChapterList()
+        refreshCurrentDrawerTab()
         val curUrl = pageLoader.curChapter?.link
-        if (!curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
+        if (binding.chapterListTab.selectedTabPosition == 0 && !curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
             loadUrlForReadMode(curUrl)
         }
     }
@@ -553,9 +623,9 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             putExtractResult(url, data)
         }
-        // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新抽屉链接列表
+        // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
         if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
-            renderChapterList()
+            refreshCurrentDrawerTab()
         }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
@@ -632,6 +702,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
+        recordReadModeHistory(url, data)
         // 内存未命中 → 异步从磁盘读取，命中后再次渲染
         if (data == null && url.isNotBlank()) {
             lifecycleScope.launch {
@@ -720,9 +791,9 @@ class BrowserReadModeActivity : BaseActivity() {
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
 
-        // 切到了新页面，若抽屉打开则立刻刷新链接；尚未提取时正文加载完成后会再次刷新
+        // 切到了新页面，若抽屉打开则立刻刷新当前 Tab；尚未提取时正文加载完成后会再次刷新
         if (pageChanged && isChapterDrawerOpen()) {
-            renderChapterList()
+            refreshCurrentDrawerTab()
         }
     }
 
