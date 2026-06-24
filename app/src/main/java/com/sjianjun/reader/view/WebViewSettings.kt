@@ -225,6 +225,13 @@ class WebViewSettings @JvmOverloads constructor(
     /** 导入书源书架：通过 SearchViewModel.searchUrl 搜索并保存 */
     private fun importToBookSourceShelf(url: String) {
         val scope = customWebView?.lifecycleScope ?: return
+        // 搜索通常要跑多个书源、耗时较长；用一个不可取消的进度框告诉用户"正在跑"，
+        // 不至于让人以为按钮点了没反应。
+        val progress = android.app.ProgressDialog(context).apply {
+            setMessage("正在导入书源书架…")
+            setCancelable(false)
+            show()
+        }
         scope.launch {
             try {
                 val vm = SearchViewModel()
@@ -241,6 +248,8 @@ class WebViewSettings @JvmOverloads constructor(
             } catch (e: Exception) {
                 Log.e("导入书源书架失败", e)
                 toast("导入失败: ${e.message}")
+            } finally {
+                runCatching { progress.dismiss() }
             }
         }
     }
