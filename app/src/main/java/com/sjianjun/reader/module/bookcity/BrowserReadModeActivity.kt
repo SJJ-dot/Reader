@@ -159,6 +159,7 @@ class BrowserReadModeActivity : BaseActivity() {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
                 applyChapterDrawerTab(tab?.position ?: 0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter)
             }
+
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
             override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
         })
@@ -198,16 +199,19 @@ class BrowserReadModeActivity : BaseActivity() {
                 binding.chapterListIncludeCrossDomain.visibility = View.VISIBLE
                 renderChapterList()
             }
+
             1 -> {
                 binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
                 binding.chapterListRv.adapter = hostListAdapter
                 binding.chapterListIncludeCrossDomain.visibility = View.GONE
             }
+
             2 -> {
                 binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
                 binding.chapterListRv.adapter = blackListAdapter
                 binding.chapterListIncludeCrossDomain.visibility = View.GONE
             }
+
             3 -> {
                 binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
                 binding.chapterListRv.adapter = whiteListAdapter
@@ -628,12 +632,15 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         val chapters = mutableListOf<TxtChapter>()
-        data?.prevUrl?.let {
+        data?.prevUrl.let { url ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = it
-                this.title = data.prevText ?: "上一页"
+                this.link = url ?: "没有上一页了"
+                this.title = data?.prevText ?: "上一页"
                 this.chapterIndex = 0
+                if (url.isNullOrBlank()) {
+                    this.content = "上一页地址未找到，无法加载"
+                }
             })
         }
         chapters.add(TxtChapter().apply {
@@ -643,12 +650,15 @@ class BrowserReadModeActivity : BaseActivity() {
             this.chapterIndex = chapters.size
             this.content = data?.content
         })
-        data?.nextUrl?.let {
+        data?.nextUrl.let { url ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = it
-                this.title = data.nextText ?: "加载中"
+                this.link = url ?: "没有下一页了"
+                this.title = data?.nextText ?: "下一页"
                 this.chapterIndex = chapters.size
+                if (url.isNullOrBlank()) {
+                    this.content = "下一页地址未找到，无法加载"
+                }
             })
         }
 
@@ -956,7 +966,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
         override fun shouldOverrideUrlLoading(
             view: WebView?,
-            request: android.webkit.WebResourceRequest
+            request: android.webkit.WebResourceRequest,
         ): Boolean {
             val url = request.url.toString()
             navigateChecked(url, currentHost, onAllow = { view?.loadUrl(url) })
@@ -972,7 +982,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
         override fun shouldInterceptRequest(
             view: WebView?,
-            request: android.webkit.WebResourceRequest
+            request: android.webkit.WebResourceRequest,
         ): android.webkit.WebResourceResponse? {
             val url = request.url.toString()
             adBlock.addUrl(url)
@@ -992,7 +1002,7 @@ class BrowserReadModeActivity : BaseActivity() {
         override fun onReceivedSslError(
             view: WebView?,
             handler: android.webkit.SslErrorHandler?,
-            error: android.net.http.SslError?
+            error: android.net.http.SslError?,
         ) {
             Log.e("ReadMode SSL: ${error?.toString()}")
             handler?.proceed()
@@ -1044,11 +1054,17 @@ class BrowserReadModeActivity : BaseActivity() {
         onAllow: () -> Unit,
         onBlock: () -> Unit = {},
     ) {
-        if (isLikelyDownload(url)) { onBlock(); return }
+        if (isLikelyDownload(url)) {
+            onBlock(); return
+        }
 
         val target = url.toHttpUrlOrNull()?.topPrivateDomain()
-        if (target != null && adBlock.whitelist.contains(target)) { onAllow(); return }
-        if (target != null && adBlock.blacklist.contains(target)) { onBlock(); return }
+        if (target != null && adBlock.whitelist.contains(target)) {
+            onAllow(); return
+        }
+        if (target != null && adBlock.blacklist.contains(target)) {
+            onBlock(); return
+        }
 
         val scheme = url.substringBefore(':', "").lowercase()
         if (scheme != "http" && scheme != "https") {
@@ -1057,7 +1073,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
 
         val isCross = baseHost != null && target != null && baseHost != target
-        if (!isCross) { onAllow(); return }
+        if (!isCross) {
+            onAllow(); return
+        }
 
         when (crossOriginMode()) {
             1 -> onAllow()
