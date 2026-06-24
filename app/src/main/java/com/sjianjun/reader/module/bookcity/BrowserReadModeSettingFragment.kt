@@ -242,8 +242,17 @@ class BrowserReadModeSettingFragment : BaseFragment() {
     private fun initRefresh() {
         val b = binding ?: return
         b.refresh.click {
-            (activity as? BrowserReadModeActivity)?.refresh()
-            hideSelf()
+            val act = activity as? BrowserReadModeActivity ?: return@click
+            if (b.refresh.isSelected) {
+                // 当前正在加载 → 停止
+                act.stopHiddenLoading()
+            } else {
+                act.refresh()
+                hideSelf()
+            }
+        }
+        (activity as? BrowserReadModeActivity)?.isHiddenLoading?.observe(viewLifecycleOwner) { loading ->
+            b.refresh.isSelected = loading == true
         }
     }
 

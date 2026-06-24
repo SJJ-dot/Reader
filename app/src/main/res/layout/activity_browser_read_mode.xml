@@ -22,6 +22,17 @@
             android:layout_height="0dp"
             android:visibility="gone" />
 
+        <!-- 后台 WebView 加载进度条（与 CustomWebView 浏览模式同一风格） -->
+        <androidx.core.widget.ContentLoadingProgressBar
+            android:id="@+id/hidden_web_view_progress"
+            style="@style/ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:visibility="gone"
+            tools:progress="50"
+            tools:visibility="visible" />
+
         <!-- 设置面板容器 -->
         <FrameLayout
             android:id="@+id/read_mode_setting_container"

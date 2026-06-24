@@ -86,6 +86,18 @@ class BrowserReadModeActivity : BaseActivity() {
 
     val pageLoader get() = binding.readModePageView.pageLoader!!
 
+    /** 后台 WebView 是否正在加载。供设置面板的刷新按钮订阅。 */
+    val isHiddenLoading = androidx.lifecycle.MutableLiveData(false)
+
+    /** 设置面板"刷新"按钮在加载中点击时调用——立即中止当前加载，丢弃排队。 */
+    fun stopHiddenLoading() {
+        hiddenWebView.stopLoading()
+        loadUrlQueue.clear()
+        loadUrlQueueJob?.cancel()
+        binding.hiddenWebViewProgress.visibility = View.GONE
+        isHiddenLoading.postValue(false)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         applyReaderOrientation(globalConfig.readerOrientationMode.value ?: 0)
         super.onCreate(savedInstanceState)
@@ -102,7 +114,18 @@ class BrowserReadModeActivity : BaseActivity() {
 
         hiddenWebView = binding.hiddenWebView
         hiddenWebView.init()
-        hiddenWebView.webChromeClient = WebChromeClient()
+        hiddenWebView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                binding.hiddenWebViewProgress.progress = newProgress
+                if (newProgress >= 100) {
+                    binding.hiddenWebViewProgress.visibility = View.GONE
+                    isHiddenLoading.postValue(false)
+                } else {
+                    binding.hiddenWebViewProgress.visibility = View.VISIBLE
+                    isHiddenLoading.postValue(true)
+                }
+            }
+        }
         // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
         hiddenWebView.webViewClient = ReadModeWebViewClient()
 
