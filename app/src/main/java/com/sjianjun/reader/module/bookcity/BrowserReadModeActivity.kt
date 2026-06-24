@@ -882,6 +882,14 @@ class BrowserReadModeActivity : BaseActivity() {
                                 allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
                             }
                         }
+                        // 临时调试：把 JS 端收集的诊断信息打印出来，定位为什么 prev/next 没匹配
+                        val dbg = obj.optJSONArray("_debug")
+                        if (dbg != null) {
+                            for (i in 0 until dbg.length()) {
+                                Log.i("extract dbg: ${dbg.optString(i)}")
+                            }
+                        }
+                        Log.i("extract result: title=$title prev=$prev prevText=$prevText next=$next nextText=$nextText links=${allLinks.size}")
                         if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
                     } catch (t: Throwable) {
                         Log.e("extractContent err", t)

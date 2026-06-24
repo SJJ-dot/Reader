@@ -1,4 +1,7 @@
 (function () {
+    var dbg = [];
+    function log(msg) { dbg.push(msg); }
+
     function abs(href) {
         try {
             return new URL(href, location.href).href;
@@ -135,17 +138,27 @@
     ];
     for (var ns = 0; ns < nextSelectors.length; ns++) {
         var pn = pickLink(nextSelectors[ns]);
-        if (pn) { next = pn.href; nextText = pn.text; break; }
+        if (pn) { next = pn.href; nextText = pn.text; log('next sel hit: ' + nextSelectors[ns]); break; }
     }
     for (var ps = 0; ps < prevSelectors.length; ps++) {
         var pp = pickLink(prevSelectors[ps]);
-        if (pp) { prev = pp.href; prevText = pp.text; break; }
+        if (pp) { prev = pp.href; prevText = pp.text; log('prev sel hit: ' + prevSelectors[ps]); break; }
     }
+    if (!prev) log('prev sel none of: ' + prevSelectors.join(','));
+    if (!next) log('next sel none of: ' + nextSelectors.join(','));
 
     // 同时覆盖单数形式 ("pre"/"nxt") 与中文常见词
     var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', '上一章', '上章', 'previous', 'prev', 'pre'];
     var nextKeys = ['下頁', '下页', '下一页', '下一节', '下一頁', '下一章', '下章', 'next', 'nxt'];
     var anchors = document.querySelectorAll('a[href]');
+    log('anchors count: ' + anchors.length);
+    // dump first few anchor signatures for diagnosis
+    for (var di = 0; di < Math.min(anchors.length, 20); di++) {
+        var da = anchors[di];
+        log('a[' + di + '] id=' + (da.id || '') + ' cls=' + ((da.className || '').toString())
+            + ' text=' + ((da.innerText || da.textContent || '').trim().slice(0, 30))
+            + ' href=' + (da.getAttribute('href') || ''));
+    }
     // 同时把 a 的祖先（li/span/div 等）类名 / id 也纳入匹配，覆盖
     // <li class="prev"><a class="url_pre" id="pb_prev"> 这种把语义放在父节点上的写法。
     function ancestorTokens(el) {
@@ -271,6 +284,7 @@
         next: next,
         nextText: nextText,
         directory: directory,
-        allLinks: allLinks
+        allLinks: allLinks,
+        _debug: dbg
     });
 })();
