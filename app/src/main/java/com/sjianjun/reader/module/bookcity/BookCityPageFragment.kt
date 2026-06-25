@@ -50,7 +50,7 @@ import sjj.alog.Log
 class BookCityPageFragment : BaseFragment() {
     private val vm by viewModels<BookCityViewModel>()
     private var url: String? = null
-    private val adBlock: AdBlock = AdBlock()
+    private val adBlock: AdBlock = AdBlock
     private var webBook: WebBook? = null
     private var crossOriginMode: Int = -1
 

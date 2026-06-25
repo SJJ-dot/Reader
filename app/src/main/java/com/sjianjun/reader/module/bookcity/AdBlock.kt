@@ -29,7 +29,7 @@ fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boo
     return this?.value?.any { it.host == host } == true
 }
 
-class AdBlock() {
+object AdBlock {
     private val config = AppConfig("ad-blacklist1")
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())

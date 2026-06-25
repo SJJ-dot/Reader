@@ -76,7 +76,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private var chapterDialog: ChapterListDialogFragment? = null
 
     /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
-    val adBlock: AdBlock = AdBlock()
+    val adBlock: AdBlock = AdBlock
 
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()

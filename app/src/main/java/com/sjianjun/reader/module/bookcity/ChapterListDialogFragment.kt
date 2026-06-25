@@ -17,8 +17,11 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
+import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
 import com.sjianjun.reader.utils.toast
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import sjj.novel.view.reader.page.PageStyle
 
 /** 阅读模式章节/链接/历史底部弹窗。 */
 class ChapterListDialogFragment : DialogFragment() {
@@ -84,6 +87,8 @@ class ChapterListDialogFragment : DialogFragment() {
         window.setGravity(Gravity.BOTTOM)
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background_dialog)))
+        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
+        applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }
 
     private fun setupAdapters() {
