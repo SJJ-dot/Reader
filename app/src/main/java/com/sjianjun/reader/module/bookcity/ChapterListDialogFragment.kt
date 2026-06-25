@@ -1,19 +1,18 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.app.Dialog
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexboxLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
@@ -24,7 +23,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.novel.view.reader.page.PageStyle
 
 /** 阅读模式章节/链接/历史底部弹窗。 */
-class ChapterListDialogFragment : DialogFragment() {
+class ChapterListDialogFragment : BottomSheetDialogFragment() {
     private var binding: DialogBrowserReadModeChapterListBinding? = null
     private var includeCrossDomain = false
 
@@ -37,13 +36,8 @@ class ChapterListDialogFragment : DialogFragment() {
     private lateinit var whiteListAdapter: BookCityPageFragment.WhiteListAdapter
     private lateinit var historyAdapter: BookCityPageFragment.HistoryListAdapter
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
-    }
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return super.onCreateDialog(savedInstanceState).apply {
+        return BottomSheetDialog(requireContext(), theme).apply {
             setCanceledOnTouchOutside(true)
         }
     }
@@ -56,11 +50,6 @@ class ChapterListDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val b = binding ?: return
-        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            b.root.setPadding(0, 0, 0, systemBars.bottom)
-            insets
-        }
         setupAdapters()
         b.chapterListRv.itemAnimator = null
         applyTab(0)
@@ -81,12 +70,21 @@ class ChapterListDialogFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        val window = dialog?.window ?: return
+        val dialog = dialog as? BottomSheetDialog ?: return
         val height = (resources.displayMetrics.heightPixels * 2 / 3f).toInt()
-        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height)
-        window.setGravity(Gravity.BOTTOM)
+        dialog.behavior.apply {
+            peekHeight = height
+            state = BottomSheetBehavior.STATE_EXPANDED
+            isHideable = true
+            skipCollapsed = true
+        }
+        dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
+            sheet.layoutParams = sheet.layoutParams.apply { this.height = height }
+            sheet.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        }
+        val window = dialog.window ?: return
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background_dialog)))
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
         applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }

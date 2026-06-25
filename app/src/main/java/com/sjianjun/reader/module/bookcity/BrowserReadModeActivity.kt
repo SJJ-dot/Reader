@@ -82,8 +82,6 @@ class BrowserReadModeActivity : BaseActivity() {
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
     private var loadUrlQueueJob: Job? = null
 
-    /** 是否包含跨域链接 */
-    private var includeCrossDomain = false
     private var updateWebBookJob: Job? = null
 
     /** 阅读模式本次打开后的内存历史记录，不落盘。 */
