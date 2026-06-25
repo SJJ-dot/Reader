@@ -46,19 +46,48 @@
             .replace(/[\u2010-\u2015\uFF0D\-_\s]/g, '\u4E00');
     }
 
+    function normalizeChapterTitleCandidate(title) {
+        title = (title || '').trim();
+        title = title.split(/[|_\-]/)[0].trim();
+        title = title.replace(/[（(]?第[0-9一二三四五六七八九零十百千万]+页[）)]?\s*$/g, '').trim();
+        return title;
+    }
+
+    function matchChapterTitle(raw) {
+        if (!raw) return '';
+        var text = String(raw)
+            .replace(/\u00A0/g, ' ')
+            .replace(/最新章节[：:_\-\s]*/g, '_')
+            .replace(/\r/g, '\n');
+        // 章节名匹配：参考 FileImportActivity，优先抽取“第N章/节/回 …”这类章节标题。
+        // 不强制锚定行首/行尾，允许在整个 HTML/innerText 中查找；但标题内容不跨行，避免吞掉正文。
+        var patterns = [
+            /第[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^\n\r|_\-<>]{0,80})/,
+            /第[0-9一二三四五六七八九零十百千万]+\s+([^\n\r|_\-<>]{1,80})/,
+            /[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^\n\r|_\-<>]{0,80})/,
+            /序[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^\n\r|_\-<>]{0,80})/,
+            /序章/
+        ];
+        for (var i = 0; i < patterns.length; i++) {
+            var m = text.match(patterns[i]);
+            if (m) return normalizeChapterTitleCandidate(m[0] || '');
+        }
+        return '';
+    }
+
+    function cleanChapterTitle(raw) {
+        if (!raw) return '';
+        var matched = matchChapterTitle(raw);
+        if (matched) return matched;
+        return linkTitleText(raw).replace(/\s+/g, ' ').trim();
+    }
+
     // 1. 标题
     var title = '';
     // 优先尝试获取 og:title
     var ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) {
         title = ogTitle.getAttribute('content') || '';
-    }
-    // 尝试 keywords meta 标签
-    if (!title) {
-        var keywords = document.querySelector('meta[name="keywords"]');
-        if (keywords) {
-            title = keywords.getAttribute('content') || '';
-        }
     }
     // 如果 title 不存在，尝试获取 h1
     if (!title) {
@@ -74,7 +103,13 @@
     }
     // 最后使用 document.title
     if (!title) title = document.title || '';
-    if(title) title = title.split(/[-|_,]/)[0].trim(); // 去掉网站名等后缀
+    var matchedTitle = matchChapterTitle(title);
+    if (!matchedTitle) {
+        // 如果常规标题来源没匹配出章节名，扩大到整个 HTML/innerText 里查找。
+        var wholeText = (document.documentElement && (document.documentElement.innerText || document.documentElement.textContent || document.documentElement.outerHTML)) || '';
+        matchedTitle = matchChapterTitle(wholeText);
+    }
+    title = matchedTitle || cleanChapterTitle(title);
 
     // 2. 正文：常见小说网站容器优先，支持单元素与多元素（如 p 列表），最后启发式选择 textLength 最大的可见块
     var content = '';
