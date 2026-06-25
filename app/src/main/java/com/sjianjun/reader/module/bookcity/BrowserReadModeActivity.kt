@@ -1,30 +1,24 @@
 package com.sjianjun.reader.module.bookcity
 
-import android.app.Dialog
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.LruCache
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.view.Gravity
 import android.view.View
-import android.view.WindowManager
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
-import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.android.flexbox.FlexboxLayoutManager
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
@@ -75,14 +69,14 @@ class BrowserReadModeActivity : BaseActivity() {
     private val startUrl by lazy { intent.getStringExtra(URL) ?: "" }
     private val webBookId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
 
-    private var webBook: WebBook? = null
+    var webBook: WebBook? = null
     private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
     private var chapterDialog: ChapterListDialogFragment? = null
 
     /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
-    private val adBlock: AdBlock = AdBlock()
+    val adBlock: AdBlock = AdBlock()
 
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
@@ -93,7 +87,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private var updateWebBookJob: Job? = null
 
     /** 阅读模式本次打开后的内存历史记录，不落盘。 */
-    private val readModeHistory = mutableListOf<HistoryItem>()
+    val readModeHistory = mutableListOf<HistoryItem>()
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
@@ -144,7 +138,6 @@ class BrowserReadModeActivity : BaseActivity() {
         setupInsets()
         setupPageLoader()
         setupTouchListener()
-        setupChapterList()
         setupSettingsObserver()
         setupTts()
         initBackPressed()
@@ -171,157 +164,14 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private fun setupChapterList() {
-        binding.chapterListRv.itemAnimator = null
-
-        // 复用 BookCityPageFragment 中的三个 host adapter 显示 AdBlock 信息
-        val chapterAdapter = ChapterListAdapter { link ->
-            navigateChecked(
-                url = link.url,
-                baseHost = currentBaseHost(),
-                onAllow = { showChapter(link.url) },
-                onBlock = { toast("链接已被阻止") },
-            )
-        }
-        val hostListAdapter = BookCityPageFragment.HostListAdapter(adBlock)
-        val blackListAdapter = BookCityPageFragment.BlackListAdapter(adBlock)
-        val whiteListAdapter = BookCityPageFragment.WhiteListAdapter(adBlock)
-        val historyAdapter = BookCityPageFragment.HistoryListAdapter()
-        historyAdapter.onClick = { url ->
-            navigateChecked(
-                url = url,
-                baseHost = null,
-                onAllow = {
-                    dismissChapterDialog()
-                    showChapter(url)
-                },
-                onBlock = { toast("链接已被阻止") },
-            )
-        }
-        historyAdapter.onDeleteHistory = { item ->
-            if (item == null) {
-                readModeHistory.clear()
-            } else {
-                readModeHistory.removeAll { it.url == item.url }
-            }
-            renderReadModeHistory()
-        }
-
-        // 观察 AdBlock 数据
-        adBlock.hostList.observe(this) {
-            hostListAdapter.data = it
-            hostListAdapter.notifyDataSetChanged()
-        }
-        adBlock.blacklist.observe(this) {
-            blackListAdapter.data = it
-            blackListAdapter.notifyDataSetChanged()
-        }
-        adBlock.whitelist.observe(this) {
-            whiteListAdapter.data = it
-            whiteListAdapter.notifyDataSetChanged()
-        }
-
-        // 默认 Tab 0：本页链接
-        applyChapterDrawerTab(0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter, historyAdapter)
-        binding.chapterListTab.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
-                applyChapterDrawerTab(tab?.position ?: 0, chapterAdapter, hostListAdapter, blackListAdapter, whiteListAdapter, historyAdapter)
-            }
-
-            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
-            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
-        })
-
-        // 跨域筛选（仅对"本页链接"Tab 有效）
-        binding.chapterListIncludeCrossDomain.setOnCheckedChangeListener { _, checked ->
-            includeCrossDomain = checked
-            renderChapterList()
-        }
-        // 章节列表改由 ChapterListDialogFragment 在底部显示，这里只完成 adapter/observer 初始化。
-    }
-
-    private fun onChapterDialogShown() {
-        refreshCurrentDrawerTab()
-        val curUrl = pageLoader.curChapter?.link
-        if (binding.chapterListTab.selectedTabPosition == 0 && !curUrl.isNullOrBlank() && extractCache.get(curUrl) == null) {
-            loadUrlForReadMode(curUrl)
-        }
-    }
-
-    /**
-     * 切换抽屉中的 Tab。Tab 0 = 本页链接（FlexboxLayoutManager + chapterAdapter + 跨域过滤）；
-     * Tab 1/2/3 = 未标记/黑名单/白名单（LinearLayoutManager + host item adapter）；Tab 4 = 历史。
-     */
-    private fun applyChapterDrawerTab(
-        position: Int,
-        chapterAdapter: ChapterListAdapter,
-        hostListAdapter: BookCityPageFragment.HostListAdapter,
-        blackListAdapter: BookCityPageFragment.BlackListAdapter,
-        whiteListAdapter: BookCityPageFragment.WhiteListAdapter,
-        historyAdapter: BookCityPageFragment.HistoryListAdapter,
-    ) {
-        when (position) {
-            0 -> {
-                binding.chapterListRv.layoutManager = FlexboxLayoutManager(this)
-                binding.chapterListRv.adapter = chapterAdapter
-                binding.chapterListIncludeCrossDomain.visibility = View.VISIBLE
-                renderChapterList()
-            }
-
-            1 -> {
-                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-                binding.chapterListRv.adapter = hostListAdapter
-                binding.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-
-            2 -> {
-                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-                binding.chapterListRv.adapter = blackListAdapter
-                binding.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-
-            3 -> {
-                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-                binding.chapterListRv.adapter = whiteListAdapter
-                binding.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-
-            4 -> {
-                binding.chapterListRv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-                binding.chapterListRv.adapter = historyAdapter
-                binding.chapterListIncludeCrossDomain.visibility = View.GONE
-                renderReadModeHistory()
-            }
-        }
-    }
-
     /** 章节底部弹窗是否处于打开状态 */
     private fun isChapterDrawerOpen(): Boolean {
         return (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? DialogFragment)?.dialog?.isShowing == true
     }
 
-    /** 根据当前页缓存渲染抽屉的"本页链接"列表，按 includeCrossDomain 过滤跨域 */
-    private fun renderChapterList() {
-        val adapter = binding.chapterListRv.adapter as? ChapterListAdapter ?: return
-        val curUrl = pageLoader.curChapter?.link
-        val links = curUrl?.let { extractCache.get(it)?.allLinks } ?: emptyList()
-        val baseHost = curUrl?.toHttpUrlOrNull()?.topPrivateDomain()
-            ?: webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
-        val filtered = if (includeCrossDomain || baseHost == null) {
-            links
-        } else {
-            links.filter { link ->
-                val host = link.url.toHttpUrlOrNull()?.topPrivateDomain()
-                host == null || host == baseHost
-            }
-        }
-        adapter.submitList(filtered.toList())
-    }
-
-    private fun renderReadModeHistory() {
-        val adapter = binding.chapterListRv.adapter as? BookCityPageFragment.HistoryListAdapter ?: return
-        adapter.data = readModeHistory.toMutableList()
-        adapter.notifyDataSetChanged()
+    private fun notifyChapterDialogChanged() {
+        (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? ChapterListDialogFragment)
+            ?.refreshCurrentTab()
     }
 
     private fun recordReadModeHistory(url: String, data: ExtractResult?) {
@@ -336,9 +186,7 @@ class BrowserReadModeActivity : BaseActivity() {
         while (readModeHistory.size > 100) {
             readModeHistory.removeAt(readModeHistory.lastIndex)
         }
-        if (binding.chapterListTab.selectedTabPosition == 4) {
-            renderReadModeHistory()
-        }
+        notifyChapterDialogChanged()
     }
 
     /** 按当前内存历史记录顺序后退：移除当前页，打开历史列表中的上一条记录。 */
@@ -348,15 +196,8 @@ class BrowserReadModeActivity : BaseActivity() {
         readModeHistory.removeAll { it.url == curUrl }
         val target = readModeHistory.firstOrNull() ?: return false
         showChapter(target.url)
-        renderReadModeHistory()
+        notifyChapterDialogChanged()
         return true
-    }
-
-    private fun refreshCurrentDrawerTab() {
-        when (binding.chapterListTab.selectedTabPosition) {
-            0 -> renderChapterList()
-            4 -> renderReadModeHistory()
-        }
     }
 
     fun openDrawer() {
@@ -364,7 +205,7 @@ class BrowserReadModeActivity : BaseActivity() {
             chapterDialog = ChapterListDialogFragment()
             chapterDialog?.show(supportFragmentManager, ChapterListDialogFragment.TAG)
         } else {
-            onChapterDialogShown()
+            notifyChapterDialogChanged()
         }
     }
 
@@ -418,52 +259,6 @@ class BrowserReadModeActivity : BaseActivity() {
             ?.dismissAllowingStateLoss()
     }
 
-    /** 底部章节列表弹窗，复用 Activity 布局中的 chapterListDrawer 及其已初始化 adapter。 */
-    class ChapterListDialogFragment : DialogFragment() {
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
-        }
-
-        override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-            return super.onCreateDialog(savedInstanceState).apply {
-                setCanceledOnTouchOutside(true)
-            }
-        }
-
-        override fun onCreateView(inflater: android.view.LayoutInflater, container: android.view.ViewGroup?, savedInstanceState: Bundle?): View {
-            val activity = requireActivity() as BrowserReadModeActivity
-            val drawer = activity.binding.chapterListDrawer
-            (drawer.parent as? android.view.ViewGroup)?.removeView(drawer)
-            drawer.visibility = View.VISIBLE
-            return drawer
-        }
-
-        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-            super.onViewCreated(view, savedInstanceState)
-            (activity as? BrowserReadModeActivity)?.onChapterDialogShown()
-        }
-
-        override fun onStart() {
-            super.onStart()
-            val window = dialog?.window ?: return
-            val height = (resources.displayMetrics.heightPixels * 2 / 3f).toInt()
-            window.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, height)
-            window.setGravity(Gravity.BOTTOM)
-            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-            window.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background_dialog)))
-        }
-
-        override fun onDestroyView() {
-            (activity as? BrowserReadModeActivity)?.chapterDialog = null
-            super.onDestroyView()
-        }
-
-        companion object {
-            const val TAG = "ChapterListDialogFragment"
-        }
-    }
-
     // ==================== Setup ====================
 
     private fun enableEdgeToEdge(isDark: Boolean) {
@@ -495,7 +290,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 right = params.insetRight + safeRight,
                 bottom = params.insetBottom + safeBottom,
             )
-            binding.chapterListDrawer.setPadding(0, 0, 0, safeBottom)
             binding.webViewContainer.setPadding(0, safeTop, 0, safeBottom)
             insets
         }
@@ -721,7 +515,7 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
+    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
         loadUrlQueue.removeAll { it.url == url }
         loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos))
         if (loadUrlQueueJob?.isActive == true) return
@@ -764,7 +558,7 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
         if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
-            refreshCurrentDrawerTab()
+            notifyChapterDialogChanged()
         }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
@@ -785,7 +579,7 @@ class BrowserReadModeActivity : BaseActivity() {
     fun openInBrowser(home: Boolean) {
         if (home) {
             readModeHistory.clear()
-            renderReadModeHistory()
+            notifyChapterDialogChanged()
             showChapter(webBook?.url ?: startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl
@@ -834,7 +628,7 @@ class BrowserReadModeActivity : BaseActivity() {
         showChapter(url, pagePos = 0)
     }
 
-    private fun showChapter(url: String, pagePos: Int? = null) {
+    fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
         recordReadModeHistory(url, data)
         // 内存未命中 → 异步从磁盘读取，命中后再次渲染
@@ -927,7 +721,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
         // 切到了新页面，若抽屉打开则立刻刷新当前 Tab；尚未提取时正文加载完成后会再次刷新
         if (pageChanged && isChapterDrawerOpen()) {
-            refreshCurrentDrawerTab()
+            notifyChapterDialogChanged()
         }
     }
 
@@ -1318,7 +1112,7 @@ class BrowserReadModeActivity : BaseActivity() {
         if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
 
     /** 当前阅读章节所在的主域，用作跨域比较基准 */
-    private fun currentBaseHost(): String? =
+    fun currentBaseHost(): String? =
         pageLoader.curChapter?.link?.toHttpUrlOrNull()?.topPrivateDomain()
             ?: webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
 
@@ -1342,7 +1136,7 @@ class BrowserReadModeActivity : BaseActivity() {
      *  - 跨域+拒绝 → onBlock
      *  - 跨域+询问 → 弹窗，用户点"允许一次"或"+白名单"会触发 onAllow；选"+黑名单"或取消则均不回调
      */
-    private fun navigateChecked(
+    fun navigateChecked(
         url: String,
         baseHost: String?,
         onAllow: () -> Unit,
