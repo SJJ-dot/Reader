@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
@@ -42,15 +42,15 @@
 
     </FrameLayout>
 
-    <!-- 章节目录抽屉 -->
+    <!-- 章节目录底部弹窗（高度由 Activity 设为屏幕 2/3） -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chapter_list_drawer"
-        android:layout_width="300dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
         android:background="@color/dn_background_dialog"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:visibility="gone">
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/chapter_list_tab"
@@ -124,4 +124,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.drawerlayout.widget.DrawerLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
