@@ -316,7 +316,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 bottom = params.insetBottom + safeBottom,
             )
             binding.webViewContainer.setPadding(0, safeTop, 0, safeBottom)
-            binding.drawerLayout.setPadding(0, safeTop, 0, safeBottom)
+            binding.chapterListDrawerContainer.setPadding(0, safeTop, 0, safeBottom)
             insets
         }
     }
