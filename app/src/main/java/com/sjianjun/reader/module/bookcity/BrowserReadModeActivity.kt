@@ -15,7 +15,7 @@ import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.res.ResourcesCompat
-import androidx.fragment.app.DialogFragment
+import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -73,7 +73,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
-    private var chapterDialog: ChapterListDialogFragment? = null
+    private var chapterFragment: ChapterListDialogFragment? = null
 
     /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
     val adBlock: AdBlock = AdBlock
@@ -164,9 +164,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    /** 章节底部弹窗是否处于打开状态 */
+    /** 章节右侧抽屉是否处于打开状态 */
     private fun isChapterDrawerOpen(): Boolean {
-        return (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? DialogFragment)?.dialog?.isShowing == true
+        return binding.drawerLayout.isDrawerOpen(GravityCompat.END)
     }
 
     private fun notifyChapterDialogChanged() {
@@ -223,12 +223,20 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun openDrawer() {
-        if (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) == null) {
-            chapterDialog = ChapterListDialogFragment()
-            chapterDialog?.show(supportFragmentManager, ChapterListDialogFragment.TAG)
-        } else {
-            notifyChapterDialogChanged()
+        var fragment = supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? ChapterListDialogFragment
+        if (fragment == null) {
+            fragment = ChapterListDialogFragment()
+            chapterFragment = fragment
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.chapter_list_drawer_container, fragment, ChapterListDialogFragment.TAG)
+                .commitAllowingStateLoss()
         }
+        binding.drawerLayout.openDrawer(GravityCompat.END)
+        fragment.onShown()
+    }
+
+    fun closeChapterDrawer() {
+        binding.drawerLayout.closeDrawer(GravityCompat.END)
     }
 
     fun isHiddenWebViewVisible(): Boolean = binding.hiddenWebView.isVisible
@@ -274,11 +282,6 @@ class BrowserReadModeActivity : BaseActivity() {
         binding.hiddenWebView.visibility = View.GONE
         binding.readModePageView.visibility = View.VISIBLE
         binding.webViewContainer.gone()
-    }
-
-    private fun dismissChapterDialog() {
-        (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? DialogFragment)
-            ?.dismissAllowingStateLoss()
     }
 
     // ==================== Setup ====================
@@ -353,7 +356,7 @@ class BrowserReadModeActivity : BaseActivity() {
             override fun intercept(event: MotionEvent?): Boolean {
                 if (isChapterDrawerOpen()) {
                     if (event?.action == MotionEvent.ACTION_UP) {
-                        dismissChapterDialog()
+                        closeChapterDrawer()
                     }
                     return true
                 }
@@ -478,7 +481,7 @@ class BrowserReadModeActivity : BaseActivity() {
             when {
 
                 isChapterDrawerOpen() -> {
-                    dismissChapterDialog()
+                    closeChapterDrawer()
                     true
                 }
 

@@ -1,46 +1,27 @@
 package com.sjianjun.reader.module.bookcity
 
-import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.flexbox.FlexboxLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
-import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
 import com.sjianjun.reader.utils.toast
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import sjj.novel.view.reader.page.PageStyle
 
-/** 阅读模式章节/链接/历史底部弹窗。 */
-class ChapterListDialogFragment : BottomSheetDialogFragment() {
+/** 阅读模式右侧抽屉：历史 / Host / 黑名单 / 白名单。 */
+class ChapterListDialogFragment : Fragment() {
     private var binding: DialogBrowserReadModeChapterListBinding? = null
-    private var includeCrossDomain = false
 
     private val activity: BrowserReadModeActivity?
         get() = getActivity() as? BrowserReadModeActivity
 
-    private lateinit var chapterAdapter: BrowserReadModeActivity.ChapterListAdapter
     private lateinit var hostListAdapter: BookCityPageFragment.HostListAdapter
     private lateinit var blackListAdapter: BookCityPageFragment.BlackListAdapter
     private lateinit var whiteListAdapter: BookCityPageFragment.WhiteListAdapter
     private lateinit var historyAdapter: BookCityPageFragment.HistoryListAdapter
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return BottomSheetDialog(requireContext(), theme).apply {
-            setCanceledOnTouchOutside(true)
-        }
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = DialogBrowserReadModeChapterListBinding.inflate(inflater, container, false)
@@ -61,47 +42,11 @@ class ChapterListDialogFragment : BottomSheetDialogFragment() {
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        b.chapterListIncludeCrossDomain.setOnCheckedChangeListener { _, checked ->
-            includeCrossDomain = checked
-            renderChapterList()
-        }
         onShown()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        val dialog = dialog as? BottomSheetDialog ?: return
-        val height = (resources.displayMetrics.heightPixels * 2 / 3f).toInt()
-        dialog.behavior.apply {
-            peekHeight = height
-            state = BottomSheetBehavior.STATE_EXPANDED
-            isHideable = true
-            skipCollapsed = true
-        }
-        dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
-            sheet.layoutParams = sheet.layoutParams.apply { this.height = height }
-            sheet.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        }
-        val window = dialog.window ?: return
-        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
-        applyEdgeToEdgeDialogBar(!pageStyle.isDark)
     }
 
     private fun setupAdapters() {
         val act = activity ?: return
-        chapterAdapter = BrowserReadModeActivity.ChapterListAdapter { link ->
-            act.navigateChecked(
-                url = link.url,
-                baseHost = act.currentBaseHost(),
-                onAllow = {
-                    dismissAllowingStateLoss()
-                    act.showChapter(link.url)
-                },
-                onBlock = { toast("链接已被阻止") },
-            )
-        }
         hostListAdapter = BookCityPageFragment.HostListAdapter(act.adBlock)
         blackListAdapter = BookCityPageFragment.BlackListAdapter(act.adBlock)
         whiteListAdapter = BookCityPageFragment.WhiteListAdapter(act.adBlock)
@@ -111,7 +56,7 @@ class ChapterListDialogFragment : BottomSheetDialogFragment() {
                     url = url,
                     baseHost = null,
                     onAllow = {
-                        dismissAllowingStateLoss()
+                        act.closeChapterDrawer()
                         act.showChapter(url)
                     },
                     onBlock = { toast("链接已被阻止") },
@@ -142,70 +87,25 @@ class ChapterListDialogFragment : BottomSheetDialogFragment() {
 
     private fun applyTab(position: Int) {
         val b = binding ?: return
-        when (position) {
-            0 -> {
-                b.chapterListRv.layoutManager = FlexboxLayoutManager(requireContext())
-                b.chapterListRv.adapter = chapterAdapter
-                b.chapterListIncludeCrossDomain.visibility = View.VISIBLE
-                renderChapterList()
-            }
-            1 -> {
-                b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
-                b.chapterListRv.adapter = hostListAdapter
-                b.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-            2 -> {
-                b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
-                b.chapterListRv.adapter = blackListAdapter
-                b.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-            3 -> {
-                b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
-                b.chapterListRv.adapter = whiteListAdapter
-                b.chapterListIncludeCrossDomain.visibility = View.GONE
-            }
-            4 -> {
-                b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
-                b.chapterListRv.adapter = historyAdapter
-                b.chapterListIncludeCrossDomain.visibility = View.GONE
-                renderReadModeHistory()
-            }
+        b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
+        b.chapterListRv.adapter = when (position) {
+            0 -> historyAdapter.also { renderReadModeHistory() }
+            1 -> hostListAdapter
+            2 -> blackListAdapter
+            3 -> whiteListAdapter
+            else -> historyAdapter.also { renderReadModeHistory() }
         }
     }
 
     fun refreshCurrentTab() {
         val b = binding ?: return
-        when (b.chapterListTab.selectedTabPosition) {
-            0 -> renderChapterList()
-            4 -> renderReadModeHistory()
+        if (b.chapterListTab.selectedTabPosition == 0) {
+            renderReadModeHistory()
         }
     }
 
     fun onShown() {
         refreshCurrentTab()
-        val act = activity ?: return
-        val curUrl = act.pageLoader.curChapter?.link
-        val selected = binding?.chapterListTab?.selectedTabPosition ?: 0
-        if (selected == 0 && !curUrl.isNullOrBlank() && BrowserReadModeActivity.extractCache.get(curUrl) == null) {
-            act.loadUrlForReadMode(curUrl)
-        }
-    }
-
-    private fun renderChapterList() {
-        val act = activity ?: return
-        val curUrl = act.pageLoader.curChapter?.link
-        val links = curUrl?.let { BrowserReadModeActivity.extractCache.get(it)?.allLinks } ?: emptyList()
-        val baseHost = curUrl?.toHttpUrlOrNull()?.topPrivateDomain()
-            ?: act.webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
-        val filtered = if (includeCrossDomain || baseHost == null) {
-            links
-        } else {
-            links.filter { link ->
-                val host = link.url.toHttpUrlOrNull()?.topPrivateDomain()
-                host == null || host == baseHost
-            }
-        }
-        chapterAdapter.submitList(filtered.toList())
     }
 
     private fun renderReadModeHistory() {
