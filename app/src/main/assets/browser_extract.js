@@ -26,6 +26,15 @@
         return t.trim();
     }
 
+    function linkTitleText(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/\u00A0/g, ' ')
+            .split(/[\r\n]+/)[0]
+            .replace(/[\t\f\v ]+/g, ' ')
+            .trim();
+    }
+
     /**
      * \u7528\u4E8E\u5173\u952E\u5B57\u5339\u914D\u7684\u5F52\u4E00\u5316\uFF1A\u5C0F\u5199\u5316 + \u628A\u5BB9\u6613\u88AB\u7AD9\u70B9\u66FF\u6362\u7684\u5B57\u7B26\u56DE\u5199\u5230\u6807\u51C6\u5F62\u5F0F\u3002
      * \u771F\u5B9E\u7AD9\u70B9\u91CC\u5E38\u89C1 "\u4E0B\u2014\u9875"/"\u4E0B\uFF0D\u9875"/"\u4E0B_\u9875" \u7B49\u7528\u7834\u6298\u53F7/\u8FDE\u5B57\u7B26\u5192\u5145"\u4E00"\u7684\u5199\u6CD5\u3002
@@ -199,7 +208,7 @@
             if (!a) return null;
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) return null;
-            return { href: abs(href), text: (a.innerText || a.textContent || '').trim() };
+            return { href: abs(href), text: linkTitleText(a.innerText || a.textContent || '') };
         } catch (e) { return null; }
     }
 
@@ -254,7 +263,7 @@
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
-            var rawText = (a.innerText || a.textContent || '').trim();
+            var rawText = linkTitleText(a.innerText || a.textContent || '');
             var t = normalize(rawText);
             var id = normalize(a.id || '');
             var cls = normalize((a.className || '').toString());
@@ -299,7 +308,7 @@
     var dirKeys = ['目录', '章节列表', '返回目录', '回目录', 'Index', 'Table of Contents'];
     for (var k = 0; k < anchors.length; k++) {
         var a = anchors[k];
-        var t = (a.innerText || a.textContent || '').trim();
+        var t = linkTitleText(a.innerText || a.textContent || '');
         var id = (a.id || '').toLowerCase();
         var cls = (a.className || '').toString().toLowerCase();
         var href = a.getAttribute('href') || '';
@@ -325,9 +334,9 @@
         var labs = abs(lhref);
         if (urlSeen.has(labs)) continue;
         // 标题兜底：innerText → aria-label/title → 父节点纯文本 → href 末段
-        var ltext = (la.innerText || la.textContent || '').trim();
-        if (!ltext) ltext = (la.getAttribute('aria-label') || la.getAttribute('title') || '').trim();
-        if (!ltext && la.parentElement) ltext = (la.parentElement.innerText || la.parentElement.textContent || '').trim();
+        var ltext = linkTitleText(la.innerText || la.textContent || '');
+        if (!ltext) ltext = linkTitleText(la.getAttribute('aria-label') || la.getAttribute('title') || '');
+        if (!ltext && la.parentElement) ltext = linkTitleText(la.parentElement.innerText || la.parentElement.textContent || '');
         if (!ltext) {
             try {
                 var u = new URL(labs);
