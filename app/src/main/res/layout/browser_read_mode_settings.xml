@@ -17,7 +17,8 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/top_bar">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/brightness_auto"

@@ -89,6 +89,9 @@ class BrowserReadModeActivity : BaseActivity() {
     private var includeCrossDomain = false
     private var updateWebBookJob: Job? = null
 
+    /** 阅读模式本次打开后的内存历史记录，不落盘。 */
+    private val readModeHistory = mutableListOf<HistoryItem>()
+
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
     val pageLoader get() = binding.readModePageView.pageLoader!!
@@ -182,21 +185,11 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         historyAdapter.onDeleteHistory = { item ->
             if (item == null) {
-                ReadModeHistory.list = emptyList()
+                readModeHistory.clear()
             } else {
-                ReadModeHistory.list = ReadModeHistory.list.toMutableList().apply { removeAll { it.url == item.url } }
+                readModeHistory.removeAll { it.url == item.url }
             }
             renderReadModeHistory()
-        }
-        historyAdapter.onMark = { item ->
-            val list = ReadModeHistory.list.toMutableList()
-            val index = list.indexOfFirst { it.url == item.url }
-            if (index >= 0) {
-                list[index].isMark = !list[index].isMark
-                list.sortDescending()
-                ReadModeHistory.list = list
-                renderReadModeHistory()
-            }
         }
 
         // 观察 AdBlock 数据
@@ -312,7 +305,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     private fun renderReadModeHistory() {
         val adapter = binding.chapterListRv.adapter as? BookCityPageFragment.HistoryListAdapter ?: return
-        adapter.data = ReadModeHistory.list.toMutableList()
+        adapter.data = readModeHistory.toMutableList()
         adapter.notifyDataSetChanged()
     }
 
@@ -320,19 +313,28 @@ class BrowserReadModeActivity : BaseActivity() {
         if (url.toHttpUrlOrNull() == null || data == null || data.content.isBlank() || data.content == "加载失败") {
             return
         }
-        val list = ReadModeHistory.list.toMutableList()
-        val isMark = list.firstOrNull { it.url == url }?.isMark ?: false
-        list.removeAll { it.url == url }
+        val isMark = readModeHistory.firstOrNull { it.url == url }?.isMark ?: false
+        readModeHistory.removeAll { it.url == url }
         val title = data.title.ifBlank { webBook?.title ?: url }
-        list.add(HistoryItem(title, url, isMark = isMark))
-        list.sortDescending()
-        while (list.size > 100) {
-            list.removeAt(list.lastIndex)
+        readModeHistory.add(HistoryItem(title, url, isMark = isMark))
+        readModeHistory.sortDescending()
+        while (readModeHistory.size > 100) {
+            readModeHistory.removeAt(readModeHistory.lastIndex)
         }
-        ReadModeHistory.list = list
         if (binding.chapterListTab.selectedTabPosition == 4) {
             renderReadModeHistory()
         }
+    }
+
+    /** 按当前内存历史记录顺序后退：移除当前页，打开历史列表中的上一条记录。 */
+    private fun goBackReadModeHistory(): Boolean {
+        val curUrl = pageLoader.curChapter?.link ?: return false
+        if (readModeHistory.size <= 1) return false
+        readModeHistory.removeAll { it.url == curUrl }
+        val target = readModeHistory.firstOrNull() ?: return false
+        showChapter(target.url)
+        renderReadModeHistory()
+        return true
     }
 
     private fun refreshCurrentDrawerTab() {
@@ -610,6 +612,8 @@ class BrowserReadModeActivity : BaseActivity() {
                     true
                 }
 
+                goBackReadModeHistory() -> true
+
                 else -> false
             }
         }
@@ -714,6 +718,8 @@ class BrowserReadModeActivity : BaseActivity() {
 
     fun openInBrowser(home: Boolean) {
         if (home) {
+            readModeHistory.clear()
+            renderReadModeHistory()
             showChapter(webBook?.url ?: startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl

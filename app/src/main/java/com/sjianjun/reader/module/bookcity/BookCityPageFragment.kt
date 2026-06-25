@@ -455,6 +455,11 @@ class BookCityPageFragment : BaseFragment() {
             binding.ivMark.click {
                 onMark?.invoke(history)
             }
+            if (onMark == null){
+                binding.ivMark.gone()
+            } else {
+                binding.ivMark.show()
+            }
         }
     }
 
