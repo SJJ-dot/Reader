@@ -243,7 +243,7 @@ class BrowserReadModeActivity : BaseActivity() {
             data.content = "加载失败"
         }
         putExtractResult(url, data)
-        showChapter(url)
+        showChapter(url,if (url == pageLoader.curChapter?.link) pageLoader.pagePos else null)
     }
 
     private fun showReadModePageView() {
@@ -470,7 +470,7 @@ class BrowserReadModeActivity : BaseActivity() {
                     true
                 }
 
-                goBackReadModeHistory() -> true
+//                goBackReadModeHistory() -> true 返回键不后退
 
                 else -> false
             }
