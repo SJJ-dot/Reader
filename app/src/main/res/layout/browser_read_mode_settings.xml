@@ -80,6 +80,69 @@
 
     </LinearLayout>
 
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/toggle_web_view"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/iv_toggle_web_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_eye_show"
+            app:tint="@color/dn_text_color_black" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/chapter_directory"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/refresh"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/iv_chapter_directory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_chapter_list"
+            app:tint="@color/dn_text_color_black" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/refresh"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/toggle_web_view"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/iv_refresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/browser_navigation_refresh"
+            app:tint="@color/dn_text_color_black" />
+    </com.google.android.material.card.MaterialCardView>
+
     <LinearLayout
         android:id="@+id/setting_container"
         android:layout_width="match_parent"
@@ -564,22 +627,6 @@
             android:layout_height="wrap_content">
 
             <TextView
-                android:id="@+id/chapter_directory"
-                android:layout_width="72dp"
-                android:layout_height="wrap_content"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:paddingStart="16dp"
-                android:paddingTop="16dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="16dp"
-                android:text="链接"
-                android:textColor="@color/dn_text_color_black"
-                app:layout_constraintEnd_toStartOf="@+id/chapter_last"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
                 android:id="@+id/chapter_last"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -591,7 +638,7 @@
                 android:text="上一章"
                 android:textColor="@color/dn_text_color_black"
                 app:layout_constraintEnd_toStartOf="@+id/chapter_progress"
-                app:layout_constraintStart_toEndOf="@+id/chapter_directory"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ProgressBar
@@ -661,14 +708,15 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
-            android:id="@+id/refresh"
+            android:id="@+id/top_bar_home"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
             android:padding="9dp"
             android:scaleType="centerInside"
-            android:src="@drawable/browser_navigation_refresh" />
+            android:src="@drawable/ic_browser_home"
+            app:tint="@color/dn_text_color_black" />
 
         <ImageButton
             android:id="@+id/screen_rotation"
@@ -729,18 +777,6 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageView
-            android:id="@+id/top_bar_home"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_browser_home"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/dn_text_color_black" />
-
-        <ImageView
             android:id="@+id/top_bar_browser"
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -748,7 +784,7 @@
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:src="@mipmap/ic_browser"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_home"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 

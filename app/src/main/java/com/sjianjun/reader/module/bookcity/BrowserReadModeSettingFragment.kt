@@ -141,6 +141,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
         initDayNight()
         initRefresh()
+        initToggleWebView()
         initScreenOrientationMode()
         initFontSize()
         initLineSpacing()
@@ -243,7 +244,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val b = binding ?: return
         b.refresh.click {
             val act = activity as? BrowserReadModeActivity ?: return@click
-            if (b.refresh.isSelected) {
+            if (b.ivRefresh.isSelected) {
                 // 当前正在加载 → 停止
                 act.stopHiddenLoading()
             } else {
@@ -252,7 +253,15 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             }
         }
         (activity as? BrowserReadModeActivity)?.isHiddenLoading?.observe(viewLifecycleOwner) { loading ->
-            b.refresh.isSelected = loading == true
+            b.ivRefresh.isSelected = loading == true
+        }
+    }
+
+    private fun initToggleWebView() {
+        val b = binding ?: return
+        b.toggleWebView.click(10) {
+            (activity as? BrowserReadModeActivity)?.toggleHiddenWebViewVisible()
+            hideSelf()
         }
     }
 

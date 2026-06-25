@@ -41,7 +41,9 @@ import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.DiskCacheUtil
 import com.sjianjun.reader.utils.TtsService
+import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -65,6 +67,8 @@ import sjj.novel.view.reader.page.TxtChapter
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.core.view.isVisible
+import com.sjianjun.reader.view.click
 
 class BrowserReadModeActivity : BaseActivity() {
 
@@ -75,7 +79,6 @@ class BrowserReadModeActivity : BaseActivity() {
     private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
-    private lateinit var hiddenWebView: WebView
     private var chapterDialog: ChapterListDialogFragment? = null
 
     /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
@@ -101,7 +104,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /** 设置面板"刷新"按钮在加载中点击时调用——立即中止当前加载，丢弃排队。 */
     fun stopHiddenLoading() {
-        hiddenWebView.stopLoading()
+        binding.hiddenWebView.stopLoading()
         loadUrlQueue.clear()
         loadUrlQueueJob?.cancel()
         binding.hiddenWebViewProgress.visibility = View.GONE
@@ -122,9 +125,8 @@ class BrowserReadModeActivity : BaseActivity() {
         enableEdgeToEdge(pageStyle.isDark)
         setContentView(binding.root)
 
-        hiddenWebView = binding.hiddenWebView
-        hiddenWebView.init()
-        hiddenWebView.webChromeClient = object : WebChromeClient() {
+        binding.hiddenWebView.init()
+        binding.hiddenWebView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 binding.hiddenWebViewProgress.progress = newProgress
                 if (newProgress >= 100) {
@@ -137,7 +139,7 @@ class BrowserReadModeActivity : BaseActivity() {
             }
         }
         // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
-        hiddenWebView.webViewClient = ReadModeWebViewClient()
+        binding.hiddenWebView.webViewClient = ReadModeWebViewClient()
 
         setupInsets()
         setupPageLoader()
@@ -153,6 +155,19 @@ class BrowserReadModeActivity : BaseActivity() {
             // 加载关联的 WebBook
             loadWebBook()
             showChapter(startUrl)
+        }
+        binding.refresh.click {
+            if (binding.ivRefresh.isSelected) {
+                stopHiddenLoading()
+            } else {
+                refresh()
+            }
+        }
+        isHiddenLoading.observe(this) { loading ->
+            binding.ivRefresh.isSelected = loading == true
+        }
+        binding.toggleWebView.click {
+            toggleHiddenWebViewVisible()
         }
     }
 
@@ -353,6 +368,51 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
+    fun isHiddenWebViewVisible(): Boolean = binding.hiddenWebView.isVisible
+
+    fun toggleHiddenWebViewVisible() {
+        if (isHiddenWebViewVisible()) {
+            lifecycleScope.launch {
+                exportHiddenWebViewToReadMode()
+                showReadModePageView()
+            }
+        } else {
+            showHiddenWebView()
+        }
+    }
+
+    /** 显示后台 WebView。显示前确保 WebView 正在展示当前阅读页 URL，不一致则自动加载。 */
+    private fun showHiddenWebView() {
+        val curUrl = pageLoader.curChapter?.link ?: startUrl
+        if (curUrl.isNotBlank() && binding.hiddenWebView.url != curUrl) {
+            binding.hiddenWebView.loadUrl(curUrl)
+        }
+        binding.readModePageView.visibility = View.GONE
+        binding.hiddenWebView.visibility = View.VISIBLE
+        binding.webViewContainer.show()
+    }
+
+    /**
+     * 从正在显示的 WebView 直接导出内容到阅读模式，不重新加载页面。
+     * 返回键只切回阅读视图不调用该方法；只有用户点 toggle_web_view 从 WebView 返回时才导出。
+     */
+    private suspend fun exportHiddenWebViewToReadMode() {
+        val url = binding.hiddenWebView.url ?: pageLoader.curChapter?.link ?: return
+        if (url.isBlank() || url == "about:blank") return
+        val data = extractWithRetry(binding.hiddenWebView, 3) ?: return
+        if (data.content.isBlank()) {
+            data.content = "加载失败"
+        }
+        putExtractResult(url, data)
+        showChapter(url)
+    }
+
+    private fun showReadModePageView() {
+        binding.hiddenWebView.visibility = View.GONE
+        binding.readModePageView.visibility = View.VISIBLE
+        binding.webViewContainer.gone()
+    }
+
     private fun dismissChapterDialog() {
         (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? DialogFragment)
             ?.dismissAllowingStateLoss()
@@ -436,6 +496,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 bottom = params.insetBottom + safeBottom,
             )
             binding.chapterListDrawer.setPadding(0, 0, 0, safeBottom)
+            binding.webViewContainer.setPadding(0, safeTop, 0, safeBottom)
             insets
         }
     }
@@ -612,6 +673,11 @@ class BrowserReadModeActivity : BaseActivity() {
                     true
                 }
 
+                isHiddenWebViewVisible() -> {
+                    showReadModePageView()
+                    true
+                }
+
                 goBackReadModeHistory() -> true
 
                 else -> false
@@ -674,23 +740,23 @@ class BrowserReadModeActivity : BaseActivity() {
             if (force) {
                 // 强制刷新：WebView 可能已经停在同一个 url 且 progress==100，
                 // 直接 loadUrl 会让等待循环立即通过、提取到旧内容；先清空状态再加载
-                hiddenWebView.loadUrl("about:blank")
+                binding.hiddenWebView.loadUrl("about:blank")
                 var blank = 0
                 while (blank < 25) {
                     delay(100.milliseconds)
-                    if (hiddenWebView.progress >= 100) break
+                    if (binding.hiddenWebView.progress >= 100) break
                     blank++
                 }
             }
-            hiddenWebView.loadUrl(url)
+            binding.hiddenWebView.loadUrl(url)
             var retry = 0
             while (retry < 50) {
                 delay(200.milliseconds)
-                if (hiddenWebView.url == url && hiddenWebView.progress >= 100) break
+                if (binding.hiddenWebView.url == url && binding.hiddenWebView.progress >= 100) break
                 retry++
             }
             delay(300.milliseconds)
-            data = extractWithRetry(hiddenWebView) ?: ExtractResult("加载失败", "加载失败")
+            data = extractWithRetry(binding.hiddenWebView) ?: ExtractResult("加载失败", "加载失败")
             if (data.content.isBlank()) {
                 data.content = "加载失败"
             }
@@ -728,21 +794,14 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private suspend fun extractWithRetry(wv: WebView): ExtractResult? {
+    private suspend fun extractWithRetry(wv: WebView, retryMax: Int = 10): ExtractResult? {
         var retry = 0
         var data: ExtractResult? = null
         val pageUrl = wv.url
-        while (retry < 10) {
+        while (retry < retryMax) {
             data = wv.extractContent()
             val contentOk = data.content.isNotBlank()
             val hasNav = !data.nextUrl.isNullOrBlank()
-            Log.i(
-                "extractWithRetry url=$pageUrl retry=$retry " +
-                    "contentLen=${data.content.length} " +
-                    "prev=${data.prevUrl} prevText=${data.prevText} " +
-                    "next=${data.nextUrl} nextText=${data.nextText} " +
-                    "allLinks=${data.allLinks.size}"
-            )
             if (contentOk && hasNav) return data
             delay(300.milliseconds)
             retry++
@@ -938,7 +997,7 @@ class BrowserReadModeActivity : BaseActivity() {
         extractJob?.cancel()
         loadUrlQueueJob?.cancel()
         loadUrlQueue.clear()
-        hiddenWebView.destroy()
+        binding.hiddenWebView.destroy()
     }
 
     // ==================== TTS ====================

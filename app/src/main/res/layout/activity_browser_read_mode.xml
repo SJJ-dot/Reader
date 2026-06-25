@@ -15,12 +15,65 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- 隐藏的 WebView，用于内容提取和章节导航 -->
-        <WebView
-            android:id="@+id/hidden_web_view"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/web_view_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <!-- 后台 WebView，用于内容提取和章节导航；调试/查看原网页时可切到前台显示 -->
+            <WebView
+                android:id="@+id/hidden_web_view"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/toggle_web_view"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_margin="16dp"
+                app:cardBackgroundColor="@color/dn_reader_setting_btn"
+                app:cardCornerRadius="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <ImageView
+                    android:id="@+id/iv_toggle_web_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/transparent"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"
+                    android:src="@mipmap/ic_eye_hide"
+                    app:tint="@color/dn_text_color_black" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/refresh"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_margin="16dp"
+                app:cardBackgroundColor="@color/dn_reader_setting_btn"
+                app:cardCornerRadius="20dp"
+                app:layout_constraintBottom_toTopOf="@+id/toggle_web_view"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <ImageView
+                    android:id="@+id/iv_refresh"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/transparent"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/browser_navigation_refresh"
+                    app:tint="@color/dn_text_color_black" />
+            </com.google.android.material.card.MaterialCardView>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- 后台 WebView 加载进度条（与 CustomWebView 浏览模式同一风格） -->
         <androidx.core.widget.ContentLoadingProgressBar
@@ -39,6 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />
+
 
     </FrameLayout>
 
