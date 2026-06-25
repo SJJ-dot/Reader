@@ -118,7 +118,7 @@
             android:background="@color/transparent"
             android:padding="8dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_chapter_list"
+            android:src="@mipmap/ic_history"
             app:tint="@color/dn_text_color_black" />
     </com.google.android.material.card.MaterialCardView>
 
