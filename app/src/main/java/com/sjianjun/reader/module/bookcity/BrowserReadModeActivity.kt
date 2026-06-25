@@ -86,6 +86,8 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /** 阅读模式本次打开后的内存历史记录，不落盘。 */
     val readModeHistory = mutableListOf<HistoryItem>()
+    private val forwardHistoryStack = ArrayDeque<HistoryItem>()
+    private var isHistoryNavigation = false
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
@@ -176,6 +178,9 @@ class BrowserReadModeActivity : BaseActivity() {
         if (url.toHttpUrlOrNull() == null || data == null || data.content.isBlank() || data.content == "加载失败") {
             return
         }
+        if (!isHistoryNavigation) {
+            forwardHistoryStack.clear()
+        }
         val isMark = readModeHistory.firstOrNull { it.url == url }?.isMark ?: false
         readModeHistory.removeAll { it.url == url }
         val title = data.title.ifBlank { webBook?.title ?: url }
@@ -187,13 +192,32 @@ class BrowserReadModeActivity : BaseActivity() {
         notifyChapterDialogChanged()
     }
 
-    /** 按当前内存历史记录顺序后退：移除当前页，打开历史列表中的上一条记录。 */
-    private fun goBackReadModeHistory(): Boolean {
+    fun canGoBackReadModeHistory(): Boolean = readModeHistory.size > 1
+
+    fun canGoForwardReadModeHistory(): Boolean = forwardHistoryStack.isNotEmpty()
+
+    /** 按当前内存历史记录顺序后退：移除当前页，打开历史列表中的上一条记录，同时放入前进栈。 */
+    fun goBackReadModeHistory(): Boolean {
         val curUrl = pageLoader.curChapter?.link ?: return false
-        if (readModeHistory.size <= 1) return false
+        if (!canGoBackReadModeHistory()) return false
+        val current = readModeHistory.firstOrNull { it.url == curUrl }
+            ?: HistoryItem(pageLoader.curChapter?.title ?: curUrl, curUrl)
         readModeHistory.removeAll { it.url == curUrl }
+        forwardHistoryStack.addLast(current)
         val target = readModeHistory.firstOrNull() ?: return false
+        isHistoryNavigation = true
         showChapter(target.url)
+        isHistoryNavigation = false
+        notifyChapterDialogChanged()
+        return true
+    }
+
+    fun goForwardReadModeHistory(): Boolean {
+        if (!canGoForwardReadModeHistory()) return false
+        val target = forwardHistoryStack.removeLast()
+        isHistoryNavigation = true
+        showChapter(target.url)
+        isHistoryNavigation = false
         notifyChapterDialogChanged()
         return true
     }
@@ -577,6 +601,7 @@ class BrowserReadModeActivity : BaseActivity() {
     fun openInBrowser(home: Boolean) {
         if (home) {
             readModeHistory.clear()
+            forwardHistoryStack.clear()
             notifyChapterDialogChanged()
             showChapter(webBook?.url ?: startUrl)
         } else {
@@ -679,13 +704,13 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         val chapters = mutableListOf<TxtChapter>()
-        data?.prevUrl.let { url ->
+        data?.prevUrl?.let { url ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = url ?: "没有上一页了"
-                this.title = data?.prevText ?: "上一页"
+                this.link = url
+                this.title = data.prevText ?: "上一页"
                 this.chapterIndex = 0
-                if (url.isNullOrBlank()) {
+                if (url.isBlank()) {
                     this.content = "上一页地址未找到，无法加载"
                 }
             })
@@ -697,13 +722,13 @@ class BrowserReadModeActivity : BaseActivity() {
             this.chapterIndex = chapters.size
             this.content = data?.content
         })
-        data?.nextUrl.let { url ->
+        data?.nextUrl?.let { url ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = url ?: "没有下一页了"
-                this.title = data?.nextText ?: "下一页"
+                this.link = url
+                this.title = data.nextText ?: "下一页"
                 this.chapterIndex = chapters.size
-                if (url.isNullOrBlank()) {
+                if (url.isBlank()) {
                     this.content = "下一页地址未找到，无法加载"
                 }
             })

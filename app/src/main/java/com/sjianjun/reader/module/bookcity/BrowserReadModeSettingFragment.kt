@@ -69,6 +69,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             binding?.settingSample?.isVisible = true
             binding?.settingDetail?.isVisible = false
             refreshNavAndProgress()
+            refreshHistoryNavigationState()
             titleText = pageLoader?.curChapter?.title ?: titleText
             binding?.bookTitle?.text = titleText
         }
@@ -142,6 +143,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         initDayNight()
         initRefresh()
         initToggleWebView()
+        initHistoryNavigation()
         initScreenOrientationMode()
         initFontSize()
         initLineSpacing()
@@ -263,6 +265,30 @@ class BrowserReadModeSettingFragment : BaseFragment() {
             (activity as? BrowserReadModeActivity)?.toggleHiddenWebViewVisible()
             hideSelf()
         }
+    }
+
+    private fun initHistoryNavigation() {
+        val b = binding ?: return
+        b.historyBackward.click(10) {
+            (activity as? BrowserReadModeActivity)?.goBackReadModeHistory()
+            refreshHistoryNavigationState()
+        }
+        b.historyForward.click(10) {
+            (activity as? BrowserReadModeActivity)?.goForwardReadModeHistory()
+            refreshHistoryNavigationState()
+        }
+        refreshHistoryNavigationState()
+    }
+
+    private fun refreshHistoryNavigationState() {
+        val b = binding ?: return
+        val act = activity as? BrowserReadModeActivity
+        val canBack = act?.canGoBackReadModeHistory() == true
+        val canForward = act?.canGoForwardReadModeHistory() == true
+        b.historyBackward.isEnabled = canBack
+        b.historyForward.isEnabled = canForward
+        b.historyBackward.alpha = if (canBack) 1f else 0.4f
+        b.historyForward.alpha = if (canForward) 1f else 0.4f
     }
 
     private fun initBrightnessSetting() {
