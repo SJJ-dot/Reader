@@ -59,7 +59,7 @@ class CustomPageStyleFragment : DialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         return inflater.inflate(R.layout.reader_fragment_custom_page_style, container, false)
     }
@@ -109,7 +109,8 @@ class CustomPageStyleFragment : DialogFragment() {
                 .with(context)
                 .setTitle("选择标题色")
                 .initialColor(info.chapterTitleColor)
-                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
@@ -135,7 +136,8 @@ class CustomPageStyleFragment : DialogFragment() {
                 .with(context)
                 .setTitle("选择正文色")
                 .initialColor(info.chapterContentColor)
-                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
@@ -161,7 +163,8 @@ class CustomPageStyleFragment : DialogFragment() {
                 .with(context)
                 .setTitle("选择标签色")
                 .initialColor(info.labelColor)
-                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
@@ -187,7 +190,8 @@ class CustomPageStyleFragment : DialogFragment() {
                 .with(context)
                 .setTitle("选择选中颜色")
                 .initialColor(info.selectedColor)
-                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
@@ -213,7 +217,8 @@ class CustomPageStyleFragment : DialogFragment() {
                 .with(context)
                 .setTitle("选择背景色")
                 .initialColor(info.backgroundColor)
-                .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
                     Log.i("onPositiveButton: 0x" + Integer.toHexString(selectedColor))
