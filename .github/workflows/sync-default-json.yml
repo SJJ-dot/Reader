@@ -14,7 +14,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if default.json.gzip was updated in this commit
+        id: check-file
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -q "^test/BookSource/default.json.gzip$"; then
+            echo "file_changed=true" >> "$GITHUB_OUTPUT"
+            echo "default.json.gzip was updated in this commit."
+          else
+            echo "file_changed=false" >> "$GITHUB_OUTPUT"
+            echo "default.json.gzip was not updated in this commit; skipping sync."
+          fi
+
       - name: Fail if file missing
+        if: steps.check-file.outputs.file_changed == 'true'
         run: |
           if [ ! -f "test/BookSource/default.json.gzip" ]; then
             echo "File test/BookSource/default.json.gzip not found; nothing to do."
@@ -22,11 +34,13 @@ jobs:
           fi
 
       - name: Configure git
+        if: steps.check-file.outputs.file_changed == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Clone target repo
+        if: steps.check-file.outputs.file_changed == 'true'
         env:
           TARGET_REPO: SJJ-dot/Reader         # example "org-or-user/target-repo"
           TARGET_TOKEN: ${{ secrets.GITHUBTOKEN }}  # PAT with repo permissions
@@ -39,6 +53,8 @@ jobs:
           ls -la target-repo || (echo "Clone failed" && exit 1)
 
       - name: Copy file into target repo and commit
+        if: steps.check-file.outputs.file_changed == 'true'
+        id: push-file
         env:
           TARGET_BRANCH: "BookSource"   # 改为目标分支
           TARGET_PATH: "test/BookSource/default.json.gzip"  # 目标仓库内存放路径
@@ -64,6 +80,13 @@ jobs:
             # push branch, force if needed (place --force outside the refspec)
             git push origin "${TARGET_BRANCH}" --force
             echo "File pushed to ${TARGET_BRANCH} in target repo."
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Purge jsDelivr CDN cache
+        if: steps.check-file.outputs.file_changed == 'true' && steps.push-file.outputs.pushed == 'true'
+        run: |
+          curl -X POST "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip"
