@@ -83,6 +83,7 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = true) = withIo {
             //同时下面三个参数也必须要设置
             apkVersionName(releasesInfo.lastVersion!!)
             apkDescription(releasesInfo.updateContent!!)
+            forcedUpgrade(true)
             onDownloadListener(object : OnDownloadListener {
                 override fun cancel() {
                 }
