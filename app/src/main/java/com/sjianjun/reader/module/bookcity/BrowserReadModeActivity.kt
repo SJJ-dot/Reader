@@ -135,6 +135,7 @@ class BrowserReadModeActivity : BaseActivity() {
         // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
         binding.hiddenWebView.webViewClient = ReadModeWebViewClient()
 
+        setupChapterDrawer()
         setupInsets()
         setupPageLoader()
         setupTouchListener()
@@ -162,6 +163,21 @@ class BrowserReadModeActivity : BaseActivity() {
         binding.toggleWebView.click {
             toggleHiddenWebViewVisible()
         }
+    }
+
+    private fun setupChapterDrawer() {
+        if (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) == null) {
+            val fragment = ChapterListDialogFragment()
+            chapterFragment = fragment
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.chapter_list_drawer_container, fragment, ChapterListDialogFragment.TAG)
+                .commitNowAllowingStateLoss()
+        }
+        binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: View) {
+                notifyChapterDialogChanged()
+            }
+        })
     }
 
     /** 章节右侧抽屉是否处于打开状态 */
