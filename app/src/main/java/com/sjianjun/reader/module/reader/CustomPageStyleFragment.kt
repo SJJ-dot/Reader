@@ -27,6 +27,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.applyEdgeToEdgeDialogBar
+import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.gson
@@ -110,6 +111,7 @@ class CustomPageStyleFragment : DialogFragment() {
                 .setTitle("选择标题色")
                 .initialColor(info.chapterTitleColor)
                 .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .setColorEditTextColor(R.color.dn_text_color_black.color(requireContext()))
                 .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
@@ -137,6 +139,7 @@ class CustomPageStyleFragment : DialogFragment() {
                 .setTitle("选择正文色")
                 .initialColor(info.chapterContentColor)
                 .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .setColorEditTextColor(R.color.dn_text_color_black.color(requireContext()))
                 .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
@@ -164,6 +167,7 @@ class CustomPageStyleFragment : DialogFragment() {
                 .setTitle("选择标签色")
                 .initialColor(info.labelColor)
                 .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .setColorEditTextColor(R.color.dn_text_color_black.color(requireContext()))
                 .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
@@ -191,6 +195,7 @@ class CustomPageStyleFragment : DialogFragment() {
                 .setTitle("选择选中颜色")
                 .initialColor(info.selectedColor)
                 .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .setColorEditTextColor(R.color.dn_text_color_black.color(requireContext()))
                 .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
@@ -218,6 +223,7 @@ class CustomPageStyleFragment : DialogFragment() {
                 .setTitle("选择背景色")
                 .initialColor(info.backgroundColor)
                 .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
+                .setColorEditTextColor(R.color.dn_text_color_black.color(requireContext()))
                 .showColorEdit(true)
                 .density(12)
                 .setPositiveButton("确定") { dialog, selectedColor, allColors ->
