@@ -291,7 +291,7 @@ class BrowserReadModeActivity : BaseActivity() {
             data.content = "加载失败"
         }
         putExtractResult(url, data)
-        showChapter(url,if (url == pageLoader.curChapter?.link) pageLoader.pagePos else null)
+        showChapter(url, if (url == pageLoader.curChapter?.link) pageLoader.pagePos else null)
     }
 
     private fun showReadModePageView() {

@@ -111,6 +111,13 @@
         matchedTitle = matchChapterTitle(wholeText);
     }
     title = matchedTitle || cleanChapterTitle(title);
+    var titleParts = title.split(/\s+/);
+    var titleFinal = '';
+    for (var i = 0; i < titleParts.length; i++) {
+        titleFinal += (titleFinal ? ' ' : '') + titleParts[i].trim();
+        if (titleFinal.length > 10) break;
+    }
+    title = titleFinal || title;
 
     // 2. 正文：常见小说网站容器优先，支持单元素与多元素（如 p 列表），最后启发式选择 textLength 最大的可见块
     var content = '';
