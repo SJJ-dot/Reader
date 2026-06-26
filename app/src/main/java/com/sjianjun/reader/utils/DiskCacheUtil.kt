@@ -5,14 +5,14 @@ import com.sjianjun.coroutine.withIo
 import java.io.File
 import java.io.FileOutputStream
 
-class DiskCacheUtil(private val root: File, maxSize: Long = 50 * 1024 * 1024) {
-    private val diskCache by lazy {
-        try {
-            DiskLruCache.open(root, 1, 1, maxSize)
-        } catch (e: Exception) {
-            null
+class DiskCacheUtil(private val root: File, val maxSize: Long = 50 * 1024 * 1024) {
+    private var diskCache: DiskLruCache? = null
+        get() {
+            if (field == null) {
+                field = DiskLruCache.open(root, 1, 1, maxSize)
+            }
+            return field
         }
-    }
 
 
     suspend fun put(key: String, value: String) = withIo {
@@ -46,6 +46,8 @@ class DiskCacheUtil(private val root: File, maxSize: Long = 50 * 1024 * 1024) {
     }
 
     suspend fun delete() = withIo {
+        val diskCache = diskCache
+        this@DiskCacheUtil.diskCache = null
         diskCache?.delete()
     }
 
