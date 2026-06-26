@@ -198,10 +198,12 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         }
     }
 
-    private fun refreshNavAndProgress() {
+    fun refreshNavAndProgress() {
         val b = binding ?: return
         val activity = activity as? BrowserReadModeActivity ?: return
         val loader = pageLoader ?: return
+        titleText = loader.curChapter?.title ?: titleText
+        b.bookTitle.text = titleText
         val curChapterData = loader.curChapterData
         val hasPrev = !curChapterData?.prevUrl.isNullOrBlank()
         val hasNext = !curChapterData?.nextUrl.isNullOrBlank()

@@ -359,6 +359,7 @@ class BrowserReadModeActivity : BaseActivity() {
                         book.scrollOffset = bean.scrollOffset
                         updateWebBookProgress(book.lastUrl ?: "")
                     }
+                    notifySettingFragmentChanged()
                 }
             })
         }
@@ -434,6 +435,13 @@ class BrowserReadModeActivity : BaseActivity() {
             return newFragment
         }
         return null
+    }
+
+    private fun notifySettingFragmentChanged() {
+        val fragment = getSettingFragment()
+        if (fragment?.isVisible == true) {
+            fragment.refreshNavAndProgress()
+        }
     }
 
     private fun setupSettingsObserver() {
@@ -761,6 +769,7 @@ class BrowserReadModeActivity : BaseActivity() {
         pageLoader.mCollBook = book
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
+        notifySettingFragmentChanged()
 
         // 切到了新页面，若抽屉打开则立刻刷新当前 Tab；尚未提取时正文加载完成后会再次刷新
         if (pageChanged && isChapterDrawerOpen()) {
