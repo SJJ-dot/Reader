@@ -35,6 +35,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.TtsService
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
+import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
@@ -211,8 +212,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         b.chapterNext.text = curChapterData?.nextText?.takeIf { it.isNotBlank() } ?: "下一章"
         b.chapterLast.isEnabled = hasPrev
         b.chapterNext.isEnabled = hasNext
-        b.chapterLast.alpha = if (hasPrev) 1f else 0.4f
-        b.chapterNext.alpha = if (hasNext) 1f else 0.4f
+        b.chapterLast.setTextColorRes(if (hasPrev) R.color.dn_text_color_black else R.color.dn_text_color_black_disable)
+        b.chapterNext.setTextColorRes(if (hasNext) R.color.dn_text_color_black else R.color.dn_text_color_black_disable)
 
         val curPage = loader.pagePos + 1
         val totalPages = loader.curPageList?.size ?: 0
@@ -289,8 +290,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val canForward = act?.canGoForwardReadModeHistory() == true
         b.historyBackward.isEnabled = canBack
         b.historyForward.isEnabled = canForward
-        b.historyBackward.alpha = if (canBack) 1f else 0.4f
-        b.historyForward.alpha = if (canForward) 1f else 0.4f
+        b.ivHistoryBackward.isEnabled = canBack
+        b.ivHistoryForward.isEnabled = canForward
     }
 
     private fun initBrightnessSetting() {

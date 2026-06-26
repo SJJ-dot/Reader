@@ -88,6 +88,8 @@ class BrowserReadModeActivity : BaseActivity() {
     val readModeHistory = mutableListOf<HistoryItem>()
     private val forwardHistoryStack = ArrayDeque<HistoryItem>()
     private var isHistoryNavigation = false
+    /** 进入 WebView 时 WebView 所在的 URL，后退到它或无法再后退即停止 WebView 后退。 */
+    private var webEntryUrl: String? = null
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
@@ -130,6 +132,7 @@ class BrowserReadModeActivity : BaseActivity() {
                     binding.hiddenWebViewProgress.visibility = View.VISIBLE
                     isHiddenLoading.postValue(true)
                 }
+                binding.forward.isEnabled = view?.canGoForward() == true
             }
         }
         // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
@@ -151,17 +154,30 @@ class BrowserReadModeActivity : BaseActivity() {
             showChapter(startUrl)
         }
         binding.refresh.click {
-            if (binding.ivRefresh.isSelected) {
+            if (binding.refresh.isSelected) {
                 stopHiddenLoading()
             } else {
                 refresh()
             }
         }
         isHiddenLoading.observe(this) { loading ->
-            binding.ivRefresh.isSelected = loading == true
+            binding.refresh.isSelected = loading == true
         }
         binding.toggleWebView.click {
             toggleHiddenWebViewVisible()
+        }
+        binding.home.click {
+            binding.hiddenWebView.loadUrl(webBook?.url ?: startUrl)
+        }
+        binding.backward.click {
+            showReadModePageView()
+        }
+        binding.forward.click {
+            if (binding.hiddenWebView.canGoForward()) {
+                binding.hiddenWebView.goForward()
+            } else {
+                toast("没有了")
+            }
         }
     }
 
@@ -274,6 +290,7 @@ class BrowserReadModeActivity : BaseActivity() {
         if (curUrl.isNotBlank() && binding.hiddenWebView.url != curUrl) {
             binding.hiddenWebView.loadUrl(curUrl)
         }
+        webEntryUrl = binding.hiddenWebView.url
         binding.readModePageView.visibility = View.GONE
         binding.hiddenWebView.visibility = View.VISIBLE
         binding.webViewContainer.show()
@@ -518,7 +535,14 @@ class BrowserReadModeActivity : BaseActivity() {
                 }
 
                 isHiddenWebViewVisible() -> {
-                    showReadModePageView()
+                    val wv = binding.hiddenWebView
+                    val entry = webEntryUrl
+                    // 还能后退且当前不在进入 WebView 时的 URL → WebView 内部后退
+                    if (wv.canGoBack() && wv.url != entry) {
+                        wv.goBack()
+                    } else {
+                        showReadModePageView()
+                    }
                     true
                 }
 
@@ -1096,6 +1120,11 @@ class BrowserReadModeActivity : BaseActivity() {
             super.onPageStarted(view, url, favicon)
             currentHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
             adBlock.markPage(url)
+        }
+
+        override fun onPageFinished(view: WebView?, url: String?) {
+            super.onPageFinished(view, url)
+            binding.forward.isEnabled = view?.canGoForward() == true
         }
 
         override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {

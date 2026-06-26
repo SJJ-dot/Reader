@@ -81,14 +81,81 @@
     </LinearLayout>
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/history_backward"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toStartOf="@+id/history_forward"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/iv_history_backward"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:rotation="180"
+            android:scaleType="fitCenter"
+            android:src="@drawable/browser_navigation_forward" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/history_forward"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toStartOf="@+id/refresh"
+        app:layout_constraintStart_toEndOf="@+id/history_backward">
+
+        <ImageView
+            android:id="@+id/iv_history_forward"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/browser_navigation_forward"/>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/refresh"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/dn_reader_setting_btn"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toStartOf="@+id/toggle_web_view"
+        app:layout_constraintStart_toEndOf="@+id/history_forward">
+
+        <ImageView
+            android:id="@+id/iv_refresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/browser_navigation_refresh"
+            app:tint="@color/dn_text_color_black" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/toggle_web_view"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_margin="16dp"
+        android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/dn_reader_setting_btn"
         app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/history_backward"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toStartOf="@+id/chapter_directory"
+        app:layout_constraintStart_toEndOf="@+id/refresh">
 
         <ImageView
             android:id="@+id/iv_toggle_web_view"
@@ -105,11 +172,12 @@
         android:id="@+id/chapter_directory"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_margin="16dp"
+        android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/dn_reader_setting_btn"
         app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/refresh"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/toggle_web_view">
 
         <ImageView
             android:id="@+id/iv_chapter_directory"
@@ -119,69 +187,6 @@
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:src="@mipmap/ic_history"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/refresh"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/toggle_web_view"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:id="@+id/iv_refresh"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/browser_navigation_refresh"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/history_backward"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/history_forward"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:id="@+id/iv_history_backward"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_arrow_back_24"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/history_forward"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:id="@+id/iv_history_forward"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_arrow_forward"
             app:tint="@color/dn_text_color_black" />
     </com.google.android.material.card.MaterialCardView>
 
@@ -673,7 +678,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?android:attr/selectableItemBackground"
-                android:paddingStart="8dp"
+                android:paddingStart="32dp"
                 android:paddingTop="16dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="16dp"
