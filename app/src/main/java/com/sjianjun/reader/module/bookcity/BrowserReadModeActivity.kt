@@ -1024,10 +1024,14 @@ class BrowserReadModeActivity : BaseActivity() {
                 _diskCache ?: createDiskCache().also { _diskCache = it }
             }
 
+        private fun diskCacheDir(): File {
+            return File(com.sjianjun.reader.App.app.cacheDir, "browser_read_mode")
+        }
+
         private fun createDiskCache(): DiskCacheUtil {
             val sizeMB = globalConfig.browserReadModeCacheSizeMB.coerceAtLeast(1)
             return DiskCacheUtil(
-                File(com.sjianjun.reader.App.app.cacheDir, "browser_read_mode"),
+                diskCacheDir(),
                 maxSize = sizeMB.toLong() * 1024 * 1024,
             )
         }
@@ -1071,6 +1075,16 @@ class BrowserReadModeActivity : BaseActivity() {
                 val url = this.curChapter?.link ?: return null
                 return extractCache.get(url)
             }
+
+        /** 当前阅读模式磁盘缓存占用字节数 */
+        fun diskCacheSize(): Long {
+            fun File.size(): Long {
+                if (!exists()) return 0L
+                if (isFile) return length()
+                return listFiles()?.sumOf { it.size() } ?: 0L
+            }
+            return diskCacheDir().size()
+        }
 
         /** 清除磁盘缓存（同时丢弃内存缓存） */
         suspend fun clearDiskCache() {

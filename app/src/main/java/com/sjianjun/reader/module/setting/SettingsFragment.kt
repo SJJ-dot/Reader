@@ -18,6 +18,7 @@ import com.hjq.permissions.permission.PermissionLists
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.HttpServiceHelper
@@ -122,8 +123,9 @@ class SettingsFragment : Fragment() {
                     .setPositiveButton("清除") { _, _ ->
                         viewLifecycleOwner.lifecycleScope.launch {
                             runCatching {
-                                com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.clearDiskCache()
+                                BrowserReadModeActivity.clearDiskCache()
                             }.onSuccess {
+                                refreshBrowserReadCacheSize()
                                 toast("已清除")
                             }.onFailure {
                                 Log.e("清除阅读模式缓存失败", it)
@@ -133,6 +135,29 @@ class SettingsFragment : Fragment() {
                     }
                     .show()
             }
+            refreshBrowserReadCacheSize()
+        }
+    }
+
+    private fun FragmentSettingsBinding.refreshBrowserReadCacheSize() {
+        browserReadCacheCurrentSize.text = "默认 50MB，当前占用：计算中..."
+        viewLifecycleOwner.lifecycleScope.launch {
+            val size = withContext(Dispatchers.IO) {
+                BrowserReadModeActivity.diskCacheSize()
+            }
+            browserReadCacheCurrentSize.text = "默认 50MB，当前占用：${formatBytes(size)}"
+        }
+    }
+
+    private fun formatBytes(bytes: Long): String {
+        val kb = 1024.0
+        val mb = kb * 1024.0
+        val gb = mb * 1024.0
+        return when {
+            bytes >= gb -> String.format(java.util.Locale.getDefault(), "%.2f GB", bytes / gb)
+            bytes >= mb -> String.format(java.util.Locale.getDefault(), "%.2f MB", bytes / mb)
+            bytes >= kb -> String.format(java.util.Locale.getDefault(), "%.2f KB", bytes / kb)
+            else -> "${bytes} B"
         }
     }
 
@@ -151,7 +176,7 @@ class SettingsFragment : Fragment() {
         }
         if (clamped != current) {
             globalConfig.browserReadModeCacheSizeMB = clamped
-            com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.resetDiskCache()
+            BrowserReadModeActivity.resetDiskCache()
             toast("已保存")
         }
     }

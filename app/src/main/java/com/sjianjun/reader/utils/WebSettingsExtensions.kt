@@ -55,8 +55,12 @@ fun WebSettings.setBackForwardCacheEnabled() {
     }
 }
 
-
+private var first = true
 fun WebView.init(headerMap: Map<String, String>? = null) {
+    if (first) {
+        first = false
+        clearCache(true)
+    }
     val cookieManager = CookieManager.getInstance();
     cookieManager.setAcceptCookie(true) // 启用 Cookie 支持
     cookieManager.setAcceptThirdPartyCookies(this, true) // 启用第三方 Cookie

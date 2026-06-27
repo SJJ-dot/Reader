@@ -224,13 +224,6 @@
                 android:text="浏览器阅读模式缓存"
                 android:textColor="@color/dn_colorAccent" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="离线缓存阅读模式提取过的章节内容，下次打开更快。"
-                android:textSize="12sp" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -270,12 +263,13 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/browser_read_cache_hint"
+                android:id="@+id/browser_read_cache_current_size"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="修改后下次进入阅读模式生效，默认 50MB。"
-                android:textSize="11sp" />
+                android:layout_marginTop="8dp"
+                android:text="默认 50MB，当前占用：计算中..."
+                android:textSize="12sp" />
+
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
