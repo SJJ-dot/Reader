@@ -589,19 +589,19 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
+    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null, preload: Boolean = false) {
         loadUrlQueue.removeAll { it.url == url }
-        loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos))
+        loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos, preload))
         if (loadUrlQueueJob?.isActive == true) return
         loadUrlQueueJob = lifecycleScope.launch {
             while (loadUrlQueue.isNotEmpty()) {
                 val request = loadUrlQueue.removeFirst()
-                loadUrlForReadModeInternal(request.url, request.force, request.pagePos)
+                loadUrlForReadModeInternal(request.url, request.force, request.pagePos, request.preload)
             }
         }
     }
 
-    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null) {
+    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null, preload: Boolean = false) {
         var data = extractCache.get(url) ?: if (!force) loadExtractFromDisk(url) else null
         Log.i("loadUrlForReadMode: loading url = $url, force = $force, cached = ${data != null}")
         if (data == null || force) {
@@ -630,12 +630,26 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             putExtractResult(url, data)
         }
+        preloadNextChapterToDisk(url, data, preload)
         // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
         if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
             notifyChapterDialogChanged()
         }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
+        }
+    }
+
+    private fun preloadNextChapterToDisk(currentUrl: String, data: ExtractResult?, preload: Boolean) {
+        if (preload) return
+        val nextUrl = data?.nextUrl?.takeIf { it.isNotBlank() } ?: return
+        if (nextUrl == currentUrl || nextUrl.toHttpUrlOrNull() == null) return
+        if (extractCache.get(nextUrl) != null) return
+        if (loadUrlQueue.any { it.url == nextUrl }) return
+        lifecycleScope.launch {
+            if (loadExtractFromDisk(nextUrl) != null) return@launch
+            Log.i("预加载下一章到磁盘缓存: $nextUrl")
+            loadUrlForReadMode(nextUrl, preload = true)
         }
     }
 
@@ -933,6 +947,7 @@ class BrowserReadModeActivity : BaseActivity() {
         val url: String,
         val force: Boolean,
         val pagePos: Int? = null,
+        val preload: Boolean = false,
     )
 
     data class ExtractResult(
