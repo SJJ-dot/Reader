@@ -17,7 +17,7 @@ class MyAppGlideModule : AppGlideModule() {
         val bitmapPool = AsyncRecycleBitmapPool(calculator.bitmapPoolSize)
         builder.setMemorySizeCalculator(calculator)
         builder.setBitmapPool(bitmapPool)
-        builder.setDiskCache(InternalCacheDiskCacheFactory(context, 1024 * 1024 * 100))
+        builder.setDiskCache(InternalCacheDiskCacheFactory(context, 1024 * 1024 * 20))
         if (!BuildConfig.DEBUG) {
             builder.setLogLevel(Log.ERROR)
         }
