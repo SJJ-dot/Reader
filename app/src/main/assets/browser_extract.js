@@ -41,8 +41,26 @@
     function normalize(s) {
         if (!s) return '';
         return s.toLowerCase()
-            // \u5404\u79CD dash / \u8FDE\u5B57\u7B26 / \u4E0B\u5212\u7EBF / \u7A7A\u767D \u2192 \u4E00
-            .replace(/[\u2010-\u2015\uFF0D\-_\s]/g, '\u4E00');
+            .replace(/[\u2010-\u2015\uFF0D\-_\s\u30FC]/g, '');
+    }
+
+    function matchNavKeyword(values, keys) {
+        for (var vi = 0; vi < values.length; vi++) {
+            var value = values[vi] || '';
+            for (var ki = 0; ki < keys.length; ki++) {
+                var key = normalize(keys[ki]);
+                if (value.indexOf(key) >= 0) return keys[ki];
+            }
+        }
+        return '';
+    }
+
+    function matchLooseChapterNav(text, aria, direction) {
+        var t = normalize(text || '');
+        var a = normalize(aria || '');
+        var re = direction === 'next' ? /下.{0,6}章/ : /上.{0,6}章/;
+        if (re.test(t) || re.test(a)) return direction === 'next' ? '下*章' : '上*章';
+        return '';
     }
 
     function normalizeChapterTitleCandidate(title) {
@@ -174,7 +192,8 @@
         infiniteScrollHints: [],
         scriptHints: [],      // <script> 内联里命中 next/prev/url 关键字的片段
         scriptTemplate: {},   // prevId/nextId + chapterUrl 模板解析结果
-        windowVars: {}        // window 上 next/prev 相关全局变量
+        windowVars: {},       // window 上 next/prev 相关全局变量
+        htmlText: ''          // 缺少导航时输出完整 HTML
     };
 
     function invalidNavText(text) {
@@ -315,104 +334,22 @@
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
             if (!prev) {
-                for (var p = 0; p < prevKeys.length; p++) {
-                    var pk = normalize(prevKeys[p]);
-                    if (t.indexOf(pk) >= 0 || id.indexOf(pk) >= 0 || cls.indexOf(pk) >= 0
-                        || aria.indexOf(pk) >= 0 || anc.indexOf(pk) >= 0) {
-                        prev = abs(href); prevText = rawText;
-                        _debug.prevHit = 'keyword'; _debug.prevKeyword = prevKeys[p];
-                        if (_debug.prevCandidates.length < 10) {
-                            _debug.prevCandidates.push({ text: rawText, href: abs(href), key: prevKeys[p] });
-                        }
-                        break;
+                var prevHit = matchNavKeyword([t, id, cls, aria, anc], prevKeys) || matchLooseChapterNav(rawText, aria, 'prev');
+                if (prevHit) {
+                    prev = abs(href); prevText = rawText;
+                    _debug.prevHit = 'keyword'; _debug.prevKeyword = prevHit;
+                    if (_debug.prevCandidates.length < 10) {
+                        _debug.prevCandidates.push({ text: rawText, href: abs(href), key: prevHit });
                     }
                 }
             }
             if (!next) {
-                for (var n = 0; n < nextKeys.length; n++) {
-                    var nk = normalize(nextKeys[n]);
-                    if (t.indexOf(nk) >= 0 || id.indexOf(nk) >= 0 || cls.indexOf(nk) >= 0
-                        || aria.indexOf(nk) >= 0 || anc.indexOf(nk) >= 0) {
-                        next = abs(href); nextText = rawText;
-                        _debug.nextHit = 'keyword'; _debug.nextKeyword = nextKeys[n];
-                        if (_debug.nextCandidates.length < 10) {
-                            _debug.nextCandidates.push({ text: rawText, href: abs(href), key: nextKeys[n] });
-                        }
-                        break;
-                    }
-                }
-            }
-            if (prev && next) break;
-        }
-    }
-
-    // 4. 目录链接
-    var directory = '';
-    var dirKeys = ['目录', '章节列表', '返回目录', '回目录', 'Index', 'Table of Contents'];
-    for (var k = 0; k < anchors.length; k++) {
-        var a = anchors[k];
-        var t = linkTitleText(a.innerText || a.textContent || '');
-        var id = (a.id || '').toLowerCase();
-        var cls = (a.className || '').toString().toLowerCase();
-        var href = a.getAttribute('href') || '';
-        if (!href || href === '#' || /^javascript:/i.test(href)) continue;
-        for (var d = 0; d < dirKeys.length; d++) {
-            if (t === dirKeys[d] || id.indexOf('chapterlist') >= 0 || id.indexOf('directory') >= 0) {
-                directory = abs(href);
-                break;
-            }
-        }
-        if (directory) break;
-    }
-
-    // 5. 全部超链接（用于章节抽屉，过滤无标题与失效，按目标 URL 与标题分别去重）
-    var allLinks = [];
-    var urlSeen = new Set();
-    var titleSeen = new Set();
-    for (var li = 0; li < anchors.length; li++) {
-        var la = anchors[li];
-        if (!visible(la)) continue;
-        var lhref = la.getAttribute('href') || '';
-        if (!lhref || lhref === '#' || /^javascript:/i.test(lhref)) continue;
-        var labs = abs(lhref);
-        if (urlSeen.has(labs)) continue;
-        // 标题兜底：innerText → aria-label/title → 父节点纯文本 → href 末段
-        var ltext = linkTitleText(la.innerText || la.textContent || '');
-        if (!ltext) ltext = linkTitleText(la.getAttribute('aria-label') || la.getAttribute('title') || '');
-        if (!ltext && la.parentElement) ltext = linkTitleText(la.parentElement.innerText || la.parentElement.textContent || '');
-        if (!ltext) {
-            try {
-                var u = new URL(labs);
-                ltext = u.pathname.split('/').filter(Boolean).pop() || u.host;
-            } catch (e) { ltext = labs; }
-        }
-        if (!ltext) continue;
-        if (titleSeen.has(ltext)) continue;
-        urlSeen.add(labs);
-        titleSeen.add(ltext);
-        allLinks.push({ title: ltext, url: labs });
-    }
-
-    // 6. prev/next 兜底：如果前面没找到，再从 allLinks 里做一次归一化匹配
-    if (!prev || !next) {
-        for (var ai = 0; ai < allLinks.length; ai++) {
-            var item = allLinks[ai];
-            var t = normalize(item.title || '');
-            if (!prev) {
-                for (var pi = 0; pi < prevKeys.length; pi++) {
-                    if (t.indexOf(normalize(prevKeys[pi])) >= 0) {
-                        prev = item.url; prevText = item.title;
-                        _debug.prevHit = 'allLinksFallback'; _debug.prevKeyword = prevKeys[pi];
-                        break;
-                    }
-                }
-            }
-            if (!next) {
-                for (var ni = 0; ni < nextKeys.length; ni++) {
-                    if (t.indexOf(normalize(nextKeys[ni])) >= 0) {
-                        next = item.url; nextText = item.title;
-                        _debug.nextHit = 'allLinksFallback'; _debug.nextKeyword = nextKeys[ni];
-                        break;
+                var nextHit = matchNavKeyword([t, id, cls, aria, anc], nextKeys) || matchLooseChapterNav(rawText, aria, 'next');
+                if (nextHit) {
+                    next = abs(href); nextText = rawText;
+                    _debug.nextHit = 'keyword'; _debug.nextKeyword = nextHit;
+                    if (_debug.nextCandidates.length < 10) {
+                        _debug.nextCandidates.push({ text: rawText, href: abs(href), key: nextHit });
                     }
                 }
             }
@@ -467,13 +404,7 @@
                 var dnt = normalize(drt);
                 var did = normalize(da.id || '');
                 var dcl = normalize((da.className || '').toString());
-                var hit = '';
-                for (var dnk = 0; dnk < nextKeys.length; dnk++) {
-                    var key = normalize(nextKeys[dnk]);
-                    if (dnt.indexOf(key) >= 0 || did.indexOf(key) >= 0 || dcl.indexOf(key) >= 0) {
-                        hit = nextKeys[dnk]; break;
-                    }
-                }
+                var hit = matchNavKeyword([dnt, did, dcl], nextKeys) || matchLooseChapterNav(drt, '', 'next');
                 if (hit && _debug.nextCandidates.length < 10) {
                     _debug.nextCandidates.push({
                         text: drt,
@@ -493,13 +424,7 @@
                 var dnt2 = normalize(drt2);
                 var did2 = normalize(da2.id || '');
                 var dcl2 = normalize((da2.className || '').toString());
-                var hit2 = '';
-                for (var dpk = 0; dpk < prevKeys.length; dpk++) {
-                    var key2 = normalize(prevKeys[dpk]);
-                    if (dnt2.indexOf(key2) >= 0 || did2.indexOf(key2) >= 0 || dcl2.indexOf(key2) >= 0) {
-                        hit2 = prevKeys[dpk]; break;
-                    }
-                }
+                var hit2 = matchNavKeyword([dnt2, did2, dcl2], prevKeys) || matchLooseChapterNav(drt2, '', 'prev');
                 if (hit2 && _debug.prevCandidates.length < 10) {
                     _debug.prevCandidates.push({
                         text: drt2,
@@ -604,7 +529,7 @@
         lines.push('正文长度: ' + content.length);
         lines.push('上一章: hit=' + _debug.prevHit + ' selector=' + _debug.prevSelector + ' keyword=' + _debug.prevKeyword + ' text=' + (prevText || '') + ' url=' + (prev || ''));
         lines.push('下一章: hit=' + _debug.nextHit + ' selector=' + _debug.nextSelector + ' keyword=' + _debug.nextKeyword + ' text=' + (nextText || '') + ' url=' + (next || ''));
-        lines.push('链接统计: anchors=' + _debug.anchorsTotal + ' allLinks=' + allLinks.length + ' directory=' + (directory || ''));
+        lines.push('链接统计: anchors=' + _debug.anchorsTotal);
         if (_debug.scriptTemplate && (_debug.scriptTemplate.prevId !== undefined || _debug.scriptTemplate.nextId !== undefined || _debug.scriptTemplate.chapterUrl)) {
             lines.push('脚本模板: prevId=' + (_debug.scriptTemplate.prevId || '') + ' nextId=' + (_debug.scriptTemplate.nextId || '') + ' chapterUrl=' + (_debug.scriptTemplate.chapterUrl || ''));
         } else if (_debug.scriptTemplate && _debug.scriptTemplate.err) {
@@ -621,6 +546,14 @@
         } else {
             lines.push('window变量: 无');
         }
+        if (!prev || !next) {
+            try {
+                _debug.htmlText = (document.documentElement && document.documentElement.outerHTML) || '';
+            } catch (e) {
+                _debug.htmlText = 'err:' + (e && e.message || e);
+            }
+        }
+
         if (_debug.infiniteScrollHints && _debug.infiniteScrollHints.length > 0) {
             lines.push('滚动加载提示: ' + _debug.infiniteScrollHints.join(' | '));
         } else {
@@ -634,6 +567,10 @@
         } else {
             lines.push('脚本片段: 无');
         }
+        if (_debug.htmlText) {
+            lines.push('HTML文本:');
+            lines.push(_debug.htmlText);
+        }
         addCandidateLines(lines, '上一章候选', _debug.prevCandidates);
         addCandidateLines(lines, '下一章候选', _debug.nextCandidates);
         return lines;
@@ -646,8 +583,6 @@
         prevText: prevText,
         next: next,
         nextText: nextText,
-        directory: directory,
-        allLinks: allLinks,
         _debug: buildDebugLines()
     });
 })();

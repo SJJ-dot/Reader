@@ -19,6 +19,7 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
@@ -693,8 +694,7 @@ class BrowserReadModeActivity : BaseActivity() {
             "extractWithRetry 失败 url=$pageUrl " +
                 "contentLen=${data?.content?.length} " +
                 "prev=${data?.prevUrl} prevText=${data?.prevText} " +
-                "next=${data?.nextUrl} nextText=${data?.nextText} " +
-                "allLinks=${data?.allLinks?.size}"
+                "next=${data?.nextUrl} nextText=${data?.nextText} "
         )
         return data
     }
@@ -957,7 +957,6 @@ class BrowserReadModeActivity : BaseActivity() {
         val nextUrl: String? = null,
         val prevText: String? = null,
         val nextText: String? = null,
-        val allLinks: List<ChapterLink> = emptyList(),
     )
 
     companion object {
@@ -982,37 +981,26 @@ class BrowserReadModeActivity : BaseActivity() {
                         val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
                         val next = obj.optString("next", "").takeIf { it.isNotBlank() }
                         val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
-                        val linksArr = obj.optJSONArray("allLinks")
-                        val allLinks = mutableListOf<ChapterLink>()
-                        if (linksArr != null) {
-                            for (i in 0 until linksArr.length()) {
-                                val c = linksArr.getJSONObject(i)
-                                allLinks.add(ChapterLink(c.optString("title"), c.optString("url")))
+                        if (BuildConfig.DEBUG) {
+                            Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev prevText=$prevText next=$next nextText=$nextText ")
+                            val debugArr = obj.optJSONArray("_debug")
+                            if (debugArr != null) {
+                                for (i in 0 until debugArr.length()) {
+                                    Log.i("extractContent debug ${i + 1}/${debugArr.length()}: ${debugArr.optString(i)}")
+                                }
+                            } else {
+                                val debugObj = obj.optJSONObject("_debug")
+                                if (debugObj != null) {
+                                    Log.i("extractContent _debug=$debugObj")
+                                }
+                            }
+                            if (prev.isNullOrBlank() || next.isNullOrBlank()) {
+                                Log.w(
+                                    "extractContent 缺少导航 url=$pageUrl prev=$prev next=$next "
+                                )
                             }
                         }
-                        Log.i(
-                            "extractContent url=$pageUrl title=$title contentLen=${content.length} " +
-                                "prev=$prev prevText=$prevText next=$next nextText=$nextText " +
-                                "allLinks=${allLinks.size}"
-                        )
-                        val debugArr = obj.optJSONArray("_debug")
-                        if (debugArr != null) {
-                            for (i in 0 until debugArr.length()) {
-                                Log.i("extractContent debug ${i + 1}/${debugArr.length()}: ${debugArr.optString(i)}")
-                            }
-                        } else {
-                            val debugObj = obj.optJSONObject("_debug")
-                            if (debugObj != null) {
-                                Log.i("extractContent _debug=$debugObj")
-                            }
-                        }
-                        if (prev.isNullOrBlank() || next.isNullOrBlank()) {
-                            Log.w(
-                                "extractContent 缺少导航 url=$pageUrl prev=$prev next=$next " +
-                                    "allLinks前20=${allLinks.take(20).joinToString { "${it.title}->${it.url}" }}"
-                            )
-                        }
-                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText, allLinks))
+                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText))
                     } catch (t: Throwable) {
                         Log.e("extractContent err raw=$raw", t)
                         if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
@@ -1113,8 +1101,13 @@ class BrowserReadModeActivity : BaseActivity() {
                 .open("browser_extract.js")
                 .bufferedReader()
                 .use { it.readText() }
-            cachedJs = text
-            return text
+            val js = if (BuildConfig.DEBUG) {
+                text
+            } else {
+                text.replace("_debug: buildDebugLines()", "_debug: []")
+            }
+            cachedJs = js
+            return js
         }
 
         fun startActivity(ctx: Context, url: String, webBookId: String? = null) {
