@@ -304,7 +304,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private suspend fun exportHiddenWebViewToReadMode() {
         val url = binding.hiddenWebView.url ?: pageLoader.curChapter?.link ?: return
         if (url.isBlank() || url == "about:blank") return
-        val data = extractWithRetry(binding.hiddenWebView, 3) ?: return
+        val data = binding.hiddenWebView.extractContent()
         if (data.content.isBlank()) {
             data.content = "加载失败"
         }
