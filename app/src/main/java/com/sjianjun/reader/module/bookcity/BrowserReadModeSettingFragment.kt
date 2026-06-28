@@ -208,8 +208,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val curChapterData = loader.curChapterData
         val hasPrev = !curChapterData?.prevUrl.isNullOrBlank()
         val hasNext = !curChapterData?.nextUrl.isNullOrBlank()
-        b.chapterLast.text = curChapterData?.prevText?.takeIf { it.isNotBlank() } ?: "上一章"
-        b.chapterNext.text = curChapterData?.nextText?.takeIf { it.isNotBlank() } ?: "下一章"
+        b.chapterLast.text = "上一页"
+        b.chapterNext.text = "下一页"
         b.chapterLast.isEnabled = hasPrev
         b.chapterNext.isEnabled = hasNext
         b.chapterLast.setTextColorRes(if (hasPrev) R.color.dn_text_color_black else R.color.dn_text_color_black_disable)

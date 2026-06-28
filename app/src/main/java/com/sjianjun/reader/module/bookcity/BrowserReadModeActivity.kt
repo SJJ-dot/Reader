@@ -89,6 +89,7 @@ class BrowserReadModeActivity : BaseActivity() {
     val readModeHistory = mutableListOf<HistoryItem>()
     private val forwardHistoryStack = ArrayDeque<HistoryItem>()
     private var isHistoryNavigation = false
+
     /** 进入 WebView 时 WebView 所在的 URL，后退到它或无法再后退即停止 WebView 后退。 */
     private var webEntryUrl: String? = null
 
@@ -361,11 +362,12 @@ class BrowserReadModeActivity : BaseActivity() {
             loader.initPageView(binding.readModePageView)
             loader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
-                    val idx = requestChapters.indexOf(loader.curChapter ?: return)
-                    val curChapter = requestChapters.getOrNull(idx) ?: return
-                    val isPrev = loader.chapterPos == 0 && (loader.chapterCategory?.size ?: 0) > 1
                     lifecycleScope.launch(Dispatchers.IO) {
-                        loadUrlForReadMode(curChapter.link, pagePos = if (isPrev) 10000 else null)
+                        requestChapters.forEach {
+                            val isPrev = it.chapterIndex == 0 && (loader.chapterCategory?.size ?: 0) > 1
+                            loadUrlForReadMode(it.link, pagePos = if (isPrev) 10000 else null)
+                        }
+
                     }
                 }
 
@@ -590,19 +592,19 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null, preload: Boolean = false) {
+    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
         loadUrlQueue.removeAll { it.url == url }
-        loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos, preload))
+        loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos))
         if (loadUrlQueueJob?.isActive == true) return
         loadUrlQueueJob = lifecycleScope.launch {
             while (loadUrlQueue.isNotEmpty()) {
                 val request = loadUrlQueue.removeFirst()
-                loadUrlForReadModeInternal(request.url, request.force, request.pagePos, request.preload)
+                loadUrlForReadModeInternal(request.url, request.force, request.pagePos)
             }
         }
     }
 
-    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null, preload: Boolean = false) {
+    private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null) {
         var data = extractCache.get(url) ?: if (!force) loadExtractFromDisk(url) else null
         Log.i("loadUrlForReadMode: loading url = $url, force = $force, cached = ${data != null}")
         if (data == null || force) {
@@ -631,26 +633,12 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             putExtractResult(url, data)
         }
-        preloadNextChapterToDisk(url, data, preload)
         // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
         if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
             notifyChapterDialogChanged()
         }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
-        }
-    }
-
-    private fun preloadNextChapterToDisk(currentUrl: String, data: ExtractResult?, preload: Boolean) {
-        if (preload) return
-        val nextUrl = data?.nextUrl?.takeIf { it.isNotBlank() } ?: return
-        if (nextUrl == currentUrl || nextUrl.toHttpUrlOrNull() == null) return
-        if (extractCache.get(nextUrl) != null) return
-        if (loadUrlQueue.any { it.url == nextUrl }) return
-        lifecycleScope.launch {
-            if (loadExtractFromDisk(nextUrl) != null) return@launch
-            Log.i("预加载下一章到磁盘缓存: $nextUrl")
-            loadUrlForReadMode(nextUrl, preload = true)
         }
     }
 
@@ -690,12 +678,7 @@ class BrowserReadModeActivity : BaseActivity() {
             delay(300.milliseconds)
             retry++
         }
-        Log.w(
-            "extractWithRetry 失败 url=$pageUrl " +
-                "contentLen=${data?.content?.length} " +
-                "prev=${data?.prevUrl} prevText=${data?.prevText} " +
-                "next=${data?.nextUrl} nextText=${data?.nextText} "
-        )
+        Log.w("extractWithRetry 失败 url=$pageUrl contentLen=${data?.content?.length} ")
         return data
     }
 
@@ -774,7 +757,7 @@ class BrowserReadModeActivity : BaseActivity() {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = url
-                this.title = data.prevText ?: "上一页"
+                this.title = "上一页"
                 this.chapterIndex = 0
                 if (url.isBlank()) {
                     this.content = "上一页地址未找到，无法加载"
@@ -792,7 +775,7 @@ class BrowserReadModeActivity : BaseActivity() {
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
                 this.link = url
-                this.title = data.nextText ?: "下一页"
+                this.title = "下一页"
                 this.chapterIndex = chapters.size
                 if (url.isBlank()) {
                     this.content = "下一页地址未找到，无法加载"
@@ -947,7 +930,6 @@ class BrowserReadModeActivity : BaseActivity() {
         val url: String,
         val force: Boolean,
         val pagePos: Int? = null,
-        val preload: Boolean = false,
     )
 
     data class ExtractResult(
@@ -955,8 +937,6 @@ class BrowserReadModeActivity : BaseActivity() {
         var content: String,
         val prevUrl: String? = null,
         val nextUrl: String? = null,
-        val prevText: String? = null,
-        val nextText: String? = null,
     )
 
     companion object {
@@ -983,6 +963,7 @@ class BrowserReadModeActivity : BaseActivity() {
                         val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
                         if (BuildConfig.DEBUG) {
                             Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev prevText=$prevText next=$next nextText=$nextText ")
+                            Log.i("extractContent content=$content")
                             val debugArr = obj.optJSONArray("_debug")
                             if (debugArr != null) {
                                 for (i in 0 until debugArr.length()) {
@@ -1000,7 +981,7 @@ class BrowserReadModeActivity : BaseActivity() {
                                 )
                             }
                         }
-                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText))
+                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next))
                     } catch (t: Throwable) {
                         Log.e("extractContent err raw=$raw", t)
                         if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
