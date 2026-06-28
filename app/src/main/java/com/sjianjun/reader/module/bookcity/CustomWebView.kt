@@ -663,21 +663,7 @@ suspend fun WebView.getTitleFromMeta(): String {
         evaluateJavascript(
             """
                 javascript:(function() {
-                    // 尝试获取 og:title 的内容
-                    let ogTitle = document.querySelector('meta[property="og:title"]');
-
-                    // 如果 og:title 存在，获取其 content 属性
-                    if (ogTitle) {
-                        return ogTitle.getAttribute('content')
-                    } else {
-                        // 如果 og:title 不存在，获取 keywords 的内容
-                        let keywords = document.querySelector('meta[name="keywords"]');
-                        if (keywords) {
-                            return keywords.getAttribute('content')
-                        } else {
-                            return ""
-                        }
-                    }
+                    return document.title
                 })()
             """.trimIndent()
         ) {

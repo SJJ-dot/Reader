@@ -63,44 +63,6 @@
         return '';
     }
 
-    function normalizeChapterTitleCandidate(title) {
-        title = linkTitleText(title || '');
-        title = title.split(/[|_\-]/)[0].trim();
-        title = title.replace(/[（(]?第[0-9一二三四五六七八九零十百千万]+页[）)]?\s*$/g, '').trim();
-        return title;
-    }
-
-    function matchChapterTitle(raw) {
-        if (!raw) return '';
-        var text = String(raw)
-            .replace(/\u00A0/g, ' ')
-            .replace(/最新章节[：:_\-\s]*/g, '_')
-            // 标题内部不保留换行/连续空白，统一压成一个空格，避免“一章\n  （1）”。
-            .replace(/\s+/g, ' ')
-            .trim();
-        // 章节名匹配：参考 FileImportActivity，优先抽取“第N章/节/回 …”这类章节标题。
-        // 不强制锚定行首/行尾，允许在整个 HTML/innerText 中查找；最多取 40 字，避免吞掉正文。
-        var patterns = [
-            /第[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^|_\-<>]{0,40})/,
-            /第[0-9一二三四五六七八九零十百千万]+\s+([^|_\-<>]{1,40})/,
-            /[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^|_\-<>]{0,40})/,
-            /序[0-9一二三四五六七八九零十百千万]+[章节回][\s:：、.-]*([^|_\-<>]{0,40})/,
-            /序章/
-        ];
-        for (var i = 0; i < patterns.length; i++) {
-            var m = text.match(patterns[i]);
-            if (m) return normalizeChapterTitleCandidate(m[0] || '');
-        }
-        return '';
-    }
-
-    function cleanChapterTitle(raw) {
-        if (!raw) return '';
-        var matched = matchChapterTitle(raw);
-        if (matched) return matched;
-        return linkTitleText(raw).replace(/\s+/g, ' ').trim();
-    }
-
     // 1. 标题
     var title = '';
     // 优先尝试获取 og:title
@@ -108,34 +70,10 @@
     if (ogTitle) {
         title = ogTitle.getAttribute('content') || '';
     }
-    // 如果 title 不存在，尝试获取 h1
+
     if (!title) {
-        var h1 = document.querySelector('h1');
-        if (h1 && visible(h1)) title = textOf(h1);
+        title = document.title || '';
     }
-    // 尝试 h2/h3
-    if (!title) {
-        var hs = document.querySelectorAll('h2,h3');
-        for (var i = 0; i < hs.length; i++) {
-            if (visible(hs[i])) { title = textOf(hs[i]); break; }
-        }
-    }
-    // 最后使用 document.title
-    if (!title) title = document.title || '';
-    var matchedTitle = matchChapterTitle(title);
-    if (!matchedTitle) {
-        // 如果常规标题来源没匹配出章节名，扩大到整个 HTML/innerText 里查找。
-        var wholeText = (document.documentElement && (document.documentElement.innerText || document.documentElement.textContent || document.documentElement.outerHTML)) || '';
-        matchedTitle = matchChapterTitle(wholeText);
-    }
-    title = matchedTitle || cleanChapterTitle(title);
-    var titleParts = title.split(/\s+/);
-    var titleFinal = '';
-    for (var i = 0; i < titleParts.length; i++) {
-        titleFinal += (titleFinal ? ' ' : '') + titleParts[i].trim();
-        if (titleFinal.length > 10) break;
-    }
-    title = titleFinal || title;
 
     // 2. 正文：常见小说网站容器优先，支持单元素与多元素（如 p 列表），最后启发式选择 textLength 最大的可见块
     var content = '';
@@ -580,9 +518,7 @@
         title: title,
         content: content,
         prev: prev,
-        prevText: prevText,
         next: next,
-        nextText: nextText,
         _debug: buildDebugLines()
     });
 })();
