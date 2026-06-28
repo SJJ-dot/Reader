@@ -136,6 +136,32 @@ class SettingsFragment : Fragment() {
                     .show()
             }
             refreshBrowserReadCacheSize()
+
+            appCacheClear.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("清除应用缓存")
+                    .setMessage("将清除图片缓存、网页缓存/本地存储、阅读3.0规则缓存、下载缓存和临时导出/分享文件。\n不会删除书籍、章节内容、书源、设置或数据库，也不会主动清除 Cookie。\n网页和图片下次打开需要重新加载，部分站点本地状态可能重置。是否继续？")
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("清除") { _, _ ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            appCacheClear.isEnabled = false
+                            appCacheTotalSize.text = "当前占用：清理中..."
+                            runCatching {
+                                SettingsCacheHelper.clearCaches(requireContext())
+                            }.onSuccess {
+                                refreshAppCacheStats()
+                                toast("已清除应用缓存")
+                            }.onFailure {
+                                Log.e("清除应用缓存失败", it)
+                                toast("清除失败：${it.message ?: "未知错误"}")
+                                refreshAppCacheStats()
+                            }
+                            appCacheClear.isEnabled = true
+                        }
+                    }
+                    .show()
+            }
+            refreshAppCacheStats()
         }
     }
 
@@ -146,6 +172,22 @@ class SettingsFragment : Fragment() {
                 BrowserReadModeActivity.diskCacheSize()
             }
             browserReadCacheCurrentSize.text = "默认 50MB，当前占用：${formatBytes(size)}"
+        }
+    }
+
+    private fun FragmentSettingsBinding.refreshAppCacheStats() {
+        appCacheTotalSize.text = "当前占用：计算中..."
+        appCacheImageSize.text = "图片缓存：计算中..."
+        appCacheWebviewSize.text = "网页缓存：计算中..."
+        appCacheJsSize.text = "阅读3.0规则缓存：计算中..."
+        appCacheTempSize.text = "临时文件：计算中..."
+        viewLifecycleOwner.lifecycleScope.launch {
+            val stats = SettingsCacheHelper.calculateStats(requireContext().applicationContext)
+            appCacheTotalSize.text = "当前占用：${formatBytes(stats.totalBytes)}"
+            appCacheImageSize.text = "图片缓存：${formatBytes(stats.imageBytes)}"
+            appCacheWebviewSize.text = "网页缓存：${formatBytes(stats.webViewBytes)}"
+            appCacheJsSize.text = "阅读3.0规则缓存：${formatBytes(stats.jsBytes)}"
+            appCacheTempSize.text = "临时文件：${formatBytes(stats.tempBytes)}"
         }
     }
 

@@ -84,4 +84,9 @@ object SharedJsScope {
         scopeMap.remove(key)
     }
 
+    fun clearCache() {
+        scopeMap.evictAll()
+        aCache.clear()
+    }
+
 }
