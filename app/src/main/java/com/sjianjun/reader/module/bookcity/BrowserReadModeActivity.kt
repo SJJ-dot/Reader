@@ -691,7 +691,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 Toast.makeText(this@BrowserReadModeActivity, "没有上一章", Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            showChapter(url, pagePos = 10000)
+            showChapter(url, pagePos = 0)
         }
     }
 
@@ -711,17 +711,6 @@ class BrowserReadModeActivity : BaseActivity() {
     fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
         recordReadModeHistory(url, data)
-        // 内存未命中 → 异步从磁盘读取，命中后再次渲染
-        if (data == null && url.isNotBlank()) {
-            lifecycleScope.launch {
-                val disk = loadExtractFromDisk(url)
-                if (disk != null && pageLoader.curChapter?.link == url) {
-                    showChapter(url, pagePos)
-                }
-            }
-        }
-        // 保存到 LruCache，夜间模式切换导致 Activity 重建时直接恢复
-
         // 切换到不同的页面时，如抽屉打开则自动刷新；否则会在下次打开时根据当前 url 渲染
         val pageChanged = pageLoader.curChapter?.link != url
 
@@ -1135,6 +1124,8 @@ class BrowserReadModeActivity : BaseActivity() {
                 if (extractCache.get(url) == null) {
                     extractCache.put(url, data)
                 }
+                getMappedPrevUrl(url)
+                getMappedNextUrl(url)
                 extractCache.get(url) ?: data
             } catch (e: Exception) {
                 Log.e("loadExtractFromDisk err", e)

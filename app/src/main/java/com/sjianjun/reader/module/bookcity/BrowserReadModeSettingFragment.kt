@@ -188,13 +188,11 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         b.chapterLast.click {
             if (b.chapterLast.isEnabled) {
                 (activity as? BrowserReadModeActivity)?.gotoPrevChapter()
-                hideSelf()
             }
         }
         b.chapterNext.click {
             if (b.chapterNext.isEnabled) {
                 (activity as? BrowserReadModeActivity)?.gotoNextChapter()
-                hideSelf()
             }
         }
     }
@@ -205,16 +203,8 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val loader = pageLoader ?: return
         titleText = loader.curChapter?.title ?: titleText
         b.bookTitle.text = titleText
-        val curChapterData = loader.curChapterData
-        val hasPrev = !curChapterData?.prevUrl.isNullOrBlank()
-        val hasNext = !curChapterData?.nextUrl.isNullOrBlank()
-        b.chapterLast.text = "上一页"
-        b.chapterNext.text = "下一页"
-        b.chapterLast.isEnabled = hasPrev
-        b.chapterNext.isEnabled = hasNext
-        b.chapterLast.setTextColorRes(if (hasPrev) R.color.dn_text_color_black else R.color.dn_text_color_black_disable)
-        b.chapterNext.setTextColorRes(if (hasNext) R.color.dn_text_color_black else R.color.dn_text_color_black_disable)
-
+        b.chapterLast.text = "上一章"
+        b.chapterNext.text = "下一章"
         val curPage = loader.pagePos + 1
         val totalPages = loader.curPageList?.size ?: 0
         b.chapterProgress.max = totalPages
