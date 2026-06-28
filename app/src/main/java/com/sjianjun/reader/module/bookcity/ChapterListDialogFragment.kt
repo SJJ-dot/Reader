@@ -5,13 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
-import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
 import com.sjianjun.reader.utils.toast
+import kotlinx.coroutines.launch
 
-/** 阅读模式右侧抽屉：历史 / Host / 黑名单 / 白名单。 */
 class ChapterListDialogFragment : Fragment() {
     private var binding: DialogBrowserReadModeChapterListBinding? = null
 
@@ -22,6 +22,7 @@ class ChapterListDialogFragment : Fragment() {
     private lateinit var blackListAdapter: BookCityPageFragment.BlackListAdapter
     private lateinit var whiteListAdapter: BookCityPageFragment.WhiteListAdapter
     private lateinit var historyAdapter: BookCityPageFragment.HistoryListAdapter
+    private lateinit var chapterAdapter: BrowserReadModeActivity.ChapterListAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = DialogBrowserReadModeChapterListBinding.inflate(inflater, container, false)
@@ -50,6 +51,18 @@ class ChapterListDialogFragment : Fragment() {
         hostListAdapter = BookCityPageFragment.HostListAdapter(act.adBlock)
         blackListAdapter = BookCityPageFragment.BlackListAdapter(act.adBlock)
         whiteListAdapter = BookCityPageFragment.WhiteListAdapter(act.adBlock)
+        chapterAdapter = BrowserReadModeActivity.ChapterListAdapter { item ->
+            act.navigateChecked(
+                url = item.url,
+                baseHost = act.currentBaseHost(),
+                onAllow = {
+                    act.closeChapterDrawer()
+                    act.showChapter(item.url)
+                    act.loadUrlForReadMode(item.url)
+                },
+                onBlock = { toast("链接已被阻止") },
+            )
+        }
         historyAdapter = BookCityPageFragment.HistoryListAdapter().apply {
             onClick = { url ->
                 act.navigateChecked(
@@ -89,23 +102,32 @@ class ChapterListDialogFragment : Fragment() {
         val b = binding ?: return
         b.chapterListRv.layoutManager = LinearLayoutManager(requireContext())
         b.chapterListRv.adapter = when (position) {
-            0 -> historyAdapter.also { renderReadModeHistory() }
-            1 -> hostListAdapter
-            2 -> blackListAdapter
-            3 -> whiteListAdapter
-            else -> historyAdapter.also { renderReadModeHistory() }
+            0 -> chapterAdapter.also { renderMappedChapterList() }
+            1 -> historyAdapter.also { renderReadModeHistory() }
+            2 -> hostListAdapter
+            3 -> blackListAdapter
+            4 -> whiteListAdapter
+            else -> chapterAdapter.also { renderMappedChapterList() }
         }
     }
 
     fun refreshCurrentTab() {
         val b = binding ?: return
-        if (b.chapterListTab.selectedTabPosition == 0) {
-            renderReadModeHistory()
+        when (b.chapterListTab.selectedTabPosition) {
+            0 -> renderMappedChapterList()
+            1 -> renderReadModeHistory()
         }
     }
 
     fun onShown() {
         refreshCurrentTab()
+    }
+
+    private fun renderMappedChapterList() {
+        val act = activity ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            chapterAdapter.submitList(act.buildMappedChapterLinks())
+        }
     }
 
     private fun renderReadModeHistory() {

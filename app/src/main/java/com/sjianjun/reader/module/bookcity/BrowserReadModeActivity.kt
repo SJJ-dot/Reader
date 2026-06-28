@@ -683,21 +683,29 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun gotoPrevChapter() {
-        val url = pageLoader.curChapterData?.prevUrl
-        if (url.isNullOrBlank()) {
-            Toast.makeText(this, "没有上一章", Toast.LENGTH_SHORT).show()
-            return
+        val currentUrl = pageLoader.curChapter?.link
+        val fallbackUrl = pageLoader.curChapterData?.prevUrl
+        lifecycleScope.launch {
+            val url = currentUrl?.let { getMappedPrevUrl(it) } ?: fallbackUrl
+            if (url.isNullOrBlank()) {
+                Toast.makeText(this@BrowserReadModeActivity, "没有上一章", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            showChapter(url, pagePos = 10000)
         }
-        showChapter(url, pagePos = 10000)
     }
 
     fun gotoNextChapter() {
-        val url = pageLoader.curChapterData?.nextUrl
-        if (url.isNullOrBlank()) {
-            Toast.makeText(this, "没有下一章", Toast.LENGTH_SHORT).show()
-            return
+        val currentUrl = pageLoader.curChapter?.link
+        val extractedUrl = pageLoader.curChapterData?.nextUrl
+        lifecycleScope.launch {
+            val url = extractedUrl ?: currentUrl?.let { getMappedNextUrl(it) }
+            if (url.isNullOrBlank()) {
+                Toast.makeText(this@BrowserReadModeActivity, "没有下一章", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            showChapter(url, pagePos = 0)
         }
-        showChapter(url, pagePos = 0)
     }
 
     fun showChapter(url: String, pagePos: Int? = null) {
@@ -753,13 +761,14 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         val chapters = mutableListOf<TxtChapter>()
-        data?.prevUrl?.let { url ->
+        val previousUrl = getMappedPrevUrlMemory(url) ?: data?.prevUrl
+        previousUrl?.let { linkUrl ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = url
+                this.link = linkUrl
                 this.title = "上一页"
                 this.chapterIndex = 0
-                if (url.isBlank()) {
+                if (linkUrl.isBlank()) {
                     this.content = "上一页地址未找到，无法加载"
                 }
             })
@@ -771,13 +780,14 @@ class BrowserReadModeActivity : BaseActivity() {
             this.chapterIndex = chapters.size
             this.content = data?.content
         })
-        data?.nextUrl?.let { url ->
+        val nextUrl = data?.nextUrl ?: getMappedNextUrlMemory(url)
+        nextUrl?.let { linkUrl ->
             chapters.add(TxtChapter().apply {
                 this.bookId = book.id
-                this.link = url
+                this.link = linkUrl
                 this.title = "下一页"
                 this.chapterIndex = chapters.size
-                if (url.isBlank()) {
+                if (linkUrl.isBlank()) {
                     this.content = "下一页地址未找到，无法加载"
                 }
             })
@@ -958,11 +968,9 @@ class BrowserReadModeActivity : BaseActivity() {
                         val title = obj.optString("title", "")
                         val content = obj.optString("content", "")
                         val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
-                        val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
                         val next = obj.optString("next", "").takeIf { it.isNotBlank() }
-                        val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
                         if (BuildConfig.DEBUG) {
-                            Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev prevText=$prevText next=$next nextText=$nextText ")
+                            Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev next=$next ")
                             Log.i("extractContent content=$content")
                             val debugArr = obj.optJSONArray("_debug")
                             if (debugArr != null) {
@@ -1000,6 +1008,85 @@ class BrowserReadModeActivity : BaseActivity() {
         /** 内存缓存：以 URL 为 key 缓存提取结果，夜间模式切换导致 Activity 重建时直接恢复 */
         val extractCache = LruCache<String, ExtractResult?>(10)
 
+
+        private const val READ_MODE_PREV_OF_PREFIX = "read_mode_prev_of:"
+        private const val READ_MODE_NEXT_OF_PREFIX = "read_mode_next_of:"
+        private val prevUrlMappingCache = LruCache<String, String>(500)
+        private val nextUrlMappingCache = LruCache<String, String>(500)
+
+        private fun normalizeReadUrl(url: String?): String? {
+            val value = url?.trim().orEmpty()
+            return value.takeIf { it.isNotBlank() && it != "about:blank" }
+        }
+
+        private fun prevMappingKey(url: String) = READ_MODE_PREV_OF_PREFIX + url
+
+        private fun nextMappingKey(url: String) = READ_MODE_NEXT_OF_PREFIX + url
+
+        fun getMappedPrevUrlMemory(url: String): String? {
+            val current = normalizeReadUrl(url) ?: return null
+            return normalizeReadUrl(prevUrlMappingCache.get(current))?.takeIf { it != current }
+        }
+
+        fun getMappedNextUrlMemory(url: String): String? {
+            val current = normalizeReadUrl(url) ?: return null
+            return normalizeReadUrl(nextUrlMappingCache.get(current))?.takeIf { it != current }
+        }
+
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        fun recordLinkMappings(currentUrl: String, data: ExtractResult) {
+            val current = normalizeReadUrl(currentUrl) ?: return
+            val prev = normalizeReadUrl(data.prevUrl)
+            val next = normalizeReadUrl(data.nextUrl)
+            val diskMappings = mutableListOf<Pair<String, String>>()
+            if (next != null && next != current) {
+                prevUrlMappingCache.put(next, current)
+                nextUrlMappingCache.put(current, next)
+                diskMappings.add(prevMappingKey(next) to current)
+                diskMappings.add(nextMappingKey(current) to next)
+            }
+            if (prev != null && prev != current) {
+                prevUrlMappingCache.put(current, prev)
+                nextUrlMappingCache.put(prev, current)
+                diskMappings.add(prevMappingKey(current) to prev)
+                diskMappings.add(nextMappingKey(prev) to current)
+            }
+            if (diskMappings.isEmpty()) return
+            GlobalScope.launch(Dispatchers.IO) {
+                try {
+                    diskMappings.forEach { (key, value) -> diskCache.put(key, value) }
+                } catch (e: Exception) {
+                    Log.e("recordLinkMappings disk err", e)
+                }
+            }
+        }
+
+        suspend fun getMappedPrevUrl(url: String): String? {
+            val current = normalizeReadUrl(url) ?: return null
+            getMappedPrevUrlMemory(current)?.let { return it }
+            return try {
+                normalizeReadUrl(diskCache.get(prevMappingKey(current)))
+                    ?.takeIf { it != current }
+                    ?.also { prevUrlMappingCache.put(current, it) }
+            } catch (e: Exception) {
+                Log.e("getMappedPrevUrl err", e)
+                null
+            }
+        }
+
+        suspend fun getMappedNextUrl(url: String): String? {
+            val current = normalizeReadUrl(url) ?: return null
+            getMappedNextUrlMemory(current)?.let { return it }
+            return try {
+                normalizeReadUrl(diskCache.get(nextMappingKey(current)))
+                    ?.takeIf { it != current }
+                    ?.also { nextUrlMappingCache.put(current, it) }
+            } catch (e: Exception) {
+                Log.e("getMappedNextUrl err", e)
+                null
+            }
+        }
+
         /** 磁盘缓存：序列化 ExtractResult 到 cacheDir/browser_read_mode/，大小由用户配置 */
         @Volatile
         private var _diskCache: DiskCacheUtil? = null
@@ -1029,6 +1116,7 @@ class BrowserReadModeActivity : BaseActivity() {
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
         fun putExtractResult(url: String, data: ExtractResult) {
             if (url.isBlank()) return
+            recordLinkMappings(url, data)
             extractCache.put(url, data)
             GlobalScope.launch(Dispatchers.IO) {
                 try {
@@ -1073,6 +1161,8 @@ class BrowserReadModeActivity : BaseActivity() {
         /** 清除磁盘缓存（同时丢弃内存缓存） */
         suspend fun clearDiskCache() {
             extractCache.evictAll()
+            prevUrlMappingCache.evictAll()
+            nextUrlMappingCache.evictAll()
             diskCache.delete()
         }
 
@@ -1104,6 +1194,37 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     data class ChapterLink(val title: String, val url: String)
+
+    suspend fun buildMappedChapterLinks(): List<ChapterLink> {
+        val currentUrl = pageLoader.curChapter?.link ?: return emptyList()
+        val visited = linkedSetOf(currentUrl)
+        val previousUrls = mutableListOf<String>()
+        var cursor = currentUrl
+        while (previousUrls.size < 200) {
+            val prev = getMappedPrevUrl(cursor) ?: break
+            if (!visited.add(prev)) break
+            previousUrls.add(prev)
+            cursor = prev
+        }
+        val urls = previousUrls.asReversed().toMutableList()
+        urls.add(currentUrl)
+        cursor = currentUrl
+        while (urls.size < 200) {
+            val next = getMappedNextUrl(cursor) ?: break
+            if (!visited.add(next)) break
+            urls.add(next)
+            cursor = next
+        }
+        return urls.mapIndexed { index, linkUrl ->
+            ChapterLink(resolveChapterLinkTitle(linkUrl, index, linkUrl == currentUrl), linkUrl)
+        }
+    }
+
+    private suspend fun resolveChapterLinkTitle(url: String, index: Int, isCurrent: Boolean): String {
+        val title = extractCache.get(url)?.title?.takeIf { it.isNotBlank() }
+            ?: loadExtractFromDisk(url)?.title?.takeIf { it.isNotBlank() }
+        return title ?: if (isCurrent) "当前页" else "第 ${index + 1} 页"
+    }
 
     /**
      * 阅读模式专用 WebViewClient。
