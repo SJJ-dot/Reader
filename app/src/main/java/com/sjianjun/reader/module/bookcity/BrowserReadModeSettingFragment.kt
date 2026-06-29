@@ -64,15 +64,19 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         this.titleText = title
     }
 
+    fun refresh(){
+        refreshNavAndProgress()
+        refreshHistoryNavigationState()
+        titleText = pageLoader?.curChapter?.title ?: titleText
+        binding?.bookTitle?.text = titleText
+    }
+
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
             binding?.settingSample?.isVisible = true
             binding?.settingDetail?.isVisible = false
-            refreshNavAndProgress()
-            refreshHistoryNavigationState()
-            titleText = pageLoader?.curChapter?.title ?: titleText
-            binding?.bookTitle?.text = titleText
+            refresh()
         }
     }
 
@@ -197,7 +201,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         }
     }
 
-    fun refreshNavAndProgress() {
+    private fun refreshNavAndProgress() {
         val b = binding ?: return
         val activity = activity as? BrowserReadModeActivity ?: return
         val loader = pageLoader ?: return

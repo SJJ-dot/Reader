@@ -466,7 +466,7 @@ class BrowserReadModeActivity : BaseActivity() {
     private fun notifySettingFragmentChanged() {
         val fragment = getSettingFragment()
         if (fragment?.isVisible == true) {
-            fragment.refreshNavAndProgress()
+            fragment.refresh()
         }
     }
 

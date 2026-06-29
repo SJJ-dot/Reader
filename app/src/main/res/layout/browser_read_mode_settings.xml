@@ -80,115 +80,107 @@
 
     </LinearLayout>
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/history_backward"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+    <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/flexbox_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintEnd_toStartOf="@+id/history_forward"
-        app:layout_constraintHorizontal_chainStyle="spread"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:id="@+id/iv_history_backward"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:rotation="180"
-            android:scaleType="fitCenter"
-            android:src="@drawable/browser_navigation_forward" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/history_forward"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintEnd_toStartOf="@+id/refresh"
-        app:layout_constraintStart_toEndOf="@+id/history_backward">
-
-        <ImageView
-            android:id="@+id/iv_history_forward"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/browser_navigation_forward"/>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/refresh"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintEnd_toStartOf="@+id/toggle_web_view"
-        app:layout_constraintStart_toEndOf="@+id/history_forward">
-
-        <ImageView
-            android:id="@+id/iv_refresh"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/browser_navigation_refresh"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/toggle_web_view"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
-        app:layout_constraintEnd_toStartOf="@+id/chapter_directory"
-        app:layout_constraintStart_toEndOf="@+id/refresh">
-
-        <ImageView
-            android:id="@+id/iv_toggle_web_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_web_show"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/chapter_directory"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/dn_reader_setting_btn"
-        app:cardCornerRadius="20dp"
+        app:justifyContent="space_around"
         app:layout_constraintBottom_toTopOf="@+id/setting_container"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/toggle_web_view">
+        app:layout_constraintStart_toStartOf="parent">
 
-        <ImageView
-            android:id="@+id/iv_chapter_directory"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/transparent"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_history"
-            app:tint="@color/dn_text_color_black" />
-    </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/chapter_directory"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_chapter_directory"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_history"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/history_backward"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_history_backward"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:rotation="180"
+                android:scaleType="fitCenter"
+                android:src="@drawable/browser_navigation_forward" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/refresh"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_refresh"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/browser_navigation_refresh"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/history_forward"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_history_forward"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/browser_navigation_forward" />
+        </com.google.android.material.card.MaterialCardView>
+
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/toggle_web_view"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp">
+
+            <ImageView
+                android:id="@+id/iv_toggle_web_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_web_show"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+    </com.google.android.flexbox.FlexboxLayout>
+
 
     <LinearLayout
         android:id="@+id/setting_container"
