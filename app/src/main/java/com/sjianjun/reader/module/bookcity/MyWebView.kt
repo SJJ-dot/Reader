@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
+import android.util.AttributeSet
 import android.webkit.WebView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -24,7 +25,11 @@ var WebView.isBlank: Boolean?
         }
     }
 
-class MyWebView(context: Context) : WebView(context) {
+class MyWebView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
+) : WebView(context, attrs, defStyleAttr) {
     var currentHost: String? = null
         set(url) {
             field = url?.toHttpUrlOrNull()?.topPrivateDomain()

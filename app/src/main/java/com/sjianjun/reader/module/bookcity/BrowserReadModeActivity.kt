@@ -781,6 +781,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 }
             })
         }
+        recordLinkMappings(url, data)
 
         pageLoader.closeBook()
         val chapter = chapters.indexOfFirst { it.link == url }
@@ -1023,9 +1024,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
 
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        fun recordLinkMappings(currentUrl: String, data: ExtractResult) {
+        fun recordLinkMappings(currentUrl: String, data: ExtractResult?) {
+            val data = data ?: return
             val current = normalizeReadUrl(currentUrl) ?: return
-            val prev = normalizeReadUrl(data.prevUrl)
             val next = normalizeReadUrl(data.nextUrl)
             val diskMappings = mutableListOf<Pair<String, String>>()
             if (next != null && next != current) {
@@ -1033,12 +1034,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 nextUrlMappingCache.put(current, next)
                 diskMappings.add(prevMappingKey(next) to current)
                 diskMappings.add(nextMappingKey(current) to next)
-            }
-            if (prev != null && prev != current) {
-                prevUrlMappingCache.put(current, prev)
-                nextUrlMappingCache.put(prev, current)
-                diskMappings.add(prevMappingKey(current) to prev)
-                diskMappings.add(nextMappingKey(prev) to current)
             }
             if (diskMappings.isEmpty()) return
             GlobalScope.launch(Dispatchers.IO) {
@@ -1105,7 +1100,6 @@ class BrowserReadModeActivity : BaseActivity() {
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
         fun putExtractResult(url: String, data: ExtractResult) {
             if (url.isBlank()) return
-            recordLinkMappings(url, data)
             extractCache.put(url, data)
             GlobalScope.launch(Dispatchers.IO) {
                 try {
