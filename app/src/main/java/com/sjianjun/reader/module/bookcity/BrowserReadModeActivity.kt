@@ -270,7 +270,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 .commitAllowingStateLoss()
         }
         binding.drawerLayout.openDrawer(GravityCompat.END)
-        fragment.onShown()
+        fragment.refreshCurrentTab()
     }
 
     fun closeChapterDrawer() {
@@ -811,7 +811,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 }
             })
         }
-        recordLinkMappings(url, data)
 
         pageLoader.closeBook()
         val chapter = chapters.indexOfFirst { it.link == url }
@@ -1148,6 +1147,7 @@ class BrowserReadModeActivity : BaseActivity() {
         fun putExtractResult(url: String, data: ExtractResult) {
             if (url.isBlank()) return
             extractCache.put(url, data)
+            recordLinkMappings(url, data)
             GlobalScope.launch(Dispatchers.IO) {
                 try {
                     diskCache.put(url, data)

@@ -47,7 +47,7 @@ class ChapterListDialogFragment : Fragment() {
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        onShown()
+        refreshCurrentTab()
     }
 
     private fun setupAdapters() {
@@ -107,10 +107,6 @@ class ChapterListDialogFragment : Fragment() {
             0 -> renderMappedChapterList()
             1 -> renderReadModeHistory()
         }
-    }
-
-    fun onShown() {
-        refreshCurrentTab()
     }
 
     private fun renderMappedChapterList() {
