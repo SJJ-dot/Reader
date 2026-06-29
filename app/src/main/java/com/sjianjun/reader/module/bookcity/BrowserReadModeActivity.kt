@@ -93,6 +93,9 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /** 进入 WebView 时 WebView 所在的 URL，后退到它或无法再后退即停止 WebView 后退。 */
     private var webEntryUrl: String? = null
+    /** 缓存启用的净化规则，供标题净化等同步路径使用。 */
+    @Volatile
+    private var cachedReplacementRules: List<com.sjianjun.reader.bean.ReplacementRule> = emptyList()
 
     private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
@@ -386,7 +389,9 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         // 初始化净化替换规则
         lifecycleScope.launch {
-            pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
+            val rules = ReplacementRuleUseCase.getEnabledRules()
+            cachedReplacementRules = rules
+            pageLoader.setReplacementRules(rules)
         }
     }
 
@@ -516,7 +521,9 @@ class BrowserReadModeActivity : BaseActivity() {
         // 净化替换规则变更
         observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
             lifecycleScope.launch {
-                pageLoader.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
+                val rules = ReplacementRuleUseCase.getEnabledRules()
+                cachedReplacementRules = rules
+                pageLoader.setReplacementRules(rules)
             }
         }
     }
@@ -709,6 +716,25 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
+    /**
+     * 对章节标题应用净化规则。作用域文本用 书名 + URL + 原始标题，
+     * 只应用 [com.sjianjun.reader.bean.ReplacementRule.applyToTitle] 为 true 的启用规则。
+     * 使用 [cachedReplacementRules] 避免在同步路径（showChapter）中调用挂起函数。
+     */
+    fun applyTitleReplacementRules(url: String, rawTitle: String): String {
+        val rules = cachedReplacementRules
+        if (rules.isEmpty()) return rawTitle
+        val book = Book().apply {
+            this.url = url
+            this.title = ""
+        }
+        val chapter = com.sjianjun.reader.bean.Chapter().apply {
+            this.url = url
+            this.title = rawTitle
+        }
+        return ReplacementRuleUseCase.applyRules(rawTitle, rules, book, chapter, applyToTitle = true)
+    }
+
     fun showChapter(url: String, pagePos: Int? = null) {
         val data: ExtractResult? = extractCache.get(url)
         recordReadModeHistory(url, data)
@@ -750,6 +776,9 @@ class BrowserReadModeActivity : BaseActivity() {
         ChapterPageCache.reset()
         TxtChapter.evictAll()
 
+        // 章节标题应用净化规则（书名 + URL + 原始标题作为作用域文本）
+        val resolvedTitle = data?.title?.let { applyTitleReplacementRules(url, it) } ?: "加载中"
+
         val chapters = mutableListOf<TxtChapter>()
         val previousUrl = getMappedPrevUrlMemory(url) ?: data?.prevUrl
         previousUrl?.let { linkUrl ->
@@ -766,7 +795,7 @@ class BrowserReadModeActivity : BaseActivity() {
         chapters.add(TxtChapter().apply {
             this.bookId = book.id
             this.link = url
-            this.title = data?.title ?: "加载中"
+            this.title = resolvedTitle
             this.chapterIndex = chapters.size
             this.content = data?.content
         })

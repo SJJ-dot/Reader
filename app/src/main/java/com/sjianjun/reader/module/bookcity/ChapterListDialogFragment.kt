@@ -158,9 +158,10 @@ class ChapterListDialogFragment : Fragment() {
     }
 
     private suspend fun resolveChapterLinkTitle(url: String, index: Int, isCurrent: Boolean): String {
-        val title = extractCache.get(url)?.title?.takeIf { it.isNotBlank() }
+        val rawTitle = extractCache.get(url)?.title?.takeIf { it.isNotBlank() }
             ?: loadExtractFromDisk(url)?.title?.takeIf { it.isNotBlank() }
-        return title ?: if (isCurrent) "当前页" else "第 ${index + 1} 页"
+        val title = rawTitle?.let { activity?.applyTitleReplacementRules(url, it) }
+        return title?.takeIf { it.isNotBlank() } ?: if (isCurrent) "当前页" else "第 ${index + 1} 页"
     }
 
     companion object {
