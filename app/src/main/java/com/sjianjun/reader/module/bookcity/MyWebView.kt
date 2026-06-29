@@ -30,6 +30,13 @@ class MyWebView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
 ) : WebView(context, attrs, defStyleAttr) {
+    init {
+        // 点击网页内输入框时需要 WebView 可获取焦点并提供输入连接，否则会
+        // "Ignoring showSoftInput() as view=...WebView... is not served" 不弹输入法。
+        isFocusable = true
+        isFocusableInTouchMode = true
+    }
+
     var currentHost: String? = null
         set(url) {
             field = url?.toHttpUrlOrNull()?.topPrivateDomain()
@@ -39,6 +46,8 @@ class MyWebView @JvmOverloads constructor(
 
     var isDestroyed = false
         private set
+
+    override fun onCheckIsTextEditor(): Boolean = true
 
     override fun destroy() {
         super.destroy()
