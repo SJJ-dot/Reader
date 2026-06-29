@@ -1,5 +1,6 @@
-package com.sjianjun.reader.view
+package com.sjianjun.reader.module.bookcity
 
+import android.app.ProgressDialog
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -17,9 +18,6 @@ import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
-import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
-import com.sjianjun.reader.module.bookcity.CustomWebView
-import com.sjianjun.reader.module.bookcity.getTitleFromMeta
 import com.sjianjun.reader.module.search.SearchViewModel
 import com.sjianjun.reader.module.shelf.WebShelfViewModel
 import com.sjianjun.reader.preferences.globalConfig
@@ -55,7 +53,7 @@ class WebViewSettings @JvmOverloads constructor(
 
     override fun onVisibilityChanged(changedView: View, visibility: Int) {
         super.onVisibilityChanged(changedView, visibility)
-        if (visibility == View.VISIBLE) {
+        if (visibility == VISIBLE) {
             refresh()
         } else {
             titleJob?.cancel()
@@ -227,7 +225,7 @@ class WebViewSettings @JvmOverloads constructor(
         val scope = customWebView?.lifecycleScope ?: return
         // 搜索通常要跑多个书源、耗时较长；用一个不可取消的进度框告诉用户"正在跑"，
         // 不至于让人以为按钮点了没反应。
-        val progress = android.app.ProgressDialog(context).apply {
+        val progress = ProgressDialog(context).apply {
             setMessage("正在导入书源书架…")
             setCancelable(false)
             show()
