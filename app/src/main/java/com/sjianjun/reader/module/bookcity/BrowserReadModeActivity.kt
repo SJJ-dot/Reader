@@ -40,6 +40,7 @@ import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.utils.trimExt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -933,7 +934,7 @@ class BrowserReadModeActivity : BaseActivity() {
     )
 
     data class ExtractResult(
-        val title: String,
+        var title: String,
         var content: String,
         val prevUrl: String? = null,
         val nextUrl: String? = null,
@@ -955,7 +956,7 @@ class BrowserReadModeActivity : BaseActivity() {
                     try {
                         val jsonStr = unwrapJsString(raw)
                         val obj = JSONObject(jsonStr)
-                        val title = obj.optString("title", "")
+                        val title = resolveChapterTitle(obj.optString("title", ""))
                         val content = obj.optString("content", "")
                         val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
                         val next = obj.optString("next", "").takeIf { it.isNotBlank() }
@@ -986,6 +987,39 @@ class BrowserReadModeActivity : BaseActivity() {
                     }
                 }
             }
+        }
+
+        /**
+         * 从原始标题里解析出真正展示的章节标题，参考 FileImportActivity。
+         * 优先匹配章节名（第N章/节/回、序章 等）；没有再尝试匹配书名（《...》）；
+         * 两者都取不到则直接用原始 [rawTitle]。
+         */
+        private fun resolveChapterTitle(rawTitle: String?): String {
+            if (rawTitle.isNullOrBlank()) return "加载中"
+            val text = rawTitle.trimExt().replace(Regex("\\s+"), " ")
+            // 章节名匹配
+            val chapterRegexes = listOf(
+                Regex("第[0-9一二三四五六七八九零十百千万]+[章节回][\\s:：、.-]*(.+)"),
+                Regex("第[0-9一二三四五六七八九零十百千万]+\\s+(.+)"),
+                Regex("[0-9一二三四五六七八九零十百千万]+[章节回][\\s:：、.-]*(.+)"),
+                Regex("序[0-9一二三四五六七八九零十百千万]+[章节回][\\s:：、.-]*(.+)"),
+                Regex("序章")
+            )
+            for (regex in chapterRegexes) {
+                val m = regex.find(text)
+                if (m != null) {
+                    val matched = m.value.trimExt()
+                    if (matched.isNotEmpty()) return matched
+                }
+            }
+            // 书名匹配 《...》
+            val bookNameRegex = Regex("《([^《》]+)》")
+            val bm = bookNameRegex.find(text)
+            if (bm != null) {
+                val name = bm.groupValues.getOrNull(1)?.trimExt()
+                if (!name.isNullOrEmpty()) return name
+            }
+            return text
         }
 
         private fun unwrapJsString(raw: String?): String {
@@ -1120,7 +1154,10 @@ class BrowserReadModeActivity : BaseActivity() {
                 }
                 getMappedPrevUrl(url)
                 getMappedNextUrl(url)
-                extractCache.get(url) ?: data
+                (extractCache.get(url) ?: data).let {
+                    it.title = resolveChapterTitle(it.title)
+                    it
+                }
             } catch (e: Exception) {
                 Log.e("loadExtractFromDisk err", e)
                 null
