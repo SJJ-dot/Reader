@@ -8,7 +8,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
+import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.ChapterLink
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.launch
 
@@ -22,7 +24,7 @@ class ChapterListDialogFragment : Fragment() {
     private lateinit var blackListAdapter: BookCityPageFragment.BlackListAdapter
     private lateinit var whiteListAdapter: BookCityPageFragment.WhiteListAdapter
     private lateinit var historyAdapter: BookCityPageFragment.HistoryListAdapter
-    private lateinit var chapterAdapter: BrowserReadModeActivity.ChapterListAdapter
+    private lateinit var chapterAdapter: ChapterListAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = DialogBrowserReadModeChapterListBinding.inflate(inflater, container, false)
@@ -51,7 +53,7 @@ class ChapterListDialogFragment : Fragment() {
         hostListAdapter = BookCityPageFragment.HostListAdapter(act.adBlock)
         blackListAdapter = BookCityPageFragment.BlackListAdapter(act.adBlock)
         whiteListAdapter = BookCityPageFragment.WhiteListAdapter(act.adBlock)
-        chapterAdapter = BrowserReadModeActivity.ChapterListAdapter { item ->
+        chapterAdapter = ChapterListAdapter { item ->
             act.navigateChecked(
                 url = item.url,
                 baseHost = act.currentBaseHost(),
@@ -143,5 +145,27 @@ class ChapterListDialogFragment : Fragment() {
 
     companion object {
         const val TAG = "ChapterListDialogFragment"
+    }
+}
+
+class ChapterListAdapter(private val onClick: (ChapterLink) -> Unit) : androidx.recyclerview.widget.ListAdapter<ChapterLink, ChapterListAdapter.ViewHolder>(
+    object : androidx.recyclerview.widget.DiffUtil.ItemCallback<ChapterLink>() {
+        override fun areItemsTheSame(oldItem: ChapterLink, newItem: ChapterLink) = oldItem.url == newItem.url
+        override fun areContentsTheSame(oldItem: ChapterLink, newItem: ChapterLink) = oldItem == newItem
+    }
+) {
+    class ViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+        val textView: android.widget.TextView = view.findViewById(R.id.chapter_title)
+    }
+
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
+        val view = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_browser_chapter, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = getItem(position)
+        holder.textView.text = item.title
+        holder.itemView.setOnClickListener { onClick(item) }
     }
 }
