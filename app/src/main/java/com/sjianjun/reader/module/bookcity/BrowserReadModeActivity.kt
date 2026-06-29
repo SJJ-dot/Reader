@@ -925,20 +925,26 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    // ==================== Extract helpers ====================
 
-    private data class LoadUrlRequest(
-        val url: String,
-        val force: Boolean,
-        val pagePos: Int? = null,
-    )
+    /**
+     * 阅读模式专用 WebViewClient。
+     * 主动导航走 Activity 的 navigateChecked；资源请求直接在 shouldInterceptRequest 内做同步判断。
+     */
+    private inner class ReadModeWebViewClient : MyWebViewClient(
+        lifecycleScope,
+        { url, request ->
+            Log.i("ReadModeWebViewClient allowed: $url")
+            binding.hiddenWebView.loadUrl(url)
+        },
+        onBlock = { url, request ->
+            Log.i("ReadModeWebViewClient blocked: $url")
+        }) {
 
-    data class ExtractResult(
-        var title: String,
-        var content: String,
-        val prevUrl: String? = null,
-        val nextUrl: String? = null,
-    )
+        override fun onPageFinished(webView: WebView?, url: String?) {
+            super.onPageFinished(webView, url)
+            binding.forward.isEnabled = webView?.canGoForward() == true
+        }
+    }
 
     companion object {
         @Volatile
@@ -1035,8 +1041,8 @@ class BrowserReadModeActivity : BaseActivity() {
 
         private const val READ_MODE_PREV_OF_PREFIX = "read_mode_prev_of:"
         private const val READ_MODE_NEXT_OF_PREFIX = "read_mode_next_of:"
-        private val prevUrlMappingCache = LruCache<String, String>(500)
-        private val nextUrlMappingCache = LruCache<String, String>(500)
+        private val prevUrlMappingCache = LruCache<String, String>(2500)
+        private val nextUrlMappingCache = LruCache<String, String>(2500)
 
         private fun normalizeReadUrl(url: String?): String? {
             val value = url?.trim().orEmpty()
@@ -1214,58 +1220,18 @@ class BrowserReadModeActivity : BaseActivity() {
             )
         }
     }
-
-    data class ChapterLink(val title: String, val url: String)
-
-    suspend fun buildMappedChapterLinks(): List<ChapterLink> {
-        val currentUrl = pageLoader.curChapter?.link ?: return emptyList()
-        val visited = linkedSetOf(currentUrl)
-        val previousUrls = mutableListOf<String>()
-        var cursor = currentUrl
-        while (previousUrls.size < 200) {
-            val prev = getMappedPrevUrl(cursor) ?: break
-            if (!visited.add(prev)) break
-            previousUrls.add(prev)
-            cursor = prev
-        }
-        val urls = previousUrls.asReversed().toMutableList()
-        urls.add(currentUrl)
-        cursor = currentUrl
-        while (urls.size < 200) {
-            val next = getMappedNextUrl(cursor) ?: break
-            if (!visited.add(next)) break
-            urls.add(next)
-            cursor = next
-        }
-        return urls.mapIndexed { index, linkUrl ->
-            ChapterLink(resolveChapterLinkTitle(linkUrl, index, linkUrl == currentUrl), linkUrl)
-        }
-    }
-
-    private suspend fun resolveChapterLinkTitle(url: String, index: Int, isCurrent: Boolean): String {
-        val title = extractCache.get(url)?.title?.takeIf { it.isNotBlank() }
-            ?: loadExtractFromDisk(url)?.title?.takeIf { it.isNotBlank() }
-        return title ?: if (isCurrent) "当前页" else "第 ${index + 1} 页"
-    }
-
-    /**
-     * 阅读模式专用 WebViewClient。
-     * 主动导航走 Activity 的 navigateChecked；资源请求直接在 shouldInterceptRequest 内做同步判断。
-     */
-    private inner class ReadModeWebViewClient : MyWebViewClient(
-        lifecycleScope,
-        { url, request ->
-            Log.i("ReadModeWebViewClient allowed: $url")
-            binding.hiddenWebView.loadUrl(url)
-        },
-        onBlock = { url, request ->
-            Log.i("ReadModeWebViewClient blocked: $url")
-        }) {
-
-        override fun onPageFinished(webView: WebView?, url: String?) {
-            super.onPageFinished(webView, url)
-            binding.forward.isEnabled = webView?.canGoForward() == true
-        }
-    }
-
 }
+// ==================== Extract helpers ====================
+
+private data class LoadUrlRequest(
+    val url: String,
+    val force: Boolean,
+    val pagePos: Int? = null,
+)
+
+data class ExtractResult(
+    var title: String,
+    var content: String,
+    val prevUrl: String? = null,
+    val nextUrl: String? = null,
+)

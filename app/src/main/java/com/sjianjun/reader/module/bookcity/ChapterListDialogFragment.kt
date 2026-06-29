@@ -10,8 +10,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.DialogBrowserReadModeChapterListBinding
-import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.ChapterLink
-import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.extractCache
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.getMappedNextUrl
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.getMappedPrevUrl
+import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.loadExtractFromDisk
 import kotlinx.coroutines.launch
 
 class ChapterListDialogFragment : Fragment() {
@@ -114,7 +116,7 @@ class ChapterListDialogFragment : Fragment() {
     private fun renderMappedChapterList() {
         val act = activity ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            chapterAdapter.submitList(act.buildMappedChapterLinks())
+            chapterAdapter.submitList(buildMappedChapterLinks())
         }
     }
 
@@ -129,11 +131,44 @@ class ChapterListDialogFragment : Fragment() {
         super.onDestroyView()
     }
 
+
+    suspend fun buildMappedChapterLinks(): List<ChapterLink> {
+        val currentUrl = activity?.pageLoader?.curChapter?.link ?: return emptyList()
+        val visited = linkedSetOf(currentUrl)
+        val previousUrls = mutableListOf<String>()
+        var cursor = currentUrl
+        while (previousUrls.size < 200) {
+            val prev = getMappedPrevUrl(cursor) ?: break
+            if (!visited.add(prev)) break
+            previousUrls.add(prev)
+            cursor = prev
+        }
+        val urls = previousUrls.asReversed().toMutableList()
+        urls.add(currentUrl)
+        cursor = currentUrl
+        while (urls.size < 200) {
+            val next = getMappedNextUrl(cursor) ?: break
+            if (!visited.add(next)) break
+            urls.add(next)
+            cursor = next
+        }
+        return urls.mapIndexed { index, linkUrl ->
+            ChapterLink(resolveChapterLinkTitle(linkUrl, index, linkUrl == currentUrl), linkUrl)
+        }
+    }
+
+    private suspend fun resolveChapterLinkTitle(url: String, index: Int, isCurrent: Boolean): String {
+        val title = extractCache.get(url)?.title?.takeIf { it.isNotBlank() }
+            ?: loadExtractFromDisk(url)?.title?.takeIf { it.isNotBlank() }
+        return title ?: if (isCurrent) "当前页" else "第 ${index + 1} 页"
+    }
+
     companion object {
         const val TAG = "ChapterListDialogFragment"
     }
 }
 
+data class ChapterLink(val title: String, val url: String)
 class ChapterListAdapter(private val onClick: (ChapterLink) -> Unit) : androidx.recyclerview.widget.ListAdapter<ChapterLink, ChapterListAdapter.ViewHolder>(
     object : androidx.recyclerview.widget.DiffUtil.ItemCallback<ChapterLink>() {
         override fun areItemsTheSame(oldItem: ChapterLink, newItem: ChapterLink) = oldItem.url == newItem.url
