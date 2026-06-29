@@ -54,28 +54,14 @@ class ChapterListDialogFragment : Fragment() {
         blackListAdapter = BookCityPageFragment.BlackListAdapter(act.adBlock)
         whiteListAdapter = BookCityPageFragment.WhiteListAdapter(act.adBlock)
         chapterAdapter = ChapterListAdapter { item ->
-            act.navigateChecked(
-                url = item.url,
-                baseHost = act.currentBaseHost(),
-                onAllow = {
-                    act.closeChapterDrawer()
-                    act.showChapter(item.url)
-                    act.loadUrlForReadMode(item.url)
-                },
-                onBlock = { toast("链接已被阻止") },
-            )
+            act.closeChapterDrawer()
+            act.showChapter(item.url)
+            act.loadUrlForReadMode(item.url)
         }
         historyAdapter = BookCityPageFragment.HistoryListAdapter().apply {
             onClick = { url ->
-                act.navigateChecked(
-                    url = url,
-                    baseHost = null,
-                    onAllow = {
-                        act.closeChapterDrawer()
-                        act.showChapter(url)
-                    },
-                    onBlock = { toast("链接已被阻止") },
-                )
+                act.closeChapterDrawer()
+                act.showChapter(url)
             }
             onDeleteHistory = { item ->
                 if (item == null) {

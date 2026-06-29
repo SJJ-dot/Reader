@@ -88,8 +88,21 @@ open class MyWebViewClient(
         if (requestHost != null && AdBlock.whitelist.contains(requestHost)) {
             return super.shouldInterceptRequest(view, request)
         }
-        if (AdBlock.blacklist.contains(requestHost)) {
-            Log.i("拦截请求：${request.url}")
+
+        val currentHost = view?.currentHost
+        val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
+        val blocked = AdBlock.blacklist.contains(requestHost) || (isCrossOrigin && crossOriginMode() == 2)
+
+        if (blocked) {
+            Log.i("拦截请求：${request.url} mainFrame=${request.isForMainFrame}")
+            if (request.isForMainFrame) {
+                // 主框架被拦截时不能返回空内容（会变成空白页且 URL 已变），
+                // 返回一段立即回退的 HTML，把页面恢复到上一页。
+                return mainFrameBlockedResponse()
+            }
+            if (isCrossOrigin) {
+                AdBlock.addUrl(request.url.toString())
+            }
             return WebResourceResponse(
                 "text/plain",
                 "UTF-8",
@@ -97,27 +110,20 @@ open class MyWebViewClient(
             )
         }
 
-        val currentHost = view?.currentHost
-        val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
-        if (isCrossOrigin) {
-            when (crossOriginMode()) {
-                2 -> {
-                    Log.i("跨域拦截请求：${request.url}")
-                    AdBlock.addUrl(request.url.toString())
-                    return WebResourceResponse(
-                        "text/plain",
-                        "UTF-8",
-                        ByteArrayInputStream("".toByteArray())
-                    )
-                }
-
-                else -> { /* 放行 */
-                }
-            }
-        }
-
         AdBlock.addUrl(request.url.toString())
         return super.shouldInterceptRequest(view, request)
+    }
+
+    private fun mainFrameBlockedResponse(): WebResourceResponse {
+        val html = """<!DOCTYPE html><html><head><meta charset="utf-8">
+            |<title>已拦截</title></head><body>
+            |<script>if(history.length>1){history.back();}else{document.body.innerText='已拦截';}</script>
+            |</body></html>""".trimMargin()
+        return WebResourceResponse(
+            "text/html",
+            "UTF-8",
+            ByteArrayInputStream(html.toByteArray())
+        )
     }
 
     override fun onReceivedSslError(

@@ -1221,181 +1221,20 @@ class BrowserReadModeActivity : BaseActivity() {
      * 阅读模式专用 WebViewClient。
      * 主动导航走 Activity 的 navigateChecked；资源请求直接在 shouldInterceptRequest 内做同步判断。
      */
-    private inner class ReadModeWebViewClient : android.webkit.WebViewClient() {
+    private inner class ReadModeWebViewClient : MyWebViewClient(
+        lifecycleScope,
+        { url, request ->
+            Log.i("ReadModeWebViewClient allowed: $url")
+            binding.hiddenWebView.loadUrl(url)
+        },
+        onBlock = { url, request ->
+            Log.i("ReadModeWebViewClient blocked: $url")
+        }) {
 
-        /**
-         * 当前主页面的顶级私有域。shouldInterceptRequest 在 WebView 工作线程上回调，
-         * 不能直接调 view.url（必须主线程）；这里在 onPageStarted/doUpdateVisitedHistory
-         * 自维护，资源拦截时直接读字段。
-         */
-        @Volatile
-        private var currentHost: String? = null
-
-        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-            super.onPageStarted(view, url, favicon)
-            currentHost = url?.toHttpUrlOrNull()?.topPrivateDomain()
-            adBlock.markPage(url)
-        }
-
-        override fun onPageFinished(view: WebView?, url: String?) {
-            super.onPageFinished(view, url)
-            binding.forward.isEnabled = view?.canGoForward() == true
-        }
-
-        override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
-            super.doUpdateVisitedHistory(view, url, isReload)
-            // SPA pushState/replaceState 等不会触发 onPageStarted 的场景
-            if (url != null) currentHost = url.toHttpUrlOrNull()?.topPrivateDomain()
-        }
-
-        override fun shouldOverrideUrlLoading(
-            view: WebView?,
-            request: android.webkit.WebResourceRequest,
-        ): Boolean {
-            val url = request.url.toString()
-            navigateChecked(url, currentHost, onAllow = { view?.loadUrl(url) })
-            return true
-        }
-
-        @Suppress("DEPRECATION")
-        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-            url ?: return false
-            navigateChecked(url, currentHost, onAllow = { view?.loadUrl(url) })
-            return true
-        }
-
-        override fun shouldInterceptRequest(
-            view: WebView?,
-            request: android.webkit.WebResourceRequest,
-        ): android.webkit.WebResourceResponse? {
-            val url = request.url.toString()
-            adBlock.addUrl(url)
-            val target = url.toHttpUrlOrNull()?.topPrivateDomain()
-            val isCross = currentHost != null && target != null && currentHost != target
-
-            val block = when {
-                target != null && adBlock.whitelist.contains(target) -> false
-                adBlock.blacklist.contains(target) -> true
-                isLikelyDownload(url) -> true
-                isCross && crossOriginMode() == 2 -> true
-                else -> false
-            }
-            return if (block) blockedResponse() else null
-        }
-
-        override fun onReceivedSslError(
-            view: WebView?,
-            handler: android.webkit.SslErrorHandler?,
-            error: android.net.http.SslError?,
-        ) {
-            Log.e("ReadMode SSL: ${error?.toString()}")
-            handler?.proceed()
-        }
-
-        private fun blockedResponse() = android.webkit.WebResourceResponse(
-            "text/plain", "UTF-8",
-            java.io.ByteArrayInputStream(ByteArray(0))
-        )
-    }
-
-    // ==================== 广告拦截 / 跨域决策 ====================
-
-    /** 跨域临时配置: -1=使用 globalConfig, 0=询问, 1=允许, 2=拒绝 */
-    @Volatile
-    private var crossOriginOverride: Int = -1
-
-    private fun crossOriginMode(): Int =
-        if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
-
-    /** 当前阅读章节所在的主域，用作跨域比较基准 */
-    fun currentBaseHost(): String? =
-        pageLoader.curChapter?.link?.toHttpUrlOrNull()?.topPrivateDomain()
-            ?: webBook?.url?.toHttpUrlOrNull()?.topPrivateDomain()
-
-    /** 简单按扩展名判断是否疑似下载链接 */
-    private fun isLikelyDownload(url: String): Boolean {
-        val lower = url.substringBefore('?').lowercase()
-        val exts = arrayOf(
-            ".apk", ".ipa", ".exe", ".msi", ".dmg",
-            ".zip", ".rar", ".7z", ".tar", ".gz",
-            ".mp3", ".mp4", ".mkv", ".avi", ".flv", ".m4a",
-            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-            ".epub", ".mobi", ".azw3"
-        )
-        return exts.any { lower.endsWith(it) }
-    }
-
-    /**
-     * 主动导航的统一拦截入口：
-     *  - 下载资源 / 黑名单 / 外部 scheme → onBlock
-     *  - 白名单 / 同主域 / 跨域允许 → onAllow
-     *  - 跨域+拒绝 → onBlock
-     *  - 跨域+询问 → 弹窗，用户点"允许一次"或"+白名单"会触发 onAllow；选"+黑名单"或取消则均不回调
-     */
-    fun navigateChecked(
-        url: String,
-        baseHost: String?,
-        onAllow: () -> Unit,
-        onBlock: () -> Unit = {},
-    ) {
-        if (isLikelyDownload(url)) {
-            onBlock(); return
-        }
-
-        val target = url.toHttpUrlOrNull()?.topPrivateDomain()
-        if (target != null && adBlock.whitelist.contains(target)) {
-            onAllow(); return
-        }
-        if (target != null && adBlock.blacklist.contains(target)) {
-            onBlock(); return
-        }
-
-        val scheme = url.substringBefore(':', "").lowercase()
-        if (scheme != "http" && scheme != "https") {
-            if (scheme in setOf("about", "data", "blob", "javascript", "file")) onAllow() else onBlock()
-            return
-        }
-
-        val isCross = baseHost != null && target != null && baseHost != target
-        if (!isCross) {
-            onAllow(); return
-        }
-
-        when (crossOriginMode()) {
-            1 -> onAllow()
-            2 -> onBlock()
-            else -> askCrossOrigin(url, target, onAllow)
+        override fun onPageFinished(webView: WebView?, url: String?) {
+            super.onPageFinished(webView, url)
+            binding.forward.isEnabled = webView?.canGoForward() == true
         }
     }
-
-    /** 跨域询问弹窗（DialogCrossOriginBinding 三选一） */
-    private fun askCrossOrigin(url: String, targetTop: String?, onAllow: () -> Unit) {
-        try {
-            val b = com.sjianjun.reader.databinding.DialogCrossOriginBinding
-                .inflate(layoutInflater, null, false)
-            b.tvDialogUrl.text = targetTop ?: url
-            val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setView(b.root)
-                .setCancelable(true)
-                .create()
-            b.btnAllowOnce.setOnClickListener {
-                dialog.dismiss()
-                onAllow()
-            }
-            b.btnWhitelist.setOnClickListener {
-                if (targetTop != null) adBlock.addWhiteHost(HostStr(targetTop, listOf()))
-                dialog.dismiss()
-                onAllow()
-            }
-            b.btnBlacklist.setOnClickListener {
-                if (targetTop != null) adBlock.addBlackHost(HostStr(targetTop, listOf()))
-                dialog.dismiss()
-            }
-            dialog.show()
-        } catch (t: Throwable) {
-            Log.e("ReadMode askCrossOrigin err", t)
-        }
-    }
-
 
 }
