@@ -249,7 +249,18 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    private fun createWebViewClient() = object : WebViewClient() {
+    private fun createWebViewClient() = object : MyWebViewClient(
+        lifecycleScope!!,
+        { url, request ->
+            Log.i("onAllow isRedirect:${request?.isRedirect} hasGesture:${request?.hasGesture()} isForMainFrame:${request?.isForMainFrame} ${url}")
+            loadUrl(url, request)
+        },
+        { url, request ->
+            Log.i("onBlock isRedirect:${request?.isRedirect} hasGesture:${request?.hasGesture()} isForMainFrame:${request?.isForMainFrame} ${url}")
+            removeBlankWebView()
+        },
+        { effectiveCrossOriginMode() }
+    ) {
 
         /**
          * 捕获所有 URL 变化（包括 SPA pushState/replaceState 和 shouldOverrideUrlLoading 返回 true 的情况），
@@ -257,53 +268,14 @@ class CustomWebView @JvmOverloads constructor(
          */
         override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
             super.doUpdateVisitedHistory(view, url, isReload)
-            Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
             if (url != null) {
-                view?.currentHost = url
                 // 在 URL 变化时先记录 url（title 可能尚未可用）
                 updateWebBookIfSameDomain(view, url, updateTitle = false)
             }
         }
 
-        override fun shouldOverrideUrlLoading(
-            view: WebView?,
-            request: WebResourceRequest,
-        ): Boolean {
-            Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
-            val showBlockDialog = showBlockDialog(view, request)
-            if (!showBlockDialog) {
-                // 放行：创建新 WebView 压入栈，后退时直接切换无需重新加载
-                val url = request.url.toString()
-                view?.currentHost = url
-                lifecycleScope?.launch {
-                    loadUrl(url, request)
-                }
-            }
-            return true
-        }
-
-        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            super.onPageStarted(view, url, favicon)
-            view?.currentHost = url
-            Log.i("onPageStarted:${view?.currentHost} ")
-            adBlock?.markPage(url)
-        }
-
         override fun onPageFinished(webView: WebView?, url: String?) {
-            webView?.isBlank = url.isNullOrBlank() || url == "about:blank"
-            if (webView?.isBlank == false) {
-                lifecycleScope?.launch {
-                    delay(100.milliseconds)
-                    webView.evaluateJavascript(
-                        "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
-                    ) { result ->
-                        webView.isBlank = result.length < 10
-                        Log.i("js ${webView?.currentHost} isBlank:${webView.isBlank} ${url}")
-                    }
-                }
-            } else {
-                Log.i("aa ${webView?.currentHost} isBlank:${webView?.isBlank} ${url}")
-            }
+            super.onPageFinished(webView, url)
             // 页面加载完成后再更新 title（如果可用）并持久化
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
 
@@ -321,63 +293,6 @@ class CustomWebView @JvmOverloads constructor(
                 History.list = list
                 history.postValue(list)
             }
-        }
-
-        override fun shouldInterceptRequest(
-            view: WebView?,
-            request: WebResourceRequest,
-        ): WebResourceResponse? {
-            val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-            if (requestHost != null && adBlock?.whitelist.contains(requestHost)) {
-                return super.shouldInterceptRequest(view, request)
-            }
-            if (adBlock?.blacklist.contains(requestHost)) {
-                Log.i("拦截请求：${request.url}")
-                return WebResourceResponse(
-                    "text/plain",
-                    "UTF-8",
-                    ByteArrayInputStream("".toByteArray())
-                )
-            }
-
-            val currentHost = view?.currentHost
-            val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
-            if (isCrossOrigin) {
-                when (effectiveCrossOriginMode()) {
-                    2 -> {
-                        Log.i("跨域拦截请求：${request.url}")
-                        adBlock?.addUrl(request.url.toString())
-                        return WebResourceResponse(
-                            "text/plain",
-                            "UTF-8",
-                            ByteArrayInputStream("".toByteArray())
-                        )
-                    }
-
-                    else -> { /* 放行 */
-                    }
-                }
-            }
-
-            adBlock?.addUrl(request.url.toString())
-            return super.shouldInterceptRequest(view, request)
-        }
-
-        override fun onReceivedSslError(
-            view: WebView?,
-            handler: SslErrorHandler?,
-            error: SslError?,
-        ) {
-            Log.e("SSL Error: ${error?.toString()}")
-            handler?.proceed()
-        }
-
-        override fun onReceivedHttpError(
-            view: WebView?,
-            request: WebResourceRequest,
-            errorResponse: WebResourceResponse,
-        ) {
-            Log.e("HTTP Error: ${errorResponse.statusCode} ${request.url}")
         }
     }
 
@@ -474,111 +389,6 @@ class CustomWebView @JvmOverloads constructor(
         forwardStack.clear()
     }
 
-    /**
-     * 显示拦截提示。根据跨域配置决定行为：
-     * - 允许：直接放行
-     * - 拒绝：直接拦截
-     * - 询问：弹窗让用户选择（允许一次 / 加入黑名单 / 加入白名单）
-     */
-    fun showBlockDialog(view: WebView?, request: WebResourceRequest): Boolean {
-        val url = request.url.toString()
-        if (url.endsWith(".apk")) {
-            return true
-        }
-        val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
-
-        // 白名单域名直接放行
-        if (targetTop != null && adBlock?.whitelist.contains(targetTop)) {
-            return false
-        }
-
-        // 若为广告黑名单，直接拦截
-        if (targetTop != null && adBlock?.blacklist.contains(targetTop)) {
-            return true
-        }
-
-        // 仅对 http/https 链接处理，其他 scheme 拦截
-        val scheme = request.url?.scheme
-        if (scheme != "http" && scheme != "https") {
-            // 浏览器内部 scheme 放行
-            if (scheme in setOf("javascript", "about", "data", "blob", "file")) {
-                return false
-            }
-            // 其他 scheme（intent://, market://, tel:, mailto: 等）拦截
-            return true
-        }
-
-        // 若目标域与当前页主域不同，根据跨域配置处理
-        val currentHost = view?.currentHost
-        val differentSite = when {
-            currentHost == null || targetTop == null -> true
-            else -> currentHost != targetTop
-        }
-
-        if (!differentSite) {
-            // 同主域，允许加载
-            return false
-        }
-
-        // 根据跨域配置决定行为
-        return when (effectiveCrossOriginMode()) {
-            1 -> false
-            2 -> true
-            else -> {
-                // 询问：延迟弹窗，避免阻塞 shouldOverrideUrlLoading 导致 WebView 卡死
-                lifecycleScope?.launch {
-                    Log.i("跨域请求：from ${currentHost} to ${targetTop} ${request.url}")
-                    showCrossOriginDialog(view, request, adBlock)
-                }
-                true
-            }
-        }
-    }
-
-    /**
-     * 显示跨域询问弹窗：允许一次 / +黑名单 / +白名单
-     */
-    private fun showCrossOriginDialog(view: WebView?, request: WebResourceRequest, adBlock: AdBlock?): Boolean {
-        try {
-            val url = request.url.toString()
-            val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
-            val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
-            originBinding.tvDialogUrl.text = targetTop
-
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setView(originBinding.root)
-                .setCancelable(true)
-                .setOnCancelListener {
-                    removeBlankWebView()
-                }
-                .create()
-
-            originBinding.btnAllowOnce.setOnClickListener {
-                loadUrl(url, request)
-                dialog.dismiss()
-            }
-            originBinding.btnWhitelist.setOnClickListener {
-                if (targetTop != null) {
-                    adBlock?.addWhiteHost(HostStr(targetTop, listOf()))
-                }
-                loadUrl(url, request)
-                dialog.dismiss()
-            }
-            originBinding.btnBlacklist.setOnClickListener {
-                if (targetTop != null) {
-                    adBlock?.addBlackHost(HostStr(targetTop, listOf()))
-                }
-                dialog.dismiss()
-                removeBlankWebView()
-            }
-
-            dialog.show()
-        } catch (t: Throwable) {
-            Log.e("show confirm dialog error", t)
-            return false
-        }
-        return true
-    }
 
 }
 
@@ -612,72 +422,5 @@ class HistoryItem(var title: String, val url: String, val time: Long = System.cu
 
     override fun toString(): String {
         return "HistoryItem(title='$title', isMark=$isMark, time=$time, url='$url')"
-    }
-}
-
-var WebView.currentHost: String?
-    get() = (this as? MyWebView)?.currentHost
-    set(url) {
-        if (this is MyWebView) {
-            currentHost = url
-        }
-    }
-
-var WebView.isBlank: Boolean?
-    get() = (this as? MyWebView)?.isBlank
-    set(value) {
-        if (this is MyWebView) {
-            isBlank = value
-        }
-    }
-
-class MyWebView(context: Context) : WebView(context) {
-    var currentHost: String? = null
-        set(url) {
-            field = url?.toHttpUrlOrNull()?.topPrivateDomain()
-        }
-
-    var isBlank: Boolean? = null
-
-    var isDestroyed = false
-        private set
-
-    override fun destroy() {
-        super.destroy()
-        isDestroyed = true
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        // 避免 WebView 内存泄漏
-        stopLoading()
-        settings.javaScriptEnabled = false
-        clearHistory()
-        removeAllViews()
-        destroy()
-    }
-}
-
-suspend fun WebView.getTitleFromMeta(): String {
-    return suspendCancellableCoroutine { continuation ->
-        evaluateJavascript(
-            """
-                javascript:(function() {
-                    return document.title
-                })()
-            """.trimIndent()
-        ) {
-            Log.i("title:$it")
-            if (continuation.isActive) {
-                val str = it?.replace("\"", "")?.split(",")?.first()
-                if (str.isNullOrBlank() || str == "null") {
-                    continuation.resume("")
-                } else {
-                    continuation.resume(str)
-                }
-            }
-
-        }
-
     }
 }

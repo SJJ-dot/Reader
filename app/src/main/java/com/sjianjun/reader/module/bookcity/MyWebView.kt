@@ -1,0 +1,78 @@
+package com.sjianjun.reader.module.bookcity
+
+import android.content.Context
+import android.webkit.WebView
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import sjj.alog.Log
+import kotlin.coroutines.resume
+
+
+var WebView.currentHost: String?
+    get() = (this as? MyWebView)?.currentHost
+    set(url) {
+        if (this is MyWebView) {
+            currentHost = url
+        }
+    }
+
+var WebView.isBlank: Boolean?
+    get() = (this as? MyWebView)?.isBlank
+    set(value) {
+        if (this is MyWebView) {
+            isBlank = value
+        }
+    }
+
+class MyWebView(context: Context) : WebView(context) {
+    var currentHost: String? = null
+        set(url) {
+            field = url?.toHttpUrlOrNull()?.topPrivateDomain()
+        }
+
+    var isBlank: Boolean? = null
+
+    var isDestroyed = false
+        private set
+
+    override fun destroy() {
+        super.destroy()
+        isDestroyed = true
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        // 避免 WebView 内存泄漏
+        stopLoading()
+        settings.javaScriptEnabled = false
+        clearHistory()
+        removeAllViews()
+        destroy()
+    }
+}
+
+suspend fun WebView.getTitleFromMeta(): String {
+    return suspendCancellableCoroutine { continuation ->
+        evaluateJavascript(
+            """
+                javascript:(function() {
+                    return document.title
+                })()
+            """.trimIndent()
+        ) {
+            Log.i("title:$it")
+            if (continuation.isActive) {
+                title
+                val str = it?.replace("\"", "")?.split(",")?.first()
+                if (str.isNullOrBlank() || str == "null") {
+                    continuation.resume("")
+                } else {
+                    continuation.resume(str)
+                }
+            }
+
+        }
+
+    }
+}
+
