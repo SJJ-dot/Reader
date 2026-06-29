@@ -146,7 +146,7 @@ class ChapterListDialogFragment : Fragment() {
         val urls = previousUrls.asReversed().toMutableList()
         urls.add(currentUrl)
         cursor = currentUrl
-        while (urls.size < 200) {
+        while (urls.size < 1500) {
             val next = getMappedNextUrl(cursor) ?: break
             if (!visited.add(next)) break
             urls.add(next)

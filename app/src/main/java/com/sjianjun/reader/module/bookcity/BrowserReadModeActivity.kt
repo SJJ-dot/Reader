@@ -1067,8 +1067,19 @@ class BrowserReadModeActivity : BaseActivity() {
         fun recordLinkMappings(currentUrl: String, data: ExtractResult?) {
             val data = data ?: return
             val current = normalizeReadUrl(currentUrl) ?: return
+            val prev = normalizeReadUrl(data.prevUrl)
             val next = normalizeReadUrl(data.nextUrl)
             val diskMappings = mutableListOf<Pair<String, String>>()
+            if (prev != null && prev != current) {
+                if (prevUrlMappingCache.get(current) == null) {
+                    prevUrlMappingCache.put(current, prev)
+                    diskMappings.add(prevMappingKey(current) to prev)
+                }
+                if (nextUrlMappingCache.get(prev) == null) {
+                    nextUrlMappingCache.put(prev, current)
+                    diskMappings.add(nextMappingKey(prev) to current)
+                }
+            }
             if (next != null && next != current) {
                 prevUrlMappingCache.put(next, current)
                 nextUrlMappingCache.put(current, next)
