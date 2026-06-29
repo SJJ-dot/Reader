@@ -59,6 +59,7 @@ import com.sjianjun.reader.view.click
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import sjj.novel.view.reader.page.CustomPageStyle
 import sjj.novel.view.reader.page.NetPageLoader
@@ -86,7 +87,7 @@ class BookReaderSettingFragment : BaseFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         return inflater.inflate(R.layout.reader_fragment_setting_view, container, false)
     }
@@ -226,13 +227,14 @@ class BookReaderSettingFragment : BaseFragment() {
                 if (parentFragmentManager.findFragmentByTag(ReplacementRuleListDialogFragment.TAG) == null) {
                     val book = pageLoader.mCollBook
                     val chapter = pageLoader.curChapter
+                    val defaultScope = book?.url?.toHttpUrlOrNull()?.topPrivateDomain()
                     val activeScopeText = listOf(
                         book?.title.orEmpty(),
                         book?.url.orEmpty(),
                         chapter?.link.orEmpty(),
                         chapter?.title.orEmpty(),
                     ).joinToString("\n")
-                    ReplacementRuleListDialogFragment.newInstance(activeScopeText = activeScopeText)
+                    ReplacementRuleListDialogFragment.newInstance(defaultScope = defaultScope, activeScopeText = activeScopeText)
                         .show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
                 }
             },

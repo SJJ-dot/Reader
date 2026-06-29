@@ -1,5 +1,6 @@
 package com.sjianjun.reader.event
 
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import com.jeremyliao.liveeventbus.LiveEventBus
@@ -43,6 +44,6 @@ fun <T> BaseActivity.observe(key: String, observer: Observer<T>) {
     EventBus.observe(key, this, observer)
 }
 
-inline fun <reified T> BaseActivity.observe(observer: Observer<T>) {
-    EventBus.observe(T::class.java, this, observer)
+fun <T> Fragment.observe(key: String, observer: Observer<T>) {
+    EventBus.observe(key, this, observer)
 }

@@ -16,6 +16,8 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ItemTextTextBinding
 import com.sjianjun.reader.databinding.MainFragmentBookChapterListBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.setTextColorRes
@@ -72,6 +74,10 @@ class ChapterListFragment : BaseFragment() {
             if (index > 0)
                 binding?.recycleViewChapterList?.scrollToPosition(index)
         }
+        // 净化规则变更后，重新加载章节列表以刷新标题
+        EventBus.observe(EventKey.REPLACEMENT_RULES_CHANGED, viewLifecycleOwner, androidx.lifecycle.Observer<String> {
+            viewModel.init(bookTitle)
+        })
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter<Chapter>() {

@@ -4,6 +4,7 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.utils.trimExt
 import sjj.alog.Log
 
 object ReplacementRuleUseCase {
@@ -85,9 +86,9 @@ object ReplacementRuleUseCase {
         }
         return try {
             if (rule.isRegex) {
-                Regex(rule.rule).replace(text, rule.replacement)
+                Regex(rule.rule).replace(text, rule.replacement).trimExt()
             } else {
-                text.replace(rule.rule, rule.replacement)
+                text.replace(rule.rule, rule.replacement).trimExt()
             }
         } catch (e: Throwable) {
             Log.e("应用净化规则失败：${rule}", e)
