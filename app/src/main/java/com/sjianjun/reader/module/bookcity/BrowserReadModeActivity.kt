@@ -739,9 +739,6 @@ class BrowserReadModeActivity : BaseActivity() {
         // 切换到不同的页面时，如抽屉打开则自动刷新；否则会在下次打开时根据当前 url 渲染
         val pageChanged = pageLoader.curChapter?.link != url
 
-        // 更新 WebBook 阅读进度（同域名时）
-        updateWebBookProgress(url)
-
         val book = Book().apply {
             this.url = webBook?.url ?: url.ifBlank { "browser://reader" }
             this.title = webBook?.title ?: "浏览器阅读模式"
