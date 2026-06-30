@@ -35,7 +35,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class],
-    version = 30,
+    version = 31,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -188,6 +188,16 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `offest` INTEGER NOT NULL default 0")
                     db.execSQL("ALTER TABLE 'WebBook' ADD COLUMN `scrollOffset` INTEGER NOT NULL default 0")
+                }
+            })
+            .addMigrations(object : Migration(30, 31) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // ReplacementRule.isEnabled(Boolean) → enabledMask(Int 位掩码)
+                    // 旧的 1 迁移为 3（阅读器+阅读模式都启用），0 保持 0
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `ReplacementRule_new` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `rule` TEXT NOT NULL, `replacement` TEXT NOT NULL, `isRegex` INTEGER NOT NULL, `enabledMask` INTEGER NOT NULL, `order` INTEGER NOT NULL, `applyToTitle` INTEGER NOT NULL, `applyToContent` INTEGER NOT NULL, `scope` TEXT, `excludeScope` TEXT, PRIMARY KEY(`id`))")
+                    db.execSQL("INSERT INTO `ReplacementRule_new` (`id`,`name`,`rule`,`replacement`,`isRegex`,`enabledMask`,`order`,`applyToTitle`,`applyToContent`,`scope`,`excludeScope`) SELECT `id`,`name`,`rule`,`replacement`,`isRegex`,CASE WHEN `isEnabled`=1 THEN 3 ELSE 0 END,`order`,`applyToTitle`,`applyToContent`,`scope`,`excludeScope` FROM `ReplacementRule`")
+                    db.execSQL("DROP TABLE `ReplacementRule`")
+                    db.execSQL("ALTER TABLE `ReplacementRule_new` RENAME TO `ReplacementRule`")
                 }
             })
             .build()

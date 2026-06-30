@@ -12,9 +12,6 @@ interface ReplacementRuleDao {
 	@Query("SELECT * FROM ReplacementRule ORDER BY `order` ASC, id ASC")
 	fun getAll(): List<ReplacementRule>
 
-	@Query("SELECT * FROM ReplacementRule WHERE isEnabled = 1 ORDER BY `order` ASC, id ASC")
-	fun getEnabled(): List<ReplacementRule>
-
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
 	fun insert(rule: ReplacementRule)
 

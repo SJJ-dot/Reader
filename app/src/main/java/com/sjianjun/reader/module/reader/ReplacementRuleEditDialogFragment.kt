@@ -20,6 +20,8 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READ_MODE
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READER
 import com.sjianjun.reader.databinding.DialogReplacementRuleEditBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
@@ -31,6 +33,8 @@ import sjj.novel.view.reader.page.PageStyle
 class ReplacementRuleEditDialogFragment : DialogFragment() {
     private var binding: DialogReplacementRuleEditBinding? = null
     private var editingRule: ReplacementRule = ReplacementRule()
+    /** 当前入口对应的启用位：[ENABLE_READER] 或 [ENABLE_READ_MODE] */
+    private val modeFlag: Int get() = arguments?.getInt(ARG_MODE, ENABLE_READER) ?: ENABLE_READER
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,10 +97,13 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
 
     private fun loadRule() {
         val ruleId = arguments?.getString(ARG_RULE_ID)
+        val modeFlag = arguments?.getInt(ARG_MODE, ENABLE_READER) ?: ENABLE_READER
         viewLifecycleOwner.lifecycleScope.launch {
             editingRule = if (ruleId.isNullOrBlank()) {
                 ReplacementRule().apply {
                     arguments?.getString(ARG_DEFAULT_SCOPE)?.takeIf { it.isNotBlank() }?.let { scope = it }
+                    // 新建规则默认启用当前入口对应的开关
+                    setEnableForFlag(modeFlag,true)
                 }
             } else {
                 ReplacementRuleUseCase.getAllRules().firstOrNull { it.id == ruleId } ?: ReplacementRule()
@@ -113,7 +120,8 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
         binding.etReplacement.setText(rule.replacement)
         binding.etScope.setText(rule.scope.orEmpty())
         binding.etExcludeScope.setText(rule.excludeScope.orEmpty())
-        binding.cbEnabled.isChecked = rule.isEnabled
+        // 单个"启用"复选框绑定到当前入口对应的模式位
+        binding.cbEnabled.isChecked = rule.isEnableForFlag(modeFlag)
         binding.cbRegex.isChecked = rule.isRegex
         binding.cbApplyTitle.isChecked = rule.applyToTitle
         binding.cbApplyContent.isChecked = rule.applyToContent
@@ -121,13 +129,15 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
 
     private fun collectRuleFromInput(): ReplacementRule {
         val binding = binding ?: return editingRule
+        val checked = binding.cbEnabled.isChecked
         return editingRule.apply {
             name = binding.etName.text?.toString().orEmpty().trim()
             rule = binding.etRule.text?.toString().orEmpty()
             replacement = binding.etReplacement.text?.toString().orEmpty()
             scope = binding.etScope.text?.toString()?.trim().takeUnless { it.isNullOrEmpty() }
             excludeScope = binding.etExcludeScope.text?.toString()?.trim().takeUnless { it.isNullOrEmpty() }
-            isEnabled = binding.cbEnabled.isChecked
+            // 根据当前入口设置对应的模式位，另一个位保持不变
+            setEnableForFlag(modeFlag,checked)
             isRegex = binding.cbRegex.isChecked
             applyToTitle = binding.cbApplyTitle.isChecked
             applyToContent = binding.cbApplyContent.isChecked
@@ -206,14 +216,16 @@ class ReplacementRuleEditDialogFragment : DialogFragment() {
     companion object {
         private const val ARG_RULE_ID = "ruleId"
         private const val ARG_DEFAULT_SCOPE = "defaultScope"
+        private const val ARG_MODE = "mode"
         const val TAG = "ReplacementRuleEditDialogFragment"
         const val RESULT_KEY = "replacement_rule_saved"
 
-        fun newInstance(ruleId: String?, defaultScope: String? = null): ReplacementRuleEditDialogFragment {
+        fun newInstance(ruleId: String?, defaultScope: String? = null, modeFlag: Int = ENABLE_READER): ReplacementRuleEditDialogFragment {
             return ReplacementRuleEditDialogFragment().apply {
                 arguments = bundleOf(
                     ARG_RULE_ID to ruleId,
                     ARG_DEFAULT_SCOPE to defaultScope,
+                    ARG_MODE to modeFlag,
                 )
             }
         }

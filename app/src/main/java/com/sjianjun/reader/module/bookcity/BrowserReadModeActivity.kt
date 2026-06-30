@@ -389,7 +389,7 @@ class BrowserReadModeActivity : BaseActivity() {
         }
         // 初始化净化替换规则
         lifecycleScope.launch {
-            val rules = ReplacementRuleUseCase.getEnabledRules()
+            val rules = ReplacementRuleUseCase.getEnabledRules(com.sjianjun.reader.bean.ReplacementRule.ENABLE_READ_MODE)
             cachedReplacementRules = rules
             pageLoader.setReplacementRules(rules)
         }
@@ -518,10 +518,10 @@ class BrowserReadModeActivity : BaseActivity() {
                 pageLoader.setTypeface(typeface)
             }
         }
-        // 净化替换规则变更
+        // 净化替换规则变更（阅读模式开关）
         observe<String>(EventKey.REPLACEMENT_RULES_CHANGED) {
             lifecycleScope.launch {
-                val rules = ReplacementRuleUseCase.getEnabledRules()
+                val rules = ReplacementRuleUseCase.getEnabledRules(com.sjianjun.reader.bean.ReplacementRule.ENABLE_READ_MODE)
                 cachedReplacementRules = rules
                 pageLoader.setReplacementRules(rules)
             }

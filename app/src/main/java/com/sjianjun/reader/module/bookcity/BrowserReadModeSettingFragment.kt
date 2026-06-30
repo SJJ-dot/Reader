@@ -621,7 +621,7 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                         curUrl.orEmpty(),
                         pageLoader?.curChapter?.title.orEmpty(),
                     ).joinToString("\n")
-                    ReplacementRuleListDialogFragment.newInstance(defaultScope, activeScopeText)
+                    ReplacementRuleListDialogFragment.newInstance(defaultScope, activeScopeText, com.sjianjun.reader.bean.ReplacementRule.ENABLE_READ_MODE)
                         .show(parentFragmentManager, ReplacementRuleListDialogFragment.TAG)
                 }
             },

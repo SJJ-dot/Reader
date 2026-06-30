@@ -18,6 +18,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READ_MODE
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READER
 import com.sjianjun.reader.databinding.DialogReplacementRuleListBinding
 import com.sjianjun.reader.databinding.ItemReplacementRuleBinding
 import com.sjianjun.reader.event.EventBus
@@ -30,13 +32,18 @@ import sjj.novel.view.reader.page.PageStyle
 
 class ReplacementRuleListDialogFragment : DialogFragment() {
     private var binding: DialogReplacementRuleListBinding? = null
+
     /** 新建规则时的默认作用域（书籍主域名等）；由调用方通过 [newInstance] 传入 */
     private val defaultScope: String? get() = arguments?.getString(ARG_DEFAULT_SCOPE)
+
     /**
      * 当前阅读上下文（书名、URL、章节标题拼接而成）。
      * 列表中 scope 不包含 / excludeScope 命中的规则将显示为禁用态。
      */
     private val activeScopeText: String? get() = arguments?.getString(ARG_ACTIVE_SCOPE_TEXT)
+
+    /** 当前管理的启用位：[ENABLE_READER] 或 [ENABLE_READ_MODE] */
+    private val modeFlag: Int get() = arguments?.getInt(ARG_MODE, ENABLE_READER) ?: ENABLE_READER
     private val adapter by lazy {
         RuleAdapter(
             onMoveUp = { rule -> moveRule(rule, true) },
@@ -45,6 +52,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
             onDelete = { rule -> deleteRule(rule) },
             onToggleEnabled = { rule -> toggleRule(rule) },
             activeScopeText = activeScopeText,
+            modeFlag = modeFlag,
         )
     }
 
@@ -118,8 +126,9 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
      */
     private fun sortRulesForDisplay(rules: List<ReplacementRule>): List<ReplacementRule> {
         val scope = activeScopeText
+        val flag = modeFlag
         return rules.sortedWith(
-            compareBy<ReplacementRule> { if (it.isEnabled) 0 else 1 }
+            compareBy<ReplacementRule> { if (it.isEnableForFlag(flag)) 0 else 1 }
                 .thenBy { if (scope == null) 0 else if (ReplacementRuleUseCase.matchesScope(it, scope)) 0 else 1 }
                 .thenBy { it.order }
                 .thenBy { it.id }
@@ -128,7 +137,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
 
     private fun toggleRule(rule: ReplacementRule) {
         viewLifecycleOwner.lifecycleScope.launch {
-            rule.isEnabled = !rule.isEnabled
+            rule.setEnableForFlag(modeFlag, !rule.isEnableForFlag(modeFlag))
             ReplacementRuleUseCase.saveRule(rule)
             loadRules()
             EventBus.post(EventKey.REPLACEMENT_RULES_CHANGED)
@@ -161,7 +170,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
     private fun openEditor(ruleId: String?) {
         // 新建规则时把默认作用域（如阅读模式当前页面的主域名）填入；编辑已有规则时不覆盖。
         val scope = if (ruleId.isNullOrBlank()) defaultScope else null
-        ReplacementRuleEditDialogFragment.newInstance(ruleId, scope)
+        ReplacementRuleEditDialogFragment.newInstance(ruleId, scope, modeFlag)
             .show(parentFragmentManager, ReplacementRuleEditDialogFragment.TAG)
     }
 
@@ -177,6 +186,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         private val onDelete: (ReplacementRule) -> Unit,
         private val onToggleEnabled: (ReplacementRule) -> Unit,
         private val activeScopeText: String?,
+        private val modeFlag: Int,
     ) : RecyclerView.Adapter<RuleAdapter.RuleViewHolder>() {
         private val data = mutableListOf<ReplacementRule>()
 
@@ -203,7 +213,7 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
                 val outOfScope = activeScopeText?.let { !ReplacementRuleUseCase.matchesScope(rule, it) } == true
                 binding.tvRuleName.text = rule.name.ifBlank { rule.rule }
                 binding.tvRuleState.text = buildString {
-                    append(if (rule.isEnabled) "已启用" else "已禁用")
+                    append(if (rule.isEnableForFlag(modeFlag)) "已启用" else "已禁用")
                     if (rule.isRegex) append(" · 正则匹配")
                     if (outOfScope) append(" · 作用域不匹配")
                 }
@@ -228,17 +238,24 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
         const val TAG = "ReplacementRuleListDialogFragment"
         private const val ARG_DEFAULT_SCOPE = "defaultScope"
         private const val ARG_ACTIVE_SCOPE_TEXT = "activeScopeText"
+        private const val ARG_MODE = "mode"
 
         /**
          * @param defaultScope 新建规则时预填的作用域（通常是书籍主域名）
          * @param activeScopeText 当前阅读上下文（书名 + URL + 章节标题），用于在列表中把
          *   作用域不匹配的规则置灰显示。两个参数通常一并提供。
+         * @param modeFlag 启用位：[ENABLE_READER]（普通阅读器）或 [ENABLE_READ_MODE]（阅读模式）
          */
-        fun newInstance(defaultScope: String? = null, activeScopeText: String? = null): ReplacementRuleListDialogFragment {
+        fun newInstance(
+            defaultScope: String? = null,
+            activeScopeText: String? = null,
+            modeFlag: Int = ENABLE_READER,
+        ): ReplacementRuleListDialogFragment {
             return ReplacementRuleListDialogFragment().apply {
                 arguments = android.os.Bundle().apply {
                     if (!defaultScope.isNullOrBlank()) putString(ARG_DEFAULT_SCOPE, defaultScope)
                     if (!activeScopeText.isNullOrBlank()) putString(ARG_ACTIVE_SCOPE_TEXT, activeScopeText)
+                    putInt(ARG_MODE, modeFlag)
                 }
             }
         }

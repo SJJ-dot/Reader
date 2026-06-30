@@ -4,6 +4,8 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READ_MODE
+import com.sjianjun.reader.bean.ReplacementRule.Companion.ENABLE_READER
 import com.sjianjun.reader.utils.trimExt
 import sjj.alog.Log
 
@@ -12,7 +14,13 @@ object ReplacementRuleUseCase {
 
     suspend fun getAllRules(): List<ReplacementRule> = withIo { normalizeOrders(ruleDao.getAll(), persist = false) }
 
-    suspend fun getEnabledRules(): List<ReplacementRule> = withIo { normalizeOrders(ruleDao.getEnabled(), persist = false) }
+    /** 取普通阅读器（BookReaderActivity）启用的规则 */
+    suspend fun getEnabledRules(): List<ReplacementRule> = getEnabledRules(ENABLE_READER)
+
+    /** 取指定启用位（[ENABLE_READER] / [ENABLE_READ_MODE]）命中的规则，用代码筛选，不依赖 DAO SQL */
+    suspend fun getEnabledRules(flag: Int): List<ReplacementRule> = withIo {
+        normalizeOrders(ruleDao.getAll().filter { it.isEnableForFlag(flag) }, persist = false)
+    }
 
     suspend fun saveRule(rule: ReplacementRule): ReplacementRule = withIo {
         val allRules = ruleDao.getAll().toMutableList()
@@ -56,7 +64,7 @@ object ReplacementRuleUseCase {
         rules: List<ReplacementRule>,
         book: Book?,
         chapter: Chapter?,
-        applyToTitle: Boolean
+        applyToTitle: Boolean,
     ): String {
         var result = text ?: return ""
         rules.sortedBy { it.order }.forEach { rule ->
@@ -70,9 +78,9 @@ object ReplacementRuleUseCase {
         rule: ReplacementRule,
         book: Book?,
         chapter: Chapter?,
-        applyToTitle: Boolean
+        applyToTitle: Boolean,
     ): String {
-        if (!rule.isEnabled) {
+        if (rule.enabledMask == 0) {
             return text
         }
         if (applyToTitle && !rule.applyToTitle) {
