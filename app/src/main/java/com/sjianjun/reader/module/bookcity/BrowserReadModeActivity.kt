@@ -93,6 +93,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     /** 进入 WebView 时 WebView 所在的 URL，后退到它或无法再后退即停止 WebView 后退。 */
     private var webEntryUrl: String? = null
+
     /** 缓存启用的净化规则，供标题净化等同步路径使用。 */
     @Volatile
     private var cachedReplacementRules: List<com.sjianjun.reader.bean.ReplacementRule> = emptyList()
@@ -379,9 +380,7 @@ class BrowserReadModeActivity : BaseActivity() {
                     val curChapter = loader.curChapter ?: return
                     val book = webBook ?: return
                     if (book.lastUrl == curChapter.link) {
-                        book.offest = bean.pagePos
-                        book.scrollOffset = bean.scrollOffset
-                        updateWebBookProgress(book.lastUrl ?: "")
+                        updateWebBookProgress(book.lastUrl ?: "", bean)
                     }
                     notifySettingFragmentChanged()
                 }
@@ -576,14 +575,20 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     /** 如果当前 URL 与 WebBook 同域名，更新阅读进度（lastUrl/lastTitle/updateTime） */
-    private fun updateWebBookProgress(url: String) {
+    private fun updateWebBookProgress(url: String, bean: BookRecordBean? = null) {
         val book = webBook ?: return
         val data = extractCache.get(url) ?: return
         val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
         val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
         if (urlHost == null || bookHost == null || urlHost != bookHost) return
+        val offest = bean?.pagePos ?: book.offest
+        val scrollOffset = bean?.scrollOffset ?: book.scrollOffset
+        val change = (book.lastUrl != url) || (book.lastTitle != data.title) || (book.offest != offest) || (book.scrollOffset != scrollOffset)
+        if (!change) return
         updateWebBookJob?.cancel()
         updateWebBookJob = lifecycleScope.launch(Dispatchers.IO) {
+            book.offest = offest
+            book.scrollOffset = scrollOffset
             if (book.lastUrl != url) {
                 book.lastUrl = url
                 book.offest = 0
