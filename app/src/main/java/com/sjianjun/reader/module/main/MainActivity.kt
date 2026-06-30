@@ -19,12 +19,14 @@ import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.PerfMonitorService
 import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -64,6 +66,9 @@ class MainActivity : BaseActivity() {
             } else {
                 PrivacyPolicyDialogFragment().show(supportFragmentManager, "PrivacyPolicyDialogFragment")
             }
+        }
+        if (BuildConfig.DEBUG){
+            PerfMonitorService.start()
         }
     }
 
