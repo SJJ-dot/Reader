@@ -588,12 +588,12 @@ class BrowserReadModeActivity : BaseActivity() {
                 book.lastUrl = url
                 book.offest = 0
                 book.scrollOffset = 0
-                Log.i("updateWebBookProgress: url changed, reset offset and scrollOffset")
             }
             book.lastTitle = data.title.ifBlank { book.lastTitle }
             book.updateTime = System.currentTimeMillis()
             try {
                 webDao.insertWebBook(book)
+                Log.i("updateWebBookProgress: updated webBook progress for url=$url, title=${data.title}")
             } catch (e: Exception) {
                 Log.e("updateWebBookProgress error", e)
             }
@@ -996,23 +996,23 @@ class BrowserReadModeActivity : BaseActivity() {
                         val next = obj.optString("next", "").takeIf { it.isNotBlank() }
                         if (BuildConfig.DEBUG) {
                             Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev next=$next ")
-                            Log.i("extractContent content=$content")
-                            val debugArr = obj.optJSONArray("_debug")
-                            if (debugArr != null) {
-                                for (i in 0 until debugArr.length()) {
-                                    Log.i("extractContent debug ${i + 1}/${debugArr.length()}: ${debugArr.optString(i)}")
-                                }
-                            } else {
-                                val debugObj = obj.optJSONObject("_debug")
-                                if (debugObj != null) {
-                                    Log.i("extractContent _debug=$debugObj")
-                                }
-                            }
-                            if (prev.isNullOrBlank() || next.isNullOrBlank()) {
-                                Log.w(
-                                    "extractContent 缺少导航 url=$pageUrl prev=$prev next=$next "
-                                )
-                            }
+//                            Log.i("extractContent content=$content")
+//                            val debugArr = obj.optJSONArray("_debug")
+//                            if (debugArr != null) {
+//                                for (i in 0 until debugArr.length()) {
+//                                    Log.i("extractContent debug ${i + 1}/${debugArr.length()}: ${debugArr.optString(i)}")
+//                                }
+//                            } else {
+//                                val debugObj = obj.optJSONObject("_debug")
+//                                if (debugObj != null) {
+//                                    Log.i("extractContent _debug=$debugObj")
+//                                }
+//                            }
+//                            if (prev.isNullOrBlank() || next.isNullOrBlank()) {
+//                                Log.w(
+//                                    "extractContent 缺少导航 url=$pageUrl prev=$prev next=$next "
+//                                )
+//                            }
                         }
                         if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next))
                     } catch (t: Throwable) {

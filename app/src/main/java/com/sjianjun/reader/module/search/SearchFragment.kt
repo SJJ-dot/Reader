@@ -252,8 +252,7 @@ class SearchFragment : BaseAsyncFragment() {
                     fragment.viewModel.saveSearchResult(data[position])
                     NavHostFragment.findNavController(fragment).navigate(
                         R.id.bookDetailsFragment,
-                        bundle(BOOK_TITLE to searchResult.bookTitle, BOOK_AUTO_REFRESH to true),
-                        navOptions
+                        bundle(BOOK_TITLE to searchResult.bookTitle, BOOK_AUTO_REFRESH to true)
                     )
                 }
             }
