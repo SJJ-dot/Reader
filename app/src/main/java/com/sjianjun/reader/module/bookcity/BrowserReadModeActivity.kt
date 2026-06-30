@@ -782,7 +782,7 @@ class BrowserReadModeActivity : BaseActivity() {
         TxtChapter.evictAll()
 
         // 章节标题应用净化规则（书名 + URL + 原始标题作为作用域文本）
-        val resolvedTitle = data?.title?.let { applyTitleReplacementRules(url, it) } ?: "加载中"
+        val resolvedTitle = data?.title ?: "加载中"
 
         val chapters = mutableListOf<TxtChapter>()
         val previousUrl = getMappedPrevUrlMemory(url) ?: data?.prevUrl

@@ -64,11 +64,12 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         this.titleText = title
     }
 
-    fun refresh(){
+    fun refresh() {
         refreshNavAndProgress()
         refreshHistoryNavigationState()
         titleText = pageLoader?.curChapter?.title ?: titleText
-        binding?.bookTitle?.text = titleText
+        val url = pageLoader?.curChapter?.link ?: ""
+        binding?.bookTitle?.text = (activity as? BrowserReadModeActivity)?.applyTitleReplacementRules(url, titleText) ?: titleText
     }
 
     override fun onHiddenChanged(hidden: Boolean) {

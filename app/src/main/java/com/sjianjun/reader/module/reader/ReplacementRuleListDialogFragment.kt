@@ -119,19 +119,13 @@ class ReplacementRuleListDialogFragment : DialogFragment() {
     }
 
     /**
-     * 显示排序：
-     * 1. 启用 且 作用域命中 → 顶部，按 order 升序
-     * 2. 启用 但 作用域不命中 → 中部，按 order 升序
-     * 3. 禁用 → 底部，按 order 升序
+     * 显示排序：作用域不命中的排最下方，剩下按 order 升序。稳定排序。
      */
     private fun sortRulesForDisplay(rules: List<ReplacementRule>): List<ReplacementRule> {
         val scope = activeScopeText
-        val flag = modeFlag
         return rules.sortedWith(
-            compareBy<ReplacementRule> { if (it.isEnableForFlag(flag)) 0 else 1 }
-                .thenBy { if (scope == null) 0 else if (ReplacementRuleUseCase.matchesScope(it, scope)) 0 else 1 }
+            compareBy<ReplacementRule> { if (scope == null) 0 else if (ReplacementRuleUseCase.matchesScope(it, scope)) 0 else 1 }
                 .thenBy { it.order }
-                .thenBy { it.id }
         )
     }
 
