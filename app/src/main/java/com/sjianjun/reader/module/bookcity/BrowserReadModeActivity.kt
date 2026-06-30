@@ -378,10 +378,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
                 override fun onBookRecordChange(bean: BookRecordBean) {
                     val curChapter = loader.curChapter ?: return
-                    val book = webBook ?: return
-                    if (book.lastUrl == curChapter.link) {
-                        updateWebBookProgress(book.lastUrl ?: "", bean)
-                    }
+                    updateWebBookProgress(curChapter.link, bean)
                     notifySettingFragmentChanged()
                 }
             })
@@ -581,19 +578,15 @@ class BrowserReadModeActivity : BaseActivity() {
         val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
         val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
         if (urlHost == null || bookHost == null || urlHost != bookHost) return
-        val offest = bean?.pagePos ?: book.offest
-        val scrollOffset = bean?.scrollOffset ?: book.scrollOffset
+        val offest = bean?.pagePos ?: 0
+        val scrollOffset = bean?.scrollOffset ?: 0
         val change = (book.lastUrl != url) || (book.lastTitle != data.title) || (book.offest != offest) || (book.scrollOffset != scrollOffset)
         if (!change) return
         updateWebBookJob?.cancel()
         updateWebBookJob = lifecycleScope.launch(Dispatchers.IO) {
             book.offest = offest
             book.scrollOffset = scrollOffset
-            if (book.lastUrl != url) {
-                book.lastUrl = url
-                book.offest = 0
-                book.scrollOffset = 0
-            }
+            book.lastUrl = url
             book.lastTitle = data.title.ifBlank { book.lastTitle }
             book.updateTime = System.currentTimeMillis()
             try {
