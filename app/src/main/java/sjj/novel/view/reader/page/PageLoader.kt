@@ -832,12 +832,13 @@ abstract class PageLoader : ViewModel() {
 
         // 判断是否具有上一章缓存
         val pageList = ChapterPageCache.get(this.chapterPos)
-        if (pageList != null) {
+        if (!pageList.isNullOrEmpty()) {
             this.curPageList = pageList
+            mStatus = STATUS_FINISH
         } else {
             dealLoadPageList(prevChapter)
         }
-        return if (this.curPageList != null) true else false
+        return this.curPageList != null
     }
 
     private fun hasPrevChapter(): Boolean {
@@ -877,7 +878,7 @@ abstract class PageLoader : ViewModel() {
         mCancelPage = mCurPage
         // 解析下一章数据
         if (parseNextChapter()) {
-            mCurPage = curPageList!!.get(0)
+            mCurPage = curPageList!![0]
         } else {
             mCurPage = TxtPage()
         }
@@ -928,14 +929,15 @@ abstract class PageLoader : ViewModel() {
 
         // 是否下一章数据已经预加载了
         val txtPages = ChapterPageCache.get(this.chapterPos)
-        if (txtPages != null) {
+        if (!txtPages.isNullOrEmpty()) {
             this.curPageList = txtPages
+            mStatus = STATUS_FINISH
         } else {
             dealLoadPageList(nextChapter)
         }
         // 预加载下一页面
         preLoadNextChapter()
-        return if (this.curPageList != null) true else false
+        return this.curPageList != null
     }
 
     private fun dealLoadPageList(chapterPos: Int) {
