@@ -18,25 +18,35 @@ object TtsService : BaseTts {
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
 
-    // underlying instances
-    private val system = TtsUtil()
-    private val edge = TtsEdgeManager
+    // underlying instances; both are recreated on each start cycle to avoid leftover state
+    private var system: TtsUtil? = null
+    private var edge: TtsEdgeManager? = null
 
     private var systemObserver: Observer<Boolean>? = null
     private var edgeObserver: Observer<Boolean>? = null
 
     var chapterPos: Int = 0
 
-    init {
-        // mirror underlying isSpeaking into service isSpeaking
-        systemObserver = Observer<Boolean> { isSpeaking.postValue(it) }
-        edgeObserver = Observer<Boolean> { isSpeaking.postValue(it) }
-        system.isSpeaking.observeForever(systemObserver!!)
-        edge.isSpeaking.observeForever(edgeObserver!!)
+    private fun currentEngine(): String = globalConfig.readerTtsEngine.value ?: "default"
+
+    private fun ensureSystem(): TtsUtil {
+        system?.let { return it }
+        val created = TtsUtil()
+        val obs = Observer<Boolean> { isSpeaking.postValue(it) }
+        systemObserver = obs
+        created.isSpeaking.observeForever(obs)
+        system = created
+        return created
     }
 
-    private fun current(): BaseTts {
-        return if (globalConfig.readerTtsEngine.value == "edge") edge else system
+    private fun ensureEdge(): TtsEdgeManager {
+        edge?.let { return it }
+        val created = TtsEdgeManager()
+        val obs = Observer<Boolean> { isSpeaking.postValue(it) }
+        edgeObserver = obs
+        created.isSpeaking.observeForever(obs)
+        edge = created
+        return created
     }
 
     suspend fun start(chapterPos: Int, pages: List<TxtPage>?, pagePos: Int) {
@@ -46,20 +56,18 @@ object TtsService : BaseTts {
 
     override suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
         try {
-            val engine = globalConfig.readerTtsEngine.value ?: "default"
-            if (engine == "edge") {
-                // delegate to Edge manager with voice param
+            if (currentEngine() == "edge") {
                 val voice = globalConfig.readerTtsVoice.value ?: "zh-CN-XiaoxiaoNeural"
-                // propagate callbacks
-                edge.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
-                edge.onCompleted = { onCompleted?.invoke() }
+                val e = ensureEdge()
+                e.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
+                e.onCompleted = { onCompleted?.invoke() }
                 val edgeRate = globalConfig.readerTtsRate.value ?: 50
-                edge.start(pages, pagePos, rate = edgeRate, voice = voice)
+                e.start(pages, pagePos, rate = edgeRate, voice = voice)
             } else {
-                // system
-                system.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
-                system.onCompleted = { onCompleted?.invoke() }
-                system.start(pages, pagePos)
+                val sys = ensureSystem()
+                sys.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
+                sys.onCompleted = { onCompleted?.invoke() }
+                sys.start(pages, pagePos)
             }
         } catch (e: Exception) {
             Log.e("TtsService start error: ${e.message}")
@@ -68,9 +76,33 @@ object TtsService : BaseTts {
 
     override fun stop() {
         try {
-            current().stop()
+            system?.release()
         } catch (_: Exception) {
         }
+        system?.let {
+            systemObserver?.let { obs ->
+                try { it.isSpeaking.removeObserver(obs) } catch (_: Throwable) {}
+            }
+        }
+        systemObserver = null
+        system = null
+
+        try {
+            edge?.release()
+        } catch (_: Exception) {
+        }
+        edge?.let {
+            edgeObserver?.let { obs ->
+                try { it.isSpeaking.removeObserver(obs) } catch (_: Throwable) {}
+            }
+        }
+        edgeObserver = null
+        edge = null
+        isSpeaking.postValue(false)
+    }
+
+    override fun release() {
+        stop()
     }
 
 }

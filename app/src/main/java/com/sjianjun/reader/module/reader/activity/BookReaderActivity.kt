@@ -106,6 +106,13 @@ class BookReaderActivity : BaseActivity() {
         applyReaderBrightness()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        ttsService.stop()
+        ttsService.progressChangeCallback = null
+        ttsService.onCompleted = null
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.i("onNewIntent: ${intent.getStringExtra(BOOK_ID)}")

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - 支持顺序播放缓存中的音频片段
  * - 提供与 TtsUtil 类似的接口：playKeys / pause / resume / stop / cache / isCached / clear
  */
-object TtsEdgeManager : BaseTts {
+class TtsEdgeManager : BaseTts {
     private val audioCache = HashMap<String, ByteArray>()
     private val keyParagraphMap = HashMap<String, List<TxtLine>>()
     private var mediaPlayer: MediaPlayer? = null
@@ -356,6 +356,15 @@ object TtsEdgeManager : BaseTts {
             removeAllCache()
         } catch (_: Exception) {
         }
+    }
+
+    override fun release() {
+        stop()
+        try {
+            ttsConversionJob?.cancel()
+        } catch (_: Throwable) {
+        }
+        ttsConversionJob = null
     }
 
     /**

@@ -18,5 +18,10 @@ interface BaseTts {
 
     fun stop()
 
+    /**
+     * Release the underlying TTS engine instance. A subsequent [start] will create a new engine.
+     */
+    fun release()
+
 }
 

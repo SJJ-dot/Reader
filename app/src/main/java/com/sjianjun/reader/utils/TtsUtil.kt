@@ -156,6 +156,19 @@ class TtsUtil() : ViewModel(), BaseTts {
         }
     }
 
+    override fun release() {
+        stop()
+        try {
+            textToSpeech?.shutdown()
+        } catch (_: Throwable) {
+        }
+        textToSpeech = null
+        try {
+            App.app.unregisterReceiver(broadcastReceiver)
+        } catch (_: Throwable) {
+        }
+    }
+
 
     private fun speakNext() {
         GlobalScope.launch(Dispatchers.Main) {
