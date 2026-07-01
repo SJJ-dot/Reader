@@ -611,9 +611,9 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     private suspend fun loadUrlForReadModeInternal(url: String, force: Boolean = false, pagePos: Int? = null) {
-        var data = extractCache.get(url) ?: if (!force) loadExtractFromDisk(url) else null
+        var data = if (!force) (extractCache.get(url) ?: loadExtractFromDisk(url)) else null
         Log.i("loadUrlForReadMode: loading url = $url, force = $force, cached = ${data != null}")
-        if (data == null || force) {
+        if (data == null) {
             if (force) {
                 // 强制刷新：WebView 可能已经停在同一个 url 且 progress==100，
                 // 直接 loadUrl 会让等待循环立即通过、提取到旧内容；先清空状态再加载
@@ -654,8 +654,6 @@ class BrowserReadModeActivity : BaseActivity() {
             toast("当前没有加载的页面，无法刷新")
             return
         }
-        // 同时清除提取缓存，确保走完整的重新加载路径
-        extractCache.remove(url)
         loadUrlForReadMode(url, true, pagePos = pageLoader.pagePos)
     }
 

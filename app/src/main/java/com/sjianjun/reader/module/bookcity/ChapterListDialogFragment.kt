@@ -58,7 +58,6 @@ class ChapterListDialogFragment : Fragment() {
         chapterAdapter = ChapterListAdapter { item ->
             act.closeChapterDrawer()
             act.showChapter(item.url)
-            act.loadUrlForReadMode(item.url)
         }
         historyAdapter = BookCityPageFragment.HistoryListAdapter().apply {
             onClick = { url ->
