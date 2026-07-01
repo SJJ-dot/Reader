@@ -115,7 +115,7 @@ object MqttUtil {
             var clientId = globalConfig.mqttClientId
             if (clientId == null){
                 clientId = if (BuildConfig.DEBUG){
-                    "debug_${UUID.randomUUID()}"
+                    "debug_UUID"
                 } else {
                     UUID.randomUUID().toString().replace("-", "")
                 }
