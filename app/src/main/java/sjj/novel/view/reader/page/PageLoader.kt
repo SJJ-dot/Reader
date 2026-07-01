@@ -212,11 +212,8 @@ abstract class PageLoader : ViewModel() {
         }
 
         // 载入上一章。
-        if (parsePrevChapter()) {
-            mCurPage = getCurPage(0)
-        } else {
-            mCurPage = TxtPage()
-        }
+        parsePrevChapter()
+        getCurPage(0)
         mPageView!!.drawCurPage()
         return true
     }
@@ -233,11 +230,8 @@ abstract class PageLoader : ViewModel() {
         }
 
         //判断是否达到章节的终止点
-        if (parseNextChapter()) {
-            mCurPage = getCurPage(0)
-        } else {
-            mCurPage = TxtPage()
-        }
+        parseNextChapter()
+        getCurPage(0)
         mPageView!!.drawCurPage()
         return true
     }
@@ -461,7 +455,7 @@ abstract class PageLoader : ViewModel() {
 
             }
         } else {
-            mCurPage = TxtPage()
+            mCurPage = getCurPage(0)
         }
         Log.i("openChapter mCurPage:${mCurPage?.position}")
         mPageView!!.drawCurPage()
@@ -559,7 +553,8 @@ abstract class PageLoader : ViewModel() {
             //根据状态不一样，数据不一样
             if (mStatus != STATUS_FINISH) {
                 if (isChapterListPrepare) {
-                    canvas.drawText(mCurPage?.title ?: "", mDisplayParams.contentLeft, tipTop, tipPaint)
+                    val count = tipPaint.breakText(mCurPage?.title ?: "", true, mDisplayParams.contentRight - 16.dp2Px, null)
+                    canvas.drawText(mCurPage?.title ?: "", 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
                 }
             } else {
                 val curPage = mCurPage ?: return
@@ -812,7 +807,7 @@ abstract class PageLoader : ViewModel() {
         if (parsePrevChapter()) {
             mCurPage = this.prevLastPage
         } else {
-            mCurPage = TxtPage()
+            mCurPage = getCurPage(0)
         }
         mPageView!!.drawNextPage()
         return true
@@ -877,11 +872,8 @@ abstract class PageLoader : ViewModel() {
 
         mCancelPage = mCurPage
         // 解析下一章数据
-        if (parseNextChapter()) {
-            mCurPage = curPageList!![0]
-        } else {
-            mCurPage = TxtPage()
-        }
+        parseNextChapter()
+        mCurPage = getCurPage(0)
         mPageView!!.drawNextPage()
         return true
     }
@@ -946,7 +938,7 @@ abstract class PageLoader : ViewModel() {
             if (this.curPageList != null) {
                 if (curPageList!!.isEmpty()) {
                     mStatus = STATUS_EMPTY
-                    curPageList = listOf(TxtPage())
+                    curPageList = listOf(getCurPage(0))
                 } else {
                     mStatus = STATUS_FINISH
                 }
@@ -991,7 +983,7 @@ abstract class PageLoader : ViewModel() {
                 if (parsePrevChapter()) {
                     mCurPage = this.prevLastPage
                 } else {
-                    mCurPage = TxtPage()
+                    mCurPage = getCurPage(0)
                 }
             }
         } else if (this.curPageList == null || (mCurPage!!.position == curPageList!!.size - 1 && this.chapterPos < mLastChapterPos)) {  // 加载上一章取消了
@@ -999,11 +991,8 @@ abstract class PageLoader : ViewModel() {
             if (pageList != null) {
                 cancelPreChapter()
             } else {
-                if (parseNextChapter()) {
-                    mCurPage = curPageList!![0]
-                } else {
-                    mCurPage = TxtPage()
-                }
+                parseNextChapter()
+                mCurPage = getCurPage(0)
             }
         } else {
             // 假设加载到下一页，又取消了。那么需要重新装载。
@@ -1507,7 +1496,10 @@ abstract class PageLoader : ViewModel() {
         val list = this.curPageList
         if (list.isNullOrEmpty()) {
             Log.e("当前页列表为空")
-            return TxtPage()
+            val chapter = chapterCategory?.getOrNull(chapterPos)
+            val page = TxtPage()
+            page.title = chapter?.title.orEmpty()
+            return page
         }
         pos = min(pos, list.size - 1)
         pos = max(0, pos)
@@ -1897,7 +1889,8 @@ abstract class PageLoader : ViewModel() {
         val normalized = when (mode) {
             MODE_TYPESETTING_HORIZONTAL_RTL,
             MODE_TYPESETTING_VERTICAL_LTR,
-            MODE_TYPESETTING_VERTICAL_RTL -> mode
+            MODE_TYPESETTING_VERTICAL_RTL,
+                -> mode
 
             else -> MODE_TYPESETTING_HORIZONTAL_LTR
         }
