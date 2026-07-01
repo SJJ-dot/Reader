@@ -594,8 +594,6 @@ abstract class PageLoader : ViewModel() {
                 STATUS_LOADING -> tip = "正在拼命加载中..."
                 STATUS_ERROR -> tip = "加载失败(点击边缘重试)"
                 STATUS_EMPTY -> tip = "文章内容为空"
-                STATUS_PARING -> tip = "正在排版请等待..."
-                STATUS_PARSE_ERROR -> tip = "文件解析错误"
                 STATUS_CATEGORY_EMPTY -> tip = "目录列表为空"
             }
 
@@ -1551,9 +1549,7 @@ abstract class PageLoader : ViewModel() {
             return false
         }
 
-        if (mStatus == STATUS_PARSE_ERROR || mStatus == STATUS_PARING) {
-            return false
-        } else if (mStatus == STATUS_ERROR) {
+        if (mStatus == STATUS_ERROR) {
             mStatus = STATUS_LOADING
         }
         return true
@@ -1854,8 +1850,6 @@ abstract class PageLoader : ViewModel() {
         const val STATUS_FINISH: Int = 2 // 加载完成
         const val STATUS_ERROR: Int = 3 // 加载错误 (一般是网络加载情况)
         const val STATUS_EMPTY: Int = 4 // 空数据
-        const val STATUS_PARING: Int = 5 // 正在解析 (装载本地数据)
-        const val STATUS_PARSE_ERROR: Int = 6 // 本地文件解析错误(暂未被使用)
         const val STATUS_CATEGORY_EMPTY: Int = 7 // 获取到的目录为空
     }
 
