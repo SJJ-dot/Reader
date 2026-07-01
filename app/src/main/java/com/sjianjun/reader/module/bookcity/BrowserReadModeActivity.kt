@@ -65,6 +65,7 @@ import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.view.isVisible
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.withContext
 
 class BrowserReadModeActivity : BaseActivity() {
 
@@ -367,7 +368,7 @@ class BrowserReadModeActivity : BaseActivity() {
             loader.initPageView(binding.readModePageView)
             loader.setOnPageChangeListener(object : PageLoader.OnPageChangeListener {
                 override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
-                    lifecycleScope.launch(Dispatchers.IO) {
+                    lifecycleScope.launch {
                         requestChapters.forEach {
                             val isPrev = it.chapterIndex == 0 && (loader.chapterCategory?.size ?: 0) > 1
                             loadUrlForReadMode(it.link, pagePos = if (isPrev) 10000 else null)
@@ -598,7 +599,21 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
+    suspend fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
+        val data = if (!force) (extractCache.get(url) ?: loadExtractFromDisk(url)) else null
+        if (data != null) {
+            Log.i("loadUrlForReadMode: url=$url, force=$force, cached=true")
+            // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
+            withContext(Dispatchers.Main) {
+                if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
+                    notifyChapterDialogChanged()
+                }
+                if (pageLoader.curChapter?.link == url) {
+                    showChapter(url, pagePos)
+                }
+            }
+            return
+        }
         loadUrlQueue.removeAll { it.url == url }
         loadUrlQueue.addLast(LoadUrlRequest(url, force, pagePos))
         if (loadUrlQueueJob?.isActive == true) return
@@ -654,7 +669,7 @@ class BrowserReadModeActivity : BaseActivity() {
             toast("当前没有加载的页面，无法刷新")
             return
         }
-        loadUrlForReadMode(url, true, pagePos = pageLoader.pagePos)
+        lifecycleScope.launch { loadUrlForReadMode(url, true, pagePos = pageLoader.pagePos) }
     }
 
     fun openInBrowser(home: Boolean) {
