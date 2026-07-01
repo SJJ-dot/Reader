@@ -35,6 +35,8 @@ class SettingTtsDialogFragment : DialogFragment() {
         val seekEdge = binding.seekbarEdgeRate
         val tvEdge = binding.tvEdgeRateValue
 
+
+
         // restore selection from globalConfig
         val current = globalConfig.readerTtsEngine.value ?: "default"
         if (current == "edge") rbEdge.isChecked = true else rbDefault.isChecked = true
@@ -47,8 +49,8 @@ class SettingTtsDialogFragment : DialogFragment() {
             "云希@zh-CN-YunxiNeural",
             "云夏@zh-CN-YunxiaNeural",
             "云扬@zh-CN-YunyangNeural",
-            "小北（辽宁方言）@zh-CN-liaoning-XiaobeiNeural",
-            "小妮（陕西方言）@zh-CN-shaanxi-XiaoniNeural"
+            "小北(辽宁方言)@zh-CN-liaoning-XiaobeiNeural",
+            "小妮(陕西方言)@zh-CN-shaanxi-XiaoniNeural"
         )
         val voiceDisplay = voiceOptions.map { it.substringBefore("@") }
         val voiceParams = voiceOptions.map { it.substringAfter("@") }

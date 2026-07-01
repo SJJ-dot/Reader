@@ -14,33 +14,56 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <RadioGroup
-        android:id="@+id/rg_tts_engine"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
-        <RadioButton
-            android:id="@+id/rb_tts_default"
-            android:layout_width="match_parent"
+        <RadioGroup
+            android:id="@+id/rg_tts_engine"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="系统 TTS (默认)"
-            android:textColor="@color/dn_text_color_black" />
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <RadioButton
-            android:id="@+id/rb_tts_edge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Edge TTS(网络合成)"
-            android:textColor="@color/dn_text_color_black" />
+            <RadioButton
+                android:id="@+id/rb_tts_default"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="系统"
+                android:textColor="@color/dn_text_color_black" />
 
-    </RadioGroup>
+            <RadioButton
+                android:id="@+id/rb_tts_edge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Edge(网络)"
+                android:textColor="@color/dn_text_color_black" />
 
-    <Spinner
-        android:id="@+id/spinner_tts_voice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:visibility="invisible" />
+
+            <Spinner
+                android:id="@+id/spinner_tts_voice"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+
+    </LinearLayout>
 
 
     <!-- TTS rate setting (base 50) -->
