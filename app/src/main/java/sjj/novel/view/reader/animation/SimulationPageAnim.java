@@ -117,7 +117,6 @@ public class SimulationPageAnim extends HorizonPageAnim {
     @Override
     public void drawStatic(Canvas canvas) {
         if (isCancel) {
-            mNextBitmap = mCurBitmap.copy(Bitmap.Config.RGB_565, true);
             canvas.drawBitmap(mCurBitmap.bitmap, 0, 0, null);
         } else {
             canvas.drawBitmap(mNextBitmap.bitmap, 0, 0, null);
