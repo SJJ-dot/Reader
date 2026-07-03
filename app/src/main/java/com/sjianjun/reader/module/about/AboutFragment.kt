@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Debug
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -32,6 +33,8 @@ import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.io.File
@@ -74,6 +77,44 @@ class AboutFragment : BaseAsyncFragment() {
             tvOnline.click {
                 NavHostFragment.findNavController(this@AboutFragment).navigate(R.id.onlineLeaderboardFragment)
             }
+
+            // 定时刷新 CPU/内存占用到 tvCpuInfo
+            val cpuInfoJob = lifecycleScope.launch {
+                var lastJiffies = readCpuJiffies()
+                var lastTime = System.currentTimeMillis()
+                while (isActive) {
+                    delay(2000)
+                    val now = System.currentTimeMillis()
+                    val jiffies = readCpuJiffies()
+                    // CPU% = Δ(jiffies)/100 / Δ(seconds) * 100
+                    val dtSec = (now - lastTime) / 1000.0
+                    val cpuPercent = if (dtSec > 0 && lastJiffies > 0) {
+                        ((jiffies - lastJiffies).toDouble() / 100.0 / dtSec * 100).toFloat().coerceAtLeast(0f)
+                    } else 0f
+                    lastJiffies = jiffies
+                    lastTime = now
+
+                    val memKb = Debug.MemoryInfo().let { info ->
+                        Debug.getMemoryInfo(info)
+                        info.totalPrivateDirty.toLong()
+                    }
+                    val memText = if (memKb >= 1024) "%.1f MB".format(memKb / 1024.0) else "$memKb KB"
+                    tvCpuInfo.text = "CPU：${"%.1f".format(cpuPercent)}%\n内存：$memText"
+                }
+            }
+        }
+    }
+
+    /** 读取 /proc/self/stat 的 utime+stime（jiffies） */
+    private fun readCpuJiffies(): Long {
+        return try {
+            val stat = java.io.File("/proc/self/stat").readText().trim()
+            val fields = stat.substringAfterLast(')').split(Regex("\\s+"))
+            val utime = fields.getOrElse(11) { "0" }.toLong()
+            val stime = fields.getOrElse(12) { "0" }.toLong()
+            utime + stime
+        } catch (e: Exception) {
+            0L
         }
     }
 

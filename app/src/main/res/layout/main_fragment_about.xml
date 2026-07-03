@@ -52,7 +52,7 @@
         android:layout_height="wrap_content"
         android:text="扫码下载"
         android:textColor="@color/dn_text_color_black"
-        app:layout_constraintBottom_toTopOf="@+id/tvOnline"
+        app:layout_constraintBottom_toTopOf="@+id/tvCpuInfo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/code" />
@@ -103,6 +103,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         tools:text="书友在线：1\n在线人数：0" />
+
+    <TextView
+        android:id="@+id/tvCpuInfo"
+        style="@style/text_body1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@+id/tvOnline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="CPU占用：1\n内存占用：0" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
