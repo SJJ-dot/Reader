@@ -323,7 +323,7 @@ public class ScrollPageAnim extends PageAnimation {
                 mVelocity.computeCurrentVelocity(VELOCITY_DURATION);
                 isRunning = true;
                 // 进行刷新
-                mView.postInvalidate();
+                mView.postInvalidateOnAnimation();
                 break;
             case MotionEvent.ACTION_UP:
                 isRunning = false;
@@ -396,7 +396,7 @@ public class ScrollPageAnim extends PageAnimation {
             if (mScroller.getFinalX() == x && mScroller.getFinalY() == y) {
                 isRunning = false;
             }
-            mView.postInvalidate();
+            mView.postInvalidateOnAnimation();
         }
     }
 

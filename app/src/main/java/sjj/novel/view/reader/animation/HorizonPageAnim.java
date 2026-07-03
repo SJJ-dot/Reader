@@ -206,7 +206,7 @@ public abstract class HorizonPageAnim extends PageAnimation{
             if (mScroller.getFinalX() == x && mScroller.getFinalY() == y){
                 isRunning = false;
             }
-            mView.postInvalidate();
+            mView.postInvalidateOnAnimation();
         }
     }
 
@@ -216,7 +216,7 @@ public abstract class HorizonPageAnim extends PageAnimation{
             mScroller.abortAnimation();
             isRunning = false;
             setTouchPoint(mScroller.getFinalX(),mScroller.getFinalY());
-            mView.postInvalidate();
+            mView.postInvalidateOnAnimation();
         }
     }
 
