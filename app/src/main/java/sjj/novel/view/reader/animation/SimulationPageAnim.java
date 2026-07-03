@@ -12,6 +12,9 @@ import android.graphics.PointF;
 import android.graphics.Region;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
+import android.view.ViewConfiguration;
+
+import sjj.alog.Log;
 
 
 /**
@@ -58,10 +61,14 @@ public class SimulationPageAnim extends HorizonPageAnim {
     GradientDrawable mFrontShadowDrawableVLR;
     GradientDrawable mFrontShadowDrawableVRL;
 
-    /** 缓存背面颜色，避免每帧调用 bitmap.getPixel 触发 GPU→CPU 回读 */
+    /**
+     * 缓存背面颜色，避免每帧调用 bitmap.getPixel 触发 GPU→CPU 回读
+     */
     private int mCachedBackPixel = 0;
 
     Paint mPaint;
+    private final int mSlop;
+    private boolean isHorizontalDrag = false;
 
     public SimulationPageAnim(int w, int h, View view, OnPageChangeListener listener) {
         super(w, h, view, listener);
@@ -85,6 +92,7 @@ public class SimulationPageAnim extends HorizonPageAnim {
 
         mTouchX = 0.01f; // 不让x,y为0,否则在点计算时会有问题
         mTouchY = 0.01f;
+        mSlop = ViewConfiguration.get(mView.getContext()).getScaledTouchSlop();
     }
 
     @Override
@@ -165,36 +173,20 @@ public class SimulationPageAnim extends HorizonPageAnim {
     public void setDirection(Direction direction) {
         super.setDirection(direction);
 
-        switch (direction) {
-            case PRE:
-                //上一页滑动不出现对角
-                if (mStartX > mScreenWidth / 2) {
-                    calcCornerXY(mScreenWidth - mStartX, mStartY);
-                }
-                break;
-            case NEXT:
-                if (mScreenWidth / 2 > mStartX) {
-                    calcCornerXY(mScreenWidth - mStartX, mStartY);
-                }
-                break;
-        }
+        calcCornerXY();
     }
 
     @Override
     public void setStartPoint(float x, float y) {
         super.setStartPoint(x, y);
-        calcCornerXY(x, y);
+        isHorizontalDrag = false;
     }
 
     @Override
     public void setTouchPoint(float x, float y) {
         super.setTouchPoint(x, y);
         //触摸y中间位置吧y变成屏幕高度
-        if ((mStartY > mScreenHeight / 3 && mStartY < mScreenHeight / 2) && mDirection.equals(Direction.PRE)) {
-            mTouchY = 1;
-        }
-
-        if (mStartY > mScreenHeight / 3 && mStartY < mScreenHeight / 2 && mDirection.equals(Direction.NEXT)) {
+        if (isHorizontalDrag) {
             mTouchY = 1;
         }
     }
@@ -300,7 +292,7 @@ public class SimulationPageAnim extends HorizonPageAnim {
 
         mPaint.setColorFilter(mColorMatrixFilter);
         //使用缓存的像素颜色，避免每帧 getPixel 触发 GPU→CPU 回读
-        if(mCachedBackPixel == 0){
+        if (mCachedBackPixel == 0) {
             // 翻页开始时取一次背面颜色，避免每帧 getPixel
             try {
                 mCachedBackPixel = mCurBitmap.bitmap.getPixel(1, 1);
@@ -504,31 +496,28 @@ public class SimulationPageAnim extends HorizonPageAnim {
 
     }
 
-    /**
-     * 计算拖拽点对应的拖拽脚
-     *
-     * @param x
-     * @param y
-     */
-    public void calcCornerXY(float x, float y) {
-        if (x <= mScreenWidth / 2) {
-            mCornerX = 0;
-        } else {
-            mCornerX = mScreenWidth;
-        }
-        if (y <= mScreenHeight / 2) {
+    public void calcCornerXY() {
+        float difY = mTouchY - mStartY;
+        if (Math.abs(difY) <= mSlop / 2) {
+            // 横向拖拽 → 整页卷动，不翘角，触摸点拉到顶部
+            isHorizontalDrag = true;
+            mTouchY = 1;
+            mCornerX = mDirection == Direction.NEXT ? mScreenWidth : 0;
             mCornerY = 0;
         } else {
-            mCornerY = mScreenHeight;
+            isHorizontalDrag = false;
+            if (mDirection == Direction.NEXT) {
+                mCornerX = mScreenWidth;
+            } else {
+                mCornerX = 0;
+            }
+            if (difY > 0) {
+                mCornerY = 0;
+            } else {
+                mCornerY = mScreenHeight;
+            }
         }
-
-        if ((mCornerX == 0 && mCornerY == mScreenHeight)
-                || (mCornerX == mScreenWidth && mCornerY == 0)) {
-            mIsRTandLB = true;
-        } else {
-            mIsRTandLB = false;
-        }
-
+        mIsRTandLB = (mCornerX == 0 && mCornerY == mScreenHeight) || (mCornerX == mScreenWidth && mCornerY == 0);
     }
 
     private void calcPoints() {
