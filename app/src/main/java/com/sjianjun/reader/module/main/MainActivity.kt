@@ -100,7 +100,21 @@ class MainActivity : BaseActivity() {
             navController!!,
             appBarConfiguration!!
         )
-        NavigationUI.setupWithNavController(binding?.navUi!!, navController!!)
+        // 覆盖默认的 setupWithNavController 行为：导航前清空回退栈，
+        // 避免从子页面（如在线排行）切抽屉菜单后栈里残留子页面。
+        binding?.navUi?.setNavigationItemSelectedListener { item ->
+            val navController = navController ?: return@setNavigationItemSelectedListener false
+            // 先清空回退栈到根节点（不包含根节点本身）
+            if (navController.currentDestination?.id != item.itemId) {
+                navController.popBackStack(navController.graph.startDestinationId, false)
+            }
+            // 再导航到目标（如果当前不是目标页面）
+            if (navController.currentDestination?.id != item.itemId) {
+                navController.navigate(item.itemId)
+            }
+            binding?.drawerLayout?.closeDrawer(GravityCompat.START)
+            true
+        }
         navController!!.addOnDestinationChangedListener { _, destination, _ ->
             if (destination.id == R.id.browserBookCityFragment) {
                 supportActionBar?.hide()

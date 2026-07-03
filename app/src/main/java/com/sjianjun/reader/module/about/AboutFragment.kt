@@ -14,6 +14,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.NavHostFragment
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
@@ -68,6 +70,9 @@ class AboutFragment : BaseAsyncFragment() {
             OnlineInfos.onlineInfo.observe(viewLifecycleOwner) { info ->
                 tvOnline.text = "今日阅读时长：${info?.today_online_seconds?.formatDuration() ?: "--"}\n" +
                         "书友在线：${info.online_count}"
+            }
+            tvOnline.click {
+                NavHostFragment.findNavController(this@AboutFragment).navigate(R.id.onlineLeaderboardFragment)
             }
         }
     }

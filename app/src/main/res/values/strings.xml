@@ -38,7 +38,7 @@
     <string name="privacy_policy_agree">同意并继续</string>
     <string name="privacy_policy_exit">拒绝并退出</string>
     <string name="privacy_policy_dialog_message">为保障你的个人信息安全，请在继续使用前阅读以下说明：\n
-1. 我们收集的信息：\n
+1. 「修仙」收集的信息：\n
 • 应用崩溃日志：通过腾讯 Bugly 收集，用于问题定位与修复，仅包含崩溃堆栈信息。\n
 • 在线时长统计：通过 MQTT 的连接与断开事件进行统计，用于统计APP使用时长。\n
 2. 除上述信息外，本应用不会主动收集任何用户信息。也不会尝试获取或者创建任何可能识别用户身份的标志，应用内部的身份信息为随机生成的UUID\n
