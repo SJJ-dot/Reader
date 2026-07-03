@@ -58,6 +58,9 @@ public class SimulationPageAnim extends HorizonPageAnim {
     GradientDrawable mFrontShadowDrawableVLR;
     GradientDrawable mFrontShadowDrawableVRL;
 
+    /** 缓存背面颜色，避免每帧调用 bitmap.getPixel 触发 GPU→CPU 回读 */
+    private int mCachedBackPixel = 0;
+
     Paint mPaint;
 
     public SimulationPageAnim(int w, int h, View view, OnPageChangeListener listener) {
@@ -297,8 +300,16 @@ public class SimulationPageAnim extends HorizonPageAnim {
 
 
         mPaint.setColorFilter(mColorMatrixFilter);
-        //对Bitmap进行取色
-        int color = bitmap.getPixel(1, 1);
+        //使用缓存的像素颜色，避免每帧 getPixel 触发 GPU→CPU 回读
+        if(mCachedBackPixel == 0){
+            // 翻页开始时取一次背面颜色，避免每帧 getPixel
+            try {
+                mCachedBackPixel = mCurBitmap.bitmap.getPixel(1, 1);
+            } catch (Exception ignored) {
+                mCachedBackPixel = 0;
+            }
+        }
+        int color = mCachedBackPixel;
         //获取对应的三色
         int red = (color & 0xff0000) >> 16;
         int green = (color & 0x00ff00) >> 8;
