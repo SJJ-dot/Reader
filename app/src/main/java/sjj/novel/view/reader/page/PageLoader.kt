@@ -9,6 +9,8 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.jaeger.library.OnSelectListener
 import com.jaeger.library.SelectableTextHelper
 import com.jaeger.library.SelectionInfo
@@ -23,6 +25,8 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.BitmapWrapper
@@ -30,6 +34,8 @@ import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import androidx.core.graphics.withClip
+import com.sjianjun.reader.preferences.globalConfig
 
 /**
  * Created by newbiechen on 17-7-1.
@@ -153,6 +159,7 @@ abstract class PageLoader : ViewModel() {
         // 初始化PageView
         pageView.setPageMode(mPageMode)
         pageView.setBackground(mBackground)
+        startCpuRefresh()
     }
 
     fun setTypeface(typeface: Typeface?) {
@@ -528,16 +535,51 @@ abstract class PageLoader : ViewModel() {
     }
 
     /***********************************default method */
-    fun drawPage(bitmap: BitmapWrapper) {
-        drawBackground(mPageView?.bgBitmap?.bitmap ?: return)
-        bitmap.chapterPos = this.chapterPos
-        bitmap.pagePos = pagePos
-        if (!bitmap.inited) {
-            bitmap.inited = mStatus == STATUS_FINISH && mCurPage != null
+    fun drawPage(bitmap: BitmapWrapper, cpuOnly: Boolean = false) {
+        if (cpuOnly) {
+            drawCpuInfo(mPageView?.bgBitmap?.bitmap ?: return)
+        } else {
+            drawBackground(mPageView?.bgBitmap?.bitmap ?: return)
+            bitmap.chapterPos = this.chapterPos
+            bitmap.pagePos = pagePos
+            if (!bitmap.inited) {
+                bitmap.inited = mStatus == STATUS_FINISH && mCurPage != null
+            }
+            drawContent(bitmap.bitmap)
         }
-        drawContent(bitmap.bitmap)
         //更新绘制
         mPageView!!.invalidate()
+    }
+
+    private fun drawCpuInfo(bitmap: Bitmap) {
+        val canvas = Canvas(bitmap)
+        val tipPaint = mTipPaint!!
+        // CPU + 内存：CPU：55 内存300MB
+        val cpu = getCpuPercent()
+        val memMb = getMemMb()
+        val infoText = "CPU:$cpu-内存:${memMb}M"
+        val infoWidth = tipPaint.measureText(infoText)
+        val infoX = mDisplayParams.contentRight - infoWidth
+        val infoY = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f - mDisplayParams.tipHeight
+        // 擦除旧文字区域
+        val eraseLeft = infoX.toInt() - 20.dp2Px
+        val eraseTop = (infoY - lineAdvance(tipPaint)).toInt() - 5
+        val eraseRight = mDisplayParams.contentRight.toInt() + 5
+        val eraseBottom = (infoY + 5).toInt()
+        canvas.withClip(eraseLeft, eraseTop, eraseRight, eraseBottom) {
+            mBackground?.draw(this)
+        }
+        canvas.drawText(infoText, infoX, infoY, tipPaint)
+    }
+
+    private fun getMemMb(): Int {
+        return try {
+            val info = android.os.Debug.MemoryInfo()
+            android.os.Debug.getMemoryInfo(info)
+            info.totalPrivateDirty / 1024
+        } catch (e: Exception) {
+            0
+        }
     }
 
     private fun drawBackground(bitmap: Bitmap) {
@@ -547,25 +589,67 @@ abstract class PageLoader : ViewModel() {
         val chapters = chapterCategory
         val tipPaint = mTipPaint!!
         if (chapters?.isEmpty() == false) {
-            /*****初始化标题的参数 */
-            //需要注意的是:绘制text的y的起始点是text的基准线的位置，而不是从text的头部的位置
             val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f
-            //根据状态不一样，数据不一样
+
             if (mStatus != STATUS_FINISH) {
                 if (isChapterListPrepare) {
-                    val count = tipPaint.breakText(mCurPage?.title ?: "", true, mDisplayParams.contentRight - 16.dp2Px, null)
+                    val count = tipPaint.breakText(mCurPage?.title ?: "", true, mDisplayParams.contentWidth - 2.dp2Px, null)
                     canvas.drawText(mCurPage?.title ?: "", 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
                 }
             } else {
                 val curPage = mCurPage ?: return
                 val pageList = curPageList ?: return
 
-                /******绘制页码 */
                 val percent = (curPage.position + 1).toString() + "/" + pageList.size
-                canvas.drawText(percent, mDisplayParams.contentRight - tipPaint.measureText(percent), tipTop, tipPaint)
+                val percentWidth = tipPaint.measureText(percent)
+                val percentX = mDisplayParams.contentRight - percentWidth
+                canvas.drawText(percent, percentX, tipTop, tipPaint)
 
-                val count = tipPaint.breakText(curPage.title, true, mDisplayParams.contentRight - tipPaint.measureText(percent) - 16.dp2Px, null)
+                val count = tipPaint.breakText(curPage.title, true, percentX - mDisplayParams.contentLeft - 2.dp2Px, null)
                 canvas.drawText(curPage.title, 0, count, mDisplayParams.contentLeft, tipTop, tipPaint)
+            }
+            if (globalConfig.showCpuMemInfo.value == true) {
+                drawCpuInfo(bitmap)
+            }
+        }
+    }
+
+    /** CPU 占用采样：drawBackground 里立即获取，无动画时每 2 秒自动刷新 */
+    @Volatile
+    private var lastCpuJiffies: Long = 0
+
+    @Volatile
+    private var lastCpuTime: Long = 0
+    private fun getCpuPercent(): Int {
+        return try {
+            val stat = java.io.File("/proc/self/stat").readText().trim()
+            val fields = stat.substringAfterLast(')').split(Regex("\\s+"))
+            val utime = fields.getOrElse(11) { "0" }.toLong()
+            val stime = fields.getOrElse(12) { "0" }.toLong()
+            val jiffies = utime + stime
+            val now = System.currentTimeMillis()
+            val percent = if (lastCpuJiffies > 0 && lastCpuTime > 0) {
+                val dtSec = (now - lastCpuTime) / 1000.0
+                if (dtSec > 0) {
+                    ((jiffies - lastCpuJiffies).toDouble() / 100.0 / dtSec * 100).toInt().coerceIn(0, 100)
+                } else 0
+            } else 0
+            lastCpuJiffies = jiffies
+            lastCpuTime = now
+            Log.i("getCpuPercent: $percent%")
+            percent
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    private fun startCpuRefresh() {
+        mPageView?.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+            while (isActive) {
+                if (globalConfig.showCpuMemInfo.value == true && mPageView?.mPageAnim?.isRunning != true) {
+                    mPageView!!.drawCurPage(true)
+                }
+                delay(2000)
             }
         }
     }

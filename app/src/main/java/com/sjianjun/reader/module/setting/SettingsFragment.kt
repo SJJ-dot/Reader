@@ -162,6 +162,14 @@ class SettingsFragment : Fragment() {
                     .show()
             }
             refreshAppCacheStats()
+
+            // CPU/内存信息显示开关
+            globalConfig.showCpuMemInfo.observe(viewLifecycleOwner) {
+                cpuMemSwitch.isChecked = it
+            }
+            cpuMemSwitch.setOnCheckedChangeListener { _, isChecked ->
+                globalConfig.showCpuMemInfo.postValue(isChecked)
+            }
         }
     }
 

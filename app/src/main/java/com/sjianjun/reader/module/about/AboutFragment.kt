@@ -78,30 +78,6 @@ class AboutFragment : BaseAsyncFragment() {
                 NavHostFragment.findNavController(this@AboutFragment).navigate(R.id.onlineLeaderboardFragment)
             }
 
-            // 定时刷新 CPU/内存占用到 tvCpuInfo
-            val cpuInfoJob = lifecycleScope.launch {
-                var lastJiffies = readCpuJiffies()
-                var lastTime = System.currentTimeMillis()
-                while (isActive) {
-                    delay(2000)
-                    val now = System.currentTimeMillis()
-                    val jiffies = readCpuJiffies()
-                    // CPU% = Δ(jiffies)/100 / Δ(seconds) * 100
-                    val dtSec = (now - lastTime) / 1000.0
-                    val cpuPercent = if (dtSec > 0 && lastJiffies > 0) {
-                        ((jiffies - lastJiffies).toDouble() / 100.0 / dtSec * 100).toFloat().coerceAtLeast(0f)
-                    } else 0f
-                    lastJiffies = jiffies
-                    lastTime = now
-
-                    val memKb = Debug.MemoryInfo().let { info ->
-                        Debug.getMemoryInfo(info)
-                        info.totalPrivateDirty.toLong()
-                    }
-                    val memText = if (memKb >= 1024) "%.1f MB".format(memKb / 1024.0) else "$memKb KB"
-                    tvCpuInfo.text = "CPU：${"%.1f".format(cpuPercent)}%\n内存：$memText"
-                }
-            }
         }
     }
 

@@ -21,7 +21,7 @@ public abstract class PageAnimation {
     //移动方向
     protected Direction mDirection = Direction.NONE;
 
-    protected boolean isRunning = false;
+    boolean isRunning = false;
 
     //屏幕的尺寸
     protected int mScreenWidth;

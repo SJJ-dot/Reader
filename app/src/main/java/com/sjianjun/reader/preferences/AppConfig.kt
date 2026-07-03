@@ -166,4 +166,7 @@ class AppConfig(val name: String) :
     val privacyPolicyAccepted by lazy { boolLivedata("privacyPolicyAccepted1", false) }
 
     var webFontZoomSize by intPref("webFontZoomSize", 100)
+
+    /** 阅读器顶部显示 CPU/内存信息 */
+    val showCpuMemInfo by lazy { boolLivedata("showCpuMemInfo", true) }
 }

@@ -49,7 +49,7 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private var pendingSizeChangeRunnable: Runnable? = null
 
     // 动画类
-    private var mPageAnim: PageAnimation? = null
+    var mPageAnim: PageAnimation? = null
 
     //点击监听
     private var mTouchListener: TouchListener? = null
@@ -278,12 +278,12 @@ class PageView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
      * 绘制当前页。
      *
      */
-    fun drawCurPage() {
+    fun drawCurPage(cpuOnly: Boolean = false) {
         if (!isPrepare) return
         if (mPageAnim is ScrollPageAnim) {
             (mPageAnim as ScrollPageAnim).resetBitmap()
         }
-        pageLoader?.drawPage(this.nextBitmap ?: return)
+        pageLoader?.drawPage(this.nextBitmap ?: return, cpuOnly)
     }
 
     override fun onDetachedFromWindow() {
