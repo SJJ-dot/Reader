@@ -220,7 +220,7 @@ abstract class PageLoader : ViewModel() {
 
         // 载入上一章。
         parsePrevChapter()
-        getCurPage(0)
+        mCurPage = getCurPage(0)
         mPageView!!.drawCurPage()
         return true
     }
@@ -231,14 +231,14 @@ abstract class PageLoader : ViewModel() {
      * @return
      */
     fun skipNextChapter(): Boolean {
-        Log.i("skipNextChapter")
+        Log.i("skipNextChapter ${chapterPos}")
         if (!hasNextChapter()) {
             return false
         }
 
         //判断是否达到章节的终止点
         parseNextChapter()
-        getCurPage(0)
+        mCurPage = getCurPage(0)
         mPageView!!.drawCurPage()
         return true
     }

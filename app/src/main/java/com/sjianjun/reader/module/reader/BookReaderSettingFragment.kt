@@ -460,11 +460,11 @@ class BookReaderSettingFragment : BaseFragment() {
 
     private fun initChapterList() {
         binding?.chapterLast?.click {
-            pageLoader?.skipPreChapter()
+            pageLoader.skipPreChapter()
             refreshChapterProgress()
         }
         binding?.chapterNext?.click {
-            pageLoader?.skipNextChapter()
+            pageLoader.skipNextChapter()
             refreshChapterProgress()
         }
         refreshChapterProgress()

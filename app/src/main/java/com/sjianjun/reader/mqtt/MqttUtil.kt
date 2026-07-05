@@ -69,7 +69,9 @@ object MqttUtil {
             } else {
                 Log.i("Connected to: $serverURI")
             }
-            publishOnline()
+            if (!BuildConfig.DEBUG) {
+                publishOnline()
+            }
             restoreSubscriptions()
         }
 
@@ -113,8 +115,8 @@ object MqttUtil {
 
             val serverURI = BuildConfig.MQTT_SERVER_URI
             var clientId = globalConfig.mqttClientId
-            if (clientId == null){
-                clientId = if (BuildConfig.DEBUG){
+            if (clientId == null) {
+                clientId = if (BuildConfig.DEBUG) {
                     "debug_UUID"
                 } else {
                     UUID.randomUUID().toString().replace("-", "")
@@ -136,11 +138,13 @@ object MqttUtil {
             keepAliveInterval = 30
             userName = BuildConfig.MQTT_USERNAME
             password = BuildConfig.MQTT_PASSWORD.toCharArray()
-            val payload = mapOf(
-                "clientId" to globalConfig.mqttClientId,
-                "status" to "offline"
-            )
-            setWill(TOPIC_ONLINE.topic, gson.toJson(payload).toByteArray(), 1, true)
+            if (!BuildConfig.DEBUG) {
+                val payload = mapOf(
+                    "clientId" to globalConfig.mqttClientId,
+                    "status" to "offline"
+                )
+                setWill(TOPIC_ONLINE.topic, gson.toJson(payload).toByteArray(), 1, true)
+            }
         }
     }
 
