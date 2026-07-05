@@ -5,13 +5,15 @@ from bs4 import BeautifulSoup
 
 from log import log
 
+
 def verify(query):
-    res = getDetails("https://www.22sq.net/b/1643/1643570/")
+    res = getDetails("https://www.ishuqu.net/b/1643/1643570/")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
 
+
 def getSiteUrl():
-    return "https://www.22sq.net/"
+    return "https://www.ishuqu.net/"
 
 
 # def search(query):
@@ -79,3 +81,16 @@ def getChapterContent(chapter_url):
     return content
 
 
+if __name__ == '__main__':
+    url = "https://www.ishuqu.net/b/0/480/"
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getDetails(url)
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    print(res)
