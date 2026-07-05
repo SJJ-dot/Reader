@@ -56,6 +56,8 @@ class RankingInfo {
     var online_seconds: Int = 0
     var total_online_seconds: Int = 0
     var level: LevelInfo? = null
+    val levelName: String
+        get() = level?.stage_name + " 总阅读时长：" + total_online_seconds.formatDuration()
 }
 
 class OnlineInfo {
@@ -64,7 +66,6 @@ class OnlineInfo {
     var today_online_seconds: Int = 0
     var total_online_seconds: Int = 0
     var level: LevelInfo? = null
-
     var server_ts: Long = 0
 }
 
@@ -92,13 +93,4 @@ class LevelInfo {
     var current_stage_required_seconds: Int = 0
     var next_level_need_seconds: Int = 0
     var is_max_level: Boolean = false
-
-
-    val levelName: String
-        get() = when {
-            stage_name.isNotBlank() -> stage_name
-            major.isNotBlank() && stage > 0 -> "${major}${stage}层"
-            major.isNotBlank() -> major
-            else -> "未入门"
-        }
 }

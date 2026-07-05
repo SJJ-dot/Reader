@@ -90,7 +90,7 @@ class OnlineLeaderboardFragment : Fragment() {
 
             binding.tvRank.text = item.rank.toString()
             binding.tvUser.text = item.user_id.user
-            binding.tvLevel.text = item.level?.levelName ?: "--"
+            binding.tvLevel.text = item.levelName
             binding.tvOnlineTime.text = item.online_seconds.formatDuration()
             val context = holder.itemView.context
             if (item.user_id == globalConfig.mqttClientId) {

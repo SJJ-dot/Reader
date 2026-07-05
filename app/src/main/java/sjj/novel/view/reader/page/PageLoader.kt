@@ -636,7 +636,7 @@ abstract class PageLoader : ViewModel() {
             } else 0
             lastCpuJiffies = jiffies
             lastCpuTime = now
-            Log.i("getCpuPercent: $percent%")
+//            Log.i("getCpuPercent: $percent%")
             percent
         } catch (e: Exception) {
             0
