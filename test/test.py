@@ -17,7 +17,7 @@ def test(filename):
     spec.loader.exec_module(module)
     # 调用verify函数校验
     if hasattr(module, "verify"):
-        if module.verify():
+        if module.verify("我的"):
             return
         raise Exception(f"Module {module_name} verification failed")
 
@@ -45,9 +45,11 @@ def test_all():
                 log(f"Error in module {filename}: {e}")  # 打印出异常信息
                 err_list.append(filename)
                 pass
+    log("校验失败===>")
     log(err_list)
 
 
 if __name__ == '__main__':
-    test_all()
-    # test("./py/香书小说.py")
+    # test_all()
+    # ['书趣阁.py', '小原文学网.py', '笔仙阁.py', '速读谷.py', '顶点小说.py']
+    test("./py/69书吧.py")

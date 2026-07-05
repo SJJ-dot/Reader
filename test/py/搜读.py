@@ -5,10 +5,10 @@ from urllib.parse import urlencode, urljoin
 from log import log
 
 def getSiteUrl():
-    return "http://www.soduzw.com"
+    return "http://www.soduzw.org"
 
 def search(query):
-    base_url = "http://www.soduzw.com/search.html"
+    base_url = "http://www.soduzw.org/search.html"
     data = {
         "searchtype": "novelname",
         "searchkey": query
@@ -71,10 +71,25 @@ def getChapterContent(url):
         "siteid": "0",
         "url": ""
     }
-    response = requests.post("http://www.soduzw.com/novelsearch/chapter/transcode.html", data=data, timeout=(5, 10))
+    response = requests.post("http://www.soduzw.org/novelsearch/chapter/transcode.html", data=data, timeout=(5, 10))
     # log(response.request)
     # log(response.text)
     content = response.json()["info"]
     return content
 
 
+if __name__ == '__main__':
+    res = search("我的")
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getDetails(res[0]["bookUrl"])
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    print(res)

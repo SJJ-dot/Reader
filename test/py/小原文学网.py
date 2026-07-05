@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from log import log
 
+
 # 支持搜索可以不需要实现verify
 # def verify(query):
 #     res = getDetails("https://www.min-yuan.com/txt/wk/")
@@ -13,6 +14,7 @@ from log import log
 
 def getSiteUrl():
     return "https://www.min-yuan.com"
+
 
 def search(query):
     base_url = "https://www.min-yuan.com/search/"
@@ -88,3 +90,20 @@ def getChapterContent(url):
         content += getChapterContent(next_url)
 
     return content
+
+
+if __name__ == '__main__':
+    res = search("我的")
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getDetails(res[0]["bookUrl"])
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    print(res)

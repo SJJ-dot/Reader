@@ -7,13 +7,16 @@ from WebViewClient import web_get
 from SessionManager import verification_activity_get
 from log import log
 
+
 def verify(query):
     res = getDetails("https://www.69shuba.com/book/90442.htm")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
 
+
 def getSiteUrl():
     return "https://www.69shuba.com"
+
 
 # 不支持搜索，太麻烦了
 # def search(query):
@@ -61,6 +64,7 @@ def get_chapter_list(url, chapter_list):
                 "url": urljoin(result.get("url"), chapter_el.get("href"))
             }
             chapter_list.append(chapter)
+
     try:
         parseChapterInfo(web_get(url))
     except Exception as e:
@@ -81,8 +85,24 @@ def getChapterContent(url):
         for h1 in txt_el.find_all("div"):
             h1.decompose()
         return txt_el.prettify()
+
     try:
         return parseChapterContent(web_get(url))
     except Exception as e:
         log(f"Error :{e}")
         return parseChapterContent(verification_activity_get(url))
+
+
+if __name__ == '__main__':
+    url = "https://www.69shuba.com/book/49991.htm"
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getDetails(url)
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    print(res)
