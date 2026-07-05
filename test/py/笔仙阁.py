@@ -6,7 +6,7 @@ from log import log
 from urllib.parse import quote
 
 def getSiteUrl():
-    return "https://m.bixiange.me"
+    return "https://bixiange.xyz/"
 
 def search(query):
     """
@@ -14,7 +14,7 @@ def search(query):
     :param query: 搜索关键词
     :return [{"bookTitle":"书名", "bookUrl": "书籍链接", "bookAuthor": "作者"}, ...] 搜索结果列表
     """
-    url = f"https://m.bixiange.me/e/search/indexpage.php"
+    url = f"https://bixiange.xyz//e/search/indexpage.php"
     # POST请求的数据
     data = f'keyboard={quote(query, encoding="gbk")}&show=title&classid=0'
     headers = {
@@ -109,3 +109,18 @@ def getChapterContent(chapter_url):
 
 
 
+if __name__ == '__main__':
+    res = search("我的")
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getDetails(res[0]["bookUrl"])
+    print(res)
+
+    print("================================")
+    print("================================")
+    print("================================")
+    res = getChapterContent(res["chapterList"][0]["url"])
+    print(res)

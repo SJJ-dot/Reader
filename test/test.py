@@ -51,5 +51,5 @@ def test_all():
 
 if __name__ == '__main__':
     # test_all()
-    # ['书趣阁.py', '小原文学网.py', '笔仙阁.py', '速读谷.py', '顶点小说.py']
+    # ['速读谷.py', '顶点小说.py']
     test("./py/69书吧.py")
