@@ -112,7 +112,7 @@ class ChapterListFragment : BaseFragment() {
                     binding.mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
                 }
                 click {
-                    if (readingChapterIndex == c.index) {
+                    if (readingChapterIndex == c.index && fragment.activity is BookReaderActivity) {
                         //如果是当前章节，直接返回
                         return@click
                     }
