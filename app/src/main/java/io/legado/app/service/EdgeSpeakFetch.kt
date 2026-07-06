@@ -249,10 +249,9 @@ class EdgeSpeakFetch {
             val speakTextStr = removeSpecialCharacters(speakText)
             val currentTime = System.currentTimeMillis()
             val timeDiff = currentTime - lastTime
-            // 判断是否超过毫秒
             val ssml = mkSSML(speakTextStr, voice, processRate(rate))
 
-            if (timeDiff < 500 && !isReconnect) {
+            if (timeDiff < 500 && !isReconnect && ::lastWss.isInitialized) {
                 Log.i(TAG, "复用使用上次lastWss")
                 wss = lastWss
                 sendSSMLMessage(wss, ssml)
