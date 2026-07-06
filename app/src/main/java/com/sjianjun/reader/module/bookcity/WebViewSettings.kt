@@ -82,7 +82,7 @@ class WebViewSettings @JvmOverloads constructor(
                 }
                 hide()
                 binding.urlInput.hideKeyboard()
-                val webView = customWebView.currentWebView ?: return@setOnClickListener
+                val webView = customWebView.webView ?: return@setOnClickListener
                 webView.loadUrl(url)
             }
         }
@@ -91,13 +91,13 @@ class WebViewSettings @JvmOverloads constructor(
         }
         binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         binding.btnFontAdd.setOnClickListener {
-            val webView = customWebView.currentWebView ?: return@setOnClickListener
+            val webView = customWebView.webView ?: return@setOnClickListener
             webView.settings.textZoom = globalConfig.webFontZoomSize + 4
             globalConfig.webFontZoomSize = webView.settings.textZoom
             binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
         binding.btnFontSubtract.setOnClickListener {
-            val webView = customWebView.currentWebView ?: return@setOnClickListener
+            val webView = customWebView.webView ?: return@setOnClickListener
             webView.settings.textZoom = globalConfig.webFontZoomSize - 4
             globalConfig.webFontZoomSize = webView.settings.textZoom
             binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
@@ -110,13 +110,13 @@ class WebViewSettings @JvmOverloads constructor(
             hide()
         }
         binding.tvFontSizeValue.setOnClickListener {
-            val webView = customWebView.currentWebView ?: return@setOnClickListener
+            val webView = customWebView.webView ?: return@setOnClickListener
             globalConfig.webFontZoomSize = 100
             webView.settings.textZoom = globalConfig.webFontZoomSize
             binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
         }
         binding.urlInput.addTextChangedListener {
-            val webView = customWebView.currentWebView ?: return@addTextChangedListener
+            val webView = customWebView.webView ?: return@addTextChangedListener
             if (webView.url == it.toString()) {
                 binding.btnCopyUrl.text = "复制"
             } else {
@@ -146,7 +146,7 @@ class WebViewSettings @JvmOverloads constructor(
         }
 
         binding.btnAddToHome.setOnClickListener {
-            val wv = customWebView?.currentWebView ?: return@setOnClickListener
+            val wv = customWebView?.webView ?: return@setOnClickListener
             val url = wv.url ?: return@setOnClickListener
             val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
             historyList.remove(url)
@@ -157,7 +157,7 @@ class WebViewSettings @JvmOverloads constructor(
 
         binding.btnReadMode.setOnClickListener {
             hide()
-            val wv = customWebView?.currentWebView ?: return@setOnClickListener
+            val wv = customWebView?.webView ?: return@setOnClickListener
             val url = wv.url ?: return@setOnClickListener
             // 先尝试用当前 WebView 提取一次正文并写入缓存（内存 + 磁盘），
             // 阅读模式启动后命中缓存可跳过 hiddenWebView 的重新加载与提取。
@@ -185,7 +185,7 @@ class WebViewSettings @JvmOverloads constructor(
     }
 
     private fun addToShelf() {
-        val wv = customWebView?.currentWebView ?: return
+        val wv = customWebView?.webView ?: return
         val url = wv.url ?: return
 
         val items = arrayOf(
@@ -319,7 +319,7 @@ class WebViewSettings @JvmOverloads constructor(
     }
 
     fun refresh() {
-        val wv = customWebView?.currentWebView ?: return
+        val wv = customWebView?.webView ?: return
         // 检查 WebView 是否已被销毁
         if (!wv.isAttachedToWindow || wv.windowToken == null) return
         titleJob?.cancel()

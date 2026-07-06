@@ -63,23 +63,6 @@ open class MyWebViewClient(
         AdBlock.markPage(url)
     }
 
-    override fun onPageFinished(webView: WebView?, url: String?) {
-        webView?.isBlank = url.isNullOrBlank() || url == "about:blank"
-        if (webView?.isBlank == false) {
-            lifecycleScope?.launch {
-                delay(100.milliseconds)
-                webView.evaluateJavascript(
-                    "(function(){var t=document.body?document.body.innerText.trim():'';return t;})()"
-                ) { result ->
-                    webView.isBlank = result.length < 10
-                    Log.i("js ${webView?.currentHost} isBlank:${webView.isBlank} ${url}")
-                }
-            }
-        } else {
-            Log.i("aa ${webView?.currentHost} isBlank:${webView?.isBlank} ${url}")
-        }
-    }
-
     override fun shouldInterceptRequest(
         view: WebView?,
         request: WebResourceRequest,

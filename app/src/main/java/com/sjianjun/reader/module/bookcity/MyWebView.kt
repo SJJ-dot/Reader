@@ -17,14 +17,6 @@ var WebView.currentHost: String?
         }
     }
 
-var WebView.isBlank: Boolean?
-    get() = (this as? MyWebView)?.isBlank
-    set(value) {
-        if (this is MyWebView) {
-            isBlank = value
-        }
-    }
-
 class MyWebView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -41,8 +33,6 @@ class MyWebView @JvmOverloads constructor(
         set(url) {
             field = url?.toHttpUrlOrNull()?.topPrivateDomain()
         }
-
-    var isBlank: Boolean? = null
 
     var isDestroyed = false
         private set
