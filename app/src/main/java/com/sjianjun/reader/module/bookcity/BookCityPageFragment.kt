@@ -156,9 +156,15 @@ class BookCityPageFragment : BaseFragment() {
         homeAdapter.onLongClickListener = { item ->
             MaterialAlertDialogBuilder(requireActivity())
                 .setTitle(item.url)
-                .setItems(arrayOf("编辑", "删除")) { _, which ->
+                .setItems(arrayOf("设为主页", "编辑", "删除")) { _, which ->
                     when (which) {
                         0 -> {
+                            globalConfig.bookCityUrl = item.url
+                            toast("已设为主页")
+                            homeAdapter.notifyDataSetChanged()
+                        }
+
+                        1 -> {
                             // 编辑：弹出输入框修改 URL
                             val input = android.widget.EditText(requireContext()).apply {
                                 setText(item.url)
@@ -181,7 +187,7 @@ class BookCityPageFragment : BaseFragment() {
                                 .show()
                         }
 
-                        1 -> {
+                        2 -> {
                             // 删除
                             MaterialAlertDialogBuilder(requireActivity())
                                 .setTitle("删除")
@@ -311,12 +317,6 @@ class BookCityPageFragment : BaseFragment() {
                 binding.ivMark.show()
             } else {
                 binding.ivMark.gone()
-            }
-
-            binding.ivMark.setOnClickListener {
-                globalConfig.bookCityUrl = homeUrl.url
-                toast("设置成功")
-                notifyDataSetChanged()
             }
         }
     }
