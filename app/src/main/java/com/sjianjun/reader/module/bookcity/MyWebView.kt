@@ -17,6 +17,14 @@ var WebView.currentHost: String?
         }
     }
 
+var WebView.isBlank: Boolean?
+    get() = (this as? MyWebView)?.isBlank
+    set(value) {
+        if (this is MyWebView) {
+            isBlank = value
+        }
+    }
+
 class MyWebView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -34,6 +42,7 @@ class MyWebView @JvmOverloads constructor(
             field = url?.toHttpUrlOrNull()?.topPrivateDomain()
         }
 
+    var isBlank: Boolean? = null
     /**
      * 强制刷新目标 URL。先加载 about:blank 丢弃损坏状态，再加载此 URL；
      * 历史跳过由 CustomWebView 维护：about:blank 与刷新前损坏页会被标记为可跳过。

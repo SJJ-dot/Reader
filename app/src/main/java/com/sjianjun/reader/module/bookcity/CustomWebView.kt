@@ -269,7 +269,7 @@ class CustomWebView @JvmOverloads constructor(
     private fun recoverFromBlockedMainFrame(blockedUrl: String) {
         val wv = webView ?: return
         wv.post {
-            if (webView !== wv || wv.isDestroyed) return@post
+            if (webView !== wv || wv.isDestroyed || wv.isBlank != true) return@post
             wv.markCurrentHistoryAsSkipped()
             val step = wv.meaningfulBackStep()
             if (step < 0) {
