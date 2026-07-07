@@ -266,7 +266,7 @@ class WebViewSettings @JvmOverloads constructor(
                 val fallbackTitle = wv.getTitleFromMeta().ifBlank { wv.title ?: "无标题" }.lines().joinToString("")
                 val extract = wv.extractCoverCandidatesFromJs(fallbackTitle)
                 val title = extract.title
-                val webBook = WebBook().apply {
+                val webBook = customWebView?.webBook ?: WebBook().apply {
                     this.url = url
                     this.title = title.ifBlank { "未命名" }
                     this.lastUrl = url
@@ -275,7 +275,7 @@ class WebViewSettings @JvmOverloads constructor(
                 val pickResult = pickCoverByDialog(title, extract.candidates) ?: return@launch
                 webBook.title = pickResult.title
                 webBook.cover = pickResult.cover
-                webBook.lastTitle = pickResult.title
+                webBook.url = url
 
                 val vm = WebShelfViewModel()
                 vm.insertWebBook(webBook)

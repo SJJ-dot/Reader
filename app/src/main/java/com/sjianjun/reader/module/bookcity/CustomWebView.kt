@@ -187,6 +187,7 @@ class CustomWebView @JvmOverloads constructor(
                     book.lastUrl = url
                     book.offest = 0
                     book.scrollOffset = 0
+                    book.updateTime = System.currentTimeMillis()
                 }
                 if (updateTitle) {
                     book.lastTitle = view.getTitleFromMeta().ifBlank { view.title ?: "无标题" }
@@ -197,7 +198,6 @@ class CustomWebView @JvmOverloads constructor(
                         }
                     }
                 }
-                book.updateTime = System.currentTimeMillis()
                 vm?.insertWebBook(book)
             }
         }
