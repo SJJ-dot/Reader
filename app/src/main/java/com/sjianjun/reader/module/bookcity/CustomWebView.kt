@@ -1,7 +1,6 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
-import android.os.Bundle
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -23,6 +22,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
 import io.legado.app.utils.activity
@@ -48,6 +48,7 @@ class CustomWebView @JvmOverloads constructor(
     /** 单 WebView 实例：所有导航复用它，后退/前进依赖 WebView 原生历史 */
     var webView: MyWebView? = null
         private set
+    private val skippedHistoryIndices = linkedMapOf<Int, String>()
 
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
@@ -84,6 +85,7 @@ class CustomWebView @JvmOverloads constructor(
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
         }
+        skippedHistoryIndices.clear()
         wv.currentHost = url
         binding.webViewContainer.addView(wv)
         webView = wv
@@ -93,8 +95,10 @@ class CustomWebView @JvmOverloads constructor(
 
     fun back(): Boolean {
         val wv = webView ?: return false
-        if (wv.canGoBack()) {
-            wv.goBack()
+        // 跳过空白页（about:blank 等），直接回到最近的非空白页
+        val step = wv.meaningfulBackStep()
+        if (step < 0) {
+            wv.goBackOrForward(step)
             updateForwardButton()
             return true
         }
@@ -103,8 +107,10 @@ class CustomWebView @JvmOverloads constructor(
 
     fun goForward(): Boolean {
         val wv = webView ?: return false
-        if (wv.canGoForward()) {
-            wv.goForward()
+        // 跳过空白页，直接前进到最近的非空白页
+        val step = wv.meaningfulForwardStep()
+        if (step > 0) {
+            wv.goBackOrForward(step)
             updateForwardButton()
             return true
         }
@@ -113,8 +119,59 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun updateForwardButton() {
         val wv = webView
-        binding.forward.isEnabled = wv?.canGoForward() == true
+        binding.forward.isEnabled = wv != null && wv.meaningfulForwardStep() > 0
         binding.refresh.isSelected = (wv?.progress ?: 100) < 100
+    }
+
+    /** 返回向后最近的可用页面步数（负值），没有则返回 0。 */
+    private fun MyWebView.meaningfulBackStep(): Int {
+        val list = copyBackForwardList()
+        pruneSkippedHistoryIndices(list.size)
+        var idx = list.currentIndex - 1
+        var step = -1
+        while (idx >= 0) {
+            val u = list.getItemAtIndex(idx).url
+            if (!isSkippableHistoryItem(idx, u)) return step
+            idx--
+            step--
+        }
+        return 0
+    }
+
+    /** 返回向前最近的可用页面步数（正值），没有则返回 0。 */
+    private fun MyWebView.meaningfulForwardStep(): Int {
+        val list = copyBackForwardList()
+        pruneSkippedHistoryIndices(list.size)
+        var idx = list.currentIndex + 1
+        var step = 1
+        while (idx < list.size) {
+            val u = list.getItemAtIndex(idx).url
+            if (!isSkippableHistoryItem(idx, u)) return step
+            idx++
+            step++
+        }
+        return 0
+    }
+
+    private fun isSkippableHistoryItem(index: Int, url: String?): Boolean {
+        if (url.isNullOrBlank() || url == "about:blank") return true
+        // 索引可能因新导航被截断/复用，需同时校验 url 一致才认为是被标记跳过的条目
+        return skippedHistoryIndices[index] == url
+    }
+
+    private fun pruneSkippedHistoryIndices(historySize: Int) {
+        val it = skippedHistoryIndices.entries.iterator()
+        while (it.hasNext()) {
+            if (it.next().key >= historySize) it.remove()
+        }
+    }
+
+    private fun MyWebView.markCurrentHistoryAsSkipped() {
+        val list = copyBackForwardList()
+        val idx = list.currentIndex
+        if (idx in 0 until list.size) {
+            skippedHistoryIndices[idx] = list.getItemAtIndex(idx).url
+        }
     }
 
     // 抽取更新 webBook 的逻辑：在同一主域下更新 lastUrl/lastTitle/updateTime 并持久化
@@ -167,6 +224,19 @@ class CustomWebView @JvmOverloads constructor(
 
         override fun onPageFinished(webView: WebView?, url: String?) {
             super.onPageFinished(webView, url)
+            binding.searchRefresh.visibility = GONE
+            val wv = webView as? MyWebView
+            if (wv != null) {
+                val target = wv.forceReloadTargetUrl
+                if (target != null) {
+                    // 强制刷新第一步：空白页加载完成，加载目标 URL（全新导航，绕过 BFCache）
+                    wv.markCurrentHistoryAsSkipped() // about:blank
+                    wv.loadUrl(target)
+                    wv.forceReloadTargetUrl = null
+                    return
+                }
+            }
+            // 页面加载完成后再更新 title（如果可用）并持久化
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
             updateForwardButton()
 
@@ -221,7 +291,11 @@ class CustomWebView @JvmOverloads constructor(
             val url = wv.url ?: return@click
             if (url.isBlank() || url == "about:blank") return@click
 
-            recreateWebView()
+            wv.reload()
+        }
+        binding.refresh.setOnLongClickListener {
+            forceReload()
+            true
         }
 
         binding.backward.click {
@@ -283,39 +357,25 @@ class CustomWebView @JvmOverloads constructor(
             Log.i("销毁 WebView: ${wv.currentHost}")
         }
         webView = null
+        skippedHistoryIndices.clear()
 
     }
 
-    /**
-     * 重建 WebView：用 saveState/restoreState 把回退栈转移到新实例。
-     * 用于解决 back-forward cache 反复前进/后退后渲染损坏、reload 无效的问题。
-     * 新 WebView 没有损坏状态，当前页会重新加载；回退/前进历史（URL 列表）会被保留。
-     */
-    private fun recreateWebView() {
-        val old = webView ?: return
-        val currentUrl = old.url
-        val state = Bundle()
-        old.saveState(state)
-        destroyWebView()
-
-        val wv = MyWebView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-            init()
-            webViewClient = createWebViewClient()
-            webChromeClient = createWebChromeClient()
+    fun forceReload() {
+        val wv = webView ?: run {
+            toast("无可刷新的页面")
+            return
         }
-        binding.webViewContainer.addView(wv)
-        webView = wv
-
-        val restored = wv.restoreState(state)
-        wv.currentHost = currentUrl ?: restored?.currentItem?.url?.toString()
-        if (restored == null || wv.url.isNullOrBlank()) {
-            // restoreState 未恢复当前页，直接加载
-            if (!currentUrl.isNullOrBlank()) {
-                wv.loadUrl(currentUrl)
-            }
+        val url = wv.url
+        if (url.isNullOrBlank() || url == "about:blank") {
+            toast("无可刷新的页面")
+            return
         }
-        updateForwardButton()
+        wv.markCurrentHistoryAsSkipped() // 强制刷新的当前损坏页
+        wv.forceReloadTargetUrl = url
+        wv.loadUrl("about:blank") // 先加载空白页，丢弃损坏的页面/渲染状态
+        toast("强制刷新")
+        Log.i("forceReload $url")
     }
 
 }

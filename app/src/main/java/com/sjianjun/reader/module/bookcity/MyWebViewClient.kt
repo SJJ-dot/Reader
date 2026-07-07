@@ -50,6 +50,7 @@ open class MyWebViewClient(
             val url = request.url.toString()
             view?.currentHost = url
             lifecycleScope?.launch {
+                Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} allow:${url}")
                 onAllow(url, request)
             }
         }
@@ -203,11 +204,13 @@ open class MyWebViewClient(
                 .setView(originBinding.root)
                 .setCancelable(true)
                 .setOnCancelListener {
+                    Log.i("跨域请求取消：${url}")
                     onBlock(url, request)
                 }
                 .create()
 
             originBinding.btnAllowOnce.setOnClickListener {
+                Log.i("跨域请求允许一次：${url}")
                 onAllow(url, request)
                 dialog.dismiss()
             }
@@ -215,6 +218,7 @@ open class MyWebViewClient(
                 if (targetTop != null) {
                     AdBlock.addWhiteHost(HostStr(targetTop, listOf()))
                 }
+                Log.i("跨域请求加入白名单：${targetTop}")
                 onAllow(url, request)
                 dialog.dismiss()
             }
@@ -223,6 +227,7 @@ open class MyWebViewClient(
                     AdBlock.addBlackHost(HostStr(targetTop, listOf()))
                 }
                 dialog.dismiss()
+                Log.i("跨域请求加入黑名单：${targetTop}")
                 onBlock(url, request)
             }
 

@@ -34,6 +34,12 @@ class MyWebView @JvmOverloads constructor(
             field = url?.toHttpUrlOrNull()?.topPrivateDomain()
         }
 
+    /**
+     * 强制刷新目标 URL。先加载 about:blank 丢弃损坏状态，再加载此 URL；
+     * 历史跳过由 CustomWebView 维护：about:blank 与刷新前损坏页会被标记为可跳过。
+     */
+    var forceReloadTargetUrl: String? = null
+
     var isDestroyed = false
         private set
 
@@ -79,4 +85,3 @@ suspend fun WebView.getTitleFromMeta(): String {
 
     }
 }
-
