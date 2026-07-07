@@ -44,11 +44,9 @@ open class MyWebViewClient(
         request: WebResourceRequest,
     ): Boolean {
         val showBlockDialog = showBlockDialog(view, request)
-        Log.i("shouldOverrideUrlLoading block:${showBlockDialog} isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
         if (!showBlockDialog) {
             val url = request.url.toString()
             view?.currentHost = url
-            Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} allowByWebView:$url")
             // 放行后交给 WebView 原生导航，避免手动 loadUrl 导致重定向历史异常。
             return false
         }
