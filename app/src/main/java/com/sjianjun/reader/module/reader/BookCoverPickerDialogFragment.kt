@@ -42,6 +42,7 @@ class BookCoverPickerDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = DialogBookCoverPickerBinding.bind(view)
+        binding?.tvTitle?.text = requireArguments().getString(ARG_BOOK_TITLE).orEmpty()
         binding?.rvCoverSources?.layoutManager = GridLayoutManager(requireContext(), 3)
         binding?.rvCoverSources?.adapter = coverAdapter
         binding?.btnClearCover?.setOnClickListener {

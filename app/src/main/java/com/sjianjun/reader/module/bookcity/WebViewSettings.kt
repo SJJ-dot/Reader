@@ -12,9 +12,13 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.WebBook
+import com.sjianjun.reader.databinding.DialogWebBookCoverPickerBinding
+import com.sjianjun.reader.databinding.ItemBookCoverSourceBinding
 import com.sjianjun.reader.databinding.WebViewSettingsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -23,6 +27,7 @@ import com.sjianjun.reader.module.shelf.WebShelfViewModel
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.copyToClipboard
+import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
@@ -33,7 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.jsoup.Jsoup
+import org.json.JSONObject
 import sjj.alog.Log
 import kotlin.coroutines.resume
 
@@ -43,6 +48,7 @@ class WebViewSettings @JvmOverloads constructor(
     val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
     private var customWebView: CustomWebView? = null
     private var titleJob: Job? = null
+    private var webBookImportJsCache: String? = null
 
     /** 当用户在设置中修改跨域配置时回调，用于清除临时覆盖 */
     var onCrossOriginModeChanged: (() -> Unit)? = null
@@ -257,29 +263,19 @@ class WebViewSettings @JvmOverloads constructor(
         val scope = customWebView?.lifecycleScope ?: return
         scope.launch {
             try {
-                val html = wv.getHtml() ?: return@launch
-                val title = wv.getTitleFromMeta().ifBlank { wv.title ?: "无标题" }
+                val fallbackTitle = wv.getTitleFromMeta().ifBlank { wv.title ?: "无标题" }.lines().joinToString("")
+                val extract = wv.extractCoverCandidatesFromJs(fallbackTitle)
+                val title = extract.title
                 val webBook = WebBook().apply {
                     this.url = url
                     this.title = title.ifBlank { "未命名" }
                     this.lastUrl = url
                     this.lastTitle = title
                 }
-                // 从 HTML 解析封面
-                val document = Jsoup.parse(html, url)
-                var cover = document.select("meta[property='og:image']").firstOrNull()?.attr("content")
-                if (cover.isNullOrEmpty()) {
-                    cover = document.select("#fmimg").firstOrNull()?.absUrl("src")
-                }
-                if (cover.isNullOrEmpty()) {
-                    cover = document.select("img").firstOrNull {
-                        it.attr("alt").contains(title) || it.attr("title").contains(title) || it.attr("src").contains("cover")
-                    }?.absUrl("src")
-                }
-                if (cover.isNullOrEmpty()) {
-                    cover = url.toHttpUrlOrNull()?.let { "${it.scheme}://${it.host}/favicon.ico" }
-                }
-                webBook.cover = cover
+                val pickResult = pickCoverByDialog(title, extract.candidates) ?: return@launch
+                webBook.title = pickResult.title
+                webBook.cover = pickResult.cover
+                webBook.lastTitle = pickResult.title
 
                 val vm = WebShelfViewModel()
                 vm.insertWebBook(webBook)
@@ -291,31 +287,169 @@ class WebViewSettings @JvmOverloads constructor(
         }
     }
 
-    /** 从 WebView 获取当前页面 HTML */
-    private suspend fun WebView.getHtml(): String? {
+    private suspend fun WebView.extractCoverCandidatesFromJs(fallbackTitle: String): CoverExtractResult {
+        val js = loadWebBookImportJs(context)
         return suspendCancellableCoroutine { cont ->
-            evaluateJavascript(
-                "(function(){return document.documentElement.outerHTML})()"
-            ) { result ->
-                if (cont.isActive) {
-                    val html = result?.trim('"')?.unescapeJava()
-                    cont.resume(html)
+            evaluateJavascript(js) { raw ->
+                try {
+                    val jsonStr = unwrapJsString(raw)
+                    val obj = JSONObject(jsonStr)
+                    val title = obj.optString("title", fallbackTitle).ifBlank { fallbackTitle }
+                    val arr = obj.optJSONArray("coverCandidates")
+                    val list = mutableListOf<CoverCandidate>()
+                    if (arr != null) {
+                        for (i in 0 until arr.length()) {
+                            val item = arr.optJSONObject(i) ?: continue
+                            val url = item.optString("url")
+                            if (url.isBlank()) continue
+                            list.add(
+                                CoverCandidate(
+                                    url = url,
+                                    source = item.optString("source", "页面图片"),
+                                    score = item.optInt("score", 0),
+                                )
+                            )
+                        }
+                    }
+                    if (cont.isActive) cont.resume(CoverExtractResult(title = title, candidates = list))
+                } catch (t: Throwable) {
+                    Log.e("extractCoverCandidatesFromJs err raw=$raw", t)
+                    if (cont.isActive) cont.resume(CoverExtractResult(title = fallbackTitle, candidates = emptyList()))
                 }
             }
         }
     }
 
-    /** 处理 evaluateJavascript 返回的转义字符串 */
-    private fun String.unescapeJava(): String {
-        return this
-            .replace("\\/", "/")
-            .replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace("\\t", "\t")
-            .replace("\\\"", "\"")
-            .replace("\\\\", "\\")
-            .replace("\\u003C", "<")
-            .replace("\\u003E", ">")
+    private fun loadWebBookImportJs(context: Context): String {
+        webBookImportJsCache?.let { return it }
+        val js = context.applicationContext.assets
+            .open("web_book_extract.js")
+            .bufferedReader()
+            .use { it.readText() }
+        webBookImportJsCache = js
+        return js
+    }
+
+    private suspend fun pickCoverByDialog(title: String, candidates: List<CoverCandidate>): CoverPickResult? {
+        val list = candidates.toMutableList()
+        if (list.isEmpty()) {
+            return CoverPickResult(title = title.ifBlank { "未命名" }, cover = null)
+        }
+        return suspendCancellableCoroutine { cont ->
+            val dialogBinding = DialogWebBookCoverPickerBinding.inflate(LayoutInflater.from(context), null, false)
+            dialogBinding.etTitleInput.setText(title)
+            val adapter = WebCoverCandidateAdapter().apply { submitList(list) }
+            dialogBinding.rvCoverSources.layoutManager = GridLayoutManager(context, 3)
+            dialogBinding.rvCoverSources.adapter = adapter
+            dialogBinding.swipeRefresh.isEnabled = false
+            dialogBinding.btnClearCover.text = "不设置封面"
+            dialogBinding.btnSave.text = "保存"
+
+            val dialog = MaterialAlertDialogBuilder(context)
+                .setView(dialogBinding.root)
+                .setOnCancelListener {
+                    if (cont.isActive) cont.resume(null)
+                }
+                .create()
+
+            dialogBinding.btnClearCover.setOnClickListener {
+                val inputTitle = dialogBinding.etTitleInput.text?.toString()?.trim().orEmpty().ifBlank { title.ifBlank { "未命名" } }
+                if (cont.isActive) cont.resume(CoverPickResult(inputTitle, null))
+                dialog.dismiss()
+            }
+            dialogBinding.btnSave.setOnClickListener {
+                val inputTitle = dialogBinding.etTitleInput.text?.toString()?.trim().orEmpty()
+                if (inputTitle.isBlank()) {
+                    dialogBinding.titleInputLayout.error = "标题不能为空"
+                    return@setOnClickListener
+                }
+                dialogBinding.titleInputLayout.error = null
+                if (cont.isActive) {
+                    val selectedUrl = adapter.getSelectedUrl()
+                    if (selectedUrl == null) {
+                        toast("请先选择封面")
+                        return@setOnClickListener
+                    }
+                    cont.resume(CoverPickResult(inputTitle, selectedUrl))
+                }
+                dialog.dismiss()
+            }
+
+            dialogBinding.etTitleInput.requestFocus()
+            dialog.show()
+        }
+    }
+
+    private data class CoverPickResult(
+        val title: String,
+        val cover: String?,
+    )
+
+    private data class CoverExtractResult(
+        val title: String,
+        val candidates: List<CoverCandidate>,
+    )
+
+    private data class CoverCandidate(
+        val url: String,
+        val source: String,
+        val score: Int,
+    )
+
+    private class WebCoverCandidateAdapter : RecyclerView.Adapter<WebCoverCandidateAdapter.CoverViewHolder>() {
+        private val data = mutableListOf<CoverCandidate>()
+        private var selectedPos = -1
+
+        fun submitList(list: List<CoverCandidate>) {
+            data.clear()
+            data.addAll(list)
+            notifyDataSetChanged()
+        }
+
+        fun getSelectedUrl(): String? = data.getOrNull(selectedPos)?.url
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoverViewHolder {
+            val binding = ItemBookCoverSourceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return CoverViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: CoverViewHolder, position: Int) {
+            val position = holder.getBindingAdapterPosition()
+            val item = data[position]
+            val selected = position == selectedPos
+            holder.bind(item, selected)
+            holder.binding.root.setOnClickListener {
+                selectedPos = position
+                notifyDataSetChanged()
+            }
+        }
+
+        override fun getItemCount(): Int = data.size
+
+        class CoverViewHolder(
+            val binding: ItemBookCoverSourceBinding,
+        ) : RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: CoverCandidate, selected: Boolean) {
+                binding.ivCover.glide(item.url)
+                binding.tvSource.text = item.source
+                if (selected) {
+                    binding.root.setBackgroundResource(R.color.dn_color_primary)
+                    binding.tvSource.setTextColor(R.color.mdr_textWhite_text.color(binding.root.context))
+                } else {
+                    binding.root.setBackgroundResource(R.color.dn_background_card)
+                    binding.tvSource.setTextColor(R.color.dn_text_color_black.color(binding.root.context))
+                }
+            }
+        }
+    }
+
+    private fun unwrapJsString(raw: String?): String {
+        if (raw.isNullOrBlank() || raw == "null") return "{}"
+        return if (raw.startsWith("\"") && raw.endsWith("\"")) {
+            JSONObject("{\"v\":$raw}").optString("v", "{}")
+        } else {
+            raw
+        }
     }
 
     fun refresh() {
