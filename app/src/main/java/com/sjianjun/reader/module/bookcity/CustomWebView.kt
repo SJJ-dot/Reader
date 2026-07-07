@@ -211,6 +211,9 @@ class CustomWebView @JvmOverloads constructor(
         },
         { url, request ->
             Log.i("onBlock isRedirect:${request?.isRedirect} hasGesture:${request?.hasGesture()} isForMainFrame:${request?.isForMainFrame} $url")
+            if (request?.isForMainFrame == true && !request.hasGesture()) {
+                recoverFromBlockedMainFrame(url)
+            }
         },
         { effectiveCrossOriginMode() }
     ) {
@@ -253,6 +256,20 @@ class CustomWebView @JvmOverloads constructor(
                 }
                 History.list = list
                 history.postValue(list)
+            }
+        }
+    }
+
+    private fun recoverFromBlockedMainFrame(blockedUrl: String) {
+        val wv = webView ?: return
+        wv.post {
+            if (webView !== wv || wv.isDestroyed) return@post
+            wv.markCurrentHistoryAsSkipped()
+            val step = wv.meaningfulBackStep()
+            if (step < 0) {
+                wv.goBackOrForward(step)
+                updateForwardButton()
+                Log.i("recoverFromBlockedMainFrame step:$step blocked:$blockedUrl")
             }
         }
     }
