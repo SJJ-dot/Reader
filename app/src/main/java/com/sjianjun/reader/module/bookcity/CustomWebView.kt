@@ -49,6 +49,7 @@ class CustomWebView @JvmOverloads constructor(
     var webView: MyWebView? = null
         private set
     private val skippedHistoryIndices = linkedMapOf<Int, String>()
+    private var pendingEditCoverOnce = false
 
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
@@ -91,6 +92,19 @@ class CustomWebView @JvmOverloads constructor(
         webView = wv
         wv.loadUrl(url)
         updateForwardButton()
+    }
+
+    fun triggerEditCoverAfterLoad() {
+        val wv = webView
+        if (wv != null &&
+            !wv.url.isNullOrBlank() &&
+            wv.url != "about:blank" &&
+            wv.progress >= 100
+        ) {
+            binding.webViewSettings.editCurrentWebBookCover()
+            return
+        }
+        pendingEditCoverOnce = true
     }
 
     fun back(): Boolean {
@@ -247,6 +261,10 @@ class CustomWebView @JvmOverloads constructor(
             }
             // 页面加载完成后再更新 title（如果可用）并持久化
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
+            if (pendingEditCoverOnce && !url.isNullOrBlank() && url != "about:blank") {
+                pendingEditCoverOnce = false
+                post { binding.webViewSettings.editCurrentWebBookCover() }
+            }
             updateForwardButton()
 
             Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")

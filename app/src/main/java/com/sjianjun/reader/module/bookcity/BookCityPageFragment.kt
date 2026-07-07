@@ -21,6 +21,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
+import com.sjianjun.reader.EDIT_WEB_COVER
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
@@ -53,6 +54,7 @@ class BookCityPageFragment : BaseFragment() {
     private val adBlock: AdBlock = AdBlock
     private var webBook: WebBook? = null
     private var crossOriginMode: Int = -1
+    private var autoEditWebCover: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -78,6 +80,7 @@ class BookCityPageFragment : BaseFragment() {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
             crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
+            autoEditWebCover = arguments?.getBoolean(EDIT_WEB_COVER) == true
 
             customWebView.crossOriginOverride = crossOriginMode
             customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
@@ -85,6 +88,10 @@ class BookCityPageFragment : BaseFragment() {
                 drawerLayout.openDrawer(GravityCompat.END)
             })
             customWebView.loadUrl(url!!)
+            if (autoEditWebCover) {
+                customWebView.triggerEditCoverAfterLoad()
+                autoEditWebCover = false
+            }
 
             initDrawer(drawerLayout, customWebView, this@apply)
             var lastTime = 0L
@@ -465,12 +472,13 @@ class BookCityPageFragment : BaseFragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1) =
+        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1, editWebCover: Boolean = false) =
             BookCityPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
                     putString(WEB_ID, webId)
                     putInt(CROSS_ORIGIN_MODE, crossOriginMode)
+                    putBoolean(EDIT_WEB_COVER, editWebCover)
                 }
             }
     }

@@ -8,6 +8,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
+import com.sjianjun.reader.EDIT_WEB_COVER
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
@@ -17,6 +18,7 @@ class WebViewBrowserActivity : BaseActivity() {
     private val url by lazy { intent.getStringExtra(URL) ?: "" }
     private val webId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
     private val crossOriginMode by lazy { intent.getIntExtra(CROSS_ORIGIN_MODE, -1) }
+    private val editWebCover by lazy { intent.getBooleanExtra(EDIT_WEB_COVER, false) }
     private val binding by lazy { ActivityBrowserReaderBinding.inflate(layoutInflater) }
 
 
@@ -35,13 +37,13 @@ class WebViewBrowserActivity : BaseActivity() {
             insets
         }
         supportFragmentManager.beginTransaction()
-            .replace(binding.fragmentContainerView.id, BookCityPageFragment.newInstance(url, webId, crossOriginMode))
+            .replace(binding.fragmentContainerView.id, BookCityPageFragment.newInstance(url, webId, crossOriginMode, editWebCover))
             .commitNowAllowingStateLoss()
 
     }
 
     companion object {
-        fun startActivity(ctx: Context, url: String = "", id: String = "", crossOriginMode: Int = -1) {
+        fun startActivity(ctx: Context, url: String = "", id: String = "", crossOriginMode: Int = -1, editWebCover: Boolean = false) {
             if (url.isEmpty() && id.isBlank()) {
                 Log.e("URL is empty, cannot start BrowserReaderActivity")
                 return
@@ -51,6 +53,7 @@ class WebViewBrowserActivity : BaseActivity() {
                     putExtra(URL, url)
                     putExtra(WEB_ID, id)
                     putExtra(CROSS_ORIGIN_MODE, crossOriginMode)
+                    putExtra(EDIT_WEB_COVER, editWebCover)
                 }
             )
         }

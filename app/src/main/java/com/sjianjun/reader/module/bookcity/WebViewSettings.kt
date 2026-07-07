@@ -287,6 +287,33 @@ class WebViewSettings @JvmOverloads constructor(
         }
     }
 
+    fun editCurrentWebBookCover() {
+        val wv = customWebView?.webView ?: return
+        val sourceBook = customWebView?.webBook ?: run {
+            toast("当前书籍不存在")
+            return
+        }
+        val scope = customWebView?.lifecycleScope ?: return
+        scope.launch {
+            try {
+                val fallbackTitle = sourceBook.title.ifBlank { wv.getTitleFromMeta().ifBlank { wv.title ?: "无标题" } }
+                    .lines().joinToString("")
+                val extract = wv.extractCoverCandidatesFromJs(fallbackTitle)
+                val pickResult = pickCoverByDialog(extract.title, extract.candidates) ?: return@launch
+                sourceBook.title = pickResult.title
+                sourceBook.lastTitle = pickResult.title
+                sourceBook.cover = pickResult.cover
+                sourceBook.updateTime = System.currentTimeMillis()
+                val vm = WebShelfViewModel()
+                vm.updateWebBook(sourceBook)
+                toast("封面已修改")
+            } catch (e: Exception) {
+                Log.e("修改封面失败", e)
+                toast("修改封面失败: ${e.message}")
+            }
+        }
+    }
+
     private suspend fun WebView.extractCoverCandidatesFromJs(fallbackTitle: String): CoverExtractResult {
         val js = loadWebBookImportJs(context)
         return suspendCancellableCoroutine { cont ->
