@@ -207,6 +207,12 @@ class CustomWebView @JvmOverloads constructor(
         lifecycleScope!!,
         { url, request ->
             Log.i("onAllow isRedirect:${request?.isRedirect} hasGesture:${request?.hasGesture()} isForMainFrame:${request?.isForMainFrame} $url")
+            // 自动重定向（主框架、无用户手势）：标记当前页（重定向源）为跳过，
+            // 后退时越过它，避免 后退→重定向源→再次重定向 的死循环。
+            // 用户点击（hasGesture）不标记，保留可后退到来源页。
+            if (request?.isForMainFrame == true && request?.hasGesture() == false) {
+                webView?.markCurrentHistoryAsSkipped()
+            }
             loadUrl(url)
         },
         { url, request ->

@@ -32,7 +32,7 @@ open class MyWebViewClient(
      */
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         super.doUpdateVisitedHistory(view, url, isReload)
-        Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
+//        Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
         if (url != null) {
             view?.currentHost = url
             // 在 URL 变化时先记录 url（title 可能尚未可用）
@@ -46,13 +46,11 @@ open class MyWebViewClient(
         val showBlockDialog = showBlockDialog(view, request)
         Log.i("shouldOverrideUrlLoading block:${showBlockDialog} isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} ${request.url}")
         if (!showBlockDialog) {
-            // 放行：创建新 WebView 压入栈，后退时直接切换无需重新加载
             val url = request.url.toString()
             view?.currentHost = url
-            lifecycleScope?.launch {
-                Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} allow:${url}")
-                onAllow(url, request)
-            }
+            Log.i("shouldOverrideUrlLoading isForMainFrame:${request.isForMainFrame} hasGesture:${request.hasGesture()} isRedirect:${request.isRedirect} allowByWebView:$url")
+            // 放行后交给 WebView 原生导航，避免手动 loadUrl 导致重定向历史异常。
+            return false
         }
         return true
     }
