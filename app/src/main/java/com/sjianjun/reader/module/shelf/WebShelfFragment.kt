@@ -81,15 +81,10 @@ class WebShelfFragment : BaseFragment() {
         adapter.onLongClickListener = { webBook ->
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(webBook.title)
-                .setItems(arrayOf("修改标题", "修改封面", "删除")) { _, which ->
+                .setItems(arrayOf("修改标题", "删除")) { _, which ->
                     when (which) {
                         0 -> showEditTitleDialog(webBook.currentSelected)
-                        1 -> WebViewBrowserActivity.startActivity(
-                            requireContext(),
-                            id = webBook.currentSelected.id,
-                            editWebCover = true
-                        )
-                        2 -> showDeleteDialog(webBook)
+                        1 -> showDeleteDialog(webBook)
                     }
                 }
                 .show()
