@@ -1,4 +1,4 @@
-name: Sync default.json.gzip to target repo
+name: Sync default.json to target repo
 
 on:
   push:
@@ -14,22 +14,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if default.json.gzip was updated in this commit
+      - name: Check if default.json or default.json.gzip was updated in this commit
         id: check-file
         run: |
-          if git diff --name-only HEAD^ HEAD | grep -q "^test/BookSource/default.json.gzip$"; then
+          if git diff --name-only HEAD^ HEAD | grep -qE "^test/BookSource/default\.json(\.gzip)?$"; then
             echo "file_changed=true" >> "$GITHUB_OUTPUT"
-            echo "default.json.gzip was updated in this commit."
+            echo "default.json or default.json.gzip was updated in this commit."
           else
             echo "file_changed=false" >> "$GITHUB_OUTPUT"
-            echo "default.json.gzip was not updated in this commit; skipping sync."
+            echo "Neither default.json nor default.json.gzip was updated in this commit; skipping sync."
           fi
 
-      - name: Fail if file missing
+      - name: Fail if files missing
         if: steps.check-file.outputs.file_changed == 'true'
         run: |
-          if [ ! -f "test/BookSource/default.json.gzip" ]; then
-            echo "File test/BookSource/default.json.gzip not found; nothing to do."
+          if [ ! -f "test/BookSource/default.json" ] && [ ! -f "test/BookSource/default.json.gzip" ]; then
+            echo "Neither file found; nothing to do."
             exit 0
           fi
 
@@ -42,44 +42,42 @@ jobs:
       - name: Clone target repo
         if: steps.check-file.outputs.file_changed == 'true'
         env:
-          TARGET_REPO: SJJ-dot/Reader         # example "org-or-user/target-repo"
-          TARGET_TOKEN: ${{ secrets.GITHUBTOKEN }}  # PAT with repo permissions
+          TARGET_REPO: SJJ-dot/Reader
+          TARGET_TOKEN: ${{ secrets.GITHUBTOKEN }}
         run: |
           if [ -z "$TARGET_REPO" ] || [ -z "$TARGET_TOKEN" ]; then
-            echo "TARGET_REPO or TARGET_REPO_TOKEN secret not set"
+            echo "TARGET_REPO or TARGET_TOKEN secret not set"
             exit 1
           fi
           git clone "https://x-access-token:${TARGET_TOKEN}@github.com/${TARGET_REPO}.git" target-repo
           ls -la target-repo || (echo "Clone failed" && exit 1)
 
-      - name: Copy file into target repo and commit
+      - name: Copy files into target repo and commit
         if: steps.check-file.outputs.file_changed == 'true'
         id: push-file
         env:
-          TARGET_BRANCH: "BookSource"   # 改为目标分支
-          TARGET_PATH: "test/BookSource/default.json.gzip"  # 目标仓库内存放路径
+          TARGET_BRANCH: "BookSource"
+          TARGET_DIR: "test/BookSource"
         run: |
-          # Enter target repo, fetch remote branches and checkout existing target branch if present
           cd target-repo
           git fetch origin
-          # If the target branch exists on remote, check it out to track origin/<branch>
           if git rev-parse --verify "origin/${TARGET_BRANCH}" >/dev/null 2>&1; then
             git checkout --track "origin/${TARGET_BRANCH}" || git checkout "${TARGET_BRANCH}"
           else
-            # create a new branch if remote doesn't have it
             git checkout -b "${TARGET_BRANCH}"
           fi
-          # make sure destination directory exists
-          mkdir -p "$(dirname "${TARGET_PATH}")"
-          # copy from workspace root (one level up) into target repo
-          cp ../test/BookSource/default.json.gzip "${TARGET_PATH}"
-          # only commit if changed
+          mkdir -p "${TARGET_DIR}"
+          # copy both files if they exist
+          for f in default.json default.json.gzip; do
+            if [ -f "../${TARGET_DIR}/${f}" ]; then
+              cp "../${TARGET_DIR}/${f}" "${TARGET_DIR}/${f}"
+            fi
+          done
           if git status --porcelain | grep -q .; then
-            git add "${TARGET_PATH}"
-            git commit -m "Sync default.json.gzip from source repo (BookSource branch) [ci skip]" || true
-            # push branch, force if needed (place --force outside the refspec)
+            git add "${TARGET_DIR}/default.json" "${TARGET_DIR}/default.json.gzip"
+            git commit -m "Sync default.json from source repo (BookSource branch) [ci skip]" || true
             git push origin "${TARGET_BRANCH}" --force
-            echo "File pushed to ${TARGET_BRANCH} in target repo."
+            echo "Files pushed to ${TARGET_BRANCH} in target repo."
             echo "pushed=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes to commit."
@@ -89,4 +87,5 @@ jobs:
       - name: Purge jsDelivr CDN cache
         if: steps.check-file.outputs.file_changed == 'true' && steps.push-file.outputs.pushed == 'true'
         run: |
+          curl -X POST "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json"
           curl -X POST "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip"
