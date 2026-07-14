@@ -167,7 +167,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btn_ua_mode"
             app:layout_constraintStart_toEndOf="@+id/tv_cross_origin"
             app:layout_constraintTop_toBottomOf="@+id/btn_font_subtract">
 
@@ -196,6 +196,20 @@
                 android:textSize="13sp" />
 
         </RadioGroup>
+
+        <ImageView
+            android:id="@+id/btn_ua_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="12dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/browser_navigation_view"
+            app:layout_constraintBottom_toBottomOf="@+id/rg_cross_origin"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/rg_cross_origin"
+            app:layout_constraintTop_toTopOf="@+id/rg_cross_origin" />
+
 
         <LinearLayout
             android:id="@+id/tv_ad_block"

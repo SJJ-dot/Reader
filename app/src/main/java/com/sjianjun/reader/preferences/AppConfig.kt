@@ -167,6 +167,11 @@ class AppConfig(val name: String) :
 
     var webFontZoomSize by intPref("webFontZoomSize", 100)
 
+    /**
+     * 浏览器 UA 模式：0=手机版（默认），1=电脑版
+     */
+    var webUaMode by intPref("webUaMode", 0)
+
     /** 阅读器顶部显示 CPU/内存信息 */
     val showCpuMemInfo by lazy { boolLivedata("showCpuMemInfo", true) }
 }

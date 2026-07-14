@@ -98,6 +98,18 @@
                         android:src="@mipmap/ic_web_hide"
                         app:tint="@color/dn_text_color_black" />
 
+
+                    <ImageView
+                        android:id="@+id/btn_ua_mode"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/browser_navigation_view"
+                        app:tint="@color/dn_text_color_black" />
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

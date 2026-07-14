@@ -31,6 +31,7 @@ import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
+import com.sjianjun.reader.utils.webUserAgent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -159,6 +160,23 @@ class WebViewSettings @JvmOverloads constructor(
             historyList.add(0, url)
             globalConfig.bookCityUrlHistoryList.postValue(historyList)
             toast("添加成功")
+        }
+
+        binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
+        binding.btnUaMode.setOnClickListener {
+            val wv = customWebView?.webView ?: return@setOnClickListener
+            val current = wv.url
+            if (current.isNullOrBlank() || current == "about:blank") {
+                toast("无可用页面")
+                return@setOnClickListener
+            }
+            // 切换 UA 模式：0=手机版，1=电脑版
+            globalConfig.webUaMode = if (globalConfig.webUaMode == 1) 0 else 1
+            binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
+            wv.settings.userAgentString = webUserAgent()
+            // 清除缓存，避免按旧 UA 缓存的 302 跳转被重放
+            wv.clearCache(true)
+            wv.reload()
         }
 
         binding.btnReadMode.setOnClickListener {

@@ -82,6 +82,12 @@ open class MyWebViewClient(
         view: WebView?,
         request: WebResourceRequest,
     ): WebResourceResponse? {
+        // 电脑版模式：将站点常用的"移动端跳转脚本" uaredirect.js 替换为空实现，
+        // 阻止页面 JS 检测到 screen.width<500 后跳转到 m. 站（改 UA 无法绕过该检测）。
+        if (globalConfig.webUaMode == 1 && isMobileRedirectScript(request)) {
+            Log.i("电脑版：替换移动端跳转脚本 ${request.url}")
+            return mobileRedirectScriptStub()
+        }
         val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
         if (requestHost != null && AdBlock.whitelist.contains(requestHost)) {
             return super.shouldInterceptRequest(view, request)
@@ -110,6 +116,18 @@ open class MyWebViewClient(
 
         AdBlock.addUrl(request.url.toString())
         return super.shouldInterceptRequest(view, request)
+    }
+
+    /** 电脑版模式下判断是否为站点常用的"移动端跳转脚本"（uaredirect.js）。 */
+    private fun isMobileRedirectScript(request: WebResourceRequest): Boolean {
+        val path = request.url.path ?: return false
+        return path.substringAfterLast('/').equals("uaredirect.js", ignoreCase = true)
+    }
+
+    /** 返回空的 uaredirect.js，使页面的 uaredirect(...) 调用变为空操作，不发生跳转。 */
+    private fun mobileRedirectScriptStub(): WebResourceResponse {
+        val js = "function uaredirect(){};function isSubdomain(){};"
+        return WebResourceResponse("text/javascript", "UTF-8", ByteArrayInputStream(js.toByteArray()))
     }
 
     private fun mainFrameBlockedResponse(): WebResourceResponse {

@@ -18,9 +18,10 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
@@ -40,7 +41,8 @@ import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
-import com.sjianjun.reader.utils.trimExt
+import com.sjianjun.reader.utils.webUserAgent
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -48,6 +50,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import sjj.alog.Log
@@ -63,9 +66,6 @@ import sjj.novel.view.reader.page.TxtChapter
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.milliseconds
-import androidx.core.view.isVisible
-import com.sjianjun.reader.view.click
-import kotlinx.coroutines.withContext
 
 class BrowserReadModeActivity : BaseActivity() {
 
@@ -186,6 +186,22 @@ class BrowserReadModeActivity : BaseActivity() {
             } else {
                 toast("没有了")
             }
+        }
+        binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
+        binding.btnUaMode.click {
+            val wv = binding.hiddenWebView
+            val current = wv.url
+            if (current.isNullOrBlank() || current == "about:blank") {
+                toast("无可用页面")
+                return@click
+            }
+            // 切换 UA 模式：0=手机版，1=电脑版
+            globalConfig.webUaMode = if (globalConfig.webUaMode == 1) 0 else 1
+            wv.settings.userAgentString = webUserAgent()
+            // 清除缓存，避免按旧 UA 缓存的 302 跳转被重放
+            wv.clearCache(true)
+            wv.reload()
+            binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
         }
     }
 

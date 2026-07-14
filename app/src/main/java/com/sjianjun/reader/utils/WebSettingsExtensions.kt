@@ -56,6 +56,14 @@ fun WebSettings.setBackForwardCacheEnabled() {
 }
 
 private var first = true
+
+/** 电脑版 User-Agent（桌面 Chrome） */
+const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+/** 返回当前 UA 模式应使用的 User-Agent；返回 null 表示使用 WebView 默认（移动端）UA。 */
+fun webUserAgent(): String? = if (globalConfig.webUaMode == 1) DESKTOP_USER_AGENT else null
+
 fun WebView.init(headerMap: Map<String, String>? = null) {
     if (first) {
         first = false
@@ -79,8 +87,11 @@ fun WebView.init(headerMap: Map<String, String>? = null) {
         builtInZoomControls = true
         displayZoomControls = false
         setSupportMultipleWindows(false) // 支持 window.open()
-        headerMap?.get("User-Agent")?.let {
-            userAgentString = it
+        val customUa = headerMap?.get("User-Agent")
+        userAgentString = when {
+            customUa != null -> customUa
+            globalConfig.webUaMode == 1 -> DESKTOP_USER_AGENT
+            else -> null
         }
         blockNetworkImage = false // 设置图片加载方式，默认true，表示不加载图片
         loadsImagesAutomatically = true // 支持自动加载图片
