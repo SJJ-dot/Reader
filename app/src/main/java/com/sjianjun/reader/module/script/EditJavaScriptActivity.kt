@@ -245,7 +245,7 @@ def getChapterContent(url):
                 return@setOnBackPressed true
             }
             if (System.currentTimeMillis() - lastTime > 1000) {
-                toast("双击退出")
+                toast("再按一次退出")
                 lastTime = System.currentTimeMillis()
                 return@setOnBackPressed true
             } else {

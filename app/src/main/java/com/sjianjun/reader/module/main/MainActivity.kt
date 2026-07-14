@@ -187,7 +187,7 @@ class MainActivity : BaseActivity() {
             } else {
                 if (navController?.currentDestination?.id == R.id.bookShelfFragment) {
                     if (System.currentTimeMillis() - lastTime > 1000) {
-                        toast("双击退出")
+                        toast("再按一次退出应用")
                         lastTime = System.currentTimeMillis()
                         true
                     } else {
