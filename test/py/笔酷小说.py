@@ -62,7 +62,7 @@ def search(query):
 
     # 搜索结果在表格中，#nr 是第一行（空行），后续每行是一本书
     # 每行第一个 td 内的 a 标签包含书名和链接
-    for row in soup.select("#nr ~ tr"):
+    for row in soup.select("#nr"):
         a = row.select_one("td a")
         if a:
             title = a.get_text().strip()
