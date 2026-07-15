@@ -78,7 +78,7 @@
     // 2. 正文：常见小说网站容器优先，支持单元素与多元素（如 p 列表），最后启发式选择 textLength 最大的可见块
     var content = '';
     var selectors = [
-        '.booktxt', '.content', '.con', '.txtnav', '.read_chapterDetail', '.contents','.chaptercontent','.novelcontent',
+        '.read_content', '#read_content','.articleinfo','#articleinfo','.read_info','#read_info', '.booktxt', '.content', '.con', '.txtnav', '.read_chapterDetail', '.contents','.chaptercontent','.novelcontent',
         '#booktxt', '#content', '#con', '#txtnav', '#read_chapterDetail', '#contents','#chaptercontent','#novelcontent',
         'main'
     ];
@@ -113,7 +113,7 @@
         else if (document.body) content = textOf(document.body);
     }
 
-    // 3. 上一章 / 下一章 链接：优先精确选择器，其次扫描 a 标签按文本/id/class 匹配
+    // 3. 上一章 / 下一章 链接：优先按可见文字匹配（含校验），其次选择器，最后 id/class/aria 匹配
     var prev = '', next = '', prevText = '', nextText = '';
 
     // 诊断信息：记录每个阶段是否命中，便于排查"上滑加载下一页"等无显式链接场景
@@ -224,29 +224,14 @@
         'li.prev > a[href]', 'li.pre > a[href]', 'a.prev[href]', 'a.pre[href]',
         "a[rel='prev']", "a[rel*='prev']"
     ];
-    for (var ns = 0; ns < nextSelectors.length; ns++) {
-        var pn = pickLink(nextSelectors[ns]);
-        if (pn) {
-            next = pn.href; nextText = pn.text;
-            _debug.nextHit = 'selector'; _debug.nextSelector = nextSelectors[ns];
-            break;
-        }
-    }
-    for (var ps = 0; ps < prevSelectors.length; ps++) {
-        var pp = pickLink(prevSelectors[ps]);
-        if (pp) {
-            prev = pp.href; prevText = pp.text;
-            _debug.prevHit = 'selector'; _debug.prevSelector = prevSelectors[ps];
-            break;
-        }
-    }
 
     // 同时覆盖单数形式 ("pre"/"nxt") 与中文常见词
     var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', '上一章', '上章', 'previous', 'prev', 'pre'];
     var nextKeys = ['下頁', '下页', '下一页', '下一节', '下一頁', '下一章', '下章', 'next', 'nxt'];
     var anchors = document.querySelectorAll('a[href]');
     _debug.anchorsTotal = anchors.length;
-    // 同时把 a 的祖先（li/span/div 等）类名 / id 也纳入匹配，覆盖
+
+    // 把 a 的祖先（li/span/div 等）类名 / id 也纳入匹配，覆盖
     // <li class="prev"><a class="url_pre" id="pb_prev"> 这种把语义放在父节点上的写法。
     function ancestorTokens(el) {
         var tokens = '';
@@ -260,34 +245,124 @@
         return normalize(tokens);
     }
 
+    /**
+     * 文字包含匹配命中后，用原始文字做校验，避免误匹配：
+     *  - "没有下一章"/"返回目录" 等并非真实翻页链接
+     *  - 正文/标题等长文本恰好包含关键字
+     *  - 英文短关键字（pre/prev）被 "preview"/"prepare" 等子串误命中
+     */
+    function verifyNavText(rawText, key) {
+        var text = (rawText || '').trim();
+        if (!text) return false;
+        if (invalidNavText(text)) return false;
+        // 导航链接文字通常很短；过长则视为正文/标题误命中
+        if (text.length > 20) return false;
+        var nk = normalize(key);
+        // 纯英文关键字要求独立成词，避免 preview/prepare/present 误命中 pre/prev
+        if (/^[a-z]+$/.test(nk)) {
+            var wb = new RegExp('(^|[^a-z0-9])' + nk + '([^a-z0-9]|$)', 'i');
+            if (!wb.test(text)) return false;
+        }
+        return true;
+    }
+
+    // 按可见文字包含匹配，命中后逐个校验原始文字，返回第一个通过校验的关键字
+    function matchTextNav(rawText, aria, keys, direction) {
+        var t = normalize(rawText);
+        for (var ki = 0; ki < keys.length; ki++) {
+            var nk = normalize(keys[ki]);
+            if (nk && t.indexOf(nk) >= 0 && verifyNavText(rawText, keys[ki])) {
+                return keys[ki];
+            }
+        }
+        var loose = matchLooseChapterNav(rawText, aria, direction);
+        if (loose && verifyNavText(rawText, loose)) return loose;
+        return '';
+    }
+
+    // ===== 阶段 1：文字匹配（优先）=====
     if (!prev || !next) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
             var rawText = linkTitleText(a.innerText || a.textContent || '');
-            var t = normalize(rawText);
-            var id = normalize(a.id || '');
-            var cls = normalize((a.className || '').toString());
-            var aria = normalize(a.getAttribute('aria-label') || a.getAttribute('title') || '');
-            var anc = ancestorTokens(a);
+            var aria = a.getAttribute('aria-label') || a.getAttribute('title') || '';
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
             if (!prev) {
-                var prevHit = matchNavKeyword([t, id, cls, aria, anc], prevKeys) || matchLooseChapterNav(rawText, aria, 'prev');
+                var prevHit = matchTextNav(rawText, aria, prevKeys, 'prev');
                 if (prevHit) {
                     prev = abs(href); prevText = rawText;
-                    _debug.prevHit = 'keyword'; _debug.prevKeyword = prevHit;
+                    _debug.prevHit = 'text'; _debug.prevKeyword = prevHit;
                     if (_debug.prevCandidates.length < 10) {
                         _debug.prevCandidates.push({ text: rawText, href: abs(href), key: prevHit });
                     }
                 }
             }
             if (!next) {
-                var nextHit = matchNavKeyword([t, id, cls, aria, anc], nextKeys) || matchLooseChapterNav(rawText, aria, 'next');
+                var nextHit = matchTextNav(rawText, aria, nextKeys, 'next');
                 if (nextHit) {
                     next = abs(href); nextText = rawText;
-                    _debug.nextHit = 'keyword'; _debug.nextKeyword = nextHit;
+                    _debug.nextHit = 'text'; _debug.nextKeyword = nextHit;
                     if (_debug.nextCandidates.length < 10) {
                         _debug.nextCandidates.push({ text: rawText, href: abs(href), key: nextHit });
+                    }
+                }
+            }
+            if (prev && next) break;
+        }
+    }
+
+    // ===== 阶段 2：选择器匹配（文字匹配失败时兜底）=====
+    if (!next) {
+        for (var ns = 0; ns < nextSelectors.length; ns++) {
+            var pn = pickLink(nextSelectors[ns]);
+            if (pn) {
+                next = pn.href; nextText = pn.text;
+                _debug.nextHit = 'selector'; _debug.nextSelector = nextSelectors[ns];
+                break;
+            }
+        }
+    }
+    if (!prev) {
+        for (var ps = 0; ps < prevSelectors.length; ps++) {
+            var pp = pickLink(prevSelectors[ps]);
+            if (pp) {
+                prev = pp.href; prevText = pp.text;
+                _debug.prevHit = 'selector'; _debug.prevSelector = prevSelectors[ps];
+                break;
+            }
+        }
+    }
+
+    // ===== 阶段 3：id/class/aria/祖先 关键字匹配（最后兜底）=====
+    // 文字匹配已单独优先处理，这里只覆盖把语义放在属性/父节点上的写法
+    if (!prev || !next) {
+        for (var k2 = 0; k2 < anchors.length; k2++) {
+            var a2 = anchors[k2];
+            var rawText2 = linkTitleText(a2.innerText || a2.textContent || '');
+            var id2 = normalize(a2.id || '');
+            var cls2 = normalize((a2.className || '').toString());
+            var aria2 = normalize(a2.getAttribute('aria-label') || a2.getAttribute('title') || '');
+            var anc2 = ancestorTokens(a2);
+            var href2 = a2.getAttribute('href') || '';
+            if (!href2 || href2 === '#' || /^javascript:/i.test(href2)) continue;
+            if (!prev) {
+                var prevHit2 = matchNavKeyword([id2, cls2, aria2, anc2], prevKeys);
+                if (prevHit2) {
+                    prev = abs(href2); prevText = rawText2 || prevHit2;
+                    _debug.prevHit = 'keyword'; _debug.prevKeyword = prevHit2;
+                    if (_debug.prevCandidates.length < 10) {
+                        _debug.prevCandidates.push({ text: rawText2, href: abs(href2), key: prevHit2 });
+                    }
+                }
+            }
+            if (!next) {
+                var nextHit2 = matchNavKeyword([id2, cls2, aria2, anc2], nextKeys);
+                if (nextHit2) {
+                    next = abs(href2); nextText = rawText2 || nextHit2;
+                    _debug.nextHit = 'keyword'; _debug.nextKeyword = nextHit2;
+                    if (_debug.nextCandidates.length < 10) {
+                        _debug.nextCandidates.push({ text: rawText2, href: abs(href2), key: nextHit2 });
                     }
                 }
             }
