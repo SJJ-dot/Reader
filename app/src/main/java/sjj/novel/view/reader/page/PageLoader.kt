@@ -1332,12 +1332,63 @@ abstract class PageLoader : ViewModel() {
     }
 
     private fun convertByJianFanMode(text: String): String {
-        val context = mPageView?.context ?: return text
+        val normalized = normalizeText(text)
         return when (mJianFanMode) {
-            MODE_JIAN_TO_FAN -> ChineseUtils.s2t(text)
-            MODE_FAN_TO_JIAN -> ChineseUtils.t2s(text)
-            else -> text
+            MODE_JIAN_TO_FAN -> ChineseUtils.s2t(normalized)
+            MODE_FAN_TO_JIAN -> ChineseUtils.t2s(normalized)
+            else -> normalized
         }
+    }
+
+    /**
+     * 标点符号与英文字符规范化，分两趟遍历字符数组完成：
+     * 1. 全角英文字母（保留大小写）和数字转换为半角；繁体标点默认转换为简体中文。
+     * 2. 前后均为英文（字母/数字）的全角标点转换为英文半角标点。
+     */
+    private fun normalizeText(text: String): String {
+        if (text.isEmpty()) return text
+        val chars = text.toCharArray()
+        // 第一趟：全角英文字母/数字转半角（保留大小写），其余字符尝试转为简体标点
+        for (i in chars.indices) {
+            val code = chars[i].code
+            chars[i] = when {
+                // 全角英文字母(A-Z/a-z)和数字(0-9)：减去 0xFEE0 得到对应半角 ASCII
+                code in 0xFF10..0xFF19 || code in 0xFF21..0xFF3A || code in 0xFF41..0xFF5A ->
+                    (code - 0xFEE0).toChar()
+                // 非全角英数字：繁体引号「」『』等转为简体""''，其余原样保留
+                else -> toSimplifiedPunct(chars[i])
+            }
+        }
+        // 第二趟：前后都是英文的全角标点转为英文半角标点（如 A，B -> A,B）
+        for (i in chars.indices) {
+            val code = chars[i].code
+            // 仅当左右紧邻字符均为 ASCII 字母/数字时，才把全角标点转为半角英文标点
+            if (code in 0xFF01..0xFF5E
+                && i > 0 && isAsciiAlnum(chars[i - 1])
+                && i < chars.size - 1 && isAsciiAlnum(chars[i + 1])
+            ) {
+                chars[i] = (code - 0xFEE0).toChar()
+            }
+        }
+        return String(chars)
+    }
+
+    /**
+     * 繁体标点转简体：将繁体直角引号「」『』（含竖排小号变体）转为简体弯引号""''。
+     */
+    private fun toSimplifiedPunct(c: Char): Char = when (c) {
+        '\u300C', '\uFE41' -> '\u201C'
+        '\u300D', '\uFE42' -> '\u201D'
+        '\u300E', '\uFE43' -> '\u2018'
+        '\u300F', '\uFE44' -> '\u2019'
+        else -> c
+    }
+
+    /**
+     * 判断字符是否为 ASCII 字母或数字（半角）。
+     */
+    private fun isAsciiAlnum(c: Char): Boolean {
+        return c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9'
     }
 
     private fun lineAdvance(paint: Paint): Float {

@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlinKapt)
 }
 
-def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 6
+def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 16
 //创建版本号===
 //获取之前的版本列表
 
