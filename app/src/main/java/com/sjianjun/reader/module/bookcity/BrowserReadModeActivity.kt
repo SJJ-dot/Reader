@@ -518,6 +518,10 @@ class BrowserReadModeActivity : BaseActivity() {
         globalConfig.readerTypesettingMode.observe(this) {
             pageLoader.setTypesettingMode(it)
         }
+
+        globalConfig.readerTextGridAlign.observe(this) {
+            pageLoader.setGridAlign(it)
+        }
         globalConfig.readerFontFamily.observe(this) {
             if (it.isAsset) {
                 if (it.resId == 0) {

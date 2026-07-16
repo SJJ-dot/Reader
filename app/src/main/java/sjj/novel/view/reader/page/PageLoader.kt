@@ -8,6 +8,7 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
+import androidx.core.graphics.withClip
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -18,9 +19,10 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReplacementRule
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
-import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.ChineseUtils
+import com.sjianjun.reader.utils.dp2Px
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -34,8 +36,6 @@ import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import androidx.core.graphics.withClip
-import com.sjianjun.reader.preferences.globalConfig
 
 /**
  * Created by newbiechen on 17-7-1.
@@ -104,6 +104,9 @@ abstract class PageLoader : ViewModel() {
 
     // 排版模式: 0=横排左起, 1=横排右起, 2=竖排左起, 3=竖排右起
     private var mTypesettingMode: Int = MODE_TYPESETTING_HORIZONTAL_LTR
+
+    // 横排文字网格对齐：以 referenceWidth 为网格基准，每个字符起点对齐网格
+    private var mTextGridAlign: Boolean = false
 
     private val isVerticalTypesetting: Boolean
         get() = mTypesettingMode == MODE_TYPESETTING_VERTICAL_LTR || mTypesettingMode == MODE_TYPESETTING_VERTICAL_RTL
@@ -1452,7 +1455,8 @@ abstract class PageLoader : ViewModel() {
             val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
-            val remWidth = (mDisplayParams.contentRight - left) % (referenceWidth + letterSpacing)
+            val lineRemain = mDisplayParams.contentRight - left
+            val remWidth = if (end) lineRemain % (referenceWidth + letterSpacing) else lineRemain
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
                 val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
                 lastExtX = extX
@@ -1480,7 +1484,8 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
+                val advance = clusterAdvance(paint, trimmed, s, e)
+                val w = if (mTextGridAlign) max(advance, referenceWidth) else advance
                 if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
                     // 需要换行。若是英文单词则逐字符测量，能放下的部分留在当前行，其余换行
                     if (e - s > 1 && isAsciiAlnum(trimmed[s])) {
@@ -1500,7 +1505,8 @@ abstract class PageLoader : ViewModel() {
                                 }
                             }
                             val segEnd = segStart + count
-                            val segW = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            val segAdvance = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            val segW = if (mTextGridAlign) max(segAdvance, referenceWidth) else segAdvance
                             if (idx != 0) {
                                 left += letterSpacing
                             }
@@ -1555,7 +1561,8 @@ abstract class PageLoader : ViewModel() {
             val line = TxtLine(sb.toString(), paint === mTitlePaint, lineHeight, mDisplayParams.contentWidth, end)
             line.clusterBoundaries = getGraphemeBoundaries(line.txt)
             //两端对齐。
-            val remWidth = (right - mDisplayParams.contentLeft) % (referenceWidth + letterSpacing)
+            val lineRemain = right - mDisplayParams.contentLeft
+            val remWidth = if (end) lineRemain % (referenceWidth + letterSpacing) else lineRemain
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
                 val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
                 lastExtX = extX
@@ -1583,7 +1590,8 @@ abstract class PageLoader : ViewModel() {
             for (i in 0 until allBounds.size - 1) {
                 val s = allBounds[i]
                 val e = allBounds[i + 1]
-                val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
+                val advance = clusterAdvance(paint, trimmed, s, e)
+                val w = if (mTextGridAlign) max(advance, referenceWidth) else advance
                 if (right - letterSpacing - w < mDisplayParams.contentLeft && sb.isNotEmpty()) {
                     // 需要换行。若是英文单词则逐字符测量，能放下的部分留在当前行，其余换行
                     if (e - s > 1 && isAsciiAlnum(trimmed[s])) {
@@ -1603,13 +1611,14 @@ abstract class PageLoader : ViewModel() {
                                 }
                             }
                             val segEnd = segStart + count
-                            val segW = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            val segAdvance = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            val segW = if (mTextGridAlign) max(segAdvance, referenceWidth) else segAdvance
                             if (idx != 0) {
                                 right -= letterSpacing
                             }
                             clusterRight[idx] = right
                             clusterLeft[idx] = right - segW
-                            sb.append(trimmed, segStart, segEnd)
+                            sb.append(trimmed.substring(segStart, segEnd).reversed())
                             right -= segW
                             idx++
                             segStart = segEnd
@@ -1627,7 +1636,11 @@ abstract class PageLoader : ViewModel() {
                     idx = 0
                 }
                 //添加一个字符
-                sb.append(trimmed, s, e)
+                if (e - s > 1 && isAsciiAlnum(trimmed[s])) {
+                    sb.append(trimmed.substring(s, e).reversed())
+                } else {
+                    sb.append(trimmed, s, e)
+                }
                 if (idx != 0) {
                     right -= letterSpacing
                 }
@@ -2090,6 +2103,19 @@ abstract class PageLoader : ViewModel() {
             mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 
+        mPageView!!.drawCurPage()
+    }
+
+    fun setGridAlign(enabled: Boolean) {
+        if (mTextGridAlign == enabled) {
+            return
+        }
+        mTextGridAlign = enabled
+        ChapterPageCache.reset()
+        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
+            dealLoadPageList(this.chapterPos)
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
+        }
         mPageView!!.drawCurPage()
     }
 

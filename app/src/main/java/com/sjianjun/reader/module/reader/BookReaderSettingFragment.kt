@@ -216,6 +216,10 @@ class BookReaderSettingFragment : BaseFragment() {
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
             },
+            ReaderSettingPopupItem.Switch(title = "等宽字符", checked = globalConfig.readerTextGridAlign.value == true) { item, checked ->
+                item.checked = checked
+                globalConfig.readerTextGridAlign.postValue(checked)
+            },
             ReaderSettingPopupItem.Action(title = "点击区域") {
                 hide()
                 if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {

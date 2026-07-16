@@ -93,6 +93,11 @@ class AppConfig(val name: String) :
     val readerTypesettingMode by lazy { intLivedata("readerTypesettingMode", 0) }
 
     /**
+     * 横排文字网格对齐：以 referenceWidth 为网格基准，每个字符起点对齐网格
+     */
+    val readerTextGridAlign by lazy { boolLivedata("readerTextGridAlign", true) }
+
+    /**
      * 上一次使用的深色 颜色样式 用于白天夜间切换 样式0支持白天和夜间模式
      */
     val lastDarkTheme by lazy { strLivedata("lastDarkThemeStr", PageStyle.defNight.id) }

@@ -380,6 +380,10 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setTypesettingMode(it)
         }
 
+        globalConfig.readerTextGridAlign.observe(this) {
+            mPageLoader?.setGridAlign(it)
+        }
+
         globalConfig.readerOrientationMode.observe(this) {
             applyReaderOrientation(it)
         }

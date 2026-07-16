@@ -603,6 +603,10 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
             },
+            BookReaderSettingFragment.ReaderSettingPopupItem.Switch(title = "等宽字符", checked = globalConfig.readerTextGridAlign.value == true) { item, checked ->
+                item.checked = checked
+                globalConfig.readerTextGridAlign.postValue(checked)
+            },
             BookReaderSettingFragment.ReaderSettingPopupItem.Action(title = "点击区域") {
                 hideSelf()
                 if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {
