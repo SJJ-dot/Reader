@@ -1388,7 +1388,7 @@ abstract class PageLoader : ViewModel() {
      * 判断字符是否为 ASCII 字母或数字（半角）。
      */
     private fun isAsciiAlnum(c: Char): Boolean {
-        return c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9'
+        return c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '.'
     }
 
     private fun lineAdvance(paint: Paint): Float {
@@ -1482,6 +1482,42 @@ abstract class PageLoader : ViewModel() {
                 val e = allBounds[i + 1]
                 val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
                 if (left + letterSpacing + w > mDisplayParams.contentRight && sb.isNotEmpty()) {
+                    // 需要换行。若是英文单词则逐字符测量，能放下的部分留在当前行，其余换行
+                    if (e - s > 1 && isAsciiAlnum(trimmed[s])) {
+                        var segStart = s
+                        while (segStart < e) {
+                            val avail = if (idx != 0) mDisplayParams.contentRight - left - letterSpacing else mDisplayParams.contentRight - left
+                            var count = paint.breakText(trimmed, segStart, e, true, avail, null)
+                            if (count <= 0) {
+                                if (idx == 0) {
+                                    count = 1
+                                } else {
+                                    createLine(left, false)
+                                    sb.clear()
+                                    left = mDisplayParams.contentLeft
+                                    idx = 0
+                                    continue
+                                }
+                            }
+                            val segEnd = segStart + count
+                            val segW = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            if (idx != 0) {
+                                left += letterSpacing
+                            }
+                            clusterLeft[idx] = left
+                            clusterRight[idx] = left + segW
+                            sb.append(trimmed, segStart, segEnd)
+                            left += segW
+                            idx++
+                            segStart = segEnd
+                            if (segStart >= e) break
+                            createLine(left, false)
+                            sb.clear()
+                            left = mDisplayParams.contentLeft
+                            idx = 0
+                        }
+                        continue
+                    }
                     createLine(left, false)
                     sb.clear()
                     left = mDisplayParams.contentLeft
@@ -1549,6 +1585,42 @@ abstract class PageLoader : ViewModel() {
                 val e = allBounds[i + 1]
                 val w = max(clusterAdvance(paint, trimmed, s, e), referenceWidth)
                 if (right - letterSpacing - w < mDisplayParams.contentLeft && sb.isNotEmpty()) {
+                    // 需要换行。若是英文单词则逐字符测量，能放下的部分留在当前行，其余换行
+                    if (e - s > 1 && isAsciiAlnum(trimmed[s])) {
+                        var segStart = s
+                        while (segStart < e) {
+                            val avail = if (idx != 0) right - mDisplayParams.contentLeft - letterSpacing else right - mDisplayParams.contentLeft
+                            var count = paint.breakText(trimmed, segStart, e, true, avail, null)
+                            if (count <= 0) {
+                                if (idx == 0) {
+                                    count = 1
+                                } else {
+                                    createLine(right, false)
+                                    sb.clear()
+                                    right = mDisplayParams.contentRight
+                                    idx = 0
+                                    continue
+                                }
+                            }
+                            val segEnd = segStart + count
+                            val segW = clusterAdvance(paint, trimmed, segStart, segEnd)
+                            if (idx != 0) {
+                                right -= letterSpacing
+                            }
+                            clusterRight[idx] = right
+                            clusterLeft[idx] = right - segW
+                            sb.append(trimmed, segStart, segEnd)
+                            right -= segW
+                            idx++
+                            segStart = segEnd
+                            if (segStart >= e) break
+                            createLine(right, false)
+                            sb.clear()
+                            right = mDisplayParams.contentRight
+                            idx = 0
+                        }
+                        continue
+                    }
                     createLine(right, false)
                     sb.clear()
                     right = mDisplayParams.contentRight
