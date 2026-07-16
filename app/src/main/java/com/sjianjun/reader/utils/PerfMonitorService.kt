@@ -1,89 +1,60 @@
 package com.sjianjun.reader.utils
 
-import android.os.Debug
-import android.os.Handler
-import android.os.Looper
-import sjj.alog.Log
-import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * APP CPU/内存消耗监控。单例，非 Android Service 组件。
- * 通过 [start] / [stop] 控制，每 5 秒采样一次，数据保留在内存环形缓冲（最多 360 条 ≈ 30 分钟）。
- */
-object PerfMonitorService {
-    private const val INTERVAL_MS = 1000L
-    private const val MAX_SAMPLES = 360
-
-    private val handler = Handler(Looper.getMainLooper())
-
-    @Volatile
-    private var running = false
-
-    /** 上一次采样的 jiffies（utime+stime）和墙钟时间，用于 CPU 差值计算 */
+object PerformanceMonitor {
+    // 缓存正则表达式，避免重复创建
+    private val spaceRegex = Regex("\\s+")
+    private var lastCpuTime: Long = 0
     private var lastCpuJiffies: Long = 0
-    private var lastWallTime: Long = 0
 
-    fun start() {
-        if (running) return
-        running = true
-        lastCpuJiffies = readProcessCpuJiffies()
-        lastWallTime = System.currentTimeMillis()
-        handler.post(samplingRunnable)
-        Log.i("PerfMonitorService started")
+    var memMb: Int = 0
+        private set
+    var cpu: Int = 0
+        private set
+
+    // 在 IO 线程执行性能数据采集
+    suspend fun getPerformanceStats(): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        cpu = calculateCpuPercent()
+        memMb = getLightweightMemory().toInt()
+        cpu to memMb
     }
 
-    fun stop() {
-        running = false
-        handler.removeCallbacks(samplingRunnable)
-        Log.i("PerfMonitorService stopped")
-    }
-
-    private val samplingRunnable = object : Runnable {
-        override fun run() {
-            if (!running) return
-            sample()
-            handler.postDelayed(this, INTERVAL_MS)
-        }
-    }
-
-    private fun sample() {
-        val now = System.currentTimeMillis()
-        val cpuJiffies = readProcessCpuJiffies()
-        // CPU% = Δ(jiffies) / clkTck / Δ(seconds) * 100
-        val clkTck = 100L // sysconf(_SC_CLK_TCK)，Android 固定 100
-        val dtSec = (now - lastWallTime) / 1000.0
-        val cpuPercent = if (dtSec > 0 && lastCpuJiffies > 0) {
-            ((cpuJiffies - lastCpuJiffies).toDouble() / clkTck / dtSec * 100).toFloat().coerceAtLeast(0f)
-        } else {
-            0f
-        }
-        lastCpuJiffies = cpuJiffies
-        lastWallTime = now
-
-        // 内存：totalPrivateDirty (KB)
-        val memKb = Debug.MemoryInfo().let { info ->
-            Debug.getMemoryInfo(info)
-            info.totalPrivateDirty.toLong()
-        }
-
-        Log.i("PerfMonitorService sample: CPU=${"%.2f".format(cpuPercent)}%, Memory=${memKb / 1024L}MB")
-    }
-
-    /**
-     * 读取 /proc/self/stat 的 utime(14) + stime(15)，单位 jiffies。
-     * 失败返回 0。
-     */
-    private fun readProcessCpuJiffies(): Long {
+    private fun calculateCpuPercent(): Int {
         return try {
-            val stat = File("/proc/self/stat").readText().trim()
-            val fields = stat.substringAfterLast(')').split(Regex("\\s+"))
-            // fields[0]=utime, fields[1]=stime（去掉 comm 字段后的第 14、15 项）
-            val utime = fields.getOrElse(11) { "0" }.toLong()
-            val stime = fields.getOrElse(12) { "0" }.toLong()
-            utime + stime
+            val stat = java.io.File("/proc/self/stat").readText().trim()
+            val fields = stat.substringAfterLast(')').split(spaceRegex)
+            val utime = fields.getOrNull(11)?.toLongOrNull() ?: 0L
+            val stime = fields.getOrNull(12)?.toLongOrNull() ?: 0L
+            val jiffies = utime + stime
+            val now = System.currentTimeMillis()
+
+            val percent = if (lastCpuJiffies > 0 && lastCpuTime > 0) {
+                val dtSec = (now - lastCpuTime) / 1000.0
+                if (dtSec > 0) {
+                    ((jiffies - lastCpuJiffies).toDouble() / 100.0 / dtSec * 100).toInt().coerceIn(0, 100)
+                } else 0
+            } else 0
+
+            lastCpuJiffies = jiffies
+            lastCpuTime = now
+            percent
         } catch (e: Exception) {
-            Log.e("readProcessCpuJiffies err", e)
-            0L
+            0
+        }
+    }
+
+    private fun getLightweightMemory(): Long {
+        return try {
+            // 1. Java 堆已用内存
+            val javaMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
+            // 2. Native 堆已用内存 (这个调用比 getMemoryInfo 轻量得多)
+            val nativeMem = android.os.Debug.getNativeHeapAllocatedSize()
+
+            (javaMem + nativeMem) / 1024 / 1024
+        } catch (e: Exception) {
+            0
         }
     }
 }

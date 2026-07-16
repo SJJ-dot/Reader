@@ -22,6 +22,7 @@ import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.ChineseUtils
+import com.sjianjun.reader.utils.PerformanceMonitor
 import com.sjianjun.reader.utils.dp2Px
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.BitmapWrapper
 import sjj.novel.view.reader.bean.BookRecordBean
@@ -539,9 +541,7 @@ abstract class PageLoader : ViewModel() {
         val canvas = Canvas(bitmap)
         val tipPaint = mTipPaint!!
         // CPU + 内存：CPU：55 内存300MB
-        val cpu = getCpuPercent()
-        val memMb = getMemMb()
-        val infoText = "CPU:$cpu-内存:${memMb}M"
+        val infoText = "CPU:${PerformanceMonitor.cpu}-内存:${PerformanceMonitor.memMb}M"
         val infoWidth = tipPaint.measureText(infoText)
         val infoX = mDisplayParams.contentRight - infoWidth
         val infoY = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f - mDisplayParams.tipHeight
@@ -554,16 +554,6 @@ abstract class PageLoader : ViewModel() {
             mBackground?.draw(this)
         }
         canvas.drawText(infoText, infoX, infoY, tipPaint)
-    }
-
-    private fun getMemMb(): Int {
-        return try {
-            val info = android.os.Debug.MemoryInfo()
-            android.os.Debug.getMemoryInfo(info)
-            info.totalPrivateDirty / 1024
-        } catch (e: Exception) {
-            0
-        }
     }
 
     private fun drawBackground(bitmap: Bitmap) {
@@ -598,42 +588,22 @@ abstract class PageLoader : ViewModel() {
         }
     }
 
-    /** CPU 占用采样：drawBackground 里立即获取，无动画时每 2 秒自动刷新 */
-    @Volatile
-    private var lastCpuJiffies: Long = 0
-
-    @Volatile
-    private var lastCpuTime: Long = 0
-    private fun getCpuPercent(): Int {
-        return try {
-            val stat = java.io.File("/proc/self/stat").readText().trim()
-            val fields = stat.substringAfterLast(')').split(Regex("\\s+"))
-            val utime = fields.getOrElse(11) { "0" }.toLong()
-            val stime = fields.getOrElse(12) { "0" }.toLong()
-            val jiffies = utime + stime
-            val now = System.currentTimeMillis()
-            val percent = if (lastCpuJiffies > 0 && lastCpuTime > 0) {
-                val dtSec = (now - lastCpuTime) / 1000.0
-                if (dtSec > 0) {
-                    ((jiffies - lastCpuJiffies).toDouble() / 100.0 / dtSec * 100).toInt().coerceIn(0, 100)
-                } else 0
-            } else 0
-            lastCpuJiffies = jiffies
-            lastCpuTime = now
-//            Log.i("getCpuPercent: $percent%")
-            percent
-        } catch (e: Exception) {
-            0
-        }
-    }
-
     private fun startCpuRefresh() {
-        mPageView?.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+        mPageView?.findViewTreeLifecycleOwner()?.lifecycleScope?.launch(Dispatchers.IO) {
             while (isActive) {
                 if (globalConfig.showCpuMemInfo.value == true && mPageView?.mPageAnim?.isRunning != true) {
-                    mPageView!!.drawCurPage(true)
+                    PerformanceMonitor.getPerformanceStats()
+                    if (mPageView?.mPageAnim?.isRunning != true) {
+                        withContext(Dispatchers.Main) {
+                            mPageView!!.drawCurPage(true)
+                        }
+                        delay(2000)
+                    } else {
+                        delay(100)
+                    }
+                } else {
+                    delay(100)
                 }
-                delay(2000)
             }
         }
     }

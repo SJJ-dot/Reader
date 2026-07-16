@@ -95,7 +95,7 @@ class AppConfig(val name: String) :
     /**
      * 横排文字网格对齐：以 referenceWidth 为网格基准，每个字符起点对齐网格
      */
-    val readerTextGridAlign by lazy { boolLivedata("readerTextGridAlign", true) }
+    val readerTextGridAlign by lazy { boolLivedata("readerTextGridAlign", false) }
     val readerFullWidthConvert by lazy { boolLivedata("readerFullWidthConvert", true) }
 
     /**
