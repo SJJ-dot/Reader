@@ -1409,10 +1409,26 @@ abstract class PageLoader : ViewModel() {
         val bi = breakIteratorTl.get()!!
         bi.setText(text)
         bi.first()
-        while (true) {
-            val nxt = bi.next()
-            if (nxt == android.icu.text.BreakIterator.DONE) break
-            boundaries.add(nxt)
+        if (!isVerticalTypesetting) {
+            // 横排：连续的英文字母/数字作为一个单词整体，允许跨行显示
+            var prevAlnum = false
+            while (true) {
+                val nxt = bi.next()
+                if (nxt == android.icu.text.BreakIterator.DONE) break
+                val isAlnum = nxt - boundaries.last() == 1 && isAsciiAlnum(text[boundaries.last()])
+                if (isAlnum && prevAlnum) {
+                    boundaries[boundaries.lastIndex] = nxt
+                } else {
+                    boundaries.add(nxt)
+                }
+                prevAlnum = isAlnum
+            }
+        } else {
+            while (true) {
+                val nxt = bi.next()
+                if (nxt == android.icu.text.BreakIterator.DONE) break
+                boundaries.add(nxt)
+            }
         }
         if (boundaries.last() != text.length) {
             boundaries.add(text.length)
