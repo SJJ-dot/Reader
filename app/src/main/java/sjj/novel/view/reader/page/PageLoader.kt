@@ -170,17 +170,7 @@ abstract class PageLoader : ViewModel() {
         mTipPaint!!.setTypeface(typeface)
         mTextPaint!!.setTypeface(typeface)
         mTitlePaint!!.setTypeface(typeface)
-        ChapterPageCache.reset()
-
-        // 如果当前已经显示数据
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            // 重新计算当前页面
-            dealLoadPageList(this.chapterPos)
-            // 重新获取指定页面
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     private fun initPaint() {
@@ -297,17 +287,7 @@ abstract class PageLoader : ViewModel() {
         mDisplayParams.titleParaInterval = paraSpace * 1.5f
         mTitlePaint!!.textSize = textSize * 1.1f
         // 取消缓存
-        ChapterPageCache.reset()
-
-        // 如果当前已经显示数据
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            // 重新计算当前页面
-            dealLoadPageList(this.chapterPos)
-            // 重新获取指定页面
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     /**
@@ -972,11 +952,12 @@ abstract class PageLoader : ViewModel() {
         return this.chapterPos + 1 < category.size
     }
 
+
     fun reloadPages() {
-        val chapter = chapterCategory?.getOrNull(chapterPos)
-        TxtChapter.evict(chapter?.link)
-        ChapterPageCache.remove(this.chapterPos)
-        parseCurChapter()
+        ChapterPageCache.reset()
+        if (isChapterListPrepare) {
+            parseCurChapter()
+        }
         if (mStatus == STATUS_FINISH) {
             // 重新设置文章指针的位置
             mCurPage = getCurPage(mCurPage?.position ?: 0)
@@ -984,7 +965,6 @@ abstract class PageLoader : ViewModel() {
         } else {
             isChapterOpen = false
         }
-
     }
 
     open fun parseCurChapter(): Boolean {
@@ -2103,17 +2083,7 @@ abstract class PageLoader : ViewModel() {
         }
         mJianFanMode = normalized
         // 取消缓存
-        ChapterPageCache.reset()
-
-        // 如果当前已经显示数据
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            // 重新计算当前页面
-            dealLoadPageList(this.chapterPos)
-            // 重新获取指定页面
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     fun setFullWidthConvert(enabled: Boolean) {
@@ -2121,12 +2091,7 @@ abstract class PageLoader : ViewModel() {
             return
         }
         mFullWidthConvert = enabled
-        ChapterPageCache.reset()
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            dealLoadPageList(this.chapterPos)
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     fun setGridAlign(enabled: Boolean) {
@@ -2134,27 +2099,12 @@ abstract class PageLoader : ViewModel() {
             return
         }
         mTextGridAlign = enabled
-        ChapterPageCache.reset()
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            dealLoadPageList(this.chapterPos)
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     fun setReplacementRules(rules: List<ReplacementRule>) {
         mReplacementRules = rules.sortedBy { it.order }
-        ChapterPageCache.reset()
-
-        // 如果当前已经显示数据
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            // 重新计算当前页面
-            dealLoadPageList(this.chapterPos)
-            // 重新获取指定页面
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 
     fun setTypesettingMode(mode: Int) {
@@ -2171,13 +2121,6 @@ abstract class PageLoader : ViewModel() {
         }
         mTypesettingMode = normalized
         // 先清缓存并重排，确保切换排版时分页立即更新。
-        ChapterPageCache.reset()
-
-        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
-            dealLoadPageList(this.chapterPos)
-            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
-        }
-
-        mPageView!!.drawCurPage()
+        reloadPages()
     }
 }
