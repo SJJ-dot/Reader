@@ -107,6 +107,7 @@ abstract class PageLoader : ViewModel() {
 
     // 横排文字网格对齐：以 referenceWidth 为网格基准，每个字符起点对齐网格
     private var mTextGridAlign: Boolean = false
+    private var mFullWidthConvert: Boolean = true
 
     private val isVerticalTypesetting: Boolean
         get() = mTypesettingMode == MODE_TYPESETTING_VERTICAL_LTR || mTypesettingMode == MODE_TYPESETTING_VERTICAL_RTL
@@ -1335,7 +1336,7 @@ abstract class PageLoader : ViewModel() {
     }
 
     private fun convertByJianFanMode(text: String): String {
-        val normalized = normalizeText(text)
+        val normalized = if (mFullWidthConvert) normalizeText(text) else text
         return when (mJianFanMode) {
             MODE_JIAN_TO_FAN -> ChineseUtils.s2t(normalized)
             MODE_FAN_TO_JIAN -> ChineseUtils.t2s(normalized)
@@ -2112,6 +2113,19 @@ abstract class PageLoader : ViewModel() {
             mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
         }
 
+        mPageView!!.drawCurPage()
+    }
+
+    fun setFullWidthConvert(enabled: Boolean) {
+        if (mFullWidthConvert == enabled) {
+            return
+        }
+        mFullWidthConvert = enabled
+        ChapterPageCache.reset()
+        if (isChapterListPrepare && mStatus == STATUS_FINISH) {
+            dealLoadPageList(this.chapterPos)
+            mCurPage = curPageList?.getOrNull(mCurPage?.position ?: -1) ?: curPageList?.lastOrNull()
+        }
         mPageView!!.drawCurPage()
     }
 

@@ -220,6 +220,10 @@ class BookReaderSettingFragment : BaseFragment() {
                 item.checked = checked
                 globalConfig.readerTextGridAlign.postValue(checked)
             },
+            ReaderSettingPopupItem.Switch(title = "全角转换", checked = globalConfig.readerFullWidthConvert.value == true) { item, checked ->
+                item.checked = checked
+                globalConfig.readerFullWidthConvert.postValue(checked)
+            },
             ReaderSettingPopupItem.Action(title = "点击区域") {
                 hide()
                 if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {

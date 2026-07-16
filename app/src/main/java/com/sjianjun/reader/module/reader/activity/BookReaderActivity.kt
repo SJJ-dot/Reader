@@ -384,6 +384,10 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setGridAlign(it)
         }
 
+        globalConfig.readerFullWidthConvert.observe(this) {
+            mPageLoader?.setFullWidthConvert(it)
+        }
+
         globalConfig.readerOrientationMode.observe(this) {
             applyReaderOrientation(it)
         }

@@ -607,6 +607,10 @@ class BrowserReadModeSettingFragment : BaseFragment() {
                 item.checked = checked
                 globalConfig.readerTextGridAlign.postValue(checked)
             },
+            BookReaderSettingFragment.ReaderSettingPopupItem.Switch(title = "全角转换", checked = globalConfig.readerFullWidthConvert.value == true) { item, checked ->
+                item.checked = checked
+                globalConfig.readerFullWidthConvert.postValue(checked)
+            },
             BookReaderSettingFragment.ReaderSettingPopupItem.Action(title = "点击区域") {
                 hideSelf()
                 if (parentFragmentManager.findFragmentByTag(ReaderClickAreaSettingDialogFragment.TAG) == null) {

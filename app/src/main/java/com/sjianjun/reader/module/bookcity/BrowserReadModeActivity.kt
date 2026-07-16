@@ -522,6 +522,9 @@ class BrowserReadModeActivity : BaseActivity() {
         globalConfig.readerTextGridAlign.observe(this) {
             pageLoader.setGridAlign(it)
         }
+        globalConfig.readerFullWidthConvert.observe(this) {
+            pageLoader.setFullWidthConvert(it)
+        }
         globalConfig.readerFontFamily.observe(this) {
             if (it.isAsset) {
                 if (it.resId == 0) {
