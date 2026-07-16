@@ -114,7 +114,7 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    url = url.replace("://m.", "://www.")
+    url = url.replace("https://www.", "http://m.")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
@@ -123,8 +123,8 @@ def getChapterContent(url):
     html = response.text
     soup = BeautifulSoup(html, "html.parser")
 
-    # 正文在 #content
-    con = soup.select_one("#content")
+    # 正文在 .content
+    con = soup.select_one(".content")
     content = con.prettify()
 
     # 翻页：下一页链接在 div.jump 中，href 含 ?page=
