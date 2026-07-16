@@ -1344,25 +1344,34 @@ abstract class PageLoader : ViewModel() {
     }
 
     /**
-     * 标点符号与英文字符规范化，分两趟遍历字符数组完成：
-     * 1. 全角英文字母（保留大小写）和数字转换为半角；繁体标点默认转换为简体中文。
-     * 2. 前后均为英文（字母/数字）的全角标点转换为英文半角标点。
+     * 字符规范化，分三趟遍历字符数组完成：
+     * 1. 所有空格统一转为全角空格；其余半角字符（字母/数字/标点）转为全角；繁体引号转简体。
+     * 2. 全角英文字母、数字转回半角。
+     * 3. 前后均为英文/数字的全角标点转为半角（如 A，B -> A,B）。
      */
     private fun normalizeText(text: String): String {
         if (text.isEmpty()) return text
         val chars = text.toCharArray()
-        // 第一趟：全角英文字母/数字转半角（保留大小写），其余字符尝试转为简体标点
+        // 第一趟：半角字符全部转全角。半角空格->全角空格，其余半角可打印字符+0xFEE0
         for (i in chars.indices) {
             val code = chars[i].code
             chars[i] = when {
-                // 全角英文字母(A-Z/a-z)和数字(0-9)：减去 0xFEE0 得到对应半角 ASCII
-                code in 0xFF10..0xFF19 || code in 0xFF21..0xFF3A || code in 0xFF41..0xFF5A ->
-                    (code - 0xFEE0).toChar()
-                // 非全角英数字：繁体引号「」『』等转为简体""''，其余原样保留
+                // 所有空格字符（半角空格、NBSP、各种宽度空格、全角空格等）统一转为全角空格
+                Character.isSpaceChar(chars[i]) -> '\u3000'
+                // 半角可打印字符（标点/数字/字母） -> 全角
+                code in 0x21..0x7E -> (code + 0xFEE0).toChar()
+                // 繁体引号「」『』等转为简体""''，其余原样保留
                 else -> toSimplifiedPunct(chars[i])
             }
         }
-        // 第二趟：前后都是英文的全角标点转为英文半角标点（如 A，B -> A,B）
+        // 第二趟：全角英文字母/数字转回半角
+        for (i in chars.indices) {
+            val code = chars[i].code
+            if (code in 0xFF10..0xFF19 || code in 0xFF21..0xFF3A || code in 0xFF41..0xFF5A) {
+                chars[i] = (code - 0xFEE0).toChar()
+            }
+        }
+        // 第三趟：前后均为英文/数字的全角标点转为半角标点（如 A，B -> A,B）
         for (i in chars.indices) {
             val code = chars[i].code
             // 仅当左右紧邻字符均为 ASCII 字母/数字时，才把全角标点转为半角英文标点
