@@ -23,7 +23,7 @@ def getChapterContent(url):(比选)，加载章节内容
     - 单个书源可以在APP新建书源直接复制书源源码即可
     - 使用打包的脚本将书源压缩为ZIP放在`GitHub`使用`链接`导入或者`手机本地`直接导入`文件`
     - 例如本教程书源文件导入链接示例：https://raw.githubusercontent.com/SJJ-dot/Reader/refs/heads/BookSource/test/BookSource/default.json.gzip
-    - 或者使用jsdelivr加速：https://cdn.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip
+    - 或者使用jsdelivr加速：https://cdn.jsdelivr.net/gh/SJJ-dot/Reader/test/BookSource/default.json.gzip
 
 
 ## 如果喜欢就动动小手点个star吧😁😁😁😁
