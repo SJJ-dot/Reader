@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import sjj.alog.Log
 import sjj.novel.view.reader.animation.BitmapWrapper
+import sjj.novel.view.reader.animation.ScrollPageAnim
 import sjj.novel.view.reader.bean.BookRecordBean
 import kotlin.math.abs
 import kotlin.math.max
@@ -594,8 +595,10 @@ abstract class PageLoader : ViewModel() {
                 if (globalConfig.showCpuMemInfo.value == true && mPageView?.mPageAnim?.isRunning != true) {
                     PerformanceMonitor.getPerformanceStats()
                     if (mPageView?.mPageAnim?.isRunning != true) {
-                        withContext(Dispatchers.Main) {
-                            mPageView!!.drawCurPage(true)
+                        if (mPageView?.mPageAnim !is ScrollPageAnim) {
+                            withContext(Dispatchers.Main) {
+                                mPageView!!.drawCurPage(true)
+                            }
                         }
                         delay(2000)
                     } else {
