@@ -118,6 +118,10 @@ def getChapterContent(url):
     if not con:
         return ""
 
+    # 删除广告容器
+    for ad in con.select(".ad-container"):
+        ad.decompose()
+
     return con.prettify()
 
 
