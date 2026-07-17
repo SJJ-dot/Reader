@@ -73,8 +73,8 @@ def getDetails(url):
         "chapterList": []
     }
 
-    # 章节列表在 a[href*='/read/']
-    chapter_links = soup.select("a[href*='/read/']")
+    # 章节列表在 a.chp-link（排除继续阅读等导航按钮）
+    chapter_links = soup.select("a.chp-link")
     seen = set()
     chapters = []
     for a in chapter_links:
@@ -88,7 +88,7 @@ def getDetails(url):
             if isinstance(desc, NavigableString) and desc.strip():
                 title = desc.strip()
                 break
-        if title:
+        if title and title not in ("继续阅读", "开始阅读"):
             chapters.append({
                 "title": title,
                 "url": urljoin(url, href)
@@ -127,13 +127,22 @@ def getChapterContent(url):
 
 if __name__ == '__main__':
     res = search("我的")
-    print(res)
+    # print(res)
+    for book in res:
+        print(book)
 
     print("================================")
     print("================================")
     print("================================")
     res = getDetails(res[0]["bookUrl"])
-    print(res)
+    # print(res)
+    print("url:", res["url"])
+    print("title:", res["title"])
+    print("author:", res["author"])
+    print("intro:", res["intro"])
+    print("cover:", res["cover"])
+    for c in res["chapterList"]:
+        print("chapter:", c["title"], c["url"])
 
     print("================================")
     print("================================")
