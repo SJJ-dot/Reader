@@ -39,6 +39,7 @@ def search(query):
 
     # 搜索结果在 ul.space-y-4 > li[itemprop='mainEntity'] > a[itemprop='url']
     for li in soup.select("ul.space-y-4 li[itemprop='mainEntity']"):
+        author_el = li.select_one("[itemprop='author']")
         a = li.select_one("a[itemprop='url']")
         if a:
             href = a.get("href")
@@ -47,6 +48,7 @@ def search(query):
             if title and href:
                 books.append({
                     "bookTitle": title,
+                    "bookAuthor": author_el.get_text(strip=True) if author_el else "",
                     "bookUrl": urljoin(getSiteUrl(), href),
                 })
 
