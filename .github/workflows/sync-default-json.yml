@@ -87,8 +87,5 @@ jobs:
       - name: Purge jsDelivr CDN cache
         if: steps.check-file.outputs.file_changed == 'true' && steps.push-file.outputs.pushed == 'true'
         run: |
-          # Purge branch root first to refresh branch resolution (@BookSource -> latest commit)
-          curl "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource"
-          # Then purge individual files
-          curl "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json"
-          curl "https://purge.jsdelivr.net/gh/SJJ-dot/Reader@BookSource/test/BookSource/default.json.gzip"
+          curl "https://purge.jsdelivr.net/gh/SJJ-dot/Reader/test/BookSource/default.json"
+          curl "https://purge.jsdelivr.net/gh/SJJ-dot/Reader/test/BookSource/default.json.gzip"
