@@ -14,6 +14,7 @@ import com.bumptech.glide.request.target.Target
 import com.sjianjun.reader.GlideApp
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.globalConfig
+import sjj.alog.Log
 
 
 /**
@@ -30,6 +31,7 @@ fun ImageView.glide(url: String?) {
                 target: Target<Drawable>,
                 isFirstResource: Boolean
             ): Boolean {
+                Log.e("Glide onLoadFailed model=$model", e)
                 return false
             }
 
