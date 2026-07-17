@@ -2,10 +2,17 @@ import copy
 import json
 
 
+_namespace_cache = {}
+
+
 def _build_namespace(script):
+    ns = _namespace_cache.get(script)
+    if ns is not None:
+        return ns
     safe_builtins = copy.copy(__builtins__.__dict__) if hasattr(__builtins__, '__dict__') else copy.copy(__builtins__)
     namespace = {'__builtins__': safe_builtins}
     exec(script, namespace)
+    _namespace_cache[script] = namespace
     return namespace
 
 

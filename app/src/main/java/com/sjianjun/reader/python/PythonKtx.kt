@@ -7,28 +7,28 @@ import com.sjianjun.reader.utils.gson
 import sjj.alog.Log
 
 
-inline fun <reified T> BookSource.py(func: String, param: String?): T? {
-    val py = Python.getInstance()
-    val exec = py.getModule("exec_script")
-    val result = if (param.isNullOrBlank()) {
-        exec.callAttr("exec_script", js, func).toString()
-    } else {
-        exec.callAttr("exec_script", js, func, param).toString()
-    }
-    if (T::class.java == String::class.java) {
-        return result as T
-    }
-    if (T::class.java == Boolean::class.java) {
-        return result.toBoolean() as T
-    }
-    if (T::class.java == Int::class.java) {
-        return result.toInt() as T
-    }
+@PublishedApi internal val execModule by lazy { Python.getInstance().getModule("exec_script") }
 
-    return try {
-        gson.fromJson<T>(result)
-    } catch (e: Exception) {
-        Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
-        throw e
+
+inline fun <reified T> BookSource.py(func: String, param: String?): T? {
+    val exec = execModule
+    val pyResult = if (param.isNullOrBlank()) {
+        exec.callAttr("exec_script", js, func)
+    } else {
+        exec.callAttr("exec_script", js, func, param)
+    }
+    return when (T::class.java) {
+        String::class.java -> pyResult.toString() as T
+        Int::class.java -> pyResult.toInt() as T
+        Boolean::class.java -> pyResult.toString().toBoolean() as T
+        else -> {
+            val json = pyResult.toString()
+            try {
+                gson.fromJson<T>(json)
+            } catch (e: Exception) {
+                Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$json")
+                throw e
+            }
+        }
     }
 }
