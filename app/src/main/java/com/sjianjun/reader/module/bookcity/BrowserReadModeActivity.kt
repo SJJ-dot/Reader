@@ -65,6 +65,7 @@ import sjj.novel.view.reader.page.PageView
 import sjj.novel.view.reader.page.TxtChapter
 import java.io.File
 import kotlin.coroutines.resume
+import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
 class BrowserReadModeActivity : BaseActivity() {
@@ -367,10 +368,10 @@ class BrowserReadModeActivity : BaseActivity() {
             val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
             val params = DisplayParams()
             pageLoader.mDisplayParams.setInsets(
-                left = params.insetLeft + safeLeft,
-                top = params.insetTop + safeTop,
-                right = params.insetRight + safeRight,
-                bottom = params.insetBottom + safeBottom,
+                left = max(params.insetLeft, safeLeft.toFloat()),
+                top = max(params.insetTop, safeTop.toFloat()),
+                right = max(params.insetRight, safeRight.toFloat()),
+                bottom = max(params.insetBottom, safeBottom.toFloat()),
             )
             binding.webViewContainer.setPadding(0, safeTop, 0, safeBottom)
             binding.chapterListDrawerContainer.setPadding(0, safeTop, 0, safeBottom)

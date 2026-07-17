@@ -183,6 +183,11 @@ abstract class PageLoader : ViewModel() {
         mTipPaint!!.setTextSize(12.dp2Px.toFloat()) // Tip默认的字体大小
         mTipPaint!!.setAntiAlias(true)
         mTipPaint!!.setSubpixelText(true)
+        if (globalConfig.showCpuMemInfo.value == true) {
+            mDisplayParams.tipHeight = 2 * lineAdvance(mTipPaint!!) + 2.dp2Px  // Tip的高度
+        } else {
+            mDisplayParams.tipHeight = lineAdvance(mTipPaint!!)  // Tip的高度
+        }
 
         // 绘制页面内容的画笔
         mTextPaint = TextPaint()
@@ -545,7 +550,7 @@ abstract class PageLoader : ViewModel() {
         val infoText = "CPU:${PerformanceMonitor.cpu}-内存:${PerformanceMonitor.memMb}M"
         val infoWidth = tipPaint.measureText(infoText)
         val infoX = mDisplayParams.contentRight - infoWidth
-        val infoY = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f - mDisplayParams.tipHeight
+        val infoY = mDisplayParams.insetTop + lineAdvance(tipPaint)
         // 擦除旧文字区域
         val eraseLeft = infoX.toInt() - 20.dp2Px
         val eraseTop = (infoY - lineAdvance(tipPaint)).toInt() - 5
@@ -564,7 +569,7 @@ abstract class PageLoader : ViewModel() {
         val chapters = chapterCategory
         val tipPaint = mTipPaint!!
         if (chapters?.isEmpty() == false) {
-            val tipTop = mDisplayParams.insetTop + mDisplayParams.tipHeight - (mDisplayParams.tipHeight - lineAdvance(tipPaint)) / 2f
+            val tipTop = mDisplayParams.contentTop - 2.dp2Px
 
             if (mStatus != STATUS_FINISH) {
                 if (isChapterListPrepare) {

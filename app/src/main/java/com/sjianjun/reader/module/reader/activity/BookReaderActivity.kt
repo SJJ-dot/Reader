@@ -85,10 +85,10 @@ class BookReaderActivity : BaseActivity() {
             val safeBottom = maxOf(systemBars.bottom, cutout?.safeInsetBottom ?: 0)
             val params = DisplayParams()
             mPageLoader?.mDisplayParams?.setInsets(
-                left = params.insetLeft + safeLeft,
-                top = params.insetTop + safeTop,
-                right = params.insetRight + safeRight,
-                bottom = params.insetBottom + safeBottom,
+                left = max(params.insetLeft, safeLeft.toFloat()),
+                top = max(params.insetTop, safeTop.toFloat()),
+                right = max(params.insetRight, safeRight.toFloat()),
+                bottom = max(params.insetBottom, safeBottom.toFloat()),
             )
             binding?.drawerChapterList?.setPadding(0, safeTop, safeRight, safeBottom)
             insets
