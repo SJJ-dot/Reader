@@ -1,40 +1,30 @@
+import json
 import re
-import time
-import re
-from urllib.parse import urljoin
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
+from urllib.parse import urljoin, quote
+
 from bs4 import BeautifulSoup, NavigableString
 from log import log
 
-# 1. 初始化一个全局的 Session 对象，实现连接复用与 TCP 握手共享
-session = requests.Session()
-
-# 2. 配置底层自动重试机制
-retries_strategy = Retry(
-    total=3,
-    backoff_factor=1,
-    status_forcelist=[500, 502, 503, 504],
-    raise_on_status=False
-)
-adapter = HTTPAdapter(max_retries=retries_strategy)
-session.mount("http://", adapter)
-session.mount("https://", adapter)
-
-session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-})
+from SessionManager import verification_activity_get
+from WebViewClient import web_get
 
 
-def _get(url, headers=None, timeout=(10, 30)):
+def _fetch(url):
+    """web_get 优先（WebView 渲染，自动过 JS 挑战），失败则回退到 verification_activity_get（人机验证）"""
+    def parse(result):
+        result = json.loads(result)
+        html = result.get("html", "")
+        if "https://challenges.cloudflare.com" in html:
+            raise Exception("人机验证")
+        if "此验证用于防止机器人自动化访问" in html:
+            raise Exception("人机验证")
+        return html
+
     try:
-        return session.get(url, headers=headers, timeout=timeout)
-    except requests.exceptions.RequestException as e:
-        log.error(f"Request failed for {url}: {e}")
-        raise
+        return parse(web_get(url))
+    except Exception as e:
+        log(f"Error: {e}")
+        return parse(verification_activity_get(url))
 
 
 def getSiteUrl():
@@ -42,18 +32,12 @@ def getSiteUrl():
 
 
 def search(query):
-    # GET /search?q=keyword
-    response = session.get(
-        urljoin(getSiteUrl(), "/search"),
-        params={"q": query},
-        timeout=(10, 30)
-    )
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
+    url = urljoin(getSiteUrl(), f"/search?q={quote(query)}")
+    html = _fetch(url)
+    soup = BeautifulSoup(html, "html.parser")
     books = []
 
     # 搜索结果在 ul.space-y-4 > li[itemprop='mainEntity'] > a[itemprop='url']
-    # 书名在 a 内的 h2[itemprop='name']
     for li in soup.select("ul.space-y-4 li[itemprop='mainEntity']"):
         a = li.select_one("a[itemprop='url']")
         if a:
@@ -70,9 +54,8 @@ def search(query):
 
 
 def getDetails(url):
-    response = _get(url)
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
+    html = _fetch(url)
+    soup = BeautifulSoup(html, "html.parser")
 
     title_el = soup.select_one("h1")
     author_el = soup.select_one("[itemprop='author']")
@@ -120,9 +103,8 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    response = _get(url)
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
+    html = _fetch(url)
+    soup = BeautifulSoup(html, "html.parser")
 
     # 正文在 #article-content（class reader-text）
     con = soup.select_one("#article-content")
