@@ -1,43 +1,56 @@
-from urllib.parse import urljoin
 import time
-
+from urllib.parse import urljoin
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 from bs4 import BeautifulSoup
 from log import log
 
+# 1. 初始化一个全局的 Session 对象，实现连接复用与 TCP 握手共享
+session = requests.Session()
 
-# 带重试的请求，应对 Cloudflare 限流和服务器不稳定
-def _get(url, headers=None, timeout=(10, 30), retries=3):
-    for attempt in range(retries):
-        try:
-            return requests.get(url, headers=headers, timeout=timeout)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
-            if attempt == retries - 1:
-                raise
-            time.sleep(2)
+# 2. 配置底层自动重试机制
+# 针对网络波动、超时以及临时服务器错误（如 500, 502, 503, 504）自动在底层重试
+retries_strategy = Retry(
+    total=3,  # 最大重试次数
+    backoff_factor=1,  # 重试间隔等待时间系数 (e.g. 1s, 2s, 4s...)
+    status_forcelist=[500, 502, 503, 504],  # 遇到这些状态码直接重试
+    raise_on_status=False  # 即使失败也返回 response，不抛出异常以维持业务逻辑
+)
+adapter = HTTPAdapter(max_retries=retries_strategy)
+session.mount("http://", adapter)
+session.mount("https://", adapter)
+
+# 统一配置全局 headers
+session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+})
 
 
-# 支持搜索可以不需要实现verify
-# def verify(query):
-#     res = getDetails("https://www.kubixs.com/shu/xiaohuaxiangbaipiaowozhijiexigan/")
-#     res = getChapterContent(res["chapterList"][0]["url"])
-#     return 0 if len(res) > 10 else 1
+# 3. 封装统一的内部请求方法（完全基于全局 Session，保障连接复用）
+def _get(url, headers=None, timeout=(10, 30)):
+    """
+    使用全局 session 发起 GET 请求。
+    因为挂载了 HTTPAdapter，该方法天然自带连接池复用与底层网络重试。
+    """
+    try:
+        # 如果传入了临时 headers，会与 session.headers 进行合并
+        return session.get(url, headers=headers, timeout=timeout)
+    except requests.exceptions.RequestException as e:
+        log.error(f"Request failed for {url}: {e}")
+        raise
 
 
 def getSiteUrl():
-    return "https://www.kubixs.com"
+    return "http://m.kubixs.com"
 
 
 def search(query):
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    })
-
-    # 访问首页以获取 Cookie 和 _token
-    response = _get(getSiteUrl(), headers=dict(session.headers), timeout=(10, 30))
+    base_url = "https://www.kubixs.com"
+    # 先访问首页以获取 Cookie 和 CSRF _token（直接复用 session）
+    response = _get(base_url)
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -52,16 +65,22 @@ def search(query):
     }
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Origin": getSiteUrl(),
-        "Referer": getSiteUrl(),
+        "Origin": base_url,
+        "Referer": base_url,
     }
-    response = session.post(urljoin(getSiteUrl(), "/search"), data=data, headers=headers, timeout=(10, 30))
+
+    # 搜索请求也复用 session 连接池
+    response = session.post(
+        urljoin(base_url, "/search"),
+        data=data,
+        headers=headers,
+        timeout=(10, 30)
+    )
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
     books = []
 
-    # 搜索结果在表格中，#nr 是第一行（空行），后续每行是一本书
-    # 每行第一个 td 内的 a 标签包含书名和链接
+    # 提取搜索结果
     for row in soup.select("#nr"):
         a = row.select_one("td a")
         if a:
@@ -70,7 +89,7 @@ def search(query):
             if title and href:
                 books.append({
                     "bookTitle": title,
-                    "bookUrl": urljoin(getSiteUrl(), href),
+                    "bookUrl": urljoin(base_url, href),
                 })
 
     return books
@@ -78,12 +97,9 @@ def search(query):
 
 def getDetails(url):
     url = url.replace("://m.", "://www.")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
 
-    # 书籍详情页：通过 OG meta 标签获取书名、作者、简介、封面
-    response = _get(url, headers=headers)
+    # 1. 抓取书籍详情页
+    response = _get(url)
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
     book = {
@@ -95,9 +111,9 @@ def getDetails(url):
         "chapterList": []
     }
 
-    # 完整目录在 /list.html 页面，章节在 #readerlist > li > a
+    # 2. 抓取完整目录（因同域名，此请求将 100% 复用刚才建立的 TCP 连接）
     list_url = urljoin(url, "list.html")
-    response = _get(list_url, headers=headers)
+    response = _get(list_url)
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -113,33 +129,50 @@ def getDetails(url):
     return book
 
 
-def getChapterContent(url):
-    url = url.replace("https://www.", "http://m.")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
-    response = _get(url, headers=headers)
-    response.encoding = "utf-8"
-    html = response.text
-    soup = BeautifulSoup(html, "html.parser")
+def getChapterContent(start_url):
+    # 统一转换成移动端链接
+    current_url = start_url.replace("https://www.", "http://m.")
 
-    # 正文在 .content
-    con = soup.select_one(".content")
-    content = con.prettify()
+    total_content = ""
+    visited_urls = set()  # 避免死循环
 
-    # 翻页：下一页链接在 div.jump 中，href 含 ?page=
-    next_url = None
-    for a in soup.select("div.jump a"):
-        if "下一页" in a.get_text():
-            href = a.get("href")
-            if href:
-                next_url = urljoin(url, href)
+    while current_url and current_url not in visited_urls:
+        visited_urls.add(current_url)
+
+        # 发送请求（通过 _get 内部走 Session 连接池，多页抓取时速度飞快）
+        response = _get(current_url)
+        response.encoding = "utf-8"
+        html = response.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # 1. 提取正文内容
+        con = soup.select_one(".content")
+        if con:
+            total_content += con.prettify()
+        else:
+            con_fallback = soup.select_one("#content") or soup.select_one(".txt-content")
+            if con_fallback:
+                total_content += con_fallback.prettify()
+
+        # 2. 寻找“下一页”链接
+        next_url = None
+        for a in soup.find_all("a"):
+            text = a.get_text().strip()
+            if "下一页" in text or "下页" in text:
+                href = a.get("href")
+                if href:
+                    temp_url = urljoin(current_url, href)
+                    if "?page=" in temp_url:
+                        next_url = temp_url
+                        break
+
+        # 3. 判断是否继续抓取下一页
+        if next_url and next_url != start_url:
+            current_url = next_url
+        else:
             break
 
-    if next_url and "?page=" in next_url and next_url != url:
-        content += getChapterContent(next_url)
-
-    return content
+    return total_content
 
 
 if __name__ == '__main__':
