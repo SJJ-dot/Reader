@@ -595,9 +595,12 @@ abstract class PageLoader : ViewModel() {
     }
 
     private fun startCpuRefresh() {
+        if (globalConfig.showCpuMemInfo.value != true) {
+            return
+        }
         mPageView?.findViewTreeLifecycleOwner()?.lifecycleScope?.launch(Dispatchers.IO) {
             while (isActive) {
-                if (globalConfig.showCpuMemInfo.value == true && mPageView?.mPageAnim?.isRunning != true) {
+                if (mPageView?.mPageAnim?.isRunning != true) {
                     PerformanceMonitor.getPerformanceStats()
                     if (mPageView?.mPageAnim?.isRunning != true) {
                         if (mPageView?.mPageAnim !is ScrollPageAnim) {
