@@ -9,11 +9,11 @@
 
 ## 预览
 
-| <img src="img/B1.jpg" width = "90" height = "180"/> | <img src="img/B5.jpg" width = "90" height = "180"/> | <img src="img/B3.jpg" width = "90" height = "180"/> | <img src="img/B4.jpg" width = "90" height = "180"/> |
+| <img src="img/B1.webp" width = "90" height = "180"/> | <img src="img/B5.webp" width = "90" height = "180"/> | <img src="img/B3.webp" width = "90" height = "180"/> | <img src="img/B4.webp" width = "90" height = "180"/> |
 |-----------------------------------------------------|-----------------------------------------------------|-----------------------------------------------------|-----------------------------------------------------|
-| <img src="img/7.jpg" width = "90" height = "180"/> | <img src="img/1.jpg" width = "90" height = "180"/> | <img src="img/2.jpg" width = "90" height = "180"/> | <img src="img/3.jpg" width = "90" height = "180"/> |
-| <img src="img/4.jpg" width = "90" height = "180"/> | <img src="img/5.jpg" width = "90" height = "180"/> | <img src="img/6.jpg" width = "90" height = "180"/> |
+| <img src="img/7.webp" width = "90" height = "180"/> | <img src="img/1.webp" width = "90" height = "180"/> | <img src="img/2.webp" width = "90" height = "180"/> | <img src="img/3.webp" width = "90" height = "180"/> |
+| <img src="img/4.webp" width = "90" height = "180"/> | <img src="img/5.webp" width = "90" height = "180"/> | <img src="img/6.webp" width = "90" height = "180"/> |
 
 ## [下载体验](https://github.com/SJJ-dot/Reader/releases)
 
-<img src="img/apk.png" width = "180" height = "180"/>
+<img src="img/apk.webp" width = "180" height = "180"/>
