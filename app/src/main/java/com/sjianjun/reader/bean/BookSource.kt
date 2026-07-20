@@ -199,9 +199,13 @@ class BookSource {
 
     suspend fun getDetails(bookUrl: String): Book? {
         return withIo {
-            execute<Book>(Func.getDetails, bookUrl)?.also {
-                it.bookSourceId = id
+            val book = execute<Book>(Func.getDetails, bookUrl)
+            book?.bookSourceId = id
+            if (book?.title.isNullOrBlank()) {
+                Log.e("$name 获取书籍详情失败：$bookUrl")
+                throw IllegalStateException("获取书籍详情失败")
             }
+            book
         }
     }
 
