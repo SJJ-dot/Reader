@@ -101,8 +101,6 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                     val res = WebViewVerificationActivity.startAndWaitResult(
                         data.url!!,
                         data.headers ?: emptyMap(),
-                        data.html ?: "",
-                        data.encoding ?: "UTF-8",
                         data.verificationKey ?: ""
                     )
                     newFixedLengthResponse(res)
@@ -113,8 +111,6 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                     WebViewVerificationActivity.startAndWaitResult(
                         data.url!!,
                         data.headers ?: emptyMap(),
-                        data.html ?: "",
-                        data.encoding ?: "UTF-8",
                         data.verificationKey ?: ""
                     )
                     newFixedLengthResponse(CookieMgr.getCookie(data.url ?: ""))
@@ -151,8 +147,6 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
     class RobotVerify {
         var url: String? = null
         var headers: Map<String, String>? = null
-        var html: String? = null
-        var encoding: String? = null
         var verificationKey: String? = null
         var postData: String? = null
     }
