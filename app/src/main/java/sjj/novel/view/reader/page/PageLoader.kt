@@ -610,10 +610,10 @@ abstract class PageLoader : ViewModel() {
                         }
                         delay(2000)
                     } else {
-                        delay(100)
+                        delay(500)
                     }
                 } else {
-                    delay(100)
+                    delay(500)
                 }
             }
         }

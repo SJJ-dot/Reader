@@ -44,6 +44,14 @@ class WebViewVerificationActivity : BaseActivity() {
     private val postData: ByteArray? by lazy { intent.getByteArrayExtra(KEY_POST_DATA) }
     private val mHandler = Handler(Looper.getMainLooper())
     private val runnable by lazy { EvalJsRunnable(binding.webView, url) }
+    private var finishing = false
+    private val finishFallback by lazy {
+        Runnable {
+            val result = resultMap[intent.getStringExtra(KEY_RESULT)]
+            result?.finished = true
+            if (!isFinishing && !isDestroyed) finish()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,9 +80,10 @@ class WebViewVerificationActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        mHandler.removeCallbacks(runnable)
+        mHandler.removeCallbacks(finishFallback)
         val result = resultMap[intent.getStringExtra(KEY_RESULT)]
         result?.finished = true
-        mHandler.removeCallbacks(runnable)
         binding.webView.destroy()
     }
 
@@ -87,7 +96,7 @@ class WebViewVerificationActivity : BaseActivity() {
         return when (item.itemId) {
             R.id.action_done -> {
                 // 处理完成按钮点击事件
-                finish() // 例如：关闭当前 Activity
+                finishWithCurrentContent()
                 true
             }
 
@@ -111,7 +120,7 @@ class WebViewVerificationActivity : BaseActivity() {
                 binding.webView.goBack()
             } else {
                 Log.w("没有后退页面")
-                finish() // 关闭当前 Activity
+                finishWithCurrentContent()
             }
         }
         binding.forward.click {
@@ -123,15 +132,18 @@ class WebViewVerificationActivity : BaseActivity() {
             }
         }
         binding.complete.click {
-            finish() // 例如：关闭当前 Activity
+            finishWithCurrentContent()
         }
         setSupportActionBar(binding.toolbar)
+        setOnBackPressed {
+            finishWithCurrentContent()
+            true
+        }
     }
 
     private fun initWebView(url: String, headerMap: Map<String, String>) {
         lifecycle.addObserver(WebViewLifecycleObserver(binding.webView))
         binding.webView.init(headerMap)
-        binding.webView.clearCache(true)
         binding.webView.webChromeClient = object : WebChromeClient() {
         }
 
@@ -181,7 +193,34 @@ class WebViewVerificationActivity : BaseActivity() {
 
     }
 
+    /**
+     * 关闭页面时抓取当前 WebView 内容作为返回结果。
+     * evaluateJavascript 为异步，回调中写入结果后再 finish；
+     * 并设置兜底定时器，避免回调未触发导致页面无法关闭。
+     */
+    private fun finishWithCurrentContent() {
+        if (finishing) return
+        finishing = true
+        val resultKey = intent.getStringExtra(KEY_RESULT)
+        binding.webView.evaluateJavascript("document.documentElement.outerHTML") { raw ->
+            val content = parseJsString(raw)
+            resultMap[resultKey]?.let {
+                if (content.isNotEmpty()) it.html = content
+                it.finished = true
+            }
+            mHandler.removeCallbacks(finishFallback)
+            if (!isFinishing && !isDestroyed) finish()
+        }
+        mHandler.postDelayed(finishFallback, 1500)
+    }
+
+    private fun parseJsString(raw: String?): String {
+        if (raw.isNullOrBlank() || raw == "null") return ""
+        return StringEscapeUtils.unescapeJson(raw).replace(QUOTE_REGEX, "")
+    }
+
     companion object {
+        private val QUOTE_REGEX = "^\"|\"$".toRegex()
         private val KEY_URL = "url"
         private val KEY_HEADER_MAP = "header_map"
         private val KEY_POST_DATA = "post_data"
@@ -257,7 +296,6 @@ class WebViewVerificationActivity : BaseActivity() {
         private val url: String,
         private val mJavaScript: String = "document.documentElement.outerHTML"
     ) : Runnable {
-        private val quoteRegex = "^\"|\"$".toRegex()
         var retry = 0
         private val mWebView: WeakReference<WebView> = WeakReference(webView)
         override fun run() {
@@ -268,7 +306,7 @@ class WebViewVerificationActivity : BaseActivity() {
 
         private fun handleResult(result: String) = GlobalScope.launch {
             if (!result.isBlank() && result != "null") {
-                val content = StringEscapeUtils.unescapeJson(result).replace(quoteRegex, "")
+                val content = parseJsString(result)
                 Log.i("js执行结果获取成功：$url")
                 val result = resultMap[intent.getStringExtra(KEY_RESULT)]
                 result?.url = url

@@ -92,6 +92,9 @@ object BookUseCase {
             book.isLoading = true
             bookDao.updateBook(book)
             val bookDetails = script.getDetails(book.url)!!
+            if (bookDetails.title != book.title) {
+                throw MessageException("加载失败：书籍标题发生变化")
+            }
             val chapterList = bookDetails.chapterList!!
             chapterList.forEachIndexed { index, chapter ->
                 chapter.bookId = book.id
