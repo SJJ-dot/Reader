@@ -13,49 +13,14 @@ def init():
     log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
 
 
-def get_cookie(url):
-    init()
-    server_url = f'http://{_server_ip}:{_server_port}/getCookie'
-    # POST请求的数据
-    data = {'url': url}
-    # 发送POST请求
-    response = requests.post(server_url, json=data)
-    response.encoding = 'utf-8'
-    log(f'Get cookies for {url}: {response.text}')
-    return response.text
-
-
-def set_cookie(url, cookies):
-    init()
-    server_url = f'http://{_server_ip}:{_server_port}/setCookie'
-    # POST请求的数据
-    data = {'url': url, 'cookies': cookies}
-    # 发送POST请求
-    response = requests.post(server_url, json=data)
-    response.encoding = 'utf-8'
-    log(f'Set cookies for {url}: {response.text} (cookies: {cookies})')
-
-
-def verification_activity_get(url, headers=None, html=None, encoding='utf-8', verificationKey=None):
+def verification_activity_get(url, headers=None, verificationKey=None):
     init()
     server_url = f'http://{_server_ip}:{_server_port}/verification_activity_get'
     # POST请求的数据
-    data = {'url': url, 'headers': headers, 'html': html, 'encoding': encoding, 'verificationKey': verificationKey}
+    data = {'url': url, 'headers': headers, 'verificationKey': verificationKey}
     # 发送POST请求
     response = requests.post(server_url, json=data)
     response.encoding = 'utf-8'
-    return response.text
-
-
-def start_verification_activity(url, headers=None, html=None, encoding='utf-8'):
-    init()
-    server_url = f'http://{_server_ip}:{_server_port}/start_verification_activity'
-    # POST请求的数据
-    data = {'url': url, 'headers': headers, 'html': html, 'encoding': encoding}
-    # 发送POST请求
-    response = requests.post(server_url, json=data)
-    response.encoding = 'utf-8'
-    log(f'Start verification activity finish for {url}: {response.text}')
     return response.text
 
 
@@ -74,6 +39,3 @@ def verification_activity_post(url, postData=None, verificationKey=None):
 if __name__ == '__main__':
     # Example usage
     url = 'https://www.69shuba.com/modules/article/search.php'
-    cookies = get_cookie(url)
-    set_cookie(url, cookies)
-    start_verification_activity(url)
