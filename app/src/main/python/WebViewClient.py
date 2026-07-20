@@ -1,5 +1,4 @@
 from java.util import HashMap
-from com.sjianjun.reader.http import CookieMgr
 from com.sjianjun.reader.http import WebViewClient
 
 

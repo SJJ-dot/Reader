@@ -23,7 +23,6 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
-import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.view.click
@@ -130,7 +129,6 @@ class WebViewVerificationActivity : BaseActivity() {
     }
 
     private fun initWebView(url: String, headerMap: Map<String, String>) {
-        CookieMgr.clearCookiesForUrl(url)
         lifecycle.addObserver(WebViewLifecycleObserver(binding.webView))
         binding.webView.init(headerMap)
         binding.webView.clearCache(true)

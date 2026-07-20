@@ -1,14 +1,5 @@
 from java.util import HashMap
-from com.sjianjun.reader.http import CookieMgr
 from com.sjianjun.reader.module.verification import WebViewVerificationActivity
-
-
-def get_cookie(url):
-    return CookieMgr.getCookie(url)
-
-
-def set_cookie(url, cookie):
-    CookieMgr.setCookie(url, cookie)
 
 
 def verification_activity_get(url, headers=None, html=None, encoding="utf-8", verificationKey=None):
@@ -22,11 +13,6 @@ def verification_activity_get(url, headers=None, html=None, encoding="utf-8", ve
     for key, value in headers.items():
         java_headers.put(key, value)
     return WebViewVerificationActivity.startAndWaitResult(url, java_headers, verificationKey)
-
-
-def start_verification_activity(url, headers=None, html=None, encoding="utf-8", verificationKey=None):
-    verification_activity_get(url, headers, html, encoding, verificationKey)
-    return get_cookie(url)
 
 
 def verification_activity_post(url, postData=None, verificationKey=None):

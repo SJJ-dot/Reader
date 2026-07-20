@@ -2,7 +2,6 @@ package com.sjianjun.reader.utils
 
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.BuildConfig
-import com.sjianjun.reader.http.CookieMgr
 import com.sjianjun.reader.http.WebViewClient
 import com.sjianjun.reader.module.verification.WebViewVerificationActivity
 import fi.iki.elonen.NanoHTTPD
@@ -104,27 +103,6 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                         data.verificationKey ?: ""
                     )
                     newFixedLengthResponse(res)
-                }
-
-                "/start_verification_activity" -> {
-                    val data = gson.fromJson<RobotVerify>(requestBody)!!
-                    WebViewVerificationActivity.startAndWaitResult(
-                        data.url!!,
-                        data.headers ?: emptyMap(),
-                        data.verificationKey ?: ""
-                    )
-                    newFixedLengthResponse(CookieMgr.getCookie(data.url ?: ""))
-                }
-
-                "/getCookie" -> {
-                    val data = gson.fromJson<Map<String, String>>(requestBody)!!
-                    newFixedLengthResponse(CookieMgr.getCookie(data["url"] ?: ""))
-                }
-
-                "/setCookie" -> {
-                    val data = gson.fromJson<Map<String, String>>(requestBody)!!
-                    CookieMgr.setCookie(data["url"] ?: "", data["cookies"] ?: "")
-                    newFixedLengthResponse(Response.Status.OK, MIME_PLAINTEXT, "Cookie 设置成功")
                 }
 
                 "/verification_activity_post" -> {
