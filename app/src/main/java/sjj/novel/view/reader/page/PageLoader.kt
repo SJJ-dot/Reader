@@ -410,7 +410,7 @@ abstract class PageLoader : ViewModel() {
     fun openChapter() {
         isFirstOpen = false
 
-        if (!mPageView!!.isPrepare) {
+        if (mPageView?.isPrepare != true) {
             Log.e("阅读页没准备好")
             return
         }
@@ -488,6 +488,10 @@ abstract class PageLoader : ViewModel() {
      */
     @Throws(Exception::class)
     private fun loadPageList(chapterPos: Int): List<TxtPage>? {
+        if (mPageView?.isPrepare != true) {
+            Log.e("阅读页没准备好")
+            return null
+        }
         // 获取章节
         val chapter = chapterCategory?.getOrNull(chapterPos)
         if (chapter == null) {
@@ -935,6 +939,9 @@ abstract class PageLoader : ViewModel() {
 
 
     fun reloadPages() {
+        if (mPageView?.isPrepare != true) {
+            return
+        }
         ChapterPageCache.reset()
         if (isChapterListPrepare) {
             parseCurChapter()
