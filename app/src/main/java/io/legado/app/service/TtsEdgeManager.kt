@@ -6,7 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.utils.BaseTts
-import io.legado.app.utils.MD5Utils
+import com.sjianjun.reader.utils.MD5Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job

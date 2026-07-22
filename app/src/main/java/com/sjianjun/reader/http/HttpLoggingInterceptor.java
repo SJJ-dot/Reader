@@ -15,8 +15,8 @@ import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import io.legado.app.lib.icu4j.CharsetDetector;
-import io.legado.app.lib.icu4j.CharsetMatch;
+import com.sjianjun.reader.lib.icu4j.CharsetDetector;
+import com.sjianjun.reader.lib.icu4j.CharsetMatch;
 import okhttp3.Connection;
 import okhttp3.Headers;
 import okhttp3.Interceptor;

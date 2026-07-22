@@ -11,7 +11,6 @@ import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.trimExt
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
-import sjj.legado.engine.YueduEngine
 
 @Entity
 class BookSource {
@@ -72,7 +71,7 @@ class BookSource {
     var lauanage: Language = Language.py
 
     private val yueduEngine by lazy {
-        YueduEngine(js)
+        YueduEngineProxy(js)
     }
 
 

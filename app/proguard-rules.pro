@@ -98,6 +98,8 @@ public static final int *;
 -keep class sun.misc.Unsafe { *; }
 -keep class com.sjianjun.reader.** { *; }
 -keep class io.legado.app.** { *; }
+# YueduEngine 通过反射（Class.forName + kotlin-reflect）调用，需保留类名/构造器/方法与 kotlin.Metadata
+-keep class sjj.legado.engine.** { *; }
 -keepattributes Signature
 
 ############################################

@@ -12,7 +12,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
-import io.legado.app.lib.icu4j.CharsetDetector
+import com.sjianjun.reader.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import org.json.JSONArray

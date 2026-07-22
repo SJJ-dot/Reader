@@ -25,7 +25,7 @@ import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
-import io.legado.app.utils.activity
+import com.sjianjun.reader.utils.activity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull

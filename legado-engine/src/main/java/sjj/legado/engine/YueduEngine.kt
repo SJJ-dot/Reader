@@ -1,16 +1,27 @@
 package sjj.legado.engine
 
+import com.script.rhino.ReadOnlyJavaObject
+import com.script.rhino.RhinoScriptEngine
+import com.script.rhino.RhinoWrapFactory
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.rule.BookInfoRule
+import io.legado.app.data.entities.rule.ContentRule
+import io.legado.app.data.entities.rule.SearchRule
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.book.isWebFile
+import io.legado.app.help.http.ObsoleteUrlFactory
+import io.legado.app.help.http.okHttpClient
+import io.legado.app.help.rhino.NativeBaseSource
 import io.legado.app.help.source.SourceHelp
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.fromJsonObject
 import sjj.alog.Log
+import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 阅读书源规则示例
@@ -18,8 +29,32 @@ import sjj.alog.Log
 class YueduEngine(val rule: String) {
     private val source: BookSource = GSON.fromJsonObject<BookSource>(rule).getOrNull() ?: throw IllegalArgumentException("规则解析失败")
     init {
+        ensureInit()
         SourceHelp.registerBookSource(source)
     }
+
+    companion object {
+        private val initialized = AtomicBoolean(false)
+
+        // 引擎全局初始化（原 io.legado.app.App.onCreate 中的逻辑）。
+        // 宿主 App 不再继承 io.legado.app.App，改为首次使用引擎时懒初始化。
+        fun ensureInit() {
+            if (!initialized.compareAndSet(false, true)) return
+            runCatching { URL.setURLStreamHandlerFactory(ObsoleteUrlFactory(okHttpClient)) }
+            initRhino()
+        }
+
+        private fun initRhino() {
+            RhinoScriptEngine
+            RhinoWrapFactory.register(BookSource::class.java, NativeBaseSource.factory)
+            RhinoWrapFactory.register(SearchRule::class.java, ReadOnlyJavaObject.factory)
+            RhinoWrapFactory.register(BookInfoRule::class.java, ReadOnlyJavaObject.factory)
+            RhinoWrapFactory.register(ContentRule::class.java, ReadOnlyJavaObject.factory)
+            RhinoWrapFactory.register(BookChapter::class.java, ReadOnlyJavaObject.factory)
+            RhinoWrapFactory.register(Book.ReadConfig::class.java, ReadOnlyJavaObject.factory)
+        }
+    }
+
     /**
      * 校验书源是否有效。0、1、2 分别代表：验证通过，验证失败，不支持验证
      * 如果书源不支持搜索则返回2

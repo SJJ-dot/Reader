@@ -3,7 +3,7 @@ package com.sjianjun.reader.view
 import androidx.appcompat.widget.LinearLayoutCompat
 import com.sjianjun.reader.databinding.AppUpdateDialogUpdateBinding
 import com.sjianjun.reader.utils.gone
-import io.legado.app.utils.activity
+import com.sjianjun.reader.utils.activity
 
 class AppUpdateDialogUpdate : LinearLayoutCompat {
     constructor(context: android.content.Context) : super(context)

@@ -13,4 +13,7 @@
     <color name="dark_text_primary_color">#9E9E9E</color>
     <color name="dark_text_secondary_color">#717171</color>
 
+    <!-- 原由 legado-engine 提供，解耦后 app 自带 -->
+    <color name="white">#FFFFFF</color>
+
 </resources>

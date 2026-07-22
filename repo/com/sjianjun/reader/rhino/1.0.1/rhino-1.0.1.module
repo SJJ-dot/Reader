@@ -1,0 +1,111 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.sjianjun.reader",
+    "module": "rhino",
+    "version": "1.0.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.13"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.mozilla",
+          "module": "rhino",
+          "version": {
+            "requires": "1.8.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "rhino-1.0.1.aar",
+          "url": "rhino-1.0.1.aar",
+          "size": 94301,
+          "sha512": "a0577bc062081ca479558e816679473db525dfa422338bf91eeab2f12bfb7867dabc749f42023436af49002ef7858aa80210b0e6407bfa917c1e59e01d15c26f",
+          "sha256": "641f4a74afbd11252a1b42ccf19ec3893593aaee39e1611ed83a8a542d428c41",
+          "sha1": "77a51ef20fb15b930727ed0719c2d760008a8994",
+          "md5": "d91feb041818ea2204192b9a49a871eb"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "5.3.2"
+          }
+        },
+        {
+          "group": "androidx.collection",
+          "module": "collection",
+          "version": {
+            "requires": "1.5.0"
+          }
+        },
+        {
+          "group": "org.mozilla",
+          "module": "rhino",
+          "version": {
+            "requires": "1.8.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "rhino-1.0.1.aar",
+          "url": "rhino-1.0.1.aar",
+          "size": 94301,
+          "sha512": "a0577bc062081ca479558e816679473db525dfa422338bf91eeab2f12bfb7867dabc749f42023436af49002ef7858aa80210b0e6407bfa917c1e59e01d15c26f",
+          "sha256": "641f4a74afbd11252a1b42ccf19ec3893593aaee39e1611ed83a8a542d428c41",
+          "sha1": "77a51ef20fb15b930727ed0719c2d760008a8994",
+          "md5": "d91feb041818ea2204192b9a49a871eb"
+        }
+      ]
+    }
+  ]
+}

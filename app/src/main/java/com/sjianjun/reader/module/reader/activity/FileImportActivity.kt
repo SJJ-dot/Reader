@@ -29,7 +29,7 @@ import com.sjianjun.reader.utils.startActivity
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.utils.trimExt
 import com.sjianjun.reader.view.click
-import io.legado.app.lib.icu4j.CharsetDetector
+import com.sjianjun.reader.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import sjj.alog.Log

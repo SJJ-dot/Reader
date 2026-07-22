@@ -47,8 +47,8 @@ import com.sjianjun.reader.utils.visibleSet
 import com.sjianjun.reader.view.click
 import com.sjianjun.reader.view.clickWithDouble
 import com.sjianjun.reader.view.isLoading
-import io.legado.app.utils.invisible
-import io.legado.app.utils.visible
+import com.sjianjun.reader.utils.invisible
+import com.sjianjun.reader.utils.visible
 import kotlinx.coroutines.FlowPreview
 
 @FlowPreview

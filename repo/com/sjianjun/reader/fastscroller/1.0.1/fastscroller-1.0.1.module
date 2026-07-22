@@ -1,0 +1,67 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.sjianjun.reader",
+    "module": "fastscroller",
+    "version": "1.0.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.13"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "fastscroller-1.0.1.aar",
+          "url": "fastscroller-1.0.1.aar",
+          "size": 38749,
+          "sha512": "1919c1ee0f206e60bce960ee3cce406bbc5742cb51a5379d9fcb60e4013ad7924756c7c9d85676a5e88247825d2b40ed0a0ad1b5af148c867f3b2b4c335fd1da",
+          "sha256": "e169b60e2ed04e3570f371eff705f7e28bb2f548ff9dd77b91bca93ed3eb0abd",
+          "sha1": "a59530181761b088190019a148e0981dc8eba8ef",
+          "md5": "c115d3071086839e7ff6ddcad8f7e372"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.coordinatorlayout",
+          "module": "coordinatorlayout",
+          "version": {
+            "requires": "1.2.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "fastscroller-1.0.1.aar",
+          "url": "fastscroller-1.0.1.aar",
+          "size": 38749,
+          "sha512": "1919c1ee0f206e60bce960ee3cce406bbc5742cb51a5379d9fcb60e4013ad7924756c7c9d85676a5e88247825d2b40ed0a0ad1b5af148c867f3b2b4c335fd1da",
+          "sha256": "e169b60e2ed04e3570f371eff705f7e28bb2f548ff9dd77b91bca93ed3eb0abd",
+          "sha1": "a59530181761b088190019a148e0981dc8eba8ef",
+          "md5": "c115d3071086839e7ff6ddcad8f7e372"
+        }
+      ]
+    }
+  ]
+}

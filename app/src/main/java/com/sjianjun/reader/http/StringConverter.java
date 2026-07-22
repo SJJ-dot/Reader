@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import io.legado.app.lib.icu4j.CharsetDetector;
-import io.legado.app.lib.icu4j.CharsetMatch;
+import com.sjianjun.reader.lib.icu4j.CharsetDetector;
+import com.sjianjun.reader.lib.icu4j.CharsetMatch;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import okio.BufferedSource;

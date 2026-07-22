@@ -1,5 +1,6 @@
 package com.sjianjun.reader
 
+import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
@@ -13,7 +14,7 @@ import com.tencent.mmkv.MMKV
 import sjj.alog.Config
 import java.io.File
 
-class App : io.legado.app.App() {
+class App : Application() {
     private var first = true
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)

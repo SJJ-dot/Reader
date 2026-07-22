@@ -5,8 +5,6 @@ import android.webkit.WebStorage
 import android.webkit.WebView
 import com.bumptech.glide.Glide
 import com.sjianjun.reader.BuildConfig
-import io.legado.app.model.SharedJsScope
-import io.legado.app.utils.ACache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import sjj.alog.Log
@@ -55,8 +53,12 @@ internal object SettingsCacheHelper {
         }
         withContext(Dispatchers.IO) {
             runCatching { Glide.get(appContext).clearDiskCache() }
-            runCatching { ACache.get().clear() }
-            runCatching { SharedJsScope.clearCache() }
+            // 直接删除 legado-engine 的磁盘缓存目录；引擎存在时再反射清理其内存缓存
+            runCatching { File(appContext.cacheDir, "ACache").deleteRecursively() }
+            runCatching { File(appContext.cacheDir, "shareJs").deleteRecursively() }
+            runCatching {
+                Class.forName("io.legado.app.model.SharedJsScope").getMethod("clearCache").invoke(null)
+            }
             jsDownloadCacheFiles(appContext).forEach { it.safeDelete() }
             otherCacheFiles(appContext, imageCacheFiles(appContext) + webViewCacheFiles(appContext) + jsCacheFiles(appContext) + jsDownloadCacheFiles(appContext))
                 .forEach { it.clearContentsOrDeleteFile() }
