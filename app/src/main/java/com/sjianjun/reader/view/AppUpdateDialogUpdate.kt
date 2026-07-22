@@ -2,6 +2,7 @@ package com.sjianjun.reader.view
 
 import androidx.appcompat.widget.LinearLayoutCompat
 import com.sjianjun.reader.databinding.AppUpdateDialogUpdateBinding
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.activity
 
@@ -19,6 +20,12 @@ class AppUpdateDialogUpdate : LinearLayoutCompat {
         val binding = AppUpdateDialogUpdateBinding.bind(this)
         binding.ibClose.gone()
         binding.ibClose2.click {
+            activity?.finish()
+        }
+        binding.tvIgnore.click {
+            globalConfig.releasesInfo?.lastVersion?.let {
+                globalConfig.ignoredUpdateVersion = it
+            }
             activity?.finish()
         }
     }

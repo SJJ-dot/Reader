@@ -74,6 +74,10 @@ suspend fun checkUpdate(ativity: Activity, fromUser: Boolean = true) = withIo {
         return@withIo
     }
     if (releasesInfo.isUpgradeable()) {
+        if (!fromUser && globalConfig.ignoredUpdateVersion == releasesInfo.lastVersion) {
+            Log.i("用户已忽略版本：${releasesInfo.lastVersion}，不再自动提示更新")
+            return@withIo
+        }
         val manager = DownloadManager.Builder(ativity).run {
             apkUrl(releasesInfo.downloadApkUrl!!)
             apkName("appupdate.apk")

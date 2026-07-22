@@ -27,6 +27,11 @@ class AppConfig(val name: String) :
      */
     var releasesInfo by dataPref<ReleasesInfo?>("releasesInfo_new222", null)
 
+    /**
+     * 用户忽略的版本号，该版本不再自动提示更新
+     */
+    var ignoredUpdateVersion by strPref("ignoredUpdateVersion", null)
+
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
 
     /**
