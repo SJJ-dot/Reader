@@ -13,15 +13,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Set up Gradle (caches dependencies + build/config cache)
+        # v3 内置的旧版 cache 客户端已被 GitHub 缓存服务拒绝（restore 400），v4+ 才支持现行 cache service v2
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Change log
         id: changelog
@@ -58,7 +52,7 @@ jobs:
       - name: Build and sign APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          ./gradlew :app:assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
           ls app/build/outputs/apk/release/
 
       - name: Get APK name

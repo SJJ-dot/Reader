@@ -62,6 +62,13 @@ android {
         buildConfig true
     }
 
+    // Skip lint vital checks during assembleRelease (lintVitalAnalyzeRelease/lintVitalRelease).
+    // Lint tasks are not build-cacheable and re-run fully on every release build.
+    // Run ./gradlew :app:lintRelease manually when a full lint report is needed.
+    lint {
+        checkReleaseBuilds = false
+    }
+
 //    buildFeatures {
 //        // Enables Jetpack Compose for this module
 //        compose true
