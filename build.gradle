@@ -11,6 +11,7 @@ plugins {
 
 allprojects {
     repositories {
+        maven { url uri("${rootDir}/repo") }   // prebuilt AAR libs (./gradlew publishLibs)
         maven { url 'https://repo1.maven.org/maven2/' }
         google()
         maven { url "https://gitee.com/SJJ-dot/repo/raw/master" }
@@ -21,4 +22,12 @@ allprojects {
 
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
+}
+
+tasks.register('publishLibs') {
+    group = 'publishing'
+    description = 'Publishes :fastscroller, :modules:rhino and :legado-engine AARs to <root>/repo.'
+    dependsOn ':fastscroller:publishReleasePublicationToLocalRepoRepository',
+              ':modules:rhino:publishReleasePublicationToLocalRepoRepository',
+              ':legado-engine:publishReleasePublicationToLocalRepoRepository'
 }

@@ -1,0 +1,300 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.sjianjun.reader",
+    "module": "legado-engine",
+    "version": "1.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.13"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.databinding",
+          "module": "viewbinding",
+          "version": {
+            "requires": "8.13.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "legado-engine-1.0.0.aar",
+          "url": "legado-engine-1.0.0.aar",
+          "size": 1286108,
+          "sha512": "76d04d2424a6c627a849c0d6b31ce91efcce5d5bcf2e942c09ab5255c36b2287458b97c2dcb08d8caebf59beb58556223368f4fc02b00a3cb13d0c20e2723baa",
+          "sha256": "995e7e40a328ca98ce2b2f45b39f438c045bf2f97a4852b401414f1b9b8b3cd0",
+          "sha1": "9e59dd1027814eec6b303ba42926af49eb61ed3b",
+          "md5": "a5565b9daeae4fb00427608452d0708e"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-parcelize-runtime",
+          "version": {
+            "requires": "2.2.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-android",
+          "version": {
+            "requires": "1.10.2"
+          }
+        },
+        {
+          "group": "androidx.core",
+          "module": "core-ktx",
+          "version": {
+            "requires": "1.17.0"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.7.1"
+          }
+        },
+        {
+          "group": "androidx.activity",
+          "module": "activity-ktx",
+          "version": {
+            "requires": "1.11.0"
+          }
+        },
+        {
+          "group": "androidx.fragment",
+          "module": "fragment-ktx",
+          "version": {
+            "requires": "1.8.9"
+          }
+        },
+        {
+          "group": "androidx.constraintlayout",
+          "module": "constraintlayout",
+          "version": {
+            "requires": "2.1.4"
+          }
+        },
+        {
+          "group": "androidx.webkit",
+          "module": "webkit",
+          "version": {
+            "requires": "1.13.0"
+          }
+        },
+        {
+          "group": "androidx.documentfile",
+          "module": "documentfile",
+          "version": {
+            "requires": "1.1.0"
+          }
+        },
+        {
+          "group": "com.google.android.material",
+          "module": "material",
+          "version": {
+            "requires": "1.14.0"
+          }
+        },
+        {
+          "group": "com.google.android.flexbox",
+          "module": "flexbox",
+          "version": {
+            "requires": "3.0.0"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.13.2"
+          }
+        },
+        {
+          "group": "androidx.lifecycle",
+          "module": "lifecycle-common-java8",
+          "version": {
+            "requires": "2.9.4"
+          }
+        },
+        {
+          "group": "com.louiscad.splitties",
+          "module": "splitties-appctx",
+          "version": {
+            "requires": "3.0.0"
+          }
+        },
+        {
+          "group": "com.louiscad.splitties",
+          "module": "splitties-systemservices",
+          "version": {
+            "requires": "3.0.0"
+          }
+        },
+        {
+          "group": "androidx.room",
+          "module": "room-runtime",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "androidx.room",
+          "module": "room-ktx",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "com.github.neo-turak",
+          "module": "LiveEventBus",
+          "version": {
+            "requires": "1.8.1"
+          }
+        },
+        {
+          "group": "org.jsoup",
+          "module": "jsoup",
+          "version": {
+            "requires": "1.16.2"
+          }
+        },
+        {
+          "group": "com.jayway.jsonpath",
+          "module": "json-path",
+          "version": {
+            "requires": "2.10.0"
+          }
+        },
+        {
+          "group": "cn.wanghaomiao",
+          "module": "JsoupXpath",
+          "version": {
+            "requires": "2.5.3"
+          }
+        },
+        {
+          "group": "com.sjianjun.reader",
+          "module": "rhino",
+          "version": {
+            "requires": "1.0.0"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "5.3.2"
+          }
+        },
+        {
+          "group": "com.github.bumptech.glide",
+          "module": "glide",
+          "version": {
+            "requires": "4.16.0"
+          }
+        },
+        {
+          "group": "com.github.bumptech.glide",
+          "module": "okhttp3-integration",
+          "version": {
+            "requires": "4.16.0"
+          }
+        },
+        {
+          "group": "me.zhanghai.android.libarchive",
+          "module": "library",
+          "version": {
+            "requires": "1.1.6"
+          }
+        },
+        {
+          "group": "org.apache.commons",
+          "module": "commons-text",
+          "version": {
+            "requires": "1.13.1"
+          }
+        },
+        {
+          "group": "com.github.liuyueyi.quick-chinese-transfer",
+          "module": "quick-transfer-core",
+          "version": {
+            "requires": "0.2.16"
+          }
+        },
+        {
+          "group": "cn.hutool",
+          "module": "hutool-crypto",
+          "version": {
+            "requires": "5.8.22"
+          }
+        },
+        {
+          "group": "com.github.SJJ-dot",
+          "module": "ALOG",
+          "version": {
+            "requires": "1.2.14"
+          }
+        },
+        {
+          "group": "androidx.databinding",
+          "module": "viewbinding",
+          "version": {
+            "requires": "8.13.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "legado-engine-1.0.0.aar",
+          "url": "legado-engine-1.0.0.aar",
+          "size": 1286108,
+          "sha512": "76d04d2424a6c627a849c0d6b31ce91efcce5d5bcf2e942c09ab5255c36b2287458b97c2dcb08d8caebf59beb58556223368f4fc02b00a3cb13d0c20e2723baa",
+          "sha256": "995e7e40a328ca98ce2b2f45b39f438c045bf2f97a4852b401414f1b9b8b3cd0",
+          "sha1": "9e59dd1027814eec6b303ba42926af49eb61ed3b",
+          "md5": "a5565b9daeae4fb00427608452d0708e"
+        }
+      ]
+    }
+  ]
+}

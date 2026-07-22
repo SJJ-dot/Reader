@@ -1,0 +1,42 @@
+// Shared Maven publishing config for the prebuilt AAR libraries.
+// Apply with: apply from: "${rootDir}/gradle/publish-aar.gradle"
+// (maven-publish must also be declared in the module's plugins {} block.)
+//
+// Publishes each library's release AAR to a project-local Maven repository
+// at <root>/repo with coordinates com.sjianjun.reader:<module-name>:<libsVersion>.
+// <libsVersion> is read from gradle.properties (default 1.0.0); bump it before
+// re-publishing so consumers pick up the new artifact.
+
+def pubGroup = 'com.sjianjun.reader'
+def pubVersion = (findProperty('libsVersion') ?: '1.0.0').toString()
+
+// Project-level group/version are reused when another module references this
+// project as a dependency, so the generated POM points at the same artifact.
+group = pubGroup
+version = pubVersion
+
+// Tell AGP to expose the release variant as a publishable software component.
+android {
+    publishing {
+        singleVariant('release')
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = pubGroup
+                artifactId = project.name
+                version = pubVersion
+                from components.release
+            }
+        }
+        repositories {
+            maven {
+                name = 'localRepo'
+                url = uri("${rootDir}/repo")
+            }
+        }
+    }
+}

@@ -110,6 +110,8 @@ android {
     }
 }
 dependencies {
+    def usePrebuiltLibs = (findProperty('usePrebuiltLibs') ?: 'true').toBoolean()
+    def libsVersion = (findProperty('libsVersion') ?: '1.0.0').toString()
     implementation fileTree(dir: 'libs', include: ['*.aar'])
     implementation(libs.kotlinReflect)
     implementation(libs.kotlinxCoroutinesCore)
@@ -155,7 +157,11 @@ dependencies {
 //    implementation "com.victor:lib:1.0.4"
 
 //    implementation project(":refreshbar")
-    implementation project(":fastscroller")
+    if (usePrebuiltLibs) {
+        implementation "com.sjianjun.reader:fastscroller:${libsVersion}"
+    } else {
+        implementation project(":fastscroller")
+    }
 
     //嵌套滚动 可容纳多个view滚动
     implementation(libs.superTextView)
@@ -180,6 +186,10 @@ dependencies {
 //    implementation(libs.opencc)简繁转换
     //转换繁体
     implementation(libs.quick.chinese.transfer.core)
-    implementation project(":legado-engine")
+    if (usePrebuiltLibs) {
+        implementation "com.sjianjun.reader:legado-engine:${libsVersion}"
+    } else {
+        implementation project(":legado-engine")
+    }
 
 }

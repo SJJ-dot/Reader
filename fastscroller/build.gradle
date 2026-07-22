@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.androidLibrary)
+    id 'maven-publish'
 }
 
 android {
@@ -32,3 +33,4 @@ dependencies {
     compileOnly libs.androidxConstraintlayout
     implementation libs.androidxCoordinatorlayout
 }
+apply from: "${rootDir}/gradle/publish-aar.gradle"

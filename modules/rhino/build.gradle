@@ -3,6 +3,7 @@ plugins {
     //id 'org.jetbrains.kotlin.android'
     alias libs.plugins.androidLibrary
     alias libs.plugins.kotlinAndroid
+    id 'maven-publish'
 }
 
 android {
@@ -45,3 +46,4 @@ dependencies {
 //    def coroutines_version = '1.7.3'
 //    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
 }
+apply from: "${rootDir}/gradle/publish-aar.gradle"

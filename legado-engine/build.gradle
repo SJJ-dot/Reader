@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kspPlugin)
+    id 'maven-publish'
 }
 
 android {
@@ -28,9 +29,6 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
-    }
-    packaging {
-        resources.excludes.add('META-INF/*')
     }
 }
 
@@ -168,3 +166,4 @@ dependencies {
     //epubLib集成到应用内
     implementation(libs.alog)
 }
+apply from: "${rootDir}/gradle/publish-aar.gradle"

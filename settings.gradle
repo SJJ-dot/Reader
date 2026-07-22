@@ -15,6 +15,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+        maven { url uri("${rootDir}/repo") }   // prebuilt AAR libs (./gradlew publishLibs)
         google()
         mavenCentral()
         maven { url 'https://repo1.maven.org/maven2/' }
