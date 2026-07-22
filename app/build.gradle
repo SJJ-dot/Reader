@@ -114,6 +114,15 @@ android {
     packagingOptions {
         exclude 'META-INF/INDEX.LIST'
         exclude 'META-INF/io.netty.versions.properties'
+        // AGP 8.3+ 默认 dex 在 APK 内不压缩（利于安装速度），本项目直接分发 APK，恢复压缩以减小下载体积
+        dex {
+            useLegacyPackaging true
+        }
+        // .so 在 APK 内压缩存储（extractNativeLibs=true），减小下载体积；
+        // 代价是安装时解压，设备存储多占一份解压后的库
+        jniLibs {
+            useLegacyPackaging true
+        }
     }
 }
 dependencies {
