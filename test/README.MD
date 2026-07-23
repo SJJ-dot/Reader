@@ -11,12 +11,12 @@ def search(query):(可选)，搜索书籍，`search`和`getSiteUrl`至少需要�
 def getDetails(url):(必选)，加载书籍详情信息和章节列表（重要）
 def getChapterContent(url):(比选)，加载章节内容
 ```
-#### 自定义书源
+#### 编写书源
 1. 模版选择：
    - 有人机验证选择[顶点小说](https://github.com/SJJ-dot/Reader/blob/BookSource/test/py/%E9%A1%B6%E7%82%B9%E5%B0%8F%E8%AF%B4.py)并打开APP设置页的测试接口，测试接口默认关闭，开启时可在局域网内调用APP内的人机验证接口
    - 无人机验证选择[小原文学网](https://github.com/SJJ-dot/Reader/blob/BookSource/test/py/%E5%B0%8F%E5%8E%9F%E6%96%87%E5%AD%A6%E7%BD%91.py)”。
 2. 如果有`AI`，将对应站点网址给到`AI`，让`AI`根据模板修改即可；如果没有`AI`则需要配置`Python3.12`开发环境
-#### 导入自定义书源
+#### 导入书源
    - 单个书源可以在APP新建书源直接复制粘贴书源源码
    - 使用打包的脚本将书源压缩为ZIP放在`GitHub`使用`链接`导入或者`手机本地`直接导入`文件`
    - 例如本教程书源文件导入链接示例：https://raw.githubusercontent.com/SJJ-dot/Reader/refs/heads/BookSource/test/BookSource/default.json.gzip
