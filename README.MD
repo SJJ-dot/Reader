@@ -4,7 +4,7 @@
 * 阅读页自定义背景、文字颜色、字间距、行间距、字体等等
 * 内置净化规则模板
 
-## [自定义书源](https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD)
+## [关于书源](https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD)
 
 
 ## 预览
