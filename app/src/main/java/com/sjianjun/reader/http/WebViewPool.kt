@@ -53,7 +53,7 @@ object WebViewPool {
     suspend fun acquire(): PooledWebView {
         semaphore.acquire()
         return withContext(Dispatchers.Main) {
-            val webView = idle.removeFirstOrNull()?.webView ?: createWebView()
+            val webView = idle.removeLastOrNull()?.webView ?: createWebView()
             webView.clearHistory()
             PooledWebView(webView)
         }
