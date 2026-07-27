@@ -10,7 +10,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.sjianjun.reader.App
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
 import kotlinx.coroutines.Dispatchers
@@ -38,13 +37,16 @@ class BackstageWebView(
 
     private val mHandler = Handler(Looper.getMainLooper())
     private var callback: Callback? = null
-    private var mWebView: WebView? = null
+    private var pooled: WebViewPool.PooledWebView? = null
+    @Volatile
+    private var cancelled = false
 
     suspend fun getResponse(): String = withTimeout(timeout) {
         suspendCancellableCoroutine { continuation ->
             continuation.invokeOnCancellation {
-                launch(Dispatchers.Main) {
-                    destroy()
+                cancelled = true
+                GlobalScope.launch(Dispatchers.Main) {
+                    release()
                 }
             }
             callback = object : Callback() {
@@ -61,7 +63,7 @@ class BackstageWebView(
             }
             launch(Dispatchers.Main) {
                 try {
-                    load()
+                    if (!cancelled) load()
                 } catch (error: Throwable) {
                     continuation.resumeWithException(error)
                 }
@@ -70,37 +72,53 @@ class BackstageWebView(
     }
 
     @Throws(AndroidRuntimeException::class)
-    private fun load() {
-        val webView = createWebView()
-        mWebView = webView
+    private suspend fun load() {
+        val pw = WebViewPool.acquire()
+        pooled = pw
+        if (cancelled) {
+            pooled = null
+            pw.release()
+            return
+        }
+        val webView = pw.webView
         try {
+            webView.init(headerMap)
+            webView.webViewClient = HtmlWebViewClient()
             when {
                 postData != null -> webView.postUrl(url!!, postData.toByteArray(charset(encoding?.uppercase() ?: "UTF-8")))
                 headerMap == null -> webView.loadUrl(url!!)
                 else -> webView.loadUrl(url!!, headerMap)
             }
         } catch (e: Exception) {
+            pooled = null
+            pw.invalidate()
             callback?.onError(e)
         }
     }
 
-    @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
-    private fun createWebView(): WebView {
-        val webView = WebView(App.Companion.app)
-        webView.init(headerMap)
-        webView.webViewClient = HtmlWebViewClient()
-        return webView
-    }
-
-    private fun destroy() {
-        mWebView?.destroy()
-        mWebView = null
+    private fun release() {
+        val pw = pooled ?: return
+        pooled = null
+        val webView = pw.webView
+        (webView.webViewClient as? HtmlWebViewClient)?.cancel()
+        try {
+            webView.stopLoading()
+        } catch (_: Exception) {
+        }
+        pw.release()
     }
 
     private inner class HtmlWebViewClient : WebViewClient() {
 
         private var runnable: EvalJsRunnable? = null
         private var isRedirect = false
+        @Volatile
+        private var disposed = false
+
+        fun cancel() {
+            disposed = true
+            runnable?.let { mHandler.removeCallbacks(it) }
+        }
 
         override fun shouldOverrideUrlLoading(
             view: WebView,
@@ -115,6 +133,9 @@ class BackstageWebView(
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (disposed) return
+            // 复用 WebView：清掉历史，避免多次请求间回退历史无限增长
+            view.clearHistory()
             if (runnable == null) {
                 runnable = EvalJsRunnable(view, url, javaScript)
             }
@@ -139,12 +160,14 @@ class BackstageWebView(
             var retry = 0
             private val mWebView: WeakReference<WebView> = WeakReference(webView)
             override fun run() {
+                if (disposed) return
                 mWebView.get()?.evaluateJavascript(mJavaScript) {
                     handleResult(it)
                 }
             }
 
             private fun handleResult(result: String) = GlobalScope.launch {
+                if (disposed) return@launch
                 if (!result.isBlank() && result != "null") {
                     val content = StringEscapeUtils.unescapeJson(result)
                         .replace(quoteRegex, "")
@@ -154,14 +177,14 @@ class BackstageWebView(
                         callback?.onError(e)
                     }
                     mHandler.post {
-                        destroy()
+                        release()
                     }
                     return@launch
                 }
                 if (retry > 30) {
                     callback?.onError(Exception("js执行超时"))
                     mHandler.post {
-                        destroy()
+                        release()
                     }
                     return@launch
                 }

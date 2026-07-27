@@ -32,8 +32,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout">
 
-        <WebView
-            android:id="@+id/web_view"
+        <FrameLayout
+            android:id="@+id/web_view_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             app:layout_constraintBottom_toTopOf="@+id/browser_book_city_toolbar"
@@ -89,17 +89,18 @@
                     android:background="?android:attr/selectableItemBackground"
                     android:scaleType="centerInside"
                     android:src="@drawable/browser_navigation_refresh"
-                    app:layout_constraintEnd_toStartOf="@+id/menu"
+                    app:layout_constraintEnd_toStartOf="@+id/settings"
                     app:layout_constraintStart_toEndOf="@+id/forward" />
 
                 <ImageView
-                    android:id="@+id/menu"
+                    android:id="@+id/settings"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:background="?android:attr/selectableItemBackground"
+                    android:padding="6dp"
                     android:scaleType="centerInside"
-                    android:src="@drawable/browser_navigation_menu"
-                    android:visibility="invisible"
+                    android:src="@mipmap/ic_setting"
+                    app:tint="@color/dn_text_color_black"
                     app:layout_constraintEnd_toStartOf="@+id/complete"
                     app:layout_constraintStart_toEndOf="@+id/refresh" />
 
@@ -112,7 +113,7 @@
                     android:text="完成"
                     android:textColor="@color/dn_text_color_black"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@+id/menu" />
+                    app:layout_constraintStart_toEndOf="@+id/settings" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
