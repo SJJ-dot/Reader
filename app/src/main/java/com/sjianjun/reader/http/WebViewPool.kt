@@ -54,6 +54,9 @@ object WebViewPool {
         semaphore.acquire()
         return withContext(Dispatchers.Main) {
             val webView = idle.removeLastOrNull()?.webView ?: createWebView()
+            // 复用的 WebView 可能被上一个使用方（如验证页 onPause）调过 onPause 而处于暂停态，
+            // 不恢复会导致加载后白屏/只渲染背景色（JS 与渲染被暂停）。统一恢复。
+            webView.onResume()
             webView.clearHistory()
             PooledWebView(webView)
         }

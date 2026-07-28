@@ -249,6 +249,8 @@ class WebViewVerificationActivity : BaseActivity() {
         (webView.parent as? ViewGroup)?.removeView(webView)
         binding.webViewContainer.removeAllViews()
         binding.webViewContainer.addView(webView)
+        // 重新挂载后恢复渲染（借用的实例可能处于 onPause 暂停态）
+        webView.onResume()
         webView.init(headerMap)
         historyCleared = false
         runnable = EvalJsRunnable(webView, url)
