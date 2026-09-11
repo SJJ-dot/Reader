@@ -2,7 +2,8 @@
 ## 如果喜欢就动动小手点个star，或者推荐给你的朋友吧😁😁😁😁
 >本应用使用 `chaquopy` `Python` 脚本引擎，对于本教程以外的Python脚本，本应用无法识别脚本是否安全，需要用户自行分辨
 ## 制作书源
-- 如果不会编程也不会使用AI辅助编程，建议使用书源教程中的书源或者使用[`开源阅读`](https://github.com/search?q=%E9%98%85%E8%AF%BB%E4%B9%A6%E6%BA%90&type=repositories)的书源。
+- AI编码：推荐使用WorkBuddy有免费额度完全用不完，可以将本仓库地址+想要做成书源的网站地址复制给WorkBuddy，让AI参考已有书源编写即可。
+- 如果不想要AI，也不会古法编码，建议使用书源教程中的书源或者使用[`开源阅读`](https://github.com/search?q=%E9%98%85%E8%AF%BB%E4%B9%A6%E6%BA%90&type=repositories)的书源。
 #### 书源接口介绍（`Python`）
 ```python
 def verify():(可选)，不支持搜索功能时提供，避免验证书源失败
