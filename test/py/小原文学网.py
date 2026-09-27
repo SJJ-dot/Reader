@@ -1,8 +1,11 @@
-from urllib.parse import urljoin
+import json
+from urllib.parse import urljoin, quote
 
-import requests
 from bs4 import BeautifulSoup
 from log import log
+
+from SessionManager import verification_activity_get
+from WebViewClient import web_get
 
 
 # 支持搜索可以不需要实现verify
@@ -16,46 +19,40 @@ def getSiteUrl():
     return "https://www.min-yuan.com"
 
 
+def _fetch(url):
+    """web_get 优先（WebView 渲染，自动过 JS 挑战），失败则回退到 verification_activity_get（人机验证）"""
+    def parse(result):
+        result = json.loads(result)
+        html = result.get("html", "")
+        if "https://challenges.cloudflare.com" in html:
+            raise Exception("人机验证")
+        if "此验证用于防止机器人自动化访问" in html:
+            raise Exception("人机验证")
+        return html
+
+    try:
+        return parse(web_get(url))
+    except Exception as e:
+        log(f"Error: {e}")
+        return parse(verification_activity_get(url))
+
+
 def search(query):
-    base_url = "https://www.min-yuan.com/search/"
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-    })
-
-    # 访问搜索页以获取必要的 Cookie
-    session.get(base_url, timeout=(5, 10))
-
-    data = {
-        "searchkey": query
-    }
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Origin": "https://www.min-yuan.com",
-        "Referer": base_url,
-    }
-    response = session.post(base_url, data=data, headers=headers, timeout=(5, 10))
-    response.encoding = 'utf-8'
-    soup = BeautifulSoup(response.text, 'html.parser')
+    url = urljoin(getSiteUrl(), f"/search/?searchkey={quote(query)}")
+    html = _fetch(url)
+    soup = BeautifulSoup(html, 'html.parser')
     books = []
 
     for i, bookEl in enumerate(soup.select(".item")):
         books.append({
             "bookTitle": bookEl.select("a")[1].text,
-            "bookUrl": urljoin(base_url, bookEl.select("a")[1].attrs["href"]),
+            "bookUrl": urljoin(getSiteUrl(), bookEl.select("a")[1].attrs["href"]),
         })
     return books
 
 
 def getDetails(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
-    response.encoding = 'utf-8'
-    html = response.text
+    html = _fetch(url)
     soup = BeautifulSoup(html, 'html.parser')
     book = {
         "url": url,
@@ -76,12 +73,7 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
-    response.encoding = 'utf-8'
-    html = response.text
+    html = _fetch(url)
     soup = BeautifulSoup(html, 'html.parser')
     con = soup.select_one("#booktxt")
     content = con.prettify()
