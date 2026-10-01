@@ -9,6 +9,7 @@ from urllib3.util import Retry
 from log import log
 
 # 书海阁：https://book.feius.live/
+# 书海阁：https://book.washai.net/
 # 页面内容全部由前端 AJAX 渲染，因此直接调用站点自身的 JSON 接口：
 #   搜索   GET /book/searchByPage?curr=&limit=&keyword=
 #   详情   GET /book/queryBookDetail/{bookId}
@@ -34,7 +35,7 @@ session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Referer": "https://book.feius.live/",
+    "Referer": "https://book.washai.net/",
 })
 
 # 站点接口单页上限（实测 limit 传再大也会被服务端压回 100）
@@ -44,7 +45,7 @@ _MAX_PAGE = 200
 
 
 def getSiteUrl():
-    return "https://book.feius.live"
+    return "https://book.washai.net"
 
 
 def _request(url, params=None):
