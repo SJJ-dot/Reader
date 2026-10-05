@@ -71,6 +71,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
+        //页面销毁时清理残留的加载中状态，避免书籍一直处于加载中无法重新加载
+        if (arguments?.getString(BOOK_TITLE) != null) {
+            viewModel.resetBookLoadingState(bookTitle)
+        }
     }
 
     private fun init() {

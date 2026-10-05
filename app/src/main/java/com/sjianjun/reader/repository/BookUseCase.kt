@@ -78,6 +78,42 @@ object BookUseCase {
         }
     }
 
+    /**
+     * 重置全部书籍的加载状态。
+     * 加载书籍详情时会把 isLoading 置为 true，若加载过程中被强制退出，状态会残留在数据库中，
+     * 导致书架页和详情页一直处于加载中且无法再次加载。应用启动时统一清理为 false。
+     */
+    @WorkerThread
+    fun resetBookLoadingState() {
+        val count = bookDao.resetBookLoadingState()
+        if (count > 0) {
+            Log.i("重置书籍加载状态 数量：$count")
+        }
+    }
+
+    /**
+     * 重置指定书籍的加载状态，页面销毁时调用
+     */
+    @WorkerThread
+    fun resetBookLoadingState(bookIds: List<String>) {
+        if (bookIds.isEmpty()) return
+        val count = bookDao.resetBookLoadingState(bookIds)
+        if (count > 0) {
+            Log.i("重置书籍加载状态 数量：$count books：$bookIds")
+        }
+    }
+
+    /**
+     * 重置同名书籍（所有书源）的加载状态，详情页销毁时调用
+     */
+    @WorkerThread
+    fun resetBookLoadingStateByTitle(title: String) {
+        val count = bookDao.resetBookLoadingStateByTitle(title)
+        if (count > 0) {
+            Log.i("重置书籍加载状态 数量：$count 书名：$title")
+        }
+    }
+
     suspend fun reloadBookFromNet(book: Book?) = withIo {
         book ?: return@withIo
         try {

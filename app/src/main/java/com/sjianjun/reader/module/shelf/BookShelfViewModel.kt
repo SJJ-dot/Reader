@@ -99,6 +99,15 @@ class BookShelfViewModel : ViewModel() {
         }
     }
 
+    /**
+     * 页面销毁时清理书架中书籍残留的加载中状态，
+     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载
+     */
+    fun resetBookLoadingState() = viewModelScope.launch(Dispatchers.IO) {
+        val ids = bookList.value?.filter { it.isLoading }?.map { it.id } ?: return@launch
+        BookUseCase.resetBookLoadingState(ids)
+    }
+
     fun deleteBook(book: Book) {
         viewModelScope.launch {
             BookUseCase.delete(book)

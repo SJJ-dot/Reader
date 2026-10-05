@@ -48,4 +48,22 @@ interface BookDao {
     //有空再改连表查询吧
     @Query("delete from Book where title not in (select bookTitle from ReadingRecord)")
     fun cleanBook(): Int
+
+    /**
+     * 重置所有书籍的加载状态。应用启动时调用，避免异常退出后 isLoading 残留为 true 导致书籍无法加载
+     */
+    @Query("update Book set isLoading=0 where isLoading=1")
+    fun resetBookLoadingState(): Int
+
+    /**
+     * 重置指定书籍的加载状态。页面销毁时调用，避免加载被中断后 isLoading 残留为 true
+     */
+    @Query("update Book set isLoading=0 where isLoading=1 and id in (:bookIds)")
+    fun resetBookLoadingState(bookIds: List<String>): Int
+
+    /**
+     * 重置同名（不同书源）书籍的加载状态
+     */
+    @Query("update Book set isLoading=0 where isLoading=1 and title=:title")
+    fun resetBookLoadingStateByTitle(title: String): Int
 }

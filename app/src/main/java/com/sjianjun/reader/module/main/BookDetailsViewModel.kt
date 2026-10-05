@@ -57,6 +57,14 @@ class BookDetailsViewModel : ViewModel() {
         }
     }
 
+    /**
+     * 页面销毁时清理该书所有书源残留的加载中状态，
+     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载
+     */
+    fun resetBookLoadingState(title: String) = launchIo {
+        BookUseCase.resetBookLoadingStateByTitle(title)
+    }
+
     suspend fun setRecordToLastChapter() = withIo {
         val book = bookLivedata.value ?: return@withIo
         val lastChapter = book.lastChapter
