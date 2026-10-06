@@ -201,11 +201,16 @@ class BookSource {
      * @param bookUrl 书籍详情链接
      * @param lastChapterUrl 本地已有的最新章节链接，没有时传空串。
      *        脚本可据此判断当前是加载全部章节还是只加载最新章节，用于优化检查更新时的速度。
+     *        注意：章节列表必须升序返回；增量返回时列表必须包含该章节，应用才能与本地章节正确定位拼接。
      */
     suspend fun getDetails(bookUrl: String, lastChapterUrl: String = ""): Book? {
         return withIo {
             val book = execute<Book>(Func.getDetails, bookUrl, lastChapterUrl)
             book?.bookSourceId = id
+            //脚本可能不返回书籍链接，此时用请求链接兜底，避免书籍id为空导致章节删除、数据更新错位
+            if (book != null && book.url.isBlank()) {
+                book.url = bookUrl
+            }
             if (book?.title.isNullOrBlank()) {
                 Log.e("$name 获取书籍详情失败：$bookUrl")
                 throw IllegalStateException("获取书籍详情失败")

@@ -46,7 +46,25 @@ class ChapterListFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = MainFragmentBookChapterListBinding.bind(view)
         binding?.recycleViewChapterList?.adapter = adapter
+        initRefresh()
         initData()
+    }
+
+    /**
+     * 章节列表下拉刷新：强制全量更新章节列表
+     */
+    private fun initRefresh() {
+        //中间嵌套了一层FrameLayout，SwipeRefreshLayout无法自行判断列表是否已滚动，需要手动判断，
+        //避免列表滚动到中间时下拉也触发刷新
+        binding?.chapterRefresh?.setOnChildScrollUpCallback { _, _ ->
+            binding?.recycleViewChapterList?.canScrollVertically(-1) == true
+        }
+        binding?.chapterRefresh?.setOnRefreshListener {
+            launch {
+                viewModel.reloadBookFromNet(bookTitle)
+                binding?.chapterRefresh?.isRefreshing = false
+            }
+        }
     }
 
     private fun initData() {

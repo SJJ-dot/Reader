@@ -5,13 +5,29 @@
     android:layout_height="match_parent"
     android:layout_gravity="end">
 
-    <sjj.novel.view.scroller.FastScrollRecyclerView
-        android:id="@+id/recycle_view_chapter_list"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/chapter_refresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/dn_background_dialog"
-        android:outlineProvider="bounds"
-        android:translationZ="5dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_text_text" />
+        android:layout_height="match_parent">
+
+        <!--
+            FastScrollRecyclerView 的快速滚动条会被加到自身直接父布局上，
+            该父布局必须是 ConstraintLayout/CoordinatorLayout/FrameLayout/RelativeLayout，
+            所以这里不能直接用 SwipeRefreshLayout 做它的父布局
+        -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <sjj.novel.view.scroller.FastScrollRecyclerView
+                android:id="@+id/recycle_view_chapter_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/dn_background_dialog"
+                android:outlineProvider="bounds"
+                android:translationZ="5dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_text_text" />
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </FrameLayout>

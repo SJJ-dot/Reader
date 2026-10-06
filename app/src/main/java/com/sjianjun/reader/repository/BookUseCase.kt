@@ -123,7 +123,10 @@ object BookUseCase {
         }
     }
 
-    suspend fun reloadBookFromNet(book: Book?) = withIo {
+    /**
+     * @param forceFull 强制加载完整章节列表（不把本地最新章节链接传给脚本），用于本地章节数据异常时重建
+     */
+    suspend fun reloadBookFromNet(book: Book?, forceFull: Boolean = false) = withIo {
         book ?: return@withIo
         try {
             if (book.bookSourceId == BookSource.fileImportBookSource.id){
@@ -137,10 +140,16 @@ object BookUseCase {
             book.isLoading = true
             bookDao.updateBook(book)
             //本地已有的最新章节链接，没有时传空串。脚本可据此只返回最新章节，加速检查更新
-            val lastChapterUrl = chapterDao.getLastChapterByBookId(book.id)?.url ?: ""
+            val lastChapterUrl = if (forceFull) "" else chapterDao.getLastChapterByBookId(book.id)?.url ?: ""
             val bookDetails = script.getDetails(book.url, lastChapterUrl)!!
             if (bookDetails.title != book.title) {
                 throw MessageException("加载失败：书籍标题发生变化")
+            }
+            //脚本返回的书籍id/url可能为空或与本地不一致，统一使用本地书籍标识，
+            //避免章节按错误的bookId删除、书籍信息更新到错误的数据行
+            bookDetails.id = book.id
+            if (bookDetails.url.isBlank()) {
+                bookDetails.url = book.url
             }
             val chapterList = bookDetails.chapterList!!
             val localChapters = chapterDao.getChapterListByBookId(book.id).first()
@@ -152,28 +161,47 @@ object BookUseCase {
                 //chapterList 为null时不修改本地章节
                 bookDetails.chapterList = null
             } else {
-                //脚本可能只返回最新章节（增量）：取返回列表第一章的url，在本地章节中从后向前定位，
-                //定位章节由返回列表的第一章替换，其后的本地章节全部丢弃，再与返回的章节拼接
-                val anchorUrl = chapterList.first().url
-                val anchor = if (anchorUrl.isBlank()) null else localChapters.lastOrNull { it.url == anchorUrl }
-                if (anchor != null) {
-                    val keepChapters = localChapters.filter { it.index < anchor.index }
-                    var nextIndex = anchor.index
-                    chapterList.forEach { chapter ->
-                        chapter.bookId = book.id
-                        chapter.index = nextIndex++
-                    }
-                    fullChapterList = keepChapters + chapterList
-                    keepUpToIndex = anchor.index - 1
-                    Log.i("${book.title} 增量加载章节：定位到第${anchor.index}章，保留${keepChapters.size}章，更新${chapterList.size}章")
-                } else {
-                    //定位不到，按完整目录处理
+                if (forceFull) {
+                    //强制全量更新：以脚本返回的完整章节列表为准，重建本地章节
                     chapterList.forEachIndexed { index, chapter ->
                         chapter.bookId = book.id
                         chapter.index = index
                     }
                     fullChapterList = chapterList
+                    Log.i("${book.title} 强制全量更新章节：共${chapterList.size}章")
+                } else {
+                    //本地章节url -> index，重复url取最后出现的一个
+                    val localIndexByUrl = HashMap<String, Int>(localChapters.size)
+                    localChapters.forEach { localIndexByUrl[it.url] = it.index }
+                    //脚本约定：章节列表升序返回（旧->新），增量更新时必须包含本地已有的最新章节。
+                    //从后向前在返回列表中找最后一个本地已有的章节作为定位章节（正常情况下即本地最新章节），
+                    //定位章节之前的返回章节与本地重复，丢弃；定位章节之后的章节拼接到本地章节后面
+                    val anchorPos = chapterList.indexOfLast { localIndexByUrl.containsKey(it.url) }
+                    if (anchorPos >= 0) {
+                        val anchorIndex = localIndexByUrl[chapterList[anchorPos].url]!!
+                        val appendChapters = chapterList.drop(anchorPos + 1)
+                        var nextIndex = anchorIndex + 1
+                        appendChapters.forEach { chapter ->
+                            chapter.bookId = book.id
+                            chapter.index = nextIndex++
+                        }
+                        fullChapterList = localChapters.filter { it.index <= anchorIndex } + appendChapters
+                        //定位章节之后的本地章节全部丢弃
+                        keepUpToIndex = anchorIndex
+                        Log.i("${book.title} 增量加载章节：定位到第${anchorIndex}章，新增${appendChapters.size}章")
+                    } else {
+                        //返回的章节在本地都找不到，视为全部为新章节，追加到末尾（不删除本地章节，避免丢失历史章节）
+                        var nextIndex = (localChapters.maxOfOrNull { it.index } ?: -1) + 1
+                        chapterList.forEach { chapter ->
+                            chapter.bookId = book.id
+                            chapter.index = nextIndex++
+                        }
+                        fullChapterList = localChapters + chapterList
+                        keepUpToIndex = localChapters.maxOfOrNull { it.index } ?: -1
+                        Log.i("${book.title} 未定位到本地章节，${chapterList.size}章按新增章节追加")
+                    }
                 }
+                //keepUpToIndex 为 null 时表示全量替换本地章节
                 bookDetails.chapterList = fullChapterList
             }
             book.chapterList = fullChapterList

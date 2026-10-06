@@ -7,11 +7,13 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -57,6 +59,14 @@ class ChapterListViewModel : ViewModel() {
             val cleaned = ReplacementRuleUseCase.applyRules(raw, rules, b, ch, applyToTitle = true)
             if (cleaned == raw) ch else ch.apply { title = cleaned }
         }
+    }
+
+    /**
+     * 强制全量重新加载章节列表（不把本地最新章节链接传给脚本），用于本地章节数据异常时重建
+     */
+    suspend fun reloadBookFromNet(bookTitle: String) = withIo {
+        val book = bookDao.getReadingBook(bookTitle).firstOrNull() ?: return@withIo
+        BookUseCase.reloadBookFromNet(book, forceFull = true)
     }
 
     suspend fun saveRecord(c: Chapter) = withIo {
