@@ -56,16 +56,17 @@ object BookUseCase {
     /**
      * @param keepUpToIndex 增量更新时保留本地 index 小于等于该值的章节，其后的旧章节会被删除；
      *        为 null 时表示全量更新，删除本地全部章节后重新插入
+     * chapterList 为 null 时表示章节没有变化，只更新书籍信息
      */
     suspend fun updateDetails(book: Book, keepUpToIndex: Int? = null) = withIo {
         db.runInTransaction {
             bookDao.updateBook(book)
+            val chapterList = book.chapterList ?: return@runInTransaction
             if (keepUpToIndex == null) {
                 chapterDao.deleteChapterByBookId(book.id)
             } else {
                 chapterDao.deleteChapterAfterIndex(book.id, keepUpToIndex)
             }
-            val chapterList = book.chapterList ?: return@runInTransaction
             chapterDao.insertChapter(chapterList)
             chapterDao.markChaptersAsLoadedByBookId(book.id)
         }
@@ -142,57 +143,67 @@ object BookUseCase {
                 throw MessageException("加载失败：书籍标题发生变化")
             }
             val chapterList = bookDetails.chapterList!!
-            //脚本可能只返回最新章节（增量）：取返回列表第一章的url，在本地章节中从后向前定位，
-            //定位到的本地章节及之前保留，其后的本地章节全部丢弃，再与返回的章节拼接
             val localChapters = chapterDao.getChapterListByBookId(book.id).first()
-            val anchorUrl = chapterList.firstOrNull()?.url
-            val anchor = if (anchorUrl.isNullOrBlank()) null else localChapters.lastOrNull { it.url == anchorUrl }
-            var fullChapterList = chapterList
+            var fullChapterList: List<Chapter> = localChapters
             var keepUpToIndex: Int? = null
-            if (anchor != null) {
-                val keepChapters = localChapters.filter { it.index <= anchor.index }
-                var nextIndex = anchor.index + 1
-                chapterList.forEach { chapter ->
-                    chapter.bookId = book.id
-                    chapter.index = nextIndex++
-                }
-                fullChapterList = keepChapters + chapterList
-                keepUpToIndex = anchor.index
-                Log.i("${book.title} 增量加载章节：定位到第${anchor.index}章，保留${keepChapters.size}章，更新${chapterList.size}章")
+            if (chapterList.isEmpty()) {
+                //脚本返回空章节列表，视为本次没有更新，本地章节保持不变，只更新书籍信息
+                Log.i("${book.title} 未检测到章节更新")
+                //chapterList 为null时不修改本地章节
+                bookDetails.chapterList = null
             } else {
-                //定位不到，按完整目录处理
-                chapterList.forEachIndexed { index, chapter ->
-                    chapter.bookId = book.id
-                    chapter.index = index
+                //脚本可能只返回最新章节（增量）：取返回列表第一章的url，在本地章节中从后向前定位，
+                //定位章节由返回列表的第一章替换，其后的本地章节全部丢弃，再与返回的章节拼接
+                val anchorUrl = chapterList.first().url
+                val anchor = if (anchorUrl.isBlank()) null else localChapters.lastOrNull { it.url == anchorUrl }
+                if (anchor != null) {
+                    val keepChapters = localChapters.filter { it.index < anchor.index }
+                    var nextIndex = anchor.index
+                    chapterList.forEach { chapter ->
+                        chapter.bookId = book.id
+                        chapter.index = nextIndex++
+                    }
+                    fullChapterList = keepChapters + chapterList
+                    keepUpToIndex = anchor.index - 1
+                    Log.i("${book.title} 增量加载章节：定位到第${anchor.index}章，保留${keepChapters.size}章，更新${chapterList.size}章")
+                } else {
+                    //定位不到，按完整目录处理
+                    chapterList.forEachIndexed { index, chapter ->
+                        chapter.bookId = book.id
+                        chapter.index = index
+                    }
+                    fullChapterList = chapterList
                 }
+                bookDetails.chapterList = fullChapterList
             }
             book.chapterList = fullChapterList
-            bookDetails.chapterList = fullChapterList
             book.isLoading = false
             book.error = null
-            //先检查章节内容是否有错
-            val record = readingRecordDao.getReadingRecord(book.title).firstOrNull()
-            val readingChapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
-            val chapterLikeName = readingChapter?.let {
-                chapterDao.getChapterLikeName(book.id, readingChapter.name()).minByOrNull { abs(readingChapter.index - it.index) }
-            }
-            val content = contentDao.getChapterContent(book.id, chapterLikeName?.index ?: -1).first().firstOrNull()
-            if (content?.contentError == true) {
-                val chapter = fullChapterList.getOrNull(content.chapterIndex)
-                if (chapter != null) {
-                    chapter.content = mutableListOf(content)
-                    val content = script.getChapterContent(chapter.url)
-                    content.bookId = chapter.bookId
-                    content.chapterIndex = chapter.index
-                    if (!content.contentError) {
-                        if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
-                            content.contentError = true
+            if (bookDetails.chapterList != null) {
+                //先检查章节内容是否有错
+                val record = readingRecordDao.getReadingRecord(book.title).firstOrNull()
+                val readingChapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
+                val chapterLikeName = readingChapter?.let {
+                    chapterDao.getChapterLikeName(book.id, readingChapter.name()).minByOrNull { abs(readingChapter.index - it.index) }
+                }
+                val content = contentDao.getChapterContent(book.id, chapterLikeName?.index ?: -1).first().firstOrNull()
+                if (content?.contentError == true) {
+                    val chapter = fullChapterList.getOrNull(content.chapterIndex)
+                    if (chapter != null) {
+                        chapter.content = mutableListOf(content)
+                        val content = script.getChapterContent(chapter.url)
+                        content.bookId = chapter.bookId
+                        content.chapterIndex = chapter.index
+                        if (!content.contentError) {
+                            if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
+                                content.contentError = true
+                            }
                         }
+                        chapter.content = mutableListOf(content)
+                        chapter.isLoaded = true
+                        chapterDao.insert(chapter)
+                        contentDao.insert(content)
                     }
-                    chapter.content = mutableListOf(content)
-                    chapter.isLoaded = true
-                    chapterDao.insert(chapter)
-                    contentDao.insert(content)
                 }
             }
             updateDetails(bookDetails, keepUpToIndex)
