@@ -46,9 +46,15 @@ def search(query):
     pass
 
 
-def getDetails(url):
+def getDetails(url, lastChapterUrl=None):
     """
     :param url: 书籍详情链接
+    :param lastChapterUrl: 本地已缓存的最新章节链接（可选）。传入时做增量更新检查，
+        避免每次全量拉取目录，返回给本地用于拼接的新增章节：
+        - 不传：首次加载，返回完整目录
+        - 传入且无更新：chapterList 返回空列表
+        - 传入且有更新：返回包含本地最新章节在内的一段尾部章节（旧->新排序），
+          由本地按章节链接去重拼接
     :return: 书籍详情字典，包含以下字段：
         - url: 书籍详情链接
         - title: 书籍标题
