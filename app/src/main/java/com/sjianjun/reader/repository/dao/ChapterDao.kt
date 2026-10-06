@@ -33,6 +33,12 @@ interface ChapterDao {
     @Query("delete from Chapter where bookId=:bookId")
     fun deleteChapterByBookId(bookId: String)
 
+    /**
+     * 删除index大于指定值的章节。增量更新时丢弃定位章节之后多余的旧章节
+     */
+    @Query("delete from Chapter where bookId=:bookId and `index` > :index")
+    fun deleteChapterAfterIndex(bookId: String, index: Int)
+
     @Query("delete from Chapter where bookId in (select id from Book where title=:bookTitle)")
     fun deleteChapterByBookTitleAndAuthor(bookTitle: String): Int
 

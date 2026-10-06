@@ -10,12 +10,16 @@ import sjj.alog.Log
 @PublishedApi internal val execModule by lazy { Python.getInstance().getModule("exec_script") }
 
 
-inline fun <reified T> BookSource.py(func: String, param: String?): T? {
+/**
+ * 调用Python书源脚本
+ * @param param2 第二个参数，仅 getDetails 使用（书籍最新章节链接，没有时传空串）
+ */
+inline fun <reified T> BookSource.py(func: String, param: String?, param2: String? = null): T? {
     val exec = execModule
-    val pyResult = if (param.isNullOrBlank()) {
-        exec.callAttr("exec_script", js, func)
-    } else {
-        exec.callAttr("exec_script", js, func, param)
+    val pyResult = when {
+        !param.isNullOrBlank() && param2 != null -> exec.callAttr("exec_script", js, func, param, param2)
+        param.isNullOrBlank() -> exec.callAttr("exec_script", js, func)
+        else -> exec.callAttr("exec_script", js, func, param)
     }
     return when (T::class.java) {
         String::class.java -> pyResult.toString() as T

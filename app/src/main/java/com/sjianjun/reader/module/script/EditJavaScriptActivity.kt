@@ -83,9 +83,12 @@ def search(query):
     pass
 
 
-def getDetails(url):
+def getDetails(url, lastChapterUrl):
     ""${'"'}
     :param url: 书籍详情链接
+    :param lastChapterUrl: 本地已有的最新章节链接，没有时为空字符串。
+        为空时可忽略，正常返回全部章节；不为空时表示正在检查更新，
+        可只返回最新章节（增量返回），应用会自动与本地已有章节合并，用于加速检查更新
     :return: 书籍详情字典，包含以下字段：
         - url: 书籍详情链接
         - title: 书籍标题

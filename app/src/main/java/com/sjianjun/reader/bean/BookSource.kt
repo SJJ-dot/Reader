@@ -75,7 +75,7 @@ class BookSource {
     }
 
 
-    private suspend inline fun <reified T> execute(func: Func, param: String?): T? {
+    private suspend inline fun <reified T> execute(func: Func, param: String?, param2: String? = null): T? {
 //        Log.i("调用脚本方法：${func}")
         return when (lauanage) {
             Language.yuedu -> {
@@ -105,7 +105,7 @@ class BookSource {
             }
 
             Language.file -> throw UnsupportedOperationException("文件导入书源不支持执行脚本")
-            Language.py -> py(func.name, param)
+            Language.py -> py(func.name, param, param2)
         }
     }
 
@@ -196,9 +196,15 @@ class BookSource {
         }
     }
 
-    suspend fun getDetails(bookUrl: String): Book? {
+    /**
+     * 获取书籍详情（含章节列表）
+     * @param bookUrl 书籍详情链接
+     * @param lastChapterUrl 本地已有的最新章节链接，没有时传空串。
+     *        脚本可据此判断当前是加载全部章节还是只加载最新章节，用于优化检查更新时的速度。
+     */
+    suspend fun getDetails(bookUrl: String, lastChapterUrl: String = ""): Book? {
         return withIo {
-            val book = execute<Book>(Func.getDetails, bookUrl)
+            val book = execute<Book>(Func.getDetails, bookUrl, lastChapterUrl)
             book?.bookSourceId = id
             if (book?.title.isNullOrBlank()) {
                 Log.e("$name 获取书籍详情失败：$bookUrl")
