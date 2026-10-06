@@ -15,7 +15,11 @@
 6. 更新书源：运行脚本`Reader/test/update_source.py`；脚本会将`Reader/test/py`目录下的脚本打包更新到`Reader/test/BookSource`目录下：[default.json](BookSource/default.json) 和 [default.json.gzip](BookSource/default.json.gzip)
 7. 如果有特别的说明可以手动编写 [default.json](BookSource/default.json) 找到对应书源，书源字典可以备注，例如：`comment:"需要梯子"`
 8. 在`APP`书源管理页面填写`BookSource`目录下的文件链接，推荐`gzip`文件优先
-
+### 3、导入书源
+   - 单个书源可以在APP新建书源直接复制粘贴书源源码
+   - 使用打包的脚本将书源压缩为ZIP放在`GitHub`使用`链接`导入或者`手机本地`直接导入`文件`
+   - 例如本教程书源文件导入链接示例：https://raw.githubusercontent.com/SJJ-dot/Reader/refs/heads/BookSource/test/BookSource/default.json.gzip
+   - 或者使用jsdelivr加速：https://cdn.jsdelivr.net/gh/SJJ-dot/Reader/test/BookSource/default.json.gzip
 
 ### 书源函数接口（具体编写参考已有的脚本：Reader/test/py）
 ```python
