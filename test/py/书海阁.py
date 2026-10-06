@@ -120,6 +120,93 @@ def _api(path, params=None):
     return _request(urljoin(getSiteUrl(), path), params)
 
 
+def _parse_index_items(book_id, items):
+    """把 queryIndexList 返回的 list 转成章节字典列表"""
+    chapters = []
+    for item in items or []:
+        index_id = str(item.get("id") or "").strip()
+        title = str(item.get("indexName") or "").strip()
+        if not index_id or not title:
+            continue
+        chapters.append({
+            "title": title,
+            "url": urljoin(getSiteUrl(), f"/book/{book_id}/{index_id}.html"),
+        })
+    return chapters
+
+
+def _chapter_index_id(url):
+    """提取章节链接中的章节 ID（/book/{bookId}/{indexId}.html）"""
+    m = re.search(r"/book/\d+/(\d+)(?:\.html)?", str(url))
+    return m.group(1) if m else str(url).strip().rstrip("/")
+
+
+def _get_all_chapters(book_id):
+    """全量抓取目录：每页 100 章，按章节序号正序"""
+    chapters = []
+    total = 0
+    curr = 1
+    while curr <= _MAX_PAGE:
+        data = _api("/book/queryIndexList", {
+            "bookId": book_id,
+            "curr": curr,
+            "limit": _PAGE_LIMIT,
+            "orderBy": "index_num asc",
+        })
+        total = int(data.get("total") or 0)
+        items = data.get("list") or []
+        if not items:
+            break
+        chapters.extend(_parse_index_items(book_id, items))
+        if total and len(chapters) >= total:
+            break
+        curr += 1
+    return chapters
+
+
+def _get_latest_chapters(book_id, last_chapter_url, last_index_id=""):
+    """抓取本地最新章节之后的章节（检查更新）
+
+    :param last_index_id: 详情接口返回的全书最新章节 ID，可零成本判断是否有更新
+    :return: 更新章节列表（含本地最新章节，旧->新排序）；无更新返回空列表
+    """
+    anchor = _chapter_index_id(last_chapter_url)
+    # 详情接口已给出最新章节 ID，与本地上次记录一致即无更新，无需再请求目录
+    if str(last_index_id or "").strip() == anchor:
+        return []
+
+    # 从最新章节所在分页（index_num desc 第 1 页）开始，按分页从后往前加载，
+    # 直到某页命中本地已缓存的最新章节所在分页为止
+    collected = []  # 页内及页间均为 新->旧
+    total = 0
+    curr = 1
+    while curr <= _MAX_PAGE:
+        data = _api("/book/queryIndexList", {
+            "bookId": book_id,
+            "curr": curr,
+            "limit": _PAGE_LIMIT,
+            "orderBy": "index_num desc",
+        })
+        total = int(data.get("total") or 0)
+        items = data.get("list") or []
+        if not items:
+            break
+        page = _parse_index_items(book_id, items)
+        # 第一页第一项即全书最新章节（lastIndexId 缺失时的兜底判断）
+        if curr == 1 and page and _chapter_index_id(page[0]["url"]) == anchor:
+            return []
+        collected.extend(page)
+        if any(_chapter_index_id(c["url"]) == anchor for c in page):
+            break
+        if total and curr * _PAGE_LIMIT >= total:
+            # 已翻到最后仍未命中本地章节（本地记录可能已失效），返回已抓取部分
+            break
+        curr += 1
+
+    collected.reverse()  # 转为 旧->新
+    return collected
+
+
 def search(query):
     """搜索书籍，返回 [{bookTitle, bookAuthor, bookUrl}]"""
     data = _api("/book/searchByPage", {
@@ -143,51 +230,35 @@ def search(query):
     return books
 
 
-def getDetails(url):
-    """获取书籍详情 + 完整目录"""
-    book_id = _getBookId(url)
+def getDetails(url, lastChapterUrl=None):
+    """获取书籍详情 + 目录
 
+    :param lastChapterUrl: 本地已缓存的最新章节链接（可选）。
+        传入时做增量更新检查，避免全量拉取目录：
+          - 无更新 -> chapterList 返回空列表
+          - 有更新 -> 从后往前按分页加载，直到命中本地最新章节所在分页，
+            返回该分页到最新章节的章节（含本地最新章节，旧->新排序），本地自行拼接
+    """
+    book_id = _getBookId(url)
     detail = _api(f"/book/queryBookDetail/{book_id}")
 
-    book = {
+    info = {
         "url": urljoin(getSiteUrl(), f"/book/{book_id}.html"),
         "title": str(detail.get("bookName") or "").strip(),
         "author": str(detail.get("authorName") or "").strip(),
         "intro": str(detail.get("bookDesc") or "").strip(),
         "cover": urljoin(getSiteUrl(), str(detail.get("picUrl") or "").strip()),
-        "chapterList": []
     }
 
-    # 目录分页抓取，每页 100 章，按章节序号正序
-    chapters = []
-    total = 0
-    curr = 1
-    while curr <= _MAX_PAGE:
-        data = _api("/book/queryIndexList", {
-            "bookId": book_id,
-            "curr": curr,
-            "limit": _PAGE_LIMIT,
-            "orderBy": "index_num asc",
-        })
-        total = int(data.get("total") or 0)
-        items = data.get("list") or []
-        if not items:
-            break
-        for item in items:
-            index_id = str(item.get("id") or "").strip()
-            title = str(item.get("indexName") or "").strip()
-            if not index_id or not title:
-                continue
-            chapters.append({
-                "title": title,
-                "url": urljoin(getSiteUrl(), f"/book/{book_id}/{index_id}.html"),
-            })
-        if total and len(chapters) >= total:
-            break
-        curr += 1
+    if not lastChapterUrl:
+        # 首次加载：完整目录
+        return {**info, "chapterList": _get_all_chapters(book_id)}
 
-    book["chapterList"] = chapters
-    return book
+    # 详情接口已带全书最新章节 ID（lastIndexId），无更新时零额外请求直接返回空列表
+    chapters = _get_latest_chapters(book_id, lastChapterUrl, detail.get("lastIndexId"))
+    if not chapters:
+        return {**info, "chapterList": []}  # 无更新
+    return {**info, "chapterList": chapters}
 
 
 def _contentToHtml(content, title=None):
