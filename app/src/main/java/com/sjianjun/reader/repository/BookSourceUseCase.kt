@@ -8,7 +8,6 @@ import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.http.http
-import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.toast
@@ -23,7 +22,7 @@ import java.util.zip.GZIPInputStream
 object BookSourceUseCase {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     suspend fun autoImport() = withIo {
-        val list = globalConfig.bookSourceListUser.filter { it.autoUpdate }
+        val list = SourceUrlUseCase.getAutoUpdate()
         import(list)
     }
 

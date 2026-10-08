@@ -18,6 +18,7 @@ import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.bean.SearchHistory
+import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.dao.BookDao
@@ -27,6 +28,7 @@ import com.sjianjun.reader.repository.dao.ChapterDao
 import com.sjianjun.reader.repository.dao.ReadingRecordDao
 import com.sjianjun.reader.repository.dao.ReplacementRuleDao
 import com.sjianjun.reader.repository.dao.SearchHistoryDao
+import com.sjianjun.reader.repository.dao.SourceUrlDao
 import com.sjianjun.reader.repository.dao.WebBookDao
 import java.io.File
 import java.text.SimpleDateFormat
@@ -34,8 +36,8 @@ import java.util.Date
 import java.util.Locale
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class],
-    version = 31,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class],
+    version = 32,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -47,6 +49,7 @@ abstract class Db : RoomDatabase() {
     abstract fun bookSourceDao(): BookSourceDao
     abstract fun webBookDao(): WebBookDao
     abstract fun replacementRule(): ReplacementRuleDao
+    abstract fun sourceUrlDao(): SourceUrlDao
 }
 
 object DbFactory {
@@ -198,6 +201,12 @@ object DbFactory {
                     db.execSQL("INSERT INTO `ReplacementRule_new` (`id`,`name`,`rule`,`replacement`,`isRegex`,`enabledMask`,`order`,`applyToTitle`,`applyToContent`,`scope`,`excludeScope`) SELECT `id`,`name`,`rule`,`replacement`,`isRegex`,CASE WHEN `isEnabled`=1 THEN 3 ELSE 0 END,`order`,`applyToTitle`,`applyToContent`,`scope`,`excludeScope` FROM `ReplacementRule`")
                     db.execSQL("DROP TABLE `ReplacementRule`")
                     db.execSQL("ALTER TABLE `ReplacementRule_new` RENAME TO `ReplacementRule`")
+                }
+            })
+            .addMigrations(object : Migration(31, 32) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 订阅链接由 MMKV 迁移到数据库，方便随数据库一起导出、导入、恢复
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `SourceUrl` (`url` TEXT NOT NULL, `group` TEXT NOT NULL, `autoUpdate` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, PRIMARY KEY(`url`))")
                 }
             })
             .build()

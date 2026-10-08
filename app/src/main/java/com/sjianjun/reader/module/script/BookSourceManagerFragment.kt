@@ -32,7 +32,7 @@ import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.SourceUrlUseCase
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.id
@@ -157,10 +157,12 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     }
 
     private fun initLinksData() {
-        val list = globalConfig.bookSourceListUser.toMutableList()
-        linksAdapter.data.clear()
-        linksAdapter.data.addAll(list)
-        linksAdapter.notifyDataSetChanged()
+        launch {
+            val list = SourceUrlUseCase.getAll()
+            linksAdapter.data.clear()
+            linksAdapter.data.addAll(list)
+            linksAdapter.notifyDataSetChanged()
+        }
     }
 
     override fun onDestroyView() {
@@ -252,11 +254,10 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     }
                     val sourceUrl = SourceUrl(url, group)
                     if (sourceUrl.url.startsWith("http")) {
-                        val bookSourceListUser = globalConfig.bookSourceListUser.toMutableList()
-                        bookSourceListUser.removeAll { it.url == sourceUrl.url }
-                        bookSourceListUser.add(0, sourceUrl)
-                        globalConfig.bookSourceListUser = bookSourceListUser
-                        initLinksData()
+                        launch {
+                            SourceUrlUseCase.add(sourceUrl)
+                            initLinksData()
+                        }
                     } else {
                         import(listOf(sourceUrl))
                     }
@@ -560,16 +561,9 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
             cbAuto.setOnCheckedChangeListener(null)
             cbAuto.isChecked = item.autoUpdate
             cbAuto.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    item.autoUpdate = true
-                    globalConfig.bookSourceListUser = (globalConfig.bookSourceListUser.toMutableList().apply {
-                        find { it.url == item.url }?.autoUpdate = true
-                    })
-                } else {
-                    item.autoUpdate = false
-                    globalConfig.bookSourceListUser = (globalConfig.bookSourceListUser.toMutableList().apply {
-                        find { it.url == item.url }?.autoUpdate = false
-                    })
+                item.autoUpdate = isChecked
+                fragment.launch {
+                    SourceUrlUseCase.setAutoUpdate(item.url, isChecked)
                 }
             }
 
@@ -578,10 +572,10 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
                     .setTitle("确定要删除“${item.group}”吗？")
                     .setMessage("地址：${item.url}")
                     .setPositiveButton(android.R.string.ok) { _, _ ->
-                        val list = globalConfig.bookSourceListUser.toMutableList()
-                        list.removeAll { it.url == item.url }
-                        globalConfig.bookSourceListUser = list
-                        fragment.initLinksData()
+                        fragment.launch {
+                            SourceUrlUseCase.delete(item.url)
+                            fragment.initLinksData()
+                        }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()

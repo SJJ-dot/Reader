@@ -113,6 +113,10 @@ class AppConfig(val name: String) :
      */
     val lastLightTheme by lazy { strLivedata("lastLightThemeStr", PageStyle.defDay.id) }
 
+    /**
+     * 旧版本的订阅链接存储（MMKV），现已迁移到数据库；
+     * 仅保留用于首次启动时把老数据迁移到数据库，请勿再写入
+     */
     var bookSourceListUser by dataPref("bookSourceListUser2", emptyList<SourceUrl>())
 
     val customPageStyleInfoList by lazy {
