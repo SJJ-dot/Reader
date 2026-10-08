@@ -7,8 +7,6 @@ plugins {
 }
 
 def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 16
-// Chaquopy 用的本机 Python：优先取 gradle.properties 的 python 属性，否则用项目内 .venv
-def pythonExec = project.findProperty("python") ?: "${project.rootDir}/.venv/Scripts/python.exe"
 //创建版本号===
 //获取之前的版本列表
 
@@ -47,7 +45,7 @@ android {
         }
         python {
 //          python.exe
-            buildPython pythonExec
+            buildPython properties.getProperty("python")
             version "3.12"
             pip {
                 install "-r", "requirements.txt"
