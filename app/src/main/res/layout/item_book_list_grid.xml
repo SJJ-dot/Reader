@@ -95,6 +95,15 @@
             app:layout_constraintTop_toTopOf="@+id/bookCover"
             tools:text="99" />
 
+        <!-- 未读章节数的点击区域，比角标大，方便点击检查更新 -->
+        <View
+            android:id="@+id/unread_clickable_area"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackground"
+            app:layout_constraintEnd_toEndOf="@+id/bookCover"
+            app:layout_constraintTop_toTopOf="@+id/bookCover" />
+
         <com.sjianjun.reader.view.RotateLoading
             android:id="@+id/loading"
             android:layout_width="26dp"

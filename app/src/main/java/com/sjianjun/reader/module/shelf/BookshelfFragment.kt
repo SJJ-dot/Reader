@@ -292,10 +292,18 @@ class BookshelfFragment : BaseFragment() {
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0)) {
                     bvUnread.invisible()
+                    unreadClickableArea.invisible()
                 } else {
                     bvUnread.visible()
+                    unreadClickableArea.visible()
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
+                unreadClickableArea.click {
+                    //点击未读章节数：检查更新
+                    if (!book.isLoading) {
+                        fragment.viewModel.reloadBookFromNet(book)
+                    }
+                }
                 originClickableArea.click {
                     fragmentCreate<BookSourceListFragment>(
                         BOOK_TITLE to book.title
@@ -393,10 +401,18 @@ class BookshelfFragment : BaseFragment() {
                 }
                 if ((book.isLoading || book.unreadChapterCount <= 0)) {
                     bvUnread.invisible()
+                    unreadClickableArea.invisible()
                 } else {
                     bvUnread.visible()
+                    unreadClickableArea.visible()
                 }
                 bvUnread.badgeCount = book.unreadChapterCount
+                unreadClickableArea.click {
+                    //点击未读章节数：检查更新
+                    if (!book.isLoading) {
+                        fragment.viewModel.reloadBookFromNet(book)
+                    }
+                }
                 if (origin.tag == null) {
                     origin.post {
                         origin.maxWidth = bookName.measuredWidth - 20.dp2Px
