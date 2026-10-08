@@ -56,12 +56,15 @@ class BookDetailsViewModel : ViewModel() {
         }
     }
 
-    fun reloadBookFromNet(book: Book? = null) {
+    /**
+     * @param forceFull true 时全量加载，以远端返回的完整章节列表重建本地章节
+     */
+    fun reloadBookFromNet(book: Book? = null, forceFull: Boolean = false) {
         val target = bookLivedata.value ?: book ?: return
         //取消上一次未完成的加载，避免重复加载
         loadJob?.cancel()
         loadJob = viewModelScope.launch(Dispatchers.IO) {
-            BookUseCase.reloadBookFromNet(target)
+            BookUseCase.reloadBookFromNet(target, forceFull = forceFull)
         }
     }
 

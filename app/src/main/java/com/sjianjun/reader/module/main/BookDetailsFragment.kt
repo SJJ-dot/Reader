@@ -96,6 +96,7 @@ class BookDetailsFragment : BaseAsyncFragment() {
             }
             true
         }
+        initPullRefresh()
         childFragmentManager.beginTransaction()
             .replace(
                 R.id.chapter_list,
@@ -107,6 +108,17 @@ class BookDetailsFragment : BaseAsyncFragment() {
         viewModel.init(bookTitle, autoRefresh)
         viewModel.bookLivedata.observeViewLifecycle {
             fillView(it)
+        }
+    }
+
+    /**
+     * 两级下拉刷新：一级「检查更新」，继续下拉「重新加载」（全量更新）
+     */
+    private fun initPullRefresh() {
+        binding?.detailsRefreshLayout?.setOnRefreshListener {
+            //二级下拉触发时执行全量更新
+            val forceFull = binding?.pullHeader?.isLevel2 == true
+            viewModel.reloadBookFromNet(forceFull = forceFull)
         }
     }
 
@@ -151,9 +163,15 @@ class BookDetailsFragment : BaseAsyncFragment() {
             binding?.bookName?.maxWidth = (binding?.bookClickableArea?.measuredWidth ?: 0) - 30.dp2Px
             binding?.originWebsite?.maxWidth = (binding?.originClickableArea?.measuredWidth ?: 0) - 25.dp2Px
         }
-        binding?.detailsRefreshLayout?.isRefreshing = book?.isLoading == true
-        binding?.detailsRefreshLayout?.setOnRefreshListener {
-            viewModel.reloadBookFromNet()
+        //加载中显示刷新动画（含其他入口触发的加载），加载结束收起
+        binding?.detailsRefreshLayout?.let { refresh ->
+            if (book?.isLoading == true) {
+                if (!refresh.isRefreshing) {
+                    refresh.autoRefreshAnimationOnly()
+                }
+            } else if (refresh.isRefreshing) {
+                refresh.finishRefresh()
+            }
         }
         binding?.reading?.click {
             book ?: return@click

@@ -170,6 +170,8 @@ dependencies {
     implementation(libs.flexbox)
     implementation(libs.material)
     implementation(libs.zxingCore)
+    //下拉刷新（两级下拉：一级检查更新，继续下拉重新加载）
+    implementation(libs.smartRefreshLayout)
 
     implementation(libs.buglyCrashreport)
 //    implementation "com.victor:lib:1.0.4"

@@ -7,15 +7,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout
+    <com.scwang.smart.refresh.layout.SmartRefreshLayout
+        android:id="@+id/detailsRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/detailsRefreshLayout"
+        <!-- 两级下拉：一级检查更新，继续下拉重新加载 -->
+        <com.sjianjun.reader.view.TwoLevelRefreshHeader
+            android:id="@+id/pullHeader"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -282,8 +284,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-    </LinearLayout>
+    </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
     <FrameLayout
         android:id="@+id/chapter_list"
