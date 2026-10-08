@@ -5,15 +5,27 @@
     android:layout_height="match_parent"
     android:layout_gravity="end">
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    <com.scwang.smart.refresh.layout.SmartRefreshLayout
         android:id="@+id/chapter_refresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- 下拉：重新加载（全量更新章节列表） -->
+        <com.sjianjun.reader.view.ReloadRefreshHeader
+            android:id="@+id/chapter_pull_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- 上拉：检查更新（增量拉取最新章节） -->
+        <com.sjianjun.reader.view.CheckUpdateRefreshFooter
+            android:id="@+id/chapter_load_footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!--
             FastScrollRecyclerView 的快速滚动条会被加到自身直接父布局上，
             该父布局必须是 ConstraintLayout/CoordinatorLayout/FrameLayout/RelativeLayout，
-            所以这里不能直接用 SwipeRefreshLayout 做它的父布局
+            所以这里不能直接用刷新控件做它的父布局
         -->
         <FrameLayout
             android:layout_width="match_parent"
@@ -29,5 +41,5 @@
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_text_text" />
         </FrameLayout>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 </FrameLayout>

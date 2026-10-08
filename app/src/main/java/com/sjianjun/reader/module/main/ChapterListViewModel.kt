@@ -69,6 +69,14 @@ class ChapterListViewModel : ViewModel() {
         BookUseCase.reloadBookFromNet(book, forceFull = true)
     }
 
+    /**
+     * 检查更新：只拉取最新章节与本地已有章节拼接（增量）
+     */
+    suspend fun checkUpdate(bookTitle: String) = withIo {
+        val book = bookDao.getReadingBook(bookTitle).firstOrNull() ?: return@withIo
+        BookUseCase.reloadBookFromNet(book, forceFull = false)
+    }
+
     suspend fun saveRecord(c: Chapter) = withIo {
         readingRecord.value?.let {
             it.chapterIndex = c.index

@@ -51,18 +51,23 @@ class ChapterListFragment : BaseFragment() {
     }
 
     /**
-     * 章节列表下拉刷新：强制全量更新章节列表
+     * 章节列表：下拉「重新加载」（全量更新章节列表），上拉「检查更新」（增量拉取最新章节）
      */
     private fun initRefresh() {
-        //中间嵌套了一层FrameLayout，SwipeRefreshLayout无法自行判断列表是否已滚动，需要手动判断，
-        //避免列表滚动到中间时下拉也触发刷新
-        binding?.chapterRefresh?.setOnChildScrollUpCallback { _, _ ->
-            binding?.recycleViewChapterList?.canScrollVertically(-1) == true
-        }
-        binding?.chapterRefresh?.setOnRefreshListener {
+        val refresh = binding?.chapterRefresh ?: return
+        refresh.setOnRefreshListener {
             launch {
                 viewModel.reloadBookFromNet(bookTitle)
-                binding?.chapterRefresh?.isRefreshing = false
+                refresh.finishRefresh()
+            }
+        }
+        refresh.setEnableLoadMore(true)
+        //默认是「拉到底自动加载」，会一上拉就触发，这里改为松手才执行
+        refresh.setEnableAutoLoadMore(false)
+        refresh.setOnLoadMoreListener {
+            launch {
+                viewModel.checkUpdate(bookTitle)
+                refresh.finishLoadMore()
             }
         }
     }

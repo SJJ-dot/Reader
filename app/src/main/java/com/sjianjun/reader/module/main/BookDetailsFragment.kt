@@ -115,7 +115,10 @@ class BookDetailsFragment : BaseAsyncFragment() {
      * 两级下拉刷新：一级「检查更新」，继续下拉「重新加载」（全量更新）
      */
     private fun initPullRefresh() {
-        binding?.detailsRefreshLayout?.setOnRefreshListener {
+        val refresh = binding?.detailsRefreshLayout ?: return
+        //1.0 是库默认值（要拉满一个头部高度），调低到 0.7 让两级都更容易拉到
+        refresh.setHeaderTriggerRate(0.7f)
+        refresh.setOnRefreshListener {
             //二级下拉触发时执行全量更新
             val forceFull = binding?.pullHeader?.isLevel2 == true
             viewModel.reloadBookFromNet(forceFull = forceFull)
