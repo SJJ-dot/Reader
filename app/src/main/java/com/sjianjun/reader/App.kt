@@ -21,7 +21,11 @@ import sjj.alog.Log
 import java.io.File
 
 class App : Application() {
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * 应用级协程作用域，用于不依赖页面/ViewModel 生命周期的后台任务。
+     * 不能用 viewModelScope：ViewModel 销毁时会被取消，任务还没执行就没了
+     */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var first = true
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)

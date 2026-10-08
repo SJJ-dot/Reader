@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.main
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.coroutine.withMain
 import com.sjianjun.reader.App
@@ -11,16 +12,20 @@ import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.format
 import com.sjianjun.reader.utils.launchIo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.io.File
 
 class BookDetailsViewModel : ViewModel() {
     val bookLivedata = MutableLiveData<Book>()
+    private var loadJob: Job? = null
     private val bookDao get() = DbFactory.db.bookDao()
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
@@ -52,17 +57,34 @@ class BookDetailsViewModel : ViewModel() {
     }
 
     fun reloadBookFromNet(book: Book? = null) {
-        launchIo {
-            BookUseCase.reloadBookFromNet(bookLivedata.value ?: book ?: return@launchIo)
+        val target = bookLivedata.value ?: book ?: return
+        //取消上一次未完成的加载，避免重复加载
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch(Dispatchers.IO) {
+            BookUseCase.reloadBookFromNet(target)
         }
     }
 
     /**
-     * 页面销毁时清理该书所有书源残留的加载中状态，
-     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载
+     * 页面销毁时取消正在进行的加载
      */
-    fun resetBookLoadingState(title: String) = launchIo {
-        BookUseCase.resetBookLoadingStateByTitle(title)
+    fun cancelLoading() {
+        loadJob?.cancel()
+        loadJob = null
+    }
+
+    /**
+     * 页面销毁时清理该书所有书源残留的加载中状态，
+     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载。
+     *
+     * 这里必须使用应用级作用域：本方法由 onDestroyView 调用，紧接着 ViewModel 就会被销毁，
+     * viewModelScope 也随之取消，协程还没执行就被取消，重置不会生效
+     */
+    fun resetBookLoadingState(title: String) {
+        App.app.appScope.launch(Dispatchers.IO) {
+            runCatching { BookUseCase.resetBookLoadingStateByTitle(title) }
+                .onFailure { Log.e("重置书籍加载状态失败：$title", it) }
+        }
     }
 
     suspend fun setRecordToLastChapter() = withIo {

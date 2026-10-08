@@ -11,6 +11,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -228,6 +229,13 @@ object BookUseCase {
                 }
             }
             updateDetails(bookDetails, keepUpToIndex)
+        } catch (e: CancellationException) {
+            //加载被取消（例如退出详情页），只清除加载中状态，不当作加载失败记录错误
+            Log.i("加载被取消：${book.title}")
+            book.isLoading = false
+            book.error = null
+            bookDao.updateBook(book)
+            throw e
         } catch (e: Throwable) {
             Log.e("加载书籍详情：$book", e)
             book.isLoading = false
