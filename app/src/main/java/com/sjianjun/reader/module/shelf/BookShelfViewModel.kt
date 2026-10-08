@@ -30,7 +30,13 @@ class BookShelfViewModel : ViewModel() {
     private val chapterDao get() = db.chapterDao()
     private val chapterContentDao get() = db.chapterContentDao()
     private val bookSourceDao get() = db.bookSourceDao()
-    fun reloadBookFromNet(book: Book) = viewModelScope.launch { BookUseCase.reloadBookFromNet(book) }
+    /**
+     * @param forceFull true 时全量加载，以远端返回的完整章节列表重建本地章节；
+     *        false 时只做增量检查更新
+     */
+    fun reloadBookFromNet(book: Book, forceFull: Boolean = false) = viewModelScope.launch {
+        BookUseCase.reloadBookFromNet(book, forceFull = forceFull)
+    }
     suspend fun reloadBookFromNet() = withIo {
         val sourceMap = mutableMapOf<String, MutableList<Book>>()
         bookList.value?.forEach {

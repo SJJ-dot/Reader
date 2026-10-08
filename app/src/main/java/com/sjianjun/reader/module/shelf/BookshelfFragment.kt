@@ -161,17 +161,25 @@ class BookshelfFragment : BaseFragment() {
         val longClickListener: (Book) -> Unit = { book: Book ->
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("书籍操作")
-                .setItems(arrayOf("详情页", "重新加载", "排序", "删除")) { _, which ->
+                .setItems(arrayOf("详情页", "检查更新", "重新加载", "排序", "删除")) { _, which ->
                     when (which) {
                         0 -> findNavController().navigate(R.id.bookDetailsFragment, bundle(BOOK_TITLE to book.title), navOptions)
 
                         1 -> {
+                            //检查更新：只拉取最新章节，与本地已有章节拼接
                             if (!book.isLoading) {
                                 viewModel.reloadBookFromNet(book)
                             }
                         }
 
                         2 -> {
+                            //重新加载：全量加载，以远端返回的完整章节列表重建本地章节
+                            if (!book.isLoading) {
+                                viewModel.reloadBookFromNet(book, forceFull = true)
+                            }
+                        }
+
+                        3 -> {
                             MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("选择排序模式")
                                 .setItems(arrayOf("置顶", "默认", "置底")) { _, subWhich ->
@@ -186,7 +194,7 @@ class BookshelfFragment : BaseFragment() {
                                 .show()
                         }
 
-                        3 -> {
+                        4 -> {
                             MaterialAlertDialogBuilder(requireContext())
                                 .setTitle("确认删除")
                                 .setMessage("确定要删除《${book.title}》吗?")
