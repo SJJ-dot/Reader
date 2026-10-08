@@ -164,19 +164,15 @@ def _get_all_chapters(book_id):
     return chapters
 
 
-def _get_latest_chapters(book_id, last_chapter_url, last_index_id=""):
-    """抓取本地最新章节之后的章节（检查更新）
+def _get_latest_chapters(book_id, last_chapter_url):
+    """按分页从后往前加载目录，直到命中本地最新章节所在分页
 
-    :param last_index_id: 详情接口返回的全书最新章节 ID，可零成本判断是否有更新
-    :return: 更新章节列表（含本地最新章节，旧->新排序）；无更新返回空列表
+    从全书最新章节所在分页（index_num desc 第 1 页）开始，按分页从后往前加载，
+    直到某页包含本地已缓存的最新章节为止。无论是否有更新，都会返回这段包含
+    本地最新章节的分页章节列表（旧->新排序），由调用方与本地已缓存章节拼接去重。
     """
     anchor = _chapter_index_id(last_chapter_url)
-    # 详情接口已给出最新章节 ID，与本地上次记录一致即无更新，无需再请求目录
-    if str(last_index_id or "").strip() == anchor:
-        return []
 
-    # 从最新章节所在分页（index_num desc 第 1 页）开始，按分页从后往前加载，
-    # 直到某页命中本地已缓存的最新章节所在分页为止
     collected = []  # 页内及页间均为 新->旧
     total = 0
     curr = 1
@@ -192,10 +188,8 @@ def _get_latest_chapters(book_id, last_chapter_url, last_index_id=""):
         if not items:
             break
         page = _parse_index_items(book_id, items)
-        # 第一页第一项即全书最新章节（lastIndexId 缺失时的兜底判断）
-        if curr == 1 and page and _chapter_index_id(page[0]["url"]) == anchor:
-            return []
         collected.extend(page)
+        # 当前分页已包含本地最新章节，说明已回溯到本地进度，无需继续往前加载
         if any(_chapter_index_id(c["url"]) == anchor for c in page):
             break
         if total and curr * _PAGE_LIMIT >= total:
@@ -234,10 +228,9 @@ def getDetails(url, lastChapterUrl=None):
     """获取书籍详情 + 目录
 
     :param lastChapterUrl: 本地已缓存的最新章节链接（可选）。
-        传入时做增量更新检查，避免全量拉取目录：
-          - 无更新 -> chapterList 返回空列表
-          - 有更新 -> 从后往前按分页加载，直到命中本地最新章节所在分页，
-            返回该分页到最新章节的章节（含本地最新章节，旧->新排序），本地自行拼接
+        传入时执行更新检查：从全书最新章节所在分页开始，按分页从后往前加载，
+        直到分页包含本地最新章节。无论是否有更新，都会返回包含本地最新章节的
+        分页章节列表（旧->新排序），由调用方与本地已缓存章节拼接去重。
     """
     book_id = _getBookId(url)
     detail = _api(f"/book/queryBookDetail/{book_id}")
@@ -254,11 +247,9 @@ def getDetails(url, lastChapterUrl=None):
         # 首次加载：完整目录
         return {**info, "chapterList": _get_all_chapters(book_id)}
 
-    # 详情接口已带全书最新章节 ID（lastIndexId），无更新时零额外请求直接返回空列表
-    chapters = _get_latest_chapters(book_id, lastChapterUrl, detail.get("lastIndexId"))
-    if not chapters:
-        return {**info, "chapterList": []}  # 无更新
-    return {**info, "chapterList": chapters}
+    # 检查更新：从后往前按分页加载，直到分页包含本地最新章节；
+    # 即使没有更新，也返回包含本地最新章节的分页章节列表，供本地拼接去重
+    return {**info, "chapterList": _get_latest_chapters(book_id, lastChapterUrl)}
 
 
 def _contentToHtml(content, title=None):
