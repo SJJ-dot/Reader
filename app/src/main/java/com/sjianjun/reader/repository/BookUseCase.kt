@@ -161,45 +161,38 @@ object BookUseCase {
                 //chapterList 为null时不修改本地章节
                 bookDetails.chapterList = null
             } else {
-                if (forceFull) {
-                    //强制全量更新：以脚本返回的完整章节列表为准，重建本地章节
+                //脚本约定：章节列表升序返回（旧->新），且本地已有的章节以返回数据为准。
+                //forceFull 时不定位，直接用返回的完整章节列表重建本地章节
+                val firstReturnedIndex = if (forceFull) {
+                    null
+                } else {
+                    //本地章节url -> index，重复url取最后出现的一个
+                    val localIndexByUrl = HashMap<String, Int>(localChapters.size)
+                    localChapters.forEach { localIndexByUrl[it.url] = it.index }
+                    //用返回的第一个章节在本地定位
+                    localIndexByUrl[chapterList.first().url]
+                }
+                if (firstReturnedIndex != null) {
+                    //定位成功：定位位置之前的本地章节保留，
+                    //定位位置及其之后的本地章节一律以返回数据为准，整体用返回章节覆盖
+                    var nextIndex = firstReturnedIndex
+                    chapterList.forEach { chapter ->
+                        chapter.bookId = book.id
+                        chapter.index = nextIndex++
+                    }
+                    fullChapterList = localChapters.filter { it.index < firstReturnedIndex } + chapterList
+                    //定位位置及其之后的本地章节全部丢弃
+                    keepUpToIndex = firstReturnedIndex - 1
+                    Log.i("${book.title} 增量加载章节：首章定位到第${firstReturnedIndex}章，覆盖${chapterList.size}章")
+                } else {
+                    //第一个章节本地查询不到（或强制全量），按全量更新：
+                    //以返回的章节列表为准重建本地章节（keepUpToIndex 保持 null）
                     chapterList.forEachIndexed { index, chapter ->
                         chapter.bookId = book.id
                         chapter.index = index
                     }
                     fullChapterList = chapterList
-                    Log.i("${book.title} 强制全量更新章节：共${chapterList.size}章")
-                } else {
-                    //本地章节url -> index，重复url取最后出现的一个
-                    val localIndexByUrl = HashMap<String, Int>(localChapters.size)
-                    localChapters.forEach { localIndexByUrl[it.url] = it.index }
-                    //脚本约定：章节列表升序返回（旧->新），增量更新时必须包含本地已有的最新章节。
-                    //从后向前在返回列表中找最后一个本地已有的章节作为定位章节（正常情况下即本地最新章节），
-                    //定位章节之前的返回章节与本地重复，丢弃；定位章节之后的章节拼接到本地章节后面
-                    val anchorPos = chapterList.indexOfLast { localIndexByUrl.containsKey(it.url) }
-                    if (anchorPos >= 0) {
-                        val anchorIndex = localIndexByUrl[chapterList[anchorPos].url]!!
-                        val appendChapters = chapterList.drop(anchorPos + 1)
-                        var nextIndex = anchorIndex + 1
-                        appendChapters.forEach { chapter ->
-                            chapter.bookId = book.id
-                            chapter.index = nextIndex++
-                        }
-                        fullChapterList = localChapters.filter { it.index <= anchorIndex } + appendChapters
-                        //定位章节之后的本地章节全部丢弃
-                        keepUpToIndex = anchorIndex
-                        Log.i("${book.title} 增量加载章节：定位到第${anchorIndex}章，新增${appendChapters.size}章")
-                    } else {
-                        //返回的章节在本地都找不到，视为全部为新章节，追加到末尾（不删除本地章节，避免丢失历史章节）
-                        var nextIndex = (localChapters.maxOfOrNull { it.index } ?: -1) + 1
-                        chapterList.forEach { chapter ->
-                            chapter.bookId = book.id
-                            chapter.index = nextIndex++
-                        }
-                        fullChapterList = localChapters + chapterList
-                        keepUpToIndex = localChapters.maxOfOrNull { it.index } ?: -1
-                        Log.i("${book.title} 未定位到本地章节，${chapterList.size}章按新增章节追加")
-                    }
+                    Log.i("${book.title} 按全量更新章节：共${chapterList.size}章")
                 }
                 //keepUpToIndex 为 null 时表示全量替换本地章节
                 bookDetails.chapterList = fullChapterList

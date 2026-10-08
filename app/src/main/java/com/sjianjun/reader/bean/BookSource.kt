@@ -201,7 +201,8 @@ class BookSource {
      * @param bookUrl 书籍详情链接
      * @param lastChapterUrl 本地已有的最新章节链接，没有时传空串。
      *        脚本可据此判断当前是加载全部章节还是只加载最新章节，用于优化检查更新时的速度。
-     *        注意：章节列表必须升序返回；增量返回时列表必须包含该章节，应用才能与本地章节正确定位拼接。
+     *        注意：章节列表必须升序返回；增量返回时请包含该章节，应用以返回的第一个章节在本地定位，
+     *        定位位置及其之后的本地章节以返回数据为准（可多返回本地已有的章节，应用会用返回数据覆盖）。
      */
     suspend fun getDetails(bookUrl: String, lastChapterUrl: String = ""): Book? {
         return withIo {
