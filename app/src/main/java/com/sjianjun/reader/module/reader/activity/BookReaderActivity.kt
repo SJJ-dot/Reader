@@ -237,13 +237,21 @@ class BookReaderActivity : BaseActivity() {
                     return@launch
                 }
                 requestNotificationPermissionIfNeeded()
-                // 从当前阅读页对应的段落开始朗读
-                val startParagraph = TtsChapterSplitter.paragraphIndexAtPage(
+                // 从当前阅读页的开始朗读：跨页段落从本页第一行开始，不回翻上一页
+                val position = TtsChapterSplitter.paragraphPositionAtPage(
                     mPageLoader?.curPageList,
                     mPageLoader?.pagePos ?: 0
                 )
-                Log.i("开始朗读章节$chapterIndex ${chapter.title} 起始段落:${startParagraph + 1}")
-                TtsPlaybackController.startBook(chapter.bookId, chapterIndex, startParagraph)
+                Log.i(
+                    "开始朗读章节$chapterIndex ${chapter.title} " +
+                        "起始段落:${position.index + 1} 段内偏移:${position.offsetChars}"
+                )
+                TtsPlaybackController.startBook(
+                    chapter.bookId,
+                    chapterIndex,
+                    position.index,
+                    position.offsetChars
+                )
             }
         }
 
@@ -574,11 +582,16 @@ class BookReaderActivity : BaseActivity() {
                     delay(100)
                 }
             }
+            // 服务端正文还没加载完（段落数未知）：先不动视图，
+            // 否则会按旧的段落位置先跳一次再跳回来（跨页段落启动朗读时表现为翻回上一页闪一下）
+            if (state.paragraphCount <= 0) return@launch
             // 按「段落序号 + 段内进度」定位到具体行，实现按行高亮
+            // 起始段跨页时带起点偏移，高亮从本页第一行开始，不会翻回上一页
             val located = TtsChapterSplitter.locateLineInParagraph(
                 loader.curPageList,
                 state.paragraphIndex,
-                state.paragraphProgress
+                state.paragraphProgress,
+                state.paragraphStartOffset
             ) ?: TtsChapterSplitter.locateByParagraphText(loader.curPageList, state.paragraphText)
                 ?.let { LocatedLine(it.first, it.second, 0) }
             if (located == null) {

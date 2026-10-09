@@ -68,32 +68,43 @@ object TtsPlaybackController {
 
     /**
      * 小说模式：开始朗读指定书籍的指定章节，从第 paragraphIndex 段开始，读完自动进入下一章
+     *
+     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：跨页段落从当前页第一行开始读
      */
-    fun startBook(bookId: String, chapterIndex: Int, paragraphIndex: Int = 0) {
+    fun startBook(bookId: String, chapterIndex: Int, paragraphIndex: Int = 0, paragraphOffset: Int = 0) {
         val target = service
         if (target != null) {
-            target.startBookSession(bookId, chapterIndex, paragraphIndex)
+            target.startBookSession(bookId, chapterIndex, paragraphIndex, paragraphOffset)
             return
         }
         val intent = baseIntent(TtsPlaybackService.ACTION_START_BOOK)
             .putExtra(TtsPlaybackService.EXTRA_BOOK_ID, bookId)
             .putExtra(TtsPlaybackService.EXTRA_CHAPTER_INDEX, chapterIndex)
             .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_INDEX, paragraphIndex)
+            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_OFFSET, paragraphOffset)
         startForegroundService(intent)
     }
 
     /**
      * 网页模式：只朗读当前页面正文，读完停止，不自动跳章。
      * 正文内容每次都取新的，所以即使服务已在朗读也会重开会话。
+     *
+     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：跨页段落从当前页第一行开始读
      */
-    fun startPage(pageUrl: String, title: String, text: String, paragraphIndex: Int = 0) {
+    fun startPage(
+        pageUrl: String,
+        title: String,
+        text: String,
+        paragraphIndex: Int = 0,
+        paragraphOffset: Int = 0,
+    ) {
         if (pageUrl.isBlank() || text.isBlank()) {
             Log.e("TtsPlaybackController 网页朗读参数不合法 url=$pageUrl textLen=${text.length}")
             return
         }
         val target = service
         if (target != null) {
-            target.startPageSession(pageUrl, title, text, paragraphIndex)
+            target.startPageSession(pageUrl, title, text, paragraphIndex, paragraphOffset)
             return
         }
         pendingPageText = text
@@ -101,6 +112,7 @@ object TtsPlaybackController {
             .putExtra(TtsPlaybackService.EXTRA_PAGE_URL, pageUrl)
             .putExtra(TtsPlaybackService.EXTRA_PAGE_TITLE, title)
             .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_INDEX, paragraphIndex)
+            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_OFFSET, paragraphOffset)
         if (!startForegroundService(intent)) {
             // 启动失败时清掉暂存正文，避免残留给下一次启动
             pendingPageText = ""

@@ -75,6 +75,9 @@ class TtsPlaybackService : Service() {
         const val EXTRA_BOOK_ID = "extra_book_id"
         const val EXTRA_CHAPTER_INDEX = "extra_chapter_index"
         const val EXTRA_PARAGRAPH_INDEX = "extra_paragraph_index"
+
+        /** 起始段落的朗读起点偏移（字符数）：跨页段落从当前页第一行开始读时用 */
+        const val EXTRA_PARAGRAPH_OFFSET = "extra_paragraph_offset"
         const val EXTRA_PAGE_URL = "extra_page_url"
         const val EXTRA_PAGE_TITLE = "extra_page_title"
         const val EXTRA_MINUTES = "extra_minutes"
@@ -184,6 +187,16 @@ class TtsPlaybackService : Service() {
     /** 本段已经上报过的最大进度，保证同一段内进度只前进不回退 */
     private var paragraphRatioFloor = 0f
 
+    /**
+     * 起始段位置（章序号 / 段序号 / 段内字符偏移）。
+     *
+     * 「从当前页第一行开始读」遇到跨页段落时，只对这一段做裁剪；
+     * 正文还没加载完时阅读页也靠这个偏移把高亮放在本页第一行，避免先闪回上一页。
+     */
+    private var startOffsetChapter = -1
+    private var startOffsetParagraph = -1
+    private var startOffsetChars = 0
+
     /** 最近一次上报段内进度的时间戳，用于节流 */
     private var progressReportedAt = 0L
 
@@ -262,7 +275,8 @@ class TtsPlaybackService : Service() {
             ACTION_START_BOOK -> startBookSession(
                 intent.getStringExtra(EXTRA_BOOK_ID).orEmpty(),
                 intent.getIntExtra(EXTRA_CHAPTER_INDEX, -1),
-                intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0)
+                intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0),
+                intent.getIntExtra(EXTRA_PARAGRAPH_OFFSET, 0)
             )
 
             ACTION_START_PAGE -> {
@@ -272,7 +286,8 @@ class TtsPlaybackService : Service() {
                     intent.getStringExtra(EXTRA_PAGE_URL).orEmpty(),
                     intent.getStringExtra(EXTRA_PAGE_TITLE).orEmpty(),
                     text,
-                    intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0)
+                    intent.getIntExtra(EXTRA_PARAGRAPH_INDEX, 0),
+                    intent.getIntExtra(EXTRA_PARAGRAPH_OFFSET, 0)
                 )
             }
 
@@ -309,14 +324,25 @@ class TtsPlaybackService : Service() {
 
     /**
      * 小说模式：多章节朗读，读完自动进入下一章，朗读期间预加载下一章
+     *
+     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：
+     *        段落跨页时从当前页第一行开始读，不用回到段落开头
      */
-    fun startBookSession(bookId: String, chapterIndex: Int, paragraphIndex: Int) {
+    fun startBookSession(
+        bookId: String,
+        chapterIndex: Int,
+        paragraphIndex: Int,
+        paragraphOffset: Int = 0,
+    ) {
         if (bookId.isBlank() || chapterIndex < 0) {
             Log.e("$TAG 启动参数不合法 bookId=$bookId chapterIndex=$chapterIndex")
             stopSelfIfIdle()
             return
         }
         resetSession()
+        startOffsetChapter = chapterIndex
+        startOffsetParagraph = paragraphIndex
+        startOffsetChars = paragraphOffset.coerceAtLeast(0)
         updateState(
             TtsPlaybackState(
                 active = true,
@@ -324,7 +350,9 @@ class TtsPlaybackService : Service() {
                 mode = TtsPlaybackMode.BOOK,
                 bookId = bookId,
                 chapterIndex = chapterIndex,
-                paragraphIndex = paragraphIndex
+                paragraphIndex = paragraphIndex,
+                // 起始段偏移一开始就上报，阅读页不会先定位到段落开头（翻回上一页）再跳回来
+                paragraphStartOffset = startOffsetChars
             )
         )
         if (!startForegroundCompat()) return
@@ -363,20 +391,33 @@ class TtsPlaybackService : Service() {
 
     /**
      * 网页模式：只朗读传入的当前页面正文，读完停止，不自动跳章
+     *
+     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：段落跨页时从当前页第一行开始读
      */
-    fun startPageSession(pageUrl: String, title: String, text: String, paragraphIndex: Int) {
+    fun startPageSession(
+        pageUrl: String,
+        title: String,
+        text: String,
+        paragraphIndex: Int,
+        paragraphOffset: Int = 0,
+    ) {
         if (pageUrl.isBlank() || text.isBlank()) {
             Log.e("$TAG 网页朗读参数不合法 url=$pageUrl textLen=${text.length}")
             stopSelfIfIdle()
             return
         }
         resetSession()
-        val list = TtsChapterSplitter.split(title, text)
+        val list = TtsChapterSplitter.split(title, text).toMutableList()
         if (list.isEmpty()) {
             Log.e("$TAG 网页正文分段为空 url=$pageUrl")
             stopSelfIfIdle()
             return
         }
+        val startIndex = paragraphIndex.coerceIn(0, list.size - 1)
+        val appliedOffset = trimParagraphAtOffset(list, startIndex, paragraphOffset)
+        startOffsetChapter = 0
+        startOffsetParagraph = startIndex
+        startOffsetChars = appliedOffset
         updateState(
             TtsPlaybackState(
                 active = true,
@@ -387,7 +428,8 @@ class TtsPlaybackService : Service() {
                 chapterIndex = 0,
                 chapterUrl = pageUrl,
                 chapterTitle = title,
-                paragraphIndex = paragraphIndex.coerceIn(0, list.size - 1),
+                paragraphIndex = startIndex,
+                paragraphStartOffset = appliedOffset,
                 paragraphCount = list.size
             )
         )
@@ -554,6 +596,8 @@ class TtsPlaybackService : Service() {
                 stopSession()
                 return
             }
+            // 起始段偏移（跨页段落从当前页第一行开始读）
+            val startOffset = startOffsetAt(chapterIndex, startPara)
             // 不强制置为播放中：正文加载期间用户可能已经暂停
             updateState(
                 state.copy(
@@ -563,16 +607,18 @@ class TtsPlaybackService : Service() {
                     paragraphIndex = startPara,
                     paragraphCount = 0,
                     paragraphText = "",
+                    // 加载期间也带偏移，阅读页不会先跳到段落开头再跳回来
+                    paragraphStartOffset = startOffset,
                     chapterProgressPercent = 0
                 )
             )
-            val list = if (chapterIndex == prefetchedIndex && prefetchedParagraphs.isNotEmpty()) {
+            val loaded = if (chapterIndex == prefetchedIndex && prefetchedParagraphs.isNotEmpty()) {
                 Log.i("$TAG 使用预加载的章节：${chapter.title}")
                 prefetchedParagraphs.also { clearPrefetch() }
             } else {
                 loadParagraphs(chapter)
             }
-            if (list.isEmpty()) {
+            if (loaded.isEmpty()) {
                 failed++
                 Log.e("$TAG 章节内容加载失败（第${chapterIndex + 1}章 ${chapter.title}）")
                 if (failed >= MAX_FAILED_CHAPTER) {
@@ -585,9 +631,19 @@ class TtsPlaybackService : Service() {
                 continue
             }
             failed = 0
+            val list = loaded.toMutableList()
+            // 「从当前页第一行开始读」：起始段落裁掉本页之前的部分
+            val appliedOffset = trimParagraphAtOffset(list, startPara, startOffset)
             prepareParagraphs(list)
             val start = startPara.coerceIn(0, list.size - 1)
-            updateState(state.copy(paragraphIndex = start, paragraphCount = list.size, paragraphText = list[start]))
+            updateState(
+                state.copy(
+                    paragraphIndex = start,
+                    paragraphCount = list.size,
+                    paragraphText = list[start],
+                    paragraphStartOffset = appliedOffset
+                )
+            )
             Log.i("$TAG 朗读第${chapterIndex + 1}章《${chapter.title}》共${list.size}段，从第${start + 1}段开始")
             // 阅读页不在前台时由服务写阅读进度；在前台时由阅读页自己写，避免互相覆盖
             saveReadingRecord(chapterIndex)
@@ -666,6 +722,39 @@ class TtsPlaybackService : Service() {
 
     // ==================== 朗读引擎驱动 ====================
 
+    /** 起始段的段内起点偏移：只对「从当前页第一行开始读」的那一段有效，其它段返回 0 */
+    private fun startOffsetAt(chapterIndex: Int, paragraphIndex: Int): Int =
+        if (chapterIndex == startOffsetChapter && paragraphIndex == startOffsetParagraph) {
+            startOffsetChars.coerceAtLeast(0)
+        } else {
+            0
+        }
+
+    /** 起始段读完（换到下一段）后就不再需要这个偏移了 */
+    private fun clearStartOffset() {
+        startOffsetChapter = -1
+        startOffsetParagraph = -1
+        startOffsetChars = 0
+    }
+
+    /**
+     * 「从当前页第一行开始读」：把起始段落裁掉本页之前的部分，从本页第一行开始朗读。
+     *
+     * 段落跨页时阅读页首行不是段落开头，若从段落开头读，视图会翻回上一页；
+     * 裁掉前缀后，朗读与高亮都从本页第一行开始。
+     *
+     * @return 实际裁掉的字符数（0 表示不需要裁剪）
+     */
+    private fun trimParagraphAtOffset(list: MutableList<String>, index: Int, offset: Int): Int {
+        if (offset <= 0 || index !in list.indices) return 0
+        val text = list[index]
+        val cut = offset.coerceIn(0, text.length)
+        if (cut <= 0 || cut >= text.length) return 0
+        list[index] = text.substring(cut)
+        Log.i("$TAG 第${index + 1}段跨页，从段内第${cut}个字符开始朗读")
+        return cut
+    }
+
     /** 记录段落列表与朗读权重，并启动进度估算 */
     private fun prepareParagraphs(list: List<String>) {
         paragraphs = list
@@ -739,6 +828,8 @@ class TtsPlaybackService : Service() {
         }
         val text = paragraphs.getOrNull(paragraphIndex).orEmpty()
         logSuspiciousParagraphHead(paragraphIndex, text)
+        // 起始段已经读完，起点偏移不再需要（之后的段落都是完整段落）
+        clearStartOffset()
         // 正常顺读时，上一段到本段的耗时就是上一段的真实朗读耗时，用来自校准进度模型；
         // 跳段（序号不连续）时耗时对不上，不参与校准
         if (paragraphIndex == state.paragraphIndex + 1 && state.paragraphStartAt > 0L) {
@@ -754,6 +845,8 @@ class TtsPlaybackService : Service() {
                 paragraphText = text,
                 paragraphStartAt = System.currentTimeMillis(),
                 paragraphEstimateMs = estimateParagraphMs(paragraphIndex),
+                // 新段落是完整段落，起点偏移只对起始段有效
+                paragraphStartOffset = 0,
                 // 新段落从 0 开始
                 paragraphProgress = 0f,
                 playing = true
@@ -1177,6 +1270,7 @@ class TtsPlaybackService : Service() {
         sleepTimerMinutes = 0
         stopAfterChapter = false
         stopPendingAfterChapter = false
+        clearStartOffset()
         stopEngine()
         paragraphs = emptyList()
         paragraphWeights = LongArray(0)

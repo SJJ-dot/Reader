@@ -1013,9 +1013,13 @@ class BrowserReadModeActivity : BaseActivity() {
         val fullWidthConvert = globalConfig.readerFullWidthConvert.value == true
         val title = ChapterTextPreparer.title(txtChapter?.title, rules, book, ruleChapter, jianFanMode, fullWidthConvert)
         val text = ChapterTextPreparer.content(rawText, rules, book, ruleChapter, jianFanMode, fullWidthConvert)
-        val startParagraph = TtsChapterSplitter.paragraphIndexAtPage(pageLoader.curPageList, pageLoader.pagePos)
-        Log.i("开始朗读网页 url=$url 起始段落:${startParagraph + 1} 字数:${text.length}")
-        TtsPlaybackController.startPage(url, title, text, startParagraph)
+        // 从当前页开始朗读：跨页段落从本页第一行开始，不回翻上一页
+        val position = TtsChapterSplitter.paragraphPositionAtPage(pageLoader.curPageList, pageLoader.pagePos)
+        Log.i(
+            "开始朗读网页 url=$url 起始段落:${position.index + 1} " +
+                "段内偏移:${position.offsetChars} 字数:${text.length}"
+        )
+        TtsPlaybackController.startPage(url, title, text, position.index, position.offsetChars)
     }
 
     /** 跟随朗读进度：高亮当前段落并在需要时翻页 */
@@ -1038,11 +1042,15 @@ class BrowserReadModeActivity : BaseActivity() {
             while (wait++ < MAX_TTS_FOLLOW_WAIT && loader.curPageList.isNullOrEmpty()) {
                 delay(100)
             }
+            // 服务端正文还没就绪（段落数未知）：先不动视图，避免按旧位置跳一次再跳回来
+            if (state.paragraphCount <= 0) return@launch
             // 按「段落序号 + 段内进度」定位到具体行，实现按行高亮
+            // 起始段跨页时带起点偏移，高亮从本页第一行开始，不会翻回上一页
             val located = TtsChapterSplitter.locateLineInParagraph(
                 loader.curPageList,
                 state.paragraphIndex,
-                state.paragraphProgress
+                state.paragraphProgress,
+                state.paragraphStartOffset
             ) ?: TtsChapterSplitter.locateByParagraphText(loader.curPageList, state.paragraphText)
                 ?.let { LocatedLine(it.first, it.second, 0) }
             if (located == null) {

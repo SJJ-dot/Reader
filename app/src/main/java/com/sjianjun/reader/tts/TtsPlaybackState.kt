@@ -42,6 +42,12 @@ data class TtsPlaybackState(
     val paragraphCount: Int = 0,
     /** 正在朗读的段落文本，阅读页定位段落失败时用它兜底 */
     val paragraphText: String = "",
+    /**
+     * 起始段落的朗读起点偏移（字符数，0 表示从段落开头读）。
+     * 「从当前页开始读」遇到跨页段落时，起始段落会被裁掉本页之前的部分，
+     * 阅读页据此把高亮落到本页第一行，而不是翻回上一页
+     */
+    val paragraphStartOffset: Int = 0,
     /** 当前段落开始朗读的时间戳，用于按时间估算段内进度 */
     val paragraphStartAt: Long = 0L,
     /** 当前段落预估朗读时长（毫秒），用于按时间估算段内进度 */

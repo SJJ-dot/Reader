@@ -17,6 +17,17 @@ data class LocatedLine(
 )
 
 /**
+ * 朗读起始位置
+ *
+ * @param index 起始段落序号
+ * @param offsetChars 起始位置在该段落文本里的字符偏移（0 表示从段落开头开始）
+ */
+data class ParagraphPosition(
+    val index: Int,
+    val offsetChars: Int,
+)
+
+/**
  * 章节正文分段工具，与阅读页排版逻辑解耦。
  *
  * 阅读页排版时（`PageLoader`）的规则是「一行原文 = 一段」：
@@ -72,27 +83,46 @@ object TtsChapterSplitter {
      * 阅读页当前所在页对应的段落序号（从本段开始朗读，而不是每次都从章首开始）。
      * 段落可能跨页，所以按「全文行序」统计目标页首行所属的段落。
      */
-    fun paragraphIndexAtPage(pages: List<TxtPage>?, pagePos: Int): Int {
-        if (pages.isNullOrEmpty()) return 0
+    fun paragraphIndexAtPage(pages: List<TxtPage>?, pagePos: Int): Int =
+        paragraphPositionAtPage(pages, pagePos).index
+
+    /**
+     * 朗读起始位置：目标页首行在章节里的段落序号 + 该行在段落文本里的字符偏移。
+     *
+     * 段落跨页时偏移大于 0：直接从本页第一行开始朗读，
+     * 不需要回到段落开头（否则视图会翻回上一页）。
+     */
+    fun paragraphPositionAtPage(pages: List<TxtPage>?, pagePos: Int): ParagraphPosition {
+        if (pages.isNullOrEmpty()) return ParagraphPosition(0, 0)
         val target = pagePos.coerceIn(0, pages.size - 1)
         var index = -1
         var inParagraph = false
+        var offsetInParagraph = 0
         for ((pageIndex, page) in pages.withIndex()) {
             for ((lineIndex, line) in page.lines.withIndex()) {
                 if (pageIndex == target && lineIndex == 0) {
                     // 目标页首行仍是上一段的续行时属于当前段，否则它就是新一段的开头
-                    return (if (inParagraph) index else index + 1).coerceAtLeast(0)
+                    return if (inParagraph) {
+                        ParagraphPosition(index.coerceAtLeast(0), offsetInParagraph)
+                    } else {
+                        ParagraphPosition((index + 1).coerceAtLeast(0), 0)
+                    }
                 }
                 if (!inParagraph) {
                     index++
                     inParagraph = true
+                    // 段落首行带排版缩进（　　 ），段落文本里没有，不计入偏移
+                    offsetInParagraph = line.txt.trimStart('　').length
+                } else {
+                    offsetInParagraph += line.txt.length
                 }
                 if (line.isParaEnd) {
                     inParagraph = false
+                    offsetInParagraph = 0
                 }
             }
         }
-        return index.coerceAtLeast(0)
+        return ParagraphPosition(index.coerceAtLeast(0), 0)
     }
 
     /**
@@ -100,8 +130,14 @@ object TtsChapterSplitter {
      * 段落跨页时行会分布到多页，返回的是目标行真正所在的页。
      *
      * @param progress 段内已朗读进度 0f~1f，由服务端估算回传
+     * @param startOffsetChars 朗读起点在本段文本里的字符偏移（跨页段落从本页第一行开始朗读时大于 0）
      */
-    fun locateLineInParagraph(pages: List<TxtPage>?, paragraphIndex: Int, progress: Float): LocatedLine? {
+    fun locateLineInParagraph(
+        pages: List<TxtPage>?,
+        paragraphIndex: Int,
+        progress: Float,
+        startOffsetChars: Int = 0,
+    ): LocatedLine? {
         if (pages.isNullOrEmpty() || paragraphIndex < 0) return null
         var index = -1
         var inParagraph = false
@@ -111,7 +147,9 @@ object TtsChapterSplitter {
             for (line in page.lines) {
                 if (!inParagraph) {
                     // 上一段结束：目标段落已收集完
-                    if (collecting) return pickLocatedLine(collected, progress)
+                    if (collecting) {
+                        return pickLocatedLine(skipLinesBeforeOffset(collected, startOffsetChars), progress)
+                    }
                     index++
                     collecting = index == paragraphIndex
                     inParagraph = true
@@ -124,7 +162,28 @@ object TtsChapterSplitter {
                 }
             }
         }
-        return if (collecting) pickLocatedLine(collected, progress) else null
+        return if (collecting) {
+            pickLocatedLine(skipLinesBeforeOffset(collected, startOffsetChars), progress)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * 丢掉段落里位于朗读起点之前的行：跨页段落从本页第一行开始朗读时，
+     * 高亮要落在起点那一行，而不是段落开头（否则视图会翻回上一页）。
+     */
+    private fun skipLinesBeforeOffset(lines: List<LocatedLine>, startOffsetChars: Int): List<LocatedLine> {
+        if (startOffsetChars <= 0 || lines.size <= 1) return lines
+        var consumed = 0
+        for (i in lines.indices) {
+            // 段落首行带排版缩进，段落文本里没有，不计入偏移
+            val text = lines[i].line.txt
+            val length = if (i == 0) text.trimStart('　').length else text.length
+            if (consumed + length > startOffsetChars) return lines.subList(i, lines.size)
+            consumed += length
+        }
+        return lines.takeLast(1)
     }
 
     /**
