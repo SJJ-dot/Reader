@@ -34,6 +34,12 @@ public class TxtChapter {
     public String title;
 
     /**
+     * 上一次加载章节内容是否失败。
+     * 失败时 content 里存的是错误提示（非空），阅读页据此判断该章要不要重新请求加载
+     */
+    public boolean contentError;
+
+    /**
      * 章节内容
      */
     public CharSequence getContent() {

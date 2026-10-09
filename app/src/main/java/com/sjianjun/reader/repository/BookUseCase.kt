@@ -14,8 +14,11 @@ import com.sjianjun.reader.utils.name
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 object BookUseCase {
@@ -255,6 +258,21 @@ object BookUseCase {
 
 
     /**
+     * 章节正文加载锁：按「书 + 章节链接」维度串行化。
+     *
+     * 阅读页和朗读服务（预加载/切章）可能同时要同一章，加锁后后来者直接复用刚加载好的缓存，
+     * 不会重复联网、也不会并发抓同一章。
+     */
+    private val chapterContentLocks = ConcurrentHashMap<String, Mutex>()
+
+    private fun chapterContentLock(chapter: Chapter): Mutex {
+        val key = "${chapter.bookId}|${chapter.url}"
+        chapterContentLocks[key]?.let { return it }
+        val created = Mutex()
+        return chapterContentLocks.putIfAbsent(key, created) ?: created
+    }
+
+    /**
      * -1 local ,0 normal,1 force
      */
     suspend fun getChapterContent(chapter: Chapter, force: Int = 0): Chapter = withIo {
@@ -270,51 +288,70 @@ object BookUseCase {
             return@withIo chapter
         }
 
-        val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo chapter
-
-        val content = js.getChapterContent(chapter.url)
-        content.bookId = chapter.bookId
-        content.chapterUrl = chapter.url
-        if (!content.contentError) {
-            if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
-                content.contentError = true
+        chapterContentLock(chapter).withLock {
+            // 等锁期间另一边可能已经加载好了：查一次库直接复用，避免重复抓取
+            if (force != 1) {
+                val cached = contentDao.getChapterContent(chapter.bookId, chapter.url).first().firstOrNull()
+                if (cached != null && !cached.contentError) {
+                    chapter.content = mutableListOf(cached)
+                    chapter.isLoaded = true
+                    Log.i("复用已加载的章节正文：${chapter.title}")
+                    return@withIo chapter
+                }
             }
+
+            val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo chapter
+
+            val content = js.getChapterContent(chapter.url)
+            content.bookId = chapter.bookId
+            content.chapterUrl = chapter.url
+            if (!content.contentError) {
+                if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
+                    content.contentError = true
+                }
+            }
+            chapter.content = mutableListOf(content)
+            chapter.isLoaded = true
+            chapterDao.insert(chapter)
+            contentDao.insert(content)
+
+            return@withIo chapter
         }
-        chapter.content = mutableListOf(content)
-        chapter.isLoaded = true
-        chapterDao.insert(chapter)
-        contentDao.insert(content)
-
-
-        return@withIo chapter
     }
 
     suspend fun getChapterContentPage(
         chapter: Chapter
     ): Boolean = withIo {
-        if (chapter.content?.lastOrNull()?.nextPageUrl.isNullOrBlank()) {
-            return@withIo false
-        }
+        chapterContentLock(chapter).withLock {
+            // 锁内以数据库为准刷新分页：另一边可能刚加载了下一页，避免重复抓同一页
+            val pages = contentDao.getChapterContent(chapter.bookId, chapter.url).first()
+            if (pages.isNotEmpty()) {
+                chapter.content = pages.toMutableList()
+            }
 
-        val lastContent = chapter.content?.lastOrNull()
-        val nextUrl = lastContent?.nextPageUrl ?: return@withIo false
-        if (nextUrl.toHttpUrlOrNull() == null) {
-            Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
-            return@withIo false
+            val lastContent = chapter.content?.lastOrNull() ?: return@withIo false
+            val nextUrl = lastContent.nextPageUrl
+            if (nextUrl.isNullOrBlank()) {
+                return@withIo false
+            }
+            if (nextUrl.toHttpUrlOrNull() == null) {
+                Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
+                return@withIo false
+            }
+            Log.i("${chapter.title} 加载下一页 url：$nextUrl")
+            val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
+            val content = js.getChapterContent(nextUrl)
+            content.bookId = chapter.bookId
+            content.chapterUrl = chapter.url
+            content.pageIndex = lastContent.pageIndex + 1
+            chapter.content?.add(content)
+            if (content.contentError) {
+                Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
+                return@withIo false
+            }
+            contentDao.insert(content)
+            return@withIo true
         }
-        Log.i("${chapter.title} 加载下一页 url：$nextUrl")
-        val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
-        val content = js.getChapterContent(nextUrl)
-        content.bookId = chapter.bookId
-        content.chapterUrl = chapter.url
-        content.pageIndex = lastContent.pageIndex + 1
-        chapter.content?.add(content)
-        if (content.contentError) {
-            Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
-            return@withIo false
-        }
-        contentDao.insert(content)
-        return@withIo true
     }
 
     /**

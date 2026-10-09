@@ -89,9 +89,6 @@ class TtsPlaybackService : Service() {
         /** 单章最多拉取的分页数，避免异常数据把分页循环卡死 */
         private const val MAX_PAGE_LOAD = 60
 
-        /** 连续多少章内容加载失败就结束朗读，避免在坏数据上反复请求 */
-        private const val MAX_FAILED_CHAPTER = 3
-
         private const val WAKE_LOCK_TIMEOUT_MS = 60 * 60 * 1000L
         private const val TIMER_TICK_MS = 10_000L
 
@@ -113,6 +110,18 @@ class TtsPlaybackService : Service() {
 
         /** 太短的段落里段落间隙占比高，测出来的时长不准，不参与校准 */
         private const val MIN_CALIBRATE_WEIGHT = 20L
+
+        /** 加载失败后的重试间隔（统一 2 秒） */
+        private const val RETRY_DELAY_MS = 2_000L
+
+        /** 预加载下一章失败时的重试次数 */
+        private const val PREFETCH_RETRY_TIMES = 3
+
+        /** 预加载失败后重新触发的冷却时间：失败就一直重试，但不能太频繁 */
+        private const val PREFETCH_RETRY_COOLDOWN_MS = 10_000L
+
+        /** 朗读到章节边界时正文加载失败的重试次数 */
+        private const val CHAPTER_LOAD_RETRY_TIMES = 2
 
         /** 段落开头异常字符检查长度 */
         private const val HEAD_CHECK_LENGTH = 8
@@ -166,6 +175,9 @@ class TtsPlaybackService : Service() {
 
     /** 预加载代际号：取消/清理后旧协程的回写会被丢弃 */
     private var prefetchToken = 0
+
+    /** 上一次触发下一章预加载的时间戳，用于失败后的重试冷却 */
+    private var prefetchTriedAt = 0L
 
     private var pausedByFocus = false
     private var sleepTimerMinutes = 0
@@ -580,110 +592,159 @@ class TtsPlaybackService : Service() {
 
     // ==================== 朗读主流程（小说模式） ====================
 
+    /**
+     * 朗读指定章节的正文。
+     *
+     * 当前章正文加载不出来（重试后仍失败）时直接结束朗读，不跳到下一章（跳章会漏内容）。
+     */
     private suspend fun playChapter(index: Int, startParagraph: Int) {
-        var chapterIndex = index
-        var startPara = startParagraph
-        var failed = 0
-        while (true) {
-            if (chapterIndex >= chapterList.size) {
-                Log.i("$TAG 全书朗读完成")
-                markBookEnd()
-                stopSession()
-                return
-            }
-            val chapter = chapterList.getOrNull(chapterIndex)
-            if (chapter == null) {
-                stopSession()
-                return
-            }
-            // 起始段偏移（跨页段落从当前页第一行开始读）
-            val startOffset = startOffsetAt(chapterIndex, startPara)
-            // 不强制置为播放中：正文加载期间用户可能已经暂停
-            updateState(
-                state.copy(
-                    chapterIndex = chapterIndex,
-                    chapterUrl = chapter.url,
-                    chapterTitle = chapter.title.orEmpty(),
-                    paragraphIndex = startPara,
-                    paragraphCount = 0,
-                    paragraphText = "",
-                    // 加载期间也带偏移，阅读页不会先跳到段落开头再跳回来
-                    paragraphStartOffset = startOffset,
-                    chapterProgressPercent = 0
-                )
-            )
-            val loaded = if (chapterIndex == prefetchedIndex && prefetchedParagraphs.isNotEmpty()) {
-                Log.i("$TAG 使用预加载的章节：${chapter.title}")
-                prefetchedParagraphs.also { clearPrefetch() }
-            } else {
-                loadParagraphs(chapter)
-            }
-            if (loaded.isEmpty()) {
-                failed++
-                Log.e("$TAG 章节内容加载失败（第${chapterIndex + 1}章 ${chapter.title}）")
-                if (failed >= MAX_FAILED_CHAPTER) {
-                    toast("连续多章内容加载失败，已停止朗读")
-                    stopSession()
-                    return
-                }
-                chapterIndex++
-                startPara = 0
-                continue
-            }
-            failed = 0
-            val list = loaded.toMutableList()
-            // 「从当前页第一行开始读」：起始段落裁掉本页之前的部分
-            val appliedOffset = trimParagraphAtOffset(list, startPara, startOffset)
-            prepareParagraphs(list)
-            val start = startPara.coerceIn(0, list.size - 1)
-            updateState(
-                state.copy(
-                    paragraphIndex = start,
-                    paragraphCount = list.size,
-                    paragraphText = list[start],
-                    paragraphStartOffset = appliedOffset
-                )
-            )
-            Log.i("$TAG 朗读第${chapterIndex + 1}章《${chapter.title}》共${list.size}段，从第${start + 1}段开始")
-            // 阅读页不在前台时由服务写阅读进度；在前台时由阅读页自己写，避免互相覆盖
-            saveReadingRecord(chapterIndex)
-            if (state.playing) {
-                acquireWakeLock()
-                acquireAudioFocus()
-                startEngine(start)
-            } else {
-                // 加载期间被暂停：内容已就绪，等用户继续
-                Log.i("$TAG 第${chapterIndex + 1}章内容已就绪，当前处于暂停状态")
-            }
-            // 朗读本章期间预加载下一章，切章时无需等待
-            prefetchNextChapter(chapterIndex + 1)
+        val chapterIndex = index
+        val startPara = startParagraph
+        if (chapterIndex >= chapterList.size) {
+            Log.i("$TAG 全书朗读完成")
+            markBookEnd()
+            stopSession()
             return
         }
+        val chapter = chapterList.getOrNull(chapterIndex)
+        if (chapter == null) {
+            stopSession()
+            return
+        }
+        // 起始段偏移（跨页段落从当前页第一行开始读）
+        val startOffset = startOffsetAt(chapterIndex, startPara)
+        // 不强制置为播放中：正文加载期间用户可能已经暂停
+        updateState(
+            state.copy(
+                chapterIndex = chapterIndex,
+                chapterUrl = chapter.url,
+                chapterTitle = chapter.title.orEmpty(),
+                paragraphIndex = startPara,
+                paragraphCount = 0,
+                paragraphText = "",
+                // 加载期间也带偏移，阅读页不会先跳到段落开头再跳回来
+                paragraphStartOffset = startOffset,
+                chapterProgressPercent = 0
+            )
+        )
+        val loaded = if (chapterIndex == prefetchedIndex && prefetchedParagraphs.isNotEmpty()) {
+            Log.i("$TAG 使用预加载的章节：${chapter.title}")
+            prefetchedParagraphs.also { clearPrefetch() }
+        } else {
+            loadParagraphsWithRetry(chapter)
+        }
+        if (loaded.isEmpty()) {
+            // 当前章正文没读到：结束朗读，让用户看到提示后自己重载/换源
+            Log.e("$TAG 章节内容加载失败，结束朗读（第${chapterIndex + 1}章 ${chapter.title}）")
+            toast("章节内容加载失败，已停止朗读")
+            stopSession()
+            return
+        }
+        val list = loaded.toMutableList()
+        // 「从当前页第一行开始读」：起始段落裁掉本页之前的部分
+        val appliedOffset = trimParagraphAtOffset(list, startPara, startOffset)
+        prepareParagraphs(list)
+        val start = startPara.coerceIn(0, list.size - 1)
+        updateState(
+            state.copy(
+                paragraphIndex = start,
+                paragraphCount = list.size,
+                paragraphText = list[start],
+                paragraphStartOffset = appliedOffset
+            )
+        )
+        Log.i("$TAG 朗读第${chapterIndex + 1}章《${chapter.title}》共${list.size}段，从第${start + 1}段开始")
+        // 阅读页不在前台时由服务写阅读进度；在前台时由阅读页自己写，避免互相覆盖
+        saveReadingRecord(chapterIndex)
+        if (state.playing) {
+            acquireWakeLock()
+            acquireAudioFocus()
+            startEngine(start)
+        } else {
+            // 加载期间被暂停：内容已就绪，等用户继续
+            Log.i("$TAG 第${chapterIndex + 1}章内容已就绪，当前处于暂停状态")
+        }
+        // 朗读本章期间预加载下一章，切章时无需等待
+        prefetchNextChapter(chapterIndex + 1)
     }
 
-    /** 预加载下一章正文（只入库，不朗读） */
+    /**
+     * 预加载下一章正文（入库 + 分段缓存，不朗读）。
+     *
+     * 后台朗读时阅读页不在前台，章节内容只能由服务自己拉，所以这里加载失败要重试，
+     * 不能让下一章直到切章那一刻才开始联网（会卡住朗读）。
+     */
     private fun prefetchNextChapter(nextIndex: Int) {
         prefetchJob?.cancel()
         prefetchJob = null
         clearPrefetch()
         if (state.mode != TtsPlaybackMode.BOOK) return
         val chapter = chapterList.getOrNull(nextIndex) ?: return
+        prefetchTriedAt = System.currentTimeMillis()
         val token = prefetchToken
         prefetchJob = scope.launch {
             Log.i("$TAG 预加载下一章《${chapter.title}》")
-            val list = loadParagraphs(chapter)
-            // 协程取消可能发生在最后一个挂起点之后，用 token 再确认一次，避免写入错章缓存
-            if (list.isEmpty() || token != prefetchToken || state.mode != TtsPlaybackMode.BOOK) return@launch
-            prefetchedIndex = nextIndex
-            prefetchedParagraphs = list
-            Log.i("$TAG 下一章预加载完成《${chapter.title}》共${list.size}段")
+            var attempt = 0
+            while (true) {
+                val list = loadParagraphs(chapter)
+                // 协程取消可能发生在最后一个挂起点之后，用 token 再确认一次，避免写入错章缓存
+                if (token != prefetchToken || state.mode != TtsPlaybackMode.BOOK) return@launch
+                if (list.isNotEmpty()) {
+                    prefetchedIndex = nextIndex
+                    prefetchedParagraphs = list
+                    Log.i("$TAG 下一章预加载完成《${chapter.title}》共${list.size}段")
+                    return@launch
+                }
+                attempt++
+                if (attempt > PREFETCH_RETRY_TIMES) {
+                    Log.e("$TAG 下一章预加载失败（已重试${attempt - 1}次）：${chapter.title}")
+                    return@launch
+                }
+                Log.i("$TAG 下一章预加载失败，第${attempt}次重试：${chapter.title}")
+                delay(RETRY_DELAY_MS)
+            }
         }
+    }
+
+    /**
+     * 兜底：下一章还没预加载成功时（首次失败、会话中途才开始朗读等）隔一段时间再触发一次。
+     *
+     * 后台朗读时阅读页不在前台，章节内容只能由服务自己拉，
+     * 首轮预加载失败也不能等到章末才发现下一章没内容。
+     */
+    private fun ensureNextChapterPrefetched() {
+        if (state.mode != TtsPlaybackMode.BOOK) return
+        val nextIndex = state.chapterIndex + 1
+        if (prefetchedIndex == nextIndex && prefetchedParagraphs.isNotEmpty()) return
+        if (prefetchJob?.isActive == true) return
+        // 正在加载章节内容（切章/启动引擎）：等它结束再预加载，避免同一章重复加载
+        if (sessionJob?.isActive == true) return
+        if (System.currentTimeMillis() - prefetchTriedAt < PREFETCH_RETRY_COOLDOWN_MS) return
+        prefetchNextChapter(nextIndex)
+    }
+
+    /**
+     * 加载章节正文并分段，失败重试几次。
+     *
+     * 阅读页打开时章节内容由阅读页请求，服务后台朗读时没人帮忙请求，偶发失败不能直接跳过本章。
+     */
+    private suspend fun loadParagraphsWithRetry(chapter: Chapter): List<String> {
+        var list = loadParagraphs(chapter)
+        var attempt = 0
+        while (list.isEmpty() && attempt < CHAPTER_LOAD_RETRY_TIMES) {
+            attempt++
+            Log.i("$TAG 章节加载失败，第${attempt}次重试：${chapter.title}")
+            delay(RETRY_DELAY_MS)
+            list = loadParagraphs(chapter)
+        }
+        return list
     }
 
     private fun clearPrefetch() {
         prefetchToken++
         prefetchedIndex = -1
         prefetchedParagraphs = emptyList()
+        prefetchTriedAt = 0L
     }
 
     /**
@@ -915,6 +976,8 @@ class TtsPlaybackService : Service() {
                 if (!state.playing) continue
                 // 兜底轮询：引擎能回传真实进度时主要由回调即时上报，这里负责没有回调的情况
                 reportProgress(currentParagraphRatio())
+                // 下一章还没预加载成功：隔一段时间再试，后台朗读不依赖阅读页
+                ensureNextChapterPrefetched()
             }
         }
     }

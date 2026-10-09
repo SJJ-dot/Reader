@@ -73,6 +73,10 @@ private const val REQUEST_CODE_NOTIFICATION = 1001
 /** 等待朗读目标章节排版完成的最长重试次数（100ms * 30 = 3 秒） */
 private const val MAX_TTS_CHAPTER_WAIT = 30
 
+/** 章节内容加载失败时的重试次数与间隔（含首次尝试共 1 + CHAPTER_LOAD_RETRY_TIMES 次） */
+private const val CHAPTER_LOAD_RETRY_TIMES = 3
+private const val CHAPTER_LOAD_RETRY_DELAY_MS = 1_000L
+
 class BookReaderActivity : BaseActivity() {
     var binding: ActivityBookReaderBinding? = null
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
@@ -84,6 +88,12 @@ class BookReaderActivity : BaseActivity() {
     private val viewModel by viewModels<BookReaderViewModel>()
 
     private var chapterCacheJob: Job? = null
+
+    /** 章节内容加载任务：同一时刻只保留一个，避免自己和自己并发重复加载 */
+    private var chapterRequestJob: Job? = null
+
+    /** 阅读页是否可见：不可见时不再预加载后面的章节（此时由朗读服务自己预加载） */
+    private var pageVisible = true
 
     /** 朗读跟随任务：切章 + 定位高亮，新的进度到来时取消旧的 */
     private var ttsFollowJob: Job? = null
@@ -127,16 +137,21 @@ class BookReaderActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         applyReaderBrightness()
+        pageVisible = true
         // 阅读页在前台时阅读进度由阅读页维护，朗读服务不写
         TtsPlaybackController.setReaderVisible(true)
     }
 
     override fun onPause() {
         super.onPause()
+        pageVisible = false
         TtsPlaybackController.setReaderVisible(false)
     }
 
     override fun onDestroy() {
+        // 阅读页关闭：取消还在跑的章节预加载（朗读服务会按自己的需要预加载）
+        chapterRequestJob?.cancel()
+        chapterRequestJob = null
         super.onDestroy()
         // 朗读由前台服务持有，退出阅读页不再停止朗读，只解除跟随
         mPageLoader?.setTtsSpeakLine(null)
@@ -526,13 +541,24 @@ class BookReaderActivity : BaseActivity() {
             override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                 Log.i("加载章节内容 $requestChapters")
 
-                launch("requestChapters") {
+                // 同一时刻只跑一个章节加载任务：新的请求代替旧的，避免并发加载同一章
+                chapterRequestJob?.cancel()
+                chapterRequestJob = launch("requestChapters") {
                     requestChapters.forEach { requestChapter ->
+                        // 阅读页不在前台时只保证当前章有内容，后面的章节交给朗读服务预加载
+                        if (!pageVisible && requestChapter.chapterIndex != loader.chapterPos) {
+                            Log.i("阅读页不在前台，跳过预加载：${requestChapter.title}")
+                            return@forEach
+                        }
                         val chapter = viewModel.book.value?.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
-                        viewModel.getChapterContent(chapter)
+                        // 加载失败会重试多次：失败一次就不再请求会让这一章一直没内容
+                        loadChapterContentWithRetry(chapter, requestChapter)
                         requestChapter.content = chapter.content?.joinToString("\n") { it.format() }
-                        if (chapter.content?.firstOrNull()?.contentError == true) {
+                        if (requestChapter.contentError) {
                             requestChapter.title = chapter.title + "(章节内容错误)"
+                        } else {
+                            // 重试成功后要把标题恢复回来
+                            requestChapter.title = chapter.title
                         }
                         if (loader.pageStatus == STATUS_LOADING && loader.chapterPos == requestChapter.chapterIndex) {
                             loader.openChapter()
@@ -548,6 +574,34 @@ class BookReaderActivity : BaseActivity() {
                 viewModel.saveRecord(bean)
             }
         })
+    }
+
+    /**
+     * 加载章节正文，失败就重试（网络/书源偶发失败很常见，失败一次就不再请求会让这一章一直没内容）。
+     *
+     * 重试后仍失败时把 [TxtChapter.contentError] 置起来，阅读页下次解析章节时会再次请求这一章。
+     *
+     * @return 是否加载成功
+     */
+    private suspend fun loadChapterContentWithRetry(chapter: Chapter, txtChapter: TxtChapter): Boolean {
+        var attempt = 0
+        while (true) {
+            viewModel.getChapterContent(chapter)
+            val content = chapter.content
+            val failed = content.isNullOrEmpty() || content.firstOrNull()?.contentError == true
+            if (!failed) {
+                txtChapter.contentError = false
+                return true
+            }
+            attempt++
+            if (attempt > CHAPTER_LOAD_RETRY_TIMES) {
+                Log.e("章节加载失败，已重试${attempt - 1}次：${chapter.title}")
+                txtChapter.contentError = true
+                return false
+            }
+            Log.i("章节加载失败，第${attempt}次重试：${chapter.title}")
+            delay(CHAPTER_LOAD_RETRY_DELAY_MS)
+        }
     }
 
     /**

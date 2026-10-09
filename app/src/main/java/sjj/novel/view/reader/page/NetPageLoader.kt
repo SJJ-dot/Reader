@@ -35,7 +35,8 @@ class NetPageLoader() : PageLoader() {
     override fun parseCurChapter(): Boolean {
         val isRight = super.parseCurChapter()
 
-        requestChapters(chapterPos, chapterPos + 2, chapterPos)
+        // 顺带预加载后面 NEXT_CHAPTER_PREFETCH 章
+        requestChapters(chapterPos, chapterPos + NEXT_CHAPTER_PREFETCH, chapterPos)
         return isRight
     }
 
@@ -43,7 +44,7 @@ class NetPageLoader() : PageLoader() {
     override fun parseNextChapter(): Boolean {
         val isRight = super.parseNextChapter()
 
-        requestChapters(chapterPos, chapterPos + 2, chapterPos)
+        requestChapters(chapterPos, chapterPos + NEXT_CHAPTER_PREFETCH, chapterPos)
 
         return isRight
     }
@@ -62,10 +63,11 @@ class NetPageLoader() : PageLoader() {
 
         val chapters = mutableListOf<TxtChapter>()
 
-        // 过滤，哪些数据已经加载了
+        // 过滤，哪些数据已经加载了；
+        // 上一次加载失败的章节内容其实是错误提示（非空），这里要当成没加载，允许反复请求
         for (i in start..end) {
             val txtChapter = chapterCategory[i]
-            if (!hasChapterData(txtChapter)) {
+            if (!hasChapterData(txtChapter) || txtChapter.contentError) {
                 chapters.add(txtChapter)
             }
         }
@@ -82,6 +84,9 @@ class NetPageLoader() : PageLoader() {
 
     companion object {
         private const val TAG = "PageFactory"
+
+        /** 预加载当前章之后的章节数（1 表示只预加载下一章） */
+        private const val NEXT_CHAPTER_PREFETCH = 1
     }
 }
 

@@ -98,7 +98,9 @@ class BookReaderViewModel : ViewModel() {
             delay(100)
         }
 
-        if (chapter.isLoaded && chapter.content != null && force != 1) {
+        // 已加载且内容正常才跳过；上次加载失败的章节允许重新请求（否则失败一次就再也不加载了）
+        val cachedError = chapter.content?.firstOrNull()?.contentError == true
+        if (chapter.isLoaded && chapter.content != null && force != 1 && !cachedError) {
             return@withIo false
         }
 
