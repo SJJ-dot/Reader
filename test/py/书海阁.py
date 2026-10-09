@@ -43,18 +43,34 @@ _PAGE_LIMIT = 100
 # 目录抓取安全阀，避免接口异常时死循环
 _MAX_PAGE = 200
 
+# 上一次成功的请求通道："session"（直连 requests）或 "webview"（WebView 渲染）。
+# 下次请求优先复用该通道，避免重复试错，并利用 WebView 已建立的会话与长连接。
+_last_channel = None
+
 
 def getSiteUrl():
     return "https://book.washai.net"
 
 
 def _request(url, params=None):
-    """requests 优先，失败则回退到 web_get / 人机验证（WebView 渲染，可过 JS 挑战）"""
-    try:
-        return _request_by_session(url, params)
-    except Exception as e:
-        log(f"书海阁 request failed: {e}")
-        return _request_by_webview(url, params)
+    """优先复用上一次成功的通道（利用 WebView 会话与长连接），失败再回退到另一通道"""
+    global _last_channel
+    channels = [("session", _request_by_session), ("webview", _request_by_webview)]
+    if _last_channel:
+        channels.sort(key=lambda item: item[0] != _last_channel)
+
+    last_error = None
+    for name, handler in channels:
+        try:
+            result = handler(url, params)
+            if _last_channel != name:
+                log(f"书海阁请求通道切换为 {name}")
+            _last_channel = name
+            return result
+        except Exception as e:
+            last_error = e
+            log(f"书海阁 {name} 通道请求失败: {e}")
+    raise last_error
 
 
 def _request_by_session(url, params=None):
