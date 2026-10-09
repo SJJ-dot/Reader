@@ -53,7 +53,11 @@ class BookReaderViewModel : ViewModel() {
             chapter.content?.firstOrNull()?.contentError = true
             txtChapter?.title = chapter.title + "(章节内容错误)"
         }
-        chapter.content?.firstOrNull()?.let { chapterContentDao.insert(it) }
+        chapter.content?.firstOrNull()?.let {
+            //内容以章节链接为标识，写入前补齐，避免存成无法定位的脏数据
+            it.chapterUrl = chapter.url
+            chapterContentDao.insert(it)
+        }
         contentError.postValue(true)
     }
 

@@ -64,7 +64,7 @@ class BookSourceListViewModel() : ViewModel() {
         book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
         if (book.readChapter != null) {
             if (book.readChapter?.isLoaded == true) {
-                val chapterContent = chapterContentDao.getChapterContent(book.readChapter!!.bookId, book.readChapter!!.index)
+                val chapterContent = chapterContentDao.getChapterContent(book.readChapter!!.bookId, book.readChapter!!.url)
                 book.readChapter!!.content = chapterContent.first().toMutableList()
             }
 

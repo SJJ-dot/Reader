@@ -37,7 +37,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class],
-    version = 32,
+    version = 33,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -207,6 +207,33 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 订阅链接由 MMKV 迁移到数据库，方便随数据库一起导出、导入、恢复
                     db.execSQL("CREATE TABLE IF NOT EXISTS `SourceUrl` (`url` TEXT NOT NULL, `group` TEXT NOT NULL, `autoUpdate` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, PRIMARY KEY(`url`))")
+                }
+            })
+            .addMigrations(object : Migration(32, 33) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 章节内容改为以章节链接(chapterUrl)为唯一标识。
+                    // 原来内容按章节索引(chapterIndex)存储，目录更新补齐中间缺失的章节时章节索引会被重新分配，
+                    // 已缓存的内容就和章节错位了。改为按章节链接存储后，内容始终跟随章节本身。
+                    // 旧数据按「bookId + 章节索引」关联章节表回填章节链接；
+                    // 关联不到章节（索引空洞、章节已删除）或章节链接为空的内容无法定位，直接丢弃，宁可重新下载也不能错位。
+                    db.execSQL(
+                        "CREATE TABLE `ChapterContent_new` (`bookId` TEXT NOT NULL," +
+                                " `chapterUrl` TEXT NOT NULL," +
+                                " `contentError` INTEGER NOT NULL," +
+                                " `pageIndex` INTEGER NOT NULL," +
+                                " `content` TEXT," +
+                                " `nextPageUrl` TEXT," +
+                                " PRIMARY KEY(`bookId`, `chapterUrl`, `pageIndex`))"
+                    )
+                    db.execSQL(
+                        "INSERT OR REPLACE INTO ChapterContent_new (bookId, chapterUrl, contentError, pageIndex, content, nextPageUrl) " +
+                                "SELECT cc.bookId, c.url, cc.contentError, cc.pageIndex, cc.content, cc.nextPageUrl " +
+                                "FROM ChapterContent cc " +
+                                "INNER JOIN Chapter c ON c.bookId = cc.bookId AND c.`index` = cc.chapterIndex " +
+                                "WHERE TRIM(c.url) <> ''"
+                    )
+                    db.execSQL("DROP TABLE ChapterContent")
+                    db.execSQL("ALTER TABLE ChapterContent_new RENAME TO ChapterContent")
                 }
             })
             .build()

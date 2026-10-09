@@ -173,7 +173,7 @@ class BookDetailsViewModel : ViewModel() {
                             writer.appendLine(titleLine)
                             writer.appendLine()
 
-                            val contents = chapterContentDao.getChapterContent(book.id, chapter.index).first().sortedBy { it.pageIndex }
+                            val contents = chapterContentDao.getChapterContent(book.id, chapter.url).first().sortedBy { it.pageIndex }
                             if (contents.isEmpty()) {
                                 // if no cached content, leave blank or skip
                                 writer.appendLine("[无内容]")

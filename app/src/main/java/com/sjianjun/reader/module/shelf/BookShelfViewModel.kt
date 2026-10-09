@@ -84,7 +84,7 @@ class BookShelfViewModel : ViewModel() {
                         book.unreadChapterCount += 1
                     }
                     if (readChapter?.isLoaded == true) {
-                        chapterContentDao.getChapterContent(readChapter.bookId, readChapter.index).mapLatest {
+                        chapterContentDao.getChapterContent(readChapter.bookId, readChapter.url).mapLatest {
                             readChapter.content = it.toMutableList()
                             book
                         }

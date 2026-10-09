@@ -215,7 +215,7 @@ class FileImportActivity : BaseActivity() {
         contentDao.insert(
             ChapterContent(
                 chapter.bookId,
-                chapter.index,
+                chapter.url,
                 if (chapterContent.isNullOrBlank()) chapter.title!! else chapterContent
             )
         )

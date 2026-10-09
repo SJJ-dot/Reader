@@ -85,6 +85,15 @@ object BookUseCase {
             Log.i("清理脏数据 chapter $chapter")
             val content = contentDao.cleanChapterContent()
             Log.i("清理脏数据 content $content")
+            //章节链接为空的内容无法定位到章节
+            val blankUrlContent = contentDao.cleanBlankUrlChapterContent()
+            Log.i("清理脏数据 无章节链接的内容 $blankUrlContent")
+            //章节被删除、章节链接变更后遗留的内容，留着会占用空间还可能被后续章节命中
+            val orphanContent = contentDao.cleanOrphanChapterContent()
+            Log.i("清理脏数据 无对应章节的内容 $orphanContent")
+            //内容已被清理的章节要同步去掉已加载标记，避免读取到空内容
+            val loadedChapter = chapterDao.cleanChapterLoadedState()
+            Log.i("清理脏数据 无内容的已加载章节 $loadedChapter")
         }
     }
 
@@ -208,14 +217,14 @@ object BookUseCase {
                 val chapterLikeName = readingChapter?.let {
                     chapterDao.getChapterLikeName(book.id, readingChapter.name()).minByOrNull { abs(readingChapter.index - it.index) }
                 }
-                val content = contentDao.getChapterContent(book.id, chapterLikeName?.index ?: -1).first().firstOrNull()
+                val content = contentDao.getChapterContent(book.id, chapterLikeName?.url ?: "").first().firstOrNull()
                 if (content?.contentError == true) {
-                    val chapter = fullChapterList.getOrNull(content.chapterIndex)
+                    val chapter = fullChapterList.firstOrNull { it.url == content.chapterUrl }
                     if (chapter != null) {
                         chapter.content = mutableListOf(content)
                         val content = script.getChapterContent(chapter.url)
                         content.bookId = chapter.bookId
-                        content.chapterIndex = chapter.index
+                        content.chapterUrl = chapter.url
                         if (!content.contentError) {
                             if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
                                 content.contentError = true
@@ -250,7 +259,7 @@ object BookUseCase {
      */
     suspend fun getChapterContent(chapter: Chapter, force: Int = 0): Chapter = withIo {
         if (chapter.isLoaded) {
-            val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.index).first()
+            val chapterContent = contentDao.getChapterContent(chapter.bookId, chapter.url).first()
             chapter.content = chapterContent.toMutableList()
             if (force != 1 && chapter.content?.firstOrNull()?.contentError == false) {
                 return@withIo chapter
@@ -265,7 +274,7 @@ object BookUseCase {
 
         val content = js.getChapterContent(chapter.url)
         content.bookId = chapter.bookId
-        content.chapterIndex = chapter.index
+        content.chapterUrl = chapter.url
         if (!content.contentError) {
             if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
                 content.contentError = true
@@ -297,7 +306,7 @@ object BookUseCase {
         val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
         val content = js.getChapterContent(nextUrl)
         content.bookId = chapter.bookId
-        content.chapterIndex = chapter.index
+        content.chapterUrl = chapter.url
         content.pageIndex = lastContent.pageIndex + 1
         chapter.content?.add(content)
         if (content.contentError) {

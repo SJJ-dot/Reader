@@ -43,10 +43,17 @@ interface ChapterDao {
     fun deleteChapterByBookTitleAndAuthor(bookTitle: String): Int
 
     /**
-     * 存在章节内容的标记为已加载
+     * 存在章节内容的标记为已加载。
+     * 按章节链接匹配，章节索引重排后也能正确对应；链接为空的章节无法定位，不做标记
      */
-    @Query("update Chapter set isLoaded=1 where bookId=:bookId and (bookId+`index`) in (select (bookId+chapterIndex) from ChapterContent where bookId=:bookId)")
+    @Query("update Chapter set isLoaded=1 where bookId=:bookId and trim(url) <> '' and url in (select chapterUrl from ChapterContent where bookId=:bookId)")
     fun markChaptersAsLoadedByBookId(bookId: String)
+
+    /**
+     * 清除已加载但没有内容的章节标记（内容被清理后遗留的脏数据）
+     */
+    @Query("update Chapter set isLoaded=0 where isLoaded=1 and not exists (select 1 from ChapterContent where ChapterContent.bookId=Chapter.bookId and ChapterContent.chapterUrl=Chapter.url)")
+    fun cleanChapterLoadedState(): Int
 
     @Query("delete from Chapter where bookId not in (select id from Book)")
     fun cleanChapter(): Int
