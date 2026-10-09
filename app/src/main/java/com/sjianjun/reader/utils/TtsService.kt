@@ -22,6 +22,7 @@ object TtsService : BaseTts {
 
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
     override var paragraphChangeCallback: ((Int) -> Unit)? = null
+    override var segmentProgressCallback: ((Float) -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
     override var onParagraphsCompleted: (() -> Unit)? = null
 
@@ -44,6 +45,7 @@ object TtsService : BaseTts {
         created.isSpeaking.observeForever(obs)
         created.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
         created.paragraphChangeCallback = { index -> paragraphChangeCallback?.invoke(index) }
+        created.segmentProgressCallback = { progress -> segmentProgressCallback?.invoke(progress) }
         created.onCompleted = { onCompleted?.invoke() }
         created.onParagraphsCompleted = { onParagraphsCompleted?.invoke() }
         system = created
@@ -58,6 +60,7 @@ object TtsService : BaseTts {
         created.isSpeaking.observeForever(obs)
         created.progressChangeCallback = { line -> progressChangeCallback?.invoke(line) }
         created.paragraphChangeCallback = { index -> paragraphChangeCallback?.invoke(index) }
+        created.segmentProgressCallback = { progress -> segmentProgressCallback?.invoke(progress) }
         created.onCompleted = { onCompleted?.invoke() }
         created.onParagraphsCompleted = { onParagraphsCompleted?.invoke() }
         edge = created

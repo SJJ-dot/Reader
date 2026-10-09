@@ -36,6 +36,8 @@ class TtsUtil() : ViewModel(), BaseTts {
 
     override var paragraphChangeCallback: ((Int) -> Unit)? = null
 
+    override var segmentProgressCallback: ((Float) -> Unit)? = null
+
     override var onCompleted: (() -> Unit)? = null
 
     override var onParagraphsCompleted: (() -> Unit)? = null
@@ -47,6 +49,11 @@ class TtsUtil() : ViewModel(), BaseTts {
 
     private var textToSpeech: TextToSpeech? = null
     override val isSpeaking = MutableLiveData(false)
+
+    /** 当前正在朗读的 utterance 标识与文本，用于把引擎的范围回调折算成段内进度 */
+    private var currentUtteranceId: String? = null
+    private var currentUtteranceText: String = ""
+
     private var speakTime = 0L
     private var estimateJob: Job? = null
     private var baseMsPerWeight: Long = 200L
@@ -182,6 +189,8 @@ class TtsUtil() : ViewModel(), BaseTts {
     override fun stop() {
         textToSpeech?.stop()
         paragraphs.clear()
+        currentUtteranceId = null
+        currentUtteranceText = ""
         // cancel any running estimator
         estimateJob?.cancel()
         estimateJob = null
@@ -306,6 +315,8 @@ class TtsUtil() : ViewModel(), BaseTts {
         object : UtteranceProgressListener() {
             override fun onDone(utteranceId: String?) {
                 speakTime = System.currentTimeMillis() - speakStartTime
+                currentUtteranceId = null
+                currentUtteranceText = ""
                 paragraphs.poll()?.let {
                     notifyProgress(it.last().tag)
                 }
@@ -317,9 +328,23 @@ class TtsUtil() : ViewModel(), BaseTts {
                 toast("speak error")
             }
 
+            /**
+             * 引擎开始朗读一段文本里的某个范围（一般按词回调），
+             * 段落模式下据此回传真实段内进度，比按时间估算准确（不受引擎启动延迟影响）。
+             */
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                if (!paragraphMode) return
+                if (utteranceId != currentUtteranceId) return
+                val length = currentUtteranceText.length
+                if (length <= 0) return
+                segmentProgressCallback?.invoke((start.toFloat() / length).coerceIn(0f, 1f))
+            }
+
             override fun onStart(utteranceId: String?) {
                 paragraphs.peek()?.let {
                     notifyProgress(it.first().tag)
+                    currentUtteranceId = utteranceId
+                    currentUtteranceText = it.joinToString(separator = "") { line -> line.txt }
                 }
                 startEstimateForParagraph()
                 speakStartTime = System.currentTimeMillis()

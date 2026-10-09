@@ -92,11 +92,24 @@ class TtsPlaybackService : Service() {
         private const val WAKE_LOCK_TIMEOUT_MS = 60 * 60 * 1000L
         private const val TIMER_TICK_MS = 10_000L
 
-        /** 进度估算刷新间隔，只有整数百分比变化时才更新状态与通知 */
-        private const val PROGRESS_TICK_MS = 1_000L
+        /** 进度估算刷新间隔（引擎没有真实进度回传时的兜底采样），只有整数百分比变化时才刷新状态 */
+        private const val PROGRESS_TICK_MS = 500L
 
         /** 每单位朗读权重的基准耗时（毫秒），与语音引擎的耗时估算模型一致 */
         private const val BASE_MS_PER_WEIGHT = 200L
+
+        /** 超过这么久没有收到引擎回传的真实段内进度，就认为引擎拿不到真实位置，改用时间模型兜底 */
+        private const val ENGINE_PROGRESS_TIMEOUT_MS = 3_000L
+
+        /** 段内进度上报的最小间隔：太密会频繁重建通知，太疏高亮会落后于语音 */
+        private const val PROGRESS_REPORT_MIN_MS = 250L
+
+        /** 实测「每权重耗时」的合理范围，超出视为异常样本 */
+        private const val MIN_MS_PER_WEIGHT = 60L
+        private const val MAX_MS_PER_WEIGHT = 600L
+
+        /** 太短的段落里段落间隙占比高，测出来的时长不准，不参与校准 */
+        private const val MIN_CALIBRATE_WEIGHT = 20L
 
         /** 段落开头异常字符检查长度 */
         private const val HEAD_CHECK_LENGTH = 8
@@ -104,8 +117,8 @@ class TtsPlaybackService : Service() {
         /** 播放器封面图尺寸：放进媒体元数据/通知的位图会跨进程拷贝，不能太大 */
         private const val COVER_SIZE = 192
 
-        /** 连续多少次检测不到播放控制面板就认为播放器被移除了（配合 1 秒轮询，约 2 秒） */
-        private const val MISSING_NOTIFICATION_LIMIT = 2
+        /** 连续多少次检测不到播放控制面板就认为播放器被移除了（配合进度轮询，约 2 秒） */
+        private const val MISSING_NOTIFICATION_LIMIT = 4
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -159,6 +172,26 @@ class TtsPlaybackService : Service() {
 
     /** 定时已到点，正在等当前章节读完再停 */
     private var stopPendingAfterChapter = false
+
+    /** 引擎回传的真实段内进度 0f~1f；-1f 表示本段还没收到过真实进度（引擎回调在 binder 线程，故加 @Volatile） */
+    @Volatile
+    private var engineSegmentProgress = -1f
+
+    /** 最近一次收到真实段内进度的时间戳 */
+    @Volatile
+    private var engineSegmentProgressAt = 0L
+
+    /** 本段已经上报过的最大进度，保证同一段内进度只前进不回退 */
+    private var paragraphRatioFloor = 0f
+
+    /** 最近一次上报段内进度的时间戳，用于节流 */
+    private var progressReportedAt = 0L
+
+    /** 实测的「每权重耗时」（毫秒），同一语速下优先于固定模型 */
+    private var measuredMsPerWeight = 0L
+
+    /** 上面实测值对应的语速设置，语速一变就作废重新校准 */
+    private var measuredMsPerWeightRate = -1
 
     /**
      * 朗读引擎的代际号：切换章节/暂停会自增，
@@ -647,6 +680,7 @@ class TtsPlaybackService : Service() {
         if (paragraphs.isEmpty()) return
         val start = startParagraph.coerceIn(0, paragraphs.size - 1)
         // 从这里开始朗读：段内进度重新计时（暂停后继续，引擎也是从本段开头读起）
+        resetParagraphProgressTracking()
         updateState(
             state.copy(
                 paragraphIndex = start,
@@ -659,6 +693,9 @@ class TtsPlaybackService : Service() {
         val generation = ++engineGeneration
         TtsService.paragraphChangeCallback = { index ->
             if (generation == engineGeneration) onParagraphChanged(index)
+        }
+        TtsService.segmentProgressCallback = { progress ->
+            if (generation == engineGeneration) onEngineSegmentProgress(progress)
         }
         TtsService.onParagraphsCompleted = {
             if (generation == engineGeneration) onChapterCompleted()
@@ -685,6 +722,7 @@ class TtsPlaybackService : Service() {
         } catch (_: Throwable) {
         }
         TtsService.paragraphChangeCallback = null
+        TtsService.segmentProgressCallback = null
         TtsService.onParagraphsCompleted = null
     }
 
@@ -701,6 +739,15 @@ class TtsPlaybackService : Service() {
         }
         val text = paragraphs.getOrNull(paragraphIndex).orEmpty()
         logSuspiciousParagraphHead(paragraphIndex, text)
+        // 正常顺读时，上一段到本段的耗时就是上一段的真实朗读耗时，用来自校准进度模型；
+        // 跳段（序号不连续）时耗时对不上，不参与校准
+        if (paragraphIndex == state.paragraphIndex + 1 && state.paragraphStartAt > 0L) {
+            calibrateMsPerWeight(
+                paragraphWeights.getOrNull(state.paragraphIndex) ?: 0L,
+                System.currentTimeMillis() - state.paragraphStartAt
+            )
+        }
+        resetParagraphProgressTracking()
         updateState(
             state.copy(
                 paragraphIndex = paragraphIndex,
@@ -759,7 +806,7 @@ class TtsPlaybackService : Service() {
     // ==================== 预估进度 ====================
 
     /**
-     * 按「章节段落权重 + 段落序号 + 段落已读时间」估算本章朗读进度。
+     * 按「章节段落权重 + 段落序号 + 段内进度」估算本章朗读进度。
      * 只回传整数百分比，避免高频刷新。
      */
     private fun startProgressTicker() {
@@ -773,20 +820,8 @@ class TtsPlaybackService : Service() {
                 checkPlayerDismissed()
                 if (!state.active) break
                 if (!state.playing) continue
-                val ratio = state.estimateParagraphRatio()
-                val chapterPercent = estimateProgressPercent(state.paragraphIndex, ratio)
-                // 段内进度按整数百分比节流上报，阅读器据此把高亮推进到具体行
-                val paragraphPercent = (ratio * 100).toInt().coerceIn(0, 100)
-                if (chapterPercent != state.chapterProgressPercent ||
-                    paragraphPercent != (state.paragraphProgress * 100).toInt()
-                ) {
-                    updateState(
-                        state.copy(
-                            chapterProgressPercent = chapterPercent,
-                            paragraphProgress = paragraphPercent / 100f
-                        )
-                    )
-                }
+                // 兜底轮询：引擎能回传真实进度时主要由回调即时上报，这里负责没有回调的情况
+                reportProgress(currentParagraphRatio())
             }
         }
     }
@@ -825,6 +860,81 @@ class TtsPlaybackService : Service() {
         }
     }
 
+    /** 换段/重新开始朗读时重置段内进度跟踪 */
+    private fun resetParagraphProgressTracking() {
+        engineSegmentProgress = -1f
+        engineSegmentProgressAt = 0L
+        paragraphRatioFloor = 0f
+    }
+
+    /**
+     * 引擎回传的真实段内进度。
+     * 系统 TTS 按「已朗读到的字符位置」回调，Edge 按「音频播放位置 / 音频总时长」回调。
+     */
+    private fun onEngineSegmentProgress(progress: Float) {
+        if (!state.active || !state.playing) return
+        val value = progress.coerceIn(0f, 1f)
+        // 引擎按词/按帧回调，偶有乱序，同段内只接受前进的值；但仍刷新时间戳，
+        // 因为引擎卡住（缓冲中）时进度本来就该停住，不该退回时间模型继续跑
+        if (engineSegmentProgress < 0f || value >= engineSegmentProgress) {
+            engineSegmentProgress = value
+        }
+        engineSegmentProgressAt = System.currentTimeMillis()
+        // 引擎回调在 binder 线程，状态刷新切回主线程；
+        // 这里立刻上报而不是等下一秒的估算轮询，否则高亮会明显落后于语音
+        val now = engineSegmentProgressAt
+        if (now - progressReportedAt < PROGRESS_REPORT_MIN_MS) return
+        progressReportedAt = now
+        scope.launch {
+            if (state.active && state.playing) reportProgress(currentParagraphRatio())
+        }
+    }
+
+    /**
+     * 当前段内进度 0f~1f。
+     *
+     * 优先用引擎回传的真实朗读位置：比按时间估算准得多（不受引擎启动延迟、合成/缓冲卡顿影响）。
+     * 引擎长时间没有回传真实位置（不支持范围回调、时长未知等）时，退回「段落开始时间 + 预估时长」的时间模型。
+     */
+    private fun currentParagraphRatio(): Float {
+        val now = System.currentTimeMillis()
+        val engineFresh = engineSegmentProgress >= 0f &&
+            now - engineSegmentProgressAt <= ENGINE_PROGRESS_TIMEOUT_MS
+        val ratio = if (engineFresh) {
+            engineSegmentProgress
+        } else {
+            // 退回时间模型时不能低于已上报过的真实进度，否则高亮会往回跳
+            maxOf(state.estimateParagraphRatio(), engineSegmentProgress.coerceAtLeast(0f))
+        }
+        // 同一段内进度只前进不回退（引擎乱序回调、两种模型交接时都可能出现短暂回退）
+        if (ratio > paragraphRatioFloor) {
+            paragraphRatioFloor = ratio
+        }
+        return paragraphRatioFloor
+    }
+
+    /**
+     * 按整数百分比节流上报段内进度与章节进度。
+     *
+     * 段内进度只影响阅读页高亮，变化频繁；章节百分比变化才需要重建通知与播放器进度。
+     */
+    private fun reportProgress(ratio: Float) {
+        val chapterPercent = estimateProgressPercent(state.paragraphIndex, ratio)
+        val paragraphPercent = (ratio * 100).toInt().coerceIn(0, 100)
+        if (chapterPercent == state.chapterProgressPercent &&
+            paragraphPercent == (state.paragraphProgress * 100).toInt()
+        ) {
+            return
+        }
+        updateState(
+            state.copy(
+                chapterProgressPercent = chapterPercent,
+                paragraphProgress = paragraphPercent / 100f
+            ),
+            refreshNotification = chapterPercent != state.chapterProgressPercent
+        )
+    }
+
     private fun estimateProgressPercent(paragraphIndex: Int, ratio: Float): Int {
         if (totalWeight <= 0L) return 0
         var done = 0L
@@ -842,14 +952,43 @@ class TtsPlaybackService : Service() {
         return weight * msPerWeight()
     }
 
-    /** 与语音引擎一致的语速换算，用于把权重折算成朗读时长 */
+    /** 当前语速设置 */
+    private fun currentTtsRate(): Int = globalConfig.readerTtsRate.value ?: 50
+
+    /**
+     * 每单位权重的朗读耗时（毫秒）。
+     *
+     * 同一语速下优先用实测值：固定模型（200ms/字）与实际语速偏差不小，
+     * 用刚读完段落的真实耗时平滑后估算更准；换了语速或还没测到就退回固定模型。
+     */
     private fun msPerWeight(): Long {
-        var rate = globalConfig.readerTtsRate.value ?: 50
-        if (rate > 50) {
-            rate = 50 + (rate - 50) * 3
+        val rate = currentTtsRate()
+        if (measuredMsPerWeight > 0 && measuredMsPerWeightRate == rate) return measuredMsPerWeight
+        var modelRate = rate
+        if (modelRate > 50) {
+            modelRate = 50 + (modelRate - 50) * 3
         }
-        val speed = (rate / 50f).coerceAtLeast(0.2f)
+        val speed = (modelRate / 50f).coerceAtLeast(0.2f)
         return (BASE_MS_PER_WEIGHT / speed).toLong().coerceAtLeast(20L)
+    }
+
+    /**
+     * 用刚读完的段落校准「每权重耗时」。
+     *
+     * @param weight 刚读完段落的朗读权重
+     * @param elapsedMs 该段从开始朗读到读完的耗时（同一语速设置下）
+     */
+    private fun calibrateMsPerWeight(weight: Long, elapsedMs: Long) {
+        if (weight < MIN_CALIBRATE_WEIGHT || elapsedMs <= 0L) return
+        val rate = currentTtsRate()
+        val sample = (elapsedMs / weight).coerceIn(MIN_MS_PER_WEIGHT, MAX_MS_PER_WEIGHT)
+        measuredMsPerWeight = if (measuredMsPerWeightRate == rate && measuredMsPerWeight > 0) {
+            // 平滑一下，别被单段抖动带偏
+            (measuredMsPerWeight * 3 + sample) / 4
+        } else {
+            sample
+        }
+        measuredMsPerWeightRate = rate
     }
 
     /** 段落朗读权重，与阅读页「按行定位」共用同一模型 */
@@ -914,12 +1053,12 @@ class TtsPlaybackService : Service() {
 
     // ==================== 状态与通知 ====================
 
-    private fun updateState(newState: TtsPlaybackState) {
+    private fun updateState(newState: TtsPlaybackState, refreshNotification: Boolean = true) {
         if (state == newState) return
         state = newState
         TtsPlaybackController.dispatchState(newState)
         mediaSession.update(newState, coverArtwork)
-        notifyNotification()
+        if (refreshNotification) notifyNotification()
     }
 
     private fun startForegroundCompat(): Boolean {

@@ -46,7 +46,10 @@ data class TtsPlaybackState(
     val paragraphStartAt: Long = 0L,
     /** 当前段落预估朗读时长（毫秒），用于按时间估算段内进度 */
     val paragraphEstimateMs: Long = 0L,
-    /** 当前段落已朗读进度 0f~1f（服务按时间估算并节流上报，阅读器据此按行高亮） */
+    /**
+     * 当前段落已朗读进度 0f~1f。
+     * 优先用语音引擎回传的真实朗读位置，引擎拿不到时按时间估算；节流上报，阅读器据此按行高亮
+     */
     val paragraphProgress: Float = 0f,
     /** 本章预估朗读进度 0~100（按「章节段落权重 + 段落序号 + 段内进度」估算） */
     val chapterProgressPercent: Int = 0,
@@ -73,7 +76,7 @@ data class TtsPlaybackState(
 
 /**
  * 段落内预估进度 0f~1f：按「段落开始时间 + 段落预估时长」估算。
- * 暂停或还没开始朗读时返回 0f。
+ * 只在引擎拿不到真实朗读位置时作为兜底；暂停时保持最后一次上报的值。
  */
 fun TtsPlaybackState.estimateParagraphRatio(): Float {
     // 暂停/没在朗读时保持最后一次上报的值，不要在暂停期间继续增长

@@ -29,6 +29,17 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - 不使用 audioCache（ByteArray），统一用 StreamingMediaDataSource
  */
 class TtsEdgeManager : BaseTts {
+    companion object {
+        /** 段内进度轮询间隔 */
+        private const val SEGMENT_PROGRESS_TICK_MS = 200L
+
+        /** 合成音频格式为 48kbps 单声道 mp3（CBR），每毫秒 6 字节，可由字节数精确换算时长 */
+        private const val BYTES_PER_MS = 6L
+
+        /** 单段音频时长上限（毫秒），超过说明播放器给出的时长不可信 */
+        private const val MAX_SEGMENT_MS = 10 * 60 * 1000L
+    }
+
     private val keyParagraphMap = HashMap<String, List<TtsSpeakLine>>()
     private var mediaPlayer: MediaPlayer? = null
     private var playQueue = ConcurrentLinkedDeque<StreamingMediaDataSource>()
@@ -44,6 +55,7 @@ class TtsEdgeManager : BaseTts {
     private val edgeFetch = EdgeSpeakFetch()
 
     private var estimateRunnable: Runnable? = null
+    private var segmentProgressRunnable: Runnable? = null
     private var estimateStartTime = 0L
     private var estimateLines: List<TtsSpeakLine>? = null
     private var estimateCumDurations: LongArray? = null
@@ -52,6 +64,7 @@ class TtsEdgeManager : BaseTts {
     override val isSpeaking = MutableLiveData(false)
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
     override var paragraphChangeCallback: ((Int) -> Unit)? = null
+    override var segmentProgressCallback: ((Float) -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
     override var onParagraphsCompleted: (() -> Unit)? = null
 
@@ -87,6 +100,9 @@ class TtsEdgeManager : BaseTts {
         }
 
         val isDone: Boolean get() = synchronized(lock) { done }
+
+        /** 已合成的音频字节数（合成完成时即整段音频大小） */
+        val synthesizedBytes: Long get() = synchronized(lock) { totalSize }
 
         /** 是否有数据可以开始播放 */
         val hasData: Boolean get() = synchronized(lock) { totalSize > 0 }
@@ -125,6 +141,54 @@ class TtsEdgeManager : BaseTts {
         estimateStartTime = 0L
         estimateLines = null
         estimateCumDurations = null
+    }
+
+    private fun cancelSegmentProgress() {
+        try {
+            segmentProgressRunnable?.let { mainHandler.removeCallbacks(it) }
+        } catch (_: Throwable) {
+        }
+        segmentProgressRunnable = null
+    }
+
+    /**
+     * 段落模式：按音频真实播放位置上报段内进度。
+     *
+     * 不用墙钟时间估算的原因：合成/缓冲卡顿时时间照走，估算会明显偏快。
+     * 段长优先用播放器给出的时长，拿不到时按「48kbps CBR 已合成字节数 / 6」换算（音质格式固定，换算精确）。
+     * 两者都拿不到就不上报，交给前台服务用时间模型兜底。
+     */
+    private fun startSegmentProgressPoller(ds: StreamingMediaDataSource) {
+        cancelSegmentProgress()
+        segmentProgressRunnable = object : Runnable {
+            override fun run() {
+                try {
+                    val player = mediaPlayer
+                    if (player != null) {
+                        val position = player.currentPosition
+                        val duration = segmentDurationMs(player, ds)
+                        if (duration > 0) {
+                            segmentProgressCallback?.invoke(
+                                (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+                            )
+                        }
+                    }
+                } catch (_: Throwable) {
+                }
+                mainHandler.postDelayed(this, SEGMENT_PROGRESS_TICK_MS)
+            }
+        }
+        mainHandler.postDelayed(segmentProgressRunnable!!, SEGMENT_PROGRESS_TICK_MS)
+    }
+
+    /** 段音频总时长（毫秒）：合成完成时按字节数精确换算，否则用播放器时长（限一个合理范围） */
+    private fun segmentDurationMs(player: MediaPlayer, ds: StreamingMediaDataSource): Long {
+        if (ds.isDone) {
+            val bytes = ds.synthesizedBytes
+            if (bytes > 0) return bytes / BYTES_PER_MS
+        }
+        val duration = player.duration
+        return if (duration > 0 && duration <= MAX_SEGMENT_MS) duration.toLong() else -1L
     }
 
     private fun startEstimateForLines(lines: List<TtsSpeakLine>, totalDurationMs: Int) {
@@ -275,24 +339,31 @@ class TtsEdgeManager : BaseTts {
                                 } else {
                                     cancelEstimate()
                                 }
+                                // 段落模式按音频播放位置上报段内进度
+                                if (paragraphMode) startSegmentProgressPoller(ds) else cancelSegmentProgress()
                             } catch (_: Throwable) {
                                 cancelEstimate()
+                                cancelSegmentProgress()
                             }
                             isSpeaking.postValue(true)
                             try {
                                 player.start()
                             } catch (_: Throwable) {
-                                cancelEstimate(); if (cont.isActive) cont.resume(Unit) {}
+                                cancelEstimate()
+                                cancelSegmentProgress()
+                                if (cont.isActive) cont.resume(Unit) {}
                             }
                         }
 
                         mp.setOnCompletionListener {
                             cancelEstimate()
+                            cancelSegmentProgress()
                             if (cont.isActive) cont.resume(Unit) {}
                         }
 
                         mp.setOnErrorListener { _, _, _ ->
                             cancelEstimate()
+                            cancelSegmentProgress()
                             if (cont.isActive) cont.resume(Unit) {}
                             true
                         }
@@ -314,6 +385,7 @@ class TtsEdgeManager : BaseTts {
                         } catch (_: Throwable) {
                         }
                         mediaPlayer = null
+                        cancelSegmentProgress()
                         if (cont.isActive) cont.resume(Unit) {}
                     }
                 }
@@ -344,6 +416,7 @@ class TtsEdgeManager : BaseTts {
         cacheJob = null
         playJob = null
         cancelEstimate()
+        cancelSegmentProgress()
         try {
             mediaPlayer?.stop()
         } catch (_: Throwable) {

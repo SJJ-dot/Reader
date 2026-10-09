@@ -28,6 +28,15 @@ interface BaseTts {
     var paragraphChangeCallback: ((Int) -> Unit)?
 
     /**
+     * 段内真实朗读进度回调 0f~1f（只用于段落模式）。
+     *
+     * 语音引擎能拿到真实播放位置时回调：系统 TTS 用「已朗读到的字符位置」，
+     * Edge 用「音频播放位置 / 音频总时长」。
+     * 引擎拿不到（不支持范围回调、时长未知）时不回调，调用方用时间模型兜底估算。
+     */
+    var segmentProgressCallback: ((Float) -> Unit)?
+
+    /**
      * 逐行模式朗读完成
      */
     var onCompleted: (() -> Unit)?
