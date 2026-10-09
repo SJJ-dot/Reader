@@ -26,6 +26,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.ActivityBrowserReadModeBinding
 import com.sjianjun.reader.event.EventBus
@@ -35,8 +36,13 @@ import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.ActivityManger
+import com.sjianjun.reader.utils.ChapterTextPreparer
 import com.sjianjun.reader.utils.DiskCacheUtil
-import com.sjianjun.reader.utils.TtsService
+import com.sjianjun.reader.tts.LocatedLine
+import com.sjianjun.reader.tts.TtsChapterSplitter
+import com.sjianjun.reader.tts.TtsPlaybackController
+import com.sjianjun.reader.tts.TtsPlaybackMode
+import com.sjianjun.reader.tts.TtsPlaybackState
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
@@ -68,6 +74,9 @@ import kotlin.coroutines.resume
 import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
+/** 等待朗读目标页码就绪的最长重试次数（100ms * 30 = 3 秒） */
+private const val MAX_TTS_FOLLOW_WAIT = 30
+
 class BrowserReadModeActivity : BaseActivity() {
 
     private val startUrl by lazy { intent.getStringExtra(URL) ?: "" }
@@ -85,6 +94,12 @@ class BrowserReadModeActivity : BaseActivity() {
     private var extractJob: Job? = null
     private val loadUrlQueue = ArrayDeque<LoadUrlRequest>()
     private var loadUrlQueueJob: Job? = null
+
+    /** 朗读跟随任务：定位段落高亮与翻页，新进度到来时取消旧的 */
+    private var ttsFollowJob: Job? = null
+
+    /** 已跟随的朗读位置（页面:段落序号），位置没变就不重复定位重绘 */
+    private var ttsFollowKey: String = ""
 
     private var updateWebBookJob: Job? = null
 
@@ -771,6 +786,12 @@ class BrowserReadModeActivity : BaseActivity() {
     }
 
     fun showChapter(url: String, pagePos: Int? = null) {
+        // 换了页面后正在朗读的旧页内容不再有效，先结束朗读；同一页面重新渲染时保持朗读
+        val reading = TtsPlaybackController.state.value
+        if (reading != null && reading.active && reading.mode == TtsPlaybackMode.PAGE && reading.pageUrl != url) {
+            Log.i("切换网页，结束当前页朗读")
+            TtsPlaybackController.stop()
+        }
         val data: ExtractResult? = extractCache.get(url)
         recordReadModeHistory(url, data)
         // 切换到不同的页面时，如抽屉打开则自动刷新；否则会在下次打开时根据当前 url 渲染
@@ -857,6 +878,13 @@ class BrowserReadModeActivity : BaseActivity() {
         if (pageChanged && isChapterDrawerOpen()) {
             notifyChapterDialogChanged()
         }
+
+        // 同一页面重新渲染后页码已重置，重新定位朗读高亮
+        val current = TtsPlaybackController.state.value
+        if (current != null && current.active && current.mode == TtsPlaybackMode.PAGE && current.pageUrl == url) {
+            ttsFollowKey = ""
+            onTtsStateChanged(current)
+        }
     }
 
     // ==================== Style / Immersive ====================
@@ -919,54 +947,31 @@ class BrowserReadModeActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        TtsService.stop()
-        TtsService.progressChangeCallback = null
-        TtsService.onCompleted = null
+        // 只结束本页的朗读会话；引擎由朗读服务统一管理，不要在这里直接释放
+        if (TtsPlaybackController.isActiveForPage(ttsPageUrl())) {
+            TtsPlaybackController.stop()
+        }
         extractJob?.cancel()
         loadUrlQueueJob?.cancel()
         loadUrlQueue.clear()
         binding.hiddenWebView.destroy()
     }
 
-    // ==================== TTS ====================
+    // ==================== 朗读（统一使用前台朗读服务） ====================
+
+    /** 当前阅读页链接，作为朗读会话标识 */
+    private fun ttsPageUrl(): String = pageLoader.curChapter?.link.orEmpty()
 
     private fun setupTts() {
-        TtsService.progressChangeCallback = { textLine ->
-            lifecycleScope.launch {
-                val loader = pageLoader
-                if (loader.chapterPos != TtsService.chapterPos) {
-                    loader.skipToChapter(TtsService.chapterPos)
-                }
-                val page = loader.curPageList?.find { page ->
-                    page.lines.find { textLine == it } != null
-                }
-                loader.setTtsSpeakLine(textLine)
-                if (page != null && page.position != loader.pagePos) {
-                    loader.skipToPage(page.position)
-                }
-            }
-        }
-        TtsService.onCompleted = {
-            pageLoader.setTtsSpeakLine(null)
-            // 浏览器阅读模式只有一章，朗读完成后自动跳转下一章
-            val url = pageLoader.curChapterData?.nextUrl
-            if (!url.isNullOrBlank()) {
-                Log.i("TTS 章节切换，继续朗读")
-                showChapter(url)
-                // 页面加载完成后自动开始朗读
-                extractJob?.invokeOnCompletion {
-                    if (TtsService.isSpeaking.value != true && pageLoader.curPageList?.isNotEmpty() == true) {
-                        EventBus.post(EventKey.CHAPTER_SPEAK)
-                    }
-                }
-            } else {
-                Log.i("TTS 没有下一章，朗读结束")
-            }
+        // 朗读由前台服务负责，网页只作为观察者跟随段落进度高亮与翻页
+        TtsPlaybackController.state.observe(this) { state ->
+            onTtsStateChanged(state)
         }
         observe<String>(EventKey.CHAPTER_SPEAK) {
             lifecycleScope.launch {
-                if (TtsService.isSpeaking.value == true) {
-                    TtsService.stop()
+                val url = ttsPageUrl()
+                if (url.isNotBlank() && TtsPlaybackController.isActiveForPage(url)) {
+                    TtsPlaybackController.stop()
                     pageLoader.setTtsSpeakLine(null)
                     Log.i("停止朗读")
                     return@launch
@@ -976,11 +981,82 @@ class BrowserReadModeActivity : BaseActivity() {
                     return@launch
                 }
                 if (pageLoader.curPageList.isNullOrEmpty()) {
-                    toast("章节内容为空")
+                    toast("页面内容为空")
                     return@launch
                 }
-                Log.i("开始朗读 chapterPos:${pageLoader.chapterPos} pageSize:${pageLoader.curPageList?.size}")
-                TtsService.start(pageLoader.chapterPos, pageLoader.curPageList, pageLoader.pagePos)
+                startTtsForCurrentPage()
+            }
+        }
+    }
+
+    /**
+     * 朗读当前页面正文：只朗读当前页，读完停止，不自动跳上一页/下一页
+     */
+    private fun startTtsForCurrentPage() {
+        val txtChapter = pageLoader.curChapter
+        val url = txtChapter?.link.orEmpty()
+        val rawText = txtChapter?.content?.toString().orEmpty()
+        if (url.isBlank() || rawText.isBlank()) {
+            toast("页面内容为空")
+            return
+        }
+        // 与网页阅读页渲染保持一致：全角转换 + 简繁转换 + 净化规则（阅读模式启用位）
+        val rules = cachedReplacementRules
+        val book = pageLoader.mCollBook
+        val ruleChapter = Chapter().apply {
+            this.url = url
+            this.bookId = txtChapter?.bookId.orEmpty()
+            this.title = txtChapter?.title.orEmpty()
+            this.index = txtChapter?.chapterIndex ?: 0
+        }
+        val jianFanMode = globalConfig.readerJianFanMode.value ?: ChapterTextPreparer.JIAN_FAN_OFF
+        val fullWidthConvert = globalConfig.readerFullWidthConvert.value == true
+        val title = ChapterTextPreparer.title(txtChapter?.title, rules, book, ruleChapter, jianFanMode, fullWidthConvert)
+        val text = ChapterTextPreparer.content(rawText, rules, book, ruleChapter, jianFanMode, fullWidthConvert)
+        val startParagraph = TtsChapterSplitter.paragraphIndexAtPage(pageLoader.curPageList, pageLoader.pagePos)
+        Log.i("开始朗读网页 url=$url 起始段落:${startParagraph + 1} 字数:${text.length}")
+        TtsPlaybackController.startPage(url, title, text, startParagraph)
+    }
+
+    /** 跟随朗读进度：高亮当前段落并在需要时翻页 */
+    private fun onTtsStateChanged(state: TtsPlaybackState) {
+        val loader = pageLoader
+        val following = state.active && state.mode == TtsPlaybackMode.PAGE && state.pageUrl == ttsPageUrl()
+        if (!following) {
+            ttsFollowJob?.cancel()
+            // 只在高亮还亮着时清一次，避免进度刷新时反复重绘
+            if (ttsFollowKey.isNotEmpty()) {
+                ttsFollowKey = ""
+                loader.setTtsSpeakLine(null)
+            }
+            return
+        }
+        ttsFollowJob?.cancel()
+        ttsFollowJob = lifecycleScope.launch {
+            // 页面重新渲染时页码还没就绪，稍等再定位
+            var wait = 0
+            while (wait++ < MAX_TTS_FOLLOW_WAIT && loader.curPageList.isNullOrEmpty()) {
+                delay(100)
+            }
+            // 按「段落序号 + 段内进度」定位到具体行，实现按行高亮
+            val located = TtsChapterSplitter.locateLineInParagraph(
+                loader.curPageList,
+                state.paragraphIndex,
+                state.paragraphProgress
+            ) ?: TtsChapterSplitter.locateByParagraphText(loader.curPageList, state.paragraphText)
+                ?.let { LocatedLine(it.first, it.second, 0) }
+            if (located == null) {
+                // 段落序号对不上（正文被净化规则改写过等），放弃本次高亮，不影响朗读
+                Log.i("网页朗读跟随定位失败：第${state.paragraphIndex + 1}段")
+                return@launch
+            }
+            // 位置（页面 + 段落 + 段内行）没变就不重绘
+            val key = "${state.pageUrl}:${state.paragraphIndex}:${located.indexInParagraph}"
+            if (key == ttsFollowKey) return@launch
+            ttsFollowKey = key
+            loader.setTtsSpeakLine(located.line)
+            if (located.pagePos != loader.pagePos) {
+                loader.skipToPage(located.pagePos)
             }
         }
     }

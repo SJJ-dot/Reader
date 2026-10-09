@@ -28,11 +28,13 @@ import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity.Companion.cur
 import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.CustomPageStyleFragment
 import com.sjianjun.reader.module.reader.DefaultPageStyleListFragment
+import com.sjianjun.reader.tts.TtsPlaybackController
+import com.sjianjun.reader.tts.TtsPlaybackMode
 import com.sjianjun.reader.module.reader.ReaderClickAreaSettingDialogFragment
 import com.sjianjun.reader.module.reader.ReplacementRuleListDialogFragment
 import com.sjianjun.reader.module.reader.SettingTtsDialogFragment
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.utils.TtsService
+
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.dp2Px
 import com.sjianjun.reader.utils.setTextColorRes
@@ -120,13 +122,16 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
         // --- Bottom buttons ---
         // TTS
-        TtsService.isSpeaking.observe(viewLifecycleOwner, Observer { isSpeaking ->
-            val c = if (isSpeaking) R.color.dn_colorAccent else R.color.dn_text_color_black
+        TtsPlaybackController.state.observe(viewLifecycleOwner) { state ->
+            val speaking = state.active && state.mode == TtsPlaybackMode.PAGE &&
+                    state.pageUrl == pageLoader?.curChapter?.link
+            val c = if (speaking) R.color.dn_colorAccent else R.color.dn_text_color_black
             b.speak.imageTintList = android.content.res.ColorStateList.valueOf(c.color(requireContext()))
-        })
+        }
         b.speak.click {
-            if (TtsService.isSpeaking.value == true) {
-                TtsService.stop()
+            val url = pageLoader?.curChapter?.link.orEmpty()
+            if (url.isNotBlank() && TtsPlaybackController.isActiveForPage(url)) {
+                TtsPlaybackController.stop()
                 pageLoader?.setTtsSpeakLine(null)
                 return@click
             }

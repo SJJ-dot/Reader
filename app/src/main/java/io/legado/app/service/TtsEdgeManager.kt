@@ -7,6 +7,8 @@ import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.utils.BaseTts
 import com.sjianjun.reader.utils.MD5Utils
+import com.sjianjun.reader.utils.TtsSpeakLine
+import com.sjianjun.reader.utils.TtsTextLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -27,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - 不使用 audioCache（ByteArray），统一用 StreamingMediaDataSource
  */
 class TtsEdgeManager : BaseTts {
-    private val keyParagraphMap = HashMap<String, List<TxtLine>>()
+    private val keyParagraphMap = HashMap<String, List<TtsSpeakLine>>()
     private var mediaPlayer: MediaPlayer? = null
     private var playQueue = ConcurrentLinkedDeque<StreamingMediaDataSource>()
     private var cacheJob: Job? = null
@@ -43,13 +45,20 @@ class TtsEdgeManager : BaseTts {
 
     private var estimateRunnable: Runnable? = null
     private var estimateStartTime = 0L
-    private var estimateLines: List<TxtLine>? = null
+    private var estimateLines: List<TtsSpeakLine>? = null
     private var estimateCumDurations: LongArray? = null
     private var baseMsPerWeight: Long = 200L
 
     override val isSpeaking = MutableLiveData(false)
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
+    override var paragraphChangeCallback: ((Int) -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
+    override var onParagraphsCompleted: (() -> Unit)? = null
+
+    /**
+     * true 表示当前会话是段落模式（前台朗读服务），完成回调走 onParagraphsCompleted
+     */
+    private var paragraphMode = false
 
     /**
      * 流式 MediaDataSource：数据到达即可播放，readAt 在数据不足时阻塞等待。
@@ -118,7 +127,7 @@ class TtsEdgeManager : BaseTts {
         estimateCumDurations = null
     }
 
-    private fun startEstimateForLines(lines: List<TxtLine>, totalDurationMs: Int) {
+    private fun startEstimateForLines(lines: List<TtsSpeakLine>, totalDurationMs: Int) {
         cancelEstimate()
         estimateLines = lines
         val weights = LongArray(lines.size)
@@ -168,7 +177,7 @@ class TtsEdgeManager : BaseTts {
                     if (idx != lastIndex) {
                         lastIndex = idx
                         try {
-                            progressChangeCallback?.invoke(linesNow[idx])
+                            notifyProgress(linesNow[idx].tag)
                         } catch (_: Throwable) {
                         }
                     }
@@ -202,8 +211,26 @@ class TtsEdgeManager : BaseTts {
             }
             if (!stopped.get()) {
                 isSpeaking.postValue(false)
-                onCompleted?.invoke()
+                notifyCompleted()
             }
+        }
+    }
+
+    /**
+     * 回传进度：逐行模式回传行对象，段落模式回传段落序号
+     */
+    private fun notifyProgress(tag: Any) {
+        when (tag) {
+            is TxtLine -> progressChangeCallback?.invoke(tag)
+            is Int -> paragraphChangeCallback?.invoke(tag)
+        }
+    }
+
+    private fun notifyCompleted() {
+        if (paragraphMode) {
+            onParagraphsCompleted?.invoke()
+        } else {
+            onCompleted?.invoke()
         }
     }
 
@@ -351,17 +378,18 @@ class TtsEdgeManager : BaseTts {
         if (pages.isNullOrEmpty() || pagePos < 0 || pagePos >= pages.size) return
         stop()
         stopped.set(false)
+        paragraphMode = false
         isSpeaking.postValue(true)
 
-        val paragraphs = ArrayList<List<TxtLine>>()
-        var paragraphLines = mutableListOf<TxtLine>()
+        val paragraphs = ArrayList<List<TtsSpeakLine>>()
+        var paragraphLines = mutableListOf<TtsSpeakLine>()
         var isTitle = false
         for (pos in pagePos until pages.size) {
             val page = pages[pos]
             page.lines.forEach { line ->
                 if (line.isTitle) {
                     isTitle = true
-                    paragraphLines.add(line)
+                    paragraphLines.add(TtsSpeakLine(line.txt, line))
                 } else {
                     if (isTitle) {
                         isTitle = false
@@ -370,7 +398,7 @@ class TtsEdgeManager : BaseTts {
                             paragraphLines = mutableListOf()
                         }
                     }
-                    paragraphLines.add(line)
+                    paragraphLines.add(TtsSpeakLine(line.txt, line))
                     if (line.isParaEnd) {
                         if (paragraphLines.isNotEmpty()) {
                             paragraphs.add(paragraphLines)
@@ -418,6 +446,62 @@ class TtsEdgeManager : BaseTts {
 
     override suspend fun start(pages: List<TxtPage>?, pagePos: Int) {
         start(pages, pagePos, rate = 12, voice = "zh-CN-XiaoxiaoNeural")
+    }
+
+    /**
+     * 段落模式：只有纯文本，没有排版数据，进度以段落序号回传（前台朗读服务使用）
+     */
+    fun startParagraphs(paragraphs: List<String>, startIndex: Int, rate: Int, voice: String = "zh-CN-XiaoxiaoNeural"): Boolean {
+        if (paragraphs.isEmpty() || startIndex < 0 || startIndex >= paragraphs.size) return false
+        stop()
+        stopped.set(false)
+        paragraphMode = true
+        isSpeaking.postValue(true)
+
+        val units = ArrayList<List<TtsSpeakLine>>()
+        for (index in startIndex until paragraphs.size) {
+            val text = paragraphs[index]
+            if (text.isBlank()) continue
+            units.add(listOf(TtsSpeakLine(text, index)))
+        }
+
+        // 缓存任务：顺序合成每段，写入 StreamingMediaDataSource，加入 playQueue
+        cacheJob = GlobalScope.launch(Dispatchers.IO) {
+            for (unit in units) {
+                if (stopped.get()) return@launch
+                val text = unit.joinToString(separator = "") { line -> line.txt }
+                // 诊断：打印真正送进在线语音合成的文本（logcat 过滤 TTS_TEXT）
+                TtsTextLogger.log(text, unit.firstOrNull()?.tag as? Int)
+                val key = MD5Utils.md5Encode(text + "_" + rate + "_" + voice)
+                keyParagraphMap[key] = unit
+
+                val ds = StreamingMediaDataSource(key)
+                playQueue.add(ds)
+
+                // 合成并喂入数据
+                try {
+                    val input = edgeFetch.synthesizeText(text, rate, voice)
+                    val buf = ByteArray(8 * 1024)
+                    var read = input.read(buf)
+                    while (read >= 0) {
+                        if (stopped.get()) return@launch
+                        if (read > 0) ds.feed(buf.copyOf(read))
+                        read = input.read(buf)
+                    }
+                } catch (e: Exception) {
+                    Log.e("synthesis feed error: $key", e)
+                } finally {
+                    ds.markDone()
+                }
+            }
+        }
+
+        startPlayTask()
+        return true
+    }
+
+    override suspend fun startParagraphs(paragraphs: List<String>, startIndex: Int): Boolean {
+        return startParagraphs(paragraphs, startIndex, rate = 12, voice = "zh-CN-XiaoxiaoNeural")
     }
 
 }

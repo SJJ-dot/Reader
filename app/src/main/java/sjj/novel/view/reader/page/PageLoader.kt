@@ -20,8 +20,7 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.ReplacementRuleUseCase
-import com.sjianjun.reader.utils.ChineseUtils
+import com.sjianjun.reader.utils.ChapterTextPreparer
 import com.sjianjun.reader.utils.PerformanceMonitor
 import com.sjianjun.reader.utils.dp2Px
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -1077,17 +1076,6 @@ abstract class PageLoader : ViewModel() {
         mCancelPage = null
     }
 
-    private fun applyRulesToTitle(text: String, chapter: TxtChapter? = null): String {
-        if (mReplacementRules.isEmpty()) return text
-        return ReplacementRuleUseCase.applyRules(text, mReplacementRules, mCollBook, chapter?.let(::buildReplacementChapter), true)
-    }
-
-    private fun applyRulesToContent(text: String, chapter: TxtChapter? = null): String {
-        if (mReplacementRules.isEmpty()) return text
-        val text = text.lines().joinToString("\n") { "　　$it" }
-        return ReplacementRuleUseCase.applyRules(text, mReplacementRules, mCollBook, chapter?.let(::buildReplacementChapter), false)
-    }
-
     private fun buildReplacementChapter(chapter: TxtChapter): Chapter {
         return Chapter().apply {
             url = chapter.link ?: ""
@@ -1107,8 +1095,14 @@ abstract class PageLoader : ViewModel() {
     private fun loadPages(chapter: TxtChapter): MutableList<TxtPage> {
 //        Log.i("加载章节内容：" + chapter.title + " pos:" + this.chapterPos)
         val lines: MutableList<TxtLine> = ArrayList()
-        val titleText = applyRulesToTitle(convertByJianFanMode(chapter.title.orEmpty()), chapter)
-        val contentText = applyRulesToContent(convertByJianFanMode(chapter.content?.toString().orEmpty()), chapter)
+        // 与朗读服务共用同一套文字处理（全角转换 + 简繁转换 + 净化规则），保证「看到的」和「听到的」一致
+        val replacementChapter = buildReplacementChapter(chapter)
+        val titleText = ChapterTextPreparer.title(
+            chapter.title, mReplacementRules, mCollBook, replacementChapter, mJianFanMode, mFullWidthConvert
+        )
+        val contentText = ChapterTextPreparer.content(
+            chapter.content, mReplacementRules, mCollBook, replacementChapter, mJianFanMode, mFullWidthConvert
+        )
         return when (mTypesettingMode) {
 
             MODE_TYPESETTING_HORIZONTAL_RTL -> {
@@ -1303,74 +1297,10 @@ abstract class PageLoader : ViewModel() {
         return pages
     }
 
-    private fun convertByJianFanMode(text: String): String {
-        val normalized = if (mFullWidthConvert) normalizeText(text) else text
-        return when (mJianFanMode) {
-            MODE_JIAN_TO_FAN -> ChineseUtils.s2t(normalized)
-            MODE_FAN_TO_JIAN -> ChineseUtils.t2s(normalized)
-            else -> normalized
-        }
-    }
-
     /**
-     * 字符规范化，分三趟遍历字符数组完成：
-     * 1. 所有空格统一转为全角空格；其余半角字符（字母/数字/标点）转为全角；繁体引号转简体。
-     * 2. 全角英文字母、数字转回半角。
-     * 3. 前后均为英文/数字的全角标点转为半角（如 A，B -> A,B）。
+     * 判断字符是否为 ASCII 字母或数字（半角）。与 [ChapterTextPreparer] 共用同一实现。
      */
-    private fun normalizeText(text: String): String {
-        if (text.isEmpty()) return text
-        val chars = text.toCharArray()
-        // 第一趟：半角字符全部转全角。半角空格->全角空格，其余半角可打印字符+0xFEE0
-        for (i in chars.indices) {
-            val code = chars[i].code
-            chars[i] = when {
-                // 所有空格字符（半角空格、NBSP、各种宽度空格、全角空格等）统一转为全角空格
-                Character.isSpaceChar(chars[i]) -> '\u3000'
-                // 半角可打印字符（标点/数字/字母） -> 全角
-                code in 0x21..0x7E -> (code + 0xFEE0).toChar()
-                // 繁体引号「」『』等转为简体""''，其余原样保留
-                else -> toSimplifiedPunct(chars[i])
-            }
-        }
-        // 第二趟：全角英文字母/数字转回半角
-        for (i in chars.indices) {
-            val code = chars[i].code
-            if (code in 0xFF10..0xFF19 || code in 0xFF21..0xFF3A || code in 0xFF41..0xFF5A) {
-                chars[i] = (code - 0xFEE0).toChar()
-            }
-        }
-        // 第三趟：前后均为英文/数字的全角标点转为半角标点（如 A，B -> A,B）
-        for (i in chars.indices) {
-            val code = chars[i].code
-            // 仅当左右紧邻字符均为 ASCII 字母/数字时，才把全角标点转为半角英文标点
-            if (code in 0xFF01..0xFF5E
-                && i > 0 && isAsciiAlnum(chars[i - 1])
-                && i < chars.size - 1 && isAsciiAlnum(chars[i + 1])
-            ) {
-                chars[i] = (code - 0xFEE0).toChar()
-            }
-        }
-        return String(chars)
-    }
-
-    /**
-     * 繁体标点转简体：将繁体直角引号「」『』（含竖排小号变体）转为简体弯引号""''。
-     */
-    private fun toSimplifiedPunct(c: Char): Char = when (c) {
-        '\u300C', '\uFE41' -> '\u201C'
-        '\u300D', '\uFE42' -> '\u201D'
-        '\u300E', '\uFE43' -> '\u2018'
-        '\u300F', '\uFE44' -> '\u2019'
-        else -> c
-    }
-
-    /**
-     * 判断字符是否为 ASCII 字母或数字（半角）。
-     */
-    private fun isAsciiAlnum(c: Char): Boolean {
-        return c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '.'
-    }
+    private fun isAsciiAlnum(c: Char): Boolean = ChapterTextPreparer.isAsciiAlnum(c)
 
     private fun lineAdvance(paint: Paint): Float {
         return max(paint.fontSpacing, paint.textSize)

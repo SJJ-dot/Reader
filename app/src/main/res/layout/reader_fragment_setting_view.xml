@@ -215,6 +215,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <!-- 朗读播放卡片：占在可切换的设置区域里，只在朗读时显示（替换上一章/下一章那一行） -->
+        <include
+            android:id="@+id/tts_play_card"
+            layout="@layout/reader_tts_play_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/setting_detail"
             android:layout_width="match_parent"

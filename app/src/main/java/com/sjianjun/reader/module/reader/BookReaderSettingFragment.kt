@@ -38,6 +38,9 @@ import com.sjianjun.reader.bean.FontInfo
 import com.sjianjun.reader.databinding.ItemFontBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupActionBinding
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupDetailBinding
+import com.sjianjun.reader.tts.TtsPlaybackController
+import com.sjianjun.reader.tts.TtsPlaybackMode
+import com.sjianjun.reader.tts.TtsPlaybackState
 import com.sjianjun.reader.databinding.ItemReaderSettingPopupSwitchBinding
 import com.sjianjun.reader.databinding.PopupReaderSettingMenuBinding
 import com.sjianjun.reader.databinding.ReaderFragmentSettingViewBinding
@@ -107,9 +110,14 @@ class BookReaderSettingFragment : BaseFragment() {
             bottomSetting.setPadding(bottomSetting.paddingLeft, bottomSetting.paddingTop, bottomSetting.paddingRight, maxOf(safeBottom, bottomSetting.paddingBottom))
             topBar.setPadding(topBar.paddingLeft, maxOf(topBar.paddingTop, safeTop), topBar.paddingRight, topBar.paddingBottom)
             root.setPadding(safeLeft, 0, safeRight, 0)
+            // 朗读时底部图标行会隐藏，导航栏避让改由播放卡片所在的设置区域承担
+            bottomSystemInset = safeBottom
+            // 边距变化后按当前朗读状态重新摆一次播放卡片
+            applyTtsPlayCardState(TtsPlaybackController.state.value)
             insets
         }
         initSpeak()
+        initTtsPlayCard()
         initChapterList()
         initChapterError()
         initChapterSync()
@@ -129,8 +137,17 @@ class BookReaderSettingFragment : BaseFragment() {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        binding?.settingSample?.isVisible = true
-        binding?.settingDetail?.isVisible = false
+        val ttsState = TtsPlaybackController.state.value
+        // 没在朗读时先恢复成正常的菜单布局；朗读中整块底部菜单都让位给播放卡片
+        if (!isTtsCardShowing(ttsState)) {
+            binding?.settingBtnContainer?.isVisible = true
+            binding?.settingSample?.isVisible = true
+            binding?.settingDetail?.isVisible = false
+            binding?.settingBottomContainer?.isVisible = true
+            ttsCardHidingBottomMenu = false
+        }
+        // 菜单每次打开都按当前朗读状态重新摆一次播放卡片
+        applyTtsPlayCardState(ttsState)
         refreshChapterProgress()
         updateBrightnessUi(globalConfig.readerBrightnessPercent.value ?: -1)
         updateBookDetailExpanded(false)
@@ -397,12 +414,14 @@ class BookReaderSettingFragment : BaseFragment() {
 
     private fun initSettings() {
         binding?.settings?.click(10) {
-            if (binding?.settingSample?.isVisible == true) {
-                binding?.settingSample?.isVisible = false
-                binding?.settingDetail?.isVisible = true
-            } else {
-                binding?.settingSample?.isVisible = true
+            // 在「设置详情面板」与「上一章/下一章」之间切换；
+            // 朗读中那块区域是播放卡片，所以收起详情时不要把那两行显示回来
+            if (binding?.settingDetail?.isVisible == true) {
                 binding?.settingDetail?.isVisible = false
+                binding?.settingSample?.isVisible = !isTtsCardShowing(TtsPlaybackController.state.value)
+            } else {
+                binding?.settingDetail?.isVisible = true
+                binding?.settingSample?.isVisible = false
             }
         }
     }
@@ -482,17 +501,106 @@ class BookReaderSettingFragment : BaseFragment() {
         }
     }
 
+    /**
+     * 菜单里的朗读播放卡片：进度、播放控制、定时停止、朗读设置入口。
+     * 只有「当前这本书」有朗读会话时才显示
+     */
+    private fun initTtsPlayCard() {
+        val card = binding?.ttsPlayCard ?: return
+        card.root.isVisible = false
+        TtsPlaybackController.state.observe(viewLifecycleOwner) { state ->
+            applyTtsPlayCardState(state)
+        }
+        card.ttsTimer.click(10) {
+            if (parentFragmentManager.findFragmentByTag(TtsTimerDialogFragment.TAG) == null) {
+                TtsTimerDialogFragment().show(parentFragmentManager, TtsTimerDialogFragment.TAG)
+            }
+        }
+        card.ttsPrev.click(10) { TtsPlaybackController.prevChapter() }
+        card.ttsToggle.click(10) { TtsPlaybackController.toggle() }
+        card.ttsNext.click(10) { TtsPlaybackController.nextChapter() }
+        card.ttsStop.click(10) { TtsPlaybackController.stop() }
+    }
+
+    /**
+     * 刷新播放卡片：显示/隐藏、进度、按钮状态，以及底部两行的显隐
+     */
+    /** 当前是否有「本书」的朗读会话（有则播放卡片占住设置区域） */
+    private fun isTtsCardShowing(state: TtsPlaybackState?): Boolean {
+        val bookId = readerViewModel.book.value?.id
+        return state != null && state.active && state.mode == TtsPlaybackMode.BOOK &&
+                bookId != null && state.bookId == bookId
+    }
+
+    private fun applyTtsPlayCardState(state: TtsPlaybackState?) {
+        val card = binding?.ttsPlayCard ?: return
+        val showing = isTtsCardShowing(state)
+        card.root.isVisible = showing
+        // 朗读中：整块底部菜单让位给播放卡片（只保留右侧亮度条与顶部菜单）
+        switchBottomMenu(showing)
+        binding?.settingContainer?.let { container ->
+            container.setPadding(
+                container.paddingLeft,
+                container.paddingTop,
+                container.paddingRight,
+                if (showing) bottomSystemInset else 0
+            )
+        }
+        if (!showing || state == null) return
+        card.ttsTitle.text = state.chapterTitle.ifBlank { "第${state.chapterIndex + 1}章" }
+        card.ttsProgress.text = "${state.chapterProgressPercent}%"
+        card.ttsProgressBar.progress = state.chapterProgressPercent
+        card.ttsToggle.setImageResource(if (state.playing) R.drawable.ic_tts_pause else R.drawable.ic_tts_play)
+        val remain = state.sleepTimerRemainingMinutes
+        card.ttsTimerText.text = when {
+            state.stopPendingAfterChapter -> "定时已到，本章读完后停止"
+            remain > 0 -> "定时停止：$remain 分钟后" + if (state.stopAfterChapter) "（章节读完后退出）" else ""
+            else -> "定时停止：关闭"
+        }
+    }
+
+    /** 是否由播放卡片隐藏了底部菜单，避免和阅读器自己的显隐逻辑互相覆盖 */
+    private var ttsCardHidingBottomMenu = false
+
+    /** 底部系统栏（导航栏）避让高度 */
+    private var bottomSystemInset = 0
+
+    /**
+     * 朗读中把整块底部菜单（中间按钮行、上一章/下一章行、设置详情、底部图标行）换成播放卡片；
+     * 朗读结束后恢复原来的菜单布局
+     */
+    private fun switchBottomMenu(hide: Boolean) {
+        if (hide) {
+            ttsCardHidingBottomMenu = true
+            binding?.settingBtnContainer?.isVisible = false
+            binding?.settingSample?.isVisible = false
+            binding?.settingDetail?.isVisible = false
+            binding?.settingBottomContainer?.isVisible = false
+            return
+        }
+        if (!ttsCardHidingBottomMenu) return
+        ttsCardHidingBottomMenu = false
+        binding?.settingBtnContainer?.isVisible = true
+        binding?.settingSample?.isVisible = true
+        binding?.settingDetail?.isVisible = false
+        binding?.settingBottomContainer?.isVisible = true
+    }
+
     private fun initSpeak() {
-        // observe TTS speaking status from delegating service
-        com.sjianjun.reader.utils.TtsService.isSpeaking.observe(viewLifecycleOwner, Observer { isSpeaking ->
-            if (isSpeaking) {
+        // 朗读由前台服务持有，这里只看会话状态（暂停中同样算朗读中）
+        TtsPlaybackController.state.observe(viewLifecycleOwner) { state ->
+            val bookId = readerViewModel.book.value?.id
+            val speaking = state.active && state.mode == TtsPlaybackMode.BOOK &&
+                    bookId != null && state.bookId == bookId
+            if (speaking) {
                 binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_colorAccent.color(requireContext()))
             } else {
                 binding?.speak?.imageTintList = ColorStateList.valueOf(R.color.dn_text_color_black.color(requireContext()))
             }
-        })
+        }
         binding?.speak?.click {
-            if (com.sjianjun.reader.utils.TtsService.isSpeaking.value == true) {
+            val bookId = readerViewModel.book.value?.id
+            if (bookId != null && TtsPlaybackController.isActiveForBook(bookId)) {
                 EventBus.post(EventKey.CHAPTER_SPEAK)
                 return@click
             }
@@ -799,6 +907,8 @@ class BookReaderSettingFragment : BaseFragment() {
     override fun onDestroyView() {
         settingPopupWindow?.dismiss()
         settingPopupWindow = null
+        // 视图销毁后是新的一份布局，重置「隐藏了底部菜单」的标记
+        ttsCardHidingBottomMenu = false
         binding = null
         super.onDestroyView()
     }

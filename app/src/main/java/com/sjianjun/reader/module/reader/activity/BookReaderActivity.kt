@@ -1,9 +1,12 @@
 package com.sjianjun.reader.module.reader.activity
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -11,6 +14,8 @@ import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -23,6 +28,7 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.SHOW_TTS_CARD
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.databinding.ActivityBookReaderBinding
 import com.sjianjun.reader.event.EventBus
@@ -34,6 +40,11 @@ import com.sjianjun.reader.module.reader.BookReaderSettingFragment
 import com.sjianjun.reader.module.reader.ReaderClickAreaAction
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
+import com.sjianjun.reader.tts.LocatedLine
+import com.sjianjun.reader.tts.TtsChapterSplitter
+import com.sjianjun.reader.tts.TtsPlaybackController
+import com.sjianjun.reader.tts.TtsPlaybackMode
+import com.sjianjun.reader.tts.TtsPlaybackState
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
@@ -56,6 +67,12 @@ import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
+/** 通知权限申请码（Android 13+ 通知需要运行时权限） */
+private const val REQUEST_CODE_NOTIFICATION = 1001
+
+/** 等待朗读目标章节排版完成的最长重试次数（100ms * 30 = 3 秒） */
+private const val MAX_TTS_CHAPTER_WAIT = 30
+
 class BookReaderActivity : BaseActivity() {
     var binding: ActivityBookReaderBinding? = null
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
@@ -67,6 +84,12 @@ class BookReaderActivity : BaseActivity() {
     private val viewModel by viewModels<BookReaderViewModel>()
 
     private var chapterCacheJob: Job? = null
+
+    /** 朗读跟随任务：切章 + 定位高亮，新的进度到来时取消旧的 */
+    private var ttsFollowJob: Job? = null
+
+    /** 已跟随的朗读位置（章节链接:段落序号），位置没变就不重复定位重绘 */
+    private var ttsFollowKey: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 在 Activity 生命周期入口先应用方向策略，减少折叠切换时方向闪动。
@@ -104,13 +127,19 @@ class BookReaderActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         applyReaderBrightness()
+        // 阅读页在前台时阅读进度由阅读页维护，朗读服务不写
+        TtsPlaybackController.setReaderVisible(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        TtsPlaybackController.setReaderVisible(false)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        ttsService.stop()
-        ttsService.progressChangeCallback = null
-        ttsService.onCompleted = null
+        // 朗读由前台服务持有，退出阅读页不再停止朗读，只解除跟随
+        mPageLoader?.setTtsSpeakLine(null)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -118,6 +147,7 @@ class BookReaderActivity : BaseActivity() {
         Log.i("onNewIntent: ${intent.getStringExtra(BOOK_ID)}")
         setIntent(intent)
         initData()
+        handleShowTtsPlayCard()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -173,33 +203,16 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun initSettingMenu() {
-        ttsService.progressChangeCallback = { textLine ->
-            launch {
-                val loader = mPageLoader ?: return@launch
-                if (loader.chapterPos != ttsService.chapterPos) {
-                    loader.skipToChapter(ttsService.chapterPos)
-                }
-                val page = loader.curPageList?.find { page ->
-                    page.lines.find { textLine == it } != null
-                }
-                loader.setTtsSpeakLine(textLine)
-                if (page != null && page.position != loader.pagePos) {
-                    loader.skipToPage(page.position)
-                }
-            }
-        }
-        ttsService.onCompleted = {
-//            播放下一个段落
-            mPageLoader?.setTtsSpeakLine(null)
-            if (mPageLoader?.skipNextChapter() == true) {
-                Log.i("章节切换，继续朗读")
-                EventBus.post(EventKey.CHAPTER_SPEAK)
-            }
+        // 朗读由前台服务负责，阅读页只是观察者：跟随服务上报的进度高亮与翻页
+        TtsPlaybackController.state.observe(this) { state ->
+            onTtsStateChanged(state)
         }
         observe<String>(EventKey.CHAPTER_SPEAK) {
             launch {
-                if (ttsService.isSpeaking.value == true) {
-                    ttsService.stop()
+                val activeState = TtsPlaybackController.state.value
+                // 正在朗读的就是本书 -> 停止；否则按「开始朗读当前书」处理（会替换掉其他会话）
+                if (activeState != null && TtsPlaybackController.isActiveForBook(bookId)) {
+                    TtsPlaybackController.stop()
                     mPageLoader?.setTtsSpeakLine(null)
                     Log.i("停止朗读")
                     return@launch
@@ -208,7 +221,8 @@ class BookReaderActivity : BaseActivity() {
                     toast("书籍正在加载中")
                     return@launch
                 }
-                val chapter = viewModel.chapterList.value?.getOrNull(mPageLoader?.chapterPos ?: 0)
+                val chapterIndex = mPageLoader?.chapterPos ?: 0
+                val chapter = viewModel.chapterList.value?.getOrNull(chapterIndex)
                 if (chapter == null) {
                     toast("当前章节获取失败")
                     return@launch
@@ -222,8 +236,14 @@ class BookReaderActivity : BaseActivity() {
                     toast("章节内容错误 $chapter")
                     return@launch
                 }
-                Log.i("开始朗读章节${mPageLoader?.chapterPos} ${chapter.title} pageSize:${mPageLoader?.curPageList?.size}")
-                ttsService.start(mPageLoader?.chapterPos ?: 0, mPageLoader?.curPageList, mPageLoader?.pagePos ?: 0)
+                requestNotificationPermissionIfNeeded()
+                // 从当前阅读页对应的段落开始朗读
+                val startParagraph = TtsChapterSplitter.paragraphIndexAtPage(
+                    mPageLoader?.curPageList,
+                    mPageLoader?.pagePos ?: 0
+                )
+                Log.i("开始朗读章节$chapterIndex ${chapter.title} 起始段落:${startParagraph + 1}")
+                TtsPlaybackController.startBook(chapter.bookId, chapterIndex, startParagraph)
             }
         }
 
@@ -430,16 +450,34 @@ class BookReaderActivity : BaseActivity() {
         when (action) {
             ReaderClickAreaAction.PREV_PAGE -> binding?.pageView?.performPageTap(false)
             ReaderClickAreaAction.NEXT_PAGE -> binding?.pageView?.performPageTap(true)
-            ReaderClickAreaAction.MENU -> getSettingFragment(create = true)?.let {
-                supportFragmentManager.beginTransaction()
-                    .show(it)
-                    .commitAllowingStateLoss()
-            }
+            ReaderClickAreaAction.MENU -> showSettingMenu()
 
             ReaderClickAreaAction.PREV_CHAPTER -> mPageLoader?.skipPreChapter()
             ReaderClickAreaAction.NEXT_CHAPTER -> mPageLoader?.skipNextChapter()
             ReaderClickAreaAction.DIRECTORY -> binding?.drawerLayout?.openDrawer(GravityCompat.END)
             ReaderClickAreaAction.NONE ->  /*无操作*/ {}
+        }
+    }
+
+    private fun showSettingMenu() {
+        getSettingFragment(create = true)?.let {
+            supportFragmentManager.beginTransaction()
+                .show(it)
+                .commitAllowingStateLoss()
+        }
+    }
+
+    /**
+     * 从朗读通知 / 播放卡片左侧按钮进来时，直接唤起设置菜单（菜单里有朗读播放卡片）
+     */
+    private fun handleShowTtsPlayCard() {
+        if (!intent.getBooleanExtra(SHOW_TTS_CARD, false)) return
+        intent.removeExtra(SHOW_TTS_CARD)
+        Log.i("唤起朗读播放菜单")
+        launch {
+            // 稍等一下让阅读页初始化完，避免和首屏抢时序
+            delay(300)
+            showSettingMenu()
         }
     }
 
@@ -504,6 +542,88 @@ class BookReaderActivity : BaseActivity() {
         })
     }
 
+    /**
+     * 跟随朗读进度：切章、翻页并高亮当前朗读段落
+     */
+    private fun onTtsStateChanged(state: TtsPlaybackState) {
+        val loader = mPageLoader ?: return
+        // 朗读的是别的书/网页时不跟随，避免把当前书切走
+        val following = state.active && state.mode == TtsPlaybackMode.BOOK && state.bookId == bookId
+        if (!following || state.chapterIndex < 0) {
+            ttsFollowJob?.cancel()
+            // 只在高亮还亮着时清一次，避免进度刷新时反复重绘
+            if (ttsFollowKey.isNotEmpty()) {
+                ttsFollowKey = ""
+                loader.setTtsSpeakLine(null)
+            }
+            return
+        }
+        ttsFollowJob?.cancel()
+        ttsFollowJob = launch {
+            // 目录刷新后章节序号可能变化，优先按章节链接定位
+            val targetIndex = resolveTtsChapterIndex(state)
+            if (targetIndex < 0) return@launch
+            if (loader.chapterPos != targetIndex) {
+                Log.i("朗读跟随切章：${loader.chapterPos} -> $targetIndex")
+                loader.skipToChapter(targetIndex)
+                // 等目标章节排版完成再定位
+                var wait = 0
+                while (wait++ < MAX_TTS_CHAPTER_WAIT &&
+                    (loader.chapterPos != targetIndex || loader.curPageList.isNullOrEmpty())
+                ) {
+                    delay(100)
+                }
+            }
+            // 按「段落序号 + 段内进度」定位到具体行，实现按行高亮
+            val located = TtsChapterSplitter.locateLineInParagraph(
+                loader.curPageList,
+                state.paragraphIndex,
+                state.paragraphProgress
+            ) ?: TtsChapterSplitter.locateByParagraphText(loader.curPageList, state.paragraphText)
+                ?.let { LocatedLine(it.first, it.second, 0) }
+            if (located == null) {
+                // 段落序号对不上（正文被替换规则改写过等），放弃本次高亮，不影响朗读
+                Log.i("朗读跟随定位失败：第${state.paragraphIndex + 1}段")
+                return@launch
+            }
+            // 位置（章节 + 段落 + 段内行）没变就不重绘
+            val key = "${state.chapterUrl}:${state.paragraphIndex}:${located.indexInParagraph}"
+            if (key == ttsFollowKey) return@launch
+            ttsFollowKey = key
+            loader.setTtsSpeakLine(located.line)
+            if (located.pagePos != loader.pagePos) {
+                loader.skipToPage(located.pagePos)
+            }
+        }
+    }
+
+    private fun resolveTtsChapterIndex(state: TtsPlaybackState): Int {
+        val chapterList = viewModel.chapterList.value
+        if (!chapterList.isNullOrEmpty() && state.chapterUrl.isNotBlank()) {
+            val index = chapterList.indexOfFirst { it.url == state.chapterUrl }
+            if (index >= 0) return index
+        }
+        return state.chapterIndex
+    }
+
+    /**
+     * Android 13+ 通知需要运行时权限：没有权限也能后台朗读，只是看不到通知栏控制
+     */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        toast("未授予通知权限，朗读仍可在后台继续，但通知栏无法显示播放控制")
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            REQUEST_CODE_NOTIFICATION
+        )
+    }
+
     private fun initData() {
         launch(singleCoroutineKey = "initBookReaderData") {
             ChapterPageCache.resetId(bookId)
@@ -555,6 +675,11 @@ class BookReaderActivity : BaseActivity() {
             mPageLoader?.setReplacementRules(ReplacementRuleUseCase.getEnabledRules())
             mPageLoader?.refreshChapterList()
             getSettingFragment()?.refreshChapterProgress()
+            // 重新打开书籍后页码/排版都是新的，重置跟随位置并立即定位到正在朗读的段落
+            ttsFollowKey = ""
+            TtsPlaybackController.state.value?.takeIf { it.active }?.let { onTtsStateChanged(it) }
+            // 从朗读播放卡片左侧按钮进来：直接唤起菜单（里面是播放卡片）
+            handleShowTtsPlayCard()
         }
     }
 

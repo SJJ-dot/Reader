@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!--  后台朗读需要前台服务与通知栏控制  -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <queries>
         <intent>
@@ -83,6 +88,16 @@
             </intent-filter>
 
         </activity>
+        <!--
+            后台朗读服务：与阅读页解耦，退出阅读页/锁屏后继续朗读，
+            通过通知栏、锁屏与耳机按键控制播放停止
+        -->
+        <service
+            android:name=".tts.TtsPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
+
         <!-- FileProvider for sharing exported files -->
         <provider
             android:name="androidx.core.content.FileProvider"

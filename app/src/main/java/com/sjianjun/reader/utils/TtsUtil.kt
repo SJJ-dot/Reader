@@ -10,7 +10,6 @@ import android.speech.tts.TextToSpeech.QUEUE_ADD
 import android.speech.tts.UtteranceProgressListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.sjianjun.reader.utils.BaseTts
 import com.sjianjun.reader.App
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -31,11 +30,20 @@ import kotlin.math.max
 class TtsUtil() : ViewModel(), BaseTts {
 
 
-    private val paragraphs = ConcurrentLinkedDeque<List<TxtLine>>()
+    private val paragraphs = ConcurrentLinkedDeque<List<TtsSpeakLine>>()
 
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
 
+    override var paragraphChangeCallback: ((Int) -> Unit)? = null
+
     override var onCompleted: (() -> Unit)? = null
+
+    override var onParagraphsCompleted: (() -> Unit)? = null
+
+    /**
+     * true 表示当前会话是段落模式（前台朗读服务），完成回调走 onParagraphsCompleted
+     */
+    private var paragraphMode = false
 
     private var textToSpeech: TextToSpeech? = null
     override val isSpeaking = MutableLiveData(false)
@@ -111,15 +119,16 @@ class TtsUtil() : ViewModel(), BaseTts {
             return
         }
         stop()
+        paragraphMode = false
         isSpeaking.postValue(true)
-        var paragraphLines = mutableListOf<TxtLine>()
+        var paragraphLines = mutableListOf<TtsSpeakLine>()
         var isTitle = false
         for (pos in pagePos until pages.size) {
             val page = pages[pos]
             page.lines.forEach { line ->
                 if (line.isTitle) {
                     isTitle = true
-                    paragraphLines.add(line)
+                    paragraphLines.add(TtsSpeakLine(line.txt, line))
                 } else {
                     if (isTitle) {
                         isTitle = false
@@ -129,7 +138,7 @@ class TtsUtil() : ViewModel(), BaseTts {
                         }
                     }
 
-                    paragraphLines.add(line)
+                    paragraphLines.add(TtsSpeakLine(line.txt, line))
                     if (line.isParaEnd) {
                         if (paragraphLines.isNotEmpty()) {
                             this.paragraphs.add(paragraphLines)
@@ -143,6 +152,31 @@ class TtsUtil() : ViewModel(), BaseTts {
             this.paragraphs.add(paragraphLines)
         }
         speakNext()
+    }
+
+    /**
+     * 段落模式：只有纯文本，没有排版数据，进度以段落序号回传（前台朗读服务使用）
+     */
+    override suspend fun startParagraphs(paragraphs: List<String>, startIndex: Int): Boolean {
+        if (paragraphs.isEmpty() || startIndex < 0 || startIndex >= paragraphs.size) {
+            return false
+        }
+        if (initTts() == null) {
+            toast("语音引擎初始化失败")
+            return false
+        }
+        stop()
+        paragraphMode = true
+        isSpeaking.postValue(true)
+        for (index in startIndex until paragraphs.size) {
+            val text = paragraphs[index]
+            if (text.isBlank()) {
+                continue
+            }
+            this.paragraphs.add(listOf(TtsSpeakLine(text, index)))
+        }
+        speakNext()
+        return true
     }
 
     override fun stop() {
@@ -176,10 +210,12 @@ class TtsUtil() : ViewModel(), BaseTts {
             val paragraph = paragraphs.peek()
             if (paragraph == null) {
                 isSpeaking.value = false
-                onCompleted?.invoke()
+                notifyCompleted()
                 return@launch
             }
             val txt = paragraph.joinToString(separator = "") { line -> line.txt }
+            // 诊断：打印真正送进系统 TTS 的文本（logcat 过滤 TTS_TEXT）
+            TtsTextLogger.log(txt, paragraph.firstOrNull()?.tag as? Int)
             // ensure speech rate is up-to-date before speaking
             try {
                 var systemRate = globalConfig.readerTtsRate.value ?: 50
@@ -193,11 +229,29 @@ class TtsUtil() : ViewModel(), BaseTts {
         }
     }
 
+    /**
+     * 回传进度：逐行模式回传行对象，段落模式回传段落序号
+     */
+    private fun notifyProgress(tag: Any) {
+        when (tag) {
+            is TxtLine -> progressChangeCallback?.invoke(tag)
+            is Int -> paragraphChangeCallback?.invoke(tag)
+        }
+    }
+
+    private fun notifyCompleted() {
+        if (paragraphMode) {
+            onParagraphsCompleted?.invoke()
+        } else {
+            onCompleted?.invoke()
+        }
+    }
+
     // start a coroutine to estimate playback percentage for the given paragraph text
     private fun startEstimateForParagraph() {
         val paragraph = paragraphs.peek() ?: return
         // build simple weight model per character
-        val expectedLineMs = mutableListOf<Pair<Long, TxtLine>>()
+        val expectedLineMs = mutableListOf<Pair<Long, TtsSpeakLine>>()
         for (line in paragraph) {
             var lineWeight = 0f
             line.txt.forEach {
@@ -211,7 +265,7 @@ class TtsUtil() : ViewModel(), BaseTts {
             expectedLineMs.add((lineWeight * baseMsPerWeight).toLong() to line)
         }
         val startTime = System.currentTimeMillis()
-        var lastTextLine: TxtLine = paragraph.first()
+        var lastTextLine: TtsSpeakLine = paragraph.first()
         estimateJob?.cancel()
         estimateJob = GlobalScope.launch(Dispatchers.Main) {
             try {
@@ -230,7 +284,7 @@ class TtsUtil() : ViewModel(), BaseTts {
                         elapsedLine += time
                         if (elapsed < elapsedLine) {
                             if (line != lastTextLine) {
-                                progressChangeCallback?.invoke(line)
+                                notifyProgress(line.tag)
                                 lastTextLine = line
                             }
                             break
@@ -253,7 +307,7 @@ class TtsUtil() : ViewModel(), BaseTts {
             override fun onDone(utteranceId: String?) {
                 speakTime = System.currentTimeMillis() - speakStartTime
                 paragraphs.poll()?.let {
-                    progressChangeCallback?.invoke(it.last())
+                    notifyProgress(it.last().tag)
                 }
                 speakNext()
             }
@@ -265,7 +319,7 @@ class TtsUtil() : ViewModel(), BaseTts {
 
             override fun onStart(utteranceId: String?) {
                 paragraphs.peek()?.let {
-                    progressChangeCallback?.invoke(it.first())
+                    notifyProgress(it.first().tag)
                 }
                 startEstimateForParagraph()
                 speakStartTime = System.currentTimeMillis()

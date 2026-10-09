@@ -147,6 +147,9 @@ dependencies {
 
     implementation(libs.googleGson)
 
+    // 后台朗读的媒体通知与媒体按键（MediaSessionCompat + MediaStyle 通知）
+    implementation(libs.media.media)
+
 //    implementation "org.mozilla:rhino-runtime:1.7.15"
     implementation(libs.jsoup)
 

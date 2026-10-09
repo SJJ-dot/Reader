@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 定时停止设置：选择时长 + 是否读完当前章节再停 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:text="定时时长"
+        android:textColor="@color/dn_text_color_black_secondary"
+        android:textSize="13sp" />
+
+    <RadioGroup
+        android:id="@+id/timer_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/timer_off"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:text="关闭" />
+
+        <RadioButton
+            android:id="@+id/timer_15"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:text="15 分钟" />
+
+        <RadioButton
+            android:id="@+id/timer_30"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:text="30 分钟" />
+
+        <RadioButton
+            android:id="@+id/timer_60"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:text="60 分钟" />
+    </RadioGroup>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="4dp"
+        android:background="@color/dn_text_color_black_secondary" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/stop_after_chapter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:text="章节读完后退出" />
+</LinearLayout>
