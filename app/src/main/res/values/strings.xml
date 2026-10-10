@@ -2,7 +2,6 @@
     <string name="app_update_ignore_version">忽略本次更新</string>
     <string name="about_app">「修仙」是为学习和研究编程而开发的小说阅读器，仅用于内部测试，严禁用于商业用途。</string>
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="feedback_title">提交反馈</string>
     <string name="replacement_rule_title">净化替换规则</string>
     <string name="replacement_rule_add">新增</string>
     <string name="replacement_rule_done">完成</string>

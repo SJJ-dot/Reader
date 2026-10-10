@@ -35,10 +35,6 @@ object MqttUtil {
     //查询在线用户数
     const val TOPIC_ONLINE_QUERY_NUM_REQUEST = "reader/online2/num/{clientId}/server"
     const val TOPIC_ONLINE_QUERY_NUM_RESP = "reader/online2/num/server/{clientId}"
-    const val TOPIC_FEEDBACK_LIST = "reader/feedback2/list/{clientId}/server"
-    const val TOPIC_FEEDBACK_LIST_RESP = "reader/feedback2/list/server/{clientId}"
-    const val TOPIC_FEEDBACK_SET = "reader/feedback2/set/{clientId}/server"
-    const val TOPIC_FEEDBACK_SET_RESP = "reader/feedback2/set/server/{clientId}"
 
     const val TOPIC_ONLINE_LEADERBOARD_REQUEST = "reader/online2/leaderboard/{clientId}/server"
     const val TOPIC_ONLINE_LEADERBOARD_RESP = "reader/online2/leaderboard/server/{clientId}"

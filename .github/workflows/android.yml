@@ -45,6 +45,8 @@ jobs:
 
       - name: Create local.properties
         run: |
+          echo "feedback.url=${{ secrets.FEEDBACKURL }}" >> local.properties
+          echo "feedback.guestToken=${{ secrets.FEEDBACKGUESTTOKEN }}" >> local.properties
           echo "mqtt.serverUri=${{ secrets.MQTT_SERVERURI }}" >> local.properties
           echo "mqtt.username=${{ secrets.MQTT_USERNAME }}" >> local.properties
           echo "mqtt.password=${{ secrets.MQTT_PASSWORD }}" >> local.properties
