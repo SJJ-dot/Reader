@@ -35,6 +35,9 @@
             android:name=".module.bookcity.WebViewBrowserActivity"
             android:exported="false" />
         <activity
+            android:name=".module.script.BookSourceHelpActivity"
+            android:exported="false" />
+        <activity
             android:name=".module.bookcity.BrowserReadModeActivity"
             android:exported="false" />
         <activity

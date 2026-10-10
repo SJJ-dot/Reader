@@ -30,9 +30,9 @@ import com.sjianjun.reader.databinding.DialogEditTextBinding
 import com.sjianjun.reader.databinding.DialogEditTextSourceUrlBinding
 import com.sjianjun.reader.databinding.MainFragmentBookScriptManagerBinding
 import com.sjianjun.reader.databinding.ScriptItemFragmentManagerJavaScriptBinding
-import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.popup.ErrorMsgPopup
 import com.sjianjun.reader.repository.SourceUrlUseCase
+import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.id
@@ -55,6 +55,13 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     private val editLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             // refresh list after returning from edit activity
+            initData()
+        }
+    }
+    private val helpLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // 书源说明页导入测试书源后，返回时刷新订阅链接与书源列表
+            initLinksData()
             initData()
         }
     }
@@ -217,8 +224,7 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.source_help -> {
-                val sourceHelp = "https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD"
-                WebViewBrowserActivity.startActivity(requireContext(), sourceHelp)
+                helpLauncher.launch(Intent(requireContext(), BookSourceHelpActivity::class.java))
                 true
             }
 
@@ -583,6 +589,11 @@ class BookSourceManagerFragment : BaseAsyncFragment() {
 
             btnCheck.click { view ->
                 fragment.import(listOf(item))
+            }
+
+            view.setOnLongClickListener {
+                item.url.copyToClipboard()
+                true
             }
         }
     }
