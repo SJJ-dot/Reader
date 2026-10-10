@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.github.liuyueyi.quick.transfer.constants.TransType
-import com.sjianjun.reader.mqtt.MqttUtil
+import com.sjianjun.reader.online.OnlineRecorder
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.utils.ActivityManger
@@ -64,7 +64,7 @@ class App : Application() {
             writeToFileDir = File(externalCacheDir, "alog")
         }
         Python.start(AndroidPlatform(this))
-        MqttUtil.connect()
+        OnlineRecorder.start(appScope, this)
         when (globalConfig.readerJianFanMode.value) {
             1 -> {
                 ChineseUtils.fixT2sDict()

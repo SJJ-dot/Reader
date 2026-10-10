@@ -25,8 +25,8 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.module.main.PrivacyPolicyDialogFragment
-import com.sjianjun.reader.mqtt.OnlineInfos
-import com.sjianjun.reader.mqtt.formatDuration
+import com.sjianjun.reader.online.OnlineInfos
+import com.sjianjun.reader.online.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.AppInfoUtil
 import com.sjianjun.reader.utils.checkUpdate

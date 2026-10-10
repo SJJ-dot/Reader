@@ -15,11 +15,11 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.databinding.FragmentOnlineLeaderboardBinding
 import com.sjianjun.reader.databinding.ItemOnlineLeaderboardBinding
-import com.sjianjun.reader.mqtt.OnlineInfos
-import com.sjianjun.reader.mqtt.RankingInfo
-import com.sjianjun.reader.mqtt.formatDuration
-import com.sjianjun.reader.mqtt.user
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.online.OnlineInfos
+import com.sjianjun.reader.online.RankingInfo
+import com.sjianjun.reader.online.formatDuration
+import com.sjianjun.reader.online.onlineDeviceId
+import com.sjianjun.reader.online.user
 import com.sjianjun.reader.utils.color
 import kotlinx.coroutines.launch
 
@@ -92,17 +92,20 @@ class OnlineLeaderboardFragment : Fragment() {
             binding.tvUser.text = item.user_id.user
             binding.tvLevel.text = item.levelName
             binding.tvOnlineTime.text = item.online_seconds.formatDuration()
+            binding.tvVersion.text = item.app_version
             val context = holder.itemView.context
-            if (item.user_id == globalConfig.mqttClientId) {
+            if (item.user_id == onlineDeviceId) {
                 binding.root.setCardBackgroundColor(R.color.dn_color_primary.color(context))
                 binding.tvUser.setTextColor(Color.WHITE)
                 binding.tvLevel.setTextColor(Color.WHITE)
                 binding.tvOnlineTime.setTextColor(Color.WHITE)
+                binding.tvVersion.setTextColor(Color.WHITE)
             } else {
                 binding.root.setCardBackgroundColor(R.color.dn_background_card.color(context))
                 binding.tvUser.setTextColor(R.color.mdr_grey_500.color(context))
                 binding.tvLevel.setTextColor(R.color.colorPrimary.color(context))
                 binding.tvOnlineTime.setTextColor(R.color.dn_text_color_black.color(context))
+                binding.tvVersion.setTextColor(R.color.mdr_grey_500.color(context))
             }
         }
 

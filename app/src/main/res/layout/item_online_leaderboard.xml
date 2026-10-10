@@ -66,5 +66,16 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="书友(ABCD)" />
 
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/mdr_grey_500"
+            android:textSize="10sp"
+            app:layout_constraintEnd_toEndOf="@+id/tv_user"
+            app:layout_constraintTop_toBottomOf="@+id/tv_user"
+            tools:text="2.1.1407" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

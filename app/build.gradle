@@ -51,11 +51,6 @@ android {
                 install "-r", "requirements.txt"
             }
         }
-        // MQTT config injected from local.properties (keys: mqtt.serverUri, mqtt.username, mqtt.password)
-        // Defaults match previous hard-coded values in MqttUtil
-        buildConfigField "String", "MQTT_SERVER_URI", "\"${properties.getProperty('mqtt.serverUri')}\""
-        buildConfigField "String", "MQTT_USERNAME", "\"${properties.getProperty('mqtt.username')}\""
-        buildConfigField "String", "MQTT_PASSWORD", "\"${properties.getProperty('mqtt.password')}\""
         // 意见反馈已改为内嵌网页版服务：地址与游客令牌同样从 local.properties 注入，
         // 令牌只内置在安装包里，不进版本库（keys: feedback.url, feedback.guestToken）
         buildConfigField "String", "FEEDBACK_URL", "\"${properties.getProperty('feedback.url')}\""
@@ -207,7 +202,6 @@ dependencies {
     implementation(libs.commonsText)
 
 //    implementation 'androidx.work:work-runtime-ktx:2.11.1'
-    implementation(libs.mqttv3)
 //    implementation(libs.opencc)简繁转换
     //转换繁体
     implementation(libs.quick.chinese.transfer.core)

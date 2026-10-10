@@ -136,7 +136,6 @@ class AppConfig(val name: String) :
      */
     var crossOriginMode by intPref("crossOriginMode", 0)
 
-    var mqttClientId by strPref("mqtt_client_id", null)
     var deviceID by strPref("deviceID", null)
 
     var admin by boolPref("admin", false)
