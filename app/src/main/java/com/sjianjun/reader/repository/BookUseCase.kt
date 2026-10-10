@@ -11,6 +11,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
+import com.sjianjun.reader.utils.normalizedChapterName
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -367,40 +368,28 @@ object BookUseCase {
             //获取最新章节失败，尝试重新加载书籍，如果还是加载失败就算了。不管怎样换源必须成功
             BookUseCase.reloadBookFromNet(book)
         }
-        val chapter = chapterDao.getChapterByIndex(readingRecord.bookId, readingRecord.chapterIndex)
-        var readChapter: Chapter? = null
-        if (chapter != null) {
-            //根据章节名查询。取索引最接近那个 这里将章节名转拼音按相似度排序在模糊搜索的时候更准确
-            readChapter = chapterDao.getChapterByTitle(book.id, chapter.title ?: "").minByOrNull { abs(chapter.index - it.index) }
-            if (readChapter == null) {
-                readChapter = getChapterLikeTitle(book.id, chapter.name()).firstOrNull()
-            }
-            if (readChapter == null) {
-                readChapter = chapterDao.getChapterByIndex(book.id, chapter.index) ?: chapterDao.getLastChapterByBookId(book.id)
-            }
-        }
+        val oldBookId = readingRecord.bookId
+        val chapter = chapterDao.getChapterByIndex(oldBookId, readingRecord.chapterIndex)
+        //三级定位：精确同名就近 -> 同名就近 -> 用相邻章节锚点推断
+        val readChapter = ChapterLocator.locateChapter(
+            newBookId = book.id,
+            oldBookId = oldBookId,
+            oldIndex = chapter?.index ?: readingRecord.chapterIndex,
+            oldTitle = chapter?.title
+        ) ?: chapterDao.getChapterByIndex(book.id, readingRecord.chapterIndex)
+            ?: chapterDao.getLastChapterByBookId(book.id)
+
+        //定位到同一章节（序号相同或归一化同名）时保留页内偏移，否则清零，避免读到错误位置
+        val keepOffset = readChapter != null && chapter != null &&
+                (readChapter.index == chapter.index ||
+                        chapter.title.orEmpty().normalizedChapterName() == readChapter.title.orEmpty().normalizedChapterName())
         readingRecord.bookId = book.id
         readingRecord.chapterIndex = readChapter?.index ?: readingRecord.chapterIndex
-        if (readingRecord.chapterIndex == -1) {
+        if (!keepOffset) {
             readingRecord.offest = 0
             readingRecord.scrollOffset = 0
         }
         readingRecordDao.insertReadingRecord(readingRecord)
         EventBus.post(EventKey.BOOK_SOURCE_CHANGED,book.id)
-    }
-
-
-    // 查询所有关键词的章节并取交集
-    fun getChapterLikeTitle(bookId: String, chapterTitle: String): List<Chapter> {
-        val keywords = Regex("[\\u4e00-\\u9fa5\\d]+").findAll(chapterTitle).map { it.value }.toList()
-        if (keywords.isEmpty()) return emptyList()
-        // 先查第一个关键词
-        var result = chapterDao.getChapterLikeName(bookId, "%${keywords[0]}%").toSet()
-        // 依次与后续关键词结果取交集
-        for (i in 1 until keywords.size) {
-            val chapters = chapterDao.getChapterLikeName(bookId, "%${keywords[i]}%")
-            result = result.intersect(chapters.toSet())
-        }
-        return result.toList()
     }
 }

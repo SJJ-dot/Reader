@@ -18,6 +18,12 @@ interface ChapterDao {
     @Query("select * from Chapter where bookId=:bookId  order by `index`")
     fun getChapterListByBookId(bookId: String): Flow<List<Chapter>>
 
+    /**
+     * 查询指定序号区间内的章节（不查章节内容），用于换源定位时只在目标位置附近做匹配
+     */
+    @Query("select * from Chapter where bookId=:bookId and `index` between :startIndex and :endIndex order by `index`")
+    suspend fun getChapterListBetween(bookId: String, startIndex: Int, endIndex: Int): List<Chapter>
+
     @Query("select * from Chapter where title=:title and bookId=:bookId order by `index`")
     fun getChapterByTitle(bookId: String, title: String): List<Chapter>
 

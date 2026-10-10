@@ -8,10 +8,10 @@ import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.BookUseCase
+import com.sjianjun.reader.repository.ChapterLocator
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.debounce
-import com.sjianjun.reader.utils.name
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -51,10 +51,12 @@ class BookSourceListViewModel() : ViewModel() {
     ): Book {
 
         if (readingChapter != null) {
-            book.readChapter = BookUseCase.getChapterLikeTitle(book.id, readingChapter.name()).firstOrNull()
-            if (book.readChapter == null) {
-                book.readChapter = chapterDao.getChapterByIndex(book.id, readingChapter.index)
-            }
+            book.readChapter = ChapterLocator.locateChapter(
+                newBookId = book.id,
+                oldBookId = record?.bookId ?: readingChapter.bookId,
+                oldIndex = readingChapter.index,
+                oldTitle = readingChapter.title
+            )
         }
 
         book.lastChapter = chapterDao.getLastChapterByBookId(book.id)
