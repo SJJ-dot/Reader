@@ -1366,7 +1366,9 @@ abstract class PageLoader : ViewModel() {
             val lineRemain = mDisplayParams.contentRight - left
             val remWidth = if (end) lineRemain % (referenceWidth + letterSpacing) else lineRemain
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
-                val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
+                // 每个字符间距最多能分配到的宽度，末行沿用上一行字间距时不能超过它，否则整行会被推出边框
+                val perGap = remWidth / (line.clusterBoundaries.size - 2)
+                val extX = if (end && lastExtX > 0) min(lastExtX, perGap) else perGap
                 lastExtX = extX
                 for (ci in 1 until line.clusterBoundaries.size - 1) {
                     val offset = ci * extX
@@ -1472,7 +1474,9 @@ abstract class PageLoader : ViewModel() {
             val lineRemain = right - mDisplayParams.contentLeft
             val remWidth = if (end) lineRemain % (referenceWidth + letterSpacing) else lineRemain
             if (remWidth > 0 && line.clusterBoundaries.size > 2) {
-                val extX = if (end && lastExtX > 0) lastExtX else remWidth / (line.clusterBoundaries.size - 2)
+                // 每个字符间距最多能分配到的宽度，末行沿用上一行字间距时不能超过它，否则整行会被推出边框
+                val perGap = remWidth / (line.clusterBoundaries.size - 2)
+                val extX = if (end && lastExtX > 0) min(lastExtX, perGap) else perGap
                 lastExtX = extX
                 for (ci in 1 until line.clusterBoundaries.size - 1) {
                     val offset = ci * extX
@@ -1580,7 +1584,9 @@ abstract class PageLoader : ViewModel() {
             //两端对齐。
             val remHeight = (mDisplayParams.contentBottom - top) % (charHeight + letterSpacing)
             if (remHeight > 0 && line.clusterBoundaries.size > 2) {
-                val extX = if (end && lastExtY > 0) lastExtY else remHeight / (line.clusterBoundaries.size - 2)
+                // 每个字符间距最多能分配到的宽度，末行沿用上一行字间距时不能超过它，否则整行会被推出边框
+                val perGap = remHeight / (line.clusterBoundaries.size - 2)
+                val extX = if (end && lastExtY > 0) min(lastExtY, perGap) else perGap
                 lastExtY = extX
                 for (ci in 1 until line.clusterBoundaries.size - 1) {
                     val offset = ci * extX
