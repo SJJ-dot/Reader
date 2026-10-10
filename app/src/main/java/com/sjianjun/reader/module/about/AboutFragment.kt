@@ -24,7 +24,7 @@ import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
-import com.sjianjun.reader.module.main.PrivacyPolicyDialogFragment
+import com.sjianjun.reader.module.main.AppHelpActivity
 import com.sjianjun.reader.online.OnlineInfos
 import com.sjianjun.reader.online.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
@@ -67,7 +67,7 @@ class AboutFragment : BaseAsyncFragment() {
                 versionCode.performClick()
             }
             tvPrivacyPolicy.click {
-                PrivacyPolicyDialogFragment().show(childFragmentManager, "PrivacyPolicyDialogFragment")
+                AppHelpActivity.startActivity(requireContext())
             }
             lifecycleScope.launch { OnlineInfos.refresh() }
             OnlineInfos.onlineInfo.observe(viewLifecycleOwner) { info ->

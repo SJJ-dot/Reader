@@ -1,11 +1,13 @@
 package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
@@ -34,6 +36,15 @@ class MainActivity : BaseActivity() {
     var binding: ActivityMainBinding? = null
     private var navController: NavController? = null
     private var appBarConfiguration: AppBarConfiguration? = null
+    private val helpLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // 已阅读并同意使用说明，进入主界面
+            globalConfig.privacyPolicyAccepted.postValue(true)
+        } else {
+            // 不同意则退出应用
+            ActivityManger.exitApp()
+        }
+    }
     override fun initTheme(isNight: Boolean) {
         if (isNight) {
             setTheme(R.style.Splash_noBackDark)
@@ -62,7 +73,10 @@ class MainActivity : BaseActivity() {
                     BookSourceUseCase.autoImport()
                 }
             } else {
-                PrivacyPolicyDialogFragment().show(supportFragmentManager, "PrivacyPolicyDialogFragment")
+                helpLauncher.launch(
+                    Intent(this, AppHelpActivity::class.java)
+                        .putExtra(AppHelpActivity.EXTRA_FORCE_CONFIRM, true)
+                )
             }
         }
     }

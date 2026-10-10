@@ -68,7 +68,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
         android:gravity="center"
-        android:text="隐私政策"
+        android:text="使用说明"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/versionCode"
         app:layout_constraintHorizontal_chainStyle="packed"

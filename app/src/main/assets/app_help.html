@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>使用说明</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #ffffff;
+            --fg: #1c1c1e;
+            --muted: #70707a;
+            --accent: #3f7f5f;
+            --card: #f5f5f7;
+            --line: #e4e4e8;
+            --warn-bg: rgba(230, 126, 34, 0.12);
+            --warn-line: rgba(230, 126, 34, 0.45);
+            --warn-fg: #e67e22;
+            --step-fg: #ffffff;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212;
+                --fg: #e6e6e8;
+                --muted: #9a9aa0;
+                --accent: #6fbf94;
+                --card: #1e1e20;
+                --line: #2c2c2e;
+                --warn-bg: rgba(230, 126, 34, 0.16);
+                --warn-line: rgba(230, 126, 34, 0.5);
+                --warn-fg: #f0a35c;
+                --step-fg: #10231a;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 22px 16px 48px;
+            background: var(--bg);
+            color: var(--fg);
+            font-size: 15px;
+            line-height: 1.8;
+            -webkit-text-size-adjust: 100%;
+            font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+        }
+        h1 {
+            font-size: 23px;
+            margin: 0 0 8px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13.5px;
+            line-height: 1.7;
+            margin: 0 0 22px;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 15px 16px;
+            margin: 14px 0;
+        }
+        .card h3 {
+            font-size: 15.5px;
+            font-weight: 600;
+            margin: 0 0 6px;
+            padding-left: 11px;
+            position: relative;
+        }
+        .card h3::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.32em;
+            width: 4px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--accent);
+        }
+        .card.warn {
+            background: var(--warn-bg);
+            border-color: var(--warn-line);
+        }
+        .card.warn h3 { color: var(--warn-fg); }
+        .card.warn h3::before { background: var(--warn-fg); }
+        ul, ol {
+            margin: 6px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+        li {
+            position: relative;
+            margin: 9px 0;
+            padding-left: 22px;
+        }
+        ul li::before {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 0.72em;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        ol { counter-reset: step; }
+        ol li { padding-left: 29px; }
+        ol li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0.3em;
+            width: 19px;
+            height: 19px;
+            line-height: 19px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--step-fg);
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        b { font-weight: 600; }
+    </style>
+</head>
+<body>
+<h1>使用说明</h1>
+<p class="subtitle">「修仙」是为学习和研究编程而开发的小说阅读器，仅供学习交流，严禁用于商业用途。</p>
+
+<div class="card warn">
+    <h3>安全提示</h3>
+    <ul>
+        <li>书源由第三方编写，其中的脚本代码可能包含未知或恶意的行为，存在隐私泄露、账号或数据被窃取等安全风险。</li>
+        <li>建议在导入或使用第三方书源之前，先借助 AI 对书源脚本进行检查与安全评估，确认无风险后再使用；对来源不明的书源请谨慎导入。</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h3>隐私说明</h3>
+    <ul>
+        <li><b>应用崩溃日志</b>：通过腾讯 Bugly 收集，仅包含崩溃堆栈信息，用于问题定位与修复。</li>
+        <li><b>在线时长统计</b>：在本机累计使用时长并定期批量上传，用于使用时长统计与在线排行。</li>
+        <li>除上述信息外，本应用不会主动收集任何用户信息，也不会获取或创建任何可能识别用户身份的标识，应用内身份为随机生成的 UUID。</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h3>使用方法</h3>
+    <ol>
+        <li><b>导入书源</b>：侧边栏 → 书源管理 → 订阅链接 → 导入书源，可粘贴书源地址或导入本地文件。</li>
+        <li><b>搜索书籍</b>：在搜索页输入书名或作者，选择书源进行搜索。</li>
+        <li><b>加入书架</b>：在书籍详情页点击加入书架，可在书架页管理收藏的书籍。</li>
+        <li><b>开始阅读</b>：从书架或详情页打开书籍，进入阅读页，可调整字号、背景、翻页方式等。</li>
+        <li><b>切换书源</b>：阅读不顺畅时，可在书籍详情或阅读设置中换源，切换到其他书源。</li>
+        <li><b>净化替换</b>：在设置中配置净化替换规则，去除章节中的广告、多余空行等。</li>
+        <li><b>听书朗读</b>：阅读页支持朗读，可后台播放。</li>
+        <li><b>备份恢复</b>：在设置中导出或导入数据库，备份书架、书源与阅读进度。</li>
+    </ol>
+</div>
+
+<div class="card">
+    <h3>免责声明</h3>
+    <ul>
+        <li>「修仙」是为学习和研究编程而开发的小说阅读器，仅供学习交流，严禁用于商业用途。</li>
+        <li>应用本身不提供任何小说内容，内容均来自第三方书源，请遵守相关网站的使用条款。</li>
+    </ul>
+</div>
+
+</body>
+</html>
