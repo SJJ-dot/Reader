@@ -17,7 +17,15 @@ object OnlineInfos {
     }
 
     /**
-     * period 统计周期 day / week / month / year / total
+     * 排行榜。period 取 day / week / month / year / total，**除 total 外都是滑动窗口**：
+     *
+     * | period | 含义 |
+     * |---|---|
+     * | day   | 最近 24 小时（不是「当天」） |
+     * | week  | 最近 7 天（不是「本周一到今天」） |
+     * | month | 最近 30 天 |
+     * | year  | 最近 365 天 |
+     * | total | 全部累计，取 ol_users.total_seconds |
      */
     suspend fun getOnlineLeaderboard(period: String): OnlineLeaderboard? {
         return OnlineApi.leaderboard(period)

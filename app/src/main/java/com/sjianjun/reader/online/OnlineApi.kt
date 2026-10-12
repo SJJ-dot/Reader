@@ -39,11 +39,13 @@ object OnlineApi {
     /**
      * 批量上报本地累计的在线时长，并返回最新统计。
      *
-     * 服务端把 [items] 里各天的秒数累加进排行榜（累加前会校验日期与数值范围），
+     * [items] 是「小时桶 → 秒数」，服务端按小时归集后累加进排行榜（累加前会校验时间与数值范围）；
+     * 排行榜的 24H / 周 / 月 / 年 都是滑动窗口（最近 24 小时 / 7 天 / 30 天 / 365 天），
+     * 时间粒度必须到小时才算得准。
      * 顺带上报 APP 版本（[BuildConfig.VERSION_NAME]），排行榜里会显示，便于看出书友用的版本。
      * [items] 为空表示只报活一次（用于刷新在线人数），不计时长。
      */
-    suspend fun report(deviceId: String, items: List<DailySeconds>): OnlineInfo? {
+    suspend fun report(deviceId: String, items: List<TimeBucket>): OnlineInfo? {
         val body = gson.toJson(
             mapOf(
                 "p_device" to deviceId,
