@@ -8,8 +8,8 @@ object ChapterPageCache {
     private var displayWidth = 0
     private var displayHeight = 0
 
-    //保留10个章节的分页缓存
-    private val cache = LruCache<Int, List<TxtPage>>(10)
+    // 只保留必要的分页缓存：当前章 + 上一章 + 下一章（预加载），共 3 章
+    private val cache = LruCache<Int, List<TxtPage>>(3)
 
     fun reset() {
         cache.evictAll()

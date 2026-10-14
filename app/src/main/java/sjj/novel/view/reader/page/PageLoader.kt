@@ -1100,9 +1100,16 @@ abstract class PageLoader : ViewModel() {
         val titleText = ChapterTextPreparer.title(
             chapter.title, mReplacementRules, mCollBook, replacementChapter, mJianFanMode, mFullWidthConvert
         )
-        val contentText = ChapterTextPreparer.content(
+        val preparedContent = ChapterTextPreparer.content(
             chapter.content, mReplacementRules, mCollBook, replacementChapter, mJianFanMode, mFullWidthConvert
         )
+        // 防御：异常超长内容会生成海量行/页对象，直接导致 OOM，这里先截断
+        val contentText = if (preparedContent.length > MAX_CHAPTER_CONTENT_LENGTH) {
+            Log.e("章节内容过长已截断：${preparedContent.length} -> $MAX_CHAPTER_CONTENT_LENGTH chapter=${chapter.title}")
+            preparedContent.substring(0, MAX_CHAPTER_CONTENT_LENGTH) + "\n（本章内容过长，仅显示部分内容）"
+        } else {
+            preparedContent
+        }
         return when (mTypesettingMode) {
 
             MODE_TYPESETTING_HORIZONTAL_RTL -> {
@@ -1138,7 +1145,7 @@ abstract class PageLoader : ViewModel() {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
-        while (i < lines.size) {
+        while (i < lines.size && pages.size < MAX_PAGE_COUNT) {
             var top = mDisplayParams.contentTop
             var clusterStart = 0
             while (i < lines.size) {
@@ -1194,7 +1201,7 @@ abstract class PageLoader : ViewModel() {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
-        while (i < lines.size) {
+        while (i < lines.size && pages.size < MAX_PAGE_COUNT) {
             var left = mDisplayParams.contentLeft
             var clusterStart = 0
             while (i < lines.size) {
@@ -1249,7 +1256,7 @@ abstract class PageLoader : ViewModel() {
         val pages: MutableList<TxtPage> = ArrayList()
         val pageLine: MutableList<TxtLine> = ArrayList()
         var i = 0
-        while (i < lines.size) {
+        while (i < lines.size && pages.size < MAX_PAGE_COUNT) {
             var right = mDisplayParams.contentRight
             var clusterStart = 0
             while (i < lines.size) {
@@ -1995,6 +2002,12 @@ abstract class PageLoader : ViewModel() {
         const val STATUS_ERROR: Int = 3 // 加载错误 (一般是网络加载情况)
         const val STATUS_EMPTY: Int = 4 // 空数据
         const val STATUS_CATEGORY_EMPTY: Int = 7 // 获取到的目录为空
+
+        /** 单章正文最大字符数：超过则截断，避免异常超长内容分页时占用过多内存 */
+        private const val MAX_CHAPTER_CONTENT_LENGTH = 200_000
+
+        /** 单章最大页数：分页达到上限即停止，避免页面对象无限增长导致 OOM */
+        const val MAX_PAGE_COUNT = 1000
     }
 
     fun setJianFanMode(mode: Int) {

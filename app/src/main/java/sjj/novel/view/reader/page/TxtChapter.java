@@ -12,8 +12,8 @@ import java.util.Objects;
  */
 
 public class TxtChapter {
-    //保存10章的章节内容 这里的10个字符串会导致内存泄漏。但不重要
-    private static final LruCache<String, CharSequence> contents = new LruCache<>(10);
+    // 章节内容缓存：只保留必要的当前章 + 上一章 + 下一章，共 3 章
+    private static final LruCache<String, CharSequence> contents = new LruCache<>(3);
 
     public static void evictAll() {
         contents.evictAll();
