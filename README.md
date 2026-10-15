@@ -1,17 +1,20 @@
-## 「修仙」是为学习和研究编程而开发的小说阅读器，严禁用于商业用途，否则后果自负。
+## 📕🤖自用网络小说阅读器；Python书源驱动，离线运行；方便AI自动编写调试书源
+* 兼容阅读3.0书源规则
+* 阅读页自定义背景、文字颜色、字间距、行间距、字体等等
+* 内置净化规则模板
 
-## 书源
-* 书源支持：修仙书源、兼容阅读3.0书源规则
-* 修仙书源使用Python编写可独立运行，相对于阅读3.0书源编写更简单，更方便使用AI辅助编写
-* 推荐使用PyCharm来进行书源编写，需要cookie的书源编写需要在手机安装APP后打开测试接口开关
-* [书源制作教程](https://github.com/SJJ-dot/Reader/blob/BookSource/README.MD)
-* 
-## 如果喜欢就动动小手点个star吧😁😁😁😁
+## [关于书源](https://github.com/SJJ-dot/Reader/blob/BookSource/test/README.MD)
 
-| <img src="img/01.jpg" width = "180" height = "360"/> | <img src="img/02.jpg" width = "180" height = "360"/> | <img src="img/10.jpg" width = "180" height = "360"/> |
-|------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
-| <img src="img/3.jpg" width = "180" height = "360"/>  | <img src="img/4.jpg" width = "180" height = "360"/>  | <img src="img/9.jpg" width = "180" height = "360"/>  |
-| <img src="img/5.jpg" width = "180" height = "360"/>  | <img src="img/6.jpg" width = "180" height = "360"/>  | <img src="img/8.jpg" width = "180" height = "360"/>  |
 
-[Releases](https://github.com/SJJ-dot/Reader/releases)
+## 预览
 
+| <img src="img/B1.webp" width = "90" height = "180"/> | <img src="img/B5.webp" width = "90" height = "180"/> | <img src="img/B3.webp" width = "90" height = "180"/> | <img src="img/B4.webp" width = "90" height = "180"/> |
+|-----------------------------------------------------|-----------------------------------------------------|-----------------------------------------------------|-----------------------------------------------------|
+| <img src="img/7.webp" width = "90" height = "180"/> | <img src="img/1.webp" width = "90" height = "180"/> | <img src="img/2.webp" width = "90" height = "180"/> | <img src="img/3.webp" width = "90" height = "180"/> |
+| <img src="img/4.webp" width = "90" height = "180"/> | <img src="img/5.webp" width = "90" height = "180"/> | <img src="img/6.webp" width = "90" height = "180"/> |
+
+## [下载体验](https://github.com/SJJ-dot/Reader/releases)
+
+<img src="img/apk.webp" width = "180" height = "180"/>
+
+## 如果喜欢就动动小手点个star，或者推荐给你的朋友吧😁😁😁😁
