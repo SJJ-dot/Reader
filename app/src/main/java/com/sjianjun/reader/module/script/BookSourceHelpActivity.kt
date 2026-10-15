@@ -132,7 +132,7 @@ class BookSourceHelpActivity : BaseActivity() {
     companion object {
         /** 内置测试书源地址（Base64 + gzip 格式） */
         private const val TEST_SOURCE_URL =
-            "https://cdn.jsdelivr.net/gh/SJJ-dot/Reader/test/BookSource/default.json.gzip"
+            "https://raw.githubusercontent.com/SJJ-dot/Reader/refs/heads/BookSource/test/BookSource/default.json.gzip"
         private const val TEST_SOURCE_GROUP = "修仙书源"
 
         fun startActivity(ctx: Context) {
