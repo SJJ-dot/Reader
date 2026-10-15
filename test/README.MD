@@ -5,7 +5,7 @@
 - 除python基础库外的内置库：`requests`、`beautifulsoup4`、`pycryptodome`
 ### 2、书源开发步骤
 1. 将存储库下载到本地，并切换到`BookSource`分支
-2. 模板推荐参考`书海阁.py`；
+2. 模板推荐参考最近编写的py书源，新的书源使用了一些新的特性；
    - 如果其他书源转修仙书源，参考：[yuedu.py](yuedu.py)，阅读书源原生支持，可直接导入不需要转换
 3. 将新书源域名告诉`AI`，让`AI`修改直到脚本测试通过，输出章节内容即可
 4. 更新书源：运行脚本`Reader/test/update_source.py`；脚本会将`Reader/test/py`目录下的脚本打包更新到`Reader/test/BookSource`目录下：[default.json](BookSource/default.json) 和 [default.json.gzip](BookSource/default.json.gzip)
