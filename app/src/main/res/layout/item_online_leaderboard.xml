@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardBackgroundColor="@color/dn_background_card"
-    android:layout_margin="5dp">
+    android:layout_margin="5dp"
+    app:cardBackgroundColor="@color/dn_background_card">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -44,17 +44,30 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="100小时" />
 
+        <!-- 已加入天数与「总阅读时长」并排一行，加入天数在前 -->
         <TextView
-            android:id="@+id/tv_level"
+            android:id="@+id/tv_joined"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:layout_marginEnd="8dp"
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/mdr_grey_500"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="@+id/tv_online_time"
             app:layout_constraintTop_toBottomOf="@+id/tv_online_time"
-            tools:text="筑基3期" />
+            tools:text="已加入 12 天" />
+
+        <TextView
+            android:id="@+id/tv_level"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/tv_joined"
+            app:layout_constraintTop_toTopOf="@+id/tv_joined"
+            tools:text="总阅读时长：3天2小时" />
 
         <TextView
             android:id="@+id/tv_user"
@@ -70,11 +83,10 @@
             android:id="@+id/tv_version"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
             android:textColor="@color/mdr_grey_500"
-            android:textSize="10sp"
+            android:textSize="12sp"
+            app:layout_constraintBaseline_toBaselineOf="@+id/tv_level"
             app:layout_constraintEnd_toEndOf="@+id/tv_user"
-            app:layout_constraintTop_toBottomOf="@+id/tv_user"
             tools:text="2.1.1407" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

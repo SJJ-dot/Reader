@@ -45,6 +45,24 @@ object OnlineStore {
         }
     }
 
+    /**
+     * 保证当前小时桶至少有 [seconds] 秒；已经有更多秒数时原样不动，不会重复叠加。
+     *
+     * 启动时用：排行榜会过滤掉 0 秒的设备（`HAVING sum(seconds) > 0`），
+     * 不补这一秒的话，新装的设备要等实际累计出时长才会出现在榜上。
+     */
+    fun ensureAtLeast(seconds: Long) {
+        if (seconds <= 0) return
+        synchronized(lock) {
+            val bucket = currentBucket()
+            val pending = readLocked()
+            if ((pending[bucket] ?: 0L) < seconds) {
+                pending[bucket] = seconds
+                writeLocked(pending)
+            }
+        }
+    }
+
     /** 当前全部待上传记录（小时 → 秒数），按时间升序 */
     fun snapshot(): List<TimeBucket> = synchronized(lock) {
         readLocked().map { TimeBucket(it.key, it.value) }

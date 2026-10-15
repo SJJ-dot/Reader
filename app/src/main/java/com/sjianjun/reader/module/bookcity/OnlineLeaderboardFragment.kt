@@ -68,6 +68,7 @@ class OnlineLeaderboardFragment : Fragment() {
 
     private fun loadLeaderboard() {
         lifecycleScope.launch {
+            // 这里只拉榜单数据，不触发上报：上传时机固定为「启动 / 每 5 分钟 / onActivityPaused」
             val leaderboard = OnlineInfos.getOnlineLeaderboard(currentPeriod)
             if (leaderboard?.items != null) {
                 adapter.data = leaderboard.items!!.toMutableList()
@@ -93,6 +94,9 @@ class OnlineLeaderboardFragment : Fragment() {
             binding.tvLevel.text = item.levelName
             binding.tvOnlineTime.text = item.online_seconds.formatDuration()
             binding.tvVersion.text = item.app_version
+            // 已加入天数由服务端计算（用本机时间算会因时钟不准而偏差）；缺字段时留空不显示
+            binding.tvJoined.text =
+                if (item.joined_days > 0) "已加入 ${item.joined_days} 天" else ""
             val context = holder.itemView.context
             if (item.user_id == onlineDeviceId) {
                 binding.root.setCardBackgroundColor(R.color.dn_color_primary.color(context))
@@ -100,12 +104,14 @@ class OnlineLeaderboardFragment : Fragment() {
                 binding.tvLevel.setTextColor(Color.WHITE)
                 binding.tvOnlineTime.setTextColor(Color.WHITE)
                 binding.tvVersion.setTextColor(Color.WHITE)
+                binding.tvJoined.setTextColor(Color.WHITE)
             } else {
                 binding.root.setCardBackgroundColor(R.color.dn_background_card.color(context))
                 binding.tvUser.setTextColor(R.color.mdr_grey_500.color(context))
                 binding.tvLevel.setTextColor(R.color.colorPrimary.color(context))
                 binding.tvOnlineTime.setTextColor(R.color.dn_text_color_black.color(context))
                 binding.tvVersion.setTextColor(R.color.mdr_grey_500.color(context))
+                binding.tvJoined.setTextColor(R.color.mdr_grey_500.color(context))
             }
         }
 

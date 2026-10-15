@@ -14,7 +14,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import com.google.zxing.BarcodeFormat
@@ -35,7 +34,6 @@ import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.io.File
 
@@ -69,7 +67,8 @@ class AboutFragment : BaseAsyncFragment() {
             tvPrivacyPolicy.click {
                 AppHelpActivity.startActivity(requireContext())
             }
-            lifecycleScope.launch { OnlineInfos.refresh() }
+            // 不在这里触发上报：上传时机固定为「启动 / 每 5 分钟 / onActivityPaused」，
+            // 这里只展示最近一次上报回来的数据（OnlineRecorder 上传成功后会 postValue）
             OnlineInfos.onlineInfo.observe(viewLifecycleOwner) { info ->
                 tvOnline.text = "今日阅读时长：${info?.today_online_seconds?.formatDuration() ?: "--"}\n" +
                         "书友在线：${info.online_count}"

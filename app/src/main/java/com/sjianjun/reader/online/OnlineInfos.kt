@@ -9,14 +9,6 @@ object OnlineInfos {
     val onlineInfo = MutableLiveData<OnlineInfo>()
 
     /**
-     * 拉取个人在线统计与在线人数。
-     * 顺带把本地累计的在线时长上传一次（见 [OnlineRecorder.flushNow]），所以打开页面就能看到最新数据。
-     */
-    suspend fun refresh() {
-        OnlineRecorder.flushNow()
-    }
-
-    /**
      * 排行榜。period 取 day / week / month / year / total，**除 total 外都是滑动窗口**：
      *
      * | period | 含义 |
@@ -51,6 +43,10 @@ class RankingInfo {
 
     /** 该设备上报的 APP 版本；老版本客户端不上报，可能为空 */
     var app_version: String = ""
+
+    /** 已加入天数：服务端按「自然日差 + 1」算，所以加入当天就是 1 天；服务端未返回时为 0 */
+    var joined_days: Int = 0
+
     val levelName: String
         get() = "总阅读时长：" + total_online_seconds.formatDuration()
 }
