@@ -1,20 +1,16 @@
 ## 书源制作教程
 ### 1、开发环境
 - 语言：`Python3.12`
-- 推荐IDE：`PyCharm`
+- 推荐使用AI
 - 除python基础库外的内置库：`requests`、`beautifulsoup4`、`pycryptodome`
 ### 2、书源开发步骤
 1. 将存储库下载到本地，并切换到`BookSource`分支
-2. 使用`PyCharm`打开目录：`Reader\test`
-3. 在`Reader/test/py`目录下创建对应书源的`py`脚本：`xx小说.py`
-4. 复制模板到`xx小说.py`中：
-   - 有人机验证，选择[顶点小说](https://github.com/SJJ-dot/Reader/blob/BookSource/test/py/%E9%A1%B6%E7%82%B9%E5%B0%8F%E8%AF%B4.py)并打开APP设置页的测试接口，测试接口默认关闭，开启时可在局域网内调用APP内的人机验证接口
-   - 无人机验证，选择[小原文学网](https://github.com/SJJ-dot/Reader/blob/BookSource/test/py/%E5%B0%8F%E5%8E%9F%E6%96%87%E5%AD%A6%E7%BD%91.py)”。
-   - 如果时其他书源转修仙书源，参考：[yuedu.py](yuedu.py)，阅读书源原生支持，可直接导入不需要转换
-5. 将新书源域名告诉`AI`，让`AI`修改直到脚本测试通过，输出章节内容即可
-6. 更新书源：运行脚本`Reader/test/update_source.py`；脚本会将`Reader/test/py`目录下的脚本打包更新到`Reader/test/BookSource`目录下：[default.json](BookSource/default.json) 和 [default.json.gzip](BookSource/default.json.gzip)
-7. 如果有特别的说明可以手动编写 [default.json](BookSource/default.json) 找到对应书源，书源字典可以备注，例如：`comment:"需要梯子"`
-8. 在`APP`书源管理页面填写`BookSource`目录下的文件链接，推荐`gzip`文件优先
+2. 模板推荐参考`书海阁.py`；
+   - 如果其他书源转修仙书源，参考：[yuedu.py](yuedu.py)，阅读书源原生支持，可直接导入不需要转换
+3. 将新书源域名告诉`AI`，让`AI`修改直到脚本测试通过，输出章节内容即可
+4. 更新书源：运行脚本`Reader/test/update_source.py`；脚本会将`Reader/test/py`目录下的脚本打包更新到`Reader/test/BookSource`目录下：[default.json](BookSource/default.json) 和 [default.json.gzip](BookSource/default.json.gzip)
+5. 如果有特别的说明可以手动编写 [default.json](BookSource/default.json) 找到对应书源，书源字典可以备注，例如：`comment:"需要梯子"`
+6. 在`APP`书源管理页面填写`BookSource`目录下的文件链接，推荐`gzip`文件优先
 ### 3、导入书源
    - 单个书源可以在APP新建书源直接复制粘贴书源源码
    - 使用打包的脚本将书源压缩为ZIP放在`GitHub`使用`链接`导入或者`手机本地`直接导入`文件`
