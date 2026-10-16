@@ -16,11 +16,18 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class ChapterListViewModel : ViewModel() {
     val chapterListLiveData = MutableLiveData<List<Chapter>>()
     val readingRecord = MutableLiveData<ReadingRecord>()
+
+    /**
+     * 当前书籍是否正在加载。下拉「重新加载」、上拉「检查更新」都会把书籍置为加载中，
+     * 用它驱动刷新动画：请求可能长时间不返回，动画跟着加载状态才能保证该收的时候一定收得掉
+     */
+    val bookIsLoadingLiveData = MutableLiveData<Boolean>()
     private val bookDao get() = DbFactory.db.bookDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
@@ -29,7 +36,9 @@ class ChapterListViewModel : ViewModel() {
     fun init(bookTitle: String) {
         bookJob?.cancel()
         bookJob = viewModelScope.launch(Dispatchers.IO) {
-            bookDao.getReadingBook(bookTitle).flatMapLatest { book ->
+            bookDao.getReadingBook(bookTitle).onEach {
+                bookIsLoadingLiveData.postValue(it?.isLoading == true)
+            }.flatMapLatest { book ->
                 // 取启用净化规则，并对章节标题应用（作用域：书名 + 书URL + 章节标题）
                 val rules = ReplacementRuleUseCase.getEnabledRules()
                 chapterDao.getChapterListByBookId(book?.id ?: "").map { chapterList ->

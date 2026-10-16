@@ -8,11 +8,17 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.python.ScriptCallTargets
+import com.sjianjun.reader.python.ScriptTaskRunner
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
 import com.sjianjun.reader.utils.normalizedChapterName
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
@@ -142,6 +148,10 @@ object BookUseCase {
      */
     suspend fun reloadBookFromNet(book: Book?, forceFull: Boolean = false) = withIo {
         book ?: return@withIo
+        //本次加载的标识：同一本书（同 URL）的重复加载只保留最新一次，
+        //开始时会取消上一次还在跑的加载（脚本连接/线程一并终止），旧调用即使侥幸返回也不写库
+        val target = ScriptCallTargets.detailsKey(book.url)
+        val generation = ScriptCallTargets.begin(target)
         try {
             if (book.bookSourceId == BookSource.fileImportBookSource.id){
                 //本地导入的书籍所有内容都在本地
@@ -156,6 +166,11 @@ object BookUseCase {
             //本地已有的最新章节链接，没有时传空串。脚本可据此只返回最新章节，加速检查更新
             val lastChapterUrl = if (forceFull) "" else chapterDao.getLastChapterByBookId(book.id)?.url ?: ""
             val bookDetails = script.getDetails(book.url, lastChapterUrl)!!
+            //本次调用已被更新的调用取代（或页面已退出）：结果直接丢弃，不写库、不改状态
+            if (!ScriptCallTargets.isLatest(target, generation)) {
+                Log.i("${book.title} 加载已被取代，丢弃本次结果")
+                return@withIo
+            }
             if (bookDetails.title != book.title) {
                 throw MessageException("加载失败：书籍标题发生变化")
             }
@@ -228,6 +243,7 @@ object BookUseCase {
                         chapter.content = mutableListOf(content)
                         val content = script.getChapterContent(chapter.url)
                         content.bookId = chapter.bookId
+                        //这里不传 taskKey：本调用嵌在详情加载内部，用独立标识，避免取消掉外面的加载
                         content.chapterUrl = chapter.url
                         if (!content.contentError) {
                             if (chapter.content?.firstOrNull()?.contentError == true && chapter.content?.firstOrNull()?.content == content.content) {
@@ -243,16 +259,40 @@ object BookUseCase {
             }
             updateDetails(bookDetails, keepUpToIndex)
         } catch (e: CancellationException) {
-            //加载被取消（例如退出详情页），只清除加载中状态，不当作加载失败记录错误
+            //协程被取消（页面销毁、发起方主动取消）：恢复加载中状态，不当作加载失败
             Log.i("加载被取消：${book.title}")
-            book.isLoading = false
-            book.error = null
-            bookDao.updateBook(book)
+            restoreLoadingState(book, target, generation)
             throw e
         } catch (e: Throwable) {
-            Log.e("加载书籍详情：$book", e)
+            if (ScriptTaskRunner.isCancelled(e)) {
+                //脚本调用被取消（页面退出、或被同一本书更新的加载取代）：不算加载失败
+                Log.i("${book.title} 加载被取消，忽略本次结果")
+                restoreLoadingState(book, target, generation)
+                //协程若已被取消，这里把取消继续向上抛；只是被取代则正常结束
+                currentCoroutineContext().ensureActive()
+            } else if (ScriptCallTargets.isLatest(target, generation)) {
+                Log.e("加载书籍详情：$book", e)
+                book.isLoading = false
+                book.error = android.util.Log.getStackTraceString(e)
+                bookDao.updateBook(book)
+            } else {
+                Log.i("${book.title} 加载已被取代，忽略本次结果")
+            }
+        } finally {
+            ScriptCallTargets.end(target, generation)
+        }
+    }
+
+    /**
+     * 取消/被取代时恢复"加载中"状态：
+     * - 只有仍是该目标最新一次调用时才写，避免把新加载刚置上的"加载中"提前清掉；
+     * - 用 NonCancellable：协程已被取消时也要能写库。
+     */
+    private suspend fun restoreLoadingState(book: Book, target: String?, generation: Long) {
+        if (!ScriptCallTargets.isLatest(target, generation)) return
+        withContext(NonCancellable) {
             book.isLoading = false
-            book.error = android.util.Log.getStackTraceString(e)
+            book.error = null
             bookDao.updateBook(book)
         }
     }
@@ -289,6 +329,9 @@ object BookUseCase {
             return@withIo chapter
         }
 
+        //同一章正文的重复加载只保留最新一次：这里先取消上一次请求，
+        //等待章节锁的上一次调用因此会立刻结束并让出锁，不会让新请求干等它超时
+        ScriptCallTargets.cancelCurrent(ScriptCallTargets.contentKey(chapter.url))
         chapterContentLock(chapter).withLock {
             // 等锁期间另一边可能已经加载好了：查一次库直接复用，避免重复抓取
             if (force != 1) {
@@ -341,6 +384,7 @@ object BookUseCase {
             }
             Log.i("${chapter.title} 加载下一页 url：$nextUrl")
             val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
+            //同一页的重复请求只保留最新一次（py 内部按 url 生成标识）
             val content = js.getChapterContent(nextUrl)
             content.bookId = chapter.bookId
             content.chapterUrl = chapter.url

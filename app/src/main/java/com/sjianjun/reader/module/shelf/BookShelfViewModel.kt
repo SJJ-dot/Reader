@@ -107,21 +107,6 @@ class BookShelfViewModel : ViewModel() {
         }
     }
 
-    /**
-     * 页面销毁时清理书架中书籍残留的加载中状态，
-     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载
-     */
-    fun resetBookLoadingState() {
-        val ids = bookList.value?.filter { it.isLoading }?.map { it.id } ?: return
-        if (ids.isEmpty()) return
-        //用应用级作用域：本方法由 onDestroyView 调用，紧接着 ViewModel 可能就被销毁，
-        //viewModelScope 一旦被取消，重置就不会执行
-        App.app.appScope.launch(Dispatchers.IO) {
-            runCatching { BookUseCase.resetBookLoadingState(ids) }
-                .onFailure { Log.e("重置书籍加载状态失败", it) }
-        }
-    }
-
     fun deleteBook(book: Book) {
         viewModelScope.launch {
             BookUseCase.delete(book)

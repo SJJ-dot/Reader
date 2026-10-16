@@ -2,6 +2,7 @@ package com.sjianjun.reader.python
 
 import com.chaquo.python.Python
 import com.sjianjun.reader.bean.BookSource
+import com.sjianjun.reader.bean.BookSource.Func
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import sjj.alog.Log
@@ -12,17 +13,28 @@ import sjj.alog.Log
 
 /**
  * 调用Python书源脚本
+ *
+ * 每次调用都跑在一个脚本任务里：协程取消（页面销毁等）时该脚本调用立即终止。
+ * 其中三类调用还要"同一目标只保留最新一次"（新的调用立即取消旧的），标识在这里统一推导：
+ * - 搜索 → 书源（同一书源只保留最后一次搜索，不区分关键词）
+ * - 加载详情 → 书籍 URL
+ * - 加载章节内容 → 章节/分页 URL
+ * 其他调用不参与去重（只随协程取消）。
+ *
  * @param param2 第二个参数，仅 getDetails 使用（书籍最新章节链接，没有时传空串）
- * @param taskKey 可被取消的脚本任务标识，需要中途取消的调用（如书籍详情加载）要传入
  */
-inline fun <reified T> BookSource.py(
+suspend inline fun <reified T> BookSource.py(
     func: String,
     param: String?,
     param2: String? = null,
-    taskKey: String? = null,
 ): T? {
     val exec = execModule
-    // 整次脚本调用跑在一个脚本任务里：任务期间建立的连接、线程都可被 abort 中断
+    val taskKey = when (func) {
+        Func.search.name -> ScriptCallTargets.searchKey(id)
+        Func.getDetails.name -> ScriptCallTargets.detailsKey(param.orEmpty())
+        Func.getChapterContent.name -> ScriptCallTargets.contentKey(param.orEmpty())
+        else -> null
+    }
     val pyResult = ScriptTaskRunner.run(taskKey, js) {
         when {
             !param.isNullOrBlank() && param2 != null -> exec.callAttr("exec_script", js, func, param, param2)

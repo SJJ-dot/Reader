@@ -68,24 +68,6 @@ class BookReaderViewModel : ViewModel() {
         this@BookReaderViewModel.chapterList.postValue(this@BookReaderViewModel.book.value?.chapterList ?: emptyList())
     }
 
-    /**
-     * 页面销毁时清理该书残留的加载中状态，避免加载被中断后 isLoading 一直为 true，
-     * 导致退出阅读页后书架里这本书一直显示加载中。
-     *
-     * 章节列表的「检查更新／重新加载」和书籍信息加载都会把 isLoading 置为 true，
-     * 退出阅读页时协程虽然被取消，但脚本调用是阻塞的、取消不会立刻生效，
-     * 状态会残留在数据库中，所以这里主动清理。
-     *
-     * 必须使用应用级作用域：本方法由 onDestroy 调用，紧接着 ViewModel 就会被销毁，
-     * viewModelScope 一旦被取消，重置就不会执行
-     */
-    fun resetBookLoadingState(bookTitle: String) {
-        App.app.appScope.launch(Dispatchers.IO) {
-            runCatching { BookUseCase.resetBookLoadingStateByTitle(bookTitle) }
-                .onFailure { Log.e("重置书籍加载状态失败：$bookTitle", it) }
-        }
-    }
-
     fun saveRecord(bean: BookRecordBean) {
         val record = book.value?.record ?: return
         if (bean.chapter != record.chapterIndex ||

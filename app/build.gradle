@@ -37,7 +37,7 @@ android {
         minSdk = libs.versions.androidMinSdk.get().toInteger()
         targetSdk = libs.versions.androidTargetSdk.get().toInteger()
         versionCode commitCont
-        versionName "2.1.${commitCont}"
+        versionName "2.2.${commitCont - 1422}"
         resConfigs("zh")
         ndk {
             //noinspection ChromeOsAbiSupport

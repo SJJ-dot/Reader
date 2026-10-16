@@ -75,7 +75,11 @@ class BookSource {
     }
 
 
-    private suspend inline fun <reified T> execute(func: Func, param: String?, param2: String? = null): T? {
+    private suspend inline fun <reified T> execute(
+        func: Func,
+        param: String?,
+        param2: String? = null,
+    ): T? {
 //        Log.i("调用脚本方法：${func}")
         return when (lauanage) {
             Language.yuedu -> {

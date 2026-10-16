@@ -92,8 +92,6 @@ class BookshelfFragment : BaseFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
-        //页面销毁时清理残留的加载中状态，避免书籍一直处于加载中无法重新加载
-        viewModel.resetBookLoadingState()
         bookShelfTitle.destroyTileView()
         bookShelfBinding = null
         adapter = null

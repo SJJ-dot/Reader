@@ -55,19 +55,32 @@ class ChapterListFragment : BaseFragment() {
      */
     private fun initRefresh() {
         val refresh = binding?.chapterRefresh ?: return
+        //记录动画是哪个手势拉起来的，收尾时按对应方式收
+        var fromLoadMore = false
+        //同一个 key：重复下拉/上拉时新的加载会取代上一次（协程取消会连带取消正在跑的脚本调用）
         refresh.setOnRefreshListener {
-            launch {
-                viewModel.reloadBookFromNet(bookTitle)
-                refresh.finishRefresh()
-            }
+            fromLoadMore = false
+            launch(singleCoroutineKey = "chapter_list_load") { viewModel.reloadBookFromNet(bookTitle) }
         }
         refresh.setEnableLoadMore(true)
         //默认是「拉到底自动加载」，会一上拉就触发，这里改为松手才执行
         refresh.setEnableAutoLoadMore(false)
         refresh.setOnLoadMoreListener {
-            launch {
-                viewModel.checkUpdate(bookTitle)
-                refresh.finishLoadMore()
+            fromLoadMore = true
+            launch(singleCoroutineKey = "chapter_list_load") { viewModel.checkUpdate(bookTitle) }
+        }
+        //刷新动画跟随书籍的加载状态，而不是等请求返回后再手动收：
+        //请求可能长时间不返回（脚本卡住、网络慢），手动收会让控件一直停在「正在刷新／加载中」，
+        //此后下拉、上拉全部失效；页面退出时加载状态会被重置，动画也随之收掉
+        viewModel.bookIsLoadingLiveData.observeViewLifecycle { loading ->
+            if (loading == true) {
+                if (!refresh.isRefreshing && !refresh.isLoading) {
+                    if (fromLoadMore) refresh.autoLoadMoreAnimationOnly()
+                    else refresh.autoRefreshAnimationOnly()
+                }
+            } else {
+                if (refresh.isRefreshing) refresh.finishRefresh()
+                if (refresh.isLoading) refresh.finishLoadMore()
             }
         }
     }

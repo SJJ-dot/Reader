@@ -69,25 +69,12 @@ class BookDetailsViewModel : ViewModel() {
     }
 
     /**
-     * 页面销毁时取消正在进行的加载
+     * 页面销毁时取消正在进行的加载：协程取消会连带取消正在跑的脚本调用，
+     * 加载流程自己会恢复"加载中"状态
      */
     fun cancelLoading() {
         loadJob?.cancel()
         loadJob = null
-    }
-
-    /**
-     * 页面销毁时清理该书所有书源残留的加载中状态，
-     * 避免加载被中断后 isLoading 一直为 true 导致书籍无法再次加载。
-     *
-     * 这里必须使用应用级作用域：本方法由 onDestroyView 调用，紧接着 ViewModel 就会被销毁，
-     * viewModelScope 也随之取消，协程还没执行就被取消，重置不会生效
-     */
-    fun resetBookLoadingState(title: String) {
-        App.app.appScope.launch(Dispatchers.IO) {
-            runCatching { BookUseCase.resetBookLoadingStateByTitle(title) }
-                .onFailure { Log.e("重置书籍加载状态失败：$title", it) }
-        }
     }
 
     suspend fun setRecordToLastChapter() = withIo {

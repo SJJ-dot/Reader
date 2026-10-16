@@ -158,6 +158,7 @@ class SearchViewModel : ViewModel() {
                 flow {
                     try {
                         Log.i("search ${it.id} start")
+                        //同一书源只保留最后一次搜索（py 内部按书源生成标识，不区分关键词）
                         val search = it.search(query)
                         if (search != null) {
                             emit(search)
