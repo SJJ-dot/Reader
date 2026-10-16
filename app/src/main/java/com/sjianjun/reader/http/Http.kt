@@ -1,12 +1,15 @@
 package com.sjianjun.reader.http
 
+import com.sjianjun.reader.python.ScriptTaskRegistry
 import okhttp3.CacheControl
+import okhttp3.Call
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.Response
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -80,6 +83,21 @@ val stringConverter = StringConverter()
 
 val http = Http()
 
+/**
+ * 发起请求并登记到当前脚本任务上：任务被取消（例如退出阅读页）时先关掉连接，
+ * 阻塞中的 execute 会立刻抛 IOException 返回，不必干等超时。
+ */
+private fun Call.executeWithScriptTask(): Response {
+    val cancelAction = { cancel() }
+    val task = ScriptTaskRegistry.current()
+    task?.addCancelAction(cancelAction)
+    try {
+        return execute()
+    } finally {
+        task?.removeCancelAction(cancelAction)
+    }
+}
+
 class Resp(val code: Int, val url: String, val body: String)
 
 class Http {
@@ -103,7 +121,7 @@ class Http {
         header.forEach {
             builder.header(it.key, it.value)
         }
-        val response = okClient.newCall(builder.build()).execute()
+        val response = okClient.newCall(builder.build()).executeWithScriptTask()
         return Resp(
             response.code,
             response.request.url.toString(),
@@ -131,7 +149,7 @@ class Http {
         header.forEach {
             builder.header(it.key, it.value)
         }
-        val response = okClient.newCall(builder.build()).execute()
+        val response = okClient.newCall(builder.build()).executeWithScriptTask()
         return Resp(
             response.code,
             response.request.url.toString(),
@@ -153,7 +171,7 @@ class Http {
         header.forEach {
             builder.header(it.key, it.value)
         }
-        val response = okClient.newCall(builder.build()).execute()
+        val response = okClient.newCall(builder.build()).executeWithScriptTask()
         return Resp(
             response.code,
             response.request.url.toString(),

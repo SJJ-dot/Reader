@@ -28,6 +28,8 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
 import com.sjianjun.reader.http.WebViewPool
+import com.sjianjun.reader.python.ScriptTaskCancelledException
+import com.sjianjun.reader.python.ScriptTaskRegistry
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.view.click
@@ -67,6 +69,7 @@ class WebViewVerificationActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activeActivity = WeakReference(this)
         // 标记已启动：供 waitForResult 判断 activity 是否真的起来（后台启动受限等场景下不会触发）
         resultMap[intent.getStringExtra(KEY_RESULT)]?.started = true
         enableEdgeToEdge()
@@ -114,6 +117,9 @@ class WebViewVerificationActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (activeActivity?.get() === this) {
+            activeActivity = null
+        }
         destroyed = true
         runnable?.let { mHandler.removeCallbacks(it) }
         mHandler.removeCallbacks(finishFallback)
@@ -349,6 +355,10 @@ class WebViewVerificationActivity : BaseActivity() {
         private val KEY_RESULT = "result"
         private val resultMap = mutableMapOf<String, Result>()
 
+        /** 当前正在运行的验证页实例，脚本任务被取消时用它关掉页面 */
+        @Volatile
+        private var activeActivity: WeakReference<WebViewVerificationActivity>? = null
+
         /** 同一时刻只允许一个验证页运行；后续请求在锁上排队，等前一个 activity 完成后再启动。 */
         private val verificationLock = Any()
 
@@ -361,6 +371,8 @@ class WebViewVerificationActivity : BaseActivity() {
                 if (Looper.myLooper() == Looper.getMainLooper()) {
                     throw IllegalStateException("startAndWaitResult 必须在子线程中调用")
                 }
+                // 调用前拦截：脚本任务已取消时不再弹出验证页，直接抛取消异常
+                ScriptTaskRegistry.throwIfCurrentCancelled()
                 val keyResult = UUID.randomUUID().toString()
                 val intent = Intent(App.app, WebViewVerificationActivity::class.java).apply {
                     putExtra(KEY_URL, url)
@@ -372,6 +384,8 @@ class WebViewVerificationActivity : BaseActivity() {
                 val result = Result(url)
                 resultMap[keyResult] = result
                 GlobalScope.launch(Dispatchers.Main) {
+                    // 等待开始前就被取消（例如脚本任务已取消）：不要再弹出验证页
+                    if (result.finished) return@launch
                     Log.i("WebViewVerificationActivity start for $url")
                     App.app.startActivity(intent)
                 }
@@ -388,6 +402,8 @@ class WebViewVerificationActivity : BaseActivity() {
                 if (Looper.myLooper() == Looper.getMainLooper()) {
                     throw IllegalStateException("startAndWaitResult 必须在子线程中调用")
                 }
+                // 调用前拦截：脚本任务已取消时不再弹出验证页，直接抛取消异常
+                ScriptTaskRegistry.throwIfCurrentCancelled()
                 val keyResult = UUID.randomUUID().toString()
                 val intent = Intent(App.app, WebViewVerificationActivity::class.java).apply {
                     putExtra(KEY_URL, url)
@@ -399,6 +415,8 @@ class WebViewVerificationActivity : BaseActivity() {
                 val result = Result(url)
                 resultMap[keyResult] = result
                 GlobalScope.launch(Dispatchers.Main) {
+                    // 等待开始前就被取消（例如脚本任务已取消）：不要再弹出验证页
+                    if (result.finished) return@launch
                     Log.i("WebViewVerificationActivity start for $url")
                     App.app.startActivity(intent)
                 }
@@ -411,16 +429,38 @@ class WebViewVerificationActivity : BaseActivity() {
         /**
          * 阻塞等待验证页完成。
          * - activity 起来后（[Result.started]）不限时等待用户完成；
-         * - activity 迟迟未起（后台启动受限等），超过 [VERIFICATION_START_TIMEOUT_MS] 放行，避免永久阻塞后续请求。
+         * - activity 迟迟未起（后台启动受限等），超过 [VERIFICATION_START_TIMEOUT_MS] 放行，避免永久阻塞后续请求；
+         * - 脚本任务被取消（例如退出阅读页）时立刻结束等待、关掉验证页并抛取消异常，让脚本退出。
          */
         private fun waitForResult(result: Result, url: String) {
-            val startDeadline = System.currentTimeMillis() + VERIFICATION_START_TIMEOUT_MS
-            while (!result.finished) {
-                if (!result.started && System.currentTimeMillis() > startDeadline) {
-                    Log.e("WebViewVerificationActivity not started within timeout for $url")
-                    break
+            val cancelAction: () -> Unit = {
+                Log.i("WebViewVerificationActivity cancelled for $url")
+                result.cancelled = true
+                result.finished = true
+                Handler(Looper.getMainLooper()).post {
+                    activeActivity?.get()?.let { activity ->
+                        if (!activity.isFinishing && !activity.isDestroyed) {
+                            activity.finish()
+                        }
+                    }
                 }
-                Thread.sleep(500)
+            }
+            val task = ScriptTaskRegistry.current()
+            task?.addCancelAction(cancelAction)
+            try {
+                val startDeadline = System.currentTimeMillis() + VERIFICATION_START_TIMEOUT_MS
+                while (!result.finished) {
+                    if (!result.started && System.currentTimeMillis() > startDeadline) {
+                        Log.e("WebViewVerificationActivity not started within timeout for $url")
+                        break
+                    }
+                    Thread.sleep(500)
+                }
+            } finally {
+                task?.removeCancelAction(cancelAction)
+            }
+            if (result.cancelled) {
+                throw ScriptTaskCancelledException()
             }
         }
 
@@ -473,6 +513,10 @@ class WebViewVerificationActivity : BaseActivity() {
 
         @Volatile
         var started: Boolean = false
+
+        /** 是否因为脚本任务被取消而结束 */
+        @Volatile
+        var cancelled: Boolean = false
     }
 
 }

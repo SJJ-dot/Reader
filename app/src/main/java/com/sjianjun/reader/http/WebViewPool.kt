@@ -30,6 +30,10 @@ object WebViewPool {
     private val idle = ArrayDeque<IdleEntry>()
     private var createdCount = 0
 
+    /** 已创建的 WebView 总数（只增不减）：供测试断言"调用前拦截后没有新建 WebView" */
+    val createdTotal: Int
+        get() = createdCount
+
     private class IdleEntry(val webView: WebView, var lastUsed: Long)
 
     /** 从池中获取的 WebView 句柄，用完必须调用 [release] 或 [invalidate] 归还。 */
