@@ -152,6 +152,10 @@ class BookReaderActivity : BaseActivity() {
         // 阅读页关闭：取消还在跑的章节预加载（朗读服务会按自己的需要预加载）
         chapterRequestJob?.cancel()
         chapterRequestJob = null
+        //退出阅读页时书籍可能还在加载中（章节列表上拉检查更新／书籍信息加载），
+        //这里的加载会被取消，但脚本调用是阻塞的、取消不会立刻生效，加载中状态会残留在数据库中，
+        //导致书架里这本书一直显示加载中，所以退出时主动清理本书的加载中状态
+        viewModel.book.value?.title?.let { viewModel.resetBookLoadingState(it) }
         super.onDestroy()
         // 朗读由前台服务持有，退出阅读页不再停止朗读，只解除跟随
         mPageLoader?.setTtsSpeakLine(null)
