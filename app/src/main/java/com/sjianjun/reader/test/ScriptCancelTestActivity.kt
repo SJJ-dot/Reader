@@ -12,6 +12,7 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.databinding.ActivityScriptCancelTestBinding
 import com.sjianjun.reader.http.WebViewPool
+import com.sjianjun.reader.python.DnsWarmUp
 import com.sjianjun.reader.python.ScriptTaskCancelledException
 import com.sjianjun.reader.python.ScriptTaskRegistry
 import com.sjianjun.reader.python.ScriptTaskRunner
@@ -87,6 +88,7 @@ class ScriptCancelTestActivity : BaseActivity() {
             "网络优化", listOf(
                 Case("DNS 缓存命中与过期重解析") { caseDnsCache(it) },
                 Case("启动预热 DNS") { caseWarmUpDns(it) },
+                Case("收集书源域名（getSiteUrl）") { caseCollectSourceHosts(it) },
             )
         ),
         Group(
@@ -281,6 +283,29 @@ class ScriptCancelTestActivity : BaseActivity() {
         val n = Regex("n=(\\d+)").find(result)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: -1
         val pass = result.contains("has_127=True") && n >= 2
         return CaseResult(case.name, pass, "结果=$result")
+    }
+
+    /** 通过 getSiteUrl 收集书源域名 */
+    private fun caseCollectSourceHosts(case: Case): CaseResult {
+        val sourceId = "test:GETSITEURL-SRC"
+        val host = "dns-warmup-test.example.com"
+        val dao = DbFactory.db
+        dao.bookSourceDao().insertBookSource(
+            listOf(
+                BookSource().apply {
+                    id = sourceId
+                    name = "GETSITEURL-SRC"
+                    lauanage = BookSource.Language.py
+                    js = "def getSiteUrl():\n    return \"https://$host\"\n"
+                }
+            )
+        )
+        val hosts = runBlocking { DnsWarmUp.collectHosts() }
+        runCatching {
+            dao.bookSourceDao().getBookSourceById(sourceId)?.let { dao.bookSourceDao().deleteBookSource(listOf(it)) }
+        }
+        val pass = host in hosts
+        return CaseResult(case.name, pass, "域名集合=$hosts")
     }
 
     // ==================== 书籍加载：取消 / 并发 ====================
