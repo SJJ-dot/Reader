@@ -35,7 +35,7 @@ suspend inline fun <reified T> BookSource.py(
         Func.getChapterContent.name -> ScriptCallTargets.contentKey(param.orEmpty())
         else -> null
     }
-    val pyResult = ScriptTaskRunner.run(taskKey, js) {
+    val pyResult = ScriptTaskRunner.run(taskKey) {
         when {
             !param.isNullOrBlank() && param2 != null -> exec.callAttr("exec_script", js, func, param, param2)
             param.isNullOrBlank() -> exec.callAttr("exec_script", js, func)

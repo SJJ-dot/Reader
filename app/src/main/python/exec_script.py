@@ -3,13 +3,14 @@ import inspect
 import json
 import socket
 import threading
+import time
 
 # ==================== 可取消的脚本任务 ====================
 # Java 侧每次脚本调用前会分配一个任务标识（set_current_task / clear_current_task）。
 # 任务期间建立的网络连接、派生的线程都登记到该任务上；取消时由 abort(key) 依次执行：
 #   1) 关闭登记的网络连接 -> 阻塞中的 recv/send 立刻返回（shutdown 会唤醒阻塞的读）
 #   2) 向登记的执行线程注入 ScriptAborted -> 脚本在字节码边界抛出异常并退出
-#   3) 丢弃该脚本的命名空间缓存 -> 下次调用重新 exec，相当于"引擎软重启"
+#   3) 保留该脚本的命名空间缓存 -> Session/连接池可继续复用，下一次请求不用重新建连
 # 另外默认给脚本补网络超时，避免脚本没写 timeout 时无限等待。
 # 任务取消后：后续网络操作在"调用前"就被拦下（check_aborted），不再白等、不再新建 WebView/弹验证页；
 # 正在阻塞中的 socket / web_get / verification_activity_get 由上面的 1)、2) 立刻打断。
@@ -19,6 +20,7 @@ import threading
 DEFAULT_SOCKET_TIMEOUT = 30.0    # 秒：脚本没显式设置时的 socket 默认超时
 DEFAULT_REQUEST_TIMEOUT = 30.0   # 秒：requests 没显式传 timeout 时的默认超时
 _ABORTED_KEY_LIMIT = 64          # 已取消任务标识的保留数量，用于拦住"取消后继续重试"的连接
+_NAMESPACE_IDLE_SECONDS = 30 * 60  # 秒：脚本命名空间超过该时间未使用则丢弃（连同 Session、连接池）
 
 
 class ScriptAborted(BaseException):
@@ -26,17 +28,18 @@ class ScriptAborted(BaseException):
 
 
 class _TaskState:
-    __slots__ = ("key", "script", "thread_ids", "sockets", "refs")
+    __slots__ = ("key", "thread_ids", "sockets", "refs")
 
-    def __init__(self, key, script):
+    def __init__(self, key):
         self.key = key
-        self.script = script
         self.thread_ids = set()
         self.sockets = set()
         self.refs = 0          # 同一个 key 上并发了几次调用
 
 
+# 脚本内容 -> [命名空间, 最后一次使用时间]。条目会被 _cleanup_namespaces 按空闲时间回收
 _namespace_cache = {}
+_namespace_cache_lock = threading.RLock()
 _tasks_lock = threading.RLock()
 _task_states = {}
 _aborted_keys = []
@@ -103,21 +106,19 @@ def _is_aborted(key):
     return key is not None and key in _aborted_keys
 
 
-def set_current_task(key, script=None):
+def set_current_task(key):
     """Java 侧在脚本调用开始前调用：把当前线程登记到该任务上。"""
     if key is None:
         return None
     with _tasks_lock:
         state = _task_states.get(key)
         if state is None:
-            state = _TaskState(key, script)
+            state = _TaskState(key)
             _task_states[key] = state
             # 同一个 key 会被复用（例如同一本书再次加载）：新任务开始，清掉上一次的取消标记，
             # 否则新任务的所有网络操作都会被"任务已取消"直接拦掉
             if key in _aborted_keys:
                 _aborted_keys.remove(key)
-        elif script is not None:
-            state.script = script
         state.refs += 1
         state.thread_ids.add(threading.get_ident())
         _thread_keys[threading.get_ident()] = state
@@ -165,9 +166,9 @@ def abort(key):
         if thread_id == current_thread_id:
             continue
         _async_raise(thread_id, ScriptAborted)
-    # 3) 丢掉脚本命名空间缓存：脚本全局变量、自建连接池一并丢弃
-    if state.script:
-        _namespace_cache.pop(state.script, None)
+    # 3) 不丢弃脚本命名空间缓存：取消只靠上面的"关连接 + 注入异常 + 取消后拦截新请求"，
+    #    保留命名空间可以让脚本的 Session/连接池继续复用，避免每次取消后重新 exec 脚本、
+    #    重建连接（多一次 DNS/TLS）。被 shutdown 的连接会被 urllib3 判定为已断开并自动重建。
     with _tasks_lock:
         if _thread_keys.get(threading.get_ident()) is state:
             _thread_keys.pop(threading.get_ident(), None)
@@ -326,14 +327,37 @@ _install_thread_hooks()
 
 # ==================== 脚本执行 ====================
 
+def _cleanup_namespaces(now=None):
+    """丢弃超过 [_NAMESPACE_IDLE_SECONDS] 未使用的脚本命名空间（连同脚本里的 Session、连接池）。
+
+    在每次脚本调用（[_build_namespace]）时顺带检查，平时不占任何定时器/线程。
+    """
+    if now is None:
+        now = time.time()
+    with _namespace_cache_lock:
+        stale = [script for script, entry in _namespace_cache.items()
+                 if now - entry[1] > _NAMESPACE_IDLE_SECONDS]
+        for script in stale:
+            _namespace_cache.pop(script, None)
+    return len(stale)
+
+
 def _build_namespace(script):
-    ns = _namespace_cache.get(script)
-    if ns is not None:
-        return ns
+    now = time.time()
+    # 每次调用都顺带回收空闲超时的命名空间，避免旧脚本（Session、连接池）一直驻留
+    _cleanup_namespaces(now)
+    with _namespace_cache_lock:
+        entry = _namespace_cache.get(script)
+        if entry is not None:
+            # 命中：刷新使用时间，保证常用脚本不会被回收
+            entry[1] = now
+            return entry[0]
     safe_builtins = copy.copy(__builtins__.__dict__) if hasattr(__builtins__, '__dict__') else copy.copy(__builtins__)
     namespace = {'__builtins__': safe_builtins}
+    # exec 可能执行很久（脚本顶层代码），不要持有锁
     exec(script, namespace)
-    _namespace_cache[script] = namespace
+    with _namespace_cache_lock:
+        _namespace_cache[script] = [namespace, time.time()]
     return namespace
 
 

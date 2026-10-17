@@ -1,8 +1,5 @@
 from com.sjianjun.reader.utils import PyLog
 
-
-from http.client import HTTPConnection
-HTTPConnection.debuglevel=1
 from requests import PreparedRequest, Response
 
 def log(arg):

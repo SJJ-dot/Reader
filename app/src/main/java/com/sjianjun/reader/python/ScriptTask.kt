@@ -29,13 +29,12 @@ class ScriptTaskCancelledException(message: String = "脚本任务已取消") : 
  *   新调用开始时旧调用会被取消（关连接、中断脚本线程），做到"重复请求只保留最新一次"。
  *
  * @param taskKey 目标标识，为 null 时只绑定协程、不参与同目标去重
- * @param script 书源脚本内容，取消时用于丢弃脚本命名空间缓存
  */
 object ScriptTaskRunner {
 
-    suspend fun <T> run(taskKey: String?, script: String, block: () -> T): T =
+    suspend fun <T> run(taskKey: String?, block: () -> T): T =
         ScriptTaskRegistry.withTask(taskKey) { task ->
-            ScriptTaskBridge.begin(task.key, script)
+            ScriptTaskBridge.begin(task.key)
             try {
                 runWithCoroutineCancellation(task.key, block)
             } finally {
@@ -133,7 +132,7 @@ object ScriptCallTargets {
  * 脚本任务注册表：把"取消某一次脚本调用"落到具体的资源上。
  *
  * Java 侧的阻塞桥（WebView 等待、okhttp 阻塞请求）在阻塞期间通过 [current] 登记取消动作；
- * Python 侧的 socket、脚本自建线程、脚本命名空间由 [ScriptTaskBridge.abort] 处理。
+ * Python 侧的 socket、脚本自建线程由 [ScriptTaskBridge.abort] 处理，脚本命名空间保留以复用连接池。
  *
  * 每次调用都有自己的任务标识（不按书、不共享），
  * [targets] 记录"某个目标上当前是哪一次调用"，新的调用开始时取消旧的调用，互不影响。
@@ -242,8 +241,8 @@ internal object ScriptTaskRegistry {
 /** Java 侧与 Python 脚本环境的任务桥 */
 internal object ScriptTaskBridge {
 
-    fun begin(taskKey: String, script: String) {
-        runCatching { execModule.callAttr("set_current_task", taskKey, script) }
+    fun begin(taskKey: String) {
+        runCatching { execModule.callAttr("set_current_task", taskKey) }
             .onFailure { Log.e("登记脚本任务失败：$taskKey", it) }
     }
 
@@ -253,7 +252,8 @@ internal object ScriptTaskBridge {
     }
 
     /**
-     * 取消脚本任务：关闭脚本登记的网络连接、向脚本执行线程注入取消异常、丢弃脚本命名空间缓存。
+     * 取消脚本任务：关闭脚本登记的网络连接、向脚本执行线程注入取消异常。
+     * 脚本命名空间缓存会保留（Session/连接池可继续复用），下次调用无需重新 exec 脚本。
      *
      * 必须在后台线程调用（[ScriptTaskRegistry.cancel] 已保证）：脚本线程可能正持有 GIL
      * （阻塞在不可打断的 C 调用里），在调用方线程（可能是主线程）同步执行会把界面一起卡住。

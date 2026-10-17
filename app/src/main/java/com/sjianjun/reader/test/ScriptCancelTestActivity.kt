@@ -2,6 +2,8 @@ package com.sjianjun.reader.test
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.BaseActivity
@@ -76,6 +78,12 @@ class ScriptCancelTestActivity : BaseActivity() {
             )
         ),
         Group(
+            "脚本命名空间缓存", listOf(
+                Case("取消后命名空间保留（Session 可复用）") { caseNamespaceRetained(it) },
+                Case("空闲超过30分钟回收、常用保留") { caseNamespaceIdleCleanup(it) },
+            )
+        ),
+        Group(
             "书籍加载取消/并发", listOf(
                 Case("并发两次：旧加载被取消") { caseBookConcurrentCancel() },
                 Case("并发两次：旧加载迟到结果被丢弃") { caseBookStaleResultDiscarded() },
@@ -88,6 +96,10 @@ class ScriptCancelTestActivity : BaseActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 直接（adb）启动本页时，App.initialize() 可能因"未同意隐私政策"而没启动 Python，这里兜底
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -205,6 +217,46 @@ class ScriptCancelTestActivity : BaseActivity() {
             }
         )
     }
+
+    // ==================== 脚本命名空间缓存 ====================
+
+    /**
+     * 取消任务不应丢弃脚本命名空间：取消前后脚本里的模块级对象（Session）必须是同一个，
+     * 否则下一次请求要重新 exec 脚本、重建连接（多一次 DNS/TLS）。
+     */
+    private fun caseNamespaceRetained(case: Case): CaseResult {
+        val before = namespaceIds()
+        val outcome = runWithKey(
+            newKey(), "block", server.hangUrlFor("namespace"), CANCEL_DELAY_MS,
+            script = NAMESPACE_TEST_SCRIPT
+        )
+        val after = namespaceIds()
+        val finished = !outcome.alive
+        val kept = before.isNotBlank() && before == after
+        return CaseResult(
+            case.name, finished && kept,
+            buildString {
+                append("取消").append(if (finished) "已生效" else "未生效")
+                append("；命名空间标识 取消前=").append(before.take(20))
+                append(" 取消后=").append(after.take(20))
+                append("；保持一致=").append(kept)
+            }
+        )
+    }
+
+    /** 调用时按空闲时间回收：超过 30 分钟未使用的丢弃，刚刚用过的保留 */
+    private fun caseNamespaceIdleCleanup(case: Case): CaseResult {
+        val result = runCatching {
+            execModule.callAttr("exec_script", NAMESPACE_TEST_SCRIPT, "test_idle_cleanup").toString()
+        }.getOrElse { "异常：$it" }
+        val pass = result.contains("stale_gone=True") && result.contains("fresh_kept=True")
+        return CaseResult(case.name, pass, "结果=$result")
+    }
+
+    private fun namespaceIds(): String =
+        runCatching {
+            execModule.callAttr("exec_script", NAMESPACE_TEST_SCRIPT, "get_ids").toString()
+        }.getOrElse { "" }
 
     // ==================== 书籍加载：取消 / 并发 ====================
 
@@ -486,15 +538,21 @@ class ScriptCancelTestActivity : BaseActivity() {
 
     // ==================== 用例执行 ====================
 
-    private fun runWithKey(key: String, func: String, url: String, cancelDelayMs: Long): Outcome {
+    private fun runWithKey(
+        key: String,
+        func: String,
+        url: String,
+        cancelDelayMs: Long,
+        script: String = TEST_SCRIPT,
+    ): Outcome {
         val error = AtomicReference<Throwable?>()
         val value = AtomicReference<String?>()
         val thread = Thread({
             try {
                 value.set(
                     runBlocking {
-                        ScriptTaskRunner.run(key, TEST_SCRIPT) {
-                            execModule.callAttr("exec_script", TEST_SCRIPT, func, url).toString()
+                        ScriptTaskRunner.run(key) {
+                            execModule.callAttr("exec_script", script, func, url).toString()
                         }
                     }
                 )
@@ -710,6 +768,41 @@ def socket_block(url):
     sock.sendall(b"GET /hang HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
     data = sock.recv(1024)
     return str(len(data))
+"""
+
+        /**
+         * 命名空间缓存用例的测试脚本：
+         * - 模块级 NAMESPACE_ID / SESSION 用于判断取消后命名空间（含 Session）是否被保留；
+         * - block 用模块级 Session 请求挂起地址，验证取消时连接被关闭、命名空间仍可复用；
+         * - test_idle_cleanup 直接操作 exec_script 的缓存，验证 30 分钟空闲回收。
+         */
+        private const val NAMESPACE_TEST_SCRIPT = """
+import time
+import uuid
+
+import requests
+
+NAMESPACE_ID = uuid.uuid4().hex
+SESSION = requests.Session()
+
+
+def get_ids():
+    return NAMESPACE_ID + "|" + str(id(SESSION))
+
+
+def block(url):
+    return SESSION.get(url, timeout=600).text
+
+
+def test_idle_cleanup():
+    import exec_script as engine
+    engine._namespace_cache["__idle_test__"] = [{"n": 1}, time.time() - engine._NAMESPACE_IDLE_SECONDS - 1]
+    engine._namespace_cache["__fresh_test__"] = [{"n": 2}, time.time()]
+    removed = engine._cleanup_namespaces()
+    stale_gone = "__idle_test__" not in engine._namespace_cache
+    fresh_kept = "__fresh_test__" in engine._namespace_cache
+    engine._namespace_cache.pop("__fresh_test__", None)
+    return "removed=%s|stale_gone=%s|fresh_kept=%s" % (removed, stale_gone, fresh_kept)
 """
 
         /**
