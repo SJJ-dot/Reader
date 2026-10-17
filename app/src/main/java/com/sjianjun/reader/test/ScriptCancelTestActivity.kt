@@ -84,6 +84,12 @@ class ScriptCancelTestActivity : BaseActivity() {
             )
         ),
         Group(
+            "网络优化", listOf(
+                Case("DNS 缓存命中与过期重解析") { caseDnsCache(it) },
+                Case("启动预热 DNS") { caseWarmUpDns(it) },
+            )
+        ),
+        Group(
             "书籍加载取消/并发", listOf(
                 Case("并发两次：旧加载被取消") { caseBookConcurrentCancel() },
                 Case("并发两次：旧加载迟到结果被丢弃") { caseBookStaleResultDiscarded() },
@@ -257,6 +263,25 @@ class ScriptCancelTestActivity : BaseActivity() {
         runCatching {
             execModule.callAttr("exec_script", NAMESPACE_TEST_SCRIPT, "get_ids").toString()
         }.getOrElse { "" }
+
+    /** DNS 结果缓存：同一域名 TTL 内命中缓存返回同一结果对象，过期后重新解析 */
+    private fun caseDnsCache(case: Case): CaseResult {
+        val result = runCatching {
+            execModule.callAttr("exec_script", NAMESPACE_TEST_SCRIPT, "test_dns_cache").toString()
+        }.getOrElse { "异常：$it" }
+        val pass = result.contains("cached=True") && result.contains("evicted=True")
+        return CaseResult(case.name, pass, "结果=$result")
+    }
+
+    /** 启动预热 DNS：warm_up_dns 能解析给定域名并填进缓存 */
+    private fun caseWarmUpDns(case: Case): CaseResult {
+        val result = runCatching {
+            execModule.callAttr("exec_script", NAMESPACE_TEST_SCRIPT, "test_warm_up_dns").toString()
+        }.getOrElse { "异常：$it" }
+        val n = Regex("n=(\\d+)").find(result)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: -1
+        val pass = result.contains("has_127=True") && n >= 2
+        return CaseResult(case.name, pass, "结果=$result")
+    }
 
     // ==================== 书籍加载：取消 / 并发 ====================
 
@@ -803,6 +828,35 @@ def test_idle_cleanup():
     fresh_kept = "__fresh_test__" in engine._namespace_cache
     engine._namespace_cache.pop("__fresh_test__", None)
     return "removed=%s|stale_gone=%s|fresh_kept=%s" % (removed, stale_gone, fresh_kept)
+
+
+def test_dns_cache():
+    import socket
+    import time
+    import exec_script as engine
+    host = "127.0.0.1"
+    r1 = socket.getaddrinfo(host, 80)
+    r2 = socket.getaddrinfo(host, 80)
+    cached = r1 is r2
+    for key, entry in list(engine._dns_cache.items()):
+        entry[1] = time.time() - engine._DNS_CACHE_TTL_SECONDS - 1
+    r3 = socket.getaddrinfo(host, 80)
+    evicted = r3 is not r2
+    engine._dns_cache.clear()
+    return "cached=%s|evicted=%s" % (cached, evicted)
+
+
+def test_warm_up_dns():
+    import exec_script as engine
+    engine._dns_cache.clear()
+    n = engine.warm_up_dns(["127.0.0.1", "localhost"])
+    cached_hosts = set(k[0] for k in engine._dns_cache.keys())
+    engine._dns_cache.clear()
+    return "n=%s|has_127=%s|has_localhost=%s" % (
+        n,
+        "127.0.0.1" in cached_hosts,
+        "localhost" in cached_hosts,
+    )
 """
 
         /**

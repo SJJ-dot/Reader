@@ -19,7 +19,6 @@ import javax.net.ssl.X509TrustManager
 private fun header() = mutableMapOf(
     "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
-    "Connection" to "close",
     "sec-ch-ua" to """" Not;A Brand";v="99", "Microsoft Edge";v="103", "Chromium";v="103"""",
     "sec-ch-ua-mobile" to "?0",
     "sec-ch-ua-platform" to "\"Windows\"",

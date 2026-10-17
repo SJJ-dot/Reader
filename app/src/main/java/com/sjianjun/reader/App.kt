@@ -8,6 +8,7 @@ import com.chaquo.python.android.AndroidPlatform
 import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.reader.online.OnlineRecorder
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.python.DnsWarmUp
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.ChineseUtils
@@ -64,6 +65,7 @@ class App : Application() {
             writeToFileDir = File(externalCacheDir, "alog")
         }
         Python.start(AndroidPlatform(this))
+        DnsWarmUp.start()
         OnlineRecorder.start(appScope, this)
         when (globalConfig.readerJianFanMode.value) {
             1 -> {

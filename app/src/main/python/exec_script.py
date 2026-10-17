@@ -17,10 +17,12 @@ import time
 # 注意：线程若阻塞在不可干预的 C 扩展内部（例如 re 的灾难性回溯），注入要等它返回才生效，
 # 这类情况单进程无法打断，只能靠进程隔离。
 
-DEFAULT_SOCKET_TIMEOUT = 30.0    # 秒：脚本没显式设置时的 socket 默认超时
-DEFAULT_REQUEST_TIMEOUT = 30.0   # 秒：requests 没显式传 timeout 时的默认超时
+DEFAULT_SOCKET_TIMEOUT = 30.0    # 秒：原始 socket 没显式设置时的默认超时
+DEFAULT_CONNECT_TIMEOUT = 5.0    # 秒：requests 建连超时（DNS/握手卡住时快速失败，而不是等满 30s）
+DEFAULT_READ_TIMEOUT = 15.0      # 秒：requests 读取超时
 _ABORTED_KEY_LIMIT = 64          # 已取消任务标识的保留数量，用于拦住"取消后继续重试"的连接
 _NAMESPACE_IDLE_SECONDS = 30 * 60  # 秒：脚本命名空间超过该时间未使用则丢弃（连同 Session、连接池）
+_DNS_CACHE_TTL_SECONDS = 120.0   # 秒：getaddrinfo 结果缓存时间，避免同一域名反复解析
 
 
 class ScriptAborted(BaseException):
@@ -262,6 +264,40 @@ def _install_socket_hooks():
             pass
 
 
+# 进程内 DNS 结果缓存：脚本反复请求同一域名时，避免每次新连接都重新解析。
+# 弱网/地铁下系统 DNS 抖动明显，缓存能减少"卡在解析"的等待；TTL 见 _DNS_CACHE_TTL_SECONDS。
+_dns_cache = {}
+_dns_cache_lock = threading.Lock()
+_DNS_CACHE_MAX = 512
+
+
+def _install_dns_hook():
+    try:
+        if getattr(socket.getaddrinfo, "_liter_reader_patched", False):
+            return
+        orig_getaddrinfo = socket.getaddrinfo
+
+        def cached_getaddrinfo(host, *args, **kwargs):
+            if not isinstance(host, str) or not host:
+                return orig_getaddrinfo(host, *args, **kwargs)
+            now = time.time()
+            key = (host, args, tuple(sorted(kwargs.items())))
+            with _dns_cache_lock:
+                entry = _dns_cache.get(key)
+                if entry is not None and now - entry[1] < _DNS_CACHE_TTL_SECONDS:
+                    return entry[0]
+            result = orig_getaddrinfo(host, *args, **kwargs)
+            with _dns_cache_lock:
+                _dns_cache[key] = [result, time.time()]
+                if len(_dns_cache) > _DNS_CACHE_MAX:
+                    _dns_cache.clear()
+            return result
+
+        socket.getaddrinfo = _mark_patched(cached_getaddrinfo)
+    except Exception:
+        pass
+
+
 def _install_requests_hooks():
     """脚本直接用 requests 时：调用前拦截 + 取消后统一异常 + 未指定时的默认超时。"""
     try:
@@ -272,9 +308,10 @@ def _install_requests_hooks():
 
         def request(self, *args, **kwargs):
             key = check_aborted()
-            # requests 不传 timeout 时会永久等待；只在脚本没指定时补默认值
+            # requests 不传 timeout 时会永久等待；只在脚本没指定时补默认值（建连/读取分开，
+            # 建连超时设短一点，DNS/握手卡住时能快速失败，脚本好重试或降级）
             if "timeout" not in kwargs and len(args) < 9:
-                kwargs["timeout"] = DEFAULT_REQUEST_TIMEOUT
+                kwargs["timeout"] = (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
             try:
                 return orig_request(self, *args, **kwargs)
             except BaseException:
@@ -320,6 +357,7 @@ def _install_thread_hooks():
         pass
 
 
+_install_dns_hook()
 _install_socket_hooks()
 _install_requests_hooks()
 _install_thread_hooks()
@@ -365,6 +403,25 @@ def has_function(script, func):
     namespace = _build_namespace(script)
     target = namespace.get(func)
     return callable(target)
+
+
+def warm_up_dns(hosts):
+    """预热 DNS：解析给定域名（80/443），把结果填进 [_dns_cache]，供后续脚本请求直接复用。
+
+    启动时在后台调用，让"第一个请求"不再卡在 DNS 解析上（弱网/地铁下尤其明显）。
+    """
+    import socket
+    resolved = 0
+    for host in hosts:
+        if not isinstance(host, str) or not host:
+            continue
+        for port in (80, 443):
+            try:
+                socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+                resolved += 1
+            except Exception:
+                pass
+    return resolved
 
 
 def _accepts_two_args(target):
