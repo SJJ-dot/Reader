@@ -464,9 +464,8 @@ class BookSourceListFragment : BaseFragment() {
                     )
                     binding.tvLastChapter.text = loaded.lastChapter?.title?.let { "最新：$it" } ?: "最新：—"
                     binding.tvContent.text = text.ifBlank { "（该章暂无正文）" }
-                    // 加载失败（正文有错误标记）时显示刷新按钮
-                    val contentError = chapter.content?.firstOrNull()?.contentError == true
-                    binding.btnRefresh.visibility = if (contentError) View.VISIBLE else View.GONE
+                
+                    binding.btnRefresh.visibility = View.VISIBLE
                 }
             }
         }
