@@ -1,6 +1,7 @@
 package io.legado.app.service
 
 import android.util.Log
+import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -11,6 +12,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.net.InetAddress
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.text.SimpleDateFormat
@@ -19,6 +21,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
@@ -98,7 +101,17 @@ class EdgeSpeakFetch {
     private lateinit var lastWss: WebSocket
     private var audioOutputStream = PipedOutputStream()
     private var audioInputStream = PipedInputStream(audioOutputStream, 8192)
+    /**
+     * 连接代际：新建连接时 +1，release 时再 +1。
+     * 跨章释放旧连接后，旧连接在途的音频回调据此丢弃，避免把旧章残留音频写进新章的流（重音）。
+     */
+    private var generation = 0
+
+    /** 当前连接是否正在合成某个 turn（发送 SSML 后置 true，收到 turn.end 后置 false） */
+    @Volatile
+    private var busy = false
     private var client = OkHttpClient.Builder()
+        .dns(CachedDns(Dns.SYSTEM))
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
@@ -142,8 +155,12 @@ class EdgeSpeakFetch {
         // 5. 构建最终请求
         val request = requestBuilder.build()
 
+        // 当前连接代际：跨章释放（generation++）后，本连接在途回调据此丢弃，避免旧章音频写进新章流（重音）
+        val gen = ++generation
+        busy = true
         val listener = object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                if (gen != generation) return
                 Log.i(TAG, "WebSocket onOpen")
                 wss = webSocket
                 isReconnect = false
@@ -152,17 +169,20 @@ class EdgeSpeakFetch {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                if (gen != generation) return
                 // 检测turn.end并关闭流
                 if (text.contains("turn.end")) {
                     Log.i(TAG, "收到turn.end 关闭流")
                     audioOutputStream.close()
                     lastTime = System.currentTimeMillis()
                     lastWss = webSocket
+                    busy = false
 
                 }
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                if (gen != generation) return
                 try {
                     // 处理二进制音频数据（与Golang解析逻辑一致）
                     val message = bytes.toByteArray()
@@ -206,6 +226,7 @@ class EdgeSpeakFetch {
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.i(TAG, "WebSocket onClosed$code$reason")
                 isReconnect = true
+                busy = false
             }
 
             override fun onFailure(
@@ -213,7 +234,9 @@ class EdgeSpeakFetch {
                 t: Throwable,
                 response: Response?
             ) {
+                if (gen != generation) return
                 isReconnect = true
+                busy = false
                 Log.e(TAG, "WebSocket onFailure: $t, code=${response?.code}, message=${response?.message}")
                 // 连接失败（如 403）时关闭输出流，让下游 read 返回 -1（EOF），
                 // 避免缓存任务永久阻塞在 read()，导致「第一段结束就停止」
@@ -257,9 +280,12 @@ class EdgeSpeakFetch {
             val timeDiff = currentTime - lastTime
             val ssml = mkSSML(speakTextStr, voice, processRate(rate))
 
-            if (timeDiff < 500 && !isReconnect && ::lastWss.isInitialized) {
+            // 连接空闲（上一个 turn 已 turn.end）即可复用，不再限制 500ms，
+            // 否则跨章后第一段（章节名）每次都重新建连，等很久才出声
+            if (!busy && !isReconnect && ::lastWss.isInitialized) {
                 Log.i(TAG, "复用使用上次lastWss")
                 wss = lastWss
+                busy = true
                 sendSSMLMessage(wss, ssml)
             } else {
                 getWssConnect(ssml)
@@ -340,12 +366,43 @@ class EdgeSpeakFetch {
     }
 
     fun release() {
-        if (::lastWss.isInitialized) lastWss.cancel()
+        if (busy) {
+            // 旧章还在合成中：取消连接并让旧 listener 失效，丢弃在途音频，避免混入新章（重音）
+            generation++
+            isReconnect = true
+            if (::lastWss.isInitialized) lastWss.cancel()
+            busy = false
+        }
+        // 无论如何关闭当前 output，让旧章缓存任务的 read 立即返回 -1 结束
         try {
             audioOutputStream.close()
             Log.i(TAG, "管道流已关闭")
         } catch (e: IOException) {
             Log.e(TAG, "关闭管道流失败", e)
         }
+    }
+}
+
+/**
+ * 带 TTL 的进程内 DNS 缓存。
+ *
+ * Edge TTS 的 WebSocket 客户端默认用系统 DNS（每次新建连接都重新解析）；
+ * 加上缓存后，跨章复用连接之外、真正需要新建连接时也能跳过 DNS 解析，减少建连耗时。
+ */
+private class CachedDns(
+    private val delegate: Dns,
+    private val ttlMs: Long = 10 * 60 * 1000L,
+) : Dns {
+    private data class Entry(val addresses: List<InetAddress>, val expireAt: Long)
+
+    private val cache = ConcurrentHashMap<String, Entry>()
+
+    override fun lookup(hostname: String): List<InetAddress> {
+        val now = System.currentTimeMillis()
+        val hit = cache[hostname]
+        if (hit != null && hit.expireAt > now) return hit.addresses
+        val resolved = delegate.lookup(hostname)
+        cache[hostname] = Entry(resolved, now + ttlMs)
+        return resolved
     }
 }
