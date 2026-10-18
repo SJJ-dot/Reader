@@ -37,6 +37,16 @@ interface BaseTts {
     var segmentProgressCallback: ((Float) -> Unit)?
 
     /**
+     * 引擎真正开始出声时回调（每段开始播放时触发一次）。
+     *
+     * 用于把时间模型起点对齐到「音频真正开始播放」的时刻，
+     * 避免引擎在合成/缓冲期间（还没出声）时间模型就提前走进度。
+     * 系统 TTS 在 UtteranceProgressListener.onStart 时触发，
+     * Edge 在 MediaPlayer onPrepared 后 start() 时触发。
+     */
+    var onPlaybackStarted: (() -> Unit)?
+
+    /**
      * 逐行模式朗读完成
      */
     var onCompleted: (() -> Unit)?

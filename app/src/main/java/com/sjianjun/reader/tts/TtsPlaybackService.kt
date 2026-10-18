@@ -98,11 +98,15 @@ class TtsPlaybackService : Service() {
         /** 每单位朗读权重的基准耗时（毫秒），与语音引擎的耗时估算模型一致 */
         private const val BASE_MS_PER_WEIGHT = 200L
 
-        /** 超过这么久没有收到引擎回传的真实段内进度，就认为引擎拿不到真实位置，改用时间模型兜底 */
-        private const val ENGINE_PROGRESS_TIMEOUT_MS = 3_000L
+        /**
+         * 超过这么久没有收到引擎回传的真实段内进度，就认为引擎拿不到真实位置，改用时间模型兜底。
+         * 系统 TTS 的 onRangeStart 按句子回传（间隔 1~3 秒），3 秒太长会导致两次回传之间
+         * 进度停在上一句开头（阶梯式滞后于语音）；收窄到 1 秒，让时间模型更及时地填补空白。
+         */
+        private const val ENGINE_PROGRESS_TIMEOUT_MS = 1_000L
 
         /** 段内进度上报的最小间隔：太密会频繁重建通知，太疏高亮会落后于语音 */
-        private const val PROGRESS_REPORT_MIN_MS = 250L
+        private const val PROGRESS_REPORT_MIN_MS = 150L
 
         /** 实测「每权重耗时」的合理范围，超出视为异常样本 */
         private const val MIN_MS_PER_WEIGHT = 60L
@@ -198,6 +202,10 @@ class TtsPlaybackService : Service() {
 
     /** 本段已经上报过的最大进度，保证同一段内进度只前进不回退 */
     private var paragraphRatioFloor = 0f
+
+    /** 本段音频是否已真正开始出声（引擎 onPlaybackStarted 回调后置 true） */
+    @Volatile
+    private var playbackStarted = false
 
     /**
      * 起始段位置（章序号 / 段序号 / 段内字符偏移）。
@@ -847,6 +855,9 @@ class TtsPlaybackService : Service() {
         TtsService.segmentProgressCallback = { progress ->
             if (generation == engineGeneration) onEngineSegmentProgress(progress)
         }
+        TtsService.onPlaybackStarted = {
+            if (generation == engineGeneration) onPlaybackStarted()
+        }
         TtsService.onParagraphsCompleted = {
             if (generation == engineGeneration) onChapterCompleted()
         }
@@ -873,6 +884,7 @@ class TtsPlaybackService : Service() {
         }
         TtsService.paragraphChangeCallback = null
         TtsService.segmentProgressCallback = null
+        TtsService.onPlaybackStarted = null
         TtsService.onParagraphsCompleted = null
     }
 
@@ -1021,6 +1033,14 @@ class TtsPlaybackService : Service() {
         engineSegmentProgress = -1f
         engineSegmentProgressAt = 0L
         paragraphRatioFloor = 0f
+        playbackStarted = false
+    }
+
+    /** 引擎真正开始出声：标记已播放，并把时间模型起点对齐到此刻 */
+    private fun onPlaybackStarted() {
+        if (!state.active || !state.playing) return
+        playbackStarted = true
+        updateState(state.copy(paragraphStartAt = System.currentTimeMillis()))
     }
 
     /**
@@ -1054,6 +1074,8 @@ class TtsPlaybackService : Service() {
      */
     private fun currentParagraphRatio(): Float {
         val now = System.currentTimeMillis()
+        // 音频还没开始出声（合成/缓冲中）：进度停在 0，绝不能用时间模型提前走
+        if (!playbackStarted) return 0f
         val engineFresh = engineSegmentProgress >= 0f &&
             now - engineSegmentProgressAt <= ENGINE_PROGRESS_TIMEOUT_MS
         val ratio = if (engineFresh) {

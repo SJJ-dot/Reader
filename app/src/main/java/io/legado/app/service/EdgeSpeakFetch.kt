@@ -99,9 +99,9 @@ class EdgeSpeakFetch {
     private var audioOutputStream = PipedOutputStream()
     private var audioInputStream = PipedInputStream(audioOutputStream, 8192)
     private var client = OkHttpClient.Builder()
-        .connectTimeout(50, TimeUnit.SECONDS)
-        .readTimeout(80, TimeUnit.SECONDS)
-        .writeTimeout(50, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
         .build()
 
 

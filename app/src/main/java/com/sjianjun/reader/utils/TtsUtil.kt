@@ -38,6 +38,8 @@ class TtsUtil() : ViewModel(), BaseTts {
 
     override var segmentProgressCallback: ((Float) -> Unit)? = null
 
+    override var onPlaybackStarted: (() -> Unit)? = null
+
     override var onCompleted: (() -> Unit)? = null
 
     override var onParagraphsCompleted: (() -> Unit)? = null
@@ -348,6 +350,8 @@ class TtsUtil() : ViewModel(), BaseTts {
                 }
                 startEstimateForParagraph()
                 speakStartTime = System.currentTimeMillis()
+                // 系统 TTS 真正开始出声
+                onPlaybackStarted?.invoke()
             }
         }
     }

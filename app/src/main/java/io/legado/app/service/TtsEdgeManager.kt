@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class TtsEdgeManager : BaseTts {
     companion object {
-        /** 段内进度轮询间隔 */
-        private const val SEGMENT_PROGRESS_TICK_MS = 200L
+        /** 段内进度轮询间隔（Edge 需要联网合成，真实进度只能靠轮询播放位置，间隔小一点让进度更贴近声音） */
+        private const val SEGMENT_PROGRESS_TICK_MS = 100L
 
         /** 合成音频格式为 48kbps 单声道 mp3（CBR），每毫秒 6 字节，可由字节数精确换算时长 */
         private const val BYTES_PER_MS = 6L
@@ -65,6 +65,7 @@ class TtsEdgeManager : BaseTts {
     override var progressChangeCallback: ((TxtLine) -> Unit)? = null
     override var paragraphChangeCallback: ((Int) -> Unit)? = null
     override var segmentProgressCallback: ((Float) -> Unit)? = null
+    override var onPlaybackStarted: (() -> Unit)? = null
     override var onCompleted: (() -> Unit)? = null
     override var onParagraphsCompleted: (() -> Unit)? = null
 
@@ -335,7 +336,14 @@ class TtsEdgeManager : BaseTts {
                             try {
                                 val lines = keyParagraphMap[ds.key]
                                 if (!lines.isNullOrEmpty()) {
-                                    startEstimateForLines(lines, if (player.duration > 0) player.duration else 0)
+                                    if (paragraphMode) {
+                                        // 段落模式：立即回传段落序号（先于 player.start/onPlaybackStarted）。
+                                        // 否则 onPlaybackStarted 先触发、onParagraphChanged 后触发，
+                                        // 会把 playbackStarted 重置回 false，导致后续段进度卡在第一句
+                                        notifyProgress(lines.first().tag)
+                                    } else {
+                                        startEstimateForLines(lines, if (player.duration > 0) player.duration else 0)
+                                    }
                                 } else {
                                     cancelEstimate()
                                 }
@@ -348,6 +356,8 @@ class TtsEdgeManager : BaseTts {
                             isSpeaking.postValue(true)
                             try {
                                 player.start()
+                                // 音频真正开始出声，通知调用方对齐时间模型起点
+                                onPlaybackStarted?.invoke()
                             } catch (_: Throwable) {
                                 cancelEstimate()
                                 cancelSegmentProgress()
@@ -495,21 +505,28 @@ class TtsEdgeManager : BaseTts {
                 keyParagraphMap[key] = para
                 playQueue.add(ds)
 
-                // 合成并喂入数据
-                try {
-                    val input = edgeFetch.synthesizeText(text, rate, voice)
-                    val buf = ByteArray(8 * 1024)
-                    var read = input.read(buf)
-                    while (read >= 0) {
-                        if (stopped.get()) return@launch
-                        if (read > 0) ds.feed(buf.copyOf(read))
-                        read = input.read(buf)
+                // 合成并喂入数据；连接偶发失败时重试一次，避免整段被跳过
+                var ok = false
+                for (attempt in 0..1) {
+                    if (stopped.get()) return@launch
+                    try {
+                        val input = edgeFetch.synthesizeText(text, rate, voice)
+                        val buf = ByteArray(8 * 1024)
+                        var read = input.read(buf)
+                        while (read >= 0) {
+                            if (stopped.get()) return@launch
+                            if (read > 0) ds.feed(buf.copyOf(read))
+                            read = input.read(buf)
+                        }
+                        if (ds.hasData) {
+                            ok = true
+                            break
+                        }
+                    } catch (e: Exception) {
+                        Log.e("synthesis feed error: $key", e)
                     }
-                } catch (e: Exception) {
-                    Log.e("synthesis feed error: $key", e)
-                } finally {
-                    ds.markDone()
                 }
+                ds.markDone()
             }
         }
 
@@ -551,21 +568,28 @@ class TtsEdgeManager : BaseTts {
                 val ds = StreamingMediaDataSource(key)
                 playQueue.add(ds)
 
-                // 合成并喂入数据
-                try {
-                    val input = edgeFetch.synthesizeText(text, rate, voice)
-                    val buf = ByteArray(8 * 1024)
-                    var read = input.read(buf)
-                    while (read >= 0) {
-                        if (stopped.get()) return@launch
-                        if (read > 0) ds.feed(buf.copyOf(read))
-                        read = input.read(buf)
+                // 合成并喂入数据；连接偶发失败时重试一次，避免整段被跳过（没进度没声音直接跳下一段）
+                var ok = false
+                for (attempt in 0..1) {
+                    if (stopped.get()) return@launch
+                    try {
+                        val input = edgeFetch.synthesizeText(text, rate, voice)
+                        val buf = ByteArray(8 * 1024)
+                        var read = input.read(buf)
+                        while (read >= 0) {
+                            if (stopped.get()) return@launch
+                            if (read > 0) ds.feed(buf.copyOf(read))
+                            read = input.read(buf)
+                        }
+                        if (ds.hasData) {
+                            ok = true
+                            break
+                        }
+                    } catch (e: Exception) {
+                        Log.e("synthesis feed error: $key", e)
                     }
-                } catch (e: Exception) {
-                    Log.e("synthesis feed error: $key", e)
-                } finally {
-                    ds.markDone()
                 }
+                ds.markDone()
             }
         }
 
