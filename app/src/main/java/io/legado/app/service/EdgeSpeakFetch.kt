@@ -29,8 +29,9 @@ class EdgeSpeakFetch {
     companion object {
         private const val TAG = "EdgeSpeakFetch"
         private const val TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
-        private const val BASE_URL = "speech.platform.bing.com"
-        private const val WSS_PATH = "/consumer/speech/synthesize/readaloud/edge/v1"
+        // 微软 2026-10 迁移了 Edge 朗读合成服务，老地址已返回 403
+        private const val BASE_URL = "api.msedgeservices.com"
+        private const val WSS_PATH = "/tts/cognitiveservices/websocket/v1"
         private const val DEFAULT_VOICE = "zh-CN-XiaoxiaoNeural"
 
         // DRM 相关参数
@@ -120,11 +121,11 @@ class EdgeSpeakFetch {
         val secMsGec = generateSecMsGec(clockSkewSeconds)
         val connectionId = connectID()
         val queryParams = String.format(
-            "ConnectionId=%s&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s&TrustedClientToken=%s",
+            "Ocp-Apim-Subscription-Key=%s&ConnectionId=%s&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s",
+            TRUSTED_CLIENT_TOKEN,
             connectionId,
             secMsGec,
-            SEC_MS_GEC_VERSION,
-            TRUSTED_CLIENT_TOKEN
+            SEC_MS_GEC_VERSION
         )
 
         val wsUrl = String.format("wss://%s%s?%s", BASE_URL, WSS_PATH, queryParams)
@@ -213,8 +214,13 @@ class EdgeSpeakFetch {
                 response: Response?
             ) {
                 isReconnect = true
-                Log.i(TAG, "WebSocket onFailure: $t $response")
-
+                Log.e(TAG, "WebSocket onFailure: $t, code=${response?.code}, message=${response?.message}")
+                // 连接失败（如 403）时关闭输出流，让下游 read 返回 -1（EOF），
+                // 避免缓存任务永久阻塞在 read()，导致「第一段结束就停止」
+                try {
+                    audioOutputStream.close()
+                } catch (_: Exception) {
+                }
             }
 
         }
