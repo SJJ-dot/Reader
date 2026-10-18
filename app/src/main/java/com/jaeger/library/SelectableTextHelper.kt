@@ -1,7 +1,7 @@
 package com.jaeger.library
 
 import android.content.Context
-import android.content.Intent
+
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -16,7 +16,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.annotation.ColorInt
-import androidx.core.net.toUri
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.utils.copyToClipboard
@@ -181,9 +180,11 @@ class SelectableTextHelper(builder: Builder) {
             mWindow.isClippingEnabled = false
             contentView.findViewById<View>(R.id.txt_search).click {
                 try {
-                    val encode = URLEncoder.encode(mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end), "utf-8")
-                    val uri = ("https://www.bing.com/search?q=$encode").toUri()
-                    mView.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    val txt = mSelectListener.getTxt(mSelectionInfo.start, mSelectionInfo.end).trim()
+                    if (txt.isBlank()) return@click
+                    val encode = URLEncoder.encode(txt, "utf-8")
+                    val uri = "https://www.bing.com/search?q=$encode"
+                    WebViewBrowserActivity.startActivity(mView.context, uri, crossOriginMode = 0)
                     this@SelectableTextHelper.resetSelectionInfo()
                     this@SelectableTextHelper.hideSelectView()
                     mSelectListener.onTextSelectedChange(mSelectionInfo)
