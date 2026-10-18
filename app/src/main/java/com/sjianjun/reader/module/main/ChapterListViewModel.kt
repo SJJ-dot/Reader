@@ -12,6 +12,7 @@ import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -33,10 +34,18 @@ class ChapterListViewModel : ViewModel() {
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private var bookJob: Job? = null
     private var readingRecordJob: Job? = null
-    fun init(bookTitle: String) {
+    /**
+     * @param bookId 指定查看某一书源的目录（换源内容对比里的「目录」）；为空则看当前正在阅读的书源
+     */
+    fun init(bookTitle: String, bookId: String? = null) {
         bookJob?.cancel()
         bookJob = viewModelScope.launch(Dispatchers.IO) {
-            bookDao.getReadingBook(bookTitle).onEach {
+            val bookFlow: Flow<Book?> = if (bookId.isNullOrBlank()) {
+                bookDao.getReadingBook(bookTitle)
+            } else {
+                bookDao.observeBookById(bookId)
+            }
+            bookFlow.onEach {
                 bookIsLoadingLiveData.postValue(it?.isLoading == true)
             }.flatMapLatest { book ->
                 // 取启用净化规则，并对章节标题应用（作用域：书名 + 书URL + 章节标题）
@@ -73,18 +82,22 @@ class ChapterListViewModel : ViewModel() {
     /**
      * 强制全量重新加载章节列表（不把本地最新章节链接传给脚本），用于本地章节数据异常时重建
      */
-    suspend fun reloadBookFromNet(bookTitle: String) = withIo {
-        val book = bookDao.getReadingBook(bookTitle).firstOrNull() ?: return@withIo
+    suspend fun reloadBookFromNet(bookTitle: String, bookId: String? = null) = withIo {
+        val book = findBook(bookTitle, bookId) ?: return@withIo
         BookUseCase.reloadBookFromNet(book, forceFull = true)
     }
 
     /**
      * 检查更新：只拉取最新章节与本地已有章节拼接（增量）
      */
-    suspend fun checkUpdate(bookTitle: String) = withIo {
-        val book = bookDao.getReadingBook(bookTitle).firstOrNull() ?: return@withIo
+    suspend fun checkUpdate(bookTitle: String, bookId: String? = null) = withIo {
+        val book = findBook(bookTitle, bookId) ?: return@withIo
         BookUseCase.reloadBookFromNet(book, forceFull = false)
     }
+
+    private suspend fun findBook(bookTitle: String, bookId: String?): Book? =
+        if (bookId.isNullOrBlank()) bookDao.getReadingBook(bookTitle).firstOrNull()
+        else bookDao.getBookById(bookId)
 
     suspend fun saveRecord(c: Chapter) = withIo {
         readingRecord.value?.let {

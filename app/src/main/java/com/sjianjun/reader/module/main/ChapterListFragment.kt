@@ -1,14 +1,25 @@
 package com.sjianjun.reader.module.main
 
 
+import android.app.Dialog
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.viewModels
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BOOK_ID
+import com.sjianjun.reader.BOOK_READ_ONLY
 import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.CHAPTER_INDEX
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -30,11 +41,37 @@ import com.sjianjun.reader.view.click
  */
 class ChapterListFragment : BaseFragment() {
     val bookTitle: String get() = requireArguments().getString(BOOK_TITLE)!!
+    val bookId: String? get() = requireArguments().getString(BOOK_ID)
+    private val readOnly: Boolean get() = requireArguments().getString(BOOK_READ_ONLY)?.toBoolean() ?: false
+    /** 换源内容对比里定位到的章节序号；非空时优先用它高亮/滚动，而不是阅读记录里的序号 */
+    private val targetChapterIndex: Int? get() = requireArguments().getString(CHAPTER_INDEX)?.toIntOrNull()
     private val adapter = ChapterListAdapter(this)
     private var binding: MainFragmentBookChapterListBinding? = null
     private val viewModel by viewModels<ChapterListViewModel>()
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NO_FRAME, R.style.dialog_NoActionBar)
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = Dialog(requireContext(), R.style.dialog_NoActionBar)
+        // 与换源弹窗一致的窗口配置：edge-to-edge 铺满导航栏区域，底部对齐、高度一致
+        dialog.window?.apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                attributes.fitInsetsTypes = 0
+            }
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.6f)
+            setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
+            setDecorFitsSystemWindows(false)
+            WindowInsetsControllerCompat(this, decorView).isAppearanceLightNavigationBars = true
+        }
+        dialog.setCanceledOnTouchOutside(true)
+        return dialog
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -45,9 +82,26 @@ class ChapterListFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = MainFragmentBookChapterListBinding.bind(view)
+        // 窗口已 edge-to-edge 延伸到导航栏下方，底部按导航栏高度加 padding，避免内容被遮挡
+        ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, 0, 0, systemBars.bottom)
+            insets
+        }
         binding?.recycleViewChapterList?.adapter = adapter
         initRefresh()
         initData()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // 作为「目录」弹窗（换源内容对比）时：右侧滑出，宽度约 82%、高度与换源弹窗一致
+        dialog?.window?.apply {
+            val metrics = resources.displayMetrics
+            setLayout((metrics.widthPixels * 0.82f).toInt(), (metrics.heightPixels * 3f / 4f).toInt())
+            setGravity(Gravity.END or Gravity.BOTTOM)
+            setWindowAnimations(R.style.right_slide_anim)
+        }
     }
 
     /**
@@ -60,14 +114,14 @@ class ChapterListFragment : BaseFragment() {
         //同一个 key：重复下拉/上拉时新的加载会取代上一次（协程取消会连带取消正在跑的脚本调用）
         refresh.setOnRefreshListener {
             fromLoadMore = false
-            launch(singleCoroutineKey = "chapter_list_load") { viewModel.reloadBookFromNet(bookTitle) }
+            launch(singleCoroutineKey = "chapter_list_load") { viewModel.reloadBookFromNet(bookTitle, bookId) }
         }
         refresh.setEnableLoadMore(true)
         //默认是「拉到底自动加载」，会一上拉就触发，这里改为松手才执行
         refresh.setEnableAutoLoadMore(false)
         refresh.setOnLoadMoreListener {
             fromLoadMore = true
-            launch(singleCoroutineKey = "chapter_list_load") { viewModel.checkUpdate(bookTitle) }
+            launch(singleCoroutineKey = "chapter_list_load") { viewModel.checkUpdate(bookTitle, bookId) }
         }
         //刷新动画跟随书籍的加载状态，而不是等请求返回后再手动收：
         //请求可能长时间不返回（脚本卡住、网络慢），手动收会让控件一直停在「正在刷新／加载中」，
@@ -86,7 +140,7 @@ class ChapterListFragment : BaseFragment() {
     }
 
     private fun initData() {
-        viewModel.init(bookTitle)
+        viewModel.init(bookTitle, bookId)
         viewModel.chapterListLiveData.observeViewLifecycle {
             var change = adapter.readingChapterIndex != adapter.readingRecord?.chapterIndex
             change = change || (adapter.data.size != it.size)
@@ -103,7 +157,8 @@ class ChapterListFragment : BaseFragment() {
         }
         viewModel.readingRecord.observeViewLifecycle {
             adapter.readingRecord = it
-            adapter.readingChapterIndex = it?.chapterIndex ?: 0
+            // 换源内容对比里的「目录」：优先用定位到的章节序号高亮/滚动
+            adapter.readingChapterIndex = targetChapterIndex ?: (it?.chapterIndex ?: 0)
             val index = adapter.data.indexOfFirst {
                 it.index == adapter.readingChapterIndex
             }
@@ -112,7 +167,7 @@ class ChapterListFragment : BaseFragment() {
         }
         // 净化规则变更后，重新加载章节列表以刷新标题
         EventBus.observe(EventKey.REPLACEMENT_RULES_CHANGED, viewLifecycleOwner, androidx.lifecycle.Observer<String> {
-            viewModel.init(bookTitle)
+            viewModel.init(bookTitle, bookId)
         })
     }
 
@@ -148,6 +203,8 @@ class ChapterListFragment : BaseFragment() {
                     binding.mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
                 }
                 click {
+                    // 换源内容对比里的「目录」仅作查看，不跳转、不改阅读记录
+                    if (fragment.readOnly) return@click
                     if (readingChapterIndex == c.index && fragment.activity is BookReaderActivity) {
                         //如果是当前章节，直接返回
                         return@click

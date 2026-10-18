@@ -71,9 +71,14 @@ object OnlineApi {
     }
 
     private suspend fun post(function: String, body: String): String? = withContext(Dispatchers.IO) {
+        val url = "$rpcBase/$function"
+        // FEEDBACK_URL 未配置（构建时为空或 "null"）时 URL 没有 http/https scheme，静默跳过，避免刷错误日志
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return@withContext null
+        }
         try {
             val request = Request.Builder()
-                .url("$rpcBase/$function")
+                .url(url)
                 .post(body.toRequestBody(JSON))
                 .header("x-wb-webapp-access-key", ACCESS_KEY)
                 .build()

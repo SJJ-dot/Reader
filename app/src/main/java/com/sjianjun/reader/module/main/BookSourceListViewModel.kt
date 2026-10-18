@@ -7,9 +7,12 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.ChapterLocator
 import com.sjianjun.reader.repository.DbFactory
+import com.sjianjun.reader.repository.ReplacementRuleUseCase
+import com.sjianjun.reader.utils.ChapterTextPreparer
 import com.sjianjun.reader.utils.bookComparator
 import com.sjianjun.reader.utils.debounce
 import com.sjianjun.reader.utils.toast
@@ -22,7 +25,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 /**
- * 书籍书源列表页
+ * 书籍书源列表页（换源）
  */
 class BookSourceListViewModel() : ViewModel() {
 
@@ -33,14 +36,32 @@ class BookSourceListViewModel() : ViewModel() {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     private val chapterContentDao get() = DbFactory.db.chapterContentDao()
 
+    /** 当前正在阅读的章节（旧书源），用于换源定位与内容对比 */
+    private var currentChapter: Chapter? = null
+
+    /** 当前阅读章节标题（旧书源），内容对比页据此判断定位到的章节是否同名 */
+    val currentChapterTitle: String? get() = currentChapter?.title
+
     fun init(bookTitle: String) {
         viewModelScope.launch(Dispatchers.IO) {
             bookDao.getAllSourceBooksByTitle(bookTitle).debounce(100).collectLatest {
                 val record = readingRecordDao.getReadingRecord(bookTitle).firstOrNull()
                 val readingChapter = if (record != null) chapterDao.getChapterByIndex(record.bookId, record.chapterIndex) else null
+                currentChapter = readingChapter
                 val list = it.map { async { loadBookInfo(it, record, readingChapter) } }.awaitAll()
-                bookList.postValue(list.sortedWith(bookComparator))
+                bookList.postValue(sortCurrentFirst(list, record))
             }
+        }
+    }
+
+    /** 当前阅读的书源排第一，其余按原排序 */
+    private fun sortCurrentFirst(list: List<Book>, record: ReadingRecord?): List<Book> {
+        if (record == null) return list.sortedWith(bookComparator)
+        return list.sortedWith { a, b ->
+            val aCur = a.id == record.bookId
+            val bCur = b.id == record.bookId
+            if (aCur != bCur) return@sortedWith if (aCur) -1 else 1
+            bookComparator.compare(a, b)
         }
     }
 
@@ -84,6 +105,74 @@ class BookSourceListViewModel() : ViewModel() {
         return book
     }
 
+    /**
+     * 内容对比模式：确保该书源有目录、定位到当前阅读章节、加载正文。
+     * 没有目录时直接加载书籍，再定位。
+     *
+     * 结果按书缓存：bookList 每次 DB 变化都会重新发射，若不缓存会反复触发加载导致页面闪烁。
+     * 刷新按钮走 force=true 强制重载。
+     */
+    private val preparedCompare = java.util.concurrent.ConcurrentHashMap<String, Book>()
+
+    suspend fun prepareForCompare(book: Book, force: Boolean = false): Book = withIo {
+        if (force) {
+            preparedCompare.remove(book.id)
+        } else {
+            preparedCompare[book.id]?.let { return@withIo it }
+        }
+        val chapters = chapterDao.getChapterListByBookId(book.id).first()
+        if (chapters.isEmpty()) {
+            // 没有章节列表，直接加载书籍
+            runCatching { BookUseCase.reloadBookFromNet(book) }
+        }
+        val record = readingRecordDao.getReadingRecord(book.title).firstOrNull()
+        val old = currentChapter
+            ?: record?.let { chapterDao.getChapterByIndex(it.bookId, it.chapterIndex) }
+        val located = if (old != null) {
+            ChapterLocator.locateChapter(
+                newBookId = book.id,
+                oldBookId = record?.bookId ?: old.bookId,
+                oldIndex = old.index,
+                oldTitle = old.title
+            )
+        } else {
+            null
+        }
+        book.readChapter = located ?: chapterDao.getLastChapterByBookId(book.id)
+        book.lastChapter = chapterDao.getLastChapterByBookId(book.id)
+        book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
+        book.record = record
+        book.readChapter?.let { chapter ->
+            BookUseCase.getChapterContent(chapter)
+            // 拼接分页正文（与阅读页/朗读一致）
+            var page = 0
+            while (page < MAX_COMPARE_PAGE_LOAD && BookUseCase.getChapterContentPage(chapter)) {
+                page++
+            }
+        }
+        preparedCompare[book.id] = book
+        book
+    }
+
+    /**
+     * 与阅读页/朗读一致的文本处理：HTML 转纯文本 + 全角规范化 + 简繁转换 + 净化规则
+     * @return (章节标题, 正文纯文本)
+     */
+    suspend fun formatCompareContent(book: Book, chapter: Chapter): Pair<String, String> = withIo {
+        val rawText = chapter.content
+            ?.sortedBy { it.pageIndex }
+            ?.joinToString("\n") { it.format() }
+            .orEmpty()
+        val rules = ReplacementRuleUseCase.getEnabledRules()
+        val jianFanMode = globalConfig.readerJianFanMode.value ?: ChapterTextPreparer.JIAN_FAN_OFF
+        val fullWidthConvert = globalConfig.readerFullWidthConvert.value == true
+        val title = ChapterTextPreparer.title(chapter.title, rules, book, chapter, jianFanMode, fullWidthConvert)
+        val text = ChapterTextPreparer.content(rawText, rules, book, chapter, jianFanMode, fullWidthConvert)
+        // 与阅读页一致：跳过空白行（净化规则删掉广告后会留下空行，阅读页排版时本来就会跳过）
+        val cleaned = text.lines().filter { it.isNotBlank() }.joinToString("\n")
+        title to cleaned
+    }
+
     suspend fun reloadAllBookFromNet() = withIo {
         val list = bookList.value ?: return@withIo
         list.map {
@@ -106,5 +195,15 @@ class BookSourceListViewModel() : ViewModel() {
         } catch (e: Exception) {
             return@withIo false
         }
+    }
+
+    /** 批量删除书源 */
+    suspend fun deleteBooks(books: List<Book>) = withIo {
+        books.forEach { runCatching { BookUseCase.deleteById(it) } }
+    }
+
+    companion object {
+        /** 内容对比最多拼接的分页数 */
+        private const val MAX_COMPARE_PAGE_LOAD = 20
     }
 }

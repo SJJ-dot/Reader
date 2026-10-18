@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.BOOK_DEFAULT_COMPARE
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -300,7 +301,8 @@ class BookReaderSettingFragment : BaseFragment() {
         binding?.originClickableArea?.click {
             val book = readerViewModel.book.value ?: return@click
             fragmentCreate<BookSourceListFragment>(
-                BOOK_TITLE to book.title
+                BOOK_TITLE to book.title,
+                BOOK_DEFAULT_COMPARE to "true"
             ).show(parentFragmentManager, "BookSourceListFragment")
             hide()
         }

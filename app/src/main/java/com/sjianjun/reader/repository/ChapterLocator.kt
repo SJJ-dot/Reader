@@ -10,7 +10,7 @@ import sjj.alog.Log
  * 换源时的章节定位器。
  *
  * 匹配策略（逐级尝试，命中即返回）：
- * 1. 精确匹配：章节名完全一致（或去掉「第X章」前缀并归一化后一致），取序号最接近当前章节者；
+ * 1. 章节标题完全相同（原始字符串一致）；有多个相同标题时取序号最接近当前章节者；
  * 2. 锚点推断：取旧书源当前章节左侧最近的"精确同名"锚点，用其偏移量推算当前位置，并"向前贴近"
  *    （取序号不超过推算位置的最大章节），避免跳到当前尚未阅读的内容；
  * 3. 兜底：无左侧锚点时，直接按旧序号切换（向前贴近，不越界）。
@@ -41,6 +41,20 @@ object ChapterLocator {
         oldTitle: String?
     ): Chapter? {
         val chapterDao = db.chapterDao()
+
+        // 1. 标题完全相同：全局按标题精确查询。不同书源的章节序号可能差异很大
+        //    （卷/番外/章节拆分方式不同），不能在旧序号 ±RADIUS 区间内找，否则
+        //    同名章节序号偏移较大时会定位不到
+        val exactTitle = oldTitle?.trim().orEmpty()
+        if (exactTitle.isNotEmpty()) {
+            chapterDao.getChapterByTitle(newBookId, exactTitle)
+                .minByOrNull { abs(oldIndex - it.index) }
+                ?.let {
+                    Log.i("换源定位[完全一致] $oldTitle -> ${it.title}(index=${it.index})")
+                    return it
+                }
+        }
+
         val start = oldIndex - LOCAL_RADIUS
         val end = oldIndex + LOCAL_RADIUS
         val newChapters = chapterDao.getChapterListBetween(newBookId, start, end)
@@ -49,12 +63,6 @@ object ChapterLocator {
             val last = chapterDao.getLastChapterByBookId(newBookId)
             Log.i("换源定位[越界] $oldTitle(index=$oldIndex) -> ${last?.title}(index=${last?.index})")
             return last
-        }
-
-        // 1. 精确匹配
-        exactMatch(newChapters, oldIndex, oldTitle)?.let {
-            Log.i("换源定位[精确] $oldTitle -> ${it.title}(index=${it.index})")
-            return it
         }
 
         // 2. 锚点推断（左侧最近同名锚点 + 偏移）
@@ -70,25 +78,6 @@ object ChapterLocator {
         val result = forwardNearest(newChapters, oldIndex.toDouble())
         Log.i("换源定位[按序号] $oldTitle(index=$oldIndex) -> ${result?.title}(index=${result?.index})")
         return result
-    }
-
-    /** 第 1 级：章节名完全一致，取序号最接近当前章节者 */
-    private fun exactMatch(newChapters: List<Chapter>, oldIndex: Int, oldTitle: String?): Chapter? {
-        val title = oldTitle?.trim().orEmpty()
-        if (title.isEmpty()) return null
-        return newChapters
-            .filter { titlesMatch(it.title, title) }
-            .minByOrNull { abs(oldIndex - it.index) }
-    }
-
-    /** 章节名是否一致：原始一致，或去掉「第X章」前缀并归一化标点/全角后一致 */
-    private fun titlesMatch(a: String?, b: String?): Boolean {
-        val x = a?.trim().orEmpty()
-        val y = b?.trim().orEmpty()
-        if (x.isEmpty() || y.isEmpty()) return false
-        if (x == y) return true
-        val nx = x.normalizedChapterName()
-        return nx.isNotEmpty() && nx == y.normalizedChapterName()
     }
 
     /**

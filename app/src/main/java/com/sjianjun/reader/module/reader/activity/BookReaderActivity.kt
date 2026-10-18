@@ -123,7 +123,7 @@ class BookReaderActivity : BaseActivity() {
                 right = max(params.insetRight, safeRight.toFloat()),
                 bottom = max(params.insetBottom, safeBottom.toFloat()),
             )
-            binding?.drawerChapterList?.setPadding(0, safeTop, safeRight, safeBottom)
+            binding?.drawerChapterList?.setPadding(0, safeTop, safeRight, 0)
             insets
         }
 

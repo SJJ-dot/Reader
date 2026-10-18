@@ -34,6 +34,10 @@ interface BookDao {
     @Query("select * from Book where id=:id")
     fun getBookById(id: String): Book?
 
+    /** 观察某本书（换源目录等场景需要跟随 isLoading 变化刷新动画） */
+    @Query("select * from Book where id=:id")
+    fun observeBookById(id: String): Flow<Book?>
+
     @Query("select count(*) from Book where title=:title")
     fun getBookBookSourceNum(title: String): Int
 
