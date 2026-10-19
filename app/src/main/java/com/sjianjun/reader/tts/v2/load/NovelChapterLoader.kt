@@ -1,32 +1,39 @@
 package com.sjianjun.reader.tts.v2.load
 
 import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.python.ScriptCallTargets
+import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.repository.BookUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import sjj.alog.Log
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 章节加载的底层能力（默认真实实现 [BookChapterBackend]）。
  *
- * 抽出来是为了单测/自测可以注入假实现（慢网络、失败重试、取消），不影响线上行为。
+ * 抽出来是为了自测可以注入假实现（慢网络、失败重试、并发共享），不影响线上行为。
  */
 interface ChapterLoadBackend {
 
-    /** 加载一章第一页，结果写回 `chapter.content`；返回是否拿到可用内容 */
-    suspend fun loadFirstPage(chapter: Chapter, force: Int): Boolean
+    /**
+     * 加载一章第一页，返回该章已加载的分页（**不写入 chapter**）。
+     *
+     * 返回 null 表示失败（由上层决定是否重试）。
+     */
+    suspend fun loadFirstPage(chapter: Chapter, force: Int): List<ChapterContent>?
 
-    /** 续抓下一页，结果追加到 `chapter.content`；没有下一页或失败返回 false */
-    suspend fun loadNextPage(chapter: Chapter): Boolean
-
-    /** 取消该章还在跑的请求（跳章时让旧请求立刻让路） */
-    fun cancel(chapter: Chapter)
+    /** 续抓下一页，返回新的一页；没有更多或失败返回 null */
+    suspend fun loadNextPage(chapter: Chapter, nextPageUrl: String): ChapterContent?
 }
 
 /**
@@ -34,36 +41,34 @@ interface ChapterLoadBackend {
  */
 class BookChapterBackend : ChapterLoadBackend {
 
-    override suspend fun loadFirstPage(chapter: Chapter, force: Int): Boolean {
+    override suspend fun loadFirstPage(chapter: Chapter, force: Int): List<ChapterContent>? {
         BookUseCase.getChapterContent(chapter, force)
-        return hasValidContent(chapter)
+        val pages = chapter.content ?: return null
+        if (pages.isEmpty() || pages.firstOrNull()?.contentError != false) return null
+        return pages.sortedBy { it.pageIndex }
     }
 
-    override suspend fun loadNextPage(chapter: Chapter): Boolean = BookUseCase.getChapterContentPage(chapter)
-
-    override fun cancel(chapter: Chapter) {
-        // 取消这一章（含分页 url）正在跑的脚本调用；它在锁内会立刻结束并让出锁
-        runCatching { ScriptCallTargets.cancelCurrent(ScriptCallTargets.contentKey(chapter.url)) }
-    }
-
-    private fun hasValidContent(chapter: Chapter): Boolean {
-        val content = chapter.content
-        return !content.isNullOrEmpty() && content.firstOrNull()?.contentError == false
+    override suspend fun loadNextPage(chapter: Chapter, nextPageUrl: String): ChapterContent? {
+        val before = chapter.content?.size ?: 0
+        if (!BookUseCase.getChapterContentPage(chapter)) return null
+        val pages = chapter.content ?: return null
+        if (pages.size <= before) return null
+        return pages.lastOrNull()
     }
 }
 
 /**
  * 阅读页章节加载入口：加载层的「整章分页」面。
  *
- * 与 [NovelLoadService]（朗读用的段落流）共用同一套底层抓取（[BookUseCase]）和同一份数据库缓存，
- * 但关心的事情不同：
+ * 与 [NovelLoadService]（朗读用的段落流）共用同一套底层抓取（[BookUseCase]）和同一份数据库缓存：
  * - [NovelLoadService]：把一章变成"可朗读的段落"，供 TTS 会话推进/预取；
  * - [NovelChapterLoader]：把一章变成"阅读页可排版的分页内容"，供阅读页显示、预加载、批量缓存。
  *
- * 跳章体验：
- * - 阅读页的加载是"前台"（`foreground = true`）：切到新章时**取消上一章还在跑的请求**，
- *   新章立刻开始，不会排队等旧章（弱网/长章节时尤其明显）；
- * - 批量缓存、朗读预取是"后台"（`foreground = false`）：不抢占前台、也不会被前台误取消。
+ * 并发与取消（重点）：
+ * - **同一章/同一页只加载一次**：谁先开始谁真正跑，后来者（阅读页、批量缓存、朗读）直接等结果，
+ *   不会取消别人的请求（例如"缓存第 100 章时跳到第 100 章"，会复用正在跑的那次）；
+ * - **没人等才取消**：等待者都走了（用户跳章/退出）才取消这次加载，避免白跑；
+ * - **跳章优先**：前台切到新章时，旧章的翻页循环会立即停止；旧章若只剩阅读页在等，请求随取消一起结束。
  */
 class NovelChapterLoader(
     private val backend: ChapterLoadBackend = BookChapterBackend(),
@@ -84,6 +89,15 @@ class NovelChapterLoader(
         val instance: NovelChapterLoader by lazy { NovelChapterLoader() }
     }
 
+    /** 一次共享的加载：多个调用方 await 同一个 job */
+    private class Flight<T>(val job: Deferred<T?>, val waiters: AtomicInteger = AtomicInteger(0))
+
+    /** 首页加载：key = first|bookId|url|force */
+    private val firstFlights = ConcurrentHashMap<String, Flight<List<ChapterContent>>>()
+
+    /** 分页加载：key = next|bookId|url|nextPageUrl */
+    private val pageFlights = ConcurrentHashMap<String, Flight<ChapterContent>>()
+
     /** 当前"前台"章节：阅读页正在加载/翻页的那一章 */
     @Volatile
     private var foregroundChapter: Chapter? = null
@@ -93,7 +107,7 @@ class NovelChapterLoader(
      *
      * @param force -1 只用本地缓存，0 缓存优先，1 强制重新请求
      * @param retries 失败重试次数（含首次尝试共 retries 次）
-     * @param foreground 是否前台请求（阅读页）；前台请求切章会取消上一章，后台（批量/预取）不会
+     * @param foreground 是否前台请求（阅读页）；后台（批量缓存/预取）不参与"跳章停止翻页"
      * @return 是否拿到可用内容
      */
     suspend fun loadChapter(
@@ -103,9 +117,19 @@ class NovelChapterLoader(
         foreground: Boolean = true,
     ): Boolean {
         if (foreground) switchForeground(chapter)
-        val ok = retry(retries) { backend.loadFirstPage(chapter, force) && hasValidContent(chapter) }
-        if (!ok) Log.e("$TAG 章节加载失败：${chapter.title} #${chapter.index}")
-        return ok
+        val key = "first|${keyOf(chapter)}|$force"
+        val pages = join(firstFlights, key) {
+            // 首页失败重试在共享 job 里做：只跑一次，后来者直接复用结果
+            retry(retries) { backend.loadFirstPage(chapter, force) }
+        }
+        if (pages.isNullOrEmpty()) {
+            Log.e("$TAG 章节加载失败：${chapter.title} #${chapter.index}")
+            return false
+        }
+        // 结果同步到调用方自己的 chapter 对象（共享 job 用的是第一个请求者的对象）
+        chapter.content = pages.toMutableList()
+        chapter.isLoaded = true
+        return true
     }
 
     /**
@@ -127,12 +151,20 @@ class NovelChapterLoader(
             }
             foregroundChapter = chapter
         }
-        // 还没加载首页：先加载首页（调用方可能直接来要分页）
-        if (chapter.content.isNullOrEmpty()) {
+        val pages = chapter.content
+        if (pages.isNullOrEmpty()) {
             return loadChapter(chapter, retries = retries, foreground = false)
         }
-        if (chapter.content?.lastOrNull()?.nextPageUrl.isNullOrBlank()) return false
-        return retry(retries) { backend.loadNextPage(chapter) }
+        val nextUrl = pages.lastOrNull()?.nextPageUrl
+        if (nextUrl.isNullOrBlank()) return false
+        val key = "next|${keyOf(chapter)}|$nextUrl"
+        val page = join(pageFlights, key) {
+            retry(retries) { backend.loadNextPage(chapter, nextUrl) }
+        } ?: return false
+        if (pages.none { it.pageIndex == page.pageIndex && it.chapterUrl == page.chapterUrl }) {
+            pages.add(page)
+        }
+        return true
     }
 
     /**
@@ -197,13 +229,45 @@ class NovelChapterLoader(
     // ==================== 内部实现 ====================
 
     /**
-     * 切换前台章节：新章 != 旧章时，取消旧章还在跑的请求（跳章要立刻响应）。
+     * 共享一次加载：
+     * - 已有同样的加载在跑 → 直接等（**不取消**别人的请求）；
+     * - 等待者都走了才取消，避免白跑。
+     */
+    private suspend fun <T> join(
+        flights: ConcurrentHashMap<String, Flight<T>>,
+        key: String,
+        block: suspend () -> T?,
+    ): T? {
+        val flight = flights.computeIfAbsent(key) { Flight(scope.async { block() }) }
+        flight.waiters.incrementAndGet()
+        try {
+            return flight.job.await()
+        } catch (e: CancellationException) {
+            // 调用方自己被取消（跳章/退出）：继续抛出，让协程正常结束
+            currentCoroutineContext().ensureActive()
+            // 否则是共享加载被外部取消（如切书源重抓）：按"本次失败"处理，别把等待者一起取消
+            Log.i("$TAG 共享加载被取消，按失败处理：$key")
+            return null
+        } finally {
+            val remaining = flight.waiters.decrementAndGet()
+            if (remaining <= 0 && !flight.job.isCompleted) {
+                Log.i("$TAG 没有等待者，取消加载：$key")
+                flight.job.cancel()
+            }
+            if (flight.job.isCompleted) flights.remove(key, flight)
+        }
+    }
+
+    /**
+     * 切换前台章节（跳章）：只记录，不取消共享加载。
+     *
+     * 旧的前台请求如果只有阅读页在等，会随协程取消而停止（见 [join] 的等待者计数）；
+     * 如果批量缓存也在等同一章，会继续跑完，不会被误杀。
      */
     private fun switchForeground(chapter: Chapter) {
         val previous = foregroundChapter
         if (previous != null && keyOf(previous) != keyOf(chapter)) {
-            Log.i("$TAG 章节跳转，取消上一章请求：${previous.title} #${previous.index}")
-            runCatching { backend.cancel(previous) }
+            Log.i("$TAG 章节跳转：${previous.title} -> ${chapter.title}")
         }
         foregroundChapter = chapter
     }
@@ -215,12 +279,12 @@ class NovelChapterLoader(
         return !content.isNullOrEmpty() && content.firstOrNull()?.contentError == false
     }
 
-    private suspend fun retry(retries: Int, block: suspend () -> Boolean): Boolean {
+    private suspend fun <T> retry(retries: Int, block: suspend () -> T?): T? {
         val attempts = retries.coerceAtLeast(1)
         for (attempt in 1..attempts) {
-            if (block()) return true
+            block()?.let { return it }
             if (attempt < attempts) delay(RETRY_DELAY_MS)
         }
-        return false
+        return null
     }
 }
