@@ -15,10 +15,10 @@ enum class TtsPlaybackMode {
 }
 
 /**
- * 朗读会话状态。
+ * 朗读会话状态（界面侧视图）。
  *
- * 只有 [TtsPlaybackService] 会写入，阅读页 / 网页阅读页 / 朗读设置页 / 媒体通知只读取，
- * 避免多方各自维护一份状态导致不一致。
+ * 由 [TtsPlaybackController] 从会话层状态映射而来；阅读页 / 网页阅读页 / 朗读设置页 /
+ * 媒体通知只读取，避免多方各自维护一份状态导致不一致。
  */
 data class TtsPlaybackState(
     /** 是否存在朗读会话（暂停中也算） */
@@ -48,10 +48,6 @@ data class TtsPlaybackState(
      * 阅读页据此把高亮落到本页第一行，而不是翻回上一页
      */
     val paragraphStartOffset: Int = 0,
-    /** 当前段落开始朗读的时间戳，用于按时间估算段内进度 */
-    val paragraphStartAt: Long = 0L,
-    /** 当前段落预估朗读时长（毫秒），用于按时间估算段内进度 */
-    val paragraphEstimateMs: Long = 0L,
     /**
      * 当前段落已朗读进度 0f~1f。
      * 优先用语音引擎回传的真实朗读位置，引擎拿不到时按时间估算；节流上报，阅读器据此按行高亮
@@ -80,16 +76,7 @@ data class TtsPlaybackState(
         }
 }
 
-/**
- * 段落内预估进度 0f~1f：按「段落开始时间 + 段落预估时长」估算。
- * 只在引擎拿不到真实朗读位置时作为兜底；暂停时保持最后一次上报的值。
- */
-fun TtsPlaybackState.estimateParagraphRatio(): Float {
-    // 暂停/没在朗读时保持最后一次上报的值，不要在暂停期间继续增长
-    if (!playing || paragraphStartAt <= 0L || paragraphEstimateMs <= 0L) return paragraphProgress
-    val elapsed = System.currentTimeMillis() - paragraphStartAt
-    return (elapsed.toFloat() / paragraphEstimateMs.toFloat()).coerceIn(0f, 1f)
-}
+
 
 /**
  * 定时停止按钮文案：提示下一次点击会切到什么，顺序为 关闭 -> 15 -> 30 -> 60 -> 关闭

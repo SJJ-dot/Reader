@@ -1,43 +1,58 @@
 package com.sjianjun.reader.tts
 
-import android.content.Intent
 import android.os.Looper
-import androidx.core.content.ContextCompat
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
+import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.repository.DbFactory
+import com.sjianjun.reader.tts.v2.TtsPlayerHolder
+import com.sjianjun.reader.tts.v2.notify.TtsNotificationService
+import com.sjianjun.reader.tts.v2.session.TtsPlayer
+import com.sjianjun.reader.tts.v2.session.TtsSessionMode
+import com.sjianjun.reader.tts.v2.session.TtsSessionState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sjj.alog.Log
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * 朗读会话的进程内入口。
+ * 朗读会话的进程内入口（**对外契约不变**：状态 + 命令）。
  *
- * - 对上层（小说阅读页、网页阅读页、朗读设置页、通知、媒体按键）只暴露「状态 + 命令」
- * - 状态由 [TtsPlaybackService] 唯一写入，这里只做分发
- * - 命令优先同进程直调服务实例，服务还没创建时退回 Intent
+ * 内部已切换为新实现：
+ * - 会话编排：[com.sjianjun.reader.tts.v2.session.TtsPlayer]（经 [TtsPlayerHolder] 持有）
+ * - 引擎：系统 TTS / Edge（由配置决定）
+ * - 通知/媒体/焦点：独立的 [TtsNotificationService] 前台服务
+ *
+ * 这里只做三件事：
+ * 1. 命令转发；
+ * 2. 把新会话状态映射成 [TtsPlaybackState] 供现有界面（播放卡片、跟随高亮、定时对话框）使用；
+ * 3. 阅读页不在前台时回写阅读进度。
  */
 object TtsPlaybackController {
 
     private val _state = MutableLiveData(TtsPlaybackState())
 
-    /** 朗读会话状态，只有服务写入 */
+    /** 朗读会话状态（新会话状态映射而来），只有播放器写入 */
     val state: LiveData<TtsPlaybackState> get() = _state
 
-    @Volatile
-    private var service: TtsPlaybackService? = null
-
-    /** 阅读页是否在前台：在前台时阅读进度由阅读页写，服务不写，避免互相覆盖 */
+    /** 阅读页是否在前台：在前台时阅读进度由阅读页写，这里不写，避免互相覆盖 */
     @Volatile
     private var readerVisible = false
 
-    /** 网页模式待朗读正文：同进程直接传递，避免大文本走 Intent 事务限制 */
+    private val bridgeStarted = AtomicBoolean(false)
+
     @Volatile
-    internal var pendingPageText: String = ""
+    private var bookCover: String = ""
 
-    internal fun attachService(newService: TtsPlaybackService?) {
-        service = newService
-    }
+    /** 上次回写阅读进度的章节，避免每次进度刷新都写库 */
+    private var lastRecordedChapter = -1
 
-    internal fun dispatchState(newState: TtsPlaybackState) {
+    private fun dispatchState(newState: TtsPlaybackState) {
         if (_state.value == newState) return
         // 服务回调都在主线程，直接 setValue 让 isActive()/isPlaying() 立刻拿到最新状态
         if (isMainThread()) {
@@ -66,30 +81,34 @@ object TtsPlaybackController {
         return current.active && current.mode == TtsPlaybackMode.PAGE && current.pageUrl == pageUrl
     }
 
+    // ==================== 命令 ====================
+
     /**
-     * 小说模式：开始朗读指定书籍的指定章节，从第 paragraphIndex 段开始，读完自动进入下一章
+     * 小说模式：开始朗读指定书籍的指定章节。
      *
-     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：跨页段落从当前页第一行开始读
+     * @param paragraphIndex 阅读页传入的"本页第一行所在段落"的索引
+     * @param paragraphOffset 本页第一行在该段落文本里的字符偏移：
+     *        从**本页第一行**开始读，跨页段落的前半部分（上一页已显示过的）不读
      */
     fun startBook(bookId: String, chapterIndex: Int, paragraphIndex: Int = 0, paragraphOffset: Int = 0) {
-        val target = service
-        if (target != null) {
-            target.startBookSession(bookId, chapterIndex, paragraphIndex, paragraphOffset)
-            return
+        if (bookId.isBlank() || chapterIndex < 0) return
+        // 设置里换了引擎（系统/Edge）：开始新的朗读前切过来
+        TtsPlayerHolder.ensureConfiguredEngine()
+        App.app.appScope.launch {
+            val book = runCatching { withContext(Dispatchers.IO) { DbFactory.db.bookDao().getBookById(bookId) } }
+                .getOrNull()
+            bookCover = book?.cover.orEmpty()
+            lastRecordedChapter = -1
+            player().startBook(bookId, book?.title.orEmpty(), chapterIndex, paragraphIndex, paragraphOffset)
+            TtsNotificationService.start(App.app)
         }
-        val intent = baseIntent(TtsPlaybackService.ACTION_START_BOOK)
-            .putExtra(TtsPlaybackService.EXTRA_BOOK_ID, bookId)
-            .putExtra(TtsPlaybackService.EXTRA_CHAPTER_INDEX, chapterIndex)
-            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_INDEX, paragraphIndex)
-            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_OFFSET, paragraphOffset)
-        startForegroundService(intent)
     }
 
     /**
      * 网页模式：只朗读当前页面正文，读完停止，不自动跳章。
-     * 正文内容每次都取新的，所以即使服务已在朗读也会重开会话。
      *
-     * @param paragraphOffset 起始段落的朗读起点偏移（字符数）：跨页段落从当前页第一行开始读
+     * @param paragraphIndex 本页第一行所在段落（同 [startBook]）
+     * @param paragraphOffset 本页第一行在该段落文本里的字符偏移（同 [startBook]）
      */
     fun startPage(
         pageUrl: String,
@@ -102,78 +121,53 @@ object TtsPlaybackController {
             Log.e("TtsPlaybackController 网页朗读参数不合法 url=$pageUrl textLen=${text.length}")
             return
         }
-        val target = service
-        if (target != null) {
-            target.startPageSession(pageUrl, title, text, paragraphIndex, paragraphOffset)
-            return
-        }
-        pendingPageText = text
-        val intent = baseIntent(TtsPlaybackService.ACTION_START_PAGE)
-            .putExtra(TtsPlaybackService.EXTRA_PAGE_URL, pageUrl)
-            .putExtra(TtsPlaybackService.EXTRA_PAGE_TITLE, title)
-            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_INDEX, paragraphIndex)
-            .putExtra(TtsPlaybackService.EXTRA_PARAGRAPH_OFFSET, paragraphOffset)
-        if (!startForegroundService(intent)) {
-            // 启动失败时清掉暂存正文，避免残留给下一次启动
-            pendingPageText = ""
-        }
+        TtsPlayerHolder.ensureConfiguredEngine()
+        player().startPage(pageUrl, title, text, paragraphIndex, paragraphOffset)
+        TtsNotificationService.start(App.app)
     }
 
-    fun pause() = dispatch(TtsPlaybackService.ACTION_PAUSE) { it.pausePlayback() }
+    fun pause() = player().pause()
 
-    fun resume() = dispatch(TtsPlaybackService.ACTION_RESUME) { it.resumePlayback() }
+    fun resume() = player().resume()
 
-    fun stop() = dispatch(TtsPlaybackService.ACTION_STOP) { it.stopSession() }
+    fun stop() = player().stop()
 
-    fun toggle() = dispatch(TtsPlaybackService.ACTION_TOGGLE) {
-        if (it.isPlayingNow()) it.pausePlayback() else it.resumePlayback()
+    fun toggle() {
+        val p = player()
+        if (p.state.value.playing) p.pause() else p.resume()
     }
 
-    fun prevChapter() = dispatch(TtsPlaybackService.ACTION_PREV) { it.prevChapter() }
+    fun prevChapter() = player().prevChapter()
 
-    fun nextChapter() = dispatch(TtsPlaybackService.ACTION_NEXT) { it.nextChapter() }
+    fun nextChapter() = player().nextChapter()
 
-    fun setSleepTimer(minutes: Int) {
-        val target = service
-        if (target != null) {
-            target.setSleepTimer(minutes)
-        } else {
-            send(TtsPlaybackService.ACTION_SET_TIMER, minutes)
-        }
+    /**
+     * 实时调整语速（0~100）：写入配置并立即生效（正在朗读时从当前段落重读）。
+     *
+     * 朗读设置里的拖动条可直接调用，不需要重启朗读。
+     */
+    fun setRate(rate: Int) {
+        val value = rate.coerceIn(0, 100)
+        globalConfig.readerTtsRate.postValue(value)
+        player().setRate(value)
     }
 
-    fun cycleSleepTimer() = dispatch(TtsPlaybackService.ACTION_CYCLE_TIMER) { it.cycleSleepTimer() }
+    fun setSleepTimer(minutes: Int) = player().setSleepTimer(minutes)
+
+    fun cycleSleepTimer() {
+        val minutes = _state.value?.sleepTimerMinutes ?: 0
+        player().setSleepTimer(nextSleepTimerMinutes(minutes))
+    }
 
     /**
      * 定时到点后是否读完当前章节再停止
      */
-    fun setStopAfterChapter(enabled: Boolean) {
-        val target = service
-        if (target != null) {
-            target.setStopAfterChapter(enabled)
-            return
-        }
-        val intent = baseIntent(TtsPlaybackService.ACTION_SET_STOP_AFTER_CHAPTER)
-            .putExtra(TtsPlaybackService.EXTRA_STOP_AFTER_CHAPTER, enabled)
-        try {
-            App.app.startService(intent)
-        } catch (e: Throwable) {
-            Log.e("TtsPlaybackController 设置读完本章再停失败", e)
-        }
-    }
+    fun setStopAfterChapter(enabled: Boolean) = player().setStopAfterChapter(enabled)
 
-    /**
-     * 结束正在进行的朗读（同进程同步执行）。
-     * 开始新的朗读会话前会调用，保证不会有两个会话同时发声。
-     */
+    /** 结束正在进行的朗读（开始新的朗读会话前调用，保证不会有两个会话同时发声） */
     fun stopIfActive() {
         if (!isActive()) return
-        val target = service
-        if (target != null) {
-            target.stopSession()
-        } else {
-            send(TtsPlaybackService.ACTION_STOP)
-        }
+        player().stop()
     }
 
     fun setReaderVisible(visible: Boolean) {
@@ -182,36 +176,114 @@ object TtsPlaybackController {
 
     fun isReaderVisible(): Boolean = readerVisible
 
-    private inline fun dispatch(action: String, direct: (TtsPlaybackService) -> Unit) {
-        val target = service
-        if (target != null) {
-            direct(target)
-        } else {
-            send(action)
+    // ==================== 内部：新状态 → 旧状态 ====================
+
+    init {
+        // 只要控制器被使用就订阅状态：订阅的是"当前播放器"的稳定入口，
+        // 引擎切换导致播放器重建后仍然能继续收到状态（否则界面不刷新、按钮状态不切换）
+        startBridge()
+    }
+
+    private fun player(): TtsPlayer = TtsPlayerHolder.player()
+
+    private fun startBridge() {
+        if (!bridgeStarted.compareAndSet(false, true)) return
+        // 兜底：若在 Application 初始化完成前就被访问，下次访问时重试绑定
+        val scope = runCatching { App.app.appScope }.getOrElse {
+            bridgeStarted.set(false)
+            return
+        }
+        scope.launch {
+            TtsPlayerHolder.state.collect { sessionState -> onSessionState(sessionState) }
         }
     }
 
-    private fun baseIntent(action: String) = Intent(App.app, TtsPlaybackService::class.java).setAction(action)
+    private fun onSessionState(sessionState: TtsSessionState) {
+        dispatchState(sessionState.toPlaybackState())
+        sessionState.error?.let { notifyError(it) }
+        saveRecordIfNeeded(sessionState)
+    }
 
-    private fun startForegroundService(intent: Intent): Boolean {
-        return try {
-            ContextCompat.startForegroundService(App.app, intent)
-            true
-        } catch (e: Throwable) {
-            Log.e("TtsPlaybackController 启动朗读失败", e)
-            false
+    /** 已经提示过的错误，避免同一错误重复弹 */
+    private var lastNotifiedError: String? = null
+
+    /**
+     * 朗读失败提示（合成失败/网络合成失败等）。
+     *
+     * 会话层只产出错误信息，提示放到这里，避免把 Toast 散落到引擎/会话里；
+     * 阅读页不在前台时同样能提示（例如后台朗读时 Edge 网络失败）。
+     */
+    private fun notifyError(message: String) {
+        if (message.isBlank() || message == lastNotifiedError) return
+        lastNotifiedError = message
+        App.app.appScope.launch(Dispatchers.Main) {
+            runCatching { Toast.makeText(App.app, message, Toast.LENGTH_LONG).show() }
         }
     }
 
-    private fun send(action: String, minutes: Int? = null) {
-        val intent = baseIntent(action)
-        if (minutes != null) {
-            intent.putExtra(TtsPlaybackService.EXTRA_MINUTES, minutes)
+    private fun TtsSessionState.toPlaybackState(): TtsPlaybackState = TtsPlaybackState(
+        active = active,
+        playing = playing,
+        mode = when (mode) {
+            TtsSessionMode.NONE -> TtsPlaybackMode.NONE
+            TtsSessionMode.BOOK -> TtsPlaybackMode.BOOK
+            TtsSessionMode.PAGE -> TtsPlaybackMode.PAGE
+        },
+        bookId = bookId,
+        bookTitle = bookTitle,
+        bookCover = bookCover,
+        pageUrl = pageUrl,
+        chapterIndex = chapterIndex,
+        // 章节链接用于目录刷新后的定位；新链路按章节序号跟随，留空即可（阅读页会回退到序号）
+        chapterUrl = "",
+        chapterTitle = chapterTitle,
+        paragraphIndex = paragraphIndex,
+        paragraphCount = paragraphCount,
+        paragraphText = paragraphText,
+        // 从本页第一行开始读：起始段带段内偏移，阅读页据此把高亮落在本页第一行
+        paragraphStartOffset = paragraphStartOffset,
+        paragraphProgress = paragraphProgress,
+        chapterProgressPercent = chapterProgressPercent,
+        // 旧字段是"本章预估总时长"，界面（播放卡片）用它显示时间轴
+        chapterEstimateMs = chapterDurationMs,
+        sleepTimerEndAt = sleepTimerEndAt,
+        sleepTimerMinutes = sleepTimerMinutes,
+        stopAfterChapter = stopAfterChapter,
+        stopPendingAfterChapter = false,
+    )
+
+    /**
+     * 阅读页不在前台时由这里回写阅读进度（阅读页在前台时由阅读页自己写，避免互相覆盖）
+     */
+    private fun saveRecordIfNeeded(sessionState: TtsSessionState) {
+        if (sessionState.mode != TtsSessionMode.BOOK) return
+        if (!sessionState.active || sessionState.chapterIndex < 0) return
+        if (readerVisible) return
+        if (sessionState.chapterIndex == lastRecordedChapter) return
+        lastRecordedChapter = sessionState.chapterIndex
+        val bookId = sessionState.bookId
+        val title = sessionState.bookTitle
+        if (bookId.isBlank() || title.isBlank()) return
+        App.app.appScope.launch(Dispatchers.IO) {
+            runCatching {
+                val dao = DbFactory.db.readingRecordDao()
+                val record = dao.getReadingRecordSync(title) ?: ReadingRecord(title, bookId)
+                record.bookId = bookId
+                record.chapterIndex = sessionState.chapterIndex
+                record.offest = 0
+                record.scrollOffset = 0
+                record.isEnd = false
+                record.updateTime = System.currentTimeMillis()
+                dao.insertReadingRecord(record)
+                Log.i("回写阅读进度：$title 第${sessionState.chapterIndex + 1}章")
+            }.onFailure { Log.e("回写阅读进度失败：$title", it) }
         }
-        try {
-            App.app.startService(intent)
-        } catch (e: Throwable) {
-            Log.e("TtsPlaybackController 发送命令失败 action=$action", e)
-        }
+    }
+
+    private fun nextSleepTimerMinutes(minutes: Int): Int {
+        val options = intArrayOf(15, 30, 60)
+        if (minutes <= 0) return options.first()
+        val nextIndex = options.indexOf(minutes) + 1
+        return options.getOrNull(nextIndex) ?: 0
     }
 }

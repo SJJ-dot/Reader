@@ -69,10 +69,38 @@ class TtsEdgeManager : BaseTts {
     override var onCompleted: (() -> Unit)? = null
     override var onParagraphsCompleted: (() -> Unit)? = null
 
+    /** 段落合成重试用尽且播放已追上：上报原因（上层停止会话并提示"网络合成失败"） */
+    var onParagraphsError: ((String) -> Unit)? = null
+
     /**
      * true 表示当前会话是段落模式（前台朗读服务），完成回调走 onParagraphsCompleted
      */
     private var paragraphMode = false
+
+    /**
+     * 待合成段落队列（段落模式）。
+     *
+     * 支持运行中追加：顺序播放到"下一章"时不重置队列、不重建连接，只是把新段落排到队尾。
+     */
+    private val synthQueue = java.util.concurrent.LinkedBlockingQueue<List<TtsSpeakLine>>()
+
+    /** 是否还会追加段落（false 且队列排空时合成任务收尾） */
+    @Volatile
+    private var synthFinished = false
+
+    /**
+     * 段内预加载窗口：合成领先播放最多 5 段。
+     *
+     * 这样即使上层把"下一章整章"都追加进来，也只会提前合成 5 段的音频，
+     * 不会把整章/整本都合成进内存。
+     */
+    private val synthWindow = 5
+
+    /** 已合成完 / 已播放的段数（用于限制合成领先量） */
+    @Volatile
+    private var synthesizedCount = 0
+    @Volatile
+    private var playedCount = 0
 
     /**
      * 流式 MediaDataSource：数据到达即可播放，readAt 在数据不足时阻塞等待。
@@ -99,6 +127,20 @@ class TtsEdgeManager : BaseTts {
                 lock.notifyAll()
             }
         }
+
+        /** 合成失败（重试用尽）：记录原因，播放到该段时据此决定"停止 + 提示" */
+        fun markFailed(message: String) {
+            synchronized(lock) {
+                errorMessage = message
+                done = true
+                lock.notifyAll()
+            }
+        }
+
+        /** 非空表示这一段合成失败（没有音频） */
+        @Volatile
+        var errorMessage: String? = null
+            private set
 
         val isDone: Boolean get() = synchronized(lock) { done }
 
@@ -260,6 +302,9 @@ class TtsEdgeManager : BaseTts {
      */
     private fun startPlayTask() {
         playJob = GlobalScope.launch(Dispatchers.Main) {
+            // 给缓存任务一点启动时间：新建 manager 时缓存任务刚 launch 还没真正开跑，
+            // 此时队列是空的，会被误判为"没有更多段落"直接结束（表现为切章后没有声音）
+            kotlinx.coroutines.delay(50)
             while (!stopped.get()) {
                 val ds = playQueue.pollFirst()
                 if (ds == null) {
@@ -271,8 +316,21 @@ class TtsEdgeManager : BaseTts {
                     kotlinx.coroutines.delay(20)
                 }
                 if (stopped.get()) break
-                if (!ds.hasData && ds.isDone) continue
+                if (!ds.hasData && ds.isDone) {
+                    // 空段也算"播放过"，否则合成窗口会一直等它
+                    playedCount++
+                    val error = ds.errorMessage
+                    if (error != null) {
+                        // 播放追上了这段、但重试用尽仍然没有音频：停止并上报（上层提示用户）
+                        Log.e("TtsEdgeManager 播放到合成失败的段：$error")
+                        onParagraphsError?.invoke(error)
+                        stop()
+                        return@launch
+                    }
+                    continue
+                }
                 playSegment(ds)
+                playedCount++
             }
             if (!stopped.get()) {
                 isSpeaking.postValue(false)
@@ -438,6 +496,8 @@ class TtsEdgeManager : BaseTts {
         mediaPlayer = null
         playQueue.clear()
         playQueue = ConcurrentLinkedDeque()
+        synthQueue.clear()
+        synthFinished = false
         currentKey = null
         try {
             edgeFetch.release()
@@ -548,17 +608,30 @@ class TtsEdgeManager : BaseTts {
         paragraphMode = true
         isSpeaking.postValue(true)
 
-        val units = ArrayList<List<TtsSpeakLine>>()
+        synthQueue.clear()
+        synthFinished = false
+        synthesizedCount = 0
+        playedCount = 0
         for (index in startIndex until paragraphs.size) {
             val text = paragraphs[index]
             if (text.isBlank()) continue
-            units.add(listOf(TtsSpeakLine(text, index)))
+            synthQueue.add(listOf(TtsSpeakLine(text, index)))
         }
 
-        // 缓存任务：顺序合成每段，写入 StreamingMediaDataSource，加入 playQueue
+        // 缓存任务：从队列里顺序取段合成（队列可被 appendParagraphs 追加），写入 StreamingMediaDataSource
         cacheJob = GlobalScope.launch(Dispatchers.IO) {
-            for (unit in units) {
+            while (!stopped.get()) {
+                // 合成窗口：领先播放不超过 synthWindow 段
+                while (!stopped.get() && synthesizedCount - playedCount >= synthWindow) {
+                    kotlinx.coroutines.delay(50)
+                }
                 if (stopped.get()) return@launch
+                val unit = synthQueue.poll(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+                if (unit == null) {
+                    // 队列暂时空：等"下一章"追加；确定不会再有就收尾
+                    if (synthFinished) return@launch
+                    continue
+                }
                 val text = unit.joinToString(separator = "") { line -> line.txt }
                 // 诊断：打印真正送进在线语音合成的文本（logcat 过滤 TTS_TEXT）
                 TtsTextLogger.log(text, unit.firstOrNull()?.tag as? Int)
@@ -568,9 +641,11 @@ class TtsEdgeManager : BaseTts {
                 val ds = StreamingMediaDataSource(key)
                 playQueue.add(ds)
 
-                // 合成并喂入数据；连接偶发失败时重试一次，避免整段被跳过（没进度没声音直接跳下一段）
+                // 弱网语义：
+                // - 预加载段失败：退避重试（3 次）；
+                // - 播放追上时仍失败：这一段没有音频可播 → 标记失败，由播放任务停止会话并提示
                 var ok = false
-                for (attempt in 0..1) {
+                for (attempt in 0..2) {
                     if (stopped.get()) return@launch
                     try {
                         val input = edgeFetch.synthesizeText(text, rate, voice)
@@ -588,13 +663,48 @@ class TtsEdgeManager : BaseTts {
                     } catch (e: Exception) {
                         Log.e("synthesis feed error: $key", e)
                     }
+                    if (attempt < 2) kotlinx.coroutines.delay(300L * (attempt + 1))
                 }
-                ds.markDone()
+                if (ok) {
+                    ds.markDone()
+                } else {
+                    ds.markFailed("网络合成失败（Edge TTS）")
+                    Log.e("TtsEdgeManager 段落合成失败（重试用尽）：$key")
+                }
+                synthesizedCount++
             }
         }
 
         startPlayTask()
         return true
+    }
+
+    /**
+     * 追加段落（顺序播放不重置）：把段落排到合成队列尾部，播放任务继续消费。
+     *
+     * 章节只存在于上层：这里只按"段落流"处理，不重建连接、不清播放队列。
+     *
+     * @param baseIndex 第一段在段落流里的扁平下标（上层负责编号，管理器只把它作为 tag 回传）
+     */
+    fun appendParagraphs(
+        paragraphs: List<String>,
+        baseIndex: Int,
+        rate: Int,
+        voice: String = "zh-CN-XiaoxiaoNeural",
+    ) {
+        if (paragraphs.isEmpty() || stopped.get()) return
+        for (index in paragraphs.indices) {
+            val text = paragraphs[index]
+            if (text.isBlank()) continue
+            synthQueue.add(listOf(TtsSpeakLine(text, baseIndex + index)))
+        }
+        Log.i("TTS追加 段数=${paragraphs.size} base=$baseIndex rate=$rate")
+    }
+
+    /** 不会再有追加的段落：合成队列排空后收尾（触发 onParagraphsCompleted） */
+    fun finishParagraphs() {
+        synthFinished = true
+        Log.i("TTS追加 结束标记")
     }
 
     override suspend fun startParagraphs(paragraphs: List<String>, startIndex: Int): Boolean {

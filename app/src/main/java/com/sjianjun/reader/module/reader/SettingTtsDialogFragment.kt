@@ -19,6 +19,7 @@ import com.sjianjun.reader.databinding.FragmentSettingTtsBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.tts.TtsPlaybackController
 import com.sjianjun.reader.view.click
 
 class SettingTtsDialogFragment : DialogFragment() {
@@ -103,15 +104,25 @@ class SettingTtsDialogFragment : DialogFragment() {
             dismissAllowingStateLoss()
         }
 
-        // SeekBar listeners
+        // SeekBar listeners：拖动时若正在朗读，直接实时生效（会话层会从当前段落重读）
         seekEdge.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val p = progress.coerceIn(0, 100)
                 tvEdge.text = p.toString()
+                if (fromUser && TtsPlaybackController.isActive()) {
+                    TtsPlaybackController.setRate(p)
+                }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // 松手时再对齐一次，避免节流丢掉最后一次变化
+                val p = (seekBar?.progress ?: seekEdge.progress).coerceIn(0, 100)
+                if (TtsPlaybackController.isActive()) {
+                    TtsPlaybackController.setRate(p)
+                }
+            }
         })
 
         return binding.root

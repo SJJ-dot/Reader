@@ -160,7 +160,10 @@ class EdgeSpeakFetch {
         busy = true
         val listener = object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                if (gen != generation) return
+                if (gen != generation) {
+                    Log.i(TAG, "WebSocket onOpen 已失效（gen=$gen, 当前=$generation），丢弃")
+                    return
+                }
                 Log.i(TAG, "WebSocket onOpen")
                 wss = webSocket
                 isReconnect = false
@@ -247,6 +250,7 @@ class EdgeSpeakFetch {
             }
 
         }
+        Log.i(TAG, "发起新连接 gen=$gen")
         client.newWebSocket(request, listener)
     }
 
@@ -273,7 +277,7 @@ class EdgeSpeakFetch {
         voice: String = DEFAULT_VOICE
     ): InputStream {
         initStream()
-        Log.i(TAG, "speakText: $speakText")
+        Log.i(TAG, "speakText: $speakText busy=$busy reconnect=$isReconnect hasLastWss=${::lastWss.isInitialized}")
         try {
             val speakTextStr = removeSpecialCharacters(speakText)
             val currentTime = System.currentTimeMillis()
@@ -366,6 +370,7 @@ class EdgeSpeakFetch {
     }
 
     fun release() {
+        Log.i(TAG, "release busy=$busy gen=$generation")
         if (busy) {
             // 旧章还在合成中：取消连接并让旧 listener 失效，丢弃在途音频，避免混入新章（重音）
             generation++
