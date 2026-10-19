@@ -55,8 +55,6 @@ android {
         // 令牌只内置在安装包里，不进版本库（keys: feedback.url, feedback.guestToken）
         buildConfigField "String", "FEEDBACK_URL", "\"${properties.getProperty('feedback.url')}\""
         buildConfigField "String", "FEEDBACK_GUEST_TOKEN", "\"${properties.getProperty('feedback.guestToken')}\""
-        // 脚本中断自测页是否对外可启动：release 不导出，debug 导出（便于用 adb 直接拉起跑测试）
-        manifestPlaceholders["scriptTestExported"] = "false"
     }
     buildFeatures {
         viewBinding true
@@ -94,7 +92,6 @@ android {
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
             manifestPlaceholders["app_name"] = "DEBUG"
-            manifestPlaceholders["scriptTestExported"] = "true"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
