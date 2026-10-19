@@ -12,10 +12,28 @@ interface ChapterContentDao {
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<ChapterContent>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     /**
-     * 章节内容以章节链接(chapterUrl)定位，章节索引重排（补齐缺章、插入新章）后内容不会错位
+     * 章节内容以章节链接(chapterUrl)定位，章节索引重排（补齐缺章、插入新章）后内容不会错位。
+     *
+     * `pageIndex >= 0`：排除缓存失败标记（[ERROR_MARKER_INDEX]，只用于目录显示"部分缓存/失败"，
+     * 不参与正文拼接，否则阅读页/TTS 会读到"章节内容加载失败"）。
      */
-    @Query("select * from ChapterContent where bookId=:bookId and chapterUrl=:chapterUrl order by pageIndex")
+    @Query("select * from ChapterContent where bookId=:bookId and chapterUrl=:chapterUrl and pageIndex >= 0 order by pageIndex")
     fun getChapterContent(bookId: String, chapterUrl: String): Flow<List<ChapterContent>>
+
+    /**
+     * 每章的缓存状态：可用分页数 / 失败分页数（章节目录的缓存标记用）
+     */
+    @Query(
+        """
+        select chapterUrl,
+               sum(case when contentError = 0 then 1 else 0 end) as validCount,
+               sum(case when contentError = 1 then 1 else 0 end) as errorCount
+        from ChapterContent
+        where bookId = :bookId
+        group by chapterUrl
+        """
+    )
+    suspend fun getChapterCacheStatus(bookId: String): List<ChapterCacheStatus>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(chapterContent: ChapterContent): Long
@@ -41,4 +59,27 @@ interface ChapterContentDao {
      */
     @Query("delete from ChapterContent where trim(chapterUrl) = ''")
     fun cleanBlankUrlChapterContent(): Int
+
+    @Query("delete from ChapterContent where bookId=:bookId and chapterUrl=:chapterUrl and pageIndex=:pageIndex")
+    fun deletePage(bookId: String, chapterUrl: String, pageIndex: Int): Int
+
+    companion object {
+        /**
+         * 缓存失败标记的 pageIndex（负值）：
+         * - 不参与正文拼接（[getChapterContent] 过滤 `pageIndex >= 0`）；
+         * - 目录据此把"第 1 页成功、后面某页失败"显示成黄色（部分缓存）。
+         */
+        const val ERROR_MARKER_INDEX = -1
+    }
 }
+
+/**
+ * 一章的缓存状态统计（[ChapterContentDao.getChapterCacheStatus] 的返回项）
+ */
+data class ChapterCacheStatus(
+    val chapterUrl: String,
+    /** 可用分页数 */
+    val validCount: Int,
+    /** 失败分页数（contentError=1） */
+    val errorCount: Int,
+)

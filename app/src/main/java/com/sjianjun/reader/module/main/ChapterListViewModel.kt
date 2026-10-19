@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ChapterCacheState
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
@@ -31,6 +32,7 @@ class ChapterListViewModel : ViewModel() {
     val bookIsLoadingLiveData = MutableLiveData<Boolean>()
     private val bookDao get() = DbFactory.db.bookDao()
     private val chapterDao get() = DbFactory.db.chapterDao()
+    private val chapterContentDao get() = DbFactory.db.chapterContentDao()
     private val readingRecordDao get() = DbFactory.db.readingRecordDao()
     private var bookJob: Job? = null
     private var readingRecordJob: Job? = null
@@ -50,8 +52,9 @@ class ChapterListViewModel : ViewModel() {
             }.flatMapLatest { book ->
                 // 取启用净化规则，并对章节标题应用（作用域：书名 + 书URL + 章节标题）
                 val rules = ReplacementRuleUseCase.getEnabledRules()
-                chapterDao.getChapterListByBookId(book?.id ?: "").map { chapterList ->
-                    applyTitleRules(chapterList, book, rules)
+                val bookId = book?.id ?: ""
+                chapterDao.getChapterListByBookId(bookId).map { chapterList ->
+                    applyCacheState(applyTitleRules(chapterList, book, rules), bookId)
                 }
             }.collectLatest { chapterList ->
                 chapterListLiveData.postValue(chapterList)
@@ -63,6 +66,29 @@ class ChapterListViewModel : ViewModel() {
                 record?.let { readingRecord.postValue(it) }
             }
         }
+    }
+
+    /**
+     * 目录缓存标记以 `ChapterContent` 的实际内容为准（不再用 `Chapter.isLoaded`）：
+     * - 有可用内容 → 已缓存（绿）
+     * - 只有失败内容 → 缓存失败（红）
+     * - 没有内容 → 未缓存（灰）
+     *
+     * 之前失败也会写一条内容行并把 isLoaded 置 true，导致"缓存失败"的章节显示成已缓存。
+     */
+    private suspend fun applyCacheState(chapterList: List<Chapter>, bookId: String): List<Chapter> {
+        if (bookId.isBlank() || chapterList.isEmpty()) return chapterList
+        val statusMap = runCatching { chapterContentDao.getChapterCacheStatus(bookId) }
+            .getOrDefault(emptyList())
+            .associateBy { it.chapterUrl }
+        chapterList.forEach { chapter ->
+            val status = statusMap[chapter.url]
+            chapter.cacheState = ChapterCacheState.of(
+                validCount = status?.validCount ?: 0,
+                errorCount = status?.errorCount ?: 0,
+            )
+        }
+        return chapterList
     }
 
     private suspend fun applyTitleRules(

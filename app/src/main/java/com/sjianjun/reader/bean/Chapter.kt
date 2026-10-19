@@ -30,6 +30,16 @@ class Chapter {
     var content: MutableList<ChapterContent>? = null
 
     /**
+     * 目录里的缓存标记（[ChapterCacheState]）。
+     *
+     * 不落库：由章节目录按 `ChapterContent` 的实际内容计算（有可用内容=已缓存、
+     * 只有失败内容=缓存失败、没有内容=未缓存），避免把"缓存失败"显示成"已缓存"。
+     */
+    @JvmField
+    @Ignore
+    var cacheState: Int = ChapterCacheState.NONE
+
+    /**
      * 章节索引
      */
     @JvmField

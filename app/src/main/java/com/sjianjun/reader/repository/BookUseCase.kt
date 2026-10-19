@@ -5,7 +5,9 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
+import com.sjianjun.reader.repository.dao.ChapterContentDao
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.python.ScriptCallTargets
@@ -355,7 +357,8 @@ object BookUseCase {
                 }
             }
             chapter.content = mutableListOf(content)
-            chapter.isLoaded = true
+            // 抓取失败（contentError）不算"已缓存"：否则目录会显示成已缓存，且下次不会再重试
+            chapter.isLoaded = !content.contentError
             chapterDao.insert(chapter)
             contentDao.insert(content)
 
@@ -389,11 +392,25 @@ object BookUseCase {
             content.bookId = chapter.bookId
             content.chapterUrl = chapter.url
             content.pageIndex = lastContent.pageIndex + 1
-            chapter.content?.add(content)
             if (content.contentError) {
+                // 失败不写正文（否则阅读页/TTS 会读到"章节内容加载失败"、分页也会卡死），
+                // 只写一条失败标记：目录据此显示"部分缓存"（黄），正文查询会过滤掉它
+                contentDao.insert(
+                    ChapterContent().apply {
+                        bookId = chapter.bookId
+                        chapterUrl = chapter.url
+                        pageIndex = ChapterContentDao.ERROR_MARKER_INDEX
+                        contentError = true
+                        this.content = null
+                        this.nextPageUrl = nextUrl
+                    }
+                )
                 Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
                 return@withIo false
             }
+            // 这一页补上了：清掉之前的失败标记
+            contentDao.deletePage(chapter.bookId, chapter.url, ChapterContentDao.ERROR_MARKER_INDEX)
+            chapter.content?.add(content)
             contentDao.insert(content)
             return@withIo true
         }

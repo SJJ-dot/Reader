@@ -24,6 +24,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Chapter
+import com.sjianjun.reader.bean.ChapterCacheState
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.databinding.ItemTextTextBinding
 import com.sjianjun.reader.databinding.MainFragmentBookChapterListBinding
@@ -197,11 +198,8 @@ class ChapterListFragment : BaseFragment() {
                 } else {
                     binding.text1.setTextColorRes(R.color.dn_text_color_light)
                 }
-                if (c.isLoaded) {
-                    binding.mark.setBackgroundColor(R.color.mdr_green_A700.color(context))
-                } else {
-                    binding.mark.setBackgroundColor(R.color.mdr_grey_500.color(context))
-                }
+                // 缓存标记：未缓存灰、已缓存绿、缓存失败红（按 ChapterContent 实际内容判定）
+                binding.mark.setBackgroundColor(ChapterCacheState.markColor(c.cacheState).color(context))
                 click {
                     // 换源内容对比里的「目录」仅作查看，不跳转、不改阅读记录
                     if (fragment.readOnly) return@click
