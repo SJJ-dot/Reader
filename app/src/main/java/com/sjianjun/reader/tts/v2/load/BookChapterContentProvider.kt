@@ -2,7 +2,6 @@ package com.sjianjun.reader.tts.v2.load
 
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.repository.ReplacementRuleUseCase
 import com.sjianjun.reader.utils.ChapterTextPreparer
@@ -15,15 +14,13 @@ import sjj.alog.Log
  * 真实章节正文来源：数据库缓存优先，未入库时用书源脚本抓取（含分页拼接），
  * 再做与阅读页一致的文字处理（净化规则 + 简繁 + 全角）。
  *
- * 抓取部分复用现有的 [BookUseCase]（带去重与可取消），本类只做"取正文"这一件事。
+ * 整章抓取（首页 + 全部分页）交给 [NovelChapterLoader]，与阅读页共用同一套加载/重试/缓存策略，
+ * 本类只做"取正文 + 文字处理"。
  */
 class BookChapterContentProvider : ChapterContentProvider {
 
     private companion object {
         const val TAG = "BookContentProvider"
-
-        /** 单章最多拉取的分页数，避免异常数据把分页循环卡死 */
-        const val MAX_PAGE_LOAD = 60
     }
 
     override suspend fun chapterCount(bookId: String): Int = withIo {
@@ -42,14 +39,10 @@ class BookChapterContentProvider : ChapterContentProvider {
             return@withIo null
         }
         try {
-            BookUseCase.getChapterContent(chapter, 0)
-            if (chapter.content?.firstOrNull()?.contentError == true) {
-                Log.e("$TAG 章节内容错误：${chapter.title}")
+            // 整章加载（首页 + 全部分页）交给加载层的阅读页入口，重试由外层 NovelLoadService 负责
+            if (!NovelChapterLoader.instance.loadWholeChapter(chapter, retries = 1)) {
+                Log.e("$TAG 章节内容加载失败：${chapter.title}")
                 return@withIo null
-            }
-            var page = 0
-            while (page < MAX_PAGE_LOAD && BookUseCase.getChapterContentPage(chapter)) {
-                page++
             }
             val rawText = chapter.content
                 ?.sortedBy { it.pageIndex }

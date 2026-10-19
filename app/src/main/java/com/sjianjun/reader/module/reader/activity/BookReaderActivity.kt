@@ -45,6 +45,7 @@ import com.sjianjun.reader.tts.TtsChapterSplitter
 import com.sjianjun.reader.tts.TtsPlaybackController
 import com.sjianjun.reader.tts.TtsPlaybackMode
 import com.sjianjun.reader.tts.TtsPlaybackState
+import com.sjianjun.reader.tts.v2.load.NovelChapterLoader
 import com.sjianjun.reader.utils.fragmentCreate
 import com.sjianjun.reader.utils.showSnackbar
 import com.sjianjun.reader.utils.toast
@@ -72,10 +73,6 @@ private const val REQUEST_CODE_NOTIFICATION = 1001
 
 /** 等待朗读目标章节排版完成的最长重试次数（100ms * 30 = 3 秒） */
 private const val MAX_TTS_CHAPTER_WAIT = 30
-
-/** 章节内容加载失败时的重试次数与间隔（含首次尝试共 1 + CHAPTER_LOAD_RETRY_TIMES 次） */
-private const val CHAPTER_LOAD_RETRY_TIMES = 3
-private const val CHAPTER_LOAD_RETRY_DELAY_MS = 1_000L
 
 class BookReaderActivity : BaseActivity() {
     var binding: ActivityBookReaderBinding? = null
@@ -279,19 +276,20 @@ class BookReaderActivity : BaseActivity() {
                 toast("已取消章节缓存")
                 return@observe
             }
-            chapterCacheJob = launch("CHAPTER_LIST_CAHE") {
-                val chapterList = viewModel.chapterList.value ?: return@launch
-                viewModel.chapterCache.postValue(true)
-                val end = chapterList.size
-                val start = max(0, mPageLoader?.chapterPos ?: 0)
-                toast("章节缓存：开始")
-                (start until end).forEach {
-                    viewModel.getChapterContent(chapterList[it])
-                    delay(100)
-                    ensureActive()
+            // 批量缓存交给加载层：逐章整章加载（首页 + 全部分页），可取消、带进度
+            val chapterList = viewModel.chapterList.value ?: return@observe
+            val start = max(0, mPageLoader?.chapterPos ?: 0)
+            viewModel.chapterCache.postValue(true)
+            toast("章节缓存：开始")
+            chapterCacheJob = NovelChapterLoader.instance.cacheBatch(chapterList, start) { done, total ->
+                if (done >= total) {
+                    runOnUiThread {
+                        if (viewModel.chapterCache.value == true) {
+                            viewModel.chapterCache.postValue(false)
+                            toast("章节缓存：完成")
+                        }
+                    }
                 }
-                viewModel.chapterCache.postValue(false)
-                toast("章节缓存：完成")
             }
         }
         observe<String>(EventKey.CHAPTER_LIST) {
@@ -579,31 +577,17 @@ class BookReaderActivity : BaseActivity() {
     }
 
     /**
-     * 加载章节正文，失败就重试（网络/书源偶发失败很常见，失败一次就不再请求会让这一章一直没内容）。
+     * 加载章节正文：重试策略在加载层（[NovelChapterLoader]），这里只同步阅读页的章节状态。
      *
-     * 重试后仍失败时把 [TxtChapter.contentError] 置起来，阅读页下次解析章节时会再次请求这一章。
+     * 失败时把 [TxtChapter.contentError] 置起来，阅读页下次解析章节时会再次请求这一章。
      *
      * @return 是否加载成功
      */
     private suspend fun loadChapterContentWithRetry(chapter: Chapter, txtChapter: TxtChapter): Boolean {
-        var attempt = 0
-        while (true) {
-            viewModel.getChapterContent(chapter)
-            val content = chapter.content
-            val failed = content.isNullOrEmpty() || content.firstOrNull()?.contentError == true
-            if (!failed) {
-                txtChapter.contentError = false
-                return true
-            }
-            attempt++
-            if (attempt > CHAPTER_LOAD_RETRY_TIMES) {
-                Log.e("章节加载失败，已重试${attempt - 1}次：${chapter.title}")
-                txtChapter.contentError = true
-                return false
-            }
-            Log.i("章节加载失败，第${attempt}次重试：${chapter.title}")
-            delay(CHAPTER_LOAD_RETRY_DELAY_MS)
-        }
+        val ok = viewModel.getChapterContent(chapter)
+        txtChapter.contentError = !ok
+        if (!ok) Log.e("章节加载失败（加载层已重试）：${chapter.title}")
+        return ok
     }
 
     /**

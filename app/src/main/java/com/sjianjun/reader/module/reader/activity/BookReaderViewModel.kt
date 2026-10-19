@@ -11,8 +11,8 @@ import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
+import com.sjianjun.reader.tts.v2.load.NovelChapterLoader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -86,37 +86,18 @@ class BookReaderViewModel : ViewModel() {
         }
     }
 
+    /** 续抓下一页（加载层负责去重/重试） */
     suspend fun getChapterContentPage(chapter: Chapter): Boolean {
-        return BookUseCase.getChapterContentPage(chapter)
+        return NovelChapterLoader.instance.loadNextPage(chapter)
     }
 
     /**
-     * 加载 上一章 当前章 下一章
+     * 加载 上一章 当前章 下一章（加载层负责去重/重试）
+     *
+     * @return 是否拿到可用内容
      */
-    suspend fun getChapterContent(chapter: Chapter?, force: Int = 0) = withIo {
-        chapter ?: return@withIo false
-
-        while (chapter.isLoading.get()) {
-            delay(100)
-        }
-
-        // 已加载且内容正常才跳过；上次加载失败的章节允许重新请求（否则失败一次就再也不加载了）
-        val cachedError = chapter.content?.firstOrNull()?.contentError == true
-        if (chapter.isLoaded && chapter.content != null && force != 1 && !cachedError) {
-            return@withIo false
-        }
-
-        if (!chapter.isLoading.compareAndSet(false, true)) {
-            return@withIo false
-        }
-
-        try {
-            //force
-            BookUseCase.getChapterContent(chapter, force)
-        } finally {
-            chapter.isLoading.set(false)
-        }
-
-        return@withIo true
+    suspend fun getChapterContent(chapter: Chapter?, force: Int = 0): Boolean {
+        chapter ?: return false
+        return NovelChapterLoader.instance.loadChapter(chapter, force)
     }
 }
