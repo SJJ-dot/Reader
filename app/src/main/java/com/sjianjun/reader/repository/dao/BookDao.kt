@@ -44,6 +44,10 @@ interface BookDao {
     @Query("select * from Book where title=:title order by bookSourceId")
     fun getBookByTitleAndAuthor(title: String): Flow<List<Book>>
 
+    /** 某书源下的全部书籍（入库去重时按相对路径比对已有书） */
+    @Query("select * from Book where bookSourceId=:sourceId")
+    fun getBooksBySourceId(sourceId: String): List<Book>
+
     @Query("select * from Book where title=:title order by bookSourceId")
     fun getAllSourceBooksByTitle(title: String): Flow<List<Book>>
 

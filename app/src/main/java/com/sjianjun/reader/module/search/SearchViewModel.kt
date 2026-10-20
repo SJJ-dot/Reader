@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import com.sjianjun.coroutine.flowIo
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.bean.SearchHistory
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 class SearchViewModel : ViewModel() {
@@ -40,7 +42,26 @@ class SearchViewModel : ViewModel() {
     }
 
     suspend fun saveSearchResult(searchResult: List<SearchResult>): String = withIo {
-        val bookList = searchResult.toBookList()
+        val incoming = searchResult.filter { !it.bookSource?.id.isNullOrBlank() }.toBookList()
+        if (incoming.isEmpty()) return@withIo ""
+        // 同一书源内只看 URL **相对站点域名的路径**是否重复：
+        // http/https、www/m 等镜像域名不同但路径相同，视为同一本书；
+        // 路径不同则是两本书（即使书名/作者相同）。
+        // 优先复用数据库已有的（章节/阅读进度都挂在它的 id 上）。
+        val sourceBooks = HashMap<String, List<Book>>()
+        val byKey = LinkedHashMap<String, Book>()
+        incoming.forEach { book ->
+            val key = "${book.bookSourceId}|${relativeBookPath(book.url)}"
+            val existing = byKey[key] ?: run {
+                val books = sourceBooks.getOrPut(book.bookSourceId) {
+                    bookDao.getBooksBySourceId(book.bookSourceId)
+                }
+                val path = relativeBookPath(book.url)
+                books.firstOrNull { relativeBookPath(it.url) == path }
+            }
+            byKey[key] = existing ?: book
+        }
+        val bookList = byKey.values.toList()
         DbFactory.db.runInTransaction<String> {
             BookUseCase.cleanDirtyData()
             bookDao.insertBook(bookList)
@@ -129,11 +150,38 @@ class SearchViewModel : ViewModel() {
         }
         val results = books.awaitAll().filterNotNull()
         val group = mutableMapOf<String, MutableList<SearchResult>>()
-        results.forEach { result ->
-            val list = group.getOrPut(result.key) { mutableListOf() }
-            list.add(result)
-        }
+        val seen = HashSet<String>()
+        results.forEach { result -> addSearchResult(group, seen, result) }
         return@withIo flowOf(group.values.toList())
+    }
+
+    /**
+     * 把搜索结果加入分组（同一本书去重）。
+     *
+     * 同一书源内按 URL **相对站点域名的路径**判定：镜像域名/协议不同但路径相同视为同一本
+     * （通用搜索源和书源自身可能重复返回）；不同书源的同路径书籍保留，换源时要用。
+     */
+    internal fun addSearchResult(
+        group: MutableMap<String, MutableList<SearchResult>>,
+        seen: MutableSet<String>,
+        result: SearchResult,
+    ) {
+        // 同一书源内只看相对站点域名的路径（镜像域名/协议不同但路径相同 = 同一本）
+        val sourceId = result.bookSource?.id.orEmpty()
+        if (!seen.add("${result.key}|${relativeBookPath(result.bookUrl)}|$sourceId")) return
+        group.getOrPut(result.key) { mutableListOf() }.add(result)
+    }
+
+    /**
+     * URL 相对站点域名的地址：忽略 http/https 和域名/子域名差异，只取路径（去掉尾部斜杠）。
+     *
+     * 例如 `http://a.com/book/1` 与 `https://m.a.com/book/1` → `/book/1`，同一书源下视为同一本；
+     * `/book/1` 与 `/bookquery/abc` 是不同地址，按两本处理。
+     */
+    internal fun relativeBookPath(url: String): String {
+        val trimmed = url.trim()
+        val path = trimmed.toHttpUrlOrNull()?.encodedPath ?: trimmed.substringAfter("://", trimmed)
+        return path.trimEnd('/')
     }
 
     /**
@@ -153,6 +201,8 @@ class SearchViewModel : ViewModel() {
                 return@withIo emptyFlow<List<List<SearchResult>>>()
             }
             val group = mutableMapOf<String, MutableList<SearchResult>>()
+            // 去重集合：通用搜索源和书源自身可能返回同一本书
+            val seen = HashSet<String>()
             allJavaScript.asFlow().flatMapMerge {
                 //读取每一个发射项目，搜索。创建异步流，并发收集数据
                 flow {
@@ -170,10 +220,7 @@ class SearchViewModel : ViewModel() {
                 }
             }.map {
                 //数据分组返回
-                it.forEach { result ->
-                    val list = group.getOrPut(result.key) { mutableListOf() }
-                    list.add(result)
-                }
+                it.forEach { result -> addSearchResult(group, seen, result) }
                 group.values.sortedWith { a, b ->
                     val aEq = a.first().bookTitle == query
                     val bEq = b.first().bookTitle == query
