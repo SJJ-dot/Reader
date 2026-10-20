@@ -19,30 +19,35 @@ def search(query):
         "Content-Type": "application/x-www-form-urlencoded",
     }
     # 发送POST请求Content-Type:
-    response = requests.post(url, data=data, headers=headers, timeout=(5, 10))
+    response = requests.post(url, data=data, headers=headers, timeout=30)
     response.encoding = 'utf-8'
-    log(response)
+    soup = BeautifulSoup(response.text, 'html.parser')
     results = []
+
+    # 只有一条结果时会直接跳转到详情页
     if response.url != url:
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
+        box = soup.select_one(".itemtxt")
+        if box:
+            title_el = box.select_one("h1 a") or box.select_one("a")
+            author_el = box.select_one("p a")
+            results.append({
+                "bookUrl": response.url,
+                "bookTitle": title_el.text.strip() if title_el else "",
+                "bookAuthor": author_el.text.replace("作者：", "").strip() if author_el else "",
+            })
+        return results
+
+    # 列表结果：.itemtxt 为单本书容器
+    for book_element in soup.select(".itemtxt"):
+        title_el = book_element.select_one("h3 a")
+        if not title_el:
+            continue
+        author_el = book_element.select_one("ul li")
         results.append({
-            "bookUrl": response.url,
-            "bookTitle": soup.select(".itemtxt a")[0].text,
-            "bookAuthor": soup.select(".itemtxt a")[1].text.replace("作者：", ""),
+            "bookTitle": title_el.text.strip(),
+            "bookUrl": urljoin(url, title_el.get("href")),
+            "bookAuthor": author_el.text.replace("作者：", "").strip() if author_el else "",
         })
-        pass
-    else:
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        book_list = soup.select(".bookbox")
-        for book_element in book_list:
-            result = {
-                "bookTitle": book_element.select("a")[0].text,
-                "bookUrl": urljoin(url, book_element.select("a")[0].get("href")),
-                "bookAuthor": book_element.select(".author")[0].text.replace("作者：", "")
-            }
-            results.append(result)
 
     return results
 
@@ -52,9 +57,8 @@ def getDetails(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0",
     }
     log("get details:{}".format(url))
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = requests.get(url, headers=headers, timeout=30)
     response.encoding = 'utf-8'
-    log(response)
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
     book = {
@@ -90,7 +94,7 @@ def get_chapter_list(url, soup, chapter_list):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0",
         }
         log(f"get chapter_list:{next_url}")
-        response = requests.get(next_url, headers=headers, timeout=(5, 10))
+        response = requests.get(next_url, headers=headers, timeout=30)
         response.encoding = 'utf-8'
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -98,7 +102,7 @@ def get_chapter_list(url, soup, chapter_list):
 
 
 def getChapterContent(url):
-    response = requests.get(url, timeout=(5, 10))
+    response = requests.get(url, timeout=30)
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')

@@ -1,3 +1,4 @@
+import re
 from urllib.parse import urljoin
 
 import requests
@@ -7,13 +8,13 @@ from log import log
 
 
 def verify(query):
-    res = getDetails("https://www.ishuqu.net/b/1643/1643570/")
+    res = getDetails("http://www.xshuquge.net/txt/60624/index.html")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
 
 
 def getSiteUrl():
-    return "https://www.ishuqu.net/"
+    return "http://www.xshuquge.net"
 
 
 # def search(query):
@@ -27,38 +28,36 @@ headers = {
 
 
 def getDetails(book_url):
-    # url book_url
     book_url = book_url.replace("://m.", "://www.")
-    # 发送get请求
-    response = requests.get(book_url, headers=headers, timeout=(5, 10))
+    response = requests.get(book_url, headers=headers, timeout=(5, 15))
     response.encoding = "utf-8"
-    # log(response)
-    info = {}
-    # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
-    info["url"] = book_url
-    # 书名
-    info["title"] = soup.select("meta[property='og:novel:book_name']")[0].get("content")
-    # 作者
-    info["author"] = soup.select("meta[property='og:novel:author']")[0].get("content")
-    # 简介
-    info["intro"] = soup.select("meta[property='og:description']")[0].get("content")
-    # 封面
-    info["cover"] = soup.select("meta[property='og:image']")[0].get("content")
-    # 章节列表
-    info["chapterList"] = []
 
-    while True:
+    info = {
+        "url": book_url,
+        "title": soup.select_one("meta[property='og:novel:book_name']").get("content"),
+        "author": soup.select_one("meta[property='og:novel:author']").get("content"),
+        "intro": soup.select_one("meta[property='og:description']").get("content"),
+        "cover": soup.select_one("meta[property='og:image']").get("content"),
+        "chapterList": [],
+    }
 
-        for el in soup.select(".section-list")[1].select("a"):
-            info["chapterList"].append({
-                "title": el.text,
-                "url": urljoin(book_url, el.get("href"))
-            })
-        if soup.select(".index-container-btn")[1].text.strip() == "下一页":
-            soup = BeautifulSoup(requests.get(urljoin(book_url, soup.select(".index-container-btn")[1].get("href")), headers=headers, timeout=(5, 10)).text, 'html.parser')
-        else:
-            break
+    # 目录只有一页，但 dl 内含“最新章节”和“正文卷”两段，只取“正文卷”之后避免重复
+    in_body = False
+    for el in soup.select(".listmain dl > *"):
+        if el.name == "dt":
+            in_body = "正文" in el.get_text()
+            continue
+        if not in_body:
+            continue
+        a = el.select_one("a")
+        if not a or not a.get("href"):
+            continue
+        info["chapterList"].append({
+            "title": a.get_text(strip=True),
+            "url": urljoin(book_url, a.get("href")),
+        })
+
     return info
 
 
@@ -68,17 +67,17 @@ def getChapterContent(chapter_url):
     :param chapter_url: 章节链接
     :return: 章节内容 html格式
     """
-    # 发送get请求
-    response = requests.get(chapter_url, headers=headers, timeout=(5, 10))
+    response = requests.get(chapter_url, headers=headers, timeout=(5, 15))
     response.encoding = "utf-8"
-    # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
-    # 章节内容 html
-    content = soup.select("#content")[0].prettify()
+    content = soup.select_one("#content")
+    if not content:
+        return ""
 
-    if soup.select("#next_url")[0].text.strip() == "下一页":
-        content += getChapterContent(urljoin(chapter_url, soup.select("#next_url")[0].get("href")))
-    return content
+    for tip in content.select("#content_tip"):
+        tip.extract()
+    html = content.prettify()
+    return re.sub(r"最新网址[:：]\s*\S+", "", html)
 
 
 if __name__ == '__main__':

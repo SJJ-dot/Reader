@@ -7,11 +7,11 @@ from log import log
 
 
 def getSiteUrl():
-    return "http://www.xbiqugu.la"
+    return "http://www.ibiqugu.net"
 
 
 def search(query):
-    url = f"http://www.xbiqugu.la/modules/article/waps.php"
+    url = "http://www.ibiqugu.net/modules/article/waps.php"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -65,12 +65,13 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    response = requests.get(url, timeout=(5, 10))
+    response = requests.get(url, timeout=(5, 15))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
-    content = soup.select("#content")[0]
-    content.select("#content_tip")[0].extract()
-    content.select("p")[0].extract()
-
-
+    content = soup.select_one("#content")
+    if not content:
+        return ""
+    # 去掉“最新网址”提示
+    for tip in content.select("#content_tip"):
+        tip.extract()
     return content.prettify()

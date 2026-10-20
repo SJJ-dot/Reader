@@ -19,21 +19,31 @@ def getSiteUrl():
     return "https://www.min-yuan.com"
 
 
+# 站点直连不稳定且经常触发人机验证，直接走 WebView
+_VERIFY_MARKERS = (
+    "challenges.cloudflare.com",
+    "此验证用于防止机器人自动化访问",
+    "Just a moment",
+)
+
+
+def _is_verify(html):
+    return any(marker in html for marker in _VERIFY_MARKERS)
+
+
 def _fetch(url):
-    """web_get 优先（WebView 渲染，自动过 JS 挑战），失败则回退到 verification_activity_get（人机验证）"""
+    """直接走 WebView；后台 WebView 被拦截时转前台人工验证"""
     def parse(result):
         result = json.loads(result)
         html = result.get("html", "")
-        if "https://challenges.cloudflare.com" in html:
-            raise Exception("人机验证")
-        if "此验证用于防止机器人自动化访问" in html:
+        if _is_verify(html):
             raise Exception("人机验证")
         return html
 
     try:
         return parse(web_get(url))
     except Exception as e:
-        log(f"Error: {e}")
+        log(f"web_get 失败，转人工验证: {e}")
         return parse(verification_activity_get(url))
 
 

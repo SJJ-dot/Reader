@@ -1,12 +1,38 @@
 import json
 from urllib.parse import urljoin, quote
 
-import requests
 from bs4 import BeautifulSoup
 
 from SessionManager import verification_activity_get
 from WebViewClient import web_get
 from log import log
+
+# 站点搜索接口有访问验证，直接走 WebView
+_VERIFY_MARKERS = (
+    "challenges.cloudflare.com",
+    "此验证用于防止机器人自动化访问",
+    "Just a moment",
+)
+
+
+def _is_verify(html):
+    return any(marker in html for marker in _VERIFY_MARKERS)
+
+
+def _fetch(url):
+    """直接走 WebView；后台 WebView 被拦截时转前台人工验证，返回 {url, html} 的 JSON"""
+    def parse(result):
+        result = json.loads(result)
+        result["html"] = result.get("html", "")
+        if _is_verify(result["html"]):
+            raise Exception("人机验证")
+        return result
+
+    try:
+        return json.dumps(parse(web_get(url)), ensure_ascii=False)
+    except Exception as e:
+        log(f"web_get 失败，转人工验证: {e}")
+        return json.dumps(parse(verification_activity_get(url)), ensure_ascii=False)
 
 
 def getSiteUrl():
@@ -37,12 +63,7 @@ def search(query):
         return books
 
     url = f"https://m.terry-haass.com/modules/article/search.php?searchkey={quote(query)}&Submit.x=20&Submit.y=16"
-    try:
-        #
-        return parseResult(web_get(url))
-    except Exception as e:
-        log(f"Error :{e}")
-        return parseResult(verification_activity_get(url))
+    return parseResult(_fetch(url))
 
 
 def getDetails(url):
@@ -88,17 +109,8 @@ def getDetails(url):
         return chapterList
 
     url = url.replace("://www.", "://m.")
-    try:
-        book = parseBookInfo(web_get(url))
-    except Exception as e:
-        log(f"Error :{e}")
-        book = parseBookInfo(verification_activity_get(url))
-
-    try:
-        book["chapterList"] = parseChapterList(web_get(url + "/index.html"))
-    except Exception as e:
-        log(f"Error :{e}")
-        book["chapterList"] = parseChapterList(verification_activity_get(url + "/index.html"))
+    book = parseBookInfo(_fetch(url))
+    book["chapterList"] = parseChapterList(_fetch(url + "/index.html"))
 
     return book
 
@@ -123,11 +135,7 @@ def getChapterContent(url):
             content = content + getChapterContent(nexturl)
         return content
 
-    try:
-        return parseContent(web_get(url))
-    except Exception as e:
-        log(f"Error :{e}")
-        return parseContent(verification_activity_get(url))
+    return parseContent(_fetch(url))
 
 
 if __name__ == '__main__':

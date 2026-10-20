@@ -4,10 +4,10 @@ import requests
 from bs4 import BeautifulSoup
 
 def getSiteUrl():
-    return "https://www.sudugu.org"
+    return "https://www.suduguu.com"
 
 def search(query):
-    url = "https://www.sudugu.org/i/sor.aspx?key=" + quote(query)
+    url = "https://www.suduguu.com/i/sor.aspx?key=" + quote(query)
     response = requests.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -30,7 +30,7 @@ def getDetails(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
     response = requests.get(url, headers=headers, timeout=(5, 10))
-    response.encoding = 'uft-8'
+    response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
     book = {
@@ -60,7 +60,7 @@ def getChapterList(soup, url, chapter_list):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
         }
         response = requests.get(next_page_url, headers=headers, timeout=(5, 10))
-        response.encoding = 'uft-8'
+        response.encoding = 'utf-8'
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         getChapterList(soup, next_page_url, chapter_list)
