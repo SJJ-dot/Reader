@@ -4,6 +4,10 @@ from urllib.parse import urlencode, urljoin
 
 from log import log
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "http://www.soduzw.org"
 
@@ -17,7 +21,7 @@ def search(query):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    response = requests.post(base_url, data=data, headers=headers, timeout=(5, 10))
+    response = _session.post(base_url, data=data, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     # log(response.request)
     # log(response.text)
@@ -38,7 +42,7 @@ def search(query):
 
 def getDetails(url):
     url = url.replace("://m.", "://www.")
-    response = requests.get(url, timeout=(5, 10))
+    response = _session.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     # log(response.request)
     # log(response.text)
@@ -71,7 +75,7 @@ def getChapterContent(url):
         "siteid": "0",
         "url": ""
     }
-    response = requests.post("http://www.soduzw.org/novelsearch/chapter/transcode.html", data=data, timeout=(5, 10))
+    response = _session.post("http://www.soduzw.org/novelsearch/chapter/transcode.html", data=data, timeout=(5, 10))
     # log(response.request)
     # log(response.text)
     content = response.json()["info"]

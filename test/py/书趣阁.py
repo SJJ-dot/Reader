@@ -7,6 +7,10 @@ from bs4 import BeautifulSoup
 from log import log
 
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def verify(query):
     res = getDetails("http://www.xshuquge.net/txt/60624/index.html")
     res = getChapterContent(res["chapterList"][0]["url"])
@@ -29,7 +33,7 @@ headers = {
 
 def getDetails(book_url):
     book_url = book_url.replace("://m.", "://www.")
-    response = requests.get(book_url, headers=headers, timeout=(5, 15))
+    response = _session.get(book_url, headers=headers, timeout=(5, 15))
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -67,7 +71,7 @@ def getChapterContent(chapter_url):
     :param chapter_url: 章节链接
     :return: 章节内容 html格式
     """
-    response = requests.get(chapter_url, headers=headers, timeout=(5, 15))
+    response = _session.get(chapter_url, headers=headers, timeout=(5, 15))
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, 'html.parser')
     content = soup.select_one("#content")

@@ -3,12 +3,16 @@ from urllib.parse import urljoin, quote, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "https://www.suduguu.com"
 
 def search(query):
     url = "https://www.suduguu.com/i/sor.aspx?key=" + quote(query)
-    response = requests.get(url, timeout=(5, 10))
+    response = _session.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -29,7 +33,7 @@ def getDetails(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -59,7 +63,7 @@ def getChapterList(soup, url, chapter_list):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
         }
-        response = requests.get(next_page_url, headers=headers, timeout=(5, 10))
+        response = _session.get(next_page_url, headers=headers, timeout=(5, 10))
         response.encoding = 'utf-8'
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -70,7 +74,7 @@ def getChapterContent(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')

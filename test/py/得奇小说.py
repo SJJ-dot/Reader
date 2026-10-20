@@ -6,6 +6,10 @@ from bs4 import BeautifulSoup
 from log import log
 
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "https://www.deqixs.org"
 
@@ -19,7 +23,7 @@ def search(query):
         "Content-Type": "application/x-www-form-urlencoded",
     }
     # 发送POST请求Content-Type:
-    response = requests.post(url, data=data, headers=headers, timeout=30)
+    response = _session.post(url, data=data, headers=headers, timeout=30)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
     results = []
@@ -57,7 +61,7 @@ def getDetails(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0",
     }
     log("get details:{}".format(url))
-    response = requests.get(url, headers=headers, timeout=30)
+    response = _session.get(url, headers=headers, timeout=30)
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -94,7 +98,7 @@ def get_chapter_list(url, soup, chapter_list):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0",
         }
         log(f"get chapter_list:{next_url}")
-        response = requests.get(next_url, headers=headers, timeout=30)
+        response = _session.get(next_url, headers=headers, timeout=30)
         response.encoding = 'utf-8'
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -102,7 +106,7 @@ def get_chapter_list(url, soup, chapter_list):
 
 
 def getChapterContent(url):
-    response = requests.get(url, timeout=30)
+    response = _session.get(url, timeout=30)
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')

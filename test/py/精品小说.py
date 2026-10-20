@@ -13,6 +13,10 @@ from log import log
 #     return 0 if len(res) > 10 else 1
 
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "https://jpxs123.top/"
 
@@ -56,7 +60,7 @@ def getDetails(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'gbk'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -100,7 +104,7 @@ def getChapterContent(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'gbk'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')

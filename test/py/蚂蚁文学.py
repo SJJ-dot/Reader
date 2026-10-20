@@ -9,6 +9,10 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 HEADERS = {"User-Agent": UA}
 
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "http://www.mayiwsk.info"
 
@@ -18,7 +22,7 @@ def search(query):
         "searchtype": "articlename",
         "searchkey": query
     }
-    response = requests.post(url, data=data, headers=HEADERS, timeout=(5, 15))
+    response = _session.post(url, data=data, headers=HEADERS, timeout=(5, 15))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -38,7 +42,7 @@ def search(query):
 
 def getDetails(url):
     url = url.replace("://m.", "://www.")
-    response = requests.get(url, headers=HEADERS, timeout=(5, 15))
+    response = _session.get(url, headers=HEADERS, timeout=(5, 15))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
@@ -64,7 +68,7 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    response = requests.get(url, headers=HEADERS, timeout=(5, 15))
+    response = _session.get(url, headers=HEADERS, timeout=(5, 15))
     response.encoding = 'utf-8'
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')

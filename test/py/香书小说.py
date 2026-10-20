@@ -6,6 +6,10 @@ from bs4 import BeautifulSoup
 from log import log
 
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "http://www.ibiqugu.net"
 
@@ -16,7 +20,7 @@ def search(query):
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
-    response = requests.post(url, data={"searchkey": query}, headers=headers, timeout=(5, 10))
+    response = _session.post(url, data={"searchkey": query}, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     # log(response.request)
     # log(response.text)
@@ -40,7 +44,7 @@ def getDetails(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
     book = {
@@ -65,7 +69,7 @@ def getDetails(url):
 
 
 def getChapterContent(url):
-    response = requests.get(url, timeout=(5, 15))
+    response = _session.get(url, timeout=(5, 15))
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
     content = soup.select_one("#content")

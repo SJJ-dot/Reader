@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 from log import log
 from urllib.parse import quote
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "https://m.qidian.com"
 
@@ -22,7 +26,7 @@ def search(query):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
     }
-    response = requests.get(url, headers=headers, timeout=(5, 10))
+    response = _session.get(url, headers=headers, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.request)
     log(response.text)
@@ -55,7 +59,7 @@ def getDetails(book_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
     }
-    response = requests.get(book_url, headers=headers, timeout=(5, 10))
+    response = _session.get(book_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
     log(response.request)
     log(response.text)
@@ -76,7 +80,7 @@ def getDetails(book_url):
     info["chapterList"] = []
     log("加载章节目录")
     chapterUrl = urljoin(book_url, soup.select("#details-menu")[0].attrs["href"])
-    response = requests.get(chapterUrl, headers=headers, timeout=(5, 10))
+    response = _session.get(chapterUrl, headers=headers, timeout=(5, 10))
     log(response.request)
     response.encoding = "utf-8"
     log(response.text)
@@ -99,7 +103,7 @@ def getChapterContent(chapter_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
     }
-    response = requests.get(chapter_url, headers=headers, timeout=(5, 10))
+    response = _session.get(chapter_url, headers=headers, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     log(response.request)

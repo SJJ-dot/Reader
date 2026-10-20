@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 from log import log
 from urllib.parse import quote
 
+_session = requests.Session()
+_session.trust_env = False
+
+
 def getSiteUrl():
     return "https://www.mingzw.net"
 
@@ -20,7 +24,7 @@ def search(query):
     query = quote(query)
     url = f'https://www.mingzw.net/mzwlist/{query}.html'
     # 发送get请求
-    response = requests.get(url, timeout=(5, 10))
+    response = _session.get(url, timeout=(5, 10))
     response.encoding = 'utf-8'
     log(response.request.url)
     log(response.text)
@@ -49,7 +53,7 @@ def getDetails(book_url):
 
     # url book_url
     # 发送get请求
-    response = requests.get(book_url, timeout=(5, 10))
+    response = _session.get(book_url, timeout=(5, 10))
     response.encoding = "utf-8"
     info = {}
     # 创建BeautifulSoup对象
@@ -72,7 +76,7 @@ def getDetails(book_url):
 
 
 def parseChapterList(book_url, chapterUrl, chapterList):
-    response = requests.get(chapterUrl, timeout=(5, 10))
+    response = _session.get(chapterUrl, timeout=(5, 10))
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, 'html.parser')
     # 递归加载章节列表
@@ -95,7 +99,7 @@ def getChapterContent(chapter_url):
     :return: 章节内容 html格式
     """
     # 发送get请求
-    response = requests.get(chapter_url, timeout=(5, 10))
+    response = _session.get(chapter_url, timeout=(5, 10))
     response.encoding = "utf-8"
     # 创建BeautifulSoup对象
     soup = BeautifulSoup(response.text, 'html.parser')
