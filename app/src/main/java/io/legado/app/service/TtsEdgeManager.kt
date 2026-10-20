@@ -5,6 +5,7 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import androidx.lifecycle.MutableLiveData
+import com.sjianjun.reader.tts.TtsChapterSplitter
 import com.sjianjun.reader.utils.BaseTts
 import com.sjianjun.reader.utils.MD5Utils
 import com.sjianjun.reader.utils.TtsSpeakLine
@@ -38,6 +39,9 @@ class TtsEdgeManager : BaseTts {
 
         /** 单段音频时长上限（毫秒），超过说明播放器给出的时长不可信 */
         private const val MAX_SEGMENT_MS = 10 * 60 * 1000L
+
+        /** 预加载目标：领先播放的音频总时长至少 5 分钟 */
+        private const val MIN_PRELOAD_MS = 5 * 60 * 1000L
     }
 
     private val keyParagraphMap = HashMap<String, List<TtsSpeakLine>>()
@@ -89,18 +93,19 @@ class TtsEdgeManager : BaseTts {
     private var synthFinished = false
 
     /**
-     * 段内预加载窗口：合成领先播放最多 5 段。
+     * 预加载目标：领先播放的音频**总时长至少 5 分钟**（6 字节/毫秒 → 约 1.8MB），
+     * 并且**至少提前合成 1 段**。
      *
-     * 这样即使上层把"下一章整章"都追加进来，也只会提前合成 5 段的音频，
-     * 不会把整章/整本都合成进内存。
+     * 合成任务按这个目标提前合成（多出的会进 [EdgeAudioCache]），
+     * 这样顺序播放/切章/暂停恢复都有现成音频可用。
      */
-    private val synthWindow = 5
+    @Volatile
+    private var preloadTargetMs = MIN_PRELOAD_MS
+    private val preloadTargetBytes: Long get() = preloadTargetMs * EdgeAudioCache.BYTES_PER_MS
 
-    /** 已合成完 / 已播放的段数（用于限制合成领先量） */
-    @Volatile
-    private var synthesizedCount = 0
-    @Volatile
-    private var playedCount = 0
+    /** 领先播放的已合成段数 / 字节数（合成任务加、播放任务减） */
+    private val aheadCount = java.util.concurrent.atomic.AtomicInteger(0)
+    private val aheadBytes = java.util.concurrent.atomic.AtomicLong(0)
 
     /**
      * 流式 MediaDataSource：数据到达即可播放，readAt 在数据不足时阻塞等待。
@@ -317,8 +322,6 @@ class TtsEdgeManager : BaseTts {
                 }
                 if (stopped.get()) break
                 if (!ds.hasData && ds.isDone) {
-                    // 空段也算"播放过"，否则合成窗口会一直等它
-                    playedCount++
                     val error = ds.errorMessage
                     if (error != null) {
                         // 播放追上了这段、但重试用尽仍然没有音频：停止并上报（上层提示用户）
@@ -327,10 +330,18 @@ class TtsEdgeManager : BaseTts {
                         stop()
                         return@launch
                     }
+                    // 无朗读内容的段落（只有标点/符号）：没有音频，但按顺序推进段落，
+                    // 保证段落序号、高亮和"追加下一章"的时机不被打断
+                    (keyParagraphMap[ds.key]?.firstOrNull()?.tag as? Int)?.let { index ->
+                        paragraphChangeCallback?.invoke(index)
+                    }
                     continue
                 }
+                val playedBytes = ds.synthesizedBytes
                 playSegment(ds)
-                playedCount++
+                // 播放消耗掉一段：从"领先量"里扣除，保证预加载按剩余播放时长计算
+                aheadCount.updateAndGet { (it - 1).coerceAtLeast(0) }
+                aheadBytes.updateAndGet { (it - playedBytes).coerceAtLeast(0L) }
             }
             if (!stopped.get()) {
                 isSpeaking.postValue(false)
@@ -610,19 +621,21 @@ class TtsEdgeManager : BaseTts {
 
         synthQueue.clear()
         synthFinished = false
-        synthesizedCount = 0
-        playedCount = 0
+        aheadCount.set(0)
+        aheadBytes.set(0)
         for (index in startIndex until paragraphs.size) {
             val text = paragraphs[index]
             if (text.isBlank()) continue
             synthQueue.add(listOf(TtsSpeakLine(text, index)))
         }
+        // 整章都是空白：不再等待追加，直接按"读完"收尾（避免空等）
+        if (synthQueue.isEmpty()) synthFinished = true
 
         // 缓存任务：从队列里顺序取段合成（队列可被 appendParagraphs 追加），写入 StreamingMediaDataSource
         cacheJob = GlobalScope.launch(Dispatchers.IO) {
             while (!stopped.get()) {
-                // 合成窗口：领先播放不超过 synthWindow 段
-                while (!stopped.get() && synthesizedCount - playedCount >= synthWindow) {
+                // 预加载：至少领先 1 段，且领先音频总时长达到目标（默认 5 分钟）
+                while (!stopped.get() && aheadCount.get() >= 1 && aheadBytes.get() >= preloadTargetBytes) {
                     kotlinx.coroutines.delay(50)
                 }
                 if (stopped.get()) return@launch
@@ -633,31 +646,56 @@ class TtsEdgeManager : BaseTts {
                     continue
                 }
                 val text = unit.joinToString(separator = "") { line -> line.txt }
-                // 诊断：打印真正送进在线语音合成的文本（logcat 过滤 TTS_TEXT）
-                TtsTextLogger.log(text, unit.firstOrNull()?.tag as? Int)
                 val key = MD5Utils.md5Encode(text + "_" + rate + "_" + voice)
                 keyParagraphMap[key] = unit
 
                 val ds = StreamingMediaDataSource(key)
                 playQueue.add(ds)
 
+                // 纯标点/符号（如"……"）合成不出音频：不联网、不按失败处理，
+                // 只推一个"空段"，由播放任务按顺序推进段落（否则会重试 3 次后误报网络失败）
+                if (!TtsChapterSplitter.hasSpeakableText(text)) {
+                    Log.i("TtsEdgeManager 跳过无朗读内容段落：${unit.firstOrNull()?.tag}")
+                    ds.markDone()
+                    continue
+                }
+                // 诊断：打印真正送进在线语音合成的文本（logcat 过滤 TTS_TEXT）
+                TtsTextLogger.log(text, unit.firstOrNull()?.tag as? Int)
+
+                // 内存缓存命中（暂停恢复/跳回同一段/重听）：不联网，直接喂给数据源立刻可播
+                val cached = EdgeAudioCache.get(key)
+                if (cached != null) {
+                    ds.feed(cached)
+                    ds.markDone()
+                    aheadCount.incrementAndGet()
+                    aheadBytes.addAndGet(cached.size.toLong())
+                    continue
+                }
+
                 // 弱网语义：
                 // - 预加载段失败：退避重试（3 次）；
                 // - 播放追上时仍失败：这一段没有音频可播 → 标记失败，由播放任务停止会话并提示
                 var ok = false
+                var audioBytes: ByteArray? = null
                 for (attempt in 0..2) {
                     if (stopped.get()) return@launch
+                    val baos = java.io.ByteArrayOutputStream()
                     try {
                         val input = edgeFetch.synthesizeText(text, rate, voice)
                         val buf = ByteArray(8 * 1024)
                         var read = input.read(buf)
                         while (read >= 0) {
                             if (stopped.get()) return@launch
-                            if (read > 0) ds.feed(buf.copyOf(read))
+                            if (read > 0) {
+                                val chunk = buf.copyOf(read)
+                                ds.feed(chunk)
+                                baos.write(chunk)
+                            }
                             read = input.read(buf)
                         }
                         if (ds.hasData) {
                             ok = true
+                            audioBytes = baos.toByteArray()
                             break
                         }
                     } catch (e: Exception) {
@@ -667,11 +705,16 @@ class TtsEdgeManager : BaseTts {
                 }
                 if (ok) {
                     ds.markDone()
+                    // 只缓存成功合成的整段音频（失败/半截数据不缓存）
+                    audioBytes?.let {
+                        EdgeAudioCache.put(key, it)
+                        aheadCount.incrementAndGet()
+                        aheadBytes.addAndGet(it.size.toLong())
+                    }
                 } else {
                     ds.markFailed("网络合成失败（Edge TTS）")
                     Log.e("TtsEdgeManager 段落合成失败（重试用尽）：$key")
                 }
-                synthesizedCount++
             }
         }
 
@@ -696,10 +739,22 @@ class TtsEdgeManager : BaseTts {
         for (index in paragraphs.indices) {
             val text = paragraphs[index]
             if (text.isBlank()) continue
+            // 纯标点/符号也放进来：合成时没有音频，但会按顺序推进段落（不能直接丢掉）
             synthQueue.add(listOf(TtsSpeakLine(text, baseIndex + index)))
         }
         Log.i("TTS追加 段数=${paragraphs.size} base=$baseIndex rate=$rate")
     }
+
+    /** 测试用：调整预加载目标（毫秒），null 恢复默认 5 分钟 */
+    internal fun configurePreloadForTest(ms: Long?) {
+        preloadTargetMs = ms ?: MIN_PRELOAD_MS
+    }
+
+    /** 测试用：当前领先播放的（段数, 字节数） */
+    internal fun aheadStatsForTest(): Pair<Int, Long> = aheadCount.get() to aheadBytes.get()
+
+    /** 测试用：当前预加载目标（毫秒） */
+    internal fun preloadTargetMsForTest(): Long = preloadTargetMs
 
     /** 不会再有追加的段落：合成队列排空后收尾（触发 onParagraphsCompleted） */
     fun finishParagraphs() {

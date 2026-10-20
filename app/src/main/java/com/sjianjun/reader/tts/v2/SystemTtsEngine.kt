@@ -5,6 +5,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.sjianjun.reader.App
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.tts.TtsChapterSplitter
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.delay
@@ -156,6 +157,12 @@ class SystemTtsEngine(
                 }
                 val index = item.first
                 val text = item.second
+                // 纯标点/符号（如"……"）：合成不出音频，也不该判为失败，按顺序推进段落即可
+                if (!TtsChapterSplitter.hasSpeakableText(text)) {
+                    trySend(TtsEngineEvent.ParagraphStarted(index))
+                    trySend(TtsEngineEvent.ParagraphFinished(index))
+                    continue
+                }
                 if (!speakParagraph(engine, text, index)) {
                     trySend(TtsEngineEvent.Failed(IllegalStateException("合成失败（系统 TTS）：引擎拒绝朗读第${index + 1}段")))
                     break

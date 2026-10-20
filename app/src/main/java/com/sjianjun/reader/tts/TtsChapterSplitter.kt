@@ -62,6 +62,20 @@ object TtsChapterSplitter {
     }
 
     /**
+     * 这段文本是否有可朗读的内容（至少一个字母/数字/CJK 字符）。
+     *
+     * 只有标点/符号/空白的段落（如"……""——""。。。"）合成不出音频：
+     * - Edge 会重试 3 次后判定失败（日志"段落合成失败（重试用尽）"），播放到该段就停；
+     * - 系统 TTS 可能不触发 onStart，同样会被判失败。
+     *
+     * 所以引擎层直接跳过这类段落（段落序号照常占用，保证与阅读页的高亮对应关系不变）。
+     */
+    fun hasSpeakableText(text: CharSequence?): Boolean {
+        if (text.isNullOrEmpty()) return false
+        return text.any { it.isLetterOrDigit() }
+    }
+
+    /**
      * 朗读权重：按字符与标点估算朗读耗时（标点停顿更久）。
      * 服务端据此估算段落时长与进度，阅读页据此把段内进度折算到具体行，两侧共用同一模型。
      */

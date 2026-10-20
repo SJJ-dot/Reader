@@ -29,7 +29,7 @@ class NovelLoadService(
     private val provider: ChapterContentProvider,
     private val scope: CoroutineScope,
     /** 内存缓存章节数 */
-    private val maxCache: Int = 8,
+    private val maxCache: Int = 3,
     /** 单章最多尝试次数（含首次） */
     private val maxAttempts: Int = 3,
     /** 重试间隔 */

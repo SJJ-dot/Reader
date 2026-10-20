@@ -31,7 +31,12 @@ object TtsPlayerHolder {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** 章节加载服务（进程级，缓存跨会话复用） */
+    /**
+     * 章节加载服务（进程级单例，跨会话/跨引擎复用）。
+     *
+     * 注意：朗读用的**段落缓存（最近 8 章 LRU）在 [NovelLoadService] 内部**，
+     * 不是存在 holder 里；holder 只是持有这个实例。
+     */
     private val loader by lazy { NovelLoadService(BookChapterContentProvider(), scope) }
 
     @Volatile
