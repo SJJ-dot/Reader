@@ -13,6 +13,9 @@ const val BOOK_READ_ONLY = "BOOK_READ_ONLY"
 const val BOOK_DEFAULT_COMPARE = "BOOK_DEFAULT_COMPARE"
 /** 打开章节列表时指定定位到的章节序号（换源内容对比里的「目录」） */
 const val CHAPTER_INDEX = "CHAPTER_INDEX"
+
+/** 打开换源内容对比时，当前阅读页第一行的文本（用于在新书源正文里按内容定位） */
+const val PAGE_FIRST_LINE = "PAGE_FIRST_LINE"
 const val URL = "url"
 const val WEB_ID = "web_id"
 const val CROSS_ORIGIN_MODE = "cross_origin_mode"

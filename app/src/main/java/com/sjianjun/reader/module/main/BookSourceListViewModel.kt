@@ -42,11 +42,19 @@ class BookSourceListViewModel() : ViewModel() {
     /** 当前阅读章节标题（旧书源），内容对比页据此判断定位到的章节是否同名 */
     val currentChapterTitle: String? get() = currentChapter?.title
 
-    fun init(bookTitle: String) {
+    /** 当前阅读页首行文本：换源对比时作为定位锚点 */
+    private var compareAnchor: String = ""
+
+    fun init(bookTitle: String, chapterIndex: Int = -1, pageFirstLine: String = "") {
+        compareAnchor = pageFirstLine.trim()
         viewModelScope.launch(Dispatchers.IO) {
             bookDao.getAllSourceBooksByTitle(bookTitle).debounce(100).collectLatest {
                 val record = readingRecordDao.getReadingRecord(bookTitle).firstOrNull()
-                val readingChapter = if (record != null) chapterDao.getChapterByIndex(record.bookId, record.chapterIndex) else null
+                // 优先用阅读页实际所在章节（页码进度比阅读记录更准），没有再用阅读记录
+                val readingChapter = if (record != null) {
+                    (if (chapterIndex >= 0) chapterDao.getChapterByIndex(record.bookId, chapterIndex) else null)
+                        ?: chapterDao.getChapterByIndex(record.bookId, record.chapterIndex)
+                } else null
                 currentChapter = readingChapter
                 val list = it.map { async { loadBookInfo(it, record, readingChapter) } }.awaitAll()
                 bookList.postValue(sortCurrentFirst(list, record))
@@ -171,6 +179,38 @@ class BookSourceListViewModel() : ViewModel() {
         // 与阅读页一致：跳过空白行（净化规则删掉广告后会留下空行，阅读页排版时本来就会跳过）
         val cleaned = text.lines().filter { it.isNotBlank() }.joinToString("\n")
         title to cleaned
+    }
+
+    /** 对比页定位结果 */
+    data class CompareLocation(
+        /** 命中位置（字符偏移），-1 表示未命中 */
+        val offset: Int,
+        /** 命中位置占整章正文的百分比（0~100），-1 表示未命中 */
+        val percent: Int,
+        /** 实际用于匹配的文本片段 */
+        val anchor: String,
+        val hit: Boolean,
+    )
+
+    /**
+     * 在新书源正文里按「当前阅读页第一行」定位。
+     *
+     * 分页折行、净化规则、标点差异可能让首行不完全一致，所以从长到短试几次前缀；
+     * 都找不到则返回未命中（对比页按章节开头展示）。
+     */
+    fun locateInContent(text: String, anchor: String = compareAnchor): CompareLocation {
+        val base = anchor.trim()
+        if (base.isBlank() || text.isBlank()) return CompareLocation(-1, -1, base.take(12), false)
+        val lengths = listOf(base.length, 12, 8, 6).distinct().filter { it > 0 }
+        for (len in lengths) {
+            val probe = base.take(minOf(len, base.length)).trim()
+            if (probe.length < 6) continue
+            val index = text.indexOf(probe)
+            if (index >= 0) {
+                return CompareLocation(index, index * 100 / text.length, probe, true)
+            }
+        }
+        return CompareLocation(-1, -1, base.take(12), false)
     }
 
     suspend fun reloadAllBookFromNet() = withIo {

@@ -32,6 +32,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.BOOK_DEFAULT_COMPARE
 import com.sjianjun.reader.BOOK_TITLE
+import com.sjianjun.reader.CHAPTER_INDEX
+import com.sjianjun.reader.PAGE_FIRST_LINE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -300,9 +302,16 @@ class BookReaderSettingFragment : BaseFragment() {
         }
         binding?.originClickableArea?.click {
             val book = readerViewModel.book.value ?: return@click
+            // 带上当前阅读页进度：章节序号 + 本页第一行文本，换源对比时据此在新源正文里定位
+            val pageLine = runCatching {
+                pageLoader.curPageList?.getOrNull(pageLoader.pagePos)
+                    ?.lines?.firstOrNull { it.txt.isNotBlank() }?.txt.orEmpty()
+            }.getOrDefault("")
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to book.title,
-                BOOK_DEFAULT_COMPARE to "true"
+                BOOK_DEFAULT_COMPARE to "true",
+                CHAPTER_INDEX to pageLoader.chapterPos.toString(),
+                PAGE_FIRST_LINE to pageLine,
             ).show(parentFragmentManager, "BookSourceListFragment")
             hide()
         }

@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.ScrollView
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -22,6 +23,7 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_READ_ONLY
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.CHAPTER_INDEX
+import com.sjianjun.reader.PAGE_FIRST_LINE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -48,6 +50,10 @@ class BookSourceListFragment : BaseFragment() {
     private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE) ?: "" }
     /** 是否默认进入「内容对比」模式（阅读页打开时为 true） */
     private val defaultCompare by lazy { requireArguments().getString(BOOK_DEFAULT_COMPARE) == "true" }
+    /** 当前阅读页所在章节（阅读页打开时传入，-1 表示没传） */
+    private val pageChapterIndex by lazy { requireArguments().getString(CHAPTER_INDEX)?.toIntOrNull() ?: -1 }
+    /** 当前阅读页第一行的文本：换源对比时用来在新源正文里定位 */
+    private val pageFirstLine by lazy { requireArguments().getString(PAGE_FIRST_LINE).orEmpty() }
     var binding: MainFragmentBookSourceListBinding? = null
     private val vm by viewModels<BookSourceListViewModel>()
     private val searchVm by viewModels<SearchViewModel>()
@@ -138,7 +144,7 @@ class BookSourceListFragment : BaseFragment() {
         compareMode = defaultCompare
         if (compareMode) refreshMode()
 
-        vm.init(bookTitle)
+        vm.init(bookTitle, pageChapterIndex, pageFirstLine)
         vm.bookList.observe(this) {
             compareBooks = it
             adapter.data.clear()
@@ -456,7 +462,13 @@ class BookSourceListFragment : BaseFragment() {
                             (chapter.title ?: "") to
                                 (chapter.content?.joinToString("\n") { it.content ?: "" } ?: "")
                         }
-                    binding.tvChapterTitle.text = "当前：$title"
+                    // 按当前阅读页首行在新源正文里定位
+                    val location = fragment.vm.locateInContent(text)
+                    binding.tvChapterTitle.text = if (location.hit) {
+                        "当前：$title · 定位 ${location.percent}%"
+                    } else {
+                        "当前：$title · 未定位到本页"
+                    }
                     // 匹配到的章节名与当前阅读章节名完全相同时绿色，否则红色
                     val same = chapter.title?.trim() == fragment.vm.currentChapterTitle?.trim()
                     binding.tvChapterTitle.setTextColor(
@@ -464,7 +476,18 @@ class BookSourceListFragment : BaseFragment() {
                     )
                     binding.tvLastChapter.text = loaded.lastChapter?.title?.let { "最新：$it" } ?: "最新：—"
                     binding.tvContent.text = text.ifBlank { "（该章暂无正文）" }
-                
+                    // 自动滚到当前页对应的位置，方便左右对比；未命中回到章节开头
+                    binding.tvContent.post {
+                        val scroll = binding.tvContent.parent as? ScrollView ?: return@post
+                        if (!location.hit || text.isEmpty()) {
+                            scroll.scrollTo(0, 0)
+                            return@post
+                        }
+                        val layout = binding.tvContent.layout ?: return@post
+                        val offset = location.offset.coerceIn(0, text.length)
+                        scroll.scrollTo(0, layout.getLineTop(layout.getLineForOffset(offset)))
+                    }
+
                     binding.btnRefresh.visibility = View.VISIBLE
                 }
             }
