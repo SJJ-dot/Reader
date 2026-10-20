@@ -192,13 +192,79 @@ class BookSource {
 
     suspend fun search(query: String): List<SearchResult>? {
         return withIo {
-            execute<List<SearchResult>>(Func.search, query)?.also {
-                it.forEach {
-                    it.bookSource = this@BookSource
-                }
+            execute<List<SearchResult>>(Func.search, query)?.also { results ->
+                // 聚合搜索源（如百度）可能返回**别的站点**的书：
+                // 按 bookUrl 归属到真正支持它的书源，找不到再保留当前书源
+                bindSourceByUrl(results)
             }
         }
     }
+
+    /**
+     * 把搜索结果归属到对应书源：
+     * - URL 属于当前书源 → 当前书源；
+     * - 否则在所有启用书源里找站点域名匹配的源（同一次搜索内缓存，避免重复跑 getSiteUrl）；
+     * - 都找不到 → 保留当前书源（this@BookSource）。
+     *
+     * @param sources 候选书源，默认取数据库里所有启用书源（测试可显式传入）
+     * @param hostOf 书源站点域名解析，默认跑书源的 getSiteUrl（测试可替换）
+     */
+    internal suspend fun bindSourceByUrl(
+        results: List<SearchResult>,
+        sources: List<BookSource>? = null,
+        hostOf: (suspend (BookSource) -> String?)? = null,
+    ) {
+        if (results.isEmpty()) return
+        val candidates = sources ?: enabledBookSources()
+        val resolver: suspend (BookSource) -> String? = hostOf ?: { it.siteHost() }
+        val hostCache = HashMap<String, String?>()
+        // 同一次搜索内每个源只解析一次域名
+        suspend fun host(source: BookSource): String? {
+            if (hostCache.containsKey(source.id)) return hostCache[source.id]
+            val value = resolver(source)
+            hostCache[source.id] = value
+            return value
+        }
+        results.forEach { result ->
+            val owner = resolveSource(result.bookUrl, candidates) { host(it) } ?: this
+            if (owner.id != id) {
+                // 设备上可核对：getSiteUrl 不靠谱时也可能是这里改绑错了
+                Log.i("$name 搜索结果归属书源：${result.bookTitle} ${result.bookUrl} -> ${owner.name}")
+            }
+            result.bookSource = owner
+        }
+    }
+
+    private suspend fun enabledBookSources(): List<BookSource> = runCatching {
+        com.sjianjun.reader.repository.DbFactory.db.bookSourceDao()
+            .getAllBookSource()
+            .filter { it.enable }
+    }.getOrDefault(emptyList())
+
+    /** 按 URL 的站点域名找书源；找不到返回 null（调用方回退到当前书源） */
+    private suspend fun resolveSource(
+        url: String,
+        sources: List<BookSource>,
+        host: suspend (BookSource) -> String?,
+    ): BookSource? {
+        val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain() ?: return null
+        // 先判断是不是本站：绝大多数搜索结果走这条，不需要扫其他源
+        if (host(this) == urlHost) return this
+        return sources.firstOrNull { it.id != id && host(it) == urlHost }
+    }
+
+    /**
+     * 书源站点域名（跑一次 getSiteUrl）。
+     *
+     * 加 3 秒超时：个别书源的 getSiteUrl 会发网络请求，卡住时不能把整个搜索结果显示拖死；
+     * 超时当作"拿不到域名"，按兜底逻辑保留搜索源。
+     */
+    private suspend fun siteHost(): String? = runCatching {
+        kotlinx.coroutines.withTimeoutOrNull(3_000) { getSiteUrl() }
+    }
+        .getOrNull()
+        ?.toHttpUrlOrNull()
+        ?.topPrivateDomain()
 
     /**
      * 获取书籍详情（含章节列表）
