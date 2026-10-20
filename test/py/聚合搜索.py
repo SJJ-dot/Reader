@@ -44,7 +44,7 @@ _SUPPORTED_HOSTS = (
     "ibiqugu.net", "jpxs123.top", "kubixs.com", "llenn.cc", "mayiwsk.info",
     "min-yuan.com", "mingzw.net", "qidian.com", "qzhd.cn", "shengxuxu.net",
     "soduzw.org", "sto66.com", "suduguu.com", "terry-haass.com", "washai.net",
-    "x33yq.org", "xbiquge345.com", "xs8.cn", "xshuquge.net", "zhys.tw",
+    "x33yq.org", "xbiquge345.com", "xshuquge.net", "zhys.tw",
     "zwda.com",
 )
 
