@@ -74,6 +74,9 @@ private const val REQUEST_CODE_NOTIFICATION = 1001
 /** 等待朗读目标章节排版完成的最长重试次数（100ms * 30 = 3 秒） */
 private const val MAX_TTS_CHAPTER_WAIT = 30
 
+/** 下一章预加载失败后，同一章翻页重试的最小间隔 */
+private const val PREFETCH_RETRY_DELAY_MS = 5_000L
+
 class BookReaderActivity : BaseActivity() {
     var binding: ActivityBookReaderBinding? = null
     private val TAG_SETTING_DIALOG = "BookReaderSettingFragment"
@@ -88,6 +91,15 @@ class BookReaderActivity : BaseActivity() {
 
     /** 章节内容加载任务：同一时刻只保留一个，避免自己和自己并发重复加载 */
     private var chapterRequestJob: Job? = null
+
+    /** 下一章预加载任务：当前章加载成功后触发；切章时取消，避免和当前章抢资源 */
+    private var prefetchJob: Job? = null
+
+    /** 预加载是由哪一章触发的（同一章翻页不重复触发） */
+    private var prefetchFromChapter = -1
+
+    /** 上一次预加载开始时间（失败后隔一段时间再试） */
+    private var prefetchStartAt = 0L
 
     /** 阅读页是否可见：不可见时不再预加载后面的章节（此时由朗读服务自己预加载） */
     private var pageVisible = true
@@ -146,9 +158,11 @@ class BookReaderActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        // 阅读页关闭：取消还在跑的章节预加载（朗读服务会按自己的需要预加载）
+        // 阅读页关闭：取消还在跑的章节加载/下一章预加载（朗读服务会按自己的需要预加载）
         chapterRequestJob?.cancel()
         chapterRequestJob = null
+        prefetchJob?.cancel()
+        prefetchJob = null
         //退出阅读页时书籍可能还在加载中（章节列表上拉检查更新／书籍信息加载）：
         //上面的协程取消会连带取消正在跑的脚本调用，加载流程自己会恢复"加载中"状态
         super.onDestroy()
@@ -539,8 +553,7 @@ class BookReaderActivity : BaseActivity() {
             override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                 Log.i("加载章节内容 $requestChapters")
 
-                // 不再取消上一次请求：上一次往往正在预加载下一章，取消会把预加载中断
-                // （日志：没有等待者 -> 共享加载被取消 -> 章节加载失败）。
+                // 不再取消上一次请求：上一次往往正在加载别的章节，取消会让其失败。
                 // 同一章由 NovelChapterLoader 的共享加载去重，不会重复抓。
                 chapterRequestJob = launch("requestChapters") {
                     requestChapters.forEach { requestChapter ->
@@ -551,7 +564,7 @@ class BookReaderActivity : BaseActivity() {
                         }
                         val chapter = viewModel.book.value?.chapterList?.getOrNull(requestChapter.chapterIndex) ?: return@launch
                         // 加载失败会重试多次：失败一次就不再请求会让这一章一直没内容
-                        loadChapterContentWithRetry(chapter, requestChapter)
+                        val ok = loadChapterContentWithRetry(chapter, requestChapter)
                         requestChapter.content = chapter.content?.joinToString("\n") { it.format() }
                         if (requestChapter.contentError) {
                             requestChapter.title = chapter.title + "(章节内容错误)"
@@ -561,12 +574,10 @@ class BookReaderActivity : BaseActivity() {
                         }
                         if (loader.pageStatus == STATUS_LOADING && loader.chapterPos == requestChapter.chapterIndex) {
                             loader.openChapter()
-                        } else if (loader.pageStatus == STATUS_FINISH && loader.chapterPos == requestChapter.chapterIndex - 1) {
-                            loader.preLoadNextChapter()
                         }
-                        // 当前章加载完就预加载下一章（只 1 章）
-                        if (requestChapter.chapterIndex == loader.chapterPos) {
-                            prefetchNextChapter(requestChapter.chapterIndex)
+                        // 预加载只在**当前章加载成功**后触发（只预加载下一章）
+                        if (ok && requestChapter.chapterIndex == loader.chapterPos) {
+                            ensureNextChapterPrefetched(requestChapter.chapterIndex)
                         }
                     }
                 }
@@ -574,6 +585,8 @@ class BookReaderActivity : BaseActivity() {
 
             override fun onBookRecordChange(bean: BookRecordBean) {
                 viewModel.saveRecord(bean)
+                // 翻页/切章后检查一次：当前章就绪就预加载下一章（翻到已缓存的章节也能触发）
+                ensureNextChapterPrefetched(bean.chapter)
             }
         })
     }
@@ -593,25 +606,58 @@ class BookReaderActivity : BaseActivity() {
     }
 
     /**
-     * 预加载下一章（只 1 章）。
+     * 确保"下一章"已在预加载（只 1 章）。
      *
-     * - 失败不阻塞当前阅读：加载层内部会重试 3 次；
-     * - 仍失败时，翻到下一章 PageLoader 发现没内容会再次请求（翻页重试）；
-     * - 内容就绪后顺手预排版，翻页可直接显示。
+     * 触发时机：当前章内容就绪（首次加载成功、或翻到已缓存章节排版完成）。
+     * 由 [requestChapters] 和 [onBookRecordChange] 调用，翻页/切章都会检查一次。
+     *
+     * - 当前章没加载成功 → 不预加载；
+     * - 下一章已有内容 → 只做预分页，不联网；
+     * - 同一章只触发一次，失败后隔 [PREFETCH_RETRY_DELAY_MS] 可再试；
+     * - 切到别的章会取消上一次预加载，不阻塞新章加载。
      */
-    private fun prefetchNextChapter(currentIndex: Int) {
+    private fun ensureNextChapterPrefetched(currentIndex: Int) {
         // 阅读页不在前台时不做预加载（朗读服务会按自己的需要预加载）
         if (!pageVisible) return
         val loader = mPageLoader ?: return
+        // 已经切到别的章了：不再为旧章做预加载
+        if (loader.chapterPos != currentIndex) return
+        val currentTxt = loader.chapterCategory?.getOrNull(currentIndex) ?: return
+        // 当前章还没加载成功：等它成功再说
+        if (currentTxt.content == null || currentTxt.contentError) return
+
+        // 换了章：取消上一章的预加载
+        if (prefetchFromChapter != currentIndex) {
+            prefetchJob?.cancel()
+            prefetchJob = null
+        }
+
         val nextIndex = currentIndex + 1
-        val txtChapter = loader.chapterCategory?.getOrNull(nextIndex) ?: return
-        if (txtChapter.content != null && !txtChapter.contentError) return
+        val nextTxt = loader.chapterCategory?.getOrNull(nextIndex) ?: return
+        // 下一章已有可用内容：只需要预分页（不联网）
+        if (nextTxt.content != null && !nextTxt.contentError) {
+            loader.preLoadNextChapter()
+            return
+        }
+        if (prefetchJob?.isActive == true) return
+        // 同一章短时间内不重复触发（失败后翻页会再试）
+        val now = System.currentTimeMillis()
+        if (prefetchFromChapter == currentIndex && now - prefetchStartAt < PREFETCH_RETRY_DELAY_MS) return
+
         val chapter = viewModel.book.value?.chapterList?.getOrNull(nextIndex) ?: return
-        launch("prefetchNextChapter") {
-            if (loadChapterContentWithRetry(chapter, txtChapter)) {
-                txtChapter.title = chapter.title
-                txtChapter.content = chapter.content?.joinToString("\n") { it.format() }
-                mPageLoader?.preLoadNextChapter()
+        prefetchFromChapter = currentIndex
+        prefetchStartAt = now
+        prefetchJob = launch("prefetchNextChapter") {
+            if (loadChapterContentWithRetry(chapter, nextTxt)) {
+                nextTxt.title = chapter.title
+                nextTxt.content = chapter.content?.joinToString("\n") { it.format() }
+                // 预分页只在仍停在这一章时做（用户可能已经切走）
+                if (mPageLoader?.chapterPos == currentIndex) {
+                    mPageLoader?.preLoadNextChapter()
+                }
+                Log.i("预加载下一章完成：${chapter.title}")
+            } else {
+                Log.i("预加载下一章失败：${chapter.title}")
             }
         }
     }

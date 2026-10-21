@@ -1,13 +1,15 @@
 package sjj.novel.view.reader.page
 
 import sjj.alog.Log
-import kotlin.math.max
-import kotlin.math.min
-
 
 /**
  * Created by newbiechen on 17-5-29.
  * 网络页面加载器
+ *
+ * 只负责加载**当前显示章节**：
+ * - 上一章/当前章/下一章切换时，只请求当前章；
+ * - 下一章的预加载由外部触发（阅读页在当前章加载成功后调用 `NovelChapterLoader`），
+ *   预分页由外部调用 [preLoadNextChapter] 触发。
  */
 class NetPageLoader() : PageLoader() {
     public override fun refreshChapterList() {
@@ -23,70 +25,46 @@ class NetPageLoader() : PageLoader() {
         }
     }
 
-    // 装载上一章节的内容
+    // 装载上一章节的内容（chapterPos 已减 1，只请求这一章）
     override fun parsePrevChapter(): Boolean {
         val isRight = super.parsePrevChapter()
 
-        requestChapters(chapterPos - 1, chapterPos, chapterPos)
+        requestCurrentChapter()
         return isRight
     }
 
-    // 装载当前章内容。
+    // 装载当前章内容
     override fun parseCurChapter(): Boolean {
         val isRight = super.parseCurChapter()
 
-        // 顺带预加载后面 NEXT_CHAPTER_PREFETCH 章
-        requestChapters(chapterPos, chapterPos + NEXT_CHAPTER_PREFETCH, chapterPos)
+        requestCurrentChapter()
         return isRight
     }
 
-    // 装载下一章节的内容
+    // 装载下一章节的内容（chapterPos 已加 1，只请求这一章）
     override fun parseNextChapter(): Boolean {
         val isRight = super.parseNextChapter()
 
-        requestChapters(chapterPos, chapterPos + NEXT_CHAPTER_PREFETCH, chapterPos)
-
+        requestCurrentChapter()
         return isRight
     }
 
-    private fun requestChapters(start: Int, end: Int, first: Int) {
+    /**
+     * 只请求当前显示章节；已经有可用内容就不请求。
+     *
+     * 失败的章节（content 为空或 contentError=true）允许重复请求：
+     * 翻页/切回来时会再次触发加载重试。
+     */
+    private fun requestCurrentChapter() {
         val listener = mPageChangeListener ?: return
         val chapterCategory = chapterCategory ?: return
+        if (chapterCategory.isEmpty()) return
 
-        val start = max(0, start)
-        val end = min(end, chapterCategory.size - 1)
-        // 检验输入值
-        if (start > end) {
-            Log.w("requestChapters: start > end, start = $start, end = $end")
-            return
-        }
+        val pos = chapterPos.coerceIn(0, chapterCategory.size - 1)
+        val txtChapter = chapterCategory[pos]
+        if (hasChapterData(txtChapter) && !txtChapter.contentError) return
 
-        val chapters = mutableListOf<TxtChapter>()
-
-        // 过滤，哪些数据已经加载了；
-        // 上一次加载失败的章节内容其实是错误提示（非空），这里要当成没加载，允许反复请求
-        for (i in start..end) {
-            val txtChapter = chapterCategory[i]
-            if (!hasChapterData(txtChapter) || txtChapter.contentError) {
-                chapters.add(txtChapter)
-            }
-        }
-
-        if (!chapters.isEmpty()) {
-            val firstChapter = chapterCategory[first]
-            if (chapters.remove(firstChapter)) {
-                chapters.add(0, firstChapter)
-            }
-            Log.i("requestChapters:${chapters.map { it.chapterIndex }}")
-            listener.requestChapters(chapters)
-        }
-    }
-
-    companion object {
-        private const val TAG = "PageFactory"
-
-        /** 预加载当前章之后的章节数（1 表示只预加载下一章） */
-        private const val NEXT_CHAPTER_PREFETCH = 1
+        Log.i("requestChapters:${txtChapter.chapterIndex}")
+        listener.requestChapters(mutableListOf(txtChapter))
     }
 }
-

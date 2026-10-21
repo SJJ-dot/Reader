@@ -958,9 +958,7 @@ abstract class PageLoader : ViewModel() {
         // 解析数据
         Log.e("章节分页")
         dealLoadPageList(this.chapterPos)
-        // 预加载下一页面
-        Log.e("预加载")
-        preLoadNextChapter()
+        // 不在这里预加载下一章：由阅读页在当前章加载成功后触发
         return if (this.curPageList != null) true else false
     }
 
@@ -982,8 +980,7 @@ abstract class PageLoader : ViewModel() {
         } else {
             dealLoadPageList(nextChapter)
         }
-        // 预加载下一页面
-        preLoadNextChapter()
+        // 不在这里预加载下一章：由阅读页在当前章加载成功后触发
         return this.curPageList != null
     }
 
