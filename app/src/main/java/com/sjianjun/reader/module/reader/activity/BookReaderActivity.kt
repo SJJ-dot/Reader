@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.reader.activity
 
 import android.Manifest
 import android.content.Intent
+import com.sjianjun.reader.module.main.MainActivity
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -216,7 +217,20 @@ class BookReaderActivity : BaseActivity() {
                     true
                 }
 
-                else -> false
+                else -> {
+                    // 从通知直接拉起阅读页时，阅读页是任务栈根：
+                    // 直接 finish 会退到桌面，这里改成回到书架（MainActivity）
+                    if (isTaskRoot) {
+                        startActivity(
+                            Intent(this@BookReaderActivity, MainActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        )
+                        finish()
+                        true
+                    } else {
+                        false
+                    }
+                }
             }
         }
 

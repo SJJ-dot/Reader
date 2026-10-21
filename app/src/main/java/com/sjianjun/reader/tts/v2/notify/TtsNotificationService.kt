@@ -72,6 +72,8 @@ class TtsNotificationService : Service() {
         const val ACTION_OPEN_READER = "com.sjianjun.reader.tts.v2.OPEN_READER"
         const val ACTION_OPEN_SETTING = "com.sjianjun.reader.tts.v2.OPEN_SETTING"
 
+
+
         /** 媒体卡片左侧自定义按钮：打开朗读设置（与通知「设置」一致） */
         private const val ACTION_CARD_SETTING = "com.sjianjun.reader.tts.v2.CARD_SETTING"
 
@@ -217,8 +219,11 @@ class TtsNotificationService : Service() {
                 // 媒体卡片上的两个自定义按钮（左设置、右停止）
                 override fun onCustomAction(action: String?, extras: Bundle?) {
                     when (action) {
-                        ACTION_CARD_SETTING -> openTtsSetting()
-                        ACTION_CARD_STOP -> player().stop()
+                        ACTION_CARD_SETTING -> {
+                Log.i("$TAG 媒体卡片「朗读设置」点击")
+                openTtsSetting()
+            }
+            ACTION_CARD_STOP -> player().stop()
                     }
                 }
             })
@@ -252,7 +257,10 @@ class TtsNotificationService : Service() {
             ACTION_NEXT -> player().nextChapter()
             ACTION_CYCLE_TIMER -> cycleSleepTimer()
             ACTION_OPEN_READER -> openReader()
-            ACTION_OPEN_SETTING -> openTtsSetting()
+            ACTION_OPEN_SETTING -> {
+                Log.i("$TAG 通知「设置」点击（服务命令）")
+                openTtsSetting()
+            }
             ACTION_START, null -> Unit
             else -> Unit
         }
@@ -330,7 +338,9 @@ class TtsNotificationService : Service() {
             }
             val playbackState = PlaybackStateCompat.Builder()
                 .setActions(actions)
-                // 卡片上的自定义按钮：左「设置」右「停止」（系统按顺序填充）
+                // 卡片上的自定义按钮：左「设置」右「停止」
+                // 注意：媒体卡片按钮是 MediaSession 回调，Android 10+ 后台不允许从回调里拉起界面；
+                // 因此「设置」回调里先尝试 PendingIntent.send，失败再 startActivity（前台时可用）。
                 .addCustomAction(
                     PlaybackStateCompat.CustomAction.Builder(
                         ACTION_CARD_SETTING, "朗读设置", R.drawable.ic_tts_settings
@@ -424,9 +434,9 @@ class TtsNotificationService : Service() {
         // 封面作为媒体卡片/通知大图
         coverArtwork?.let { builder.setLargeIcon(it) }
 
-        // 折叠态只显示前 3 个动作，所以「停止」必须在前 3 个里，否则用户看不到
-        // 小说：[播放/暂停] [下一章] [停止] [定时] [设置]
-        // 网页：[播放/暂停] [停止] [定时] [设置]
+        // 动作顺序：[播放/暂停] [下一章] [设置] [停止] [定时]
+        // 「设置」放在前 3 个：折叠态就能看到，且用 PendingIntent 由系统拉起（后台可跳转）。
+        // 媒体卡片上的自定义齿轮（MediaSession 回调）在后台会被系统拦截，已移除。
         builder.addAction(
             if (state.playing) R.drawable.ic_tts_pause else R.drawable.ic_tts_play,
             if (state.playing) "暂停" else "播放",
@@ -435,16 +445,16 @@ class TtsNotificationService : Service() {
         if (state.mode == TtsSessionMode.BOOK) {
             builder.addAction(R.drawable.ic_tts_next, "下一章", servicePendingIntent(ACTION_NEXT, REQUEST_CODE_NEXT))
         }
+        builder.addAction(
+            R.drawable.ic_tts_settings,
+            "设置",
+            openSettingPendingIntent(state)
+        )
         builder.addAction(R.drawable.ic_tts_stop, "停止", servicePendingIntent(ACTION_STOP, REQUEST_CODE_STOP + 10))
         builder.addAction(
             R.drawable.ic_tts_timer,
             sleepTimerActionTitle(state.sleepTimerMinutes),
             servicePendingIntent(ACTION_CYCLE_TIMER, REQUEST_CODE_TIMER)
-        )
-        builder.addAction(
-            R.drawable.ic_tts_settings,
-            "设置",
-            servicePendingIntent(ACTION_OPEN_SETTING, REQUEST_CODE_SETTING)
         )
 
         if (state.paragraphCount > 0) {
@@ -452,6 +462,7 @@ class TtsNotificationService : Service() {
         }
         val style = androidx.media.app.NotificationCompat.MediaStyle()
             .setMediaSession(mediaSession.sessionToken)
+        // 折叠态展示前 3 个：[播放/暂停] [下一章] [设置]
         style.setShowActionsInCompactView(0, 1, 2)
         builder.setStyle(style)
         return builder.build()
@@ -577,30 +588,59 @@ class TtsNotificationService : Service() {
     }
 
     /**
-     * 通知「设置」：打开正在朗读的内容，并直接唤起朗读播放卡片（里面可调语速/定时）。
+     * 通知「设置」/媒体卡片「朗读设置」：打开正在朗读的内容并唤起阅读页的设置菜单。
+     *
+     * 必须用 `PendingIntent`（由系统发起）而不是服务里 `startActivity`：
+     * Android 10+ 后台服务直接启动 Activity 会被拦截，表现就是点「设置」没反应。
      */
-    private fun openTtsSetting() {
-        val state = player().state.value
+    private fun openSettingPendingIntent(state: TtsSessionState): PendingIntent {
         val intent = when {
             state.mode == TtsSessionMode.BOOK && state.bookId.isNotBlank() -> {
                 Intent(this, BookReaderActivity::class.java)
                     .putExtra(BOOK_ID, state.bookId)
                     .putExtra(SHOW_TTS_CARD, true)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
 
             state.mode == TtsSessionMode.PAGE && state.pageUrl.isNotBlank() -> {
                 Intent(this, BrowserReadModeActivity::class.java)
                     .putExtra(URL, state.pageUrl)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
 
-            else -> {
-                Intent(this, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
+            else -> Intent(this, MainActivity::class.java)
         }
-        runCatching { startActivity(intent) }.onFailure { Log.e("$TAG 打开朗读设置失败", it) }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return PendingIntent.getActivity(
+            this, REQUEST_CODE_SETTING, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /**
+     * 兼容入口（媒体卡片/服务命令）：优先用 PendingIntent 由系统拉起，失败再退回 startActivity。
+     */
+    private fun openTtsSetting() {
+        runCatching { openSettingPendingIntent(player().state.value).send() }
+            .onFailure { e ->
+                Log.e("$TAG 打开朗读设置失败（PendingIntent）", e)
+                val state = player().state.value
+                val intent = when {
+                    state.mode == TtsSessionMode.BOOK && state.bookId.isNotBlank() -> {
+                        Intent(this, BookReaderActivity::class.java)
+                            .putExtra(BOOK_ID, state.bookId)
+                            .putExtra(SHOW_TTS_CARD, true)
+                    }
+
+                    state.mode == TtsSessionMode.PAGE && state.pageUrl.isNotBlank() -> {
+                        Intent(this, BrowserReadModeActivity::class.java)
+                            .putExtra(URL, state.pageUrl)
+                    }
+
+                    else -> Intent(this, MainActivity::class.java)
+                }
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                runCatching { startActivity(intent) }
+                    .onFailure { Log.e("$TAG 打开朗读设置失败", it) }
+            }
     }
 
     // ==================== 播放器被移除检测 ====================
