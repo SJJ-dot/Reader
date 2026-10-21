@@ -19,6 +19,24 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- 朗读时用户手动翻页后，点这里恢复"跟随朗读自动翻页" -->
+        <TextView
+            android:id="@+id/btn_resume_auto_follow"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="56dp"
+            android:background="#66000000"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:text="恢复自动翻页"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <FrameLayout
             android:id="@+id/fl_setting_container"
             android:layout_width="match_parent"

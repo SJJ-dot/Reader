@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -110,6 +111,17 @@ class BookReaderActivity : BaseActivity() {
 
     /** 已跟随的朗读位置（章节链接:段落序号），位置没变就不重复定位重绘 */
     private var ttsFollowKey: String = ""
+
+    /**
+     * 朗读自动翻页是否被"用户手动翻页"打断。
+     *
+     * 打断后朗读继续，但不再自动跳页；底部显示"恢复自动翻页"按钮，点了才重新跟随。
+     */
+    private var ttsAutoFollowPaused = false
+
+    /** 手指按下/按键前的章节与页，用于判断这次操作是否真的翻了页 */
+    private var turnBeforeChapter = -1
+    private var turnBeforePage = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 在 Activity 生命周期入口先应用方向策略，减少折叠切换时方向闪动。
@@ -471,8 +483,15 @@ class BookReaderActivity : BaseActivity() {
             applyReaderBrightness()
         }
 
+        binding!!.btnResumeAutoFollow.setOnClickListener { resumeTtsAutoFollow() }
+
         binding!!.pageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
+                // 记录按下位置：抬手后如果页变了，说明是用户手动翻页
+                when (event?.action) {
+                    MotionEvent.ACTION_DOWN -> rememberTurnStart()
+                    MotionEvent.ACTION_UP -> checkUserTurnedPage()
+                }
                 //隐藏设置对话框
                 return getSettingFragment()?.let {
                     if (it.isVisible && event?.action == MotionEvent.ACTION_UP) {
@@ -496,6 +515,7 @@ class BookReaderActivity : BaseActivity() {
     }
 
     private fun handleReaderClickAction(action: Int) {
+        rememberTurnStart()
         when (action) {
             ReaderClickAreaAction.PREV_PAGE -> binding?.pageView?.performPageTap(false)
             ReaderClickAreaAction.NEXT_PAGE -> binding?.pageView?.performPageTap(true)
@@ -506,6 +526,58 @@ class BookReaderActivity : BaseActivity() {
             ReaderClickAreaAction.DIRECTORY -> binding?.drawerLayout?.openDrawer(GravityCompat.END)
             ReaderClickAreaAction.NONE ->  /*无操作*/ {}
         }
+        checkUserTurnedPage()
+    }
+
+    /** 记录这次触摸/按键前的阅读位置 */
+    private fun rememberTurnStart() {
+        val loader = mPageLoader ?: return
+        turnBeforeChapter = loader.chapterPos
+        turnBeforePage = loader.pagePos
+    }
+
+    /**
+     * 翻页动作结束后检查：位置确实变了 → 视为用户手动翻页，
+     * 暂停朗读自动翻页并显示「恢复自动翻页」按钮（朗读本身继续）。
+     */
+    private fun checkUserTurnedPage() {
+        val chapterBefore = turnBeforeChapter
+        val pageBefore = turnBeforePage
+        if (chapterBefore < 0) return
+        launch {
+            // 等翻页动画/分页完成
+            delay(350)
+            val loader = mPageLoader ?: return@launch
+            val changed = loader.chapterPos != chapterBefore || loader.pagePos != pageBefore
+            if (changed) pauseTtsAutoFollow()
+        }
+    }
+
+    /** 用户手动翻页：朗读继续，但不再自动跟随翻页 */
+    private fun pauseTtsAutoFollow() {
+        val state = TtsPlaybackController.state.value ?: return
+        val following = state.active && state.mode == TtsPlaybackMode.BOOK && state.bookId == bookId
+        if (!following || ttsAutoFollowPaused) return
+        ttsAutoFollowPaused = true
+        binding?.btnResumeAutoFollow?.visibility = View.VISIBLE
+        Log.i("用户手动翻页：暂停朗读自动翻页")
+    }
+
+    /** 点「恢复自动翻页」：重新跟随当前朗读位置 */
+    private fun resumeTtsAutoFollow() {
+        ttsAutoFollowPaused = false
+        binding?.btnResumeAutoFollow?.visibility = View.GONE
+        // 强制重新定位到朗读位置
+        ttsFollowKey = ""
+        TtsPlaybackController.state.value?.let { onTtsStateChanged(it) }
+        Log.i("恢复朗读自动翻页")
+    }
+
+    private fun resetTtsAutoFollow() {
+        ttsAutoFollowPaused = false
+        turnBeforeChapter = -1
+        turnBeforePage = -1
+        binding?.btnResumeAutoFollow?.visibility = View.GONE
     }
 
     private fun showSettingMenu() {
@@ -690,8 +762,11 @@ class BookReaderActivity : BaseActivity() {
                 ttsFollowKey = ""
                 loader.setTtsSpeakLine(null)
             }
+            resetTtsAutoFollow()
             return
         }
+        // 用户手动翻过页：朗读继续，但不要再自动跳页（等用户点「恢复自动翻页」）
+        if (ttsAutoFollowPaused) return
         ttsFollowJob?.cancel()
         ttsFollowJob = launch {
             // 目录刷新后章节序号可能变化，优先按章节链接定位
