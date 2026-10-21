@@ -3,26 +3,18 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
-from log import log
 
-_UA = ("Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 "
-       "(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36")
+_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 _HEADERS = {"User-Agent": _UA, "Accept-Language": "zh-CN,zh;q=0.9"}
-
-# 复用连接，避免逐页新建 TLS 连接导致 SSL EOF / 变慢
-_session = requests.Session()
-_session.trust_env = False
-_session.headers.update(_HEADERS)
-_retry = Retry(total=2, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
-_adapter = HTTPAdapter(max_retries=_retry)
-_session.mount("https://", _adapter)
-_session.mount("http://", _adapter)
 _CHAPTER_RE = re.compile(r"^第\s*([0-9零一二三四五六七八九十百千两]+)\s*[章节]")
 _CN_DIGITS = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
               "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 _CN_UNITS = {"十": 10, "百": 100, "千": 1000}
+
+_session = requests.Session()
+_session.trust_env = False
+_session.headers.update(_HEADERS)
 
 
 def _chapter_no(title):
@@ -45,23 +37,19 @@ def _chapter_no(title):
     return total + num
 
 
-def _norm(text):
-    return re.sub(r"[\s《》<>“”\"'·,，。.!！?？:：;；_\-—|/\\]+", "", text or "").lower()
-
-
 def _book_id(url):
     match = re.search(r"/(?:xiaoshuo_|read/)(\d+)", url or "")
     return match.group(1) if match else ""
 
 
 def verify(query):
-    res = getDetails("https://m.x33yq.org/xiaoshuo_103619.html")
+    res = getDetails("https://www.x33yq.org/read/103619/")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
 
 
 def getSiteUrl():
-    return "https://m.x33yq.org"
+    return "https://www.x33yq.org"
 
 
 def _get(url):
@@ -77,6 +65,9 @@ def _meta(soup, prop, default=""):
 
 
 def search(query):
+    if not query:
+        return []
+
     # 先访问首页拿会话，再提交搜索
     _session.get(getSiteUrl(), timeout=30)
     response = _session.post(
@@ -87,26 +78,26 @@ def search(query):
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
 
-    key = _norm(query)
     books = []
     seen = set()
-    for a in soup.select("a[href*='/xiaoshuo_']"):
-        href = (a.get("href") or "").strip()
-        book_id = _book_id(href)
-        if not book_id or book_id in seen:
+    for card in soup.select("div.info"):
+        text = card.get_text(" ", strip=True)
+        match = re.search(r"《\s*(.*?)\s*》\s*作者[:：]\s*(\S+)", text)
+        if not match:
             continue
-        parent_text = a.parent.get_text(" ", strip=True) if a.parent else ""
-        parts = parent_text.split()
-        if not parts:
+        title = match.group(1).strip()
+        author = match.group(2).strip()
+        link = card.select_one("a[href*='/xiaoshuo_']")
+        if not link:
             continue
-        title = parts[0]
-        if key and key not in _norm(title):
+        book_url = urljoin(getSiteUrl(), link.get("href"))
+        if book_url in seen:
             continue
-        seen.add(book_id)
+        seen.add(book_url)
         books.append({
             "bookTitle": title,
-            "bookUrl": urljoin(getSiteUrl(), href),
-            "bookAuthor": parts[1] if len(parts) > 1 else "",
+            "bookUrl": book_url,
+            "bookAuthor": author,
         })
 
     return books
@@ -114,42 +105,39 @@ def search(query):
 
 def getDetails(url):
     book_id = _book_id(url)
-    if not book_id:
-        return {"url": url, "title": "", "author": "", "intro": "",
-                "cover": "", "chapterList": []}
+    page_url = f"{getSiteUrl()}/read/{book_id}/"
+    soup = _get(page_url)
 
-    book_soup = _get(f"{getSiteUrl()}/xiaoshuo_{book_id}.html")
-    cover = _meta(book_soup, "og:image")
+    cover = _meta(soup, "og:image")
     book = {
         "url": url,
-        "title": _meta(book_soup, "og:novel:book_name"),
-        "author": _meta(book_soup, "og:novel:author"),
-        "intro": _meta(book_soup, "og:description"),
-        "cover": urljoin(getSiteUrl(), cover) if cover else "",
+        "title": _meta(soup, "og:novel:book_name"),
+        "author": _meta(soup, "og:novel:author"),
+        "intro": _meta(soup, "og:description"),
+        "cover": cover,
         "chapterList": [],
     }
 
-    chapters = {}
-    for page in range(1, 51):
-        page_url = f"{getSiteUrl()}/read/{book_id}/" if page == 1 \
-            else f"{getSiteUrl()}/read/{book_id}_{page}/"
-        soup = _get(page_url)
+    links = []
+    for a in soup.select("a[href]"):
+        title = a.get_text(strip=True)
+        no = _chapter_no(title)
+        if no is None:
+            continue
+        links.append((no, title, urljoin(page_url, a.get("href"))))
 
-        added = 0
-        for a in soup.select("a[href]"):
-            title = a.get_text(strip=True)
-            no = _chapter_no(title)
-            if no is None or no in chapters:
-                continue
-            chapters[no] = {"title": title, "url": urljoin(page_url, a.get("href"))}
-            added += 1
+    # 顶部有最新章节倒序块，从第一个“第一章”开始截取
+    first_index = next((i for i, (no, _, _) in enumerate(links) if no == 1), 0)
+    seen_nos = set()
+    for no, title, chapter_url in links[first_index:]:
+        if no in seen_nos:
+            continue
+        seen_nos.add(no)
+        book["chapterList"].append({
+            "title": title,
+            "url": chapter_url,
+        })
 
-        has_next = any(a.get_text(strip=True) == "下一页" for a in soup.select("a[href]"))
-        if added == 0 or not has_next:
-            break
-
-    # 站点目录本身就是升序，按插入顺序保留（个别“第一千零六章”是站点笔误，不能按数字排序）
-    book["chapterList"] = list(chapters.values())
     return book
 
 
@@ -163,10 +151,19 @@ def getChapterContent(url):
         visited.add(current)
         soup = _get(current)
 
-        content = soup.select_one(".content")
+        content = soup.select_one("#content")
         if content:
-            parts.append(content.prettify())
+            # 去掉脚本、样式和正文末尾的导航链接
+            for tag in content.select("script, style, a"):
+                tag.decompose()
+            for div in content.select("div"):
+                if not div.get_text(strip=True):
+                    div.decompose()
+            html = content.prettify()
+            html = re.sub(r"第\(\d+/\d+\)页", "", html)
+            parts.append(html)
 
+        # 同一章可能分页为 xxx_2.html
         next_url = ""
         for a in soup.select("a[href]"):
             full = urljoin(current, a.get("href"))
@@ -176,3 +173,31 @@ def getChapterContent(url):
         current = next_url
 
     return "\n".join(parts)
+
+if __name__ == '__main__':
+    # 本地调试：直接运行 python 顶点小说.py
+    keyword = "我的"
+    print("========== 搜索 ==========")
+    results = search(keyword)
+    print(f"搜索「{keyword}」: {len(results)} 条")
+    for item in results[:3]:
+        print("  ", item)
+
+    # 搜索无结果时回退到已知测试书
+    book_url = results[0]["bookUrl"] if results else "https://m.terry-haass.com/1423629234254/"
+
+    print("\n========== 详情 ==========")
+    book = getDetails(book_url)
+    chapters = book.get("chapterList") or []
+    print("书名:", book.get("title"))
+    print("作者:", book.get("author"))
+    print("章节数:", len(chapters))
+    if chapters:
+        print("首章:", chapters[0])
+        print("末章:", chapters[-1])
+
+    if chapters:
+        print("\n========== 正文 ==========")
+        content = getChapterContent(chapters[0]["url"])
+        print("正文长度:", len(content))
+        print("预览:", content[:200])
