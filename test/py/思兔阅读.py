@@ -81,3 +81,30 @@ def getChapterContent(url):
     con = soup.select_one("#content")
     return con.prettify()
 
+if __name__ == '__main__':
+    # 本地调试：直接运行 python 顶点小说.py
+    keyword = "我的"
+    print("========== 搜索 ==========")
+    results = search(keyword)
+    print(f"搜索「{keyword}」: {len(results)} 条")
+    for item in results[:3]:
+        print("  ", item)
+
+    # 搜索无结果时回退到已知测试书
+    book_url = results[0]["bookUrl"] if results else "https://m.terry-haass.com/1423629234254/"
+
+    print("\n========== 详情 ==========")
+    book = getDetails(book_url)
+    chapters = book.get("chapterList") or []
+    print("书名:", book.get("title"))
+    print("作者:", book.get("author"))
+    print("章节数:", len(chapters))
+    if chapters:
+        print("首章:", chapters[0])
+        print("末章:", chapters[-1])
+
+    if chapters:
+        print("\n========== 正文 ==========")
+        content = getChapterContent(chapters[0]["url"])
+        print("正文长度:", len(content))
+        print("预览:", content[:200])
