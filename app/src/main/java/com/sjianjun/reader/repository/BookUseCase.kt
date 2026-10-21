@@ -10,6 +10,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.python.ScriptCallTargets
 import com.sjianjun.reader.python.ScriptTaskRunner
+import com.sjianjun.reader.tts.v2.TtsPlayerHolder
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
@@ -257,6 +258,8 @@ object BookUseCase {
                 }
             }
             updateDetails(bookDetails, keepUpToIndex)
+            // 整本重载后章节链接可能变化：作废朗读的段落缓存，避免按旧链接读到旧正文
+            if (forceFull) TtsPlayerHolder.invalidateBook(book.id)
         } catch (e: CancellationException) {
             //协程被取消（页面销毁、发起方主动取消）：恢复加载中状态，不当作加载失败
             Log.i("加载被取消：${book.title}")
@@ -369,6 +372,11 @@ object BookUseCase {
             chapter.isLoaded = !content.contentError
             chapterDao.insert(chapter)
             contentDao.insert(content)
+
+            // 强制重新加载后，朗读的段落缓存也要作废，否则朗读仍会读到旧正文
+            if (force == 1 && !content.contentError) {
+                TtsPlayerHolder.invalidateChapter(chapter.bookId, chapter.index)
+            }
 
             return@withIo chapter
         }

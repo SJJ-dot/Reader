@@ -7,7 +7,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
@@ -18,7 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * 只做「加载编排」，正文章节怎么取交给 [ChapterContentProvider]：
  * - **同一章并发只加载一次**：并发的 [loadChapter] 共用同一个任务，结果共享；
- * - **没有等待者就取消加载**：页面/会话切走时不会白跑（协程取消即停止抓取）；
+ * - **没有等待者延迟取消**：会话切章/退出后延迟 [CANCEL_GRACE_MS] 再取消，
+ *   给"紧接着到来的新会话/预取"复用同一次加载的机会（与 [NovelChapterLoader] 一致）；
+ * - **被外部取消时重试一次**：例如 `invalidate` 取消在途加载，等待方重新发起而不是直接失败；
  * - **内存缓存**：最近若干章命中直接返回（队列/预取/会话推进都会命中）；
  * - **失败重试**：[maxAttempts] 次，仍失败返回 null（会话层据此结束会话，不跳章）；
  * - **预取**：[prefetch] 在内部作用域提前加载，后续 [loadChapter] 直接命中缓存。
@@ -38,6 +42,9 @@ class NovelLoadService(
 
     private companion object {
         const val TAG = "NovelLoadService"
+
+        /** 等待者归零后延迟取消：给紧接着到来的新请求/预取复用同一次加载的机会 */
+        const val CANCEL_GRACE_MS = 500L
     }
 
     private class Entry(
@@ -65,19 +72,38 @@ class NovelLoadService(
         val key = keyOf(bookId, chapterIndex)
         synchronized(cacheLock) { cache[key] }?.let { return it }
 
-        val entry = inflight.computeIfAbsent(key) { Entry(startLoad(key, bookId, chapterIndex)) }
-        entry.waiters.incrementAndGet()
-        try {
-            return entry.deferred.await()
-        } finally {
-            val remaining = entry.waiters.decrementAndGet()
-            if (remaining <= 0 && !entry.deferred.isCompleted) {
-                // 没有等待者了（会话切章/页面退出）：取消这次加载，别白跑
-                Log.i("$TAG 无等待者，取消加载：$key")
-                entry.deferred.cancel()
-            }
-            if (entry.deferred.isCompleted) {
+        var attempt = 0
+        while (true) {
+            attempt++
+            val entry = inflight.computeIfAbsent(key) { Entry(startLoad(key, bookId, chapterIndex)) }
+            entry.waiters.incrementAndGet()
+            try {
+                return entry.deferred.await()
+            } catch (e: CancellationException) {
+                // 调用方自己取消（会话停止/切章）：继续抛出
+                currentCoroutineContext().ensureActive()
                 inflight.remove(key, entry)
+                if (attempt >= 2) {
+                    Log.i("$TAG 加载被取消，按失败处理：$key")
+                    return null
+                }
+                // 被外部取消（invalidate / 上一个等待方退出）：重开一次，别让本次请求跟着失败
+                Log.i("$TAG 加载被取消，重新发起：$key")
+            } finally {
+                val remaining = entry.waiters.decrementAndGet()
+                if (remaining <= 0) {
+                    // 延迟取消：给紧接着到来的新请求/预取一个复用同一加载的机会
+                    scope.launch {
+                        delay(CANCEL_GRACE_MS)
+                        if (entry.waiters.get() <= 0 && !entry.deferred.isCompleted) {
+                            Log.i("$TAG 无等待者，取消加载：$key")
+                            entry.deferred.cancel()
+                        }
+                        if (entry.deferred.isCompleted) inflight.remove(key, entry)
+                    }
+                } else if (entry.deferred.isCompleted) {
+                    inflight.remove(key, entry)
+                }
             }
         }
     }
@@ -99,11 +125,23 @@ class NovelLoadService(
 
     // ==================== 缓存/调试 ====================
 
-    /** 作废某一章的缓存（正文更新/换源后调用） */
+    /** 作废某一章的缓存（正文更新/重新加载后调用） */
     fun invalidate(bookId: String, chapterIndex: Int) {
         val key = keyOf(bookId, chapterIndex)
         synchronized(cacheLock) { cache.remove(key) }
         inflight.remove(key)?.deferred?.cancel()
+    }
+
+    /** 作废整本书的缓存（目录整本重载后调用：章节链接可能变化） */
+    fun invalidateBook(bookId: String) {
+        if (bookId.isBlank()) return
+        val prefix = "$bookId#"
+        synchronized(cacheLock) {
+            cache.keys.filter { it.startsWith(prefix) }.forEach { cache.remove(it) }
+        }
+        inflight.keys.filter { it.startsWith(prefix) }.forEach { key ->
+            inflight.remove(key)?.deferred?.cancel()
+        }
     }
 
     /** 当前缓存了哪些章节（测试/日志用） */

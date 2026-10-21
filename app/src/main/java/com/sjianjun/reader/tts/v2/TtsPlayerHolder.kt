@@ -89,6 +89,22 @@ object TtsPlayerHolder {
 
     fun currentEngineType(): TtsEngineType? = currentType
 
+    /**
+     * 作废某一章的朗读段落缓存（正文被强制刷新后调用，避免朗读读到旧正文）。
+     */
+    fun invalidateChapter(bookId: String, chapterIndex: Int) {
+        if (bookId.isBlank() || chapterIndex < 0) return
+        loader.invalidate(bookId, chapterIndex)
+    }
+
+    /**
+     * 作废整本书的朗读段落缓存（目录整本重载后调用：章节链接可能变化）。
+     */
+    fun invalidateBook(bookId: String) {
+        if (bookId.isBlank()) return
+        loader.invalidateBook(bookId)
+    }
+
     internal fun setPlayerForTest(newPlayer: TtsPlayer?) {
         synchronized(this) {
             player?.stop()
