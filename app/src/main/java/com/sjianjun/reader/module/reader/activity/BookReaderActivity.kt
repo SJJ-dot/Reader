@@ -327,7 +327,6 @@ class BookReaderActivity : BaseActivity() {
                     }
                     Log.e("加载完成 ${curChapter.chapterIndex} ${curChapter.title}")
                     loader.reloadPages()
-                    getChapterContentPage(curChapter, chapter)
                 }
             }
         }
@@ -353,7 +352,6 @@ class BookReaderActivity : BaseActivity() {
                 }
                 viewModel.maskChapterContentErr(chapter, txtChapter)
                 loader.reloadPages()
-                getChapterContentPage(txtChapter, chapter)
 
             }
         }
@@ -565,7 +563,6 @@ class BookReaderActivity : BaseActivity() {
                         } else if (loader.pageStatus == STATUS_FINISH && loader.chapterPos == requestChapter.chapterIndex - 1) {
                             loader.preLoadNextChapter()
                         }
-                        getChapterContentPage(requestChapter, chapter)
                     }
                 }
             }
@@ -756,28 +753,5 @@ class BookReaderActivity : BaseActivity() {
         }
         window.attributes = attrs
     }
-
-    private suspend fun getChapterContentPage(txtChapter: TxtChapter?, chapter: Chapter) = withMain {
-        val launch = launch("getChapterContentPage") {
-            val loader = mPageLoader ?: return@launch
-            val txtChapter = txtChapter ?: return@launch
-            while (true) {
-                ensureActive()
-                if (viewModel.getChapterContentPage(chapter)) {
-                    if (loader.chapterPos in txtChapter.chapterIndex - 3..txtChapter.chapterIndex + 3) {
-                        txtChapter.content = chapter.content?.joinToString("\n") { it.format() }
-                    }
-                    if (loader.chapterPos in txtChapter.chapterIndex..txtChapter.chapterIndex + 1 && loader.pageStatus == STATUS_FINISH) {
-                        loader.reloadPages()
-                    }
-                } else {
-                    break
-                }
-            }
-        }
-        launch.join()
-
-    }
-
 
 }

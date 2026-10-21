@@ -86,11 +86,6 @@ class BookReaderViewModel : ViewModel() {
         }
     }
 
-    /** 续抓下一页（加载层负责去重/重试） */
-    suspend fun getChapterContentPage(chapter: Chapter): Boolean {
-        return NovelChapterLoader.instance.loadNextPage(chapter)
-    }
-
     /**
      * 加载 上一章 当前章 下一章（加载层负责去重/重试）
      *

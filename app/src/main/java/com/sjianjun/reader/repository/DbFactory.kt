@@ -37,7 +37,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class],
-    version = 33,
+    version = 34,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -234,6 +234,24 @@ object DbFactory {
                     )
                     db.execSQL("DROP TABLE ChapterContent")
                     db.execSQL("ALTER TABLE ChapterContent_new RENAME TO ChapterContent")
+                }
+            })
+            .addMigrations(object : Migration(33, 34) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 移除章节分页（nextPageUrl）：一章只保存一份正文。
+                    // 旧内容按页拆分存储，无法直接合并成完整章节，这里清空，
+                    // 阅读/朗读时按单章重新抓取；章节的已加载标记同步复位。
+                    db.execSQL("DROP TABLE IF EXISTS `ChapterContent`")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `ChapterContent` (" +
+                                "`bookId` TEXT NOT NULL," +
+                                " `chapterUrl` TEXT NOT NULL," +
+                                " `contentError` INTEGER NOT NULL," +
+                                " `pageIndex` INTEGER NOT NULL," +
+                                " `content` TEXT," +
+                                " PRIMARY KEY(`bookId`, `chapterUrl`, `pageIndex`))"
+                    )
+                    db.execSQL("UPDATE `Chapter` SET `isLoaded` = 0")
                 }
             })
             .build()

@@ -5,9 +5,7 @@ import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.ChapterContent
 import com.sjianjun.reader.bean.ReadingRecord
-import com.sjianjun.reader.repository.dao.ChapterContentDao
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.python.ScriptCallTargets
@@ -25,7 +23,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
@@ -363,56 +360,6 @@ object BookUseCase {
             contentDao.insert(content)
 
             return@withIo chapter
-        }
-    }
-
-    suspend fun getChapterContentPage(
-        chapter: Chapter
-    ): Boolean = withIo {
-        chapterContentLock(chapter).withLock {
-            // 锁内以数据库为准刷新分页：另一边可能刚加载了下一页，避免重复抓同一页
-            val pages = contentDao.getChapterContent(chapter.bookId, chapter.url).first()
-            if (pages.isNotEmpty()) {
-                chapter.content = pages.toMutableList()
-            }
-
-            val lastContent = chapter.content?.lastOrNull() ?: return@withIo false
-            val nextUrl = lastContent.nextPageUrl
-            if (nextUrl.isNullOrBlank()) {
-                return@withIo false
-            }
-            if (nextUrl.toHttpUrlOrNull() == null) {
-                Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
-                return@withIo false
-            }
-            Log.i("${chapter.title} 加载下一页 url：$nextUrl")
-            val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo false
-            //同一页的重复请求只保留最新一次（py 内部按 url 生成标识）
-            val content = js.getChapterContent(nextUrl)
-            content.bookId = chapter.bookId
-            content.chapterUrl = chapter.url
-            content.pageIndex = lastContent.pageIndex + 1
-            if (content.contentError) {
-                // 失败不写正文（否则阅读页/TTS 会读到"章节内容加载失败"、分页也会卡死），
-                // 只写一条失败标记：目录据此显示"部分缓存"（黄），正文查询会过滤掉它
-                contentDao.insert(
-                    ChapterContent().apply {
-                        bookId = chapter.bookId
-                        chapterUrl = chapter.url
-                        pageIndex = ChapterContentDao.ERROR_MARKER_INDEX
-                        contentError = true
-                        this.content = null
-                        this.nextPageUrl = nextUrl
-                    }
-                )
-                Log.i("${chapter.title} 加载下一页失败 url：$nextUrl")
-                return@withIo false
-            }
-            // 这一页补上了：清掉之前的失败标记
-            contentDao.deletePage(chapter.bookId, chapter.url, ChapterContentDao.ERROR_MARKER_INDEX)
-            chapter.content?.add(content)
-            contentDao.insert(content)
-            return@withIo true
         }
     }
 

@@ -152,11 +152,6 @@ class BookSourceListViewModel() : ViewModel() {
         book.record = record
         book.readChapter?.let { chapter ->
             BookUseCase.getChapterContent(chapter)
-            // 拼接分页正文（与阅读页/朗读一致）
-            var page = 0
-            while (page < MAX_COMPARE_PAGE_LOAD && BookUseCase.getChapterContentPage(chapter)) {
-                page++
-            }
         }
         preparedCompare[book.id] = book
         book
@@ -240,10 +235,5 @@ class BookSourceListViewModel() : ViewModel() {
     /** 批量删除书源 */
     suspend fun deleteBooks(books: List<Book>) = withIo {
         books.forEach { runCatching { BookUseCase.deleteById(it) } }
-    }
-
-    companion object {
-        /** 内容对比最多拼接的分页数 */
-        private const val MAX_COMPARE_PAGE_LOAD = 20
     }
 }

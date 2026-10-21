@@ -26,14 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger
 interface ChapterLoadBackend {
 
     /**
-     * 加载一章第一页，返回该章已加载的分页（**不写入 chapter**）。
+     * 加载一章正文，返回该章已缓存的内容（**不写入 chapter**）。
      *
      * 返回 null 表示失败（由上层决定是否重试）。
      */
     suspend fun loadFirstPage(chapter: Chapter, force: Int): List<ChapterContent>?
-
-    /** 续抓下一页，返回新的一页；没有更多或失败返回 null */
-    suspend fun loadNextPage(chapter: Chapter, nextPageUrl: String): ChapterContent?
 }
 
 /**
@@ -47,28 +44,21 @@ class BookChapterBackend : ChapterLoadBackend {
         if (pages.isEmpty() || pages.firstOrNull()?.contentError != false) return null
         return pages.sortedBy { it.pageIndex }
     }
-
-    override suspend fun loadNextPage(chapter: Chapter, nextPageUrl: String): ChapterContent? {
-        val before = chapter.content?.size ?: 0
-        if (!BookUseCase.getChapterContentPage(chapter)) return null
-        val pages = chapter.content ?: return null
-        if (pages.size <= before) return null
-        return pages.lastOrNull()
-    }
 }
 
 /**
- * 阅读页章节加载入口：加载层的「整章分页」面。
+ * 阅读页章节加载入口：加载层的「整章正文」面。
  *
  * 与 [NovelLoadService]（朗读用的段落流）共用同一套底层抓取（[BookUseCase]）和同一份数据库缓存：
  * - [NovelLoadService]：把一章变成"可朗读的段落"，供 TTS 会话推进/预取；
- * - [NovelChapterLoader]：把一章变成"阅读页可排版的分页内容"，供阅读页显示、预加载、批量缓存。
+ * - [NovelChapterLoader]：把一章变成"阅读页可排版的正文"，供阅读页显示、预加载、批量缓存。
+ *
+ * 一章只抓一次（不再有 nextPageUrl 分页续抓）。
  *
  * 并发与取消（重点）：
- * - **同一章/同一页只加载一次**：谁先开始谁真正跑，后来者（阅读页、批量缓存、朗读）直接等结果，
+ * - **同一章只加载一次**：谁先开始谁真正跑，后来者（阅读页、批量缓存、朗读）直接等结果，
  *   不会取消别人的请求（例如"缓存第 100 章时跳到第 100 章"，会复用正在跑的那次）；
- * - **没人等才取消**：等待者都走了（用户跳章/退出）才取消这次加载，避免白跑；
- * - **跳章优先**：前台切到新章时，旧章的翻页循环会立即停止；旧章若只剩阅读页在等，请求随取消一起结束。
+ * - **没人等才取消**：等待者都走了（用户跳章/退出）才取消这次加载，避免白跑。
  */
 class NovelChapterLoader(
     private val backend: ChapterLoadBackend = BookChapterBackend(),
@@ -82,9 +72,6 @@ class NovelChapterLoader(
         private const val DEFAULT_MAX_ATTEMPTS = 3
         private const val RETRY_DELAY_MS = 1_000L
 
-        /** 单章最多续抓的分页数（防止异常书源把分页循环卡死） */
-        private const val MAX_PAGE_LOAD = 60
-
         /** 进程内单例（阅读页用） */
         val instance: NovelChapterLoader by lazy { NovelChapterLoader() }
     }
@@ -92,11 +79,8 @@ class NovelChapterLoader(
     /** 一次共享的加载：多个调用方 await 同一个 job */
     private class Flight<T>(val job: Deferred<T?>, val waiters: AtomicInteger = AtomicInteger(0))
 
-    /** 首页加载：key = first|bookId|url|force */
+    /** 章节加载：key = first|bookId|url|force */
     private val firstFlights = ConcurrentHashMap<String, Flight<List<ChapterContent>>>()
-
-    /** 分页加载：key = next|bookId|url|nextPageUrl */
-    private val pageFlights = ConcurrentHashMap<String, Flight<ChapterContent>>()
 
     /** 当前"前台"章节：阅读页正在加载/翻页的那一章 */
     @Volatile
@@ -133,42 +117,9 @@ class NovelChapterLoader(
     }
 
     /**
-     * 续抓下一页（分页）。
+     * 加载整章（批量缓存、朗读预取用）。
      *
-     * 没有下一页（章节读完）直接返回 false，不做重试；加载失败才重试。
-     * 前台模式下，如果用户已经跳到别的章，旧章的翻页循环会立刻停止（返回 false）。
-     */
-    suspend fun loadNextPage(
-        chapter: Chapter,
-        retries: Int = maxAttempts,
-        foreground: Boolean = true,
-    ): Boolean {
-        if (foreground) {
-            val current = foregroundChapter
-            if (current != null && keyOf(current) != keyOf(chapter)) {
-                Log.i("$TAG 已切到其他章节，停止旧章翻页：${chapter.title}")
-                return false
-            }
-            foregroundChapter = chapter
-        }
-        val pages = chapter.content
-        if (pages.isNullOrEmpty()) {
-            return loadChapter(chapter, retries = retries, foreground = false)
-        }
-        val nextUrl = pages.lastOrNull()?.nextPageUrl
-        if (nextUrl.isNullOrBlank()) return false
-        val key = "next|${keyOf(chapter)}|$nextUrl"
-        val page = join(pageFlights, key) {
-            retry(retries) { backend.loadNextPage(chapter, nextUrl) }
-        } ?: return false
-        if (pages.none { it.pageIndex == page.pageIndex && it.chapterUrl == page.chapterUrl }) {
-            pages.add(page)
-        }
-        return true
-    }
-
-    /**
-     * 加载整章：第一页 + 全部分页（批量缓存、朗读预取用）。
+     * 一章只有一份正文，等价于 [loadChapter]；保留这个方法名是为了调用方语义清晰。
      *
      * @return 是否拿到可用内容
      */
@@ -177,14 +128,7 @@ class NovelChapterLoader(
         force: Int = 0,
         retries: Int = maxAttempts,
         foreground: Boolean = false,
-    ): Boolean {
-        if (!loadChapter(chapter, force, retries, foreground)) return false
-        var page = 0
-        while (page < MAX_PAGE_LOAD && loadNextPage(chapter, retries, foreground)) {
-            page++
-        }
-        return hasValidContent(chapter)
-    }
+    ): Boolean = loadChapter(chapter, force, retries, foreground)
 
     /** 后台预取一章（不阻塞调用方，失败只记日志） */
     fun prefetch(chapter: Chapter) {

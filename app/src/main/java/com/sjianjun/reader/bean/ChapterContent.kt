@@ -16,12 +16,10 @@ class ChapterContent {
     //章节链接，章节的唯一标识
     var chapterUrl: String = ""
     var contentError: Boolean = false
-    //当前分页索引，默认为0。由客户端维护
+    //分页索引，固定为 0（保留字段兼容旧表结构）
     var pageIndex: Int = 0
     //章节内容
     var content: String? = null
-    //下一页地址,没有分页为null，由脚本维护
-    var nextPageUrl: String? = null
 
     fun format(): CharSequence {
         return content.format()
@@ -50,7 +48,7 @@ class ChapterContent {
     }
 
     override fun toString(): String {
-        return "ChapterContent(content=$content, pageIndex=$pageIndex, nextPageUrl=$nextPageUrl, chapterUrl='$chapterUrl', bookId='$bookId', contentError=$contentError)"
+        return "ChapterContent(content=$content, pageIndex=$pageIndex, chapterUrl='$chapterUrl', bookId='$bookId', contentError=$contentError)"
     }
 
 
