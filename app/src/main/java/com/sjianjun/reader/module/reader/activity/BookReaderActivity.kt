@@ -539,8 +539,9 @@ class BookReaderActivity : BaseActivity() {
             override fun requestChapters(requestChapters: MutableList<TxtChapter>) {
                 Log.i("加载章节内容 $requestChapters")
 
-                // 同一时刻只跑一个章节加载任务：新的请求代替旧的，避免并发加载同一章
-                chapterRequestJob?.cancel()
+                // 不再取消上一次请求：上一次往往正在预加载下一章，取消会把预加载中断
+                // （日志：没有等待者 -> 共享加载被取消 -> 章节加载失败）。
+                // 同一章由 NovelChapterLoader 的共享加载去重，不会重复抓。
                 chapterRequestJob = launch("requestChapters") {
                     requestChapters.forEach { requestChapter ->
                         // 阅读页不在前台时只保证当前章有内容，后面的章节交给朗读服务预加载
@@ -562,6 +563,10 @@ class BookReaderActivity : BaseActivity() {
                             loader.openChapter()
                         } else if (loader.pageStatus == STATUS_FINISH && loader.chapterPos == requestChapter.chapterIndex - 1) {
                             loader.preLoadNextChapter()
+                        }
+                        // 当前章加载完就预加载下一章（只 1 章）
+                        if (requestChapter.chapterIndex == loader.chapterPos) {
+                            prefetchNextChapter(requestChapter.chapterIndex)
                         }
                     }
                 }
@@ -585,6 +590,30 @@ class BookReaderActivity : BaseActivity() {
         txtChapter.contentError = !ok
         if (!ok) Log.e("章节加载失败（加载层已重试）：${chapter.title}")
         return ok
+    }
+
+    /**
+     * 预加载下一章（只 1 章）。
+     *
+     * - 失败不阻塞当前阅读：加载层内部会重试 3 次；
+     * - 仍失败时，翻到下一章 PageLoader 发现没内容会再次请求（翻页重试）；
+     * - 内容就绪后顺手预排版，翻页可直接显示。
+     */
+    private fun prefetchNextChapter(currentIndex: Int) {
+        // 阅读页不在前台时不做预加载（朗读服务会按自己的需要预加载）
+        if (!pageVisible) return
+        val loader = mPageLoader ?: return
+        val nextIndex = currentIndex + 1
+        val txtChapter = loader.chapterCategory?.getOrNull(nextIndex) ?: return
+        if (txtChapter.content != null && !txtChapter.contentError) return
+        val chapter = viewModel.book.value?.chapterList?.getOrNull(nextIndex) ?: return
+        launch("prefetchNextChapter") {
+            if (loadChapterContentWithRetry(chapter, txtChapter)) {
+                txtChapter.title = chapter.title
+                txtChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                mPageLoader?.preLoadNextChapter()
+            }
+        }
     }
 
     /**

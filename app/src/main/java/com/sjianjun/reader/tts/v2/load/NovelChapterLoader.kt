@@ -72,6 +72,14 @@ class NovelChapterLoader(
         private const val DEFAULT_MAX_ATTEMPTS = 3
         private const val RETRY_DELAY_MS = 1_000L
 
+        /**
+         * 等待者归零后延迟取消共享加载的时间。
+         *
+         * 阅读页一次 `requestChapters` 结束、紧接着又会发起新请求（例如预加载下一章），
+         * 立即取消会把"马上要被新请求复用"的加载误杀；留一点时间让新请求加入。
+         */
+        private const val CANCEL_GRACE_MS = 500L
+
         /** 进程内单例（阅读页用） */
         val instance: NovelChapterLoader by lazy { NovelChapterLoader() }
     }
@@ -182,23 +190,40 @@ class NovelChapterLoader(
         key: String,
         block: suspend () -> T?,
     ): T? {
-        val flight = flights.computeIfAbsent(key) { Flight(scope.async { block() }) }
-        flight.waiters.incrementAndGet()
-        try {
-            return flight.job.await()
-        } catch (e: CancellationException) {
-            // 调用方自己被取消（跳章/退出）：继续抛出，让协程正常结束
-            currentCoroutineContext().ensureActive()
-            // 否则是共享加载被外部取消（如切书源重抓）：按"本次失败"处理，别把等待者一起取消
-            Log.i("$TAG 共享加载被取消，按失败处理：$key")
-            return null
-        } finally {
-            val remaining = flight.waiters.decrementAndGet()
-            if (remaining <= 0 && !flight.job.isCompleted) {
-                Log.i("$TAG 没有等待者，取消加载：$key")
-                flight.job.cancel()
+        var attempt = 0
+        while (true) {
+            attempt++
+            val flight = flights.computeIfAbsent(key) { Flight(scope.async { block() }) }
+            flight.waiters.incrementAndGet()
+            try {
+                return flight.job.await()
+            } catch (e: CancellationException) {
+                // 调用方自己被取消（跳章/退出）：继续抛出，让协程正常结束
+                currentCoroutineContext().ensureActive()
+                // 共享加载被外部取消（例如上一个加载任务的协程被取消）：重开一次，
+                // 别让"刚发起的加载"跟着失败（阅读页预加载下一章经常遇到）
+                flights.remove(key, flight)
+                if (attempt >= 2) {
+                    Log.i("$TAG 共享加载被取消，按失败处理：$key")
+                    return null
+                }
+                Log.i("$TAG 共享加载被取消，重新发起：$key")
+            } finally {
+                val remaining = flight.waiters.decrementAndGet()
+                if (remaining <= 0) {
+                    // 延迟取消：给"紧接着到来的新请求"加入同一加载的机会
+                    scope.launch {
+                        delay(CANCEL_GRACE_MS)
+                        if (flight.waiters.get() <= 0 && !flight.job.isCompleted) {
+                            Log.i("$TAG 没有等待者，取消加载：$key")
+                            flight.job.cancel()
+                        }
+                        if (flight.job.isCompleted) flights.remove(key, flight)
+                    }
+                } else if (flight.job.isCompleted) {
+                    flights.remove(key, flight)
+                }
             }
-            if (flight.job.isCompleted) flights.remove(key, flight)
         }
     }
 

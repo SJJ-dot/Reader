@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import com.chaquo.python.Python
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.python.py
+import com.sjianjun.reader.python.ScriptTaskRunner
 import com.sjianjun.reader.utils.fromJson
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.trimExt
@@ -308,6 +309,12 @@ class BookSource {
                 }
                 content
             } catch (t: Throwable) {
+                //脚本被取消（页面退出、被更新的请求取代）：不能当成"内容加载失败"写进缓存，
+                //否则阅读页会显示"章节内容加载失败: ScriptAborted"，且这一章会被标记成失败
+                if (ScriptTaskRunner.isCancelled(t)) {
+                    Log.i("$name 章节内容加载被取消：$chapterUrl")
+                    throw t
+                }
                 Log.e("$name 加载章节内容出错：$chapterUrl", t)
                 ChapterContent().apply {
                     this.content = "章节内容加载失败: ${t.message}"

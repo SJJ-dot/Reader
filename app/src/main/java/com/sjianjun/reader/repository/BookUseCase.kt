@@ -328,9 +328,11 @@ object BookUseCase {
             return@withIo chapter
         }
 
-        //同一章正文的重复加载只保留最新一次：这里先取消上一次请求，
-        //等待章节锁的上一次调用因此会立刻结束并让出锁，不会让新请求干等它超时
-        ScriptCallTargets.cancelCurrent(ScriptCallTargets.contentKey(chapter.url))
+        //只有"显式重新加载"才取消上一次在跑的脚本；普通加载交给章节锁排队/复用。
+        //否则阅读页、朗读预取、换源对比同时要同一章时会互相取消，报"脚本任务已取消"
+        if (force == 1) {
+            ScriptCallTargets.cancelCurrent(ScriptCallTargets.contentKey(chapter.url))
+        }
         chapterContentLock(chapter).withLock {
             // 等锁期间另一边可能已经加载好了：查一次库直接复用，避免重复抓取
             if (force != 1) {
@@ -345,7 +347,16 @@ object BookUseCase {
 
             val js = bookSourceDao.getBookSourceByBookId(chapter.bookId) ?: return@withIo chapter
 
-            val content = js.getChapterContent(chapter.url)
+            val content = try {
+                js.getChapterContent(chapter.url)
+            } catch (t: Throwable) {
+                if (ScriptTaskRunner.isCancelled(t)) {
+                    //被更新的请求取代/页面退出：不写错误内容、不置 isLoaded，下次需要时会重新加载
+                    Log.i("${chapter.title} 章节加载被取消，忽略本次结果")
+                    return@withIo chapter
+                }
+                throw t
+            }
             content.bookId = chapter.bookId
             content.chapterUrl = chapter.url
             if (!content.contentError) {
