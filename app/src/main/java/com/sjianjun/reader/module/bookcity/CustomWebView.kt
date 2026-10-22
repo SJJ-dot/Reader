@@ -121,6 +121,7 @@ class CustomWebView @JvmOverloads constructor(
         // 跳过空白页（about:blank 等），直接回到最近的非空白页
         val step = wv.meaningfulBackStep()
         if (step < 0) {
+            // 保持 BFCache，不刷新、不重绘，原样恢复之前的位置
             wv.goBackOrForward(step)
             updateForwardButton()
             return true
@@ -133,6 +134,7 @@ class CustomWebView @JvmOverloads constructor(
         // 跳过空白页，直接前进到最近的非空白页
         val step = wv.meaningfulForwardStep()
         if (step > 0) {
+            // 保持 BFCache，不刷新、不重绘
             wv.goBackOrForward(step)
             updateForwardButton()
             return true
@@ -337,7 +339,9 @@ class CustomWebView @JvmOverloads constructor(
             val url = wv.url ?: return@click
             if (url.isBlank() || url == "about:blank") return@click
 
-            wv.reload()
+            // 直接 reload 在渲染状态损坏时不会重绘（一直白屏）；
+            // 走“先 about:blank 再加载目标”，强制重建文档，刷新才能恢复画面
+            forceReload(showToast = false)
         }
         binding.refresh.setOnLongClickListener {
             forceReload()
@@ -407,20 +411,20 @@ class CustomWebView @JvmOverloads constructor(
 
     }
 
-    fun forceReload() {
+    fun forceReload(showToast: Boolean = true) {
         val wv = webView ?: run {
-            toast("无可刷新的页面")
+            if (showToast) toast("无可刷新的页面")
             return
         }
         val url = wv.url
         if (url.isNullOrBlank() || url == "about:blank") {
-            toast("无可刷新的页面")
+            if (showToast) toast("无可刷新的页面")
             return
         }
         wv.markCurrentHistoryAsSkipped() // 强制刷新的当前损坏页
         wv.forceReloadTargetUrl = url
         wv.loadUrl("about:blank") // 先加载空白页，丢弃损坏的页面/渲染状态
-        toast("强制刷新")
+        if (showToast) toast("强制刷新")
         Log.i("forceReload $url")
     }
 
