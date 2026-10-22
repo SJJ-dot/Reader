@@ -22,10 +22,10 @@ class ChapterListDialogFragment : Fragment() {
     private val activity: BrowserReadModeActivity?
         get() = getActivity() as? BrowserReadModeActivity
 
-    private lateinit var hostListAdapter: BookCityPageFragment.HostListAdapter
-    private lateinit var blackListAdapter: BookCityPageFragment.BlackListAdapter
-    private lateinit var whiteListAdapter: BookCityPageFragment.WhiteListAdapter
-    private lateinit var historyAdapter: BookCityPageFragment.HistoryListAdapter
+    private lateinit var hostListAdapter: BrowserPageFragment.HostListAdapter
+    private lateinit var blackListAdapter: BrowserPageFragment.BlackListAdapter
+    private lateinit var whiteListAdapter: BrowserPageFragment.WhiteListAdapter
+    private lateinit var historyAdapter: BrowserPageFragment.HistoryListAdapter
     private lateinit var chapterAdapter: ChapterListAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -52,14 +52,14 @@ class ChapterListDialogFragment : Fragment() {
 
     private fun setupAdapters() {
         val act = activity ?: return
-        hostListAdapter = BookCityPageFragment.HostListAdapter(act.adBlock)
-        blackListAdapter = BookCityPageFragment.BlackListAdapter(act.adBlock)
-        whiteListAdapter = BookCityPageFragment.WhiteListAdapter(act.adBlock)
+        hostListAdapter = BrowserPageFragment.HostListAdapter(act.adBlock)
+        blackListAdapter = BrowserPageFragment.BlackListAdapter(act.adBlock)
+        whiteListAdapter = BrowserPageFragment.WhiteListAdapter(act.adBlock)
         chapterAdapter = ChapterListAdapter { item ->
             act.closeChapterDrawer()
             act.showChapter(item.url)
         }
-        historyAdapter = BookCityPageFragment.HistoryListAdapter().apply {
+        historyAdapter = BrowserPageFragment.HistoryListAdapter().apply {
             onClick = { url ->
                 act.closeChapterDrawer()
                 act.showChapter(url)

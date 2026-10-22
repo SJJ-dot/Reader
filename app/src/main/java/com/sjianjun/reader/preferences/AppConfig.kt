@@ -186,6 +186,9 @@ class AppConfig(val name: String) :
      */
     var webUaMode by intPref("webUaMode", 0)
 
+    /** 浏览器搜索引擎下标：0百度 1必应 2谷歌 3搜狗 4 360 5神马 */
+    var webSearchEngine by intPref("webSearchEngine", 0)
+
     /** 阅读器顶部显示 CPU/内存信息 */
     val showCpuMemInfo by lazy { boolLivedata("showCpuMemInfo", true) }
 }

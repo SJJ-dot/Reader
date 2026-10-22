@@ -1,6 +1,12 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
+import android.graphics.drawable.ColorDrawable
+import android.content.res.Configuration
+import android.os.Build
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import com.sjianjun.reader.R
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
@@ -28,7 +34,21 @@ class WebViewBrowserActivity : BaseActivity() {
             return
         }
         enableEdgeToEdge()
+        // 导航栏与底部工具栏同色，避免出现一条不同颜色的底边
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.dn_background_card)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = !night
+        // Android 15+ 会强制透明导航栏，window.navigationBarColor 不生效；
+        // 用窗口/根布局背景兜底，保证导航栏区域和底部工具栏同色
+        val barColor = ContextCompat.getColor(this, R.color.dn_background_card)
+        window.setBackgroundDrawable(ColorDrawable(barColor))
         setContentView(binding.root)
+        binding.root.setBackgroundColor(barColor)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -36,12 +56,22 @@ class WebViewBrowserActivity : BaseActivity() {
         }
         // 重建（夜间模式切换等）时交给 FragmentManager 恢复原页面，
         // 否则这里会重新 new 一个只带首页 URL 的 Fragment，导致回到首页
+        if (savedInstanceState != null) {
+            // Activity 重建后旧标签的 WebView 已失效，只清引用，保留标签列表
+            BrowserTabs.detachWebViews()
+        }
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(binding.fragmentContainerView.id, BookCityPageFragment.newInstance(url, webId, crossOriginMode))
+                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, webId, crossOriginMode))
                 .commitNowAllowingStateLoss()
         }
 
+    }
+
+    override fun onDestroy() {
+        // 不保留标签页：正常退出浏览器时清空本次会话的标签
+        if (isFinishing) BrowserTabs.tabs.clear()
+        super.onDestroy()
     }
 
     companion object {

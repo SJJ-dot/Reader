@@ -1,28 +1,60 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
+import android.os.Message
+import java.io.File
+import java.io.FileOutputStream
+import java.net.URLEncoder
+import android.content.Intent
 import android.os.Bundle
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.os.SystemClock
+import android.view.MotionEvent
+import android.view.ViewConfiguration
+import android.view.WindowManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import kotlin.math.abs
+import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.FrameLayout
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.bean.WebBook
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.CustomWebViewBinding
+import com.sjianjun.reader.databinding.DialogBrowserMenuBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
+import com.sjianjun.reader.module.shelf.WebShelfViewModel
+import com.sjianjun.reader.databinding.DialogBrowserAddressBinding
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
+import com.sjianjun.reader.utils.copyToClipboard
+import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.hideKeyboard
+import com.sjianjun.reader.utils.showKeyboard
+import com.sjianjun.reader.utils.webUserAgent
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
@@ -51,6 +83,42 @@ class CustomWebView @JvmOverloads constructor(
         private set
     private val skippedHistoryIndices = linkedMapOf<Int, String>()
 
+    /** 底部工具栏是否已收起（页面上滑时收起、下滑时显示） */
+    private var toolbarHidden = false
+
+    private companion object {
+        const val MAX_TABS = 8
+    }
+
+    private val SEARCH_ENGINES = listOf(
+        "百度" to "https://www.baidu.com/s?wd=%s",
+        "必应" to "https://cn.bing.com/search?q=%s",
+        "谷歌" to "https://www.google.com/search?q=%s",
+        "搜狗" to "https://www.sogou.com/web?query=%s",
+        "360" to "https://www.so.com/s?q=%s",
+        "神马" to "https://m.sm.cn/s?q=%s",
+    )
+
+    /** 键盘弹出时工具栏的整体偏移（负值） */
+    private var toolbarImeOffset = 0f
+
+    /** 工具栏隐藏进度：0 = 完全显示，height = 完全隐藏 */
+    private var toolbarOffset = 0f
+
+    /** 复用原设置面板的实现（不上界面，只用其功能） */
+    private val browserActions by lazy { BrowserActions(context, this) }
+
+    /** 跟手拖动状态 */
+    private var toolbarTracking = false
+    private var toolbarTouchLastY = 0f
+    private var toolbarTouchStartY = 0f
+    private var toolbarDragging = false
+
+    /** 触摸滑动阈值（dp 转 px），过滤轻点抖动 */
+    private val toolbarTouchSlop by lazy {
+        ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    }
+
     /**
      * 跨域临时配置: -1=未设置(使用globalConfig), 0=询问, 1=允许, 2=拒绝
      */
@@ -73,18 +141,36 @@ class CustomWebView @JvmOverloads constructor(
 
     fun loadUrl(url: String) {
         Log.i("loadUrl:$url ")
-        val existing = webView
-        if (existing != null && !existing.isDestroyed) {
-            existing.currentHost = url
-            existing.loadUrl(url)
-            updateForwardButton()
-            return
+        showToolbar()
+        if (BrowserTabs.tabs.isEmpty()) {
+            BrowserTabs.tabs.add(BrowserTabs.Tab("", url))
+            BrowserTabs.activeIndex = 0
         }
-        val wv = createWebView()
+        val tab = BrowserTabs.tabs[BrowserTabs.activeIndex]
+        tab.url = url
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+
+        val wv = tab.webView?.takeIf { !it.isDestroyed } ?: createWebView().also {
+            tab.webView = it
+        }
+        showOnlyWebView(wv)
+        webView = wv
         skippedHistoryIndices.clear()
         wv.currentHost = url
         wv.loadUrl(url)
         updateForwardButton()
+    }
+
+    /** 同一时间只显示当前标签的 WebView（其余 GONE，保留完整状态） */
+    private fun showOnlyWebView(target: MyWebView) {
+        for (i in 0 until binding.webViewContainer.childCount) {
+            val child = binding.webViewContainer.getChildAt(i)
+            child.visibility = if (child === target) View.VISIBLE else View.GONE
+        }
+        if (target.parent == null) {
+            binding.webViewContainer.addView(target)
+        }
+        target.visibility = View.VISIBLE
     }
 
     /**
@@ -108,12 +194,221 @@ class CustomWebView @JvmOverloads constructor(
         val wv = MyWebView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
+            settings.setSupportMultipleWindows(true)
+            settings.javaScriptCanOpenWindowsAutomatically = true
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
         }
         binding.webViewContainer.addView(wv)
         webView = wv
+        attachToolbarAutoHide(wv)
         return wv
+    }
+
+    /**
+     * 底部工具栏跟手（仿 Edge）：
+     * - 手指上滑：工具栏按滑动距离连续下移（offset 0 → height）；
+     * - 手指下滑：连续上移；
+     * - 抬手：偏移超过一半 → 自动收起，否则回弹显示。
+     */
+    private fun attachToolbarAutoHide(wv: WebView) {
+        wv.setOnTouchListener { _, event ->
+            // 设置面板展开时不联动，避免把输入框拖走
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    binding.browserBookCityToolbar.animate().cancel()
+                    toolbarTouchStartY = event.rawY
+                    toolbarTouchLastY = event.rawY
+                    toolbarDragging = false
+                    toolbarTracking = true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    if (!toolbarTracking) return@setOnTouchListener false
+                    if (!toolbarDragging) {
+                        // 超过触摸阈值才开始跟手，避免轻点/抖动导致工具栏闪动
+                        if (abs(event.rawY - toolbarTouchStartY) <= toolbarTouchSlop) {
+                            return@setOnTouchListener false
+                        }
+                        toolbarDragging = true
+                        toolbarTouchLastY = event.rawY
+                        // 上滑：先把页面铺满，工具栏再下滑，避免底部露出空白
+                        if (event.rawY < toolbarTouchStartY) {
+                            setContentInsetForToolbarPx(0)
+                        }
+                    } else {
+                        val dy = event.rawY - toolbarTouchLastY
+                        toolbarTouchLastY = event.rawY
+                        if (dy != 0f) dragToolbar(-dy)
+                    }
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (toolbarTracking) {
+                        toolbarTracking = false
+                        if (toolbarDragging) snapToolbar() else snapToShownIfNeeded() 
+                        toolbarDragging = false
+                    }
+                }
+            }
+            false
+        }
+    }
+
+    internal fun debugSwipe(startY: Float, endY: Float) {
+        val wv = webView ?: return
+        val t0 = SystemClock.uptimeMillis()
+        val steps = 8
+        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0, MotionEvent.ACTION_DOWN, 300f, startY, 0))
+        for (i in 1..steps) {
+            val y = startY + (endY - startY) * i / steps
+            wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + i * 16L, MotionEvent.ACTION_MOVE, 300f, y, 0))
+        }
+        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + 150, MotionEvent.ACTION_UP, 300f, endY, 0))
+    }
+
+    internal fun debugHold(startY: Float, endY: Float) {
+        val wv = webView ?: return
+        val t0 = SystemClock.uptimeMillis()
+        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0, MotionEvent.ACTION_DOWN, 300f, startY, 0))
+        val steps = 8
+        for (i in 1..steps) {
+            val y = startY + (endY - startY) * i / steps
+            wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + i * 16L, MotionEvent.ACTION_MOVE, 300f, y, 0))
+        }
+    }
+
+    internal fun debugRelease(y: Float) {
+        val wv = webView ?: return
+        val t = SystemClock.uptimeMillis()
+        wv.dispatchTouchEvent(MotionEvent.obtain(t, t, MotionEvent.ACTION_UP, 300f, y, 0))
+    }
+
+    internal fun debugState(): String {
+        val bar = binding.browserBookCityToolbar
+        val lp = binding.webViewContainer.layoutParams as? ViewGroup.MarginLayoutParams
+        return "offset=${(bar.translationY - toolbarImeOffset).toInt()} hidden=$toolbarHidden " +
+                "margin=${lp?.bottomMargin} height=${toolbarHeightPx().toInt()}"
+    }
+
+    /** 跟手拖动：delta > 0 表示向下隐藏 */
+    private fun dragToolbar(delta: Float) {
+        val bar = binding.browserBookCityToolbar
+        val height = toolbarHeightPx()
+        val next = (toolbarOffset + delta).coerceIn(0f, height)
+        toolbarOffset = next
+        if (next < height) {
+            // 只要没完全收起就保持可见（从隐藏状态往上滑时会重新露出来）
+            toolbarHidden = false
+            bar.visibility = View.VISIBLE
+        }
+        // 只做位移，不做淡出：否则伸缩过程中底栏会半透明，页面内容透出来
+        bar.translationY = toolbarImeOffset + next
+        bar.alpha = 1f
+        // 页面高度已在上滑开始时一次性铺满；这里不再逐帧改高度，避免重排跳动
+    }
+
+    /** 抬手吸附：以一半为界 */
+    private fun snapToolbar() {
+        val bar = binding.browserBookCityToolbar
+        val height = toolbarHeightPx()
+        val current = toolbarOffset.coerceIn(0f, height)
+        val hide = current > height / 2f
+        toolbarHidden = hide
+        bar.visibility = View.VISIBLE
+        val target = if (hide) height else 0f
+        // 关键：吸附后同步 offset，避免 insets 等回调把工具栏重置到一半
+        toolbarOffset = target
+        // 收起时立刻让页面铺满；显示时等工具栏归位后再让位，避免动画中露出空白
+        if (hide) setContentInsetForToolbar(false)
+        val duration = (120 + 180 * (kotlin.math.abs(target - current) / height)).toLong()
+        bar.animate()
+            .translationY(toolbarImeOffset + target)
+            .alpha(1f)
+            .setDuration(duration)
+            .withEndAction {
+                if (hide) {
+                    bar.visibility = View.INVISIBLE
+                } else {
+                    setContentInsetForToolbar(true)
+                }
+            }
+            .start()
+    }
+
+    private fun hideToolbar() {
+        if (toolbarHidden) return
+        toolbarHidden = true
+        setContentInsetForToolbar(false)
+        snapToHidden()
+    }
+
+    private fun showToolbar() {
+        if (!toolbarHidden) return
+        toolbarHidden = false
+        snapToShown()
+    }
+
+    private fun snapToHidden() {
+        toolbarOffset = toolbarHeightPx()
+        val bar = binding.browserBookCityToolbar
+        bar.animate().cancel()
+        bar.visibility = View.VISIBLE
+        bar.animate()
+            .translationY(toolbarImeOffset + toolbarHeightPx())
+            .alpha(1f)
+            .setDuration(180)
+            .withEndAction {
+                if (toolbarHidden) bar.visibility = View.INVISIBLE
+            }
+            .start()
+    }
+
+    /** 轻点/微动松手：只把半开的工具栏复位，不动完全收起的状态 */
+    private fun snapToShownIfNeeded() {
+        if (!toolbarHidden && toolbarOffset > 0f) snapToShown()
+    }
+
+    private fun snapToShown() {
+        toolbarOffset = 0f
+        val bar = binding.browserBookCityToolbar
+        bar.animate().cancel()
+        bar.visibility = View.VISIBLE
+        bar.animate()
+            .translationY(toolbarImeOffset)
+            .alpha(1f)
+            .setDuration(180)
+            .withEndAction {
+                if (!toolbarHidden) setContentInsetForToolbar(true)
+            }
+            .start()
+    }
+
+    /** 工具栏显示时给网页容器留出底部空间，页面内容不会被遮挡 */
+    private fun setContentInsetForToolbar(inset: Boolean) {
+        setContentInsetForToolbarPx(if (inset) toolbarHeightPx().toInt() else 0)
+    }
+
+    /** 按"工具栏当前露出的高度"设置页面底部留白（拖动时连续更新） */
+    private fun setContentInsetForToolbarPx(px: Int) {
+        val container = binding.webViewContainer
+        val lp = container.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        val target = px.coerceIn(0, toolbarHeightPx().toInt())
+        if (lp.bottomMargin == target) return
+        lp.bottomMargin = target
+        container.layoutParams = lp
+    }
+
+    private fun toolbarHeightPx(): Float {
+        val height = binding.browserBookCityToolbar.height
+        return (if (height > 0) height else (48 * resources.displayMetrics.density).toInt()).toFloat()
+    }
+
+    private fun applyToolbarTranslation() {
+        // 拖动过程中不要被 insets 回调重置
+        if (toolbarTracking) return
+        val bar = binding.browserBookCityToolbar
+        bar.translationY = toolbarImeOffset + toolbarOffset
     }
 
     fun back(): Boolean {
@@ -124,6 +419,12 @@ class CustomWebView @JvmOverloads constructor(
             // 保持 BFCache，不刷新、不重绘，原样恢复之前的位置
             wv.goBackOrForward(step)
             updateForwardButton()
+            showToolbar()
+            return true
+        }
+        // 当前标签没有上一页：还有其它标签就关闭当前标签，否则交给系统退出
+        if (BrowserTabs.tabs.size > 1) {
+            closeTab(BrowserTabs.activeIndex)
             return true
         }
         return false
@@ -137,9 +438,465 @@ class CustomWebView @JvmOverloads constructor(
             // 保持 BFCache，不刷新、不重绘
             wv.goBackOrForward(step)
             updateForwardButton()
+            showToolbar()
             return true
         }
         return false
+    }
+
+    internal fun debugAddressSheet() = showAddressSheet()
+
+    /** 地址栏面板：标题可复制、分享、切换手机/电脑 UA、编辑网址 */
+    private fun showAddressSheet() {
+        val wv = webView ?: return
+        val b = DialogBrowserAddressBinding.inflate(LayoutInflater.from(context))
+        val dialog = BottomSheetDialog(context)
+        dialog.setContentView(b.root)
+        // 用 PAN 而不是 RESIZE：键盘弹出时整窗上移，收键盘时不会卡住 insets，
+        // 关闭动画可以立即开始（之前的 0.5 秒停顿就是 RESIZE 等 insets 造成的）
+        dialog.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+        )
+
+        b.tvPageTitle.text = wv.title?.takeIf { it.isNotBlank() } ?: displayUrl(wv.url)
+        b.tvPageUrl.text = wv.url ?: ""
+        // 输入框默认留空：输入内容时按"网址/搜索词"自动判断
+        b.urlInput.setText("")
+
+        // 点标题 / 网址复制
+        b.tvPageTitle.click { b.tvPageTitle.text.toString().copyToClipboard() }
+        b.tvPageUrl.click { b.tvPageUrl.text.toString().copyToClipboard() }
+
+        // 编辑网址：把当前 URL 带入输入框
+        b.btnEdit.click {
+            b.urlInput.setText(wv.url.orEmpty())
+            b.urlInput.requestFocus()
+            b.urlInput.setSelection(b.urlInput.text.length)
+            b.urlInput.showKeyboard()
+        }
+        // 搜索图标：切换搜索引擎
+        b.btnSearchEngine.click {
+            val names = SEARCH_ENGINES.map { it.first }.toTypedArray()
+            MaterialAlertDialogBuilder(context)
+                .setTitle("搜索引擎")
+                .setSingleChoiceItems(names, globalConfig.webSearchEngine) { d, which ->
+                    globalConfig.webSearchEngine = which
+                    toast("已切换为${names[which]}")
+                    d.dismiss()
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+        b.urlInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                val input = b.urlInput.text.toString().trim()
+                if (input.isNotBlank()) loadUrl(resolveAddress(input))
+                b.urlInput.hideKeyboard()
+                dialog.dismiss()
+                true
+            } else {
+                false
+            }
+        }
+        // 关闭（点外部/返回）时先收键盘，避免 insets 回落让 dim 停半秒
+        dialog.setOnCancelListener { b.urlInput.hideKeyboard() }
+        dialog.setOnShowListener {
+            applySheetNavBar(dialog)
+            // BottomSheet 自带的白色背景会把卡片的圆角盖住，置为透明只留卡片
+            dialog.findViewById<android.view.View>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            // 打开即展开 + 聚焦弹键盘
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+            b.urlInput.requestFocus()
+            b.urlInput.setSelection(b.urlInput.text.length)
+            b.urlInput.post { b.urlInput.showKeyboard() }
+        }
+        b.urlInput.doAfterTextChanged {
+            renderAddressSuggestions(b, dialog, it?.toString().orEmpty())
+        }
+        dialog.show()
+    }
+
+    /** 底部面板打开时：导航栏与面板同色（日间白/夜间深色），图标对比度跟随 */
+    private fun applySheetNavBar(dialog: BottomSheetDialog) {
+        val window = dialog.window ?: return
+        val night = (resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val color = ContextCompat.getColor(context, R.color.dn_background_card)
+        window.navigationBarColor = color
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = !night
+        // Android 15+ 忽略 navigationBarColor：在导航栏区域盖同色 scrim
+        val decor = window.decorView as? android.view.ViewGroup ?: return
+        val navBottom = ViewCompat.getRootWindowInsets(decor)
+            ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+        if (navBottom <= 0) return
+        val scrim = decor.findViewWithTag<android.view.View>("browser_sheet_nav")
+            ?: android.view.View(context).also { v ->
+                v.tag = "browser_sheet_nav"
+                decor.addView(
+                    v,
+                    android.widget.FrameLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT, navBottom
+                    ).apply { gravity = android.view.Gravity.BOTTOM }
+                )
+            }
+        scrim.setBackgroundColor(color)
+        scrim.layoutParams = scrim.layoutParams.apply { height = navBottom }
+    }
+
+    /** 输入时用历史记录做候选，末尾附一条搜索入口 */
+    private fun renderAddressSuggestions(
+        b: DialogBrowserAddressBinding,
+        dialog: BottomSheetDialog,
+        query: String,
+    ) {
+        val container = b.suggestionsList
+        container.removeAllViews()
+        val q = query.trim()
+        if (q.isEmpty()) {
+            b.suggestionsScroll.isVisible = false
+            return
+        }
+        b.suggestionsScroll.isVisible = true
+        val titleColor = ContextCompat.getColor(context, R.color.dn_text_color_black)
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+        History.list
+            .filter { it.title.contains(q, true) || it.url.contains(q, true) }
+            .sortedByDescending { it.time }
+            .take(6)
+            .forEach { item ->
+                val tv = TextView(context).apply {
+                    text = item.title.ifBlank { item.url } + "\n" + item.url
+                    textSize = 13f
+                    setTextColor(titleColor)
+                    setPadding(dp(14), dp(8), dp(14), dp(8))
+                    setLineSpacing(0f, 1.1f)
+                    setOnClickListener {
+                        loadUrl(item.url)
+                        b.urlInput.hideKeyboard()
+                        dialog.dismiss()
+                    }
+                }
+                container.addView(tv)
+            }
+        val searchRow = TextView(context).apply {
+            text = "搜索 " + q
+            textSize = 13f
+            setTextColor(titleColor)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_browser_search, 0, 0, 0)
+            compoundDrawablePadding = dp(8)
+            setOnClickListener {
+                loadUrl(resolveAddress(q))
+                b.urlInput.hideKeyboard()
+                dialog.dismiss()
+            }
+        }
+        container.addView(searchRow)
+    }
+
+    internal fun debugMenu() = showBrowserMenu()
+
+    internal fun debugWindowOpen() {
+        webView?.evaluateJavascript("window.open('https://example.com')", null)
+        binding.root.postDelayed({ Log.i("tabs after window.open=${BrowserTabs.tabs.size}") }, 2_000)
+    }
+
+    internal fun debugTabFlow() {
+        newTab("data:text/html,<h1>Tab2</h1>")
+        switchTab(0)
+        switchTab(1)
+        openTabsManager()
+    }
+
+    internal fun debugTabs() {
+        BrowserTabs.tabs.clear()
+        BrowserTabs.tabs.add(BrowserTabs.Tab("示例页面一", "https://example.com"))
+        BrowserTabs.tabs.add(BrowserTabs.Tab("起点中文网", "https://m.qidian.com"))
+        BrowserTabs.tabs.add(BrowserTabs.Tab("百度", "https://www.baidu.com"))
+        BrowserTabs.activeIndex = 1
+        openTabsManager()
+    }
+
+    /** 标签页管理界面 */
+    private fun captureThumb(tab: BrowserTabs.Tab) {
+        val wv = tab.webView ?: return
+        if (wv.width <= 0 || wv.height <= 0 || wv.isDestroyed) return
+        runCatching {
+            val bmp = Bitmap.createBitmap(wv.width / 2, wv.height / 2, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            canvas.scale(0.5f, 0.5f)
+            wv.draw(canvas)
+            val dir = File(context.cacheDir, "browser_tabs").apply { mkdirs() }
+            val file = File(dir, tab.id.toString() + ".png")
+            FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.PNG, 80, it) }
+            bmp.recycle()
+            tab.thumbPath = file.absolutePath
+        }.onFailure { Log.e("标签缩略图失败", it) }
+    }
+
+    private fun openTabsManager() {
+        captureThumb(BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return)
+        BrowserTabs.onSelect = { switchTab(it) }
+        BrowserTabs.onClose = { closeTab(it) }
+        BrowserTabs.onNew = { newTab() }
+        context.startActivity(Intent(context, BrowserTabsActivity::class.java))
+    }
+
+    private fun homeUrl(): String = webBook?.url ?: globalConfig.bookCityUrl
+
+    private fun newTab(url: String = homeUrl()) {
+        if (BrowserTabs.tabs.size >= MAX_TABS) {
+            toast("最多同时打开 $MAX_TABS 个标签页")
+            return
+        }
+        // 当前标签先隐藏，新标签有自己的 WebView
+        webView?.visibility = View.GONE
+        val tab = BrowserTabs.Tab("新标签页", url)
+        BrowserTabs.tabs.add(tab)
+        BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
+        val wv = createWebView()
+        tab.webView = wv
+        showOnlyWebView(wv)
+        webView = wv
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+        wv.currentHost = url
+        wv.loadUrl(url)
+        updateForwardButton()
+    }
+
+    private fun switchTab(index: Int) {
+        if (index !in BrowserTabs.tabs.indices || index == BrowserTabs.activeIndex) return
+        captureThumb(BrowserTabs.tabs[BrowserTabs.activeIndex])
+        webView?.visibility = View.GONE
+        BrowserTabs.activeIndex = index
+        val tab = BrowserTabs.tabs[index]
+        val wv = tab.webView?.takeIf { !it.isDestroyed }
+        if (wv != null) {
+            // 已有 WebView：直接显示，保留滚动位置/历史/JS 状态
+            showOnlyWebView(wv)
+            webView = wv
+            binding.tvUrl.text = displayUrl(wv.url ?: tab.url)
+            updateForwardButton()
+        } else {
+            val created = createWebView()
+            tab.webView = created
+            showOnlyWebView(created)
+            webView = created
+            created.currentHost = tab.url
+            created.loadUrl(tab.url)
+            updateForwardButton()
+        }
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+    }
+
+    private fun closeTab(index: Int) {
+        if (index !in BrowserTabs.tabs.indices) return
+        // 关闭的是最后一个：销毁后自动开一个全新标签页
+        if (BrowserTabs.tabs.size <= 1) {
+            BrowserTabs.tabs.forEach { tab ->
+                tab.webView?.let {
+                    binding.webViewContainer.removeView(it)
+                    it.destroy()
+                }
+            }
+            BrowserTabs.tabs.clear()
+            BrowserTabs.activeIndex = 0
+            webView = null
+            newTab(homeUrl())
+            return
+        }
+        val tab = BrowserTabs.tabs.removeAt(index)
+        tab.webView?.let {
+            binding.webViewContainer.removeView(it)
+            it.destroy()
+        }
+        if (index < BrowserTabs.activeIndex) {
+            BrowserTabs.activeIndex--
+        } else if (index == BrowserTabs.activeIndex) {
+            BrowserTabs.activeIndex = BrowserTabs.activeIndex.coerceAtMost(BrowserTabs.tabs.lastIndex)
+            val next = BrowserTabs.tabs[BrowserTabs.activeIndex]
+            val wv = next.webView?.takeIf { !it.isDestroyed } ?: createWebView().also {
+                next.webView = it
+                it.currentHost = next.url
+                it.loadUrl(next.url)
+            }
+            showOnlyWebView(wv)
+            webView = wv
+            binding.tvUrl.text = displayUrl(wv.url ?: next.url)
+            updateForwardButton()
+        }
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+    }
+
+    /** Edge 风格网格菜单 */
+    private fun showBrowserMenu() {
+        val b = DialogBrowserMenuBinding.inflate(LayoutInflater.from(context))
+        val dialog = BottomSheetDialog(context)
+        dialog.setContentView(b.root)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+        dialog.setOnShowListener {
+            applySheetNavBar(dialog)
+            dialog.findViewById<android.view.View>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        }
+        b.menuBookmarks.click {
+            dialog.dismiss()
+            openRecords(BrowserRecordsActivity.BOOKMARKS)
+        }
+        b.menuHistory.click {
+            dialog.dismiss()
+            openRecords(BrowserRecordsActivity.HISTORY)
+        }
+        b.menuRead.click {
+            dialog.dismiss()
+            browserActions.openReadMode()
+        }
+        b.menuAdBlock.click {
+            dialog.dismiss()
+            EventBus.post(EventKey.WEB_VIEW_SETTINGS)
+        }
+        b.menuFontValue.text = globalConfig.webFontZoomSize.toString()
+        b.menuFontAdd.click {
+            val wv = webView ?: return@click
+            wv.settings.textZoom = globalConfig.webFontZoomSize + 4
+            globalConfig.webFontZoomSize = wv.settings.textZoom
+            b.menuFontValue.text = globalConfig.webFontZoomSize.toString()
+        }
+        b.menuFontSubtract.click {
+            val wv = webView ?: return@click
+            wv.settings.textZoom = globalConfig.webFontZoomSize - 4
+            globalConfig.webFontZoomSize = wv.settings.textZoom
+            b.menuFontValue.text = globalConfig.webFontZoomSize.toString()
+        }
+        when (globalConfig.crossOriginMode) {
+            1 -> b.menuRbAllow.isChecked = true
+            2 -> b.menuRbDeny.isChecked = true
+            else -> b.menuRbAsk.isChecked = true
+        }
+        b.menuCrossOrigin.setOnCheckedChangeListener { _, checkedId ->
+            crossOriginOverride = -1
+            globalConfig.crossOriginMode = when (checkedId) {
+                R.id.menu_rb_allow -> 1
+                R.id.menu_rb_deny -> 2
+                else -> 0
+            }
+        }
+        b.menuShare.click {
+            val wv = webView
+            val text = "${wv?.title ?: ""}\n${wv?.url ?: ""}"
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            runCatching { context.startActivity(Intent.createChooser(intent, "分享")) }
+            dialog.dismiss()
+        }
+        b.menuHome.click {
+            dialog.dismiss()
+            binding.home.performClick()
+        }
+        b.menuDesktop.click {
+            val wv = webView
+            if (wv?.url.isNullOrBlank()) {
+                toast("无可用页面")
+                return@click
+            }
+            globalConfig.webUaMode = if (globalConfig.webUaMode == 1) 0 else 1
+            wv.settings.userAgentString = webUserAgent()
+            wv.clearCache(true)
+            wv.reload()
+            dialog.dismiss()
+        }
+        b.menuShelf.click {
+            dialog.dismiss()
+            browserActions.addToShelf()
+        }
+        dialog.show()
+    }
+
+    /** 把当前页加入收藏夹（即主页列表） */
+    private fun addCurrentToFavorites() {
+        val url = webView?.url ?: return
+        if (!url.startsWith("http")) {
+            toast("当前页面无法收藏")
+            return
+        }
+        BookmarkStore.add(webView?.title.orEmpty(), url)
+        toast("已加入收藏夹")
+    }
+
+    private fun openRecords(mode: String) {
+        val wv = webView ?: return
+        context.startActivity(Intent(context, BrowserRecordsActivity::class.java).apply {
+            putExtra(BrowserRecordsActivity.MODE, mode)
+            putExtra(BrowserRecordsActivity.CURRENT_TITLE, wv.title.orEmpty())
+            putExtra(BrowserRecordsActivity.CURRENT_URL, wv.url.orEmpty())
+        })
+    }
+
+    /** 收藏夹：收藏当前页 / 打开已收藏的网页 */
+    internal fun showBookmarks() {
+        val bookmarks = BookmarkStore.list()
+        val items = mutableListOf("收藏当前页")
+        items += bookmarks.map { "${it.title}\n${it.url}" }
+        MaterialAlertDialogBuilder(context)
+            .setTitle("收藏夹")
+            .setItems(items.toTypedArray()) { _, which ->
+                if (which == 0) {
+                    val wv = webView ?: return@setItems
+                    BookmarkStore.add(wv.title ?: "", wv.url ?: "")
+                    toast("已收藏")
+                } else {
+                    loadUrl(bookmarks[which - 1].url)
+                }
+            }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    /** 历史记录：按时间倒序，点击直接打开 */
+    internal fun showHistory() {
+        val history = History.list.sortedByDescending { it.time }
+        if (history.isEmpty()) {
+            toast("暂无历史记录")
+            return
+        }
+        val items = history.map { it.title.ifBlank { it.url } }
+        MaterialAlertDialogBuilder(context)
+            .setTitle("历史记录")
+            .setItems(items.toTypedArray()) { _, which -> loadUrl(history[which].url) }
+            .setNeutralButton("清空") { _, _ ->
+                History.list = emptyList()
+                toast("已清空")
+            }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    /** 输入内容：网址直接打开，否则用当前搜索引擎搜索 */
+    private fun resolveAddress(input: String): String {
+        val text = input.trim()
+        if (text.startsWith("http://") || text.startsWith("https://")) return text
+        val looksLikeUrl = text.contains(".") && !text.contains(" ") && !text.contains("。")
+        if (looksLikeUrl) return "https://$text"
+        val index = globalConfig.webSearchEngine.coerceIn(SEARCH_ENGINES.indices)
+        return SEARCH_ENGINES[index].second.format(URLEncoder.encode(text, "UTF-8"))
+    }
+
+    private fun displayUrl(url: String?): String {
+        if (url.isNullOrBlank()) return "搜索或输入网址"
+        return url.removePrefix("https://").removePrefix("http://").trimEnd('/')
     }
 
     private fun updateForwardButton() {
@@ -253,6 +1010,7 @@ class CustomWebView @JvmOverloads constructor(
             super.doUpdateVisitedHistory(view, url, isReload)
             if (url != null) {
                 updateWebBookIfSameDomain(view, url, updateTitle = false)
+                binding.tvUrl.text = displayUrl(url)
             }
         }
 
@@ -272,7 +1030,15 @@ class CustomWebView @JvmOverloads constructor(
             }
             // 页面加载完成后再更新 title（如果可用）并持久化
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
-            updateForwardButton()
+            binding.tvUrl.text = displayUrl(url)
+            BrowserTabs.tabs.firstOrNull { it.webView === webView }?.apply {
+                title = webView?.title.orEmpty()
+                if (!url.isNullOrBlank()) this.url = url
+            }
+            binding.tabs.text = BrowserTabs.tabs.size.toString()
+                updateForwardButton()
+            BrowserTabs.tabs.firstOrNull { it.webView === webView }?.let { captureThumb(it) }
+            BrowserTabs.tabs.firstOrNull { it.webView === webView }?.let { captureThumb(it) }
 
             Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")
             val list = history.value!!.toMutableList()
@@ -306,6 +1072,33 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun createWebChromeClient() = object : WebChromeClient() {
+        /** 网页里 target=_blank / window.open：在新标签页打开，而不是丢弃 */
+        override fun onCreateWindow(
+            view: WebView?,
+            isDialog: Boolean,
+            isUserGesture: Boolean,
+            resultMsg: Message?,
+        ): Boolean {
+            val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+            val temp = WebView(context).apply {
+                settings.javaScriptEnabled = true
+                webViewClient = object : android.webkit.WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        v: WebView?,
+                        request: android.webkit.WebResourceRequest?,
+                    ): Boolean {
+                        val link = request?.url?.toString().orEmpty()
+                        if (link.isNotBlank()) newTab(link)
+                        v?.destroy()
+                        return true
+                    }
+                }
+            }
+            transport.webView = temp
+            resultMsg.sendToTarget()
+            return true
+        }
+
         override fun onProgressChanged(view: WebView?, newProgress: Int) {
             if (view !== webView) return
             binding.searchRefresh.progress = newProgress
@@ -324,9 +1117,15 @@ class CustomWebView @JvmOverloads constructor(
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val offset = (imeInsets.bottom - systemBars.bottom).coerceAtLeast(0)
-            binding.browserBookCityToolbar.translationY = -offset.toFloat()
-            binding.webViewSettings.translationY = -offset.toFloat()
+            toolbarImeOffset = -offset.toFloat()
+            if (offset > 0) showToolbar()
+            applyToolbarTranslation()
             insets
+        }
+
+        // 首次布局完成后，按工具栏实际高度给网页留出底部空间
+        binding.browserBookCityToolbar.post {
+            if (!toolbarHidden) setContentInsetForToolbar(true)
         }
 
         binding.refresh.click {
@@ -340,7 +1139,7 @@ class CustomWebView @JvmOverloads constructor(
             if (url.isBlank() || url == "about:blank") return@click
 
             // 直接 reload 在渲染状态损坏时不会重绘（一直白屏）；
-            // 走“先 about:blank 再加载目标”，强制重建文档，刷新才能恢复画面
+            // 走"先 about:blank 再加载目标"，强制重建文档，刷新才能恢复画面
             forceReload(showToast = false)
         }
         binding.refresh.setOnLongClickListener {
@@ -348,28 +1147,24 @@ class CustomWebView @JvmOverloads constructor(
             true
         }
 
+        // 后退按钮：返回上一页（历史回退），退出浏览器用系统返回键
         binding.backward.click {
-            destroyWebView()
-            activity?.onBackPressedDispatcher?.onBackPressed()
+            if (!back()) {
+                activity?.onBackPressedDispatcher?.onBackPressed()
+            }
         }
+        // 地址栏：弹出地址面板（标题可复制、分享、切换 UA、编辑网址）
+        binding.tvUrl.click { showAddressSheet() }
         binding.forward.click {
             goForward()
         }
-        binding.settings.setOnClickListener {
-            if (binding.webViewSettings.isVisible) {
-                binding.webViewSettings.hide()
-            } else {
-                binding.webViewSettings.show()
-            }
-        }
+        binding.settings.setOnClickListener { showBrowserMenu() }
+        binding.tabs.click { openTabsManager() }
+        binding.newTab.click { newTab() }
         binding.home.click {
             Log.i("回到首页")
             val home = webBook?.url ?: globalConfig.bookCityUrl
-            destroyWebView()
             loadUrl(home)
-        }
-        binding.webViewSettings.init(this) {
-            crossOriginOverride = -1
         }
     }
 

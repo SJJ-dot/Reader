@@ -35,6 +35,12 @@
             android:name=".module.bookcity.WebViewBrowserActivity"
             android:exported="false" />
         <activity
+            android:name=".module.bookcity.BrowserTabsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".module.bookcity.BrowserRecordsActivity"
+            android:exported="true" />
+        <activity
             android:name=".module.script.BookSourceHelpActivity"
             android:exported="false" />
         <activity
@@ -46,6 +52,10 @@
         <activity
             android:name=".module.verification.WebViewVerificationActivity"
             android:exported="false" />
+        <!-- 临时自测页（测完删除）：浏览器底栏动画 -->
+        <activity
+            android:name=".module.bookcity.test.BrowserAnimationTestActivity"
+            android:exported="true" />
         <activity
             android:name=".module.reader.activity.BookReaderActivity"
             android:launchMode="singleTask" /> <!-- 适配华为（huawei）刘海屏 沉浸式 -->

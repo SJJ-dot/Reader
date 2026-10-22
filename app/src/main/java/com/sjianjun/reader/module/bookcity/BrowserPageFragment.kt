@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
-class BookCityPageFragment : BaseFragment() {
+class BrowserPageFragment : BaseFragment() {
     private val vm by viewModels<BookCityViewModel>()
     private var url: String? = null
     private val adBlock: AdBlock = AdBlock
@@ -127,10 +127,6 @@ class BookCityPageFragment : BaseFragment() {
                 val imeVisible = rootInsets?.isVisible(WindowInsetsCompat.Type.ime()) == true
                 if (imeVisible) {
                     WindowInsetsControllerCompat(requireActivity().window, binding.root).hide(WindowInsetsCompat.Type.ime())
-                    return@setOnBackPressed true
-                }
-                if (customWebView.binding.webViewSettings.isVisible) {
-                    customWebView.binding.webViewSettings.hide()
                     return@setOnBackPressed true
                 }
                 if (!customWebView.back()) {
@@ -498,7 +494,7 @@ class BookCityPageFragment : BaseFragment() {
 
         @JvmStatic
         fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1) =
-            BookCityPageFragment().apply {
+            BrowserPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
                     putString(WEB_ID, webId)

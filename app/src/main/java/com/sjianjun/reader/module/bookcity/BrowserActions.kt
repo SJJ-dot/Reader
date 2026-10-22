@@ -2,7 +2,6 @@ package com.sjianjun.reader.module.bookcity
 
 import android.app.ProgressDialog
 import android.content.Context
-import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,7 +10,6 @@ import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -19,196 +17,50 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.DialogWebBookCoverPickerBinding
 import com.sjianjun.reader.databinding.ItemBookCoverSourceBinding
-import com.sjianjun.reader.databinding.WebViewSettingsBinding
-import com.sjianjun.reader.event.EventBus
-import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.search.SearchViewModel
 import com.sjianjun.reader.module.shelf.WebShelfViewModel
-import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
-import com.sjianjun.reader.utils.copyToClipboard
 import com.sjianjun.reader.utils.glide
-import com.sjianjun.reader.utils.hide
-import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.toast
-import com.sjianjun.reader.utils.webUserAgent
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import sjj.alog.Log
 import kotlin.coroutines.resume
 
-class WebViewSettings @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
-) : FrameLayout(context, attrs) {
-    val binding = WebViewSettingsBinding.inflate(LayoutInflater.from(context), this, true)
-    private var customWebView: CustomWebView? = null
-    private var titleJob: Job? = null
+/** 浏览器操作（书架导入、阅读模式），从原设置面板抽取，无界面。 */
+class BrowserActions(
+    private val context: Context,
+    private val customWebView: CustomWebView,
+) {
     private var webBookImportJsCache: String? = null
 
-    /** 当用户在设置中修改跨域配置时回调，用于清除临时覆盖 */
-    var onCrossOriginModeChanged: (() -> Unit)? = null
-
-    init {
-        setBackgroundColor(R.color.translucent.color(context))
-    }
-
-    override fun onVisibilityChanged(changedView: View, visibility: Int) {
-        super.onVisibilityChanged(changedView, visibility)
-        if (visibility == VISIBLE) {
-            refresh()
-        } else {
-            titleJob?.cancel()
+    /** 阅读模式：先预提取正文写缓存，再打开阅读器 */
+    fun openReadMode() {
+        val wv = customWebView.webView ?: return
+        val url = wv.url ?: return
+        val scope = customWebView.lifecycleScope
+        if (scope == null) {
+            BrowserReadModeActivity.startActivity(context, url, customWebView.webBook?.id)
+            return
         }
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        titleJob?.cancel()
-    }
-
-    fun init(customWebView: CustomWebView, onCrossOriginModeChanged: () -> Unit) {
-        this.customWebView = customWebView
-        this.onCrossOriginModeChanged = onCrossOriginModeChanged
-        binding.btnCopyUrl.setOnClickListener {
-            if (binding.btnCopyUrl.text == "复制") {
-                binding.urlInput.text.toString().trim().copyToClipboard()
-            } else {
-                var url = binding.urlInput.text.toString()
-                if (!url.startsWith("http")) {
-                    url = "http://$url"
+        scope.launch {
+            try {
+                val data = withTimeoutOrNull(2_000L) {
+                    with(BrowserReadModeActivity.Companion) { wv.extractContent() }
                 }
-                if (url.toHttpUrlOrNull() == null) {
-                    toast("请输入正确的网址")
-                    return@setOnClickListener
+                if (data != null && data.content.isNotBlank()) {
+                    BrowserReadModeActivity.putExtractResult(url, data)
                 }
-                hide()
-                binding.urlInput.hideKeyboard()
-                val webView = customWebView.webView ?: return@setOnClickListener
-                webView.loadUrl(url)
-            }
-        }
-        binding.btnCopyTitle.setOnClickListener {
-            binding.webTitle.text.toString().trim().copyToClipboard()
-        }
-        binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
-        binding.btnFontAdd.setOnClickListener {
-            val webView = customWebView.webView ?: return@setOnClickListener
-            webView.settings.textZoom = globalConfig.webFontZoomSize + 4
-            globalConfig.webFontZoomSize = webView.settings.textZoom
-            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
-        }
-        binding.btnFontSubtract.setOnClickListener {
-            val webView = customWebView.webView ?: return@setOnClickListener
-            webView.settings.textZoom = globalConfig.webFontZoomSize - 4
-            globalConfig.webFontZoomSize = webView.settings.textZoom
-            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
-        }
-        binding.tvAdBlock.setOnClickListener {
-            EventBus.post(EventKey.WEB_VIEW_SETTINGS)
-            hide()
-        }
-        setOnClickListener {
-            hide()
-        }
-        binding.tvFontSizeValue.setOnClickListener {
-            val webView = customWebView.webView ?: return@setOnClickListener
-            globalConfig.webFontZoomSize = 100
-            webView.settings.textZoom = globalConfig.webFontZoomSize
-            binding.tvFontSizeValue.text = globalConfig.webFontZoomSize.toString()
-        }
-        binding.urlInput.addTextChangedListener {
-            val webView = customWebView.webView ?: return@addTextChangedListener
-            if (webView.url == it.toString()) {
-                binding.btnCopyUrl.text = "复制"
-            } else {
-                binding.btnCopyUrl.text = "跳转"
-            }
-        }
-
-        // 跨域配置 RadioGroup
-        when (customWebView.effectiveCrossOriginMode()) {
-            0 -> binding.rbAsk.isChecked = true
-            1 -> binding.rbAllow.isChecked = true
-            2 -> binding.rbDeny.isChecked = true
-        }
-        binding.rgCrossOrigin.setOnCheckedChangeListener { _, checkedId ->
-            val mode = when (checkedId) {
-                R.id.rb_ask -> 0
-                R.id.rb_allow -> 1
-                R.id.rb_deny -> 2
-                else -> return@setOnCheckedChangeListener
-            }
-            globalConfig.crossOriginMode = mode
-            onCrossOriginModeChanged?.invoke()
-        }
-
-        binding.btnAddToShelf.setOnClickListener {
-            addToShelf()
-        }
-
-        binding.btnAddToHome.setOnClickListener {
-            val wv = customWebView?.webView ?: return@setOnClickListener
-            val url = wv.url ?: return@setOnClickListener
-            val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-            historyList.remove(url)
-            historyList.add(0, url)
-            globalConfig.bookCityUrlHistoryList.postValue(historyList)
-            toast("添加成功")
-        }
-
-        binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
-        binding.btnUaMode.setOnClickListener {
-            val wv = customWebView?.webView ?: return@setOnClickListener
-            val current = wv.url
-            if (current.isNullOrBlank() || current == "about:blank") {
-                toast("无可用页面")
-                return@setOnClickListener
-            }
-            // 切换 UA 模式：0=手机版，1=电脑版
-            globalConfig.webUaMode = if (globalConfig.webUaMode == 1) 0 else 1
-            binding.btnUaMode.isSelected = globalConfig.webUaMode == 1
-            wv.settings.userAgentString = webUserAgent()
-            // 清除缓存，避免按旧 UA 缓存的 302 跳转被重放
-            wv.clearCache(true)
-            wv.reload()
-        }
-
-        binding.btnReadMode.setOnClickListener {
-            hide()
-            val wv = customWebView?.webView ?: return@setOnClickListener
-            val url = wv.url ?: return@setOnClickListener
-            // 先尝试用当前 WebView 提取一次正文并写入缓存（内存 + 磁盘），
-            // 阅读模式启动后命中缓存可跳过 hiddenWebView 的重新加载与提取。
-            // 提取失败/超时不阻塞跳转，阅读模式仍会按原逻辑重新加载。
-            val scope = customWebView?.lifecycleScope
-            if (scope == null) {
-                BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
-                return@setOnClickListener
-            }
-            scope.launch {
-                try {
-                    val data = withTimeoutOrNull(2_000L) {
-                        with(BrowserReadModeActivity.Companion) { wv.extractContent() }
-                    }
-                    if (data != null && data.content.isNotBlank()) {
-                        BrowserReadModeActivity.putExtractResult(url, data)
-                    }
-                } catch (t: Throwable) {
-                    Log.e("预提取阅读模式正文失败", t)
-                } finally {
-                    BrowserReadModeActivity.startActivity(context, url, customWebView?.webBook?.id)
-                }
+            } catch (t: Throwable) {
+                Log.e("预提取阅读模式正文失败", t)
+            } finally {
+                BrowserReadModeActivity.startActivity(context, url, customWebView.webBook?.id)
             }
         }
     }
-
-    private fun addToShelf() {
+    fun addToShelf() {
         val wv = customWebView?.webView ?: return
         val url = wv.url ?: return
 
@@ -468,22 +320,6 @@ class WebViewSettings @JvmOverloads constructor(
         } else {
             raw
         }
-    }
-
-    fun refresh() {
-        val wv = customWebView?.webView ?: return
-        // 检查 WebView 是否已被销毁
-        if (!wv.isAttachedToWindow || wv.windowToken == null) return
-        titleJob?.cancel()
-        titleJob = GlobalScope.launch(Dispatchers.Main) {
-            val title = wv.getTitleFromMeta()
-            if (title.isNotBlank()) {
-                binding.webTitle.text = title
-            } else {
-                binding.webTitle.text = wv.title ?: "~"
-            }
-        }
-        binding.urlInput.setText(wv.url ?: "")
     }
 
 }
