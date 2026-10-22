@@ -764,7 +764,7 @@ class CustomWebView @JvmOverloads constructor(
         }
         b.menuAdBlock.click {
             dialog.dismiss()
-            EventBus.post(EventKey.WEB_VIEW_SETTINGS)
+            context.startActivity(Intent(context, BrowserAdBlockActivity::class.java))
         }
         b.menuFontValue.text = globalConfig.webFontZoomSize.toString()
         b.menuFontAdd.click {

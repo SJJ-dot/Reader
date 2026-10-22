@@ -80,12 +80,6 @@ class BrowserRecordsActivity : BaseActivity() {
         }
         binding.btnClear.setOnClickListener { confirmClear() }
         reload()
-        if (intent.getBooleanExtra("debug_add", false)) {
-            binding.btnAdd.postDelayed({
-                BookmarkStore.add("测试收藏页", "https://example.com/test")
-                reload()
-            }, 2_000)
-        }
     }
 
     private fun reload() {

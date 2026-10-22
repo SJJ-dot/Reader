@@ -39,7 +39,10 @@
             android:exported="false" />
         <activity
             android:name=".module.bookcity.BrowserRecordsActivity"
-            android:exported="true" />
+            android:exported="false" />
+        <activity
+            android:name=".module.bookcity.BrowserAdBlockActivity"
+            android:exported="false" />
         <activity
             android:name=".module.script.BookSourceHelpActivity"
             android:exported="false" />

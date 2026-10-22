@@ -105,9 +105,6 @@ class BrowserPageFragment : BaseFragment() {
 
             customWebView.crossOriginOverride = crossOriginMode
             customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
-            EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
-                drawerLayout.openDrawer(GravityCompat.END)
-            })
             // 有保存状态就恢复到当前页（夜间模式切换不跳回首页），否则正常加载
             val state = savedWebState
             savedWebState = null
@@ -115,14 +112,11 @@ class BrowserPageFragment : BaseFragment() {
                 customWebView.loadUrl(url!!)
             }
 
-            initDrawer(drawerLayout, customWebView, this@apply)
+            // 右侧抽屉 UI 已移除，禁止手势打开
+            drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
             var lastTime = 0L
             val binding = this
             setOnBackPressed {
-                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
-                    drawerLayout.closeDrawer(GravityCompat.END)
-                    return@setOnBackPressed true
-                }
                 val rootInsets = ViewCompat.getRootWindowInsets(binding.root)
                 val imeVisible = rootInsets?.isVisible(WindowInsetsCompat.Type.ime()) == true
                 if (imeVisible) {
