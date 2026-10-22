@@ -81,21 +81,6 @@
             android:textSize="15sp"
             android:textStyle="bold"
             tools:text="当前：第X章" />
-
-        <TextView
-            android:id="@+id/btn_refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="2dp"
-            android:text="刷新"
-            android:textColor="@color/colorPrimary"
-            android:textSize="14sp"
-            android:visibility="gone"
-            tools:visibility="visible" />
     </LinearLayout>
 
     <ScrollView
@@ -161,6 +146,23 @@
             android:text="目录"
             android:textColor="@color/colorPrimary"
             android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/btn_refresh"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_outline_button"
+            android:gravity="center"
+            android:maxLines="1"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="刷新"
+            android:textColor="@color/colorPrimary"
+            android:textSize="15sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/btn_switch"

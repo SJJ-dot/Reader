@@ -130,8 +130,8 @@ class BookSourceListViewModel() : ViewModel() {
         }
         val chapters = chapterDao.getChapterListByBookId(book.id).first()
         if (chapters.isEmpty()) {
-            // 没有章节列表，直接加载书籍
-            runCatching { BookUseCase.reloadBookFromNet(book) }
+            // 没有章节列表，直接加载书籍；点刷新时同时强制拉取完整目录
+            runCatching { BookUseCase.reloadBookFromNet(book, forceFull = force) }
         }
         val record = readingRecordDao.getReadingRecord(book.title).firstOrNull()
         val old = currentChapter
@@ -151,7 +151,8 @@ class BookSourceListViewModel() : ViewModel() {
         book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
         book.record = record
         book.readChapter?.let { chapter ->
-            BookUseCase.getChapterContent(chapter)
+            // force=1：忽略数据库缓存、取消同章在跑的加载，真正重新请求正文
+            BookUseCase.getChapterContent(chapter, if (force) 1 else 0)
         }
         preparedCompare[book.id] = book
         book

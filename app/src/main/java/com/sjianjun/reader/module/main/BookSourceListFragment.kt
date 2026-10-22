@@ -18,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
-import com.sjianjun.reader.BOOK_DEFAULT_COMPARE
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_READ_ONLY
 import com.sjianjun.reader.BOOK_TITLE
@@ -49,7 +48,6 @@ import com.sjianjun.reader.view.isLoading
 class BookSourceListFragment : BaseFragment() {
     private val bookTitle by lazy { requireArguments().getString(BOOK_TITLE) ?: "" }
     /** 是否默认进入「内容对比」模式（阅读页打开时为 true） */
-    private val defaultCompare by lazy { requireArguments().getString(BOOK_DEFAULT_COMPARE) == "true" }
     /** 当前阅读页所在章节（阅读页打开时传入，-1 表示没传） */
     private val pageChapterIndex by lazy { requireArguments().getString(CHAPTER_INDEX)?.toIntOrNull() ?: -1 }
     /** 当前阅读页第一行的文本：换源对比时用来在新源正文里定位 */
@@ -140,10 +138,6 @@ class BookSourceListFragment : BaseFragment() {
             }
         })
 
-        // 阅读页打开时默认进入内容对比
-        compareMode = defaultCompare
-        if (compareMode) refreshMode()
-
         vm.init(bookTitle, pageChapterIndex, pageFirstLine)
         vm.bookList.observe(this) {
             compareBooks = it
@@ -218,7 +212,14 @@ class BookSourceListFragment : BaseFragment() {
         }
     }
 
-    private fun refreshMode() {
+    /** 从列表项进入内容对比，并定位到该书源 */
+    fun enterCompareMode(book: Book) {
+        compareMode = true
+        compareInitialized = true
+        refreshMode(book.id)
+    }
+
+    private fun refreshMode(selectedBookId: String? = null) {
         val b = binding ?: return
         b.swipeRefresh.visibility = if (compareMode) View.GONE else View.VISIBLE
         b.viewPager.visibility = if (compareMode) View.VISIBLE else View.GONE
@@ -228,7 +229,11 @@ class BookSourceListFragment : BaseFragment() {
             compareAdapter.data.addAll(compareBooks)
             compareAdapter.notifyDataSetChanged()
             // 默认定位到当前阅读书源那一页
-            val index = compareBooks.indexOfFirst { it.id == it.record?.bookId }
+            val index = if (selectedBookId != null) {
+                compareBooks.indexOfFirst { it.id == selectedBookId }
+            } else {
+                compareBooks.indexOfFirst { it.id == it.record?.bookId }
+            }
             if (index >= 0) b.viewPager.setCurrentItem(index, false)
             compareAdapter.updateIndicators()
         }
@@ -341,6 +346,9 @@ class BookSourceListFragment : BaseFragment() {
                         }
                     }
                 }
+                // 直接进入内容对比，并定位到这本书的书源
+                binding.btnCompare.visibility = if (fragment.deleteMode) View.GONE else View.VISIBLE
+                binding.btnCompare.click { fragment.enterCompareMode(book) }
                 // 长按进入批量删除模式
                 setOnLongClickListener {
                     fragment.enterDeleteMode(book.id)
@@ -441,7 +449,8 @@ class BookSourceListFragment : BaseFragment() {
             private fun loadContent(book: Book, force: Boolean = false) {
                 binding.tvChapterTitle.text = "正在加载…"
                 binding.tvContent.text = ""
-                binding.btnRefresh.gone()
+                // 刷新中保持按钮可见（置灰），避免底部按钮行宽度跳动
+                binding.btnRefresh.isEnabled = false
                 binding.loading.show()
                 fragment.launch {
                     val loaded = runCatching { fragment.vm.prepareForCompare(book, force) }.getOrNull()
@@ -453,6 +462,7 @@ class BookSourceListFragment : BaseFragment() {
                         binding.tvChapterTitle.setTextColor(R.color.mdr_red_600.color(fragment.context))
                         binding.tvLastChapter.text = loaded?.lastChapter?.title?.let { "最新：$it" } ?: "最新：—"
                         binding.tvContent.text = loaded?.error?.takeIf { it.isNotBlank() } ?: "暂无内容"
+                        binding.btnRefresh.isEnabled = true
                         binding.btnRefresh.show()
                         return@launch
                     }
@@ -488,6 +498,7 @@ class BookSourceListFragment : BaseFragment() {
                         scroll.scrollTo(0, layout.getLineTop(layout.getLineForOffset(offset)))
                     }
 
+                    binding.btnRefresh.isEnabled = true
                     binding.btnRefresh.visibility = View.VISIBLE
                 }
             }

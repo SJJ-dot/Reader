@@ -80,10 +80,26 @@
             android:gravity="center_vertical"
             style="@style/text_body2"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@id/bookName"
+            app:layout_constraintEnd_toStartOf="@id/btn_compare"
             app:layout_constraintStart_toStartOf="@+id/locateChapter"
             app:layout_constraintTop_toBottomOf="@+id/locateChapter"
             tools:text="标题" />
+
+        <TextView
+            android:id="@+id/btn_compare"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="5dp"
+            android:background="@drawable/bg_outline_button"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="对比"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <com.sjianjun.reader.view.RotateLoading
             android:id="@+id/loading"

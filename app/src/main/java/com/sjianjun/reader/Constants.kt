@@ -10,7 +10,6 @@ const val BOOK_TITLE = "BOOK_TITLE"
 const val BOOK_AUTO_REFRESH = "BOOK_AUTO_REFRESH"
 const val BOOK_READ_ONLY = "BOOK_READ_ONLY"
 /** 打开换源弹窗时默认进入「内容对比」模式（阅读页打开时传 true） */
-const val BOOK_DEFAULT_COMPARE = "BOOK_DEFAULT_COMPARE"
 /** 打开章节列表时指定定位到的章节序号（换源内容对比里的「目录」） */
 const val CHAPTER_INDEX = "CHAPTER_INDEX"
 

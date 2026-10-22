@@ -30,7 +30,6 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.coorchice.library.SuperTextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.withIo
-import com.sjianjun.reader.BOOK_DEFAULT_COMPARE
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.CHAPTER_INDEX
 import com.sjianjun.reader.PAGE_FIRST_LINE
@@ -309,7 +308,6 @@ class BookReaderSettingFragment : BaseFragment() {
             }.getOrDefault("")
             fragmentCreate<BookSourceListFragment>(
                 BOOK_TITLE to book.title,
-                BOOK_DEFAULT_COMPARE to "true",
                 CHAPTER_INDEX to pageLoader.chapterPos.toString(),
                 PAGE_FIRST_LINE to pageLine,
             ).show(parentFragmentManager, "BookSourceListFragment")
