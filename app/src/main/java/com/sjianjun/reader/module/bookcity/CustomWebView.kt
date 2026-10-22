@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
+import android.os.Bundle
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -79,18 +80,40 @@ class CustomWebView @JvmOverloads constructor(
             updateForwardButton()
             return
         }
+        val wv = createWebView()
+        skippedHistoryIndices.clear()
+        wv.currentHost = url
+        wv.loadUrl(url)
+        updateForwardButton()
+    }
+
+    /**
+     * 恢复 WebView 的历史/当前页（夜间模式切换等导致 Activity 重建时使用）。
+     * 成功返回 true，调用方就不需要再 loadUrl 首页。
+     */
+    fun restoreState(state: Bundle): Boolean {
+        val existing = webView
+        val wv = if (existing != null && !existing.isDestroyed) existing else createWebView()
+        // restoreState 返回恢复后的历史（失败为 null）
+        val restored = runCatching { wv.restoreState(state) != null }.getOrDefault(false)
+        if (restored) {
+            wv.currentHost = wv.url.orEmpty()
+            updateForwardButton()
+            Log.i("恢复 WebView 状态：${wv.url}")
+        }
+        return restored
+    }
+
+    private fun createWebView(): MyWebView {
         val wv = MyWebView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
         }
-        skippedHistoryIndices.clear()
-        wv.currentHost = url
         binding.webViewContainer.addView(wv)
         webView = wv
-        wv.loadUrl(url)
-        updateForwardButton()
+        return wv
     }
 
     fun back(): Boolean {

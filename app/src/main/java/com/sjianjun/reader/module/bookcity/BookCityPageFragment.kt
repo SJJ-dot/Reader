@@ -53,6 +53,10 @@ class BookCityPageFragment : BaseFragment() {
     private val adBlock: AdBlock = AdBlock
     private var webBook: WebBook? = null
     private var crossOriginMode: Int = -1
+    private var pageBinding: FragmentBookCityPageBinding? = null
+
+    /** 夜间模式切换导致重建时，用来恢复 WebView 的当前页/历史 */
+    private var savedWebState: Bundle? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -62,9 +66,29 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val bind = FragmentBookCityPageBinding.bind(view)
+        pageBinding = bind
+        // 重建（夜间模式切换等）时优先恢复当前页，而不是回到首页
+        savedWebState = savedInstanceState?.getBundle(KEY_WEB_STATE)
         lifecycleScope.launch {
-            init(FragmentBookCityPageBinding.bind(view))
+            init(bind)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val webView = pageBinding?.customWebView?.webView ?: return
+        if (webView.isDestroyed) return
+        runCatching {
+            val state = Bundle()
+            webView.saveState(state)
+            outState.putBundle(KEY_WEB_STATE, state)
+        }.onFailure { Log.e("保存 WebView 状态失败", it) }
+    }
+
+    override fun onDestroyView() {
+        pageBinding = null
+        super.onDestroyView()
     }
 
     private suspend fun init(bind: FragmentBookCityPageBinding) {
@@ -84,7 +108,12 @@ class BookCityPageFragment : BaseFragment() {
             EventBus.observe(EventKey.WEB_VIEW_SETTINGS, viewLifecycleOwner, Observer<String> {
                 drawerLayout.openDrawer(GravityCompat.END)
             })
-            customWebView.loadUrl(url!!)
+            // 有保存状态就恢复到当前页（夜间模式切换不跳回首页），否则正常加载
+            val state = savedWebState
+            savedWebState = null
+            if (state == null || !customWebView.restoreState(state)) {
+                customWebView.loadUrl(url!!)
+            }
 
             initDrawer(drawerLayout, customWebView, this@apply)
             var lastTime = 0L
@@ -464,6 +493,9 @@ class BookCityPageFragment : BaseFragment() {
     }
 
     companion object {
+        /** 重建时恢复 WebView 状态用（当前页/历史） */
+        private const val KEY_WEB_STATE = "book_city_web_state"
+
         @JvmStatic
         fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1) =
             BookCityPageFragment().apply {

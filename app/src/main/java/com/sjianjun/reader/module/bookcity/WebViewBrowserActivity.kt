@@ -34,9 +34,13 @@ class WebViewBrowserActivity : BaseActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        supportFragmentManager.beginTransaction()
-            .replace(binding.fragmentContainerView.id, BookCityPageFragment.newInstance(url, webId, crossOriginMode))
-            .commitNowAllowingStateLoss()
+        // 重建（夜间模式切换等）时交给 FragmentManager 恢复原页面，
+        // 否则这里会重新 new 一个只带首页 URL 的 Fragment，导致回到首页
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(binding.fragmentContainerView.id, BookCityPageFragment.newInstance(url, webId, crossOriginMode))
+                .commitNowAllowingStateLoss()
+        }
 
     }
 
