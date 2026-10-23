@@ -149,6 +149,7 @@ class CustomWebView @JvmOverloads constructor(
         this.vm = vm
 
         initView()
+        initQuickAccess()
         history.value = History.list.toMutableList()
         this.lifecycleScope = owner.lifecycleScope
     }
@@ -459,6 +460,10 @@ class CustomWebView @JvmOverloads constructor(
         bar.translationY = toolbarImeOffset + toolbarOffset
     }
 
+    private fun samePage(a: String?, b: String?): Boolean =
+        a != null && b != null &&
+                a.substringBefore('#').trimEnd('/') == b.substringBefore('#').trimEnd('/')
+
     /** 记录标签的 URL 历史（跨进程退出时用于回退） */
     private fun recordHistory(tab: BrowserTabs.Tab, url: String?) {
         if (url.isNullOrBlank() || url == "about:blank") return
@@ -503,6 +508,14 @@ class CustomWebView @JvmOverloads constructor(
         if (step < 0) {
             suppressHistoryRecord = true
             if (tab != null && tab.historyIndex > 0) tab.historyIndex--
+            // 立刻把"将要到达的页面"写入标签，避免退出时还保存后退前的 URL
+            if (tab != null) {
+                runCatching {
+                    val list = wv.copyBackForwardList()
+                    val target = list.getItemAtIndex(list.currentIndex + step).url
+                    if (!target.isNullOrBlank()) tab.url = target
+                }
+            }
             // 保持 BFCache，不刷新、不重绘，原样恢复之前的位置
             wv.goBackOrForward(step)
             updateForwardButton()
@@ -511,20 +524,33 @@ class CustomWebView @JvmOverloads constructor(
             return true
         }
         // 原生历史没有（例如退出重进后）：用当前标签保存的 URL 历史再退一步
-        if (tab != null && tab.historyIndex > 0) {
-            tab.historyIndex--
-            virtualNavigating = true
-            val target = tab.history[tab.historyIndex]
-            wv.currentHost = target
-            wv.loadUrl(target)
-            updateForwardButton()
-            showToolbar()
-            BrowserTabs.persist()
-            return true
+        // 仅恢复的标签使用 URL 历史回退，跳过与当前页相同的重定向记录
+        if (tab != null && tab.restored && tab.historyIndex > 0) {
+            var idx = tab.historyIndex
+            while (idx > 0 && samePage(tab.history[idx], wv.url)) idx--
+            if (idx > 0) {
+                tab.historyIndex = idx
+                virtualNavigating = true
+                val target = tab.history[idx]
+                wv.currentHost = target
+                wv.loadUrl(target)
+                updateForwardButton()
+                showToolbar()
+                BrowserTabs.persist()
+                return true
+            }
         }
-        // 当前标签回退栈清空：退出浏览器，但保留标签和前进栈，下次进入仍是这个标签
-        BrowserTabs.exitByBack = false
-        BrowserTabs.persist()
+        // 空白标签页退到底：下次进入直接打开主页
+        val activeTab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
+        val blankTab = activeTab == null || activeTab.url.isBlank() || activeTab.url == "about:blank"
+        if (blankTab) {
+            BrowserTabs.clearPersisted()
+            BrowserTabs.exitByBack = true
+        } else {
+            // 当前标签回退栈清空：保留标签和前进栈，下次进入仍是这个标签
+            BrowserTabs.exitByBack = false
+            BrowserTabs.persist()
+        }
         BrowserSession.clear()
         return false
     }
@@ -544,8 +570,8 @@ class CustomWebView @JvmOverloads constructor(
             BrowserTabs.persist()
             return true
         }
-        // 原生历史到底：用保存的 URL 历史再前进一步（会重新加载该页）
-        if (tab != null && tab.historyIndex < tab.history.lastIndex) {
+        // 原生历史到底：只有恢复的标签才用保存的 URL 历史前进
+        if (tab != null && tab.restored && tab.historyIndex < tab.history.lastIndex) {
             tab.historyIndex++
             virtualNavigating = true
             val target = tab.history[tab.historyIndex]
@@ -591,6 +617,17 @@ class CustomWebView @JvmOverloads constructor(
             b.urlInput.requestFocus()
             b.urlInput.setSelection(b.urlInput.text.length)
             b.urlInput.showKeyboard()
+        }
+        // 设为主页：书城入口/新窗口默认打开这个地址
+        b.btnSetHome.click {
+            val current = wv.url
+            if (current.isNullOrBlank() || !current.startsWith("http")) {
+                toast("当前页面无法设为主页")
+            } else {
+                globalConfig.bookCityUrl = current
+                toast("已设为主页")
+                dialog.dismiss()
+            }
         }
         // 搜索图标：切换搜索引擎
         b.btnSearchEngine.click {
@@ -1054,6 +1091,95 @@ class CustomWebView @JvmOverloads constructor(
         return SEARCH_ENGINES[index].second.format(URLEncoder.encode(text, "UTF-8"))
     }
 
+    private var quickAccessView: android.widget.LinearLayout? = null
+
+    private fun initQuickAccess() {
+        val container = android.widget.LinearLayout(context).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(android.graphics.Color.WHITE)
+            visibility = View.GONE
+            setPadding(48, 64, 48, 24)
+        }
+        val params = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT,
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT
+        )
+        params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+        params.bottomToTop = binding.browserBookCityToolbar.id
+        binding.root.addView(container, params)
+        quickAccessView = container
+    }
+
+    private fun refreshQuickAccess(blank: Boolean) {
+        val container = quickAccessView ?: return
+        if (!blank) {
+            container.visibility = View.GONE
+            return
+        }
+        container.removeAllViews()
+        container.addView(android.widget.TextView(context).apply {
+            text = "快速访问"
+            textSize = 15f
+            setTextColor(android.graphics.Color.parseColor("#222222"))
+            setPadding(0, 0, 0, 24)
+        })
+        val grid = android.widget.GridLayout(context).apply { columnCount = 4 }
+        val cell = ((resources.displayMetrics.widthPixels - 96) / 4)
+        BookmarkStore.list().take(7).forEach { site ->
+            grid.addView(quickTile(site.title.ifBlank { site.url }, site.url, cell))
+        }
+        grid.addView(quickTile("添加", null, cell))
+        container.addView(grid)
+        container.visibility = View.VISIBLE
+    }
+
+    private fun quickTile(label: String, url: String?, cell: Int): View {
+        val ctx = context
+        val tile = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            layoutParams = android.widget.GridLayout.LayoutParams().apply { width = cell; height = cell + 40 }
+            setOnClickListener {
+                if (url.isNullOrBlank()) {
+                    val input = android.widget.EditText(ctx).apply { hint = "https://" }
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
+                        .setTitle("添加快速访问")
+                        .setView(input)
+                        .setPositiveButton("添加") { _, _ ->
+                            val link = input.text.toString().trim()
+                            if (link.startsWith("http")) {
+                                BookmarkStore.add(link, link)
+                                refreshQuickAccess(true)
+                            } else {
+                                toast("请输入完整网址")
+                            }
+                        }
+                        .setNegativeButton("取消", null)
+                        .show()
+                } else {
+                    loadUrl(url)
+                }
+            }
+        }
+        val icon = android.widget.TextView(ctx).apply {
+            text = if (url.isNullOrBlank()) "+" else "●"
+            textSize = if (url.isNullOrBlank()) 28f else 18f
+            gravity = android.view.Gravity.CENTER
+            setTextColor(if (url.isNullOrBlank()) android.graphics.Color.parseColor("#1A73E8")
+            else android.graphics.Color.parseColor("#00897B"))
+        }
+        val text = android.widget.TextView(ctx).apply {
+            text = label
+            textSize = 11f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            gravity = android.view.Gravity.CENTER
+            setTextColor(android.graphics.Color.parseColor("#444444"))
+        }
+        tile.addView(icon, android.widget.LinearLayout.LayoutParams(cell, cell))
+        tile.addView(text, android.widget.LinearLayout.LayoutParams(cell, 40))
+        return tile
+    }
     private fun displayUrl(url: String?): String {
         if (url.isNullOrBlank()) return "搜索或输入网址"
         return url.removePrefix("https://").removePrefix("http://").trimEnd('/')
@@ -1073,11 +1199,15 @@ class CustomWebView @JvmOverloads constructor(
     private fun MyWebView.meaningfulBackStep(): Int {
         val list = copyBackForwardList()
         pruneSkippedHistoryIndices(list.size)
+        val current = list.currentItem?.url?.substringBefore('#')?.trimEnd('/')
         var idx = list.currentIndex - 1
         var step = -1
         while (idx >= 0) {
             val u = list.getItemAtIndex(idx).url
-            if (!isSkippableHistoryItem(idx, u)) return step
+            val samePage = current != null && u != null &&
+                    u.substringBefore('#').trimEnd('/') == current
+            // 跳过重定向产生的"同一个 URL"历史，否则返回会一直重新加载首页
+            if (!samePage && !isSkippableHistoryItem(idx, u)) return step
             idx--
             step--
         }
@@ -1242,6 +1372,7 @@ class CustomWebView @JvmOverloads constructor(
                 updateForwardButton()
             }
 
+            refreshQuickAccess(url.isNullOrBlank() || url == "about:blank")
             Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")
             val list = history.value!!.toMutableList()
             webView?.url?.let { url ->

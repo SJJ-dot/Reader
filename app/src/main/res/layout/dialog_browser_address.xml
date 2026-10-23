@@ -61,6 +61,19 @@
                     android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:padding="7dp"
                     android:src="@drawable/ic_browser_edit" />
+
+                <TextView
+                    android:id="@+id/btn_set_home"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:gravity="center"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:text="设为主页"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <TextView

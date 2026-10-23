@@ -16,6 +16,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityBrowserRecordsBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordHeaderBinding
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.utils.glide
@@ -205,6 +206,11 @@ class BrowserRecordsActivity : BaseActivity() {
                     // 复用栈内已打开的浏览器，避免新建 Activity 与全局标签共享 WebView
                     EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
                     finish()
+                }
+                binding.btnSetHome.setOnClickListener {
+                    if (row.url.isBlank()) return@setOnClickListener
+                    globalConfig.bookCityUrl = row.url
+                    toast("已设为主页")
                 }
                 binding.btnDelete.visibility = if (row.removable) View.VISIBLE else View.GONE
                 binding.btnDelete.setOnClickListener {

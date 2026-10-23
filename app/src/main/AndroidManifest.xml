@@ -33,7 +33,7 @@
         tools:replace="android:label,android:icon,android:name,android:theme">
         <activity
             android:name=".module.bookcity.WebViewBrowserActivity"
-            android:exported="true" />
+            android:exported="false" />
         <activity
             android:name=".module.bookcity.BrowserTabsActivity"
             android:exported="false" />
