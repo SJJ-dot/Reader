@@ -141,38 +141,45 @@ def getDetails(url):
     return book
 
 
-def getChapterContent(url):
+def getChapterContent(url, _depth=0):
+    # m 站正文容器不同，统一走 www
+    url = (url or "").replace("://m.x33yq.org", "://www.x33yq.org")
+    if _depth > 5:
+        return ""
+
+    soup = _get(url)
+    content = soup.select_one("#content")
+    if not content:
+        return ""
+
+    # 先找同章的“下一页”，后面会删掉导航段
     base = url[:-5] if url.endswith(".html") else url
-    parts = []
-    visited = set()
-    current = url
+    next_url = ""
+    for a in soup.select("a[href]"):
+        if a.get_text(strip=True) != "下一页":
+            continue
+        full = urljoin(url, a.get("href"))
+        if full.startswith(base + "_"):
+            next_url = full
+            break
 
-    while current and current not in visited and len(parts) < 20:
-        visited.add(current)
-        soup = _get(current)
+    # 去掉“请点击下一页”这种污染段落
+    for p in content.select("p"):
+        if "请点击下一页" in p.get_text(strip=True):
+            p.decompose()
 
-        content = soup.select_one("#content")
-        if content:
-            # 去掉脚本、样式和正文末尾的导航链接
-            for tag in content.select("script, style, a"):
-                tag.decompose()
-            for div in content.select("div"):
-                if not div.get_text(strip=True):
-                    div.decompose()
-            html = content.prettify()
-            html = re.sub(r"第\(\d+/\d+\)页", "", html)
-            parts.append(html)
+    # 去掉末尾导航段
+    paragraphs = content.select("p")
+    if paragraphs:
+        last_text = paragraphs[-1].get_text(strip=True)
+        if any(word in last_text for word in ("下一页", "章节目录", "加入书签", "返回书架", "投推荐票")):
+            paragraphs[-1].decompose()
 
-        # 同一章可能分页为 xxx_2.html
-        next_url = ""
-        for a in soup.select("a[href]"):
-            full = urljoin(current, a.get("href"))
-            if full.startswith(base + "_"):
-                next_url = full
-                break
-        current = next_url
+    html = content.prettify()
+    if next_url:
+        html += getChapterContent(next_url, _depth + 1)
 
-    return "\n".join(parts)
+    return html
 
 if __name__ == '__main__':
     # 本地调试：直接运行 python 顶点小说.py
@@ -184,7 +191,7 @@ if __name__ == '__main__':
         print("  ", item)
 
     # 搜索无结果时回退到已知测试书
-    book_url = results[0]["bookUrl"] if results else "https://m.terry-haass.com/1423629234254/"
+    book_url = results[0]["bookUrl"]
 
     print("\n========== 详情 ==========")
     book = getDetails(book_url)
@@ -201,3 +208,4 @@ if __name__ == '__main__':
         content = getChapterContent(chapters[0]["url"])
         print("正文长度:", len(content))
         print("预览:", content[:200])
+        print(content[-200:])
