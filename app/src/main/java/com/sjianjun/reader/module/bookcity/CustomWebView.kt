@@ -158,6 +158,19 @@ class CustomWebView @JvmOverloads constructor(
         this.lifecycleScope = owner.lifecycleScope
     }
 
+    /** 把内置搜索引擎的主域加入白名单，避免地址栏搜索被广告拦截误伤 */
+    private fun ensureSearchEngineWhitelist() {
+        SEARCH_ENGINES
+            .mapNotNull { runCatching { it.second.toHttpUrlOrNull()?.topPrivateDomain() }.getOrNull() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .forEach { host ->
+                if (!AdBlock.whitelist.contains(host)) {
+                    AdBlock.addWhiteHost(HostStr(host, listOf()))
+                }
+            }
+    }
+
     fun loadUrl(url: String) {
         Log.i("loadUrl:$url ")
         showToolbar()
@@ -538,6 +551,8 @@ class CustomWebView @JvmOverloads constructor(
         return true
     }
     private fun showAddressSheet() {
+        // 确保搜索引擎主域在白名单内，避免地址栏搜索被广告拦截
+        ensureSearchEngineWhitelist()
         val wv = webView ?: return
         val b = DialogBrowserAddressBinding.inflate(LayoutInflater.from(context))
         val dialog = BottomSheetDialog(context)
@@ -581,13 +596,17 @@ class CustomWebView @JvmOverloads constructor(
                 dialog.dismiss()
             }
         }
-        // 搜索图标：切换搜索引擎
+        // 前导标识：搜索词模式显示当前搜索引擎名字，网址模式显示地球图标
+        b.btnSearchEngine.text = SEARCH_ENGINES[globalConfig.webSearchEngine.coerceIn(SEARCH_ENGINES.indices)].first
+        b.btnSearchEngine.visibility = View.VISIBLE
+        b.ivUrlGlobe.visibility = View.GONE
         b.btnSearchEngine.click {
             val names = SEARCH_ENGINES.map { it.first }.toTypedArray()
             MaterialAlertDialogBuilder(context)
                 .setTitle("搜索引擎")
                 .setSingleChoiceItems(names, globalConfig.webSearchEngine) { d, which ->
                     globalConfig.webSearchEngine = which
+                    b.btnSearchEngine.text = names[which]
                     toast("已切换为${names[which]}")
                     d.dismiss()
                 }
@@ -697,6 +716,10 @@ class CustomWebView @JvmOverloads constructor(
         val container = b.suggestionsList
         container.removeAllViews()
         val q = query.trim()
+        // 输入像网址时前导显示地球，否则显示搜索引擎名字
+        val urlMode = isUrlInput(q)
+        b.btnSearchEngine.visibility = if (urlMode) View.GONE else View.VISIBLE
+        b.ivUrlGlobe.visibility = if (urlMode) View.VISIBLE else View.GONE
         if (q.isEmpty()) {
             b.suggestionsScroll.isVisible = false
             return
@@ -1057,11 +1080,17 @@ class CustomWebView @JvmOverloads constructor(
     /** 输入内容：网址直接打开，否则用当前搜索引擎搜索 */
     private fun resolveAddress(input: String): String {
         val text = input.trim()
-        if (text.startsWith("http://") || text.startsWith("https://")) return text
-        val looksLikeUrl = text.contains(".") && !text.contains(" ") && !text.contains("。")
-        if (looksLikeUrl) return "https://$text"
+        if (isUrlInput(text)) {
+            return if (text.startsWith("http://") || text.startsWith("https://")) text else "https://$text"
+        }
         val index = globalConfig.webSearchEngine.coerceIn(SEARCH_ENGINES.indices)
         return SEARCH_ENGINES[index].second.format(URLEncoder.encode(text, "UTF-8"))
+    }
+
+    /** 判断输入是否应作为网址处理（与 resolveAddress 的判定保持一致，供前导图标切换使用） */
+    private fun isUrlInput(text: String): Boolean {
+        if (text.startsWith("http://") || text.startsWith("https://")) return true
+        return text.contains(".") && !text.contains(" ") && !text.contains("。")
     }
 
     private fun displayUrl(url: String?): String {
