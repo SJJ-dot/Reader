@@ -113,16 +113,8 @@ class CustomWebView @JvmOverloads constructor(
     /** 工具栏隐藏进度：0 = 完全显示，height = 完全隐藏 */
     private var toolbarOffset = 0f
 
-    /** 通过标签自带的 URL 历史回退/前进，避免把回退页再次记入历史 */
+    /** 通过标签自带的 URL 历史回退/前进（虚拟 loadUrl），仅用于决定是否清理原生历史 */
     private var virtualNavigating = false
-
-    /** 原生 goBack/goForward 后 onPageFinished 不要再追加历史 */
-    private var suppressHistoryRecord = false
-
-    /** 防止广告/重定向导致回退停留在同一 URL 无限循环 */
-    private var lastBackUrl: String? = null
-    private var lastBackTime = 0L
-    private var backRepeatCount = 0
 
     /** 复用原设置面板的实现（不上界面，只用其功能） */
     private val browserActions by lazy { BrowserActions(context, this) }
@@ -180,7 +172,9 @@ class CustomWebView @JvmOverloads constructor(
         }
         val tab = BrowserTabs.tabs[BrowserTabs.activeIndex]
         tab.url = url
-        tab.session.navigate(url)
+        // 新导航：丢弃上一笔未提交的预演，开启新的预演事务
+        tab.session.rollback()
+        tab.session.beginNavigate(url)
         tab.lastUsedAt = System.currentTimeMillis()
         binding.tabs.text = BrowserTabs.tabs.size.toString()
 
@@ -222,6 +216,7 @@ class CustomWebView @JvmOverloads constructor(
         webView = wv
         val state = tab.state
         tab.state = null
+        tab.session.rollback() // 旧加载已随 WebView 销毁中断，清理残留事务
         if (state != null) {
             wv.restoreState(state)
         } else if (tab.url.isNotBlank()) {
@@ -470,47 +465,24 @@ class CustomWebView @JvmOverloads constructor(
         bar.translationY = toolbarImeOffset + toolbarOffset
     }
 
-    private fun samePage(a: String?, b: String?): Boolean =
-        a != null && b != null &&
-                a.substringBefore('#').trimEnd('/') == b.substringBefore('#').trimEnd('/')
-
-    /** 记录标签的 URL 历史（跨进程退出时用于回退） */
-    private fun recordHistory(tab: BrowserTabs.Tab, url: String?) {
-        if (url.isNullOrBlank() || url == "about:blank") return
-        val index = tab.historyIndex
-        if (index in tab.history.indices && tab.history[index] == url) return
-        while (tab.history.size > index + 1) {
-            tab.history.removeAt(tab.history.lastIndex)
-        }
-        tab.history.add(url)
-        tab.historyIndex = tab.history.lastIndex
-        if (tab.history.size > 50) {
-            tab.history.removeAt(0)
-            tab.historyIndex = (tab.historyIndex - 1).coerceAtLeast(0)
-        }
-        BrowserTabs.persist()
-    }
-
     fun back(): Boolean {
         val wv = webView ?: return false
-        val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
-        val target = tab?.session?.back()
+        val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return false
+        val target = tab.session.beginBack()
         if (target == null) {
-            // 后退到底：清空当前标签页会话（重置回主页），退出浏览器。
+            // 后退到底：回滚预演，清空当前标签页会话（重置回主页），退出浏览器。
             // 标签页本身不删除——只有用户手动才能新建/删除标签页，下次进入重建该标签页。
-            val cur = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
-            if (cur != null) {
-                deleteThumb(cur)
-                cur.session.backStack.clear()
-                cur.session.forwardStack.clear()
-                cur.url = homeUrl()
-                cur.session.currentUrl = homeUrl()
-                cur.webView?.let {
-                    binding.webViewContainer.removeView(it)
-                    it.destroy()
-                }
-                cur.webView = null
+            tab.session.rollback()
+            deleteThumb(tab)
+            tab.session.backStack.clear()
+            tab.session.forwardStack.clear()
+            tab.url = homeUrl()
+            tab.session.currentUrl = homeUrl()
+            tab.webView?.let {
+                binding.webViewContainer.removeView(it)
+                it.destroy()
             }
+            tab.webView = null
             webView = null
             BrowserSession.clear()
             return false
@@ -518,7 +490,6 @@ class CustomWebView @JvmOverloads constructor(
         tab.url = target
         val step = if (wv.canGoBack()) wv.meaningfulBackStep() else 0
         if (step < 0) {
-            suppressHistoryRecord = true
             wv.goBackOrForward(step)
         } else {
             virtualNavigating = true
@@ -533,12 +504,11 @@ class CustomWebView @JvmOverloads constructor(
 
     fun goForward(): Boolean {
         val wv = webView ?: return false
-        val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
-        val target = tab?.session?.forward() ?: return false
+        val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return false
+        val target = tab.session.beginForward() ?: return false
         tab.url = target
         val step = if (wv.canGoForward()) wv.meaningfulForwardStep() else 0
         if (step > 0) {
-            suppressHistoryRecord = true
             wv.goBackOrForward(step)
         } else {
             virtualNavigating = true
@@ -549,6 +519,14 @@ class CustomWebView @JvmOverloads constructor(
         showToolbar()
         BrowserTabs.persist()
         return true
+    }
+
+    /** 停止加载：取消当前导航，回滚未提交的预演，栈保持不变 */
+    fun stopLoading() {
+        webView?.stopLoading()
+        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.session?.rollback()
+        pendingMainFrameRedirect = false
+        updateForwardButton()
     }
     private fun showAddressSheet() {
         // 确保搜索引擎主域在白名单内，避免地址栏搜索被广告拦截
@@ -1215,8 +1193,18 @@ class CustomWebView @JvmOverloads constructor(
 
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest): Boolean {
             if (request.isForMainFrame) {
-                // 无用户手势的主框架导航（JS 跳转等）视为重定向：重定向源不压栈
-                pendingMainFrameRedirect = !request.hasGesture()
+                if (request.hasGesture()) {
+                    // 用户点击链接：开启一次新导航事务，压栈在 onPageFinished 提交时生效
+                    val tab = BrowserTabs.tabs.firstOrNull { it.webView === view }
+                    if (tab != null) {
+                        tab.session.rollback() // 丢弃上一笔未提交的预演
+                        tab.session.beginNavigate(request.url.toString())
+                    }
+                    pendingMainFrameRedirect = false
+                } else {
+                    // 无用户手势的主框架导航（JS 跳转等）视为重定向：不产生额外历史
+                    pendingMainFrameRedirect = true
+                }
             }
             return super.shouldOverrideUrlLoading(view, request)
         }
@@ -1255,51 +1243,29 @@ class CustomWebView @JvmOverloads constructor(
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
             binding.tvUrl.text = displayUrl(url)
             val tabForHistory = BrowserTabs.tabs.firstOrNull { it.webView === webView }
-            if (suppressHistoryRecord) {
-                suppressHistoryRecord = false
-            }
             tabForHistory?.apply {
                 title = webView?.title.orEmpty()
                 if (!url.isNullOrBlank()) {
                     this.url = url
                     session.title = title
-                    if (pendingMainFrameRedirect) {
-                        // 重定向到达：URL1 出栈（不压栈），URL2 成为当前页
+                    if (session.hasPendingNav) {
+                        // 事务提交：匹配（含重定向放宽）才提交，否则视为过期回调丢弃
+                        if (session.isCurrentNav(url, pendingMainFrameRedirect)) {
+                            session.commit(url)
+                            pendingMainFrameRedirect = false
+                        }
+                    } else if (pendingMainFrameRedirect) {
+                        // 无事务的重定向到达：URL1 出栈（不压栈），URL2 成为当前页
                         session.currentUrl = url
                         pendingMainFrameRedirect = false
-                    } else if (samePage(session.currentUrl, url)) {
-                        // 后退/前进/刷新到达的页面：session 栈已由 back()/forward() 维护，
-                        // 只同步当前页；不能 navigate，否则 forwardStack.clear() 会清掉前进栈
-                        session.currentUrl = url
-                    } else {
-                        // 普通前进导航（点击链接等）：压入后退栈并清空前进栈
+                    } else if (!session.samePage(session.currentUrl, url)) {
+                        // 无事务的普通前进导航（兜底）：压入后退栈并清空前进栈
                         session.navigate(url)
                     }
                 }
             }
             // 后退/前进或页面跳转后，立即把当前 URL 落盘，退出恢复时停在最后一页
             BrowserTabs.persist()
-            // 首次进入页面时清掉重定向产生的历史，
-            // 否则在首页按返回会沿着重定向链反复重新加载首页
-            tabForHistory?.let { tab ->
-                if (!tab.entryCleared && !tab.restored) {
-                    binding.root.postDelayed({
-                        if (tab.webView === webView) {
-                            val currentHost = runCatching {
-                                java.net.URI(webView?.url.orEmpty()).host
-                            }.getOrNull()
-                            val entryHost = runCatching {
-                                java.net.URI(tab.initialUrl.orEmpty()).host
-                            }.getOrNull()
-                            // 还在入口站点的重定向链里才清历史；已经点进别的页面就不清
-                            if (currentHost != null && currentHost == entryHost) {
-                                webView?.clearHistory()
-                            }
-                            tab.entryCleared = true
-                        }
-                    }, 1_000)
-                }
-            }
             binding.tabs.text = BrowserTabs.tabs.size.toString()
                 updateForwardButton()
             if (virtualNavigating) {
@@ -1385,7 +1351,7 @@ class CustomWebView @JvmOverloads constructor(
         binding.refresh.click {
             val wv = webView ?: return@click
             if (binding.refresh.isSelected) {
-                wv.stopLoading()
+                stopLoading()
                 binding.refresh.isSelected = false
                 return@click
             }
@@ -1464,6 +1430,7 @@ class CustomWebView @JvmOverloads constructor(
             if (showToast) toast("无可刷新的页面")
             return
         }
+        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.session?.rollback() // 清理残留事务
         wv.markCurrentHistoryAsSkipped() // 强制刷新的当前损坏页
         wv.forceReloadTargetUrl = url
         wv.loadUrl("about:blank") // 先加载空白页，丢弃损坏的页面/渲染状态

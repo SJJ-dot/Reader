@@ -16,9 +16,6 @@ object BrowserTabs {
         var state: android.os.Bundle? = null,
         val history: MutableList<String> = mutableListOf(),
         var historyIndex: Int = -1,
-        var initialUrl: String? = null,
-        var userNavigated: Boolean = false,
-        var entryCleared: Boolean = false,
         var restored: Boolean = false,
         var lastUsedAt: Long = System.currentTimeMillis(),
         /** 单一数据源：前进/后退栈与当前页都以此为准 */
