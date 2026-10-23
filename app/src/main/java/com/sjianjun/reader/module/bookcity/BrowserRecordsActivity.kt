@@ -16,6 +16,8 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityBrowserRecordsBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordHeaderBinding
+import com.sjianjun.reader.event.EventBus
+import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Job
@@ -200,7 +202,9 @@ class BrowserRecordsActivity : BaseActivity() {
                 binding.tvTitle.text = row.title.ifBlank { row.url }
                 binding.tvUrl.text = row.url
                 binding.root.setOnClickListener {
-                    WebViewBrowserActivity.startActivity(this@BrowserRecordsActivity, row.url)
+                    // 复用栈内已打开的浏览器，避免新建 Activity 与全局标签共享 WebView
+                    EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
+                    finish()
                 }
                 binding.btnDelete.visibility = if (row.removable) View.VISIBLE else View.GONE
                 binding.btnDelete.setOnClickListener {

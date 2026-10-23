@@ -120,7 +120,11 @@ class MainActivity : BaseActivity() {
                         this,
                         com.sjianjun.reader.module.bookcity.WebViewBrowserActivity::class.java
                     ).apply {
-                        putExtra(com.sjianjun.reader.URL, com.sjianjun.reader.preferences.globalConfig.bookCityUrl)
+                        putExtra(
+                            com.sjianjun.reader.URL,
+                            com.sjianjun.reader.module.bookcity.BrowserSession.consumeResume()
+                                ?: com.sjianjun.reader.preferences.globalConfig.bookCityUrl
+                        )
                     }
                 )
                 return@setNavigationItemSelectedListener true

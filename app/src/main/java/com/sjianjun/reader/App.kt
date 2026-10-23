@@ -38,8 +38,6 @@ class App : Application() {
         MMKV.initialize(this)
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(globalConfig.appDayNightMode)
-        // 浏览器标签缩略图只在本次运行有效，启动时清空
-        runCatching { java.io.File(cacheDir, "browser_tabs").deleteRecursively() }
         resetBookLoadingState()
         initialize()
     }

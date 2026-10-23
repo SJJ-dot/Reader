@@ -86,6 +86,15 @@ class BrowserPageFragment : BaseFragment() {
         }.onFailure { Log.e("保存 WebView 状态失败", it) }
     }
 
+    internal fun onAppBackground() {
+        pageBinding?.customWebView?.onBackground()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        pageBinding?.customWebView?.onForeground()
+    }
+
     override fun onDestroyView() {
         pageBinding = null
         super.onDestroyView()
@@ -101,6 +110,9 @@ class BrowserPageFragment : BaseFragment() {
             if (url == null) {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
+            // 有恢复的标签时，加载当前标签页面
+            BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.url?.takeIf { it.isNotBlank() }
+                ?.let { url = it }
             crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
 
             customWebView.crossOriginOverride = crossOriginMode
@@ -112,6 +124,9 @@ class BrowserPageFragment : BaseFragment() {
                 customWebView.loadUrl(url!!)
             }
 
+            EventBus.observe(EventKey.OPEN_BROWSER_URL, viewLifecycleOwner, Observer<String> {
+                if (it.isNotBlank()) customWebView.loadUrl(it)
+            })
             // 右侧抽屉 UI 已移除，禁止手势打开
             drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
             var lastTime = 0L

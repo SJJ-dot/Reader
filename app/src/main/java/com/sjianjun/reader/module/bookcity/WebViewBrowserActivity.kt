@@ -59,6 +59,14 @@ class WebViewBrowserActivity : BaseActivity() {
         if (savedInstanceState != null) {
             // Activity 重建后旧标签的 WebView 已失效，只清引用，保留标签列表
             BrowserTabs.detachWebViews()
+        } else {
+            BrowserTabs.restore()
+            if (BrowserSession.consumeNewHomeTab()) {
+                // 上次是后退到底退出：恢复剩余标签后，再补一个主页标签
+                val home = url.ifBlank { com.sjianjun.reader.preferences.globalConfig.bookCityUrl }
+                BrowserTabs.tabs.add(BrowserTabs.Tab("新标签页", home))
+                BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
+            }
         }
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -68,9 +76,32 @@ class WebViewBrowserActivity : BaseActivity() {
 
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // 仅 App 整体退到后台时回收标签 WebView；内部页面切换不回收
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
+                    as? BrowserPageFragment)?.onAppBackground()
+        }
+    }
+
+    override fun onStop() {
+        BrowserTabs.persist()
+        super.onStop()
+    }
+
     override fun onDestroy() {
-        // 不保留标签页：正常退出浏览器时清空本次会话的标签
-        if (isFinishing) BrowserTabs.tabs.clear()
+        if (isFinishing) {
+            if (BrowserTabs.exitByBack) {
+                // 后退到底退出：清空标签，下次进入新建标签页
+                BrowserTabs.clearPersisted()
+            } else {
+                // 主动退出：保留标签与当前页，下次进入恢复
+                BrowserTabs.persist()
+            }
+            BrowserTabs.exitByBack = false
+            BrowserTabs.tabs.clear()
+        }
         super.onDestroy()
     }
 

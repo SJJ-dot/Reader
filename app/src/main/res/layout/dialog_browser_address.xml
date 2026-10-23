@@ -123,7 +123,7 @@
                     android:background="@null"
                     android:hint="搜索或输入网址"
                     android:imeOptions="actionGo"
-                    android:inputType="textUri"
+                    android:inputType="text"
                     android:maxLines="1"
                     android:textSize="13sp" />
             </LinearLayout>

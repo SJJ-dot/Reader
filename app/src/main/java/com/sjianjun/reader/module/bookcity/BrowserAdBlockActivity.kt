@@ -5,10 +5,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.databinding.ActivityBrowserAdBlockBinding
+import kotlinx.coroutines.launch
 
 /** 广告拦截独立列表页：拦截记录 / 黑名单 / 白名单 */
 class BrowserAdBlockActivity : BaseActivity() {
@@ -19,6 +21,21 @@ class BrowserAdBlockActivity : BaseActivity() {
     private lateinit var hostAdapter: BrowserPageFragment.HostListAdapter
     private lateinit var blackAdapter: BrowserPageFragment.BlackListAdapter
     private lateinit var whiteAdapter: BrowserPageFragment.WhiteListAdapter
+
+    /** 白名单与书源域名同步：新增加入、删除移除 */
+    private fun seedBookSourceWhitelist() {
+        lifecycleScope.launch {
+            runCatching {
+                val hosts = BookCityViewModel().getAllBookSourceSite()
+                    .mapNotNull { site ->
+                        runCatching { java.net.URI(site.url).host }.getOrNull()
+                    }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                BookSourceWhitelistSync.sync(adBlock, hosts)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
