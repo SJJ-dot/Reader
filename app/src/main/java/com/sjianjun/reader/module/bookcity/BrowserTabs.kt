@@ -19,6 +19,8 @@ object BrowserTabs {
         var initialUrl: String? = null,
         var userNavigated: Boolean = false,
         var entryCleared: Boolean = false,
+        var restored: Boolean = false,
+        var lastUsedAt: Long = System.currentTimeMillis(),
     )
 
     private data class SavedTab(
@@ -28,6 +30,7 @@ object BrowserTabs {
         val thumbPath: String? = null,
         val history: List<String>? = null,
         val historyIndex: Int? = null,
+        val lastUsedAt: Long = 0L,
     )
 
     private val mmkv = MMKV.mmkvWithID("BrowserTabs")
@@ -48,7 +51,7 @@ object BrowserTabs {
         val saved = tabs.map {
             SavedTab(
                 it.title, it.url, it.id.toString(), it.thumbPath,
-                it.history.toList(), it.historyIndex
+                it.history.toList(), it.historyIndex, it.lastUsedAt
             )
         }
         mmkv.encode("tabs_v3", gson.toJson(saved))
@@ -70,7 +73,9 @@ object BrowserTabs {
                     id = java.util.UUID.fromString(it.id),
                     thumbPath = it.thumbPath,
                     history = it.history.orEmpty().toMutableList(),
-                    historyIndex = it.historyIndex ?: -1
+                    historyIndex = it.historyIndex ?: -1,
+                    lastUsedAt = it.lastUsedAt,
+                    restored = true
                 )
             })
         }.onFailure {
@@ -80,7 +85,9 @@ object BrowserTabs {
                     it.title, it.url,
                     thumbPath = it.thumbPath,
                     history = it.history.orEmpty().toMutableList(),
-                    historyIndex = it.historyIndex ?: -1
+                    historyIndex = it.historyIndex ?: -1,
+                    lastUsedAt = it.lastUsedAt,
+                    restored = true
                 )
             })
         }

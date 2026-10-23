@@ -88,7 +88,9 @@ class CustomWebView @JvmOverloads constructor(
     private var toolbarHidden = false
 
     private companion object {
-        const val MAX_TABS = 20
+        const val MAX_TABS = 50
+        /** 内存中最多同时保留的 WebView 实例数，其余标签只保留 URL/历史 */
+        const val MAX_LIVE_TABS = 5
     }
 
     private val SEARCH_ENGINES = listOf(
@@ -160,6 +162,7 @@ class CustomWebView @JvmOverloads constructor(
         }
         val tab = BrowserTabs.tabs[BrowserTabs.activeIndex]
         tab.url = url
+        tab.lastUsedAt = System.currentTimeMillis()
         if (!virtualNavigating) {
             if (tab.initialUrl == null) {
                 tab.initialUrl = url
@@ -228,6 +231,7 @@ class CustomWebView @JvmOverloads constructor(
             binding.webViewContainer.addView(target)
         }
         target.visibility = View.VISIBLE
+        trimLiveTabs(target)
     }
 
     /**
@@ -261,6 +265,28 @@ class CustomWebView @JvmOverloads constructor(
         webView = wv
         attachToolbarAutoHide(wv)
         return wv
+    }
+
+    /** 内存里最多保留 MAX_LIVE_TABS 个 WebView，超出按创建顺序销毁最旧的（列表/历史仍保留） */
+    private fun trimLiveTabs(active: MyWebView) {
+        val live = BrowserTabs.tabs.filter { it.webView != null && it.webView?.isDestroyed == false }
+        if (live.size <= MAX_LIVE_TABS) return
+        val activeTab = BrowserTabs.tabs.firstOrNull { it.webView === active }
+        // 按最近使用时间排序，优先销毁最久未用的
+        live.filter { it !== activeTab }
+            .sortedBy { it.lastUsedAt }
+            .take(live.size - MAX_LIVE_TABS)
+            .forEach { tab ->
+                val wv = tab.webView ?: return@forEach
+                tab.url = wv.url ?: tab.url
+                tab.title = wv.title?.takeIf { it.isNotBlank() } ?: tab.title
+                val state = android.os.Bundle()
+                runCatching { wv.saveState(state) }.onSuccess { tab.state = state }
+                binding.webViewContainer.removeView(wv)
+                wv.destroy()
+                tab.webView = null
+            }
+        BrowserTabs.persist()
     }
 
     /**
@@ -311,42 +337,6 @@ class CustomWebView @JvmOverloads constructor(
             }
             false
         }
-    }
-
-    internal fun debugSwipe(startY: Float, endY: Float) {
-        val wv = webView ?: return
-        val t0 = SystemClock.uptimeMillis()
-        val steps = 8
-        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0, MotionEvent.ACTION_DOWN, 300f, startY, 0))
-        for (i in 1..steps) {
-            val y = startY + (endY - startY) * i / steps
-            wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + i * 16L, MotionEvent.ACTION_MOVE, 300f, y, 0))
-        }
-        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + 150, MotionEvent.ACTION_UP, 300f, endY, 0))
-    }
-
-    internal fun debugHold(startY: Float, endY: Float) {
-        val wv = webView ?: return
-        val t0 = SystemClock.uptimeMillis()
-        wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0, MotionEvent.ACTION_DOWN, 300f, startY, 0))
-        val steps = 8
-        for (i in 1..steps) {
-            val y = startY + (endY - startY) * i / steps
-            wv.dispatchTouchEvent(MotionEvent.obtain(t0, t0 + i * 16L, MotionEvent.ACTION_MOVE, 300f, y, 0))
-        }
-    }
-
-    internal fun debugRelease(y: Float) {
-        val wv = webView ?: return
-        val t = SystemClock.uptimeMillis()
-        wv.dispatchTouchEvent(MotionEvent.obtain(t, t, MotionEvent.ACTION_UP, 300f, y, 0))
-    }
-
-    internal fun debugState(): String {
-        val bar = binding.browserBookCityToolbar
-        val lp = binding.webViewContainer.layoutParams as? ViewGroup.MarginLayoutParams
-        return "offset=${(bar.translationY - toolbarImeOffset).toInt()} hidden=$toolbarHidden " +
-                "margin=${lp?.bottomMargin} height=${toolbarHeightPx().toInt()}"
     }
 
     /** 跟手拖动：delta > 0 表示向下隐藏 */
@@ -532,25 +522,9 @@ class CustomWebView @JvmOverloads constructor(
             BrowserTabs.persist()
             return true
         }
-        // 当前标签回退栈清空：只删除这个标签页，其它标签保留，然后退出浏览器
-        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { current ->
-            BrowserTabs.tabs.remove(current)
-            deleteThumb(current)
-            current.webView?.let {
-                binding.webViewContainer.removeView(it)
-                it.destroy()
-            }
-        }
-        if (BrowserTabs.tabs.isEmpty()) {
-            BrowserTabs.clearPersisted()
-        } else {
-            BrowserTabs.activeIndex = BrowserTabs.activeIndex
-                .coerceAtMost(BrowserTabs.tabs.lastIndex)
-        }
-        // 下次进入：恢复剩余标签 + 新建一个主页标签
+        // 当前标签回退栈清空：退出浏览器，但保留标签和前进栈，下次进入仍是这个标签
         BrowserTabs.exitByBack = false
         BrowserTabs.persist()
-        BrowserSession.markNewHomeTab()
         BrowserSession.clear()
         return false
     }
@@ -585,9 +559,6 @@ class CustomWebView @JvmOverloads constructor(
         return false
     }
 
-    internal fun debugAddressSheet() = showAddressSheet()
-
-    /** 地址栏面板：标题可复制、分享、切换手机/电脑 UA、编辑网址 */
     private fun showAddressSheet() {
         val wv = webView ?: return
         val b = DialogBrowserAddressBinding.inflate(LayoutInflater.from(context))
@@ -754,29 +725,6 @@ class CustomWebView @JvmOverloads constructor(
         container.addView(searchRow)
     }
 
-    internal fun debugMenu() = showBrowserMenu()
-
-    internal fun debugWindowOpen() {
-        webView?.evaluateJavascript("window.open('https://example.com')", null)
-        binding.root.postDelayed({ Log.i("tabs after window.open=${BrowserTabs.tabs.size}") }, 2_000)
-    }
-
-    internal fun debugTabFlow() {
-        newTab("data:text/html,<h1>Tab2</h1>")
-        switchTab(0)
-        switchTab(1)
-        openTabsManager()
-    }
-
-    internal fun debugTabs() {
-        BrowserTabs.tabs.clear()
-        BrowserTabs.tabs.add(BrowserTabs.Tab("示例页面一", "https://example.com"))
-        BrowserTabs.tabs.add(BrowserTabs.Tab("起点中文网", "https://m.qidian.com"))
-        BrowserTabs.tabs.add(BrowserTabs.Tab("百度", "https://www.baidu.com"))
-        BrowserTabs.activeIndex = 1
-        openTabsManager()
-    }
-
     /** 标签页管理界面 */
     /** 标签被关闭/回收时删除它的缩略图文件 */
     private fun deleteThumb(tab: BrowserTabs.Tab) {
@@ -847,6 +795,7 @@ class CustomWebView @JvmOverloads constructor(
         webView?.visibility = View.GONE
         BrowserTabs.activeIndex = index
         val tab = BrowserTabs.tabs[index]
+        tab.lastUsedAt = System.currentTimeMillis()
         val wv = tab.webView?.takeIf { !it.isDestroyed }
         if (wv != null) {
             // 已有 WebView：直接显示，保留滚动位置/历史/JS 状态
@@ -1261,7 +1210,7 @@ class CustomWebView @JvmOverloads constructor(
             // 首次进入页面时清掉重定向产生的历史，
             // 否则在首页按返回会沿着重定向链反复重新加载首页
             tabForHistory?.let { tab ->
-                if (!tab.entryCleared) {
+                if (!tab.entryCleared && !tab.restored) {
                     binding.root.postDelayed({
                         if (tab.webView === webView) {
                             val currentHost = runCatching {

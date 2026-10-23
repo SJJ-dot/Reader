@@ -58,7 +58,8 @@ class BrowserTabsActivity : BaseActivity() {
                     it.title.contains(keyword, true) ||
                     it.url.contains(keyword, true)
         }
-        adapter.submit(list)
+        // 按最近使用排序，当前标签排最前
+        adapter.submit(list.sortedByDescending { it.lastUsedAt })
     }
 
     private inner class TabsAdapter : RecyclerView.Adapter<TabsAdapter.Holder>() {

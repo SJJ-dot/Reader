@@ -61,12 +61,6 @@ class WebViewBrowserActivity : BaseActivity() {
             BrowserTabs.detachWebViews()
         } else {
             BrowserTabs.restore()
-            if (BrowserSession.consumeNewHomeTab()) {
-                // 上次是后退到底退出：恢复剩余标签后，再补一个主页标签
-                val home = url.ifBlank { com.sjianjun.reader.preferences.globalConfig.bookCityUrl }
-                BrowserTabs.tabs.add(BrowserTabs.Tab("新标签页", home))
-                BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
-            }
         }
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
