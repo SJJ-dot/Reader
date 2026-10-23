@@ -39,18 +39,21 @@ def _chapter_no(title):
 
 
 def verify(query):
-    res = getDetails("https://m.zwda.com/zaigangzongchengweichuanshuo/index_2.html")
+    res = getDetails("https://www.eexsvw.cc/zaigangzongchengweichuanshuo/")
     res = getChapterContent(res["chapterList"][0]["url"])
     return 0 if len(res) > 10 else 1
 
 
 def getSiteUrl():
-    # 聚合搜索返回的是 m.zwda.com，保留它以便归属；实际抓取走 PC 站 eexsvw.cc
-    return "https://m.zwda.com"
+    return "https://www.eexsvw.cc"
 
 
 def _pc_url(url):
-    url = (url or "").replace("://m.zwda.com", "://www.eexsvw.cc")
+    # 旧域名 m.zwda.com 会 302 到 m.eexsvw.cc，统一换成 PC 站
+    url = (url or "")
+    url = url.replace("://m.zwda.com", "://www.eexsvw.cc")
+    url = url.replace("://www.zwda.com", "://www.eexsvw.cc")
+    url = url.replace("://m.eexsvw.cc", "://www.eexsvw.cc")
     return re.sub(r"/index(_\d+)?\.html$", "/", url)
 
 

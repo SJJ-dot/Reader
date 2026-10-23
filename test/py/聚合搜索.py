@@ -45,7 +45,7 @@ _SUPPORTED_HOSTS = (
     "min-yuan.com", "mingzw.net", "qidian.com", "qzhd.cn", "shengxuxu.net",
     "soduzw.org", "sto66.com", "suduguu.com", "terry-haass.com", "washai.net",
     "x33yq.org", "xbiquge345.com", "xshuquge.net", "zhys.tw",
-    "zwda.com",
+    "eexsvw.cc","zwda.com",
 )
 
 
@@ -168,6 +168,11 @@ def search(query):
         # 只保留以书名开头的结果，过滤“相关推荐”和简介片段
         if not _normalize(raw_title).startswith(query_key):
             return
+
+        # 旧域名 zwda.com 已 302 到 eexsvw.cc，统一改写以便绑定 E小说
+        parsed = urlparse(book_url)
+        if _host_key(parsed.netloc.lower()) == "zwda.com":
+            book_url = parsed._replace(netloc="www.eexsvw.cc").geturl()
 
         host = urlparse(book_url).netloc.lower()
         if not host or _is_skipped(host):
