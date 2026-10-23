@@ -629,36 +629,63 @@ class CustomWebView @JvmOverloads constructor(
         dialog.show()
     }
 
-    /** 底部面板打开时：导航栏与面板同色（日间白/夜间深色），图标对比度跟随 */
+    /** 底部面板打开时：导航栏与面板同色（日间白底黑图标 / 夜间深灰底白图标），随夜间模式切换自动更新 */
     private fun applySheetNavBar(dialog: BottomSheetDialog) {
         val window = dialog.window ?: return
-        val night = (resources.configuration.uiMode and
-                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val color = ContextCompat.getColor(context, R.color.dn_background_card)
-        window.navigationBarColor = color
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-        }
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightNavigationBars = !night
-        // Android 15+ 忽略 navigationBarColor：在导航栏区域盖同色 scrim
         val decor = window.decorView as? android.view.ViewGroup ?: return
-        val navBottom = ViewCompat.getRootWindowInsets(decor)
-            ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
-        if (navBottom <= 0) return
-        val scrim = decor.findViewWithTag<android.view.View>("browser_sheet_nav")
-            ?: android.view.View(context).also { v ->
-                v.tag = "browser_sheet_nav"
-                decor.addView(
-                    v,
-                    android.widget.FrameLayout.LayoutParams(
-                        android.view.ViewGroup.LayoutParams.MATCH_PARENT, navBottom
-                    ).apply { gravity = android.view.Gravity.BOTTOM }
-                )
+
+        fun apply() {
+            val night = (resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            // 日间纯白、夜间深灰
+            val color = ContextCompat.getColor(context, R.color.dn_background_card)
+            window.navigationBarColor = color
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
             }
-        scrim.setBackgroundColor(color)
-        scrim.layoutParams = scrim.layoutParams.apply { height = navBottom }
+            // 日间黑色图标、夜间白色图标
+            WindowCompat.getInsetsController(window, decor)
+                .isAppearanceLightNavigationBars = !night
+            // Android 15+ 忽略 navigationBarColor：在导航栏区域盖同色 scrim
+            val navBottom = ViewCompat.getRootWindowInsets(decor)
+                ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+            if (navBottom <= 0) return
+            val scrim = decor.findViewWithTag<android.view.View>("browser_sheet_nav")
+                ?: android.view.View(context).also { v ->
+                    v.tag = "browser_sheet_nav"
+                    decor.addView(
+                        v,
+                        android.widget.FrameLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT, navBottom
+                        ).apply { gravity = android.view.Gravity.BOTTOM }
+                    )
+                }
+            scrim.setBackgroundColor(color)
+            scrim.layoutParams = scrim.layoutParams.apply { height = navBottom }
+        }
+
+        apply()
+        // insets 首次可能尚未就绪（getRootWindowInsets 返回 0），布局后再应用一次
+        decor.post { apply() }
+
+        // 面板打开期间切换夜间模式时自动更新；面板关闭时注销，避免泄漏
+        val callbacks = object : android.content.ComponentCallbacks {
+            override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+                apply()
+            }
+
+            override fun onLowMemory() {}
+        }
+        context.applicationContext.registerComponentCallbacks(callbacks)
+        decor.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: android.view.View) {}
+
+            override fun onViewDetachedFromWindow(v: android.view.View) {
+                context.applicationContext.unregisterComponentCallbacks(callbacks)
+                decor.removeOnAttachStateChangeListener(this)
+            }
+        })
     }
 
     /** 输入时用历史记录做候选，末尾附一条搜索入口 */
@@ -948,10 +975,6 @@ class CustomWebView @JvmOverloads constructor(
                 R.id.menu_rb_deny -> 2
                 else -> 0
             }
-        }
-        b.menuHome.click {
-            dialog.dismiss()
-            binding.home.performClick()
         }
         b.menuDesktop.click {
             val wv = webView

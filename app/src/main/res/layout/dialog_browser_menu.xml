@@ -82,66 +82,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/menu_home"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/browser_navigation_home"
-                    app:tint="#34A853" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="主页"
-                    android:textColor="@color/dn_text_color_black"
-                    android:textSize="11sp" />
-            </LinearLayout>
-            <LinearLayout
-                android:id="@+id/menu_exit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_menu_exit"
-                    app:tint="#EA4335" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="退出"
-                    android:textColor="@color/dn_text_color_black"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 第二行 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp">
-
-            <LinearLayout
                 android:id="@+id/menu_shelf"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -166,6 +106,43 @@
                     android:textColor="@color/dn_text_color_black"
                     android:textSize="11sp" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/menu_night_mode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
+
+                <ImageView
+                    android:id="@+id/iv_night_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_menu_night"
+                    app:tint="#3949AB" />
+
+                <TextView
+                    android:id="@+id/tv_night_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="夜间模式"
+                    android:textColor="@color/dn_text_color_black"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 第二行 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
 
             <LinearLayout
                 android:id="@+id/menu_desktop"
@@ -244,7 +221,7 @@
                     android:textSize="11sp" />
             </LinearLayout>
             <LinearLayout
-                android:id="@+id/menu_night_mode"
+                android:id="@+id/menu_exit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -255,18 +232,16 @@
                 android:paddingBottom="6dp">
 
                 <ImageView
-                    android:id="@+id/iv_night_icon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_menu_night"
-                    app:tint="#3949AB" />
+                    android:src="@drawable/ic_menu_exit"
+                    app:tint="#EA4335" />
 
                 <TextView
-                    android:id="@+id/tv_night_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="夜间模式"
+                    android:text="退出"
                     android:textColor="@color/dn_text_color_black"
                     android:textSize="11sp" />
             </LinearLayout>
