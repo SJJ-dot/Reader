@@ -110,9 +110,12 @@ class BrowserPageFragment : BaseFragment() {
             if (url == null) {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
-            // 有恢复的标签时，加载当前标签页面
-            BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.url?.takeIf { it.isNotBlank() }
-                ?.let { url = it }
+            // 有恢复的标签时，加载当前标签页面（仅书城主入口恢复标签；
+            // 字典/搜索等外部打开指定 URL 时不做恢复，避免覆盖传入的 URL）
+            if (arguments?.getBoolean(KEY_RESTORE_TABS, false) == true) {
+                BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.url?.takeIf { it.isNotBlank() }
+                    ?.let { url = it }
+            }
             crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
 
             customWebView.crossOriginOverride = crossOriginMode
@@ -126,6 +129,9 @@ class BrowserPageFragment : BaseFragment() {
 
             EventBus.observe(EventKey.OPEN_BROWSER_URL, viewLifecycleOwner, Observer<String> {
                 if (it.isNotBlank()) customWebView.loadUrl(it)
+            })
+            EventBus.observe(EventKey.OPEN_BROWSER_URL_NEW_TAB, viewLifecycleOwner, Observer<String> {
+                if (it.isNotBlank()) customWebView.openInNewTab(it)
             })
             // 右侧抽屉 UI 已移除，禁止手势打开
             drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
@@ -500,14 +506,17 @@ class BrowserPageFragment : BaseFragment() {
     companion object {
         /** 重建时恢复 WebView 状态用（当前页/历史） */
         private const val KEY_WEB_STATE = "book_city_web_state"
+        /** 是否恢复上次标签列表 */
+        private const val KEY_RESTORE_TABS = "restore_tabs"
 
         @JvmStatic
-        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1) =
+        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1, restoreTabs: Boolean = false) =
             BrowserPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
                     putString(WEB_ID, webId)
                     putInt(CROSS_ORIGIN_MODE, crossOriginMode)
+                    putBoolean(KEY_RESTORE_TABS, restoreTabs)
                 }
             }
     }

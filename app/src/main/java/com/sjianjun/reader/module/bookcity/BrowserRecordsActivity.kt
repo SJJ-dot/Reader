@@ -207,6 +207,17 @@ class BrowserRecordsActivity : BaseActivity() {
                     EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
                     finish()
                 }
+                binding.root.setOnLongClickListener {
+                    MaterialAlertDialogBuilder(it.context)
+                        .setTitle(row.title.ifBlank { row.url })
+                        .setItems(arrayOf("在新标签页打开")) { _, _ ->
+                            EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
+                            finish()
+                        }
+                        .setNegativeButton("取消", null)
+                        .show()
+                    true
+                }
                 binding.btnSetHome.setOnClickListener {
                     if (row.url.isBlank()) return@setOnClickListener
                     globalConfig.bookCityUrl = row.url

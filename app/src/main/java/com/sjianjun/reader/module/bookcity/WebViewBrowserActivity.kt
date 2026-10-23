@@ -23,6 +23,8 @@ class WebViewBrowserActivity : BaseActivity() {
     private val url by lazy { intent.getStringExtra(URL) ?: "" }
     private val webId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
     private val crossOriginMode by lazy { intent.getIntExtra(CROSS_ORIGIN_MODE, -1) }
+    /** 是否恢复上次的标签列表：仅书城主入口为 true，字典/搜索等外部打开为 false */
+    private val restoreTabs by lazy { intent.getBooleanExtra(RESTORE_TABS, false) }
     private val binding by lazy { ActivityBrowserReaderBinding.inflate(layoutInflater) }
 
 
@@ -59,12 +61,12 @@ class WebViewBrowserActivity : BaseActivity() {
         if (savedInstanceState != null) {
             // Activity 重建后旧标签的 WebView 已失效，只清引用，保留标签列表
             BrowserTabs.detachWebViews()
-        } else {
+        } else if (restoreTabs) {
             BrowserTabs.restore()
         }
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, webId, crossOriginMode))
+                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, webId, crossOriginMode, restoreTabs))
                 .commitNowAllowingStateLoss()
         }
 
@@ -86,20 +88,21 @@ class WebViewBrowserActivity : BaseActivity() {
 
     override fun onDestroy() {
         if (isFinishing) {
-            if (BrowserTabs.exitByBack) {
-                // 后退到底退出：清空标签，下次进入新建标签页
+            if (BrowserTabs.tabs.isEmpty()) {
+                // 没有剩余标签：清空持久化，下次进入自动重建主页标签
                 BrowserTabs.clearPersisted()
             } else {
-                // 主动退出：保留标签与当前页，下次进入恢复
+                // 还有剩余标签：保留，下次进入恢复
                 BrowserTabs.persist()
             }
-            BrowserTabs.exitByBack = false
             BrowserTabs.tabs.clear()
         }
         super.onDestroy()
     }
 
     companion object {
+        const val RESTORE_TABS = "restore_tabs"
+
         fun startActivity(ctx: Context, url: String = "", id: String = "", crossOriginMode: Int = -1) {
             if (url.isEmpty() && id.isBlank()) {
                 Log.e("URL is empty, cannot start BrowserReaderActivity")

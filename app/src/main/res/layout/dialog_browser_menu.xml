@@ -82,32 +82,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/menu_share"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_browser_share"
-                    app:tint="#1A73E8" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="分享"
-                    android:textColor="@color/dn_text_color_black"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/menu_home"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

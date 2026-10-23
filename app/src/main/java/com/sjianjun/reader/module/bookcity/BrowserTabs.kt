@@ -21,7 +21,15 @@ object BrowserTabs {
         var entryCleared: Boolean = false,
         var restored: Boolean = false,
         var lastUsedAt: Long = System.currentTimeMillis(),
-    )
+        /** 单一数据源：前进/后退栈与当前页都以此为准 */
+        val session: TabSession = TabSession(),
+    ) {
+        fun syncToSession() {
+            session.currentUrl = url
+            session.title = title
+            session.lastUsedAt = lastUsedAt
+        }
+    }
 
     private data class SavedTab(
         val title: String,
@@ -39,19 +47,21 @@ object BrowserTabs {
     val tabs = mutableListOf<Tab>()
     var activeIndex: Int = 0
 
-    /** 本次退出是否由后退到底触发：是则下次进入不恢复标签 */
-    var exitByBack: Boolean = false
-
     var onSelect: ((Int) -> Unit)? = null
     var onClose: ((Int) -> Unit)? = null
     var onNew: (() -> Unit)? = null
 
-    /** 保存标签列表（标题/URL/选中项），下次进入浏览器恢复 */
+    /** 保存标签列表（标题/URL/前进后退栈/选中项），下次进入浏览器恢复 */
     fun persist() {
-        val saved = tabs.map {
+        val saved = tabs.map { tab ->
+            val back = tab.session.backStack.toList()
+            val forward = tab.session.forwardStack.toList()
+            val current = tab.session.currentUrl.ifBlank { tab.url }
+            val history = back + current + forward
+            val index = back.size
             SavedTab(
-                it.title, it.url, it.id.toString(), it.thumbPath,
-                it.history.toList(), it.historyIndex, it.lastUsedAt
+                tab.title, current, tab.id.toString(), tab.thumbPath,
+                history, index, tab.lastUsedAt
             )
         }
         mmkv.encode("tabs_v3", gson.toJson(saved))
@@ -67,31 +77,35 @@ object BrowserTabs {
         }.getOrDefault(emptyList())
         if (saved.isEmpty()) return
         runCatching {
-            tabs.addAll(saved.map {
-                Tab(
-                    it.title, it.url,
-                    id = java.util.UUID.fromString(it.id),
-                    thumbPath = it.thumbPath,
-                    history = it.history.orEmpty().toMutableList(),
-                    historyIndex = it.historyIndex ?: -1,
-                    lastUsedAt = it.lastUsedAt,
-                    restored = true
-                )
-            })
+            tabs.addAll(saved.map { it.toTab() })
         }.onFailure {
             tabs.clear()
-            tabs.addAll(saved.map {
-                Tab(
-                    it.title, it.url,
-                    thumbPath = it.thumbPath,
-                    history = it.history.orEmpty().toMutableList(),
-                    historyIndex = it.historyIndex ?: -1,
-                    lastUsedAt = it.lastUsedAt,
-                    restored = true
-                )
-            })
+            tabs.addAll(saved.map { it.toTab() })
         }
         activeIndex = mmkv.decodeInt("active_v3", 0).coerceIn(tabs.indices)
+    }
+
+    private fun SavedTab.toTab(): Tab {
+        val tab = Tab(
+            title, url,
+            id = runCatching { java.util.UUID.fromString(id) }.getOrDefault(java.util.UUID.randomUUID()),
+            thumbPath = thumbPath,
+            lastUsedAt = if (lastUsedAt > 0) lastUsedAt else System.currentTimeMillis(),
+        )
+        val list = history.orEmpty()
+        val idx = (historyIndex ?: -1).coerceIn(-1, list.lastIndex)
+        val back = list.take((idx + 1).coerceAtLeast(0))
+        if (back.isNotEmpty()) {
+            tab.session.backStack.addAll(back.dropLast(1))
+            tab.url = back.last()
+        }
+        tab.session.forwardStack.addAll(list.drop(back.size))
+        tab.session.currentUrl = url
+        tab.session.title = title
+        tab.restored = true
+        tab.history.addAll(list)
+        tab.historyIndex = idx
+        return tab
     }
 
     fun clearPersisted() {

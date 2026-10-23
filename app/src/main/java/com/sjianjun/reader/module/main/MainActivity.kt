@@ -125,6 +125,10 @@ class MainActivity : BaseActivity() {
                             com.sjianjun.reader.module.bookcity.BrowserSession.consumeResume()
                                 ?: com.sjianjun.reader.preferences.globalConfig.bookCityUrl
                         )
+                        putExtra(
+                            com.sjianjun.reader.module.bookcity.WebViewBrowserActivity.RESTORE_TABS,
+                            true
+                        )
                     }
                 )
                 return@setNavigationItemSelectedListener true

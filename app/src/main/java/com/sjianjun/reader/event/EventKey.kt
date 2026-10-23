@@ -26,6 +26,9 @@ object EventKey {
     val WEB_VIEW_SETTINGS = "WEB_VIEW_SETTINGS"
     val OPEN_BROWSER_URL = "OPEN_BROWSER_URL"
 
+    /** 在新标签页打开链接 */
+    val OPEN_BROWSER_URL_NEW_TAB = "OPEN_BROWSER_URL_NEW_TAB"
+
     /** 阅读页净化替换规则变更 */
     val REPLACEMENT_RULES_CHANGED = "REPLACEMENT_RULES_CHANGED"
 

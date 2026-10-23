@@ -109,16 +109,16 @@
                     android:scaleType="centerInside"
                     android:src="@drawable/browser_navigation_forward" />
 
-                <TextView
-                    android:id="@+id/new_tab"
+                <ImageView
+                    android:id="@+id/home"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="?android:attr/selectableItemBackground"
-                    android:gravity="center"
-                    android:text="+"
-                    android:textColor="@color/dn_text_color_black"
-                    android:textSize="26sp" />
+                    android:padding="12dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/browser_navigation_home"
+                    app:tint="@color/dn_text_color_black" />
 
                 <FrameLayout
                     android:layout_width="0dp"
@@ -148,12 +148,6 @@
                     android:src="@drawable/browser_navigation_menu"
                     app:tint="@color/dn_text_color_black" />
 
-                <!-- 首页：暂时收进菜单前先保留控件，避免代码引用失效 -->
-                <ImageView
-                    android:id="@+id/home"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
