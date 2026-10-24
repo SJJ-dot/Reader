@@ -4,6 +4,12 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light" />
 
+    <!-- 浏览器长按菜单：紧凑 popup（更小的菜单项高度） -->
+    <style name="AppTheme.PopupOverlay.Compact" parent="AppTheme.PopupOverlay">
+        <item name="android:listPreferredItemHeightSmall">40dp</item>
+        <item name="android:listPreferredItemHeight">40dp</item>
+    </style>
+
     <style name="textAppearanceSubtitle2" parent="TextAppearance.MaterialComponents.Subtitle2" />
 
 

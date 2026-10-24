@@ -47,6 +47,7 @@ object BrowserTabs {
     var onSelect: ((Int) -> Unit)? = null
     var onClose: ((Int) -> Unit)? = null
     var onNew: (() -> Unit)? = null
+    var onDuplicate: ((Int) -> Unit)? = null
 
     /** 保存标签列表（标题/URL/前进后退栈/选中项），下次进入浏览器恢复 */
     fun persist() {

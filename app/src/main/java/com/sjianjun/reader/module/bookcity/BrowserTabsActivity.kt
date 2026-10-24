@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -25,6 +26,8 @@ class BrowserTabsActivity : BaseActivity() {
     private val binding by lazy { ActivityBrowserTabsBinding.inflate(layoutInflater) }
     private val adapter = TabsAdapter()
     private var keyword = ""
+    /** 当前长按弹出的菜单（拖动开始时关闭） */
+    private var currentMenu: PopupMenu? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,9 +65,15 @@ class BrowserTabsActivity : BaseActivity() {
         }
         // 按打开顺序排序（标签列表本身即打开顺序）
         adapter.submit(list)
+        // 自动定位到当前显示的标签
+        val activeTab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
+        val activePos = if (activeTab != null) list.indexOf(activeTab) else -1
+        if (activePos >= 0) {
+            binding.rvTabs.post { binding.rvTabs.scrollToPosition(activePos) }
+        }
     }
 
-    /** 长按拖动调整标签顺序（搜索过滤时禁用） */
+    /** 长按立即弹菜单；开始拖动时隐藏菜单并进入排序（搜索过滤时禁用） */
     private fun attachDragSort() {
         val callback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN or
@@ -79,11 +88,26 @@ class BrowserTabsActivity : BaseActivity() {
                 target: RecyclerView.ViewHolder
             ): Boolean {
                 if (keyword.isNotBlank()) return false
+                // 拖动开始：隐藏长按菜单
+                currentMenu?.dismiss()
+                currentMenu = null
                 adapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
                 return true
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    // 长按：立即弹出菜单（不等松手）
+                    val vh = viewHolder ?: return
+                    val pos = vh.bindingAdapterPosition
+                    if (pos >= 0) {
+                        showTabMenu(pos, vh.itemView)
+                    }
+                }
+            }
 
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                 super.clearView(recyclerView, viewHolder)
@@ -93,6 +117,36 @@ class BrowserTabsActivity : BaseActivity() {
             }
         }
         ItemTouchHelper(callback).attachToRecyclerView(binding.rvTabs)
+    }
+
+    /** 标签长按菜单：复制 / 关闭 */
+    private fun showTabMenu(index: Int, anchor: View) {
+        if (index !in BrowserTabs.tabs.indices) return
+        currentMenu?.dismiss()
+        val popup = PopupMenu(
+            android.view.ContextThemeWrapper(this, R.style.AppTheme_PopupOverlay_Compact),
+            anchor
+        )
+        popup.menu.add(0, 0, 0, "复制标签页")
+        popup.menu.add(0, 1, 0, "关闭标签页")
+        popup.setOnMenuItemClickListener { item ->
+            currentMenu = null
+            when (item.itemId) {
+                0 -> {
+                    BrowserTabs.onDuplicate?.invoke(index)
+                    finish()
+                }
+
+                1 -> {
+                    BrowserTabs.onClose?.invoke(index)
+                    refresh()
+                }
+            }
+            true
+        }
+        popup.setOnDismissListener { currentMenu = null }
+        currentMenu = popup
+        popup.show()
     }
 
     private inner class TabsAdapter : RecyclerView.Adapter<TabsAdapter.Holder>() {
@@ -141,6 +195,10 @@ class BrowserTabsActivity : BaseActivity() {
             holder.binding.root.setOnClickListener {
                 BrowserTabs.onSelect?.invoke(index)
                 finish()
+            }
+            holder.binding.root.setOnLongClickListener {
+                // 长按由 ItemTouchHelper 处理（弹菜单/拖动），不触发点击切换
+                true
             }
             holder.binding.btnClose.setOnClickListener {
                 BrowserTabs.onClose?.invoke(index)

@@ -53,16 +53,6 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/btn_set_home"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="设为主页"
-            android:padding="6dp"
-            android:src="@drawable/browser_navigation_home"
-            app:tint="@color/colorPrimary" />
-
-        <ImageView
             android:id="@+id/btn_delete"
             android:layout_width="30dp"
             android:layout_height="30dp"

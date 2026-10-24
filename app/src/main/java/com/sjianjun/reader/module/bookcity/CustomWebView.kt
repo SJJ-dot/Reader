@@ -770,6 +770,7 @@ class CustomWebView @JvmOverloads constructor(
         BrowserTabs.onSelect = { switchTab(it) }
         BrowserTabs.onClose = { closeTab(it) }
         BrowserTabs.onNew = { newTab() }
+        BrowserTabs.onDuplicate = { duplicateTab(it) }
         context.startActivity(Intent(context, BrowserTabsActivity::class.java))
     }
 
@@ -780,23 +781,47 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun homeUrl(): String = webBook?.url ?: globalConfig.bookCityUrl
 
-    private fun newTab(url: String = "", fromPopup: Boolean = false) {
-        if (BrowserTabs.tabs.size >= MAX_TABS) {
-            // 达到上限：回收最久未使用（非当前）的标签，信息已随列表落盘
-            val activeIndex = BrowserTabs.activeIndex
-            val recycleIndex = BrowserTabs.tabs.indices
-                .filter { it != activeIndex }
-                .minByOrNull { BrowserTabs.tabs[it].lastUsedAt }
-            if (recycleIndex != null) {
-                val old = BrowserTabs.tabs.removeAt(recycleIndex)
-                deleteThumb(old)
-                old.webView?.let {
-                    binding.webViewContainer.removeView(it)
-                    it.destroy()
-                }
-                if (recycleIndex < activeIndex) BrowserTabs.activeIndex--
+    /** 标签数达到上限时，回收最久未使用（非当前）的标签，信息已随列表落盘 */
+    private fun ensureTabCapacity() {
+        if (BrowserTabs.tabs.size < MAX_TABS) return
+        val activeIndex = BrowserTabs.activeIndex
+        val recycleIndex = BrowserTabs.tabs.indices
+            .filter { it != activeIndex }
+            .minByOrNull { BrowserTabs.tabs[it].lastUsedAt }
+        if (recycleIndex != null) {
+            val old = BrowserTabs.tabs.removeAt(recycleIndex)
+            deleteThumb(old)
+            old.webView?.let {
+                binding.webViewContainer.removeView(it)
+                it.destroy()
             }
+            if (recycleIndex < activeIndex) BrowserTabs.activeIndex--
         }
+    }
+
+    /** 复制标签：新建一个 URL/前进后退栈一致的标签并切换过去 */
+    private fun duplicateTab(index: Int) {
+        if (index !in BrowserTabs.tabs.indices) return
+        val src = BrowserTabs.tabs[index]
+        val activeTab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
+        ensureTabCapacity()
+        // ensureTabCapacity 可能回收标签导致索引变化，重新定位被复制标签
+        val srcIndex = BrowserTabs.tabs.indexOf(src)
+        if (srcIndex < 0) return
+        val targetUrl = src.session.currentUrl.ifBlank { src.url }
+        val tab = BrowserTabs.Tab(src.title.ifBlank { "新标签页" }, targetUrl, fromPopup = src.fromPopup)
+        tab.session.backStack.addAll(src.session.backStack)
+        tab.session.forwardStack.addAll(src.session.forwardStack)
+        tab.session.currentUrl = targetUrl
+        // 新标签插入到被复制标签后面，不切换当前显示（WebView 在切换时按需创建）
+        BrowserTabs.tabs.add(srcIndex + 1, tab)
+        BrowserTabs.activeIndex = BrowserTabs.tabs.indexOf(activeTab).coerceAtLeast(0)
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+        BrowserTabs.persist()
+    }
+
+    private fun newTab(url: String = "", fromPopup: Boolean = false) {
+        ensureTabCapacity()
         // 新建前先给当前标签截图，否则切走后它的卡片没有缩略图
         BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { captureThumb(it) }
         BrowserTabs.persist()
@@ -1001,17 +1026,6 @@ class CustomWebView @JvmOverloads constructor(
         dialog.show()
     }
 
-    /** 把当前页加入收藏夹（即主页列表） */
-    private fun addCurrentToFavorites() {
-        val url = webView?.url ?: return
-        if (!url.startsWith("http")) {
-            toast("当前页面无法收藏")
-            return
-        }
-        BookmarkStore.add(webView?.title.orEmpty(), url)
-        toast("已加入收藏夹")
-    }
-
     private fun openRecords(mode: String) {
         val wv = webView ?: return
         context.startActivity(Intent(context, BrowserRecordsActivity::class.java).apply {
@@ -1019,45 +1033,6 @@ class CustomWebView @JvmOverloads constructor(
             putExtra(BrowserRecordsActivity.CURRENT_TITLE, wv.title.orEmpty())
             putExtra(BrowserRecordsActivity.CURRENT_URL, wv.url.orEmpty())
         })
-    }
-
-    /** 收藏夹：收藏当前页 / 打开已收藏的网页 */
-    internal fun showBookmarks() {
-        val bookmarks = BookmarkStore.list()
-        val items = mutableListOf("收藏当前页")
-        items += bookmarks.map { "${it.title}\n${it.url}" }
-        MaterialAlertDialogBuilder(context)
-            .setTitle("收藏夹")
-            .setItems(items.toTypedArray()) { _, which ->
-                if (which == 0) {
-                    val wv = webView ?: return@setItems
-                    BookmarkStore.add(wv.title ?: "", wv.url ?: "")
-                    toast("已收藏")
-                } else {
-                    loadUrl(bookmarks[which - 1].url)
-                }
-            }
-            .setNegativeButton("关闭", null)
-            .show()
-    }
-
-    /** 历史记录：按时间倒序，点击直接打开 */
-    internal fun showHistory() {
-        val history = History.list.sortedByDescending { it.time }
-        if (history.isEmpty()) {
-            toast("暂无历史记录")
-            return
-        }
-        val items = history.map { it.title.ifBlank { it.url } }
-        MaterialAlertDialogBuilder(context)
-            .setTitle("历史记录")
-            .setItems(items.toTypedArray()) { _, which -> loadUrl(history[which].url) }
-            .setNeutralButton("清空") { _, _ ->
-                History.list = emptyList()
-                toast("已清空")
-            }
-            .setNegativeButton("关闭", null)
-            .show()
     }
 
     /** 输入内容：网址直接打开，否则用当前搜索引擎搜索 */
@@ -1245,6 +1220,7 @@ class CustomWebView @JvmOverloads constructor(
                 }
             }
             // 页面加载完成后再更新 title（如果可用）并持久化
+            binding.swipeRefresh.isRefreshing = false
             updateWebBookIfSameDomain(webView, url, updateTitle = true)
             binding.tvUrl.text = displayUrl(url)
             val tabForHistory = BrowserTabs.tabs.firstOrNull { it.webView === webView }
@@ -1372,6 +1348,19 @@ class CustomWebView @JvmOverloads constructor(
             true
         }
 
+        // 下拉刷新页面：仅当当前 WebView 滚到顶部时触发
+        binding.swipeRefresh.setOnChildScrollUpCallback { _, _ ->
+            webView?.canScrollVertically(-1) == true
+        }
+        binding.swipeRefresh.setOnRefreshListener {
+            val wv = webView
+            if (wv == null || wv.url.isNullOrBlank() || wv.url == "about:blank") {
+                binding.swipeRefresh.isRefreshing = false
+            } else {
+                forceReload(showToast = false)
+            }
+        }
+
         // 后退按钮：返回上一页（历史回退），退出浏览器用系统返回键
         binding.backward.click {
             if (!back()) {
@@ -1401,28 +1390,6 @@ class CustomWebView @JvmOverloads constructor(
             }
             true
         }
-    }
-
-    fun clearHistory() {
-        History.list = mutableListOf()
-        history.postValue(mutableListOf())
-    }
-
-    fun removeHistory(item: HistoryItem) {
-        val list = history.value!!.toMutableList()
-        list.remove(item)
-        History.list = list
-        history.postValue(list)
-    }
-
-    fun markHistory(item: HistoryItem) {
-        item.isMark = !item.isMark
-        val list = history.value!!.toMutableList()
-        list.remove(item)
-        list.add(0, item)
-        list.sortDescending()
-        History.list = list
-        history.postValue(list)
     }
 
     fun forceReload(showToast: Boolean = true) {

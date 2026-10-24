@@ -6,29 +6,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.adapter.BaseAdapter
-import com.sjianjun.reader.bean.HomeUrl
 import com.sjianjun.reader.bean.WebBook
-import com.sjianjun.reader.databinding.DialogEditTextBinding
-import com.sjianjun.reader.databinding.FragmentBookCityHomeItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHistoryItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
@@ -37,14 +30,11 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.gone
-import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
-import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 class BrowserPageFragment : BaseFragment() {
@@ -133,9 +123,6 @@ class BrowserPageFragment : BaseFragment() {
             EventBus.observe(EventKey.OPEN_BROWSER_URL_NEW_TAB, viewLifecycleOwner, Observer<String> {
                 if (it.isNotBlank()) customWebView.openInNewTab(it)
             })
-            // 右侧抽屉 UI 已移除，禁止手势打开
-            drawerLayout.setDrawerLockMode(androidx.drawerlayout.widget.DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-            var lastTime = 0L
             val binding = this
             setOnBackPressed {
                 val rootInsets = ViewCompat.getRootWindowInsets(binding.root)
@@ -149,214 +136,6 @@ class BrowserPageFragment : BaseFragment() {
                 } else {
                     true
                 }
-            }
-        }
-    }
-
-    private fun initHomeListAdapterData(homeAdapter: HomeListAdapter) {
-        lifecycleScope.launch {
-            val sites = vm.getAllBookSourceSite().distinct()
-            val list = globalConfig.bookCityUrlHistoryList.value ?: emptyList()
-            homeAdapter.data.clear()
-            homeAdapter.data.addAll(list.map { HomeUrl(url = it) })
-            homeAdapter.data.addAll(sites)
-            homeAdapter.notifyDataSetChanged()
-        }
-    }
-
-    private fun initDrawer(drawer: DrawerLayout, view: CustomWebView, binding: FragmentBookCityPageBinding) {
-        val historyAdapter = HistoryListAdapter()
-        historyAdapter.onClick = {
-            view.loadUrl(it)
-        }
-        historyAdapter.onDeleteHistory = { item ->
-            if (item == null) {
-                view.clearHistory()
-            } else {
-                view.removeHistory(item)
-            }
-        }
-        historyAdapter.onMark = { item ->
-            view.markHistory(item)
-        }
-        view.history.observe(viewLifecycleOwner) {
-            historyAdapter.data = it.toMutableList()
-            historyAdapter.notifyDataSetChanged()
-        }
-        val hostListAdapter = HostListAdapter(adBlock)
-        val blackListAdapter = BlackListAdapter(adBlock)
-        val whiteListAdapter = WhiteListAdapter(adBlock)
-        val homeAdapter = HomeListAdapter {
-            url = it.url
-            view.loadUrl(it.url)
-            drawer.closeDrawer(GravityCompat.END)
-            view.adBlock = adBlock
-            initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
-        }
-        homeAdapter.onLongClickListener = { item ->
-            MaterialAlertDialogBuilder(requireActivity())
-                .setTitle(item.url)
-                .setItems(arrayOf("设为主页", "编辑", "删除")) { _, which ->
-                    when (which) {
-                        0 -> {
-                            globalConfig.bookCityUrl = item.url
-                            toast("已设为主页")
-                            homeAdapter.notifyDataSetChanged()
-                        }
-
-                        1 -> {
-                            // 编辑：弹出输入框修改 URL
-                            val input = android.widget.EditText(requireContext()).apply {
-                                setText(item.url)
-                                setSelection(item.url.length)
-                            }
-                            MaterialAlertDialogBuilder(requireActivity())
-                                .setTitle("编辑网址")
-                                .setView(input)
-                                .setPositiveButton(android.R.string.ok) { _, _ ->
-                                    val newUrl = input.text.toString().trim()
-                                    if (newUrl.isBlank()) return@setPositiveButton
-                                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                                    val idx = list.indexOf(item.url)
-                                    if (idx >= 0) {
-                                        list[idx] = newUrl
-                                        globalConfig.bookCityUrlHistoryList.postValue(list)
-                                    }
-                                }
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .show()
-                        }
-
-                        2 -> {
-                            // 删除
-                            MaterialAlertDialogBuilder(requireActivity())
-                                .setTitle("删除")
-                                .setMessage("确定删除吗？\n${item.url}")
-                                .setPositiveButton("删除") { _, _ ->
-                                    val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                                    list.remove(item.url)
-                                    globalConfig.bookCityUrlHistoryList.postValue(list)
-                                }
-                                .setNegativeButton("取消", null)
-                                .show()
-                        }
-                    }
-                }
-                .show()
-        }
-        globalConfig.bookCityUrlHistoryList.observe(viewLifecycleOwner) {
-            initHomeListAdapterData(homeAdapter)
-        }
-        binding.fab.click {
-            val bindingDialog = DialogEditTextBinding.inflate(LayoutInflater.from(requireContext()))
-            bindingDialog.editView.apply {
-                val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                setFilterValues(historyList)
-                delCallBack = {
-                    if (historyList.remove(it)) {
-                        globalConfig.bookCityUrlHistoryList.postValue(historyList)
-                    }
-                }
-            }
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("主页记录")
-                .setView(bindingDialog.root)
-                .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                    var url = bindingDialog.editView.text.toString().trim().lowercase()
-                    if (!url.startsWith("http")) {
-                        url = "https://$url"
-                    }
-                    if (url.toHttpUrlOrNull() != null) {
-                        val historyList = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
-                        historyList.remove(url)
-                        historyList.add(0, url)
-                        globalConfig.bookCityUrlHistoryList.postValue(historyList)
-                        toast("设置成功")
-                        initHomeListAdapterData(homeAdapter)
-                    } else {
-                        toast("请输入正确的网址")
-                    }
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-        }
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.adapter = homeAdapter
-        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                Log.i("tab:${tab?.position}")
-                binding.recyclerView.adapter = when (tab?.position) {
-                    0 -> homeAdapter
-                    1 -> hostListAdapter
-                    2 -> blackListAdapter
-                    3 -> whiteListAdapter
-                    4 -> historyAdapter
-                    else -> hostListAdapter
-                }
-            }
-
-            override fun onTabUnselected(tab: TabLayout.Tab?) {
-            }
-
-            override fun onTabReselected(tab: TabLayout.Tab?) {
-            }
-        })
-        initAdBlockList(hostListAdapter, blackListAdapter, whiteListAdapter)
-    }
-
-    private fun initAdBlockList(
-        hostListAdapter: HostListAdapter,
-        blackListAdapter: BlackListAdapter,
-        whiteListAdapter: WhiteListAdapter,
-    ) {
-        hostListAdapter.adBlock.hostList.removeObservers(viewLifecycleOwner)
-        hostListAdapter.adBlock.blacklist.removeObservers(viewLifecycleOwner)
-        hostListAdapter.adBlock.whitelist.removeObservers(viewLifecycleOwner)
-
-        hostListAdapter.adBlock = adBlock
-        blackListAdapter.adBlock = adBlock
-        whiteListAdapter.adBlock = adBlock
-        adBlock.hostList.observe(viewLifecycleOwner) {
-            hostListAdapter.data = it
-            hostListAdapter.notifyDataSetChanged()
-        }
-        adBlock.blacklist.observe(viewLifecycleOwner) {
-            blackListAdapter.data = it
-            blackListAdapter.notifyDataSetChanged()
-        }
-        adBlock.whitelist.observe(viewLifecycleOwner) {
-            whiteListAdapter.data = it
-            whiteListAdapter.notifyDataSetChanged()
-        }
-    }
-
-    class HomeListAdapter(val onClick: (url: HomeUrl) -> Unit) : BaseAdapter<HomeUrl>(R.layout.fragment_book_city_home_item) {
-        var onLongClickListener: (HomeUrl) -> Unit = {}
-
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val binding = FragmentBookCityHomeItemBinding.bind(holder.itemView)
-            val homeUrl = data[position]
-            binding.tvHost.text = homeUrl.title ?: homeUrl.url
-            if (homeUrl.supportSearch == false) {
-                binding.tvHostFlag.show()
-            } else {
-                binding.tvHostFlag.gone()
-            }
-            binding.root.click {
-                onClick(homeUrl)
-            }
-            binding.root.setOnLongClickListener {
-                if (homeUrl.supportSearch != null) {
-                    toast("书源地址无法编辑或删除")
-                    return@setOnLongClickListener true
-                }
-                onLongClickListener(homeUrl)
-                true
-            }
-            if (globalConfig.bookCityUrl == homeUrl.url) {
-                binding.ivMark.show()
-            } else {
-                binding.ivMark.gone()
             }
         }
     }

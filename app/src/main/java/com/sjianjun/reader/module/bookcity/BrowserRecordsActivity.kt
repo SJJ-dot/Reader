@@ -245,7 +245,10 @@ class BrowserRecordsActivity : BaseActivity() {
                     finish()
                 }
                 binding.root.setOnLongClickListener {
-                    val popup = PopupMenu(it.context, binding.root)
+                    val popup = PopupMenu(
+                        android.view.ContextThemeWrapper(it.context, R.style.AppTheme_PopupOverlay_Compact),
+                        binding.root
+                    )
                     if (bookmarksMode && row.removable) {
                         popup.menu.add(0, 0, 0, "编辑")
                     }
@@ -253,6 +256,7 @@ class BrowserRecordsActivity : BaseActivity() {
                     if (!bookmarksMode) {
                         popup.menu.add(0, 2, 0, "添加到收藏")
                     }
+                    popup.menu.add(0, 3, 0, "设为主页")
                     popup.setOnMenuItemClickListener { menuItem ->
                         when (menuItem.itemId) {
                             0 -> {
@@ -268,16 +272,18 @@ class BrowserRecordsActivity : BaseActivity() {
                                 BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
                                 toast("已收藏")
                             }
+
+                            3 -> {
+                                if (row.url.isNotBlank()) {
+                                    globalConfig.bookCityUrl = row.url
+                                    toast("已设为主页")
+                                }
+                            }
                         }
                         true
                     }
                     popup.show()
                     true
-                }
-                binding.btnSetHome.setOnClickListener {
-                    if (row.url.isBlank()) return@setOnClickListener
-                    globalConfig.bookCityUrl = row.url
-                    toast("已设为主页")
                 }
                 binding.btnDelete.visibility = if (row.removable) View.VISIBLE else View.GONE
                 binding.btnDelete.setOnClickListener {
