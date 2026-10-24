@@ -32,6 +32,18 @@ object BookmarkStore {
         save(list)
     }
 
+    /** 编辑收藏项：修改名称与地址，保持原位置与收藏时间 */
+    fun update(oldUrl: String, title: String, url: String) {
+        if (oldUrl.isBlank() || url.isBlank()) return
+        val list = list()
+        val idx = list.indexOfFirst { it.url == oldUrl }
+        if (idx < 0) return
+        val time = list[idx].time
+        val before = list.subList(0, idx).filterNot { it.url == url }
+        val after = list.subList(idx + 1, list.size).filterNot { it.url == url }
+        save(before + listOf(Bookmark(title = title.ifBlank { url }, url = url, time = time)) + after)
+    }
+
     fun remove(url: String) {
         save(list().filterNot { it.url == url })
     }

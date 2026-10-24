@@ -146,6 +146,42 @@ class BrowserRecordsActivity : BaseActivity() {
             .show()
     }
 
+    /** 编辑收藏项的名称与地址 */
+    private fun showEditBookmarkDialog(row: Row) {
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 0)
+        }
+        val nameInput = android.widget.EditText(this).apply {
+            hint = "名称"
+            setText(row.title)
+            setSelection(text.length)
+        }
+        val urlInput = android.widget.EditText(this).apply {
+            hint = "地址"
+            setText(row.url)
+            setSelection(row.url.length)
+        }
+        container.addView(nameInput)
+        container.addView(urlInput)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("编辑收藏")
+            .setView(container)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val newTitle = nameInput.text.toString().trim()
+                val newUrl = urlInput.text.toString().trim()
+                if (newUrl.isBlank()) {
+                    toast("地址不能为空")
+                    return@setPositiveButton
+                }
+                BookmarkStore.update(row.url, newTitle, newUrl)
+                toast("已保存")
+                reload()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun faviconOf(url: String): String = runCatching {
         val uri = java.net.URI(url)
         "${uri.scheme}://${uri.host}/favicon.ico"
@@ -210,18 +246,25 @@ class BrowserRecordsActivity : BaseActivity() {
                 }
                 binding.root.setOnLongClickListener {
                     val popup = PopupMenu(it.context, binding.root)
-                    popup.menu.add(0, 0, 0, "在新标签页打开")
+                    if (bookmarksMode && row.removable) {
+                        popup.menu.add(0, 0, 0, "编辑")
+                    }
+                    popup.menu.add(0, 1, 0, "在新标签页打开")
                     if (!bookmarksMode) {
-                        popup.menu.add(0, 1, 0, "添加到收藏")
+                        popup.menu.add(0, 2, 0, "添加到收藏")
                     }
                     popup.setOnMenuItemClickListener { menuItem ->
                         when (menuItem.itemId) {
                             0 -> {
+                                showEditBookmarkDialog(row)
+                            }
+
+                            1 -> {
                                 EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
                                 finish()
                             }
 
-                            1 -> {
+                            2 -> {
                                 BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
                                 toast("已收藏")
                             }
