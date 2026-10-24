@@ -157,8 +157,9 @@ class BrowserPageFragment : BaseFragment() {
         lifecycleScope.launch {
             val sites = vm.getAllBookSourceSite().distinct()
             val list = globalConfig.bookCityUrlHistoryList.value ?: emptyList()
+            val titles = globalConfig.homeUrlTitles.value ?: emptyMap()
             homeAdapter.data.clear()
-            homeAdapter.data.addAll(list.map { HomeUrl(url = it) })
+            homeAdapter.data.addAll(list.map { HomeUrl(url = it, title = titles[it]) })
             homeAdapter.data.addAll(sites)
             homeAdapter.notifyDataSetChanged()
         }
@@ -205,22 +206,48 @@ class BrowserPageFragment : BaseFragment() {
                         }
 
                         1 -> {
-                            // 编辑：弹出输入框修改 URL
-                            val input = android.widget.EditText(requireContext()).apply {
+                            // 编辑：弹出输入框修改名称与地址
+                            val container = android.widget.LinearLayout(requireContext()).apply {
+                                orientation = android.widget.LinearLayout.VERTICAL
+                                setPadding(48, 24, 48, 0)
+                            }
+                            val nameInput = android.widget.EditText(requireContext()).apply {
+                                hint = "名称"
+                                setText(item.title.orEmpty())
+                                setSelection(text.length)
+                            }
+                            val urlInput = android.widget.EditText(requireContext()).apply {
+                                hint = "地址"
                                 setText(item.url)
                                 setSelection(item.url.length)
                             }
+                            container.addView(nameInput)
+                            container.addView(urlInput)
                             MaterialAlertDialogBuilder(requireActivity())
-                                .setTitle("编辑网址")
-                                .setView(input)
+                                .setTitle("编辑主页")
+                                .setView(container)
                                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                                    val newUrl = input.text.toString().trim()
-                                    if (newUrl.isBlank()) return@setPositiveButton
+                                    val newName = nameInput.text.toString().trim()
+                                    val newUrl = urlInput.text.toString().trim()
+                                    if (newUrl.isBlank()) {
+                                        toast("地址不能为空")
+                                        return@setPositiveButton
+                                    }
+                                    // 先更新名称映射，再更新地址列表触发界面刷新
+                                    val titles = globalConfig.homeUrlTitles.value?.toMutableMap() ?: mutableMapOf()
+                                    titles.remove(item.url)
+                                    if (newName.isNotBlank()) titles[newUrl] = newName
+                                    globalConfig.homeUrlTitles.setValue(titles)
+
                                     val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
                                     val idx = list.indexOf(item.url)
                                     if (idx >= 0) {
                                         list[idx] = newUrl
-                                        globalConfig.bookCityUrlHistoryList.postValue(list)
+                                        globalConfig.bookCityUrlHistoryList.setValue(list)
+                                    }
+                                    // 编辑的正是当前主页时，同步更新主页地址
+                                    if (globalConfig.bookCityUrl == item.url) {
+                                        globalConfig.bookCityUrl = newUrl
                                     }
                                 }
                                 .setNegativeButton(android.R.string.cancel, null)
@@ -236,6 +263,10 @@ class BrowserPageFragment : BaseFragment() {
                                     val list = globalConfig.bookCityUrlHistoryList.value?.toMutableList() ?: mutableListOf()
                                     list.remove(item.url)
                                     globalConfig.bookCityUrlHistoryList.postValue(list)
+                                    val titles = globalConfig.homeUrlTitles.value?.toMutableMap() ?: mutableMapOf()
+                                    if (titles.remove(item.url) != null) {
+                                        globalConfig.homeUrlTitles.setValue(titles)
+                                    }
                                 }
                                 .setNegativeButton("取消", null)
                                 .show()

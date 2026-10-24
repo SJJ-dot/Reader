@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -208,14 +209,26 @@ class BrowserRecordsActivity : BaseActivity() {
                     finish()
                 }
                 binding.root.setOnLongClickListener {
-                    MaterialAlertDialogBuilder(it.context)
-                        .setTitle(row.title.ifBlank { row.url })
-                        .setItems(arrayOf("在新标签页打开")) { _, _ ->
-                            EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
-                            finish()
+                    val popup = PopupMenu(it.context, binding.root)
+                    popup.menu.add(0, 0, 0, "在新标签页打开")
+                    if (!bookmarksMode) {
+                        popup.menu.add(0, 1, 0, "添加到收藏")
+                    }
+                    popup.setOnMenuItemClickListener { menuItem ->
+                        when (menuItem.itemId) {
+                            0 -> {
+                                EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
+                                finish()
+                            }
+
+                            1 -> {
+                                BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
+                                toast("已收藏")
+                            }
                         }
-                        .setNegativeButton("取消", null)
-                        .show()
+                        true
+                    }
+                    popup.show()
                     true
                 }
                 binding.btnSetHome.setOnClickListener {

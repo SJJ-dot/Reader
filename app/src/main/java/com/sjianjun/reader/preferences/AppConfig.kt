@@ -126,6 +126,11 @@ class AppConfig(val name: String) :
     val bookCityUrlHistoryList by lazy { dataLivedata<List<String>>("bookCityUrlHistoryList", mutableListOf("https://m.qidian.com")) }
     var bookCityUrl by dataPref("bookCityUrl", "https://m.qidian.com")
 
+    /**
+     * 主页列表自定义名称（url -> 名称），长按编辑名称/地址时写入
+     */
+    val homeUrlTitles by lazy { dataLivedata<MutableMap<String, String>>("homeUrlTitles", mutableMapOf()) }
+
     //本次启动之后书城访问的所有的URL
     var hostBlacklist by dataPref("hostBlacklistHostStr", mutableListOf<HostStr>())
 

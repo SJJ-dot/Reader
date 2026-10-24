@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
@@ -36,6 +37,7 @@ class BrowserTabsActivity : BaseActivity() {
         }
         binding.rvTabs.layoutManager = GridLayoutManager(this, 2)
         binding.rvTabs.adapter = adapter
+        attachDragSort()
         binding.inputSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -58,8 +60,39 @@ class BrowserTabsActivity : BaseActivity() {
                     it.title.contains(keyword, true) ||
                     it.url.contains(keyword, true)
         }
-        // 按最近使用排序，当前标签排最前
-        adapter.submit(list.sortedByDescending { it.lastUsedAt })
+        // 按打开顺序排序（标签列表本身即打开顺序）
+        adapter.submit(list)
+    }
+
+    /** 长按拖动调整标签顺序（搜索过滤时禁用） */
+    private fun attachDragSort() {
+        val callback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN or
+                    ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT,
+            0
+        ) {
+            override fun isLongPressDragEnabled(): Boolean = keyword.isBlank()
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                if (keyword.isNotBlank()) return false
+                adapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                // 拖动结束后刷新 active 标记并落盘顺序
+                adapter.notifyChanged()
+                BrowserTabs.persist()
+            }
+        }
+        ItemTouchHelper(callback).attachToRecyclerView(binding.rvTabs)
     }
 
     private inner class TabsAdapter : RecyclerView.Adapter<TabsAdapter.Holder>() {
@@ -70,6 +103,21 @@ class BrowserTabsActivity : BaseActivity() {
             data.addAll(list)
             notifyDataSetChanged()
         }
+
+        /** 拖动调整位置：同步重排底层标签列表与展示列表 */
+        fun move(from: Int, to: Int) {
+            if (from == to || from !in data.indices || to !in data.indices) return
+            val tabs = BrowserTabs.tabs
+            val activeTab = tabs.getOrNull(BrowserTabs.activeIndex)
+            val moved = tabs.removeAt(from)
+            tabs.add(to, moved)
+            BrowserTabs.activeIndex = tabs.indexOf(activeTab).coerceAtLeast(0)
+            val item = data.removeAt(from)
+            data.add(to, item)
+            notifyItemMoved(from, to)
+        }
+
+        fun notifyChanged() = notifyDataSetChanged()
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
             return Holder(ItemBrowserTabBinding.inflate(LayoutInflater.from(parent.context), parent, false))

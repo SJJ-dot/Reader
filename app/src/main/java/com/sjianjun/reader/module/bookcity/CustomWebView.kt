@@ -273,7 +273,7 @@ class CustomWebView @JvmOverloads constructor(
         return wv
     }
 
-    /** 内存里最多保留 MAX_LIVE_TABS 个 WebView，超出按创建顺序销毁最旧的（列表/历史仍保留） */
+    /** 内存里最多保留 MAX_LIVE_TABS 个 WebView，超出按最近使用时间销毁最久未用的（列表/历史仍保留） */
     private fun trimLiveTabs(active: MyWebView) {
         val live = BrowserTabs.tabs.filter { it.webView != null && it.webView?.isDestroyed == false }
         if (live.size <= MAX_LIVE_TABS) return
@@ -783,14 +783,19 @@ class CustomWebView @JvmOverloads constructor(
     private fun newTab(url: String = "", fromPopup: Boolean = false) {
         if (BrowserTabs.tabs.size >= MAX_TABS) {
             // 达到上限：回收最久未使用（非当前）的标签，信息已随列表落盘
-            val recycleIndex = if (BrowserTabs.activeIndex == 0) 1 else 0
-            val old = BrowserTabs.tabs.removeAt(recycleIndex)
-            deleteThumb(old)
-            old.webView?.let {
-                binding.webViewContainer.removeView(it)
-                it.destroy()
+            val activeIndex = BrowserTabs.activeIndex
+            val recycleIndex = BrowserTabs.tabs.indices
+                .filter { it != activeIndex }
+                .minByOrNull { BrowserTabs.tabs[it].lastUsedAt }
+            if (recycleIndex != null) {
+                val old = BrowserTabs.tabs.removeAt(recycleIndex)
+                deleteThumb(old)
+                old.webView?.let {
+                    binding.webViewContainer.removeView(it)
+                    it.destroy()
+                }
+                if (recycleIndex < activeIndex) BrowserTabs.activeIndex--
             }
-            if (recycleIndex < BrowserTabs.activeIndex) BrowserTabs.activeIndex--
         }
         // 新建前先给当前标签截图，否则切走后它的卡片没有缩略图
         BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { captureThumb(it) }
