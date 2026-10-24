@@ -1,14 +1,17 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.widget.PopupWindow
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -27,7 +30,9 @@ class BrowserTabsActivity : BaseActivity() {
     private val adapter = TabsAdapter()
     private var keyword = ""
     /** 当前长按弹出的菜单（拖动开始时关闭） */
-    private var currentMenu: PopupMenu? = null
+    private var currentMenu: PopupWindow? = null
+    /** 本次长按是否发生了拖动排序 */
+    private var dragMoved = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +80,7 @@ class BrowserTabsActivity : BaseActivity() {
 
     /** 长按立即弹菜单；开始拖动时隐藏菜单并进入排序（搜索过滤时禁用） */
     private fun attachDragSort() {
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop.toFloat()
         val callback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN or
                     ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT,
@@ -89,10 +95,28 @@ class BrowserTabsActivity : BaseActivity() {
             ): Boolean {
                 if (keyword.isNotBlank()) return false
                 // 拖动开始：隐藏长按菜单
-                currentMenu?.dismiss()
-                currentMenu = null
+                dragMoved = true
+                dismissTabMenu()
                 adapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
                 return true
+            }
+
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                // 手指位移超过系统拖动阈值时隐藏菜单
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG &&
+                    (kotlin.math.abs(dX) > touchSlop || kotlin.math.abs(dY) > touchSlop)
+                ) {
+                    dismissTabMenu()
+                }
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
@@ -101,6 +125,7 @@ class BrowserTabsActivity : BaseActivity() {
                 super.onSelectedChanged(viewHolder, actionState)
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     // 长按：立即弹出菜单（不等松手）
+                    dragMoved = false
                     val vh = viewHolder ?: return
                     val pos = vh.bindingAdapterPosition
                     if (pos >= 0) {
@@ -111,42 +136,53 @@ class BrowserTabsActivity : BaseActivity() {
 
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                 super.clearView(recyclerView, viewHolder)
-                // 拖动结束后刷新 active 标记并落盘顺序
-                adapter.notifyChanged()
-                BrowserTabs.persist()
+                if (dragMoved) {
+                    // 只有真正拖动排序后才刷新 active 标记并落盘；
+                    // 长按未拖动时避免 notifyDataSetChanged 干扰菜单定位
+                    adapter.notifyChanged()
+                    BrowserTabs.persist()
+                    dragMoved = false
+                }
             }
         }
         ItemTouchHelper(callback).attachToRecyclerView(binding.rvTabs)
     }
 
-    /** 标签长按菜单：复制 / 关闭 */
+    /** 标签长按菜单：复制 / 关闭（模态，点击外部/返回键自动关闭） */
     private fun showTabMenu(index: Int, anchor: View) {
         if (index !in BrowserTabs.tabs.indices) return
-        currentMenu?.dismiss()
-        val popup = PopupMenu(
-            android.view.ContextThemeWrapper(this, R.style.AppTheme_PopupOverlay_Compact),
-            anchor
-        )
-        popup.menu.add(0, 0, 0, "复制标签页")
-        popup.menu.add(0, 1, 0, "关闭标签页")
-        popup.setOnMenuItemClickListener { item ->
-            currentMenu = null
-            when (item.itemId) {
-                0 -> {
-                    BrowserTabs.onDuplicate?.invoke(index)
-                    finish()
-                }
-
-                1 -> {
-                    BrowserTabs.onClose?.invoke(index)
-                    refresh()
-                }
-            }
-            true
+        dismissTabMenu()
+        val content = LayoutInflater.from(this).inflate(R.layout.popup_tab_menu, null)
+        val popup = PopupWindow(
+            content,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            isFocusable = true
+            isOutsideTouchable = true
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+        content.findViewById<View>(R.id.menu_duplicate).setOnClickListener {
+            dismissTabMenu()
+            BrowserTabs.onDuplicate?.invoke(index)
+            refresh()
+        }
+        content.findViewById<View>(R.id.menu_close).setOnClickListener {
+            dismissTabMenu()
+            BrowserTabs.onClose?.invoke(index)
+            refresh()
         }
         popup.setOnDismissListener { currentMenu = null }
         currentMenu = popup
-        popup.show()
+        // 用 showAtLocation 手动定位，避免 showAsDropDown 注册 layout 监听导致松手后自动重定位
+        val loc = IntArray(2)
+        anchor.getLocationOnScreen(loc)
+        popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, loc[0], loc[1] + anchor.height + 4)
+    }
+
+    private fun dismissTabMenu() {
+        currentMenu?.dismiss()
+        currentMenu = null
     }
 
     private inner class TabsAdapter : RecyclerView.Adapter<TabsAdapter.Holder>() {

@@ -445,12 +445,12 @@ class CustomWebView @JvmOverloads constructor(
 
     /** 按"工具栏当前露出的高度"设置页面底部留白（拖动时连续更新） */
     private fun setContentInsetForToolbarPx(px: Int) {
-        val container = binding.webViewContainer
-        val lp = container.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        // webViewContainer 被 SwipeRefreshLayout 包裹，SwipeRefreshLayout 忽略子 View 的 margin，
+        // 需改设它的 paddingBottom，才能让 WebView 底部为工具栏让位
+        val swipe = binding.swipeRefresh
         val target = px.coerceIn(0, toolbarHeightPx().toInt())
-        if (lp.bottomMargin == target) return
-        lp.bottomMargin = target
-        container.layoutParams = lp
+        if (swipe.paddingBottom == target) return
+        swipe.setPadding(swipe.paddingLeft, swipe.paddingTop, swipe.paddingRight, target)
     }
 
     private fun toolbarHeightPx(): Float {

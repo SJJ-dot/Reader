@@ -3,12 +3,17 @@ package com.sjianjun.reader.module.bookcity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.PopupWindow
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -57,6 +62,8 @@ class BrowserRecordsActivity : BaseActivity() {
     private var bookmarksMode = true
     private val collapsedDays = mutableSetOf<String>()
     private var bookmarksJob: Job? = null
+    /** 当前长按弹出的菜单（拖动开始时关闭） */
+    private var currentMenu: PopupWindow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +79,7 @@ class BrowserRecordsActivity : BaseActivity() {
         binding.btnAdd.visibility = if (bookmarksMode) View.VISIBLE else View.GONE
         binding.rvRecords.layoutManager = LinearLayoutManager(this)
         binding.rvRecords.adapter = adapter
+        attachBookmarkDragSort()
         binding.btnAdd.setOnClickListener {
             val url = intent.getStringExtra(CURRENT_URL).orEmpty()
             if (url.isBlank()) {
@@ -148,8 +156,8 @@ class BrowserRecordsActivity : BaseActivity() {
 
     /** 编辑收藏项的名称与地址 */
     private fun showEditBookmarkDialog(row: Row) {
-        val container = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(48, 24, 48, 0)
         }
         val nameInput = android.widget.EditText(this).apply {
@@ -187,6 +195,126 @@ class BrowserRecordsActivity : BaseActivity() {
         "${uri.scheme}://${uri.host}/favicon.ico"
     }.getOrDefault(url)
 
+    /** 收藏夹模式：长按可拖动排序（仅用户收藏），并弹出非模态菜单 */
+    private fun attachBookmarkDragSort() {
+        if (!bookmarksMode) return
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop.toFloat()
+        val callback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun isLongPressDragEnabled(): Boolean = bookmarksMode
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                // 拖动开始：隐藏菜单
+                dismissRecordMenu()
+                if (!adapter.move(from, to)) return false
+                BookmarkStore.move(from, to)
+                return true
+            }
+
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                // 手指位移超过系统拖动阈值时隐藏菜单
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG &&
+                    (kotlin.math.abs(dX) > touchSlop || kotlin.math.abs(dY) > touchSlop)
+                ) {
+                    dismissRecordMenu()
+                }
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    val vh = viewHolder ?: return
+                    val pos = vh.bindingAdapterPosition
+                    val row = adapter.recordAt(pos) ?: return
+                    showRecordMenu(row, vh.itemView)
+                }
+            }
+        }
+        ItemTouchHelper(callback).attachToRecyclerView(binding.rvRecords)
+    }
+
+    /** 长按菜单（非模态，避免拦截拖动） */
+    private fun showRecordMenu(row: Row, anchor: View) {
+        dismissRecordMenu()
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+        val textColor = ContextCompat.getColor(this, R.color.dn_text_color_black)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_popup_menu)
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        fun addItem(label: String, onClick: () -> Unit) {
+            container.addView(TextView(this).apply {
+                text = label
+                textSize = 13f
+                setTextColor(textColor)
+                setPadding(dp(16), dp(10), dp(16), dp(10))
+                setOnClickListener {
+                    dismissRecordMenu()
+                    onClick()
+                }
+            })
+        }
+        if (bookmarksMode && row.removable) {
+            addItem("编辑") { showEditBookmarkDialog(row) }
+        }
+        addItem("在新标签页打开") {
+            EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
+            finish()
+        }
+        if (!bookmarksMode) {
+            addItem("添加到收藏") {
+                BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
+                toast("已收藏")
+            }
+        }
+        addItem("设为主页") {
+            if (row.url.isNotBlank()) {
+                globalConfig.bookCityUrl = row.url
+                toast("已设为主页")
+            }
+        }
+        val popup = PopupWindow(
+            container,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            isFocusable = true
+            isOutsideTouchable = true
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+        popup.setOnDismissListener { currentMenu = null }
+        currentMenu = popup
+        // 用 showAtLocation 手动定位，避免 showAsDropDown 注册 layout 监听导致松手后自动重定位
+        val loc = IntArray(2)
+        anchor.getLocationOnScreen(loc)
+        popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, loc[0], loc[1] + anchor.height + 4)
+    }
+
+    private fun dismissRecordMenu() {
+        currentMenu?.dismiss()
+        currentMenu = null
+    }
+
     private inner class RecordsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         private val data = mutableListOf<Item>()
 
@@ -194,6 +322,20 @@ class BrowserRecordsActivity : BaseActivity() {
             data.clear()
             data.addAll(list)
             notifyDataSetChanged()
+        }
+
+        fun recordAt(position: Int): Row? = (data.getOrNull(position) as? Item.Record)?.row
+
+        /** 拖动调整位置：只允许用户收藏（removable）之间排序 */
+        fun move(from: Int, to: Int): Boolean {
+            if (from == to) return false
+            val fromItem = data.getOrNull(from) as? Item.Record ?: return false
+            val toItem = data.getOrNull(to) as? Item.Record ?: return false
+            if (!fromItem.row.removable || !toItem.row.removable) return false
+            val item = data.removeAt(from)
+            data.add(to, item)
+            notifyItemMoved(from, to)
+            return true
         }
 
         override fun getItemViewType(position: Int): Int =
@@ -244,46 +386,12 @@ class BrowserRecordsActivity : BaseActivity() {
                     EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
                     finish()
                 }
-                binding.root.setOnLongClickListener {
-                    val popup = PopupMenu(
-                        android.view.ContextThemeWrapper(it.context, R.style.AppTheme_PopupOverlay_Compact),
-                        binding.root
-                    )
-                    if (bookmarksMode && row.removable) {
-                        popup.menu.add(0, 0, 0, "编辑")
-                    }
-                    popup.menu.add(0, 1, 0, "在新标签页打开")
-                    if (!bookmarksMode) {
-                        popup.menu.add(0, 2, 0, "添加到收藏")
-                    }
-                    popup.menu.add(0, 3, 0, "设为主页")
-                    popup.setOnMenuItemClickListener { menuItem ->
-                        when (menuItem.itemId) {
-                            0 -> {
-                                showEditBookmarkDialog(row)
-                            }
-
-                            1 -> {
-                                EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
-                                finish()
-                            }
-
-                            2 -> {
-                                BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
-                                toast("已收藏")
-                            }
-
-                            3 -> {
-                                if (row.url.isNotBlank()) {
-                                    globalConfig.bookCityUrl = row.url
-                                    toast("已设为主页")
-                                }
-                            }
-                        }
+                if (!bookmarksMode) {
+                    // 历史模式：长按弹菜单（收藏夹模式由 ItemTouchHelper 处理）
+                    binding.root.setOnLongClickListener {
+                        showRecordMenu(row, binding.root)
                         true
                     }
-                    popup.show()
-                    true
                 }
                 binding.btnDelete.visibility = if (row.removable) View.VISIBLE else View.GONE
                 binding.btnDelete.setOnClickListener {

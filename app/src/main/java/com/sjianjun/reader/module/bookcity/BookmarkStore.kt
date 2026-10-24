@@ -44,6 +44,16 @@ object BookmarkStore {
         save(before + listOf(Bookmark(title = title.ifBlank { url }, url = url, time = time)) + after)
     }
 
+    /** 调整收藏顺序：把 from 位置的收藏移到 to 位置 */
+    fun move(from: Int, to: Int) {
+        if (from == to) return
+        val list = list().toMutableList()
+        if (from !in list.indices || to !in list.indices) return
+        val item = list.removeAt(from)
+        list.add(to, item)
+        save(list)
+    }
+
     fun remove(url: String) {
         save(list().filterNot { it.url == url })
     }
