@@ -247,6 +247,8 @@ class CustomWebView @JvmOverloads constructor(
     fun restoreState(state: Bundle): Boolean {
         val existing = webView
         val wv = if (existing != null && !existing.isDestroyed) existing else createWebView()
+        // 让当前标签持有这个 WebView，避免后续 onBackground/onForeground 找不到它而重复创建
+        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.webView = wv
         // restoreState 返回恢复后的历史（失败为 null）
         val restored = runCatching { wv.restoreState(state) != null }.getOrDefault(false)
         if (restored) {

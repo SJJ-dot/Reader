@@ -2,18 +2,22 @@ package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
-import androidx.core.os.bundleOf
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -129,10 +133,10 @@ class MainActivity : BaseActivity() {
                     // 优先恢复到上次退出时的页面，否则打开配置的主页；并恢复上次的标签列表
                     navController.navigate(
                         item.itemId,
-                        bundleOf(
-                            URL to (BrowserSession.consumeResume() ?: globalConfig.bookCityUrl),
-                            WebViewBrowserActivity.RESTORE_TABS to true
-                        )
+                        Bundle().apply {
+                            putString(URL, BrowserSession.consumeResume() ?: globalConfig.bookCityUrl)
+                            putBoolean(WebViewBrowserActivity.RESTORE_TABS, true)
+                        }
                     )
                 } else {
                     navController.navigate(item.itemId)
@@ -142,14 +146,23 @@ class MainActivity : BaseActivity() {
             true
         }
         navController!!.addOnDestinationChangedListener { _, destination, _ ->
-            if (destination.id == R.id.browserBookCityFragment) {
+            val isBrowser = destination.id == R.id.browserBookCityFragment
+            // 书城页直接移出 AppBarLayout，彻底避免 Toolbar 的绿色透到状态栏区域
+            binding?.appBarLayout?.visibility = if (isBrowser) View.GONE else View.VISIBLE
+            if (isBrowser) {
                 supportActionBar?.hide()
             } else {
                 supportActionBar?.show()
             }
+            applyStatusBarForBrowser(isBrowser)
+            // 让上面的 insets 回调重新执行一次，按当前目的地重新设置顶部留白
+            binding?.root?.requestApplyInsets()
         }
 
         initDrawerMenuWidget()
+        // addOnDestinationChangedListener 不会为初始目的地回调，这里补一次
+        applyStatusBarForBrowser(navController?.currentDestination?.id == R.id.browserBookCityFragment)
+        binding?.root?.requestApplyInsets()
     }
 
     @SuppressLint("SetTextI18n")
@@ -157,7 +170,20 @@ class MainActivity : BaseActivity() {
         val headerBinding = MainMenuNavHeaderBinding.bind(binding?.navUi?.getHeaderView(0)!!)
         ViewCompat.setOnApplyWindowInsetsListener(binding!!.root) { _, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             headerBinding.navHeaderContainer.setPadding(0, statusBars.top, 0, 0)
+            // DrawerLayout 的 fitsSystemWindows 已关闭，这里统一给主内容补上系统栏留白，
+            // 保证所有页面的 Toolbar / 页面内容都不会顶到状态栏或导航栏下面。
+            binding?.drawerContent?.setPadding(0, statusBars.top, 0, navBars.bottom)
+            // 状态栏占位（位于 DrawerLayout 下层）：高度 = 状态栏高度，颜色按目的地切换
+            binding?.statusBarBg?.let { bg ->
+                val lp = bg.layoutParams
+                if (lp.height != statusBars.top) {
+                    lp.height = statusBars.top
+                    bg.layoutParams = lp
+                }
+                bg.visibility = View.VISIBLE
+            }
             insets
         }
         binding?.navUi?.getHeaderView(0)?.apply {
@@ -188,6 +214,28 @@ class MainActivity : BaseActivity() {
             }
         }
 
+    }
+
+    /**
+     * 书城页状态栏与独立浏览器（WebViewBrowserActivity）对齐：
+     * - 书城：状态栏/导航栏区域用 dn_background_card（浏览器根布局底色），浅色主题用深色图标、深色主题用浅色图标；
+     * - 其它页面：恢复 dn_background 底色 + 白色图标（与原来的 SystemBarStyle.dark 一致）。
+     */
+    private fun applyStatusBarForBrowser(browser: Boolean) {
+        // 状态栏占位颜色：书城用页面底色，其它页面沿用主题的深绿（与原来的观感一致）
+        val barColor = getColor(if (browser) R.color.dn_background_card else R.color.colorPrimaryDark)
+        binding?.statusBarBg?.setBackgroundColor(barColor)
+        val bgColor = getColor(if (browser) R.color.dn_background_card else R.color.dn_background)
+        window.setBackgroundDrawable(ColorDrawable(bgColor))
+        binding?.root?.setBackgroundColor(bgColor)
+        // API 35 以下保持状态栏透明，颜色统一由下层 status_bar_bg 负责
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            window.statusBarColor = Color.TRANSPARENT
+        }
+        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars =
+            browser && !night
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

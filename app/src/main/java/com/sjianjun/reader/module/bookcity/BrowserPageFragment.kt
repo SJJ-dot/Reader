@@ -48,6 +48,9 @@ class BrowserPageFragment : BaseFragment() {
     /** 夜间模式切换导致重建时，用来恢复 WebView 的当前页/历史 */
     private var savedWebState: Bundle? = null
 
+    /** init() 是否已完成：未完成时 onStart 不能触发 onForeground，避免与初始化抢建 WebView */
+    private var initialized = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -82,13 +85,16 @@ class BrowserPageFragment : BaseFragment() {
 
     override fun onStart() {
         super.onStart()
-        pageBinding?.customWebView?.onForeground()
+        // init() 是挂起函数（要查 webId），未完成时不能触发 onForeground，
+        // 否则两边会抢着创建 WebView，夜间模式重建后容易出现空白页
+        if (initialized) pageBinding?.customWebView?.onForeground()
     }
 
     override fun onDestroyView() {
         // 离开书城页（切到其它抽屉菜单 / 宿主销毁）时释放 WebView：
         // 否则复用的 WebView 仍挂在已销毁的视图树上，下次进入会因“已有父容器”而无法重新挂载
         pageBinding?.customWebView?.onBackground()
+        initialized = false
         pageBinding = null
         super.onDestroyView()
     }
@@ -141,6 +147,7 @@ class BrowserPageFragment : BaseFragment() {
                 }
             }
         }
+        initialized = true
     }
 
     class HostListAdapter(var adBlock: AdBlock) : BaseAdapter<HostStr>(R.layout.fragment_book_city_page_host_item) {

@@ -5,11 +5,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!--
+        状态栏占位：位于 DrawerLayout 下层（不会盖住抽屉），高度由 insets 手动设置。
+        仅在书城页显示，用来把状态栏区域染成页面底色。
+    -->
+    <View
+        android:id="@+id/status_bar_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="top"
+        android:background="@color/dn_background_card"
+        android:visibility="gone" />
+
+    <!--
+        fitsSystemWindows 关掉：交给各子 View 用 WindowInsets 自己处理。
+        DrawerLayout 开启时只会把 insets 用于抽屉（并可能绘制 statusBarBackground），
+        却不处理主内容，正是书城页内容顶到状态栏下面、透出 Toolbar 绿色的原因。
+    -->
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="false">
 
         <LinearLayout
             android:id="@+id/drawer_content"
