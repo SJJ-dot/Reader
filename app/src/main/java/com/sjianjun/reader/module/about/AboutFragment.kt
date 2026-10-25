@@ -14,8 +14,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.NavHostFragment
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
@@ -24,8 +22,6 @@ import com.sjianjun.reader.BaseAsyncFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.MainFragmentAboutBinding
 import com.sjianjun.reader.module.main.AppHelpActivity
-import com.sjianjun.reader.online.OnlineInfos
-import com.sjianjun.reader.online.formatDuration
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.AppInfoUtil
 import com.sjianjun.reader.utils.checkUpdate
@@ -67,16 +63,6 @@ class AboutFragment : BaseAsyncFragment() {
             tvPrivacyPolicy.click {
                 AppHelpActivity.startActivity(requireContext())
             }
-            // 不在这里触发上报：上传时机固定为「启动 / 每 5 分钟 / onActivityPaused」，
-            // 这里只展示最近一次上报回来的数据（OnlineRecorder 上传成功后会 postValue）
-            OnlineInfos.onlineInfo.observe(viewLifecycleOwner) { info ->
-                tvOnline.text = "今日阅读时长：${info?.today_online_seconds?.formatDuration() ?: "--"}\n" +
-                        "书友在线：${info.online_count}"
-            }
-            tvOnline.click {
-                NavHostFragment.findNavController(this@AboutFragment).navigate(R.id.onlineLeaderboardFragment)
-            }
-
         }
     }
 

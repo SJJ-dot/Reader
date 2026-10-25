@@ -51,10 +51,6 @@ android {
                 install "-r", "requirements.txt"
             }
         }
-        // 意见反馈已改为内嵌网页版服务：地址与游客令牌同样从 local.properties 注入，
-        // 令牌只内置在安装包里，不进版本库（keys: feedback.url, feedback.guestToken）
-        buildConfigField "String", "FEEDBACK_URL", "\"${properties.getProperty('feedback.url')}\""
-        buildConfigField "String", "FEEDBACK_GUEST_TOKEN", "\"${properties.getProperty('feedback.guestToken')}\""
     }
     buildFeatures {
         viewBinding true

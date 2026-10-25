@@ -98,7 +98,6 @@ class MainActivity : BaseActivity() {
             R.id.browserBookCityFragment,
             R.id.novelScriptFragment,
             R.id.settingsFragment,
-            R.id.feedbackFragment,
             R.id.aboutFragment
         )
             .setOpenableLayout(binding?.drawerLayout)

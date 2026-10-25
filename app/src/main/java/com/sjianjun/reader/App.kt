@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.github.liuyueyi.quick.transfer.constants.TransType
-import com.sjianjun.reader.online.OnlineRecorder
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.python.DnsWarmUp
 import com.sjianjun.reader.repository.BookUseCase
@@ -67,7 +66,6 @@ class App : Application() {
         }
         Python.start(AndroidPlatform(this))
         DnsWarmUp.start()
-        OnlineRecorder.start(appScope, this)
         when (globalConfig.readerJianFanMode.value) {
             1 -> {
                 ChineseUtils.fixT2sDict()
