@@ -3,10 +3,15 @@ name: assembleRelease
 on:
   workflow_dispatch:
 
+# create-release 需要用 token 创建 Release，必须显式授予写权限（新仓库默认只读）
+permissions:
+  contents: write
+
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -36,12 +41,22 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platform-tools'
+          # 显式安装与 compileSdk(36) 匹配的 platform/build-tools，避免 aapt 依赖镜像预装版本
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      # Chaquopy 构建期会执行 pip install，缓存 pip 下载目录可明显加速
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Create local.properties
         run: |
@@ -56,25 +71,18 @@ jobs:
       - name: Build and sign APK
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease -Psigning.keyAlias=${{ secrets.ALIAS }} -Psigning.keyPassword=${{ secrets.KEY_PASSWORD }} -Psigning.storeFile=./reader.jks -Psigning.storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          ./gradlew :app:assembleRelease
           ls app/build/outputs/apk/release/
 
-      - name: Get APK name
-        run: |
-          apk_file_path=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
-          apk_name=$(basename $apk_file_path)
-          echo "APK_NAME=$apk_name"
-          echo "APK_NAME=$apk_name" >> $GITHUB_ENV
-
       - name: Get APK version info
-        id: version_info
-        env:
-          AAPT: ${{ env.ANDROID_HOME }}/build-tools/35.0.0/aapt
         run: |
           ls ${{ env.ANDROID_HOME }}/build-tools/
+          # 动态取最新 aapt，避免 build-tools 版本升级后写死路径失效
+          aapt=$(ls -1 "$ANDROID_HOME"/build-tools/*/aapt | sort -V | tail -n 1)
+          echo "aapt: $aapt"
           apk_file=$(ls app/build/outputs/apk/release/*.apk | tail -n 1)
-          version_code=$($AAPT dump badging $apk_file | awk '/versionCode/ {print $3}' | cut -d"'" -f2)
-          version_name=$($AAPT dump badging $apk_file | awk '/versionName/ {print $4}' | cut -d"'" -f2)
+          version_code=$("$aapt" dump badging "$apk_file" | awk '/versionCode/ {print $3}' | cut -d"'" -f2)
+          version_name=$("$aapt" dump badging "$apk_file" | awk '/versionName/ {print $4}' | cut -d"'" -f2)
           echo "APK_FILE=$apk_file" >> $GITHUB_ENV
           echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
           echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
@@ -89,25 +97,14 @@ jobs:
           chmod +x ./pgyer_upload.sh
           bash ./pgyer_upload.sh -k ${{ secrets.PGY_KEY }} -d ${{env.CHANGELOG}} "${{ env.APK_FILE }}"
 
+      # 用 action-gh-release 替代已归档的 actions/create-release@v1 + actions/upload-release-asset@v1
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }} # This token is provided by Actions, you do not need to create your own token
+        uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUBTOKEN }}
           tag_name: ${{ env.TAG_NAME }}
-          release_name: Release ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}
           body_path: changelog.txt
           draft: false
           prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ${{ env.APK_FILE }}
-          asset_name: ${{ env.APK_NAME }}
-          asset_content_type: application/vnd.android.package-archive
-
+          files: ${{ env.APK_FILE }}
