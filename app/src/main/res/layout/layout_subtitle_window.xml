@@ -23,15 +23,10 @@
             android:layout_height="wrap_content"
             android:clipChildren="true">
 
-            <TextView
+            <com.sjianjun.reader.tts.v2.subtitle.SubtitleTextView
                 android:id="@+id/subtitle_text"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:includeFontPadding="false"
-                android:justificationMode="inter_word"
-                android:lineSpacingMultiplier="1.2"
-                android:textColor="#FFFFFFFF"
-                android:textSize="17sp" />
+                android:layout_height="wrap_content" />
         </FrameLayout>
 
         <ImageView

@@ -49,9 +49,6 @@ class TtsSubtitleWindow(private val context: Context) {
     private var binding: LayoutSubtitleWindowBinding? = null
     private var params: WindowManager.LayoutParams? = null
 
-    /** 当前 TextView 里的段落文本（变化时才重新设置并等布局） */
-    private var lastText: String = ""
-
     /** 最近一次渲染的会话状态：设置项变更时用它立即重绘 */
     private var lastState: TtsSessionState? = null
 
@@ -102,7 +99,6 @@ class TtsSubtitleWindow(private val context: Context) {
         }
         binding = view
         params = lp
-        lastText = ""
 
         view.subtitleSettings.visibility = View.GONE
         hideActionButtons()
@@ -129,7 +125,6 @@ class TtsSubtitleWindow(private val context: Context) {
         runCatching { wm.removeView(view.root) }
         binding = null
         params = null
-        lastText = ""
         lastState = null
         dragging = false
     }
@@ -344,14 +339,8 @@ class TtsSubtitleWindow(private val context: Context) {
         val view = binding ?: return
         val fontSize = (globalConfig.ttsSubtitleFontSize.value ?: 17).coerceIn(FONT_MIN, 28)
         val alpha = (globalConfig.ttsSubtitleAlpha.value ?: 85).coerceIn(ALPHA_MIN, ALPHA_MAX) / 100f
-
-        view.subtitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
-        view.subtitleText.setShadowLayer(2f, 0f, 1f, 0x99000000.toInt())
-        // 先用字号估算窗口高度（真实行高在布局完成后校准）
-        val estimate = (TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat(), context.resources.displayMetrics
-        ) * 1.2f).toInt()
-        updateWindowHeight(estimate)
+        // 字号 / 行数：控件自己负责折行、两端对齐与固定行高
+        view.subtitleText.setStyle(fontSize, configuredLines())
         // 透明度只作用于字幕文字区，设置面板保持不透明便于操作
         view.subtitlePanel.alpha = alpha
     }
@@ -360,48 +349,9 @@ class TtsSubtitleWindow(private val context: Context) {
         val view = binding ?: return
         val text = state.paragraphText
         if (text.isBlank()) return
-        val tv = view.subtitleText
-        if (lastText != text) {
-            lastText = text
-            tv.text = text
-            // 文本变了要等 TextView 重新布局后才能算行高/滚动位置
-            tv.post { syncScroll(state) }
-            return
-        }
-        syncScroll(state)
-    }
-
-    /**
-     * 把整段文本滚动到窗口内的目标行（两端对齐由 TextView 的 justificationMode 完成）。
-     * 窗口固定 N 行高，靠 translationY 上移显示窗口内的那几行。
-     */
-    private fun syncScroll(state: TtsSessionState) {
-        val view = binding ?: return
-        val tv = view.subtitleText
-        val layout = tv.layout ?: return
-        val text = tv.text?.toString().orEmpty()
-        if (text.isBlank() || layout.lineCount <= 0) return
-        val lines = configuredLines()
-        val lineHeight = (layout.getLineBottom(0) - layout.getLineTop(0)).coerceAtLeast(1)
-        updateWindowHeight(lineHeight)
-
-        val charIndex = currentCharIndex(state, text)
-        val currentLine = layout.getLineForOffset(charIndex)
-        val lead = (lines - 1) / 2
-        val maxStart = (layout.lineCount - lines).coerceAtLeast(0)
-        val startLine = (currentLine - lead).coerceIn(0, maxStart)
-        tv.translationY = -layout.getLineTop(startLine).toFloat()
-    }
-
-    /** 字幕窗口固定显示 [configuredLines] 行 */
-    private fun updateWindowHeight(lineHeight: Int) {
-        val view = binding ?: return
-        val target = lineHeight * configuredLines()
-        val lp = view.subtitleLines.layoutParams
-        if (lp.height != target) {
-            lp.height = target
-            view.subtitleLines.layoutParams = lp
-        }
+        // 文本相同则内部直接跳过；行位置只随进度变化
+        view.subtitleText.setContent(text)
+        view.subtitleText.setCharIndex(currentCharIndex(state, text))
     }
 
     private fun configuredLines(): Int =
@@ -438,10 +388,6 @@ class TtsSubtitleWindow(private val context: Context) {
     }
 
     private fun screenHeightPx(): Int = screenBounds().second
-
-    private fun dp(value: Int): Int = TypedValue.applyDimension(
-        TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics
-    ).toInt()
 
     /** 只关心拖动进度的 SeekBar 监听（程序化赋值不触发保存） */
     private abstract class SimpleSeekListener : SeekBar.OnSeekBarChangeListener {

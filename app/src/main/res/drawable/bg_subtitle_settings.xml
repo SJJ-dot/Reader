@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#E6222222" />
+    <!-- 设置面板：接近不透明的深黑，和字幕条统一 -->
+    <solid android:color="#F21A1A1A" />
     <corners android:radius="12dp" />
 </shape>
