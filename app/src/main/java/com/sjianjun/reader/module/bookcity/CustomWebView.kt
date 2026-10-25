@@ -1403,7 +1403,8 @@ class CustomWebView @JvmOverloads constructor(
             goForward()
         }
         binding.settings.setOnClickListener { showBrowserMenu() }
-        binding.tabs.click { openTabsManager() }
+        // 标签按钮：点击区域与其它按钮一致（整块 weight 区域 + 水波纹反馈）
+        binding.tabsButton.click { openTabsManager() }
         binding.home.click {
             Log.i("回到首页")
             val home = webBook?.url ?: globalConfig.bookCityUrl

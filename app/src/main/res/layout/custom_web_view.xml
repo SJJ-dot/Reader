@@ -127,9 +127,13 @@
                     app:tint="@color/dn_text_color_black" />
 
                 <FrameLayout
+                    android:id="@+id/tabs_button"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
 
                     <TextView
                         android:id="@+id/tabs"
