@@ -86,6 +86,9 @@ class BrowserPageFragment : BaseFragment() {
     }
 
     override fun onDestroyView() {
+        // 离开书城页（切到其它抽屉菜单 / 宿主销毁）时释放 WebView：
+        // 否则复用的 WebView 仍挂在已销毁的视图树上，下次进入会因“已有父容器”而无法重新挂载
+        pageBinding?.customWebView?.onBackground()
         pageBinding = null
         super.onDestroyView()
     }

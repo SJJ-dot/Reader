@@ -11,19 +11,25 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
+import androidx.core.os.bundleOf
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
+import com.sjianjun.reader.URL
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
+import com.sjianjun.reader.module.bookcity.BrowserPageFragment
+import com.sjianjun.reader.module.bookcity.BrowserSession
+import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.BookSourceUseCase
 import com.sjianjun.reader.utils.ActivityManger
@@ -111,27 +117,6 @@ class MainActivity : BaseActivity() {
         // 覆盖默认的 setupWithNavController 行为：导航前清空回退栈，
         // 避免从子页面（如在线排行）切抽屉菜单后栈里残留子页面。
         binding?.navUi?.setNavigationItemSelectedListener { item ->
-            // 书城不再用内部 Fragment，直接跳转独立的浏览器 Activity
-            if (item.itemId == R.id.browserBookCityFragment) {
-                binding?.drawerLayout?.closeDrawer(GravityCompat.START)
-                startActivity(
-                    android.content.Intent(
-                        this,
-                        com.sjianjun.reader.module.bookcity.WebViewBrowserActivity::class.java
-                    ).apply {
-                        putExtra(
-                            com.sjianjun.reader.URL,
-                            com.sjianjun.reader.module.bookcity.BrowserSession.consumeResume()
-                                ?: com.sjianjun.reader.preferences.globalConfig.bookCityUrl
-                        )
-                        putExtra(
-                            com.sjianjun.reader.module.bookcity.WebViewBrowserActivity.RESTORE_TABS,
-                            true
-                        )
-                    }
-                )
-                return@setNavigationItemSelectedListener true
-            }
             val navController = navController ?: return@setNavigationItemSelectedListener false
             // 先清空回退栈到根节点（不包含根节点本身）
             if (navController.currentDestination?.id != item.itemId) {
@@ -139,7 +124,19 @@ class MainActivity : BaseActivity() {
             }
             // 再导航到目标（如果当前不是目标页面）
             if (navController.currentDestination?.id != item.itemId) {
-                navController.navigate(item.itemId)
+                if (item.itemId == R.id.browserBookCityFragment) {
+                    // 书城以内嵌 Fragment 形式打开，参数与独立浏览器的入口保持一致：
+                    // 优先恢复到上次退出时的页面，否则打开配置的主页；并恢复上次的标签列表
+                    navController.navigate(
+                        item.itemId,
+                        bundleOf(
+                            URL to (BrowserSession.consumeResume() ?: globalConfig.bookCityUrl),
+                            WebViewBrowserActivity.RESTORE_TABS to true
+                        )
+                    )
+                } else {
+                    navController.navigate(item.itemId)
+                }
             }
             binding?.drawerLayout?.closeDrawer(GravityCompat.START)
             true
@@ -201,6 +198,22 @@ class MainActivity : BaseActivity() {
 
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // App 整体退到后台时回收书城标签的 WebView；内部页面切换不回收
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            currentBrowserFragment()?.onAppBackground()
+        }
+    }
+
+    /** 当前展示中的书城 Fragment（不存在则返回 null） */
+    private fun currentBrowserFragment(): BrowserPageFragment? {
+        val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_main) as? NavHostFragment
+        return host?.childFragmentManager?.fragments
+            ?.filterIsInstance<BrowserPageFragment>()
+            ?.firstOrNull { it.isAdded && it.view != null }
     }
 
     override fun onSupportNavigateUp(): Boolean {
