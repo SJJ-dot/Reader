@@ -62,8 +62,6 @@ import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
 import com.sjianjun.reader.utils.activity
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
@@ -74,9 +72,7 @@ class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0,
 ) : FrameLayout(context, attrs, defStyleAttr) {
     internal var lifecycleScope: LifecycleCoroutineScope? = null
-    private var updateWebBookJob: Job? = null
     var webBook: WebBook? = null
-    private var vm: BookCityViewModel? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
@@ -94,6 +90,9 @@ class CustomWebView @JvmOverloads constructor(
 
     private companion object {
         const val MAX_TABS = 50
+
+        /** 浏览器历史记录上限（不去重，超出后丢弃最旧的） */
+        const val MAX_HISTORY = 1000
         /**
          * 内存中最多同时保留的 WebView 实例数（1 = 只留当前标签）。
          * 其余标签切走后立即销毁 WebView，只保留 URL/标题/前进后退栈与 saveState 快照，切回时重建。
@@ -149,10 +148,9 @@ class CustomWebView @JvmOverloads constructor(
         return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
     }
 
-    fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?, vm: BookCityViewModel) {
+    fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?) {
         this.webBook = webBook
         this.adBlock = adBlock
-        this.vm = vm
 
         initView()
         history.value = History.list.toMutableList()
@@ -1151,35 +1149,6 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    // 抽取更新 webBook 的逻辑：在同一主域下更新 lastUrl/lastTitle/updateTime 并持久化
-    private fun updateWebBookIfSameDomain(view: WebView?, url: String?, updateTitle: Boolean) {
-        if (url == null) return
-        val book = webBook ?: return
-        val view = view as? MyWebView ?: return
-        updateWebBookJob?.cancel()
-        updateWebBookJob = lifecycleScope?.launch {
-            val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
-            if (book.url.toHttpUrlOrNull()?.topPrivateDomain() == urlHost) {
-                if (book.lastUrl != url) {
-                    book.lastUrl = url
-                    book.offest = 0
-                    book.scrollOffset = 0
-                    book.updateTime = System.currentTimeMillis()
-                }
-                if (updateTitle) {
-                    book.lastTitle = view.getTitleFromMeta().ifBlank { view.title ?: "无标题" }
-                } else {
-                    view.post {
-                        if (book.lastUrl == url) {
-                            updateWebBookIfSameDomain(view, url, true)
-                        }
-                    }
-                }
-                vm?.insertWebBook(book)
-            }
-        }
-    }
-
     private fun createWebViewClient() = object : MyWebViewClient(
         lifecycleScope!!,
         { url, request ->
@@ -1230,7 +1199,6 @@ class CustomWebView @JvmOverloads constructor(
         override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
             super.doUpdateVisitedHistory(view, url, isReload)
             if (url != null) {
-                updateWebBookIfSameDomain(view, url, updateTitle = false)
                 binding.tvUrl.text = displayUrl(url)
             }
         }
@@ -1249,9 +1217,7 @@ class CustomWebView @JvmOverloads constructor(
                     return
                 }
             }
-            // 页面加载完成后再更新 title（如果可用）并持久化
             binding.swipeRefresh.isRefreshing = false
-            updateWebBookIfSameDomain(webView, url, updateTitle = true)
             binding.tvUrl.text = displayUrl(url)
             val tabForHistory = BrowserTabs.tabs.firstOrNull { it.webView === webView }
             tabForHistory?.apply {
@@ -1290,12 +1256,13 @@ class CustomWebView @JvmOverloads constructor(
             Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")
             val list = history.value!!.toMutableList()
             webView?.url?.let { url ->
-                val item = HistoryItem(webView.title ?: "无标题", url)
-                item.isMark = list.firstOrNull { it.url == url }?.isMark ?: false
-                list.removeAll { item -> item.url == url }
-                list.add(item)
+                val now = System.currentTimeMillis()
+                // 当天去重：同一天内同一地址只保留最新一条；跨天保留历史（昨天/前天各留一条）
+                list.removeAll { it.url == url && isSameDay(it.time, now) }
+                list.add(HistoryItem(webView.title ?: "无标题", url, now))
                 list.sortDescending()
-                if (list.size > 100) {
+                // 超过上限只丢弃最旧的一条（标记项排在前面，不会被优先丢弃）
+                if (list.size > MAX_HISTORY) {
                     list.removeAt(list.lastIndex)
                 }
                 History.list = list
@@ -1448,11 +1415,15 @@ object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
     var list by dataPref("History", listOf<HistoryItem>())
 }
 
-class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis(), var isMark: Boolean = false) : Comparable<HistoryItem> {
-    override fun compareTo(other: HistoryItem): Int {
-        if (isMark != other.isMark) return if (isMark) 1 else -1
-        return time.compareTo(other.time)
-    }
+/** 两个时间戳是否属于同一天（用于历史记录"当天去重、不跨天去重"） */
+private fun isSameDay(a: Long, b: Long): Boolean {
+    val zone = java.time.ZoneId.systemDefault()
+    return java.time.Instant.ofEpochMilli(a).atZone(zone).toLocalDate() ==
+            java.time.Instant.ofEpochMilli(b).atZone(zone).toLocalDate()
+}
+
+class HistoryItem(var title: String, val url: String, val time: Long = System.currentTimeMillis()) : Comparable<HistoryItem> {
+    override fun compareTo(other: HistoryItem): Int = time.compareTo(other.time)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -1472,6 +1443,6 @@ class HistoryItem(var title: String, val url: String, val time: Long = System.cu
     }
 
     override fun toString(): String {
-        return "HistoryItem(title='$title', isMark=$isMark, time=$time, url='$url')"
+        return "HistoryItem(title='$title', time=$time, url='$url')"
     }
 }

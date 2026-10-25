@@ -33,6 +33,7 @@ import com.sjianjun.reader.URL
 import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
 import com.sjianjun.reader.module.main.MainActivity
 import com.sjianjun.reader.module.reader.activity.BookReaderActivity
+import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.tts.v2.TtsPlayerHolder
 import com.sjianjun.reader.tts.v2.session.TtsPlayer
@@ -206,8 +207,20 @@ class TtsNotificationService : Service() {
         }
     }
 
-    /** 朗读字幕（悬浮字幕）窗口：会话开始默认关闭，由通知/媒体卡片手动开启 */
-    private val subtitle by lazy { TtsSubtitleWindow(this) }
+    /** 本次朗读会话是否已经处理过「恢复上次字幕状态」 */
+    private var subtitleRestored = false
+
+    /** 朗读字幕（悬浮字幕）窗口：按上次的开关状态恢复，默认关闭 */
+    private val subtitle by lazy {
+        TtsSubtitleWindow(this).apply {
+            // 字幕窗口右上角的关闭按钮：隐藏窗口后同步刷新通知栏的开关状态
+            onCloseRequest = {
+                hide()
+                globalConfig.ttsSubtitleVisible = false
+                refreshSubtitleUi()
+            }
+        }
+    }
 
     private fun player(): TtsPlayer = TtsPlayerHolder.player()
 
@@ -238,7 +251,29 @@ class TtsNotificationService : Service() {
             subtitle.render(player().state.value)
             Log.i("$TAG 开启朗读字幕")
         }
-        // 刷新通知与媒体卡片的按钮文案/图标
+        // 记住本次开关状态：下次开始朗读时按此恢复
+        globalConfig.ttsSubtitleVisible = subtitle.isVisible
+        refreshSubtitleUi()
+    }
+
+    /** 首次进入活跃会话时恢复字幕窗口（上次停止朗读时是开着的就自动显示） */
+    private fun restoreSubtitleIfNeeded() {
+        if (subtitleRestored) return
+        subtitleRestored = true
+        if (!globalConfig.ttsSubtitleVisible) return
+        if (!subtitle.canDrawOverlay()) {
+            Log.i("$TAG 上次开启了字幕，但未授予悬浮窗权限，跳过自动显示")
+            return
+        }
+        if (subtitle.show()) {
+            subtitle.render(player().state.value)
+            Log.i("$TAG 恢复上次的字幕显示状态")
+            refreshSubtitleUi()
+        }
+    }
+
+    /** 字幕开关变化后刷新通知与媒体卡片的图标/文案 */
+    private fun refreshSubtitleUi() {
         val current = player().state.value
         runCatching {
             if (foregroundStarted) notify(current) else startForegroundCompat(current)
@@ -346,6 +381,8 @@ class TtsNotificationService : Service() {
             stopSelf()
             return
         }
+        // 首次进入活跃会话：按上次停止时的开关状态恢复字幕
+        restoreSubtitleIfNeeded()
         // 字幕跟随当前段落刷新（未开启时内部直接返回）
         if (subtitle.isVisible) {
             subtitle.render(state)

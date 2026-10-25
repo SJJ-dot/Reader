@@ -1,7 +1,6 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.annotation.SuppressLint
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -121,7 +120,7 @@ class BrowserPageFragment : BaseFragment() {
             crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
 
             customWebView.crossOriginOverride = crossOriginMode
-            customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
+            customWebView.init(viewLifecycleOwner, adBlock, webBook)
             // 菜单「退出」：独立浏览器里结束 Activity；内嵌在首页时只回到书架，避免退出整个 App
             customWebView.onExitRequest = {
                 val act = requireActivity()
@@ -259,7 +258,6 @@ class BrowserPageFragment : BaseFragment() {
     class HistoryListAdapter : BaseAdapter<HistoryItem>(R.layout.fragment_book_city_page_history_item) {
         var onClick: ((url: String) -> Unit)? = null
         var onDeleteHistory: ((item: HistoryItem?) -> Unit)? = null
-        var onMark: ((item: HistoryItem) -> Unit)? = null
         private val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
 
         @SuppressLint("SetTextI18n")
@@ -291,15 +289,6 @@ class BrowserPageFragment : BaseFragment() {
                     }
                 }.show()
                 return@setOnLongClickListener true
-            }
-            binding.ivMark.imageTintList = ColorStateList.valueOf(if (history.isMark) R.color.colorPrimary.color() else R.color.mdr_grey_500.color())
-            binding.ivMark.click {
-                onMark?.invoke(history)
-            }
-            if (onMark == null){
-                binding.ivMark.gone()
-            } else {
-                binding.ivMark.show()
             }
         }
     }

@@ -1,13 +1,9 @@
 package com.sjianjun.reader.tts.v2.subtitle
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.provider.Settings
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -15,11 +11,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.widget.FrameLayout
-import android.widget.LinearLayout
 import android.widget.SeekBar
-import android.widget.TextView
-import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.LayoutSubtitleWindowBinding
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.tts.v2.session.TtsSessionState
@@ -30,20 +22,20 @@ import kotlin.math.abs
  * 朗读字幕（悬浮字幕）。
  *
  * 交互：
- * - 拖动字幕块可自由移动位置；
- * - 点击字幕块展开/收起下方的设置面板（字号 / 透明度 / 行数 / 偏移），改动实时生效；
- * - 右上角锁图标：锁定后点击字幕不再弹出设置，避免误触（仍可拖动）。
+ * - 整条铺满屏幕宽度，可上下拖动移动位置（位置会记住）；
+ * - 右下角设置图标 → 展开/收起设置面板（字号 / 透明度 / 行数 / 偏移），改动实时生效；
+ * - 右上角关闭图标 → 关闭字幕（并同步通知栏开关状态）。
  *
  * 显示策略：只取**当前段落**文本折行，以"当前读到的行"为中心上下展开 N 行（不跨段落）。
  * 生命周期由朗读通知服务持有：会话开始默认关闭，由通知按钮手动开启。
  */
 class TtsSubtitleWindow(private val context: Context) {
 
+    /** 用户点右上角关闭时回调（服务层据此隐藏并刷新通知栏状态） */
+    var onCloseRequest: (() -> Unit)? = null
+
     private companion object {
         const val TAG = "TtsSubtitle"
-
-        /** 字幕文字区宽度占屏幕宽度的比例 */
-        const val WIDTH_RATIO = 0.86f
 
         const val FONT_MIN = 12
         const val ALPHA_MIN = 20
@@ -56,24 +48,20 @@ class TtsSubtitleWindow(private val context: Context) {
 
     private var binding: LayoutSubtitleWindowBinding? = null
     private var params: WindowManager.LayoutParams? = null
-    private val lineViews = mutableListOf<TextView>()
 
-    /** 折行缓存（文本/宽度/字号不变时复用，避免每 100ms 重建 StaticLayout） */
-    private var cachedLayout: StaticLayout? = null
-    private var cachedKey: String = ""
+    /** 当前 TextView 里的段落文本（变化时才重新设置并等布局） */
+    private var lastText: String = ""
 
     /** 最近一次渲染的会话状态：设置项变更时用它立即重绘 */
     private var lastState: TtsSessionState? = null
 
-    /** 锁定后点击字幕不再弹出设置面板 */
-    private var locked = false
-
     private var dragging = false
-    private var downRawX = 0f
     private var downRawY = 0f
-    private var startX = 0
     private var startY = 0
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+
+    /** 关闭/设置按钮自动隐藏（设置面板展开时保持常显） */
+    private val hideButtonsRunnable = Runnable { hideActionButtonsIfAllowed() }
 
     val isVisible: Boolean get() = binding != null
 
@@ -90,7 +78,7 @@ class TtsSubtitleWindow(private val context: Context) {
         }
         val view = LayoutSubtitleWindowBinding.inflate(LayoutInflater.from(context))
         val lp = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -104,8 +92,9 @@ class TtsSubtitleWindow(private val context: Context) {
             PixelFormat.TRANSLUCENT
         )
         lp.gravity = Gravity.TOP or Gravity.START
-        // 恢复上次拖动保存的位置；没有记录时先放屏幕下方，稍后居中
+        lp.x = 0
         val restored = applySavedPosition(lp)
+
         val added = runCatching { wm.addView(view.root, lp) }.isSuccess
         if (!added) {
             Log.e("$TAG 添加悬浮字幕窗口失败")
@@ -113,44 +102,35 @@ class TtsSubtitleWindow(private val context: Context) {
         }
         binding = view
         params = lp
-        locked = false
-        cachedLayout = null
-        cachedKey = ""
-        lineViews.clear()
+        lastText = ""
 
-        // 文字区宽度固定，窗口宽度 wrap_content，这样左右拖动才有意义
-        // 注意：subtitleLines 的父容器是 FrameLayout，必须用 FrameLayout.LayoutParams
-        view.subtitleLines.layoutParams = FrameLayout.LayoutParams(
-            textWidthPx(), FrameLayout.LayoutParams.WRAP_CONTENT
-        )
-        view.subtitleSettings.layoutParams = LinearLayout.LayoutParams(
-            textWidthPx() + dp(40), LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        view.subtitleLock.setImageResource(R.drawable.ic_subtitle_unlock)
         view.subtitleSettings.visibility = View.GONE
+        hideActionButtons()
 
-        setupDragAndClick(view)
+        view.subtitleClose.setOnClickListener {
+            val callback = onCloseRequest
+            if (callback != null) callback() else hide()
+        }
+        view.subtitleSettingsBtn.setOnClickListener { toggleSettings() }
+
+        setupDrag(view)
         setupSettings(view)
         applyStyle()
         if (restored) {
             // 尺寸变化（旋转/不同分辨率）后把恢复的位置收进屏幕内
             view.root.post { clampIntoBounds() }
-        } else {
-            centerHorizontally()
         }
         return true
     }
 
     fun hide() {
         val view = binding ?: return
+        view.root.removeCallbacks(hideButtonsRunnable)
         runCatching { wm.removeView(view.root) }
         binding = null
         params = null
-        lineViews.clear()
-        cachedLayout = null
-        cachedKey = ""
+        lastText = ""
         lastState = null
-        locked = false
         dragging = false
     }
 
@@ -164,41 +144,28 @@ class TtsSubtitleWindow(private val context: Context) {
 
     // ==================== 交互 ====================
 
-    /** 拖动移动 + 点击展开设置 */
-    private fun setupDragAndClick(view: LayoutSubtitleWindowBinding) {
-        view.subtitleLock.setOnClickListener {
-            locked = !locked
-            view.subtitleLock.setImageResource(
-                if (locked) R.drawable.ic_subtitle_lock else R.drawable.ic_subtitle_unlock
-            )
-            if (locked) view.subtitleSettings.visibility = View.GONE
-        }
+    /** 上下拖动移动字幕（宽度铺满，水平方向不需要移动） */
+    private fun setupDrag(view: LayoutSubtitleWindowBinding) {
         view.subtitlePanel.setOnTouchListener { _, event ->
             val lp = params ?: return@setOnTouchListener false
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     dragging = false
-                    downRawX = event.rawX
                     downRawY = event.rawY
-                    startX = lp.x
                     startY = lp.y
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - downRawX
                     val dy = event.rawY - downRawY
-                    if (!dragging && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
-                        dragging = true
-                    }
-                    if (dragging) {
-                        moveTo(startX + dx, startY + dy)
-                    }
+                    if (!dragging && abs(dy) > touchSlop) dragging = true
+                    if (dragging) moveTo(startY + dy)
                     true
                 }
 
                 MotionEvent.ACTION_UP -> {
-                    if (dragging) savePosition() else toggleSettings()
+                    // 拖动=移动位置；单击=呼出关闭/设置按钮（3 秒后自动隐藏）
+                    if (dragging) savePosition() else showActionButtons()
                     dragging = false
                     true
                 }
@@ -213,21 +180,50 @@ class TtsSubtitleWindow(private val context: Context) {
         }
     }
 
-    private fun moveTo(x: Float, y: Float) {
+    private fun moveTo(y: Float) {
         val view = binding ?: return
         val lp = params ?: return
-        val screenW = context.resources.displayMetrics.widthPixels
-        val screenH = context.resources.displayMetrics.heightPixels
-        lp.x = x.toInt().coerceIn(0, (screenW - view.root.width).coerceAtLeast(0))
+        val screenH = screenHeightPx()
         lp.y = y.toInt().coerceIn(0, (screenH - view.root.height).coerceAtLeast(0))
         runCatching { wm.updateViewLayout(view.root, lp) }
     }
 
+    /**
+     * 显示右上角关闭、右下角设置按钮。
+     * 设置面板未展开时 3 秒后自动隐藏；展开期间保持常显。
+     */
+    private fun showActionButtons() {
+        val view = binding ?: return
+        view.subtitleClose.visibility = View.VISIBLE
+        view.subtitleSettingsBtn.visibility = View.VISIBLE
+        view.root.removeCallbacks(hideButtonsRunnable)
+        if (!isSettingsOpen()) {
+            view.root.postDelayed(hideButtonsRunnable, 3000L)
+        }
+    }
+
+    private fun hideActionButtons() {
+        val view = binding ?: return
+        view.root.removeCallbacks(hideButtonsRunnable)
+        view.subtitleClose.visibility = View.GONE
+        view.subtitleSettingsBtn.visibility = View.GONE
+    }
+
+    /** 倒计时到点：设置面板还开着就保持显示，否则隐藏 */
+    private fun hideActionButtonsIfAllowed() {
+        if (isSettingsOpen()) return
+        hideActionButtons()
+    }
+
+    private fun isSettingsOpen(): Boolean =
+        binding?.subtitleSettings?.visibility == View.VISIBLE
+
+    /** 展开/收起设置面板：展开期间关闭/设置按钮常显，收起后重新计时 3 秒 */
     private fun toggleSettings() {
         val view = binding ?: return
-        if (locked) return
         val show = view.subtitleSettings.visibility != View.VISIBLE
         view.subtitleSettings.visibility = if (show) View.VISIBLE else View.GONE
+        showActionButtons()
         if (show) clampInsideScreen()
     }
 
@@ -236,7 +232,7 @@ class TtsSubtitleWindow(private val context: Context) {
         val view = binding ?: return
         val lp = params ?: return
         view.root.post {
-            val screenH = context.resources.displayMetrics.heightPixels
+            val screenH = screenHeightPx()
             val overflow = lp.y + view.root.height - screenH
             if (overflow > 0) {
                 lp.y = (lp.y - overflow).coerceAtLeast(0)
@@ -245,60 +241,36 @@ class TtsSubtitleWindow(private val context: Context) {
         }
     }
 
-    /**
-     * 读取上次保存的位置（屏幕千分比 → 像素）；没有记录时放在屏幕下方。
-     * @return 是否成功恢复了保存的位置
-     */
+    /** 读取上次保存的纵向位置（屏幕高度千分比 → 像素） */
     private fun applySavedPosition(lp: WindowManager.LayoutParams): Boolean {
-        val screenW = context.resources.displayMetrics.widthPixels
-        val screenH = context.resources.displayMetrics.heightPixels
-        val rx = globalConfig.ttsSubtitlePosXRatio
+        val screenH = screenHeightPx()
         val ry = globalConfig.ttsSubtitlePosYRatio
-        val restored = rx in 0..1000 && ry in 0..1000
-        if (restored) {
-            lp.x = (screenW * rx / 1000f).toInt()
-            lp.y = (screenH * ry / 1000f).toInt()
+        val restored = ry in 0..1000
+        lp.y = if (restored) {
+            (screenH * ry / 1000f).toInt()
         } else {
-            lp.x = 0
-            lp.y = (screenH * 0.72f).toInt()
+            (screenH * 0.72f).toInt()
         }
         return restored
     }
 
-    /** 拖动结束后记录位置（存千分比，适应旋转与不同分辨率） */
+    /** 拖动结束后记录纵向位置（存千分比，适应旋转与不同分辨率） */
     private fun savePosition() {
         val lp = params ?: return
-        val screenW = context.resources.displayMetrics.widthPixels
-        val screenH = context.resources.displayMetrics.heightPixels
-        if (screenW <= 0 || screenH <= 0) return
-        globalConfig.ttsSubtitlePosXRatio =
-            (lp.x * 1000f / screenW).toInt().coerceIn(0, 1000)
-        globalConfig.ttsSubtitlePosYRatio =
-            (lp.y * 1000f / screenH).toInt().coerceIn(0, 1000)
-        Log.i("$TAG 保存字幕位置 x=${lp.x} y=${lp.y}")
+        val screenH = screenHeightPx()
+        if (screenH <= 0) return
+        globalConfig.ttsSubtitlePosYRatio = (lp.y * 1000f / screenH).toInt().coerceIn(0, 1000)
+        Log.i("$TAG 保存字幕位置 y=${lp.y}")
     }
 
     /** 把窗口限制在屏幕可见范围内 */
     private fun clampIntoBounds() {
         val view = binding ?: return
         val lp = params ?: return
-        val screenW = context.resources.displayMetrics.widthPixels
-        val screenH = context.resources.displayMetrics.heightPixels
-        val nx = lp.x.coerceIn(0, (screenW - view.root.width).coerceAtLeast(0))
+        val screenH = screenHeightPx()
         val ny = lp.y.coerceIn(0, (screenH - view.root.height).coerceAtLeast(0))
-        if (nx != lp.x || ny != lp.y) {
-            lp.x = nx
+        if (ny != lp.y) {
             lp.y = ny
-            runCatching { wm.updateViewLayout(view.root, lp) }
-        }
-    }
-
-    private fun centerHorizontally() {
-        val view = binding ?: return
-        val lp = params ?: return
-        view.root.post {
-            val screenW = context.resources.displayMetrics.widthPixels
-            lp.x = ((screenW - view.root.width) / 2).coerceAtLeast(0)
             runCatching { wm.updateViewLayout(view.root, lp) }
         }
     }
@@ -362,7 +334,6 @@ class TtsSubtitleWindow(private val context: Context) {
 
     /** 设置变化后立即重绘（播放期间实时生效） */
     private fun refreshNow() {
-        cachedLayout = null
         applyStyle()
         lastState?.let { renderText(it) }
     }
@@ -373,64 +344,68 @@ class TtsSubtitleWindow(private val context: Context) {
         val view = binding ?: return
         val fontSize = (globalConfig.ttsSubtitleFontSize.value ?: 17).coerceIn(FONT_MIN, 28)
         val alpha = (globalConfig.ttsSubtitleAlpha.value ?: 85).coerceIn(ALPHA_MIN, ALPHA_MAX) / 100f
-        val lines = (globalConfig.ttsSubtitleLines.value ?: 2).coerceIn(1, 4)
 
-        if (lineViews.size != lines) {
-            view.subtitleLines.removeAllViews()
-            lineViews.clear()
-            repeat(lines) {
-                val tv = TextView(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        textWidthPx(), LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    includeFontPadding = false
-                    maxLines = 1
-                    setTextColor(Color.WHITE)
-                    setShadowLayer(2f, 0f, 1f, 0x99000000.toInt())
-                }
-                view.subtitleLines.addView(tv)
-                lineViews += tv
-            }
-            cachedLayout = null
-            cachedKey = ""
-        }
-        lineViews.forEach {
-            it.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
-            it.alpha = 1f
-        }
-        // 透明度只作用于字幕块，设置面板保持不透明便于操作
+        view.subtitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
+        view.subtitleText.setShadowLayer(2f, 0f, 1f, 0x99000000.toInt())
+        // 先用字号估算窗口高度（真实行高在布局完成后校准）
+        val estimate = (TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat(), context.resources.displayMetrics
+        ) * 1.2f).toInt()
+        updateWindowHeight(estimate)
+        // 透明度只作用于字幕文字区，设置面板保持不透明便于操作
         view.subtitlePanel.alpha = alpha
     }
 
     private fun renderText(state: TtsSessionState) {
+        val view = binding ?: return
         val text = state.paragraphText
         if (text.isBlank()) return
-        val layout = obtainLayout(text) ?: return
-        val lineCount = layout.lineCount
-        if (lineCount <= 0) return
+        val tv = view.subtitleText
+        if (lastText != text) {
+            lastText = text
+            tv.text = text
+            // 文本变了要等 TextView 重新布局后才能算行高/滚动位置
+            tv.post { syncScroll(state) }
+            return
+        }
+        syncScroll(state)
+    }
 
-        val lines = lineViews.size
+    /**
+     * 把整段文本滚动到窗口内的目标行（两端对齐由 TextView 的 justificationMode 完成）。
+     * 窗口固定 N 行高，靠 translationY 上移显示窗口内的那几行。
+     */
+    private fun syncScroll(state: TtsSessionState) {
+        val view = binding ?: return
+        val tv = view.subtitleText
+        val layout = tv.layout ?: return
+        val text = tv.text?.toString().orEmpty()
+        if (text.isBlank() || layout.lineCount <= 0) return
+        val lines = configuredLines()
+        val lineHeight = (layout.getLineBottom(0) - layout.getLineTop(0)).coerceAtLeast(1)
+        updateWindowHeight(lineHeight)
+
         val charIndex = currentCharIndex(state, text)
         val currentLine = layout.getLineForOffset(charIndex)
-        // 以当前行为中心，向上/向下各展开
         val lead = (lines - 1) / 2
-        val maxStart = (lineCount - lines).coerceAtLeast(0)
+        val maxStart = (layout.lineCount - lines).coerceAtLeast(0)
         val startLine = (currentLine - lead).coerceIn(0, maxStart)
+        tv.translationY = -layout.getLineTop(startLine).toFloat()
+    }
 
-        for (i in 0 until lines) {
-            val tv = lineViews[i]
-            val line = startLine + i
-            if (line < lineCount) {
-                val start = layout.getLineStart(line)
-                val end = layout.getLineEnd(line)
-                tv.text = text.substring(start, end).trimEnd('\n')
-                tv.visibility = View.VISIBLE
-            } else {
-                tv.text = ""
-                tv.visibility = View.INVISIBLE
-            }
+    /** 字幕窗口固定显示 [configuredLines] 行 */
+    private fun updateWindowHeight(lineHeight: Int) {
+        val view = binding ?: return
+        val target = lineHeight * configuredLines()
+        val lp = view.subtitleLines.layoutParams
+        if (lp.height != target) {
+            lp.height = target
+            view.subtitleLines.layoutParams = lp
         }
     }
+
+    private fun configuredLines(): Int =
+        (globalConfig.ttsSubtitleLines.value ?: 2).coerceIn(1, 4)
 
     /** 进度 → 字符下标（叠加时间偏移，用于修正文字超前/滞后） */
     private fun currentCharIndex(state: TtsSessionState, text: String): Int {
@@ -447,34 +422,22 @@ class TtsSubtitleWindow(private val context: Context) {
         return (progress * text.length).toInt().coerceIn(0, text.length - 1)
     }
 
-    private fun obtainLayout(text: String): StaticLayout? {
-        val fontSize = (globalConfig.ttsSubtitleFontSize.value ?: 17).coerceIn(FONT_MIN, 28)
-        val width = textWidthPx()
-        val key = "$text|$width|$fontSize"
-        cachedLayout?.let { if (cachedKey == key) return it }
-        val paint = TextPaint().apply {
-            isAntiAlias = true
-            textSize = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat(), context.resources.displayMetrics
-            )
-        }
-        val layout = runCatching {
-            StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
-                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setLineSpacing(0f, 1.2f)
-                .setIncludePad(false)
-                .build()
-        }.onFailure { Log.e("$TAG 折行失败", it) }.getOrNull() ?: return null
-        cachedLayout = layout
-        cachedKey = key
-        return layout
+    /**
+     * 真实屏幕尺寸。
+     * Service 里拿到的 displayMetrics 有时不是当前屏幕（例如返回较小的默认配置），
+     * 会导致折行宽度偏窄、右侧留出大片空白，所以统一从 WindowManager 取。
+     */
+    private fun screenBounds(): Pair<Int, Int> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val bounds = wm.currentWindowMetrics.bounds
+        bounds.width() to bounds.height()
+    } else {
+        val dm = android.util.DisplayMetrics()
+        @Suppress("DEPRECATION")
+        wm.defaultDisplay.getRealMetrics(dm)
+        dm.widthPixels to dm.heightPixels
     }
 
-    /** 字幕文字区宽度（固定值，便于窗口按内容收缩后自由拖动） */
-    private fun textWidthPx(): Int {
-        val screen = context.resources.displayMetrics.widthPixels
-        return (screen * WIDTH_RATIO).toInt().coerceAtLeast(dp(160))
-    }
+    private fun screenHeightPx(): Int = screenBounds().second
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics

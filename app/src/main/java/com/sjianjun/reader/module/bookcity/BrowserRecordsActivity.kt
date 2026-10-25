@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.bookcity
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
@@ -64,6 +65,9 @@ class BrowserRecordsActivity : BaseActivity() {
     private var bookmarksJob: Job? = null
     /** 当前长按弹出的菜单（拖动开始时关闭） */
     private var currentMenu: PopupWindow? = null
+    /** 最近一次按下的屏幕坐标（用于让长按菜单在按压位置弹出） */
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -251,8 +255,11 @@ class BrowserRecordsActivity : BaseActivity() {
         ItemTouchHelper(callback).attachToRecyclerView(binding.rvRecords)
     }
 
-    /** 长按菜单（非模态，避免拦截拖动） */
-    private fun showRecordMenu(row: Row, anchor: View) {
+    /**
+     * 长按菜单（非模态，避免拦截拖动）。
+     * @param useTouchPosition true = 在手指按压位置弹出；false = 紧贴条目下方（拖动场景）
+     */
+    private fun showRecordMenu(row: Row, anchor: View, useTouchPosition: Boolean = false) {
         dismissRecordMenu()
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
@@ -307,7 +314,21 @@ class BrowserRecordsActivity : BaseActivity() {
         // 用 showAtLocation 手动定位，避免 showAsDropDown 注册 layout 监听导致松手后自动重定位
         val loc = IntArray(2)
         anchor.getLocationOnScreen(loc)
-        popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, loc[0], loc[1] + anchor.height + 4)
+        // 先量出菜单尺寸，再以按压点为中心并限制在屏幕内
+        container.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val menuW = container.measuredWidth
+        val menuH = container.measuredHeight
+        val screenW = resources.displayMetrics.widthPixels
+        val screenH = resources.displayMetrics.heightPixels
+        val margin = dp(8)
+        val rawX = if (useTouchPosition) lastTouchX.toInt() - menuW / 2 else loc[0]
+        val rawY = if (useTouchPosition) lastTouchY.toInt() else loc[1] + anchor.height + 4
+        val x = rawX.coerceIn(margin, (screenW - menuW - margin).coerceAtLeast(margin))
+        val y = rawY.coerceIn(margin, (screenH - menuH - margin).coerceAtLeast(margin))
+        popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y)
     }
 
     private fun dismissRecordMenu() {
@@ -386,10 +407,18 @@ class BrowserRecordsActivity : BaseActivity() {
                     EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
                     finish()
                 }
+                // 记录按压坐标，长按菜单据此在手指附近弹出
+                binding.root.setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        lastTouchX = event.rawX
+                        lastTouchY = event.rawY
+                    }
+                    false
+                }
                 if (!bookmarksMode) {
                     // 历史模式：长按弹菜单（收藏夹模式由 ItemTouchHelper 处理）
                     binding.root.setOnLongClickListener {
-                        showRecordMenu(row, binding.root)
+                        showRecordMenu(row, binding.root, useTouchPosition = true)
                         true
                     }
                 }
@@ -399,7 +428,8 @@ class BrowserRecordsActivity : BaseActivity() {
                     if (bookmarksMode) {
                         BookmarkStore.remove(row.url)
                     } else {
-                        History.list = History.list.filterNot { it.url == row.url }
+                        // 历史不再去重，按「地址 + 时间」精确删除这一条
+                        History.list = History.list.filterNot { it.url == row.url && it.time == row.time }
                     }
                     reload()
                 }

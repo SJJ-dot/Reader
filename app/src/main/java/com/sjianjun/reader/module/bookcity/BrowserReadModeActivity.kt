@@ -253,10 +253,9 @@ class BrowserReadModeActivity : BaseActivity() {
         if (!isHistoryNavigation) {
             forwardHistoryStack.clear()
         }
-        val isMark = readModeHistory.firstOrNull { it.url == url }?.isMark ?: false
         readModeHistory.removeAll { it.url == url }
         val title = data.title.ifBlank { webBook?.title ?: url }
-        readModeHistory.add(HistoryItem(title, url, isMark = isMark))
+        readModeHistory.add(HistoryItem(title, url))
         readModeHistory.sortDescending()
         while (readModeHistory.size > 100) {
             readModeHistory.removeAt(readModeHistory.lastIndex)

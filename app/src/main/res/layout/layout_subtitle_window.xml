@@ -1,42 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/subtitle_root"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <!-- 字幕文字区：可拖动 / 点击展开设置 -->
+    <!-- 字幕文字区：整条铺满（文字可用宽度 = 屏幕宽 - 左右 padding）；关闭/设置按钮浮在上层且默认隐藏 -->
     <FrameLayout
         android:id="@+id/subtitle_panel"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_subtitle_panel"
         android:paddingStart="14dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="26dp"
-        android:paddingBottom="8dp">
+        android:paddingTop="6dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="6dp">
 
-        <LinearLayout
+        <!-- 固定高度窗口 + 内部整段 TextView：只显示其中 N 行，靠 translationY 滚动；两端对齐由 justificationMode 完成 -->
+        <FrameLayout
             android:id="@+id/subtitle_lines"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:clipChildren="true">
+
+            <TextView
+                android:id="@+id/subtitle_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:justificationMode="inter_word"
+                android:lineSpacingMultiplier="1.2"
+                android:textColor="#FFFFFFFF"
+                android:textSize="17sp" />
+        </FrameLayout>
 
         <ImageView
-            android:id="@+id/subtitle_lock"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:id="@+id/subtitle_close"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:layout_gravity="top|end"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="锁定字幕"
-            android:padding="3dp"
-            android:src="@drawable/ic_subtitle_unlock" />
+            android:contentDescription="关闭字幕"
+            android:padding="4dp"
+            android:src="@drawable/ic_tab_close"
+            android:tint="#FFFFFFFF"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/subtitle_settings_btn"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="bottom|end"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="字幕设置"
+            android:padding="4dp"
+            android:src="@drawable/ic_tts_settings"
+            android:tint="#FFFFFFFF"
+            android:visibility="gone" />
     </FrameLayout>
 
-    <!-- 设置面板：点击字幕区展开 -->
+    <!-- 设置面板：点右下角设置图标展开 -->
     <LinearLayout
         android:id="@+id/subtitle_settings"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:background="@drawable/bg_subtitle_settings"
