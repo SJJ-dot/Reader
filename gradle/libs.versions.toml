@@ -28,7 +28,6 @@ persistentCookieJar = "v1.0.1"
 glide = "4.16.0"
 flexbox = "3.0.0"
 material = "1.14.0"
-zxing = "3.5.3"
 bugly = "latest.release"
 superTextView = "v3.2.6.99"
 circleimageview = "3.1.0"
@@ -117,7 +116,6 @@ glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
-zxingCore = { module = "com.google.zxing:core", version.ref = "zxing" }
 buglyCrashreport = { module = "com.tencent.bugly:crashreport", version.ref = "bugly" }
 superTextView = { module = "com.github.chenBingX:SuperTextView", version.ref = "superTextView" }
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }

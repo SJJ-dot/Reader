@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --text: #333;
+            --text-secondary: #888;
+            --bg: #f5f6f7;
+            --card: #ffffff;
+            --divider: #f0f0f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px 16px 32px;
+            min-height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .hero {
+            padding: 28px 24px 24px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
+            margin: 0 auto 16px;
+            display: block;
+            object-fit: cover;
+        }
+
+        .app-name {
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .declare {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .declare a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .qr-section {
+            padding: 24px 20px 20px;
+            text-align: center;
+        }
+
+        .qr-img {
+            width: 168px;
+            height: 168px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .qr-img canvas, .qr-img img {
+            display: block;
+            width: 168px;
+            height: 168px;
+        }
+
+        .qr-tip {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            font-size: 15px;
+            border-bottom: 1px solid var(--divider);
+            cursor: pointer;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:active {
+            background: #fafafa;
+        }
+
+        .menu-item .label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item .icon {
+            font-size: 18px;
+        }
+
+        .menu-item .arrow {
+            color: #ccc;
+            font-size: 18px;
+            font-weight: 300;
+        }
+
+        .accent {
+            color: var(--primary);
+        }
+
+        .accent .arrow {
+            color: var(--primary);
+            opacity: 0.6;
+        }
+
+        .version {
+            text-align: center;
+            font-size: 12px;
+            color: #bbb;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="hero">
+        <img class="logo" id="logo" alt="logo">
+        <div class="app-name">修仙</div>
+        <div class="declare" id="declare"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="qr-section">
+        <div class="qr-img" id="qr"></div>
+        <div class="qr-tip">扫码下载 App</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="menu-item accent" onclick="android.openFeedback()">
+        <span class="label"><span class="icon">💬</span>意见反馈</span>
+        <span class="arrow">›</span>
+    </div>
+    <div class="menu-item accent" onclick="android.openLicense()">
+        <span class="label"><span class="icon">📄</span>开源协议（GPL-3.0）</span>
+        <span class="arrow">›</span>
+    </div>
+    <div class="menu-item" onclick="android.openHelp()">
+        <span class="label"><span class="icon">📖</span>使用说明</span>
+        <span class="arrow">›</span>
+    </div>
+    <div class="menu-item" onclick="android.checkUpdate()">
+        <span class="label"><span class="icon">🔄</span>检查更新</span>
+        <span class="arrow" id="versionHint">›</span>
+    </div>
+</div>
+
+<div class="version" id="versionText"></div>
+
+<script src="qrcode.min.js"></script>
+<script>
+    function linkify(text) {
+        if (!text) return '';
+        return text.replace(/(https?:\/\/[^\s]+)/g, function (m) {
+            return '<a href="' + m + '">' + m + '</a>';
+        });
+    }
+
+    function renderQr(text) {
+        var el = document.getElementById('qr');
+        if (!el) return;
+        el.innerHTML = '';
+        new QRCode(el, {
+            text: text,
+            width: 168,
+            height: 168,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }
+
+    function renderAbout(data) {
+        if (data.logo) document.getElementById('logo').src = data.logo;
+        if (data.apkUrl) renderQr(data.apkUrl);
+        document.getElementById('declare').innerHTML = linkify(data.declare || '');
+        var current = data.version || '';
+        var latest = data.latestVersion || '';
+        // “检查更新”这一行显示检查更新接口获取到的版本号
+        var shown = latest || current;
+        document.getElementById('versionText').textContent = current ? ('当前版本 ' + current) : '';
+        document.getElementById('versionHint').textContent = shown ? ('v' + shown + ' ›') : '›';
+    }
+</script>
+</body>
+</html>

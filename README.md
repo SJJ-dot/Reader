@@ -18,3 +18,13 @@
 <img src="img/apk.webp" width = "180" height = "180"/>
 
 ## 如果喜欢就动动小手点个star，或者推荐给你的朋友吧😁😁😁😁
+
+## 开源协议
+
+本项目是开源项目，遵循 [GNU General Public License v3.0 (GPL-3.0)](LICENSE) 协议发布。
+
+您可以自由使用、修改和分发本软件，但任何基于本项目的衍生作品也必须以 GPL-3.0 协议开源发布。
+
+## 意见反馈
+
+如遇问题或有功能建议，欢迎通过 [GitHub Issues](https://github.com/SJJ-dot/Reader/issues) 反馈。
