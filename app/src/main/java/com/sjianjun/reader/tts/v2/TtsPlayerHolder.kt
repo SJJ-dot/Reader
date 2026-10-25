@@ -54,6 +54,10 @@ object TtsPlayerHolder {
     @Volatile
     private var currentVoice: String? = null
 
+    /** 已经下发给引擎的语速（用于判断配置里的语速是否需要重新同步） */
+    @Volatile
+    private var currentRate: Int = -1
+
     /** 会话状态的稳定入口（跟着播放器实例走，重建后自动重绑） */
     private val _state = MutableStateFlow(TtsSessionState())
     val state: StateFlow<TtsSessionState> get() = _state
@@ -83,22 +87,35 @@ object TtsPlayerHolder {
     }
 
     /**
-     * 设置里的引擎变了：开始新的朗读前调用，保证用的是配置的引擎
+     * 设置变了：开始新的朗读前调用，保证用的是配置的引擎 / 音色 / 语速。
+     *
+     * - 引擎、音色：引擎实例内部固定，必须重建播放器；
+     * - 语速：引擎内部字段，直接 setRate 同步即可（未播放时不会打断朗读）。
      */
     fun ensureConfiguredEngine() {
         val configured = configuredEngine()
         val voice = configuredVoice(configured)
+        val rate = configuredRate()
         synchronized(this) {
-            if (currentType == configured && currentVoice == voice) return
-            Log.i("$TAG 引擎/音色配置变化：$currentType($currentVoice) -> $configured($voice)，重建播放器")
-            player?.stop()
-            player = createPlayer(configured)
+            if (currentType != configured || currentVoice != voice) {
+                Log.i("$TAG 引擎/音色配置变化：$currentType($currentVoice) -> $configured($voice)，重建播放器")
+                player?.stop()
+                player = createPlayer(configured)
+            }
+            if (currentRate != rate) {
+                Log.i("$TAG 同步语速 $currentRate -> $rate")
+                currentRate = rate
+                player().setRate(rate)
+            }
         }
     }
 
     /** 当前配置对应的音色（仅 Edge 有意义，其它引擎返回空串） */
     private fun configuredVoice(type: TtsEngineType): String =
         if (type == TtsEngineType.EDGE) (globalConfig.readerTtsVoice.value ?: "").trim() else ""
+
+    /** 当前配置对应的语速（0~100） */
+    private fun configuredRate(): Int = (globalConfig.readerTtsRate.value ?: 50).coerceIn(0, 100)
 
     fun currentEngineType(): TtsEngineType? = currentType
 
@@ -124,6 +141,7 @@ object TtsPlayerHolder {
             player = newPlayer
             currentType = null
             currentVoice = null
+            currentRate = -1
             bindState(newPlayer)
         }
     }
@@ -135,7 +153,8 @@ object TtsPlayerHolder {
         }
         currentType = type
         currentVoice = configuredVoice(type)
-        Log.i("$TAG 创建播放器，引擎=${type.label} voice=$currentVoice")
+        currentRate = configuredRate()
+        Log.i("$TAG 创建播放器，引擎=${type.label} voice=$currentVoice rate=$currentRate")
         val created = TtsPlayer(engine, loader, scope, onBookEnd = ::markBookEnd)
         bindState(created)
         return created

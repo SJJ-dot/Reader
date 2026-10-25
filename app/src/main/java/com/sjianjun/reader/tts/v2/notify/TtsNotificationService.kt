@@ -16,6 +16,7 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
+import android.provider.Settings
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -37,6 +38,8 @@ import com.sjianjun.reader.tts.v2.TtsPlayerHolder
 import com.sjianjun.reader.tts.v2.session.TtsPlayer
 import com.sjianjun.reader.tts.v2.session.TtsSessionMode
 import com.sjianjun.reader.tts.v2.session.TtsSessionState
+import com.sjianjun.reader.tts.v2.subtitle.TtsSubtitleWindow
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,6 +74,9 @@ class TtsNotificationService : Service() {
         const val ACTION_CYCLE_TIMER = "com.sjianjun.reader.tts.v2.CYCLE_TIMER"
         const val ACTION_OPEN_READER = "com.sjianjun.reader.tts.v2.OPEN_READER"
         const val ACTION_OPEN_SETTING = "com.sjianjun.reader.tts.v2.OPEN_SETTING"
+
+        /** 通知/媒体卡片上的字幕开关 */
+        const val ACTION_TOGGLE_SUBTITLE = "com.sjianjun.reader.tts.v2.TOGGLE_SUBTITLE"
 
 
 
@@ -116,6 +122,7 @@ class TtsNotificationService : Service() {
         private const val REQUEST_CODE_STOP = 204
         private const val REQUEST_CODE_TIMER = 205
         private const val REQUEST_CODE_SETTING = 206
+        private const val REQUEST_CODE_SUBTITLE = 207
 
         /** 启动通知服务（会话开始后由交互层调用） */
         fun start(context: Context) {
@@ -199,7 +206,52 @@ class TtsNotificationService : Service() {
         }
     }
 
+    /** 朗读字幕（悬浮字幕）窗口：会话开始默认关闭，由通知/媒体卡片手动开启 */
+    private val subtitle by lazy { TtsSubtitleWindow(this) }
+
     private fun player(): TtsPlayer = TtsPlayerHolder.player()
+
+    private fun subtitleActionTitle(): String = if (subtitle.isVisible) "关闭字幕" else "开启字幕"
+
+    /**
+     * 切换朗读字幕（悬浮字幕）。
+     * 默认关闭，每次朗读都需要手动开启；未授权悬浮窗时引导去系统设置授权。
+     */
+    private fun toggleSubtitle() {
+        if (subtitle.isVisible) {
+            subtitle.hide()
+            Log.i("$TAG 关闭朗读字幕")
+        } else {
+            if (!subtitle.canDrawOverlay()) {
+                toast("请先允许「显示在其他应用上层」")
+                openOverlayPermission()
+                return
+            }
+            if (!subtitle.show()) {
+                toast("字幕开启失败")
+                return
+            }
+            subtitle.render(player().state.value)
+            Log.i("$TAG 开启朗读字幕")
+        }
+        // 刷新通知与媒体卡片的按钮文案/图标
+        val current = player().state.value
+        runCatching {
+            if (foregroundStarted) notify(current) else startForegroundCompat(current)
+        }
+    }
+
+    /** 跳系统「显示在其他应用上层」权限页 */
+    private fun openOverlayPermission() {
+        runCatching {
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:$packageName")
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.onFailure { Log.e("$TAG 打开悬浮窗权限页失败", it) }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -216,14 +268,11 @@ class TtsNotificationService : Service() {
                 override fun onSkipToNext() = player().nextChapter()
                 override fun onSkipToPrevious() = player().prevChapter()
 
-                // 媒体卡片上的两个自定义按钮（左设置、右停止）
+                // 媒体卡片上的两个自定义按钮（左字幕开关、右停止）
                 override fun onCustomAction(action: String?, extras: Bundle?) {
                     when (action) {
-                        ACTION_CARD_SETTING -> {
-                Log.i("$TAG 媒体卡片「朗读设置」点击")
-                openTtsSetting()
-            }
-            ACTION_CARD_STOP -> player().stop()
+                        ACTION_CARD_SETTING -> toggleSubtitle()
+                        ACTION_CARD_STOP -> player().stop()
                     }
                 }
             })
@@ -261,6 +310,8 @@ class TtsNotificationService : Service() {
                 Log.i("$TAG 通知「设置」点击（服务命令）")
                 openTtsSetting()
             }
+
+            ACTION_TOGGLE_SUBTITLE -> toggleSubtitle()
             ACTION_START, null -> Unit
             else -> Unit
         }
@@ -276,6 +327,7 @@ class TtsNotificationService : Service() {
         releaseWakeLock()
         releaseAudioFocus()
         runCatching { mediaSession.isActive = false; mediaSession.release() }
+        subtitle.hide()
         scope.cancel()
         super.onDestroy()
     }
@@ -285,9 +337,14 @@ class TtsNotificationService : Service() {
     private fun onStateChanged(state: TtsSessionState) {
         if (!state.active) {
             Log.i("$TAG 会话已结束，退出前台并停止服务")
+            subtitle.hide()
             stopForegroundCompat()
             stopSelf()
             return
+        }
+        // 字幕跟随当前段落刷新（未开启时内部直接返回）
+        if (subtitle.isVisible) {
+            subtitle.render(state)
         }
         if (!foregroundStarted) {
             startForegroundCompat(state)
@@ -321,10 +378,12 @@ class TtsNotificationService : Service() {
             positionMs = position,
             playing = state.playing,
             chapterTitle = state.chapterTitle,
-            customActions = listOf("朗读设置", "停止朗读"),
+            customActions = listOf("朗读字幕", "停止朗读"),
         )
         // 进度每 100ms 刷新一次，播放状态按秒节流即可（系统会按 speed 自行推进）
-        val playbackKey = "${state.playing}|${state.chapterIndex}|${state.chapterTitle}|$duration|${position / 1000}"
+        // 字幕开关状态也纳入 key：切换后媒体卡片的按钮文案要跟着变
+        val playbackKey =
+            "${state.playing}|${state.chapterIndex}|${state.chapterTitle}|$duration|${position / 1000}|${subtitle.isVisible}"
         if (playbackKey != lastPlaybackKey) {
             lastPlaybackKey = playbackKey
             var actions = PlaybackStateCompat.ACTION_PLAY or
@@ -343,7 +402,7 @@ class TtsNotificationService : Service() {
                 // 因此「设置」回调里先尝试 PendingIntent.send，失败再 startActivity（前台时可用）。
                 .addCustomAction(
                     PlaybackStateCompat.CustomAction.Builder(
-                        ACTION_CARD_SETTING, "朗读设置", R.drawable.ic_tts_settings
+                        ACTION_CARD_SETTING, subtitleActionTitle(), R.drawable.ic_tts_subtitle
                     ).build()
                 )
                 .addCustomAction(
@@ -445,10 +504,11 @@ class TtsNotificationService : Service() {
         if (state.mode == TtsSessionMode.BOOK) {
             builder.addAction(R.drawable.ic_tts_next, "下一章", servicePendingIntent(ACTION_NEXT, REQUEST_CODE_NEXT))
         }
+        // 字幕开关：替换原来的「设置」按钮（朗读设置仍可从阅读页进入）
         builder.addAction(
-            R.drawable.ic_tts_settings,
-            "设置",
-            openSettingPendingIntent(state)
+            R.drawable.ic_tts_subtitle,
+            subtitleActionTitle(),
+            servicePendingIntent(ACTION_TOGGLE_SUBTITLE, REQUEST_CODE_SUBTITLE)
         )
         builder.addAction(R.drawable.ic_tts_stop, "停止", servicePendingIntent(ACTION_STOP, REQUEST_CODE_STOP + 10))
         builder.addAction(

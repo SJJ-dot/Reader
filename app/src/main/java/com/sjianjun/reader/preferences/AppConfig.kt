@@ -85,6 +85,23 @@ class AppConfig(val name: String) :
 
     val readerTtsRate by lazy { intLivedata("readerTtsRate", 50) }
 
+    // ==================== 朗读字幕（悬浮字幕） ====================
+
+    /** 字幕文字大小（sp），12~28 */
+    val ttsSubtitleFontSize by lazy { intLivedata("ttsSubtitleFontSize", 17) }
+
+    /** 字幕整体不透明度（百分比 20~100） */
+    val ttsSubtitleAlpha by lazy { intLivedata("ttsSubtitleAlpha", 85) }
+
+    /** 字幕显示行数（1~4，默认 2） */
+    val ttsSubtitleLines by lazy { intLivedata("ttsSubtitleLines", 2) }
+
+    /**
+     * 字幕文本偏移（毫秒）：正数让文本"提前"（解决声音先到、文字滞后），
+     * 负数让文本"延后"（解决文字超前）。范围 -1500~1500。
+     */
+    val ttsSubtitleOffsetMs by lazy { intLivedata("ttsSubtitleOffsetMs", 0) }
+
     /**
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
