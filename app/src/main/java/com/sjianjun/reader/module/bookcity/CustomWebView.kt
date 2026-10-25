@@ -94,8 +94,11 @@ class CustomWebView @JvmOverloads constructor(
 
     private companion object {
         const val MAX_TABS = 50
-        /** 内存中最多同时保留的 WebView 实例数，其余标签只保留 URL/历史 */
-        const val MAX_LIVE_TABS = 5
+        /**
+         * 内存中最多同时保留的 WebView 实例数（1 = 只留当前标签）。
+         * 其余标签切走后立即销毁 WebView，只保留 URL/标题/前进后退栈与 saveState 快照，切回时重建。
+         */
+        const val MAX_LIVE_TABS = 1
     }
 
     private val SEARCH_ENGINES = listOf(
@@ -275,7 +278,10 @@ class CustomWebView @JvmOverloads constructor(
         return wv
     }
 
-    /** 内存里最多保留 MAX_LIVE_TABS 个 WebView，超出按最近使用时间销毁最久未用的（列表/历史仍保留） */
+    /**
+     * 只保留当前标签的 WebView：其余标签立即销毁（销毁前保存 URL/标题与 saveState 快照并落盘），
+     * 切回时按需重建，用于节省内存。
+     */
     private fun trimLiveTabs(active: MyWebView) {
         val live = BrowserTabs.tabs.filter { it.webView != null && it.webView?.isDestroyed == false }
         if (live.size <= MAX_LIVE_TABS) return

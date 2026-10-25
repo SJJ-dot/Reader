@@ -112,6 +112,8 @@ class BrowserPageFragment : BaseFragment() {
             // 有恢复的标签时，加载当前标签页面（仅书城主入口恢复标签；
             // 字典/搜索等外部打开指定 URL 时不做恢复，避免覆盖传入的 URL）
             if (arguments?.getBoolean(KEY_RESTORE_TABS, false) == true) {
+                // 进程重启后先从持久化恢复标签元数据，否则标签列表会从空开始（表现为“标签被清空”）
+                BrowserTabs.restore()
                 BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.url?.takeIf { it.isNotBlank() }
                     ?.let { url = it }
             }
