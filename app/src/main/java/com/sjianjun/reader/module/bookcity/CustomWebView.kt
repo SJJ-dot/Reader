@@ -1064,6 +1064,17 @@ class CustomWebView @JvmOverloads constructor(
         val nativeForward = wv != null && wv.canGoForward() && wv.meaningfulForwardStep() > 0
         binding.forward.isEnabled = nativeForward || virtualForward
         binding.refresh.isSelected = (wv?.progress ?: 100) < 100
+        // 退到底（再返回就退出浏览器）时，返回箭头切换为叉叉关闭
+        val canBack = tab?.session?.canBack == true
+        if (canBack) {
+            binding.backward.setImageResource(R.drawable.browser_navigation_forward)
+            binding.backward.imageTintList = null
+            binding.backward.scaleX = -1f
+        } else {
+            binding.backward.setImageResource(R.mipmap.icon_exit)
+            binding.backward.imageTintList = null
+            binding.backward.scaleX = 1f
+        }
     }
 
     /** 返回向后最近的可用页面步数（负值），没有则返回 0。 */
