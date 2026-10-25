@@ -13,6 +13,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.BaseFragment
@@ -121,6 +122,15 @@ class BrowserPageFragment : BaseFragment() {
 
             customWebView.crossOriginOverride = crossOriginMode
             customWebView.init(viewLifecycleOwner, adBlock, webBook, vm)
+            // 菜单「退出」：独立浏览器里结束 Activity；内嵌在首页时只回到书架，避免退出整个 App
+            customWebView.onExitRequest = {
+                val act = requireActivity()
+                if (act is WebViewBrowserActivity) {
+                    act.finish()
+                } else if (!findNavController().popBackStack(R.id.bookShelfFragment, false)) {
+                    act.onBackPressedDispatcher.onBackPressed()
+                }
+            }
             // 有保存状态就恢复到当前页（夜间模式切换不跳回首页），否则正常加载
             val state = savedWebState
             savedWebState = null

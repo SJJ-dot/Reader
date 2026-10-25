@@ -139,6 +139,12 @@ class CustomWebView @JvmOverloads constructor(
     @Volatile
     var crossOriginOverride: Int = -1
 
+    /**
+     * 菜单「退出」的处理方式。宿主不设置时默认 finish 当前 Activity；
+     * 书城内嵌在首页时由 Fragment 设置为「回到书架」，避免把首页 Activity 结束掉。
+     */
+    var onExitRequest: (() -> Unit)? = null
+
     fun effectiveCrossOriginMode(): Int {
         return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
     }
@@ -977,11 +983,16 @@ class CustomWebView @JvmOverloads constructor(
             BrowserSession.saveResume(
                 if (webView?.canGoBack() == true) webView?.url else null
             )
-            // 等面板完全关闭后再 finish，避免点击事件穿透到底部按钮
+            // 等面板完全关闭后再退出，避免点击事件穿透到底部按钮
             dialog.setOnDismissListener {
-                val act = activity ?: (context as? android.app.Activity)
-                Log.i("menuExit finish activity=$act")
-                act?.finish()
+                val exit = onExitRequest
+                if (exit != null) {
+                    exit.invoke()
+                } else {
+                    val act = activity ?: (context as? android.app.Activity)
+                    Log.i("menuExit finish activity=$act")
+                    act?.finish()
+                }
             }
             dialog.dismiss()
         }
