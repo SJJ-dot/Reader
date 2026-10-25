@@ -46,6 +46,14 @@ object TtsPlayerHolder {
     @Volatile
     private var currentType: TtsEngineType? = null
 
+    /**
+     * 当前播放器创建时使用的 Edge 音色。
+     * Edge 的音色在合成会话建立时就固定了（引擎实例里的 voice 不会热更新），
+     * 所以音色变化必须重建播放器，否则表现为「切换音色无效，要重启 App」。
+     */
+    @Volatile
+    private var currentVoice: String? = null
+
     /** 会话状态的稳定入口（跟着播放器实例走，重建后自动重绑） */
     private val _state = MutableStateFlow(TtsSessionState())
     val state: StateFlow<TtsSessionState> get() = _state
@@ -79,13 +87,18 @@ object TtsPlayerHolder {
      */
     fun ensureConfiguredEngine() {
         val configured = configuredEngine()
+        val voice = configuredVoice(configured)
         synchronized(this) {
-            if (currentType == configured) return
-            Log.i("$TAG 引擎配置变化：$currentType -> $configured，重建播放器")
+            if (currentType == configured && currentVoice == voice) return
+            Log.i("$TAG 引擎/音色配置变化：$currentType($currentVoice) -> $configured($voice)，重建播放器")
             player?.stop()
             player = createPlayer(configured)
         }
     }
+
+    /** 当前配置对应的音色（仅 Edge 有意义，其它引擎返回空串） */
+    private fun configuredVoice(type: TtsEngineType): String =
+        if (type == TtsEngineType.EDGE) (globalConfig.readerTtsVoice.value ?: "").trim() else ""
 
     fun currentEngineType(): TtsEngineType? = currentType
 
@@ -110,6 +123,7 @@ object TtsPlayerHolder {
             player?.stop()
             player = newPlayer
             currentType = null
+            currentVoice = null
             bindState(newPlayer)
         }
     }
@@ -120,7 +134,8 @@ object TtsPlayerHolder {
             TtsEngineType.EDGE -> EdgeTtsEngine()
         }
         currentType = type
-        Log.i("$TAG 创建播放器，引擎=${type.label}")
+        currentVoice = configuredVoice(type)
+        Log.i("$TAG 创建播放器，引擎=${type.label} voice=$currentVoice")
         val created = TtsPlayer(engine, loader, scope, onBookEnd = ::markBookEnd)
         bindState(created)
         return created
