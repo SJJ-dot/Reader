@@ -51,6 +51,10 @@ android {
                 install "-r", "requirements.txt"
             }
         }
+        // 第三方服务配置统一从 local.properties 读取（不进版本库）
+        buildConfigField "String", "BUGLY_APP_ID", "\"${properties.getProperty('bugly.appId', '')}\""
+        buildConfigField "String", "PGY_API_KEY", "\"${properties.getProperty('pgy.apiKey', '')}\""
+        buildConfigField "String", "PGY_APP_KEY", "\"${properties.getProperty('pgy.appKey', '')}\""
     }
     buildFeatures {
         viewBinding true

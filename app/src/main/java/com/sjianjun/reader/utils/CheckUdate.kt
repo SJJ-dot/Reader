@@ -5,6 +5,7 @@ import android.widget.Toast
 import com.azhon.appupdate.listener.OnDownloadListener
 import com.azhon.appupdate.manager.DownloadManager
 import com.sjianjun.coroutine.withIo
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.http.http
@@ -19,8 +20,8 @@ import java.io.File
 enum class Channels {
     PGY {
         override suspend fun getReleaseInfo(): ReleasesInfo {
-            val _api_key = "fbdcc7e3fea0c654fed879db614f9031"
-            val appKey = "80fa89dd88b73aff5f8c1dfbacc0ae6a"
+            val _api_key = BuildConfig.PGY_API_KEY
+            val appKey = BuildConfig.PGY_APP_KEY
             val url =
                 "https://www.pgyer.com/apiv2/app/check?_api_key=${_api_key}&appKey=${appKey}"
             val info = JSONObject(http.get(url).body).getJSONObject("data")

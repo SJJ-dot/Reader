@@ -14,7 +14,7 @@ fun handleDefaultException(context: Context) {
         deviceID = UUID.randomUUID().toString().replace("-", "")
         globalConfig.deviceID = deviceID
     }
-    CrashReport.initCrashReport(context, "d3d6da5bd7", BuildConfig.DEBUG)
+    CrashReport.initCrashReport(context, BuildConfig.BUGLY_APP_ID, BuildConfig.DEBUG)
     CrashReport.setUserId(context, deviceID.nickname)
     CrashReport.setDeviceId(context, deviceID.nickname)
 

@@ -45,8 +45,9 @@ jobs:
 
       - name: Create local.properties
         run: |
-          echo "feedback.url=${{ secrets.FEEDBACKURL }}" >> local.properties
-          echo "feedback.guestToken=${{ secrets.FEEDBACKGUESTTOKEN }}" >> local.properties
+          echo "bugly.appId=${{ secrets.BUGLY_APP_ID }}" >> local.properties
+          echo "pgy.apiKey=${{ secrets.PGY_KEY }}" >> local.properties
+          echo "pgy.appKey=${{ secrets.PGY_APP_KEY }}" >> local.properties
           echo "sign.storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
           echo "sign.keyAlias=${{ secrets.ALIAS }}" >> local.properties
           echo "sign.keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
