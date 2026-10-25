@@ -213,6 +213,10 @@ class TtsNotificationService : Service() {
 
     private fun subtitleActionTitle(): String = if (subtitle.isVisible) "关闭字幕" else "开启字幕"
 
+    /** 字幕按钮图标：关闭=线框（灰），开启=实心彩色，便于一眼区分状态 */
+    private fun subtitleIcon(): Int =
+        if (subtitle.isVisible) R.drawable.ic_tts_subtitle_active else R.drawable.ic_tts_subtitle
+
     /**
      * 切换朗读字幕（悬浮字幕）。
      * 默认关闭，每次朗读都需要手动开启；未授权悬浮窗时引导去系统设置授权。
@@ -402,7 +406,7 @@ class TtsNotificationService : Service() {
                 // 因此「设置」回调里先尝试 PendingIntent.send，失败再 startActivity（前台时可用）。
                 .addCustomAction(
                     PlaybackStateCompat.CustomAction.Builder(
-                        ACTION_CARD_SETTING, subtitleActionTitle(), R.drawable.ic_tts_subtitle
+                        ACTION_CARD_SETTING, subtitleActionTitle(), subtitleIcon()
                     ).build()
                 )
                 .addCustomAction(
@@ -506,7 +510,7 @@ class TtsNotificationService : Service() {
         }
         // 字幕开关：替换原来的「设置」按钮（朗读设置仍可从阅读页进入）
         builder.addAction(
-            R.drawable.ic_tts_subtitle,
+            subtitleIcon(),
             subtitleActionTitle(),
             servicePendingIntent(ACTION_TOGGLE_SUBTITLE, REQUEST_CODE_SUBTITLE)
         )

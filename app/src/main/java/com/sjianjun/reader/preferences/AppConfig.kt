@@ -103,6 +103,13 @@ class AppConfig(val name: String) :
     val ttsSubtitleOffsetMs by lazy { intLivedata("ttsSubtitleOffsetMs", 0) }
 
     /**
+     * 字幕浮窗位置：屏幕宽/高的千分比（0~1000），-1 表示从未记录过。
+     * 用比例而不是像素，旋转屏幕/换分辨率后仍能回到相对位置。
+     */
+    var ttsSubtitlePosXRatio by intPref("ttsSubtitlePosXRatio", -1)
+    var ttsSubtitlePosYRatio by intPref("ttsSubtitlePosYRatio", -1)
+
+    /**
      * 阅读器亮度：1~255，-1表示不主动调节亮度，跟随系统亮度。
      */
     val readerBrightnessPercent by lazy { intLivedata("readerBrightnessPercent", -1) }

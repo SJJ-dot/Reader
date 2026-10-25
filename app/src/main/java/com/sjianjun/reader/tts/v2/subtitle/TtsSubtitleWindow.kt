@@ -22,13 +22,7 @@ import android.widget.TextView
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.LayoutSubtitleWindowBinding
 import com.sjianjun.reader.preferences.globalConfig
-import com.sjianjun.reader.tts.TtsPlaybackController
-import com.sjianjun.reader.tts.v2.TtsEngineType
-import com.sjianjun.reader.tts.v2.TtsPlayerHolder
-import com.sjianjun.reader.tts.v2.TtsVoices
-import com.sjianjun.reader.tts.v2.session.TtsSessionMode
 import com.sjianjun.reader.tts.v2.session.TtsSessionState
-import com.sjianjun.reader.utils.toast
 import sjj.alog.Log
 import kotlin.math.abs
 
@@ -108,11 +102,10 @@ class TtsSubtitleWindow(private val context: Context) {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                     or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = (context.resources.displayMetrics.heightPixels * 0.72f).toInt()
-        }
+        )
+        lp.gravity = Gravity.TOP or Gravity.START
+        // 恢复上次拖动保存的位置；没有记录时先放屏幕下方，稍后居中
+        val restored = applySavedPosition(lp)
         val added = runCatching { wm.addView(view.root, lp) }.isSuccess
         if (!added) {
             Log.e("$TAG 添加悬浮字幕窗口失败")
@@ -139,7 +132,12 @@ class TtsSubtitleWindow(private val context: Context) {
         setupDragAndClick(view)
         setupSettings(view)
         applyStyle()
-        centerHorizontally()
+        if (restored) {
+            // 尺寸变化（旋转/不同分辨率）后把恢复的位置收进屏幕内
+            view.root.post { clampIntoBounds() }
+        } else {
+            centerHorizontally()
+        }
         return true
     }
 
@@ -200,7 +198,7 @@ class TtsSubtitleWindow(private val context: Context) {
                 }
 
                 MotionEvent.ACTION_UP -> {
-                    if (!dragging) toggleSettings()
+                    if (dragging) savePosition() else toggleSettings()
                     dragging = false
                     true
                 }
@@ -229,7 +227,6 @@ class TtsSubtitleWindow(private val context: Context) {
         val view = binding ?: return
         if (locked) return
         val show = view.subtitleSettings.visibility != View.VISIBLE
-        if (show) syncAudioSettings(view)
         view.subtitleSettings.visibility = if (show) View.VISIBLE else View.GONE
         if (show) clampInsideScreen()
     }
@@ -248,6 +245,54 @@ class TtsSubtitleWindow(private val context: Context) {
         }
     }
 
+    /**
+     * 读取上次保存的位置（屏幕千分比 → 像素）；没有记录时放在屏幕下方。
+     * @return 是否成功恢复了保存的位置
+     */
+    private fun applySavedPosition(lp: WindowManager.LayoutParams): Boolean {
+        val screenW = context.resources.displayMetrics.widthPixels
+        val screenH = context.resources.displayMetrics.heightPixels
+        val rx = globalConfig.ttsSubtitlePosXRatio
+        val ry = globalConfig.ttsSubtitlePosYRatio
+        val restored = rx in 0..1000 && ry in 0..1000
+        if (restored) {
+            lp.x = (screenW * rx / 1000f).toInt()
+            lp.y = (screenH * ry / 1000f).toInt()
+        } else {
+            lp.x = 0
+            lp.y = (screenH * 0.72f).toInt()
+        }
+        return restored
+    }
+
+    /** 拖动结束后记录位置（存千分比，适应旋转与不同分辨率） */
+    private fun savePosition() {
+        val lp = params ?: return
+        val screenW = context.resources.displayMetrics.widthPixels
+        val screenH = context.resources.displayMetrics.heightPixels
+        if (screenW <= 0 || screenH <= 0) return
+        globalConfig.ttsSubtitlePosXRatio =
+            (lp.x * 1000f / screenW).toInt().coerceIn(0, 1000)
+        globalConfig.ttsSubtitlePosYRatio =
+            (lp.y * 1000f / screenH).toInt().coerceIn(0, 1000)
+        Log.i("$TAG 保存字幕位置 x=${lp.x} y=${lp.y}")
+    }
+
+    /** 把窗口限制在屏幕可见范围内 */
+    private fun clampIntoBounds() {
+        val view = binding ?: return
+        val lp = params ?: return
+        val screenW = context.resources.displayMetrics.widthPixels
+        val screenH = context.resources.displayMetrics.heightPixels
+        val nx = lp.x.coerceIn(0, (screenW - view.root.width).coerceAtLeast(0))
+        val ny = lp.y.coerceIn(0, (screenH - view.root.height).coerceAtLeast(0))
+        if (nx != lp.x || ny != lp.y) {
+            lp.x = nx
+            lp.y = ny
+            runCatching { wm.updateViewLayout(view.root, lp) }
+        }
+    }
+
     private fun centerHorizontally() {
         val view = binding ?: return
         val lp = params ?: return
@@ -261,24 +306,6 @@ class TtsSubtitleWindow(private val context: Context) {
     // ==================== 设置项 ====================
 
     private fun setupSettings(view: LayoutSubtitleWindowBinding) {
-        // 语速：系统 TTS 与 Edge 通用，实时生效（播放中会从当前段落重读）
-        val currentRate = (globalConfig.readerTtsRate.value ?: 50).coerceIn(0, 100)
-        view.sbSubtitleRate.progress = currentRate
-        view.tvSubtitleRate.text = currentRate.toString()
-        view.sbSubtitleRate.setOnSeekBarChangeListener(object : SimpleSeekListener() {
-            override fun onChange(progress: Int) {
-                val value = progress.coerceIn(0, 100)
-                view.tvSubtitleRate.text = value.toString()
-                TtsPlaybackController.setRate(value)
-            }
-        })
-
-        // 音色：仅 Edge 显示，左右切换
-        view.tvSubtitleVoice.text = TtsVoices.displayOf(globalConfig.readerTtsVoice.value)
-        view.btnSubtitleVoicePrev.setOnClickListener { shiftVoice(-1) }
-        view.btnSubtitleVoiceNext.setOnClickListener { shiftVoice(1) }
-        syncAudioSettings(view)
-
         // 字号
         view.sbSubtitleFont.progress =
             ((globalConfig.ttsSubtitleFontSize.value ?: 17) - FONT_MIN).coerceIn(0, 16)
@@ -331,49 +358,6 @@ class TtsSubtitleWindow(private val context: Context) {
                 refreshNow()
             }
         })
-    }
-
-    /** 同步语速/音色显示（引擎可能在别处被切换过） */
-    private fun syncAudioSettings(view: LayoutSubtitleWindowBinding) {
-        val isEdge = TtsPlayerHolder.configuredEngine() == TtsEngineType.EDGE
-        view.subtitleVoiceRow.visibility = if (isEdge) View.VISIBLE else View.GONE
-        view.tvSubtitleVoice.text = TtsVoices.displayOf(globalConfig.readerTtsVoice.value)
-        val rate = (globalConfig.readerTtsRate.value ?: 50).coerceIn(0, 100)
-        if (view.sbSubtitleRate.progress != rate) view.sbSubtitleRate.progress = rate
-        view.tvSubtitleRate.text = rate.toString()
-    }
-
-    /** 音色前后切换（仅 Edge 生效） */
-    private fun shiftVoice(step: Int) {
-        val view = binding ?: return
-        val current = globalConfig.readerTtsVoice.value
-        val next = TtsVoices.shift(current, step)
-        if (next == current) return
-        globalConfig.readerTtsVoice.setValue(next)
-        view.tvSubtitleVoice.text = TtsVoices.displayOf(next)
-        applyVoiceChange()
-    }
-
-    /**
-     * Edge 音色是合成会话级参数，无法热切换：
-     * 重建播放器（ensureConfiguredEngine）后从当前段落继续朗读。
-     * 网页模式拿不到正文，只能等下次播放生效。
-     */
-    private fun applyVoiceChange() {
-        val state = TtsPlayerHolder.state.value
-        if (!state.active) return
-        TtsPlayerHolder.ensureConfiguredEngine()
-        when (state.mode) {
-            TtsSessionMode.BOOK -> TtsPlaybackController.startBook(
-                bookId = state.bookId,
-                chapterIndex = state.chapterIndex,
-                paragraphIndex = state.paragraphIndex,
-                paragraphOffset = state.paragraphStartOffset,
-            )
-
-            TtsSessionMode.PAGE -> toast("音色已切换，重新播放后生效")
-            TtsSessionMode.NONE -> Unit
-        }
     }
 
     /** 设置变化后立即重绘（播放期间实时生效） */

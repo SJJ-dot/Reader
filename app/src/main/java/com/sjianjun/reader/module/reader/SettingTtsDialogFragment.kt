@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.RadioButton
@@ -53,6 +54,14 @@ class SettingTtsDialogFragment : DialogFragment() {
         val currentVoice = globalConfig.readerTtsVoice.value ?: TtsVoices.defaultParam
         val sel = voiceParams.indexOf(currentVoice).coerceAtLeast(0)
         spinner.setSelection(sel)
+        // 播放中打开本弹窗时，切换音色立即生效（不必再点「播放」）
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: View?, position: Int, id: Long) {
+                voiceParams.getOrNull(position)?.let { TtsPlaybackController.applyVoice(it) }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
         // restore system and edge rate settings
         val edgeRate = globalConfig.readerTtsRate.value ?: 50
         // ensure seekbar progress within bounds

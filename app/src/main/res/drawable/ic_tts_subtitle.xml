@@ -1,13 +1,21 @@
+<!--
+    字幕（关闭态）：线框 + 两条文字线。
+    注意：用 stroke 画外框（而不是 fill 双矩形 + fillType），
+    避免被系统渲染成实心一块（通知栏图标会被单色化，实心块就“一坨”了）。
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:tint="#FFFFFFFF"
     android:viewportWidth="24"
     android:viewportHeight="24">
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M4.8,5.5h14.4v13h-14.4z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.6" />
+
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M3,4h18v16H3zM5,6v12h14V6z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M6.5,9.5h11v1.6h-11zM6.5,13h7.5v1.6h-7.5z" />
+        android:pathData="M7.4,9.4h9.2v1.6h-9.2zM7.4,12.9h5.8v1.6h-5.8z" />
 </vector>

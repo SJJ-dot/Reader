@@ -13,6 +13,7 @@ import com.sjianjun.reader.tts.v2.notify.TtsNotificationService
 import com.sjianjun.reader.tts.v2.session.TtsPlayer
 import com.sjianjun.reader.tts.v2.session.TtsSessionMode
 import com.sjianjun.reader.tts.v2.session.TtsSessionState
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -150,6 +151,32 @@ object TtsPlaybackController {
         val value = rate.coerceIn(0, 100)
         globalConfig.readerTtsRate.postValue(value)
         player().setRate(value)
+    }
+
+    /**
+     * 切换 Edge 音色（播放设置弹窗里改音色时调用）。
+     *
+     * 音色是合成会话级参数，播放中必须重建播放器，并从当前段落继续朗读；
+     * 未在播放时只写配置，下次开始朗读生效。
+     */
+    fun applyVoice(voice: String) {
+        if (voice.isBlank()) return
+        if (voice == globalConfig.readerTtsVoice.value) return
+        globalConfig.readerTtsVoice.setValue(voice)
+        val current = TtsPlayerHolder.state.value
+        if (!current.active) return
+        TtsPlayerHolder.ensureConfiguredEngine()
+        when (current.mode) {
+            TtsSessionMode.BOOK -> startBook(
+                current.bookId,
+                current.chapterIndex,
+                current.paragraphIndex,
+                current.paragraphStartOffset,
+            )
+
+            TtsSessionMode.PAGE -> toast("音色已切换，重新播放后生效")
+            TtsSessionMode.NONE -> Unit
+        }
     }
 
     fun setSleepTimer(minutes: Int) = player().setSleepTimer(minutes)
