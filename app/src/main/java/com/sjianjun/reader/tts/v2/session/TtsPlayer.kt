@@ -4,6 +4,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.tts.TtsChapterSplitter
 import com.sjianjun.reader.tts.v2.TtsEngine
 import com.sjianjun.reader.tts.v2.TtsEngineEvent
+import com.sjianjun.reader.tts.v2.session.LoadedChapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +49,12 @@ class TtsPlayer(
 
         /** 每单位权重的基础耗时（语速 50 时约 200ms/字），仅用于展示时间轴 */
         private const val BASE_MS_PER_WEIGHT = 200f
+
+        /** 朗读出错自动重试上限（最多重试 2 次，即共尝试 3 次） */
+        private const val MAX_PLAYBACK_RETRIES = 2
+
+        /** 章节加载失败后的额外重试次数（每次等待递增，给缓存/网络一点时间） */
+        private const val MAX_LOAD_RETRY = 2
     }
 
     private val _state = MutableStateFlow(TtsSessionState())
@@ -87,6 +94,9 @@ class TtsPlayer(
 
     /** 上次因语速变化重启当前段落的时间（拖动滑块时节流，避免频繁重读） */
     private var lastRateRestartAt = 0L
+
+    /** 朗读出错后的自动重试计数（读到一段成功即清零，连续失败才结束会话） */
+    private var playbackRetries = 0
 
     /**
      * 本章各段的朗读累计权重与总权重：
@@ -316,7 +326,7 @@ class TtsPlayer(
                 )
             }
             val bookId = _state.value.bookId
-            val loaded = content.loadChapter(bookId, chapterIndex)
+            val loaded = loadChapterOrRetry(bookId, chapterIndex)
             if (loaded == null || loaded.paragraphs.isEmpty()) {
                 fail("章节内容加载失败")
                 return@launch
@@ -395,7 +405,7 @@ class TtsPlayer(
 
                 TtsEngineEvent.Completed -> completed = true
 
-                is TtsEngineEvent.Failed -> fail(event.error.message ?: "朗读失败")
+                is TtsEngineEvent.Failed -> handleFailure(event.error)
             }
         }
         return completed
@@ -446,6 +456,8 @@ class TtsPlayer(
     }
 
     private fun onParagraphFinished(flatIndex: Int) {
+        // 一段成功读完：清零重试计数，避免偶发抖动被累积成"连续失败"
+        playbackRetries = 0
         if (!pendingStopAfterChapter) return
         val segment = segmentOf(flatIndex) ?: return
         if (flatIndex - segment.flatStart >= segment.paragraphs.lastIndex) {
@@ -473,7 +485,7 @@ class TtsPlayer(
             engine.finish()
             return
         }
-        val loaded = content.loadChapter(bookId, next)
+        val loaded = loadChapterOrRetry(bookId, next)
         if (loaded == null || loaded.paragraphs.isEmpty()) {
             fail("章节内容加载失败")
             return
@@ -560,6 +572,44 @@ class TtsPlayer(
         playJob = null
         engine.stop()
         _state.update { it.copy(playing = false, mode = TtsSessionMode.NONE, error = message) }
+    }
+
+    /**
+     * 加载章节时多等一会：先走 NormalLoadService 的 3 次内置重试，
+     * 仍拿不到（预取/网络还没就绪）时再递增等待重试几次，避免"内容还没缓存好就报错"。
+     */
+    private suspend fun loadChapterOrRetry(bookId: String, chapterIndex: Int): LoadedChapter? {
+        var loaded = content.loadChapter(bookId, chapterIndex)
+        var attempt = 0
+        while (loaded == null && attempt < MAX_LOAD_RETRY) {
+            attempt++
+            delay(600L * attempt)
+            loaded = content.loadChapter(bookId, chapterIndex)
+        }
+        return loaded
+    }
+
+    /**
+     * 朗读过程中遇到引擎错误（合成/播放异常、启动或读完超时等）：
+     * 先自动重试几次（从出错段落接着重读），只有连续失败超过上限才真正结束会话并上报错误，
+     * 避免偶发的网络/引擎抖动直接中断朗读。
+     */
+    private suspend fun handleFailure(error: Throwable): Boolean {
+        val current = _state.value
+        if (!current.active || current.mode == TtsSessionMode.NONE) return false
+        if (playbackRetries < MAX_PLAYBACK_RETRIES) {
+            playbackRetries++
+            Log.i("$TAG 朗读失败，第${playbackRetries}次自动重试：${error.message}")
+            engine.stop()
+            when (current.mode) {
+                TtsSessionMode.BOOK -> launchChapter(current.chapterIndex, current.paragraphIndex, current.paragraphStartOffset)
+                TtsSessionMode.PAGE -> launchPage(current.paragraphIndex, current.paragraphStartOffset)
+                TtsSessionMode.NONE -> return false
+            }
+            return true
+        }
+        fail(error.message ?: "朗读失败")
+        return false
     }
 
     private fun cancelJob() {

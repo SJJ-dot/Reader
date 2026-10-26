@@ -1,7 +1,9 @@
 package com.sjianjun.reader.tts
 
 import android.os.Looper
+import android.speech.tts.TextToSpeech
 import android.widget.Toast
+import java.util.Locale
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.sjianjun.reader.App
@@ -53,6 +55,9 @@ object TtsPlaybackController {
     /** 上次回写阅读进度的章节，避免每次进度刷新都写库 */
     private var lastRecordedChapter = -1
 
+    /** 独立的系统 TTS，仅用于朗读出错时语音播报（与播放引擎分开，避免被 stop 影响） */
+    private var errorTts: TextToSpeech? = null
+
     private fun dispatchState(newState: TtsPlaybackState) {
         if (_state.value == newState) return
         // 服务回调都在主线程，直接 setValue 让 isActive()/isPlaying() 立刻拿到最新状态
@@ -94,6 +99,7 @@ object TtsPlaybackController {
     fun startBook(bookId: String, chapterIndex: Int, paragraphIndex: Int = 0, paragraphOffset: Int = 0) {
         if (bookId.isBlank() || chapterIndex < 0) return
         // 设置里换了引擎（系统/Edge）：开始新的朗读前切过来
+        lastNotifiedError = null
         TtsPlayerHolder.ensureConfiguredEngine()
         App.app.appScope.launch {
             val book = runCatching { withContext(Dispatchers.IO) { DbFactory.db.bookDao().getBookById(bookId) } }
@@ -122,6 +128,7 @@ object TtsPlaybackController {
             Log.e("TtsPlaybackController 网页朗读参数不合法 url=$pageUrl textLen=${text.length}")
             return
         }
+        lastNotifiedError = null
         TtsPlayerHolder.ensureConfiguredEngine()
         player().startPage(pageUrl, title, text, paragraphIndex, paragraphOffset)
         TtsNotificationService.start(App.app)
@@ -129,7 +136,10 @@ object TtsPlaybackController {
 
     fun pause() = player().pause()
 
-    fun resume() = player().resume()
+    fun resume() {
+        lastNotifiedError = null
+        player().resume()
+    }
 
     fun stop() = player().stop()
 
@@ -209,6 +219,7 @@ object TtsPlaybackController {
         // 只要控制器被使用就订阅状态：订阅的是"当前播放器"的稳定入口，
         // 引擎切换导致播放器重建后仍然能继续收到状态（否则界面不刷新、按钮状态不切换）
         startBridge()
+        initErrorTts()
     }
 
     private fun player(): TtsPlayer = TtsPlayerHolder.player()
@@ -240,11 +251,31 @@ object TtsPlaybackController {
      * 会话层只产出错误信息，提示放到这里，避免把 Toast 散落到引擎/会话里；
      * 阅读页不在前台时同样能提示（例如后台朗读时 Edge 网络失败）。
      */
+    /** 初始化错误播报用的独立系统 TTS（异步，真正出错时通常已就绪） */
+    private fun initErrorTts() {
+        runCatching {
+            errorTts = TextToSpeech(App.app) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    runCatching { errorTts?.language = Locale.getDefault() }
+                }
+            }
+        }.onFailure { Log.e("TtsPlaybackController 错误播报引擎初始化失败", it) }
+    }
+
+    /** 朗读出错时语音播报（暂停/停止不会走到这里，所以不会打扰用户） */
+    private fun announceError(message: String) {
+        val tts = errorTts ?: return
+        runCatching {
+            tts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "tts_error_announce")
+        }.onFailure { Log.e("TtsPlaybackController 错误语音播报失败", it) }
+    }
+
     private fun notifyError(message: String) {
         if (message.isBlank() || message == lastNotifiedError) return
         lastNotifiedError = message
         App.app.appScope.launch(Dispatchers.Main) {
             runCatching { Toast.makeText(App.app, message, Toast.LENGTH_LONG).show() }
+            announceError(message)
         }
     }
 
