@@ -3,6 +3,7 @@ package com.sjianjun.reader.module.bookcity
 import android.content.Context
 import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -122,6 +123,21 @@ class AccessRecordAdapter(
     private fun indentPx(level: Int, context: Context): Int =
         ((8 + level * 16) * context.resources.displayMetrics.density).toInt()
 
+    /** 由 URL 推断资源类型（用于访问记录里区分图片/脚本/样式等，便于判断广告） */
+    private fun resourceType(url: String): String {
+        val path = url.lowercase().substringBefore('?').substringBefore('#')
+        return when {
+            Regex(""".*\.(png|jpe?g|gif|webp|bmp|svg)(\?|#|$)""").matches(path) -> "图片"
+            path.endsWith("/favicon.ico") -> "图标"
+            Regex(""".*\.js(\?|#|$)""").matches(path) -> "脚本"
+            Regex(""".*\.css(\?|#|$)""").matches(path) -> "样式"
+            Regex(""".*\.(woff2?|ttf|eot|otf)(\?|#|$)""").matches(path) -> "字体"
+            Regex(""".*\.(mp4|webm|ogv|mov|m4v)(\?|#|$)""").matches(path) -> "视频"
+            Regex(""".*\.(mp3|wav|ogg|m4a|aac)(\?|#|$)""").matches(path) -> "音频"
+            else -> "资源"
+        }
+    }
+
     /** 整卡缩进：把缩进量设置到卡片自身的 marginStart（卡片边框跟着缩进，而非仅内容） */
     private fun indentCard(view: android.view.View, level: Int) {
         val lp = view.layoutParams as? ViewGroup.MarginLayoutParams ?: return
@@ -158,10 +174,53 @@ class AccessRecordAdapter(
                 if (row.key in expanded) expanded.remove(row.key) else expanded.add(row.key)
                 rebuild()
             }
-            // 顶级域名行按顶级域名范围、子域名行按子域名范围加入黑白名单
-            val mode = if (row.level == 1) BLOCK_MODE_DOMAIN else BLOCK_MODE_SUBDOMAIN
-            b.btnBlack.setOnClickListener { onAddBlackDomain(row.value, mode) }
-            b.btnWhite.setOnClickListener { onAddWhiteDomain(row.value, mode) }
+            // 规则状态标记：白名单优先（与实际放行逻辑一致），子域名继承顶级域名规则。
+            // 这样点顶级域名“+黑名单”后，真正承载规则的域名行会显示红色“已拦截”。
+            val ownMode = if (row.level == 1) BLOCK_MODE_DOMAIN else BLOCK_MODE_SUBDOMAIN
+            val topOfValue = topDomain(row.value)
+            val whitelisted = when (row.level) {
+                1 -> AdBlock.hasWhiteRule(row.value, ownMode)
+                else -> AdBlock.hasWhiteRule(row.value, ownMode)
+                        || AdBlock.hasWhiteRule(topOfValue, BLOCK_MODE_DOMAIN)
+            }
+            val blacklisted = when (row.level) {
+                1 -> AdBlock.hasBlackRule(row.value, ownMode)
+                else -> AdBlock.hasBlackRule(row.value, ownMode)
+                        || AdBlock.hasBlackRule(topOfValue, BLOCK_MODE_DOMAIN)
+            }
+            when {
+                whitelisted -> {
+                    b.tvState.visibility = View.VISIBLE
+                    b.tvState.text = "已放行"
+                    b.tvState.setTextColor(Color.parseColor("#2E7D32"))
+                }
+                blacklisted -> {
+                    b.tvState.visibility = View.VISIBLE
+                    b.tvState.text = "已拦截"
+                    b.tvState.setTextColor(Color.parseColor("#E53935"))
+                }
+                else -> b.tvState.visibility = View.GONE
+            }
+            // 按钮：本行范围已有规则时显示“-移除”，否则显示“+加入”
+            if (AdBlock.hasBlackRule(row.value, ownMode)) {
+                b.btnBlack.text = "-黑名单"
+                b.btnBlack.setOnClickListener {
+                    AdBlock.removeBlackHost(HostStr(row.value, listOf()).apply { mode = ownMode })
+                    AdBlock.unmarkBlockedInAccess(row.value, ownMode)
+                }
+            } else {
+                b.btnBlack.text = "+黑名单"
+                b.btnBlack.setOnClickListener { onAddBlackDomain(row.value, ownMode) }
+            }
+            if (AdBlock.hasWhiteRule(row.value, ownMode)) {
+                b.btnWhite.text = "-白名单"
+                b.btnWhite.setOnClickListener {
+                    AdBlock.removeWhiteHost(HostStr(row.value, listOf()).apply { mode = ownMode })
+                }
+            } else {
+                b.btnWhite.text = "+白名单"
+                b.btnWhite.setOnClickListener { onAddWhiteDomain(row.value, ownMode) }
+            }
         }
     }
 
@@ -170,6 +229,16 @@ class AccessRecordAdapter(
             val req = row.req
             b.tvUrl.text = req.url
             indentCard(b.root, 3)
+
+            // 资源类型 + 图片缩略图（便于判断是否为广告）
+            val type = resourceType(req.url)
+            b.tvType.text = type
+            if (type == "图片") {
+                b.ivThumb.visibility = View.VISIBLE
+                runCatching { b.ivThumb.glide(req.url) }
+            } else {
+                b.ivThumb.visibility = View.GONE
+            }
 
             // 命中次数 + 被拦截标记
             val blockedColor = Color.parseColor("#E53935")

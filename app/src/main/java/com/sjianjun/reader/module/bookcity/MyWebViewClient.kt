@@ -35,7 +35,8 @@ open class MyWebViewClient(
 //        Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
         if (url != null) {
             view?.currentHost = url
-            // 在 URL 变化时先记录 url（title 可能尚未可用）
+            // URL 变化即视为“页面成为可见页”，刷新最后显示时间（后退/前进/SPA 也能命中），用于访问记录排序
+            AdBlock.touchPage(url)
         }
     }
 

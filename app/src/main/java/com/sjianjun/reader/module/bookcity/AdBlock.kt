@@ -151,6 +151,23 @@ object AdBlock {
     /** 读取某条规则的命中次数（供黑白名单列表展示） */
     fun getHitCount(host: String, mode: String): Int = hitCounts[hitKey(host, mode)] ?: 0
 
+    /** 是否存在指定范围的黑名单规则 */
+    fun hasBlackRule(host: String, mode: String): Boolean =
+        blacklist.value?.any { it.host == host && it.mode == mode } ?: false
+
+    /** 是否存在指定范围的白名单规则 */
+    fun hasWhiteRule(host: String, mode: String): Boolean =
+        whitelist.value?.any { it.host == host && it.mode == mode } ?: false
+
+    /**
+     * 兼容裸域名与完整 URL 的顶级域名解析。
+     * 访问记录里的 r.domain 是裸 host（如 "soduzw.org"），直接 toHttpUrlOrNull() 会因缺少
+     * scheme 得到 null，导致按范围匹配时 null==null 误命中全部请求，这里统一补 scheme 再解析。
+     */
+    private fun topPrivateOf(hostOrUrl: String): String? =
+        hostOrUrl.toHttpUrlOrNull()?.topPrivateDomain()
+            ?: "https://$hostOrUrl".toHttpUrlOrNull()?.topPrivateDomain()
+
     // ===================== 访问记录（内存，不落库） =====================
     // shouldInterceptRequest 会在 WebView 的多个线程并发回调，
     // 因此所有对访问记录的读写都用 recordLock 串行化，避免 ConcurrentModificationException。
@@ -181,6 +198,21 @@ object AdBlock {
             accessPages.value?.firstOrNull { it.pageUrl == url }?.let { page ->
                 if (!title.isNullOrBlank()) page.title = title
             }
+        }
+        accessPages.postValue(accessPages.value)
+    }
+
+    /**
+     * 页面再次成为“可见页”时刷新最后显示时间（用于访问记录按最后显示时间排序）。
+     * 后退/前进/历史/SPA 等场景 onPageStarted 不触发时，由 doUpdateVisitedHistory 调用，
+     * 确保例如 A→B→C 后退到 B 后，访问记录从上到下排序为 B、C、A。
+     */
+    fun touchPage(url: String?) {
+        if (url.isNullOrBlank()) return
+        synchronized(recordLock) {
+            val page = accessPages.value?.firstOrNull { it.pageUrl == url } ?: return
+            page.time = System.currentTimeMillis()
+            currentPage = page
         }
         accessPages.postValue(accessPages.value)
     }
@@ -216,23 +248,41 @@ object AdBlock {
         maybeFlush()
     }
 
-    /** 加入黑名单/白名单后，从访问记录里清掉命中的请求（按范围移除） */
-    fun removeFromAccess(hostOrUrl: String, mode: String) {
-        val top = hostOrUrl.toHttpUrlOrNull()?.topPrivateDomain()
+    /**
+     * 加入黑名单后，把访问记录里命中的请求标记为“已拦截”（保留记录用于误拦截恢复），而非删除。
+     * 标记为 blocked 的请求在访问记录中显示红色“已拦截”与“恢复”按钮。
+     */
+    fun markBlockedInAccess(hostOrUrl: String, mode: String) {
+        val top = topPrivateOf(hostOrUrl)
         synchronized(recordLock) {
             accessPages.value?.forEach { page ->
-                val iter = page.requests.iterator()
-                while (iter.hasNext()) {
-                    val r = iter.next()
-                    val remove = when (mode) {
+                page.requests.forEach { r ->
+                    val match = when (mode) {
                         BLOCK_MODE_URL -> r.url == hostOrUrl
                         BLOCK_MODE_SUBDOMAIN -> r.domain == hostOrUrl
-                        else -> r.domain.toHttpUrlOrNull()?.topPrivateDomain() == top
+                        else -> top != null && topPrivateOf(r.domain) == top
                     }
-                    if (remove) iter.remove()
+                    if (match) r.blocked = true
                 }
             }
-            accessPages.value?.removeAll { it.requests.isEmpty() }
+        }
+        accessPages.postValue(accessPages.value)
+    }
+
+    /** 移除黑名单规则后，复位访问记录里命中该规则的“已拦截”标记（用于域名行 -黑名单） */
+    fun unmarkBlockedInAccess(hostOrUrl: String, mode: String) {
+        val top = topPrivateOf(hostOrUrl)
+        synchronized(recordLock) {
+            accessPages.value?.forEach { page ->
+                page.requests.forEach { r ->
+                    val match = when (mode) {
+                        BLOCK_MODE_URL -> r.url == hostOrUrl
+                        BLOCK_MODE_SUBDOMAIN -> r.domain == hostOrUrl
+                        else -> top != null && topPrivateOf(r.domain) == top
+                    }
+                    if (match) r.blocked = false
+                }
+            }
         }
         accessPages.postValue(accessPages.value)
     }
@@ -266,7 +316,7 @@ object AdBlock {
             blacklist.postValue(list)
             persist("black", list)
         }
-        removeFromAccess(host, mode)
+        markBlockedInAccess(host, mode)
     }
 
     fun removeBlackHost(hostStr: HostStr) {
@@ -277,16 +327,36 @@ object AdBlock {
     }
 
     /**
-     * 误拦截恢复：移除所有会拦截该 URL 的黑名单规则（顶级域名 / 子域名 / 精确URL 三档都尝试）。
-     * 用于访问记录里对被误拦的 URL 一键解除拦截。
+     * 误拦截恢复：让指定 URL 真正放行。
+     * 1) 移除会拦截该 URL 的黑名单规则（顶级域名 / 子域名 / 精确URL 三档都尝试）；
+     * 2) 加入一条“精确 URL”白名单——白名单在 shouldInterceptRequest 中优先于黑名单与跨域拦截，
+     *    即使该资源是被跨域拦截模式（crossOriginMode==2）拦的也能放行；
+     * 3) 同步把访问记录里对应请求的“已拦截”标记复位，使 UI 立即从“已拦截”变回正常。
      */
     fun restoreBlocked(url: String) {
         val httpUrl = url.toHttpUrlOrNull() ?: return
-        val top = httpUrl.topPrivateDomain() ?: return
+        val top = httpUrl.topPrivateDomain()
         val host = httpUrl.host
-        removeBlackHost(HostStr(top, listOf()).apply { mode = BLOCK_MODE_DOMAIN })
+        val list = blacklist.value
+        val hadTop = top != null && list?.any { it.host == top && it.mode == BLOCK_MODE_DOMAIN } == true
+        val hadSub = list?.any { it.host == host && it.mode == BLOCK_MODE_SUBDOMAIN } == true
+        if (top != null) removeBlackHost(HostStr(top, listOf()).apply { mode = BLOCK_MODE_DOMAIN })
         removeBlackHost(HostStr(host, listOf()).apply { mode = BLOCK_MODE_SUBDOMAIN })
         removeBlackHost(HostStr(url, listOf()).apply { mode = BLOCK_MODE_URL })
+        // 加白名单（精确URL），保证该资源真正放行
+        addWhiteHost(url, BLOCK_MODE_URL)
+        // 复位访问记录里被误拦条目的标记
+        synchronized(recordLock) {
+            accessPages.value?.forEach { page ->
+                page.requests.forEach { r ->
+                    val unblock = r.url == url
+                            || (hadSub && r.domain == host)
+                            || (top != null && topPrivateOf(r.domain) == top)
+                    if (unblock) r.blocked = false
+                }
+            }
+        }
+        accessPages.postValue(accessPages.value)
     }
 
     fun addWhiteHost(host: String, mode: String = BLOCK_MODE_DOMAIN) {
@@ -297,7 +367,6 @@ object AdBlock {
             whitelist.postValue(list)
             persist("white", list)
         }
-        removeFromAccess(host, mode)
     }
 
     fun removeWhiteHost(hostStr: HostStr) {
