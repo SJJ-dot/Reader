@@ -6,6 +6,7 @@ import com.sjianjun.reader.bean.BookmarkEntity
 import com.sjianjun.reader.bean.BookmarkFolderEntity
 import com.sjianjun.reader.bean.BrowserHistoryEntity
 import com.sjianjun.reader.bean.BrowserTabEntity
+import com.sjianjun.reader.module.bookcity.BLOCK_MODE_DOMAIN
 import com.sjianjun.reader.module.bookcity.BookmarkStore
 import com.sjianjun.reader.preferences.AppConfig
 import com.tencent.mmkv.MMKV
@@ -106,10 +107,10 @@ object BrowserDataMigration {
         val white = config.hostWhitelist
         val entities = mutableListOf<AdBlockHostEntity>()
         black.forEach {
-            entities.add(AdBlockHostEntity(it.host, "black", gson.toJson(it.type), it.isPage, it.time, it.mode))
+            entities.add(AdBlockHostEntity(it.host, "black", gson.toJson(it.type), it.isPage, it.time ?: "", it.mode ?: BLOCK_MODE_DOMAIN))
         }
         white.forEach {
-            entities.add(AdBlockHostEntity(it.host, "white", gson.toJson(it.type), it.isPage, it.time, it.mode))
+            entities.add(AdBlockHostEntity(it.host, "white", gson.toJson(it.type), it.isPage, it.time ?: "", it.mode ?: BLOCK_MODE_DOMAIN))
         }
         if (entities.isNotEmpty()) dao.insertAdBlock(entities)
         // 清空旧 MMKV 存储，避免重复
