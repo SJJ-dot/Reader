@@ -23,7 +23,10 @@ const val BLOCK_MODE_SUBDOMAIN = "subdomain"
 /** 拦截范围：精确 URL */
 const val BLOCK_MODE_URL = "url"
 
-class HostStr(val host: String, var type: List<String>) {
+class HostStr @JvmOverloads constructor(
+    var host: String = "",
+    var type: List<String> = emptyList()
+) {
     var isPage = false
     var time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
     /** 拦截/放行范围：顶级域名 / 子域名 / 精确URL（见 BLOCK_MODE_*） */
