@@ -26,8 +26,6 @@ tasks.register('clean', Delete) {
 
 tasks.register('publishLibs') {
     group = 'publishing'
-    description = 'Publishes :fastscroller, :modules:rhino and :legado-engine AARs to <root>/repo.'
-    dependsOn ':fastscroller:publishReleasePublicationToLocalRepoRepository',
-              ':modules:rhino:publishReleasePublicationToLocalRepoRepository',
-              ':legado-engine:publishReleasePublicationToLocalRepoRepository'
+    description = 'Publishes :fastscroller AAR to <root>/repo.'
+    dependsOn ':fastscroller:publishReleasePublicationToLocalRepoRepository'
 }

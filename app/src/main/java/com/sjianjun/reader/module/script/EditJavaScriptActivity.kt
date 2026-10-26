@@ -15,7 +15,6 @@ import com.sjianjun.reader.bean.BookSource
 import com.sjianjun.reader.databinding.ActivityEditJavaScriptBinding
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
-import org.json.JSONObject
 import java.util.UUID
 
 class EditJavaScriptActivity : BaseActivity() {
@@ -36,7 +35,7 @@ class EditJavaScriptActivity : BaseActivity() {
             insets
         }
         // 初始化设置面板和数据
-        val languageList = listOf(BookSource.Language.py.name + "-修仙书源", BookSource.Language.yuedu.name + "-阅读书源")
+        val languageList = listOf(BookSource.Language.py.name + "-修仙书源")
         binding!!.bookSourceLanguage.adapter = android.widget.ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
@@ -129,18 +128,7 @@ def getChapterContent(url):
             val index = languageList.indexOfFirst { it.startsWith(langName) }.coerceAtLeast(0)
             binding!!.bookSourceLanguage.setSelection(index)
 
-            if (src.lauanage == BookSource.Language.yuedu) {
-                //阅读书源是json，格式化
-                val json = src.js
-                val formatJson = try {
-                    JSONObject(json).toString(2)
-                } catch (e: Exception) {
-                    json
-                }
-                binding!!.script.setText(formatJson)
-            } else {
-                binding!!.script.setText(src.js)
-            }
+            binding!!.script.setText(src.js)
         }
         binding!!.settingsPanel.click {
             binding!!.editInfo.performClick()
@@ -186,8 +174,6 @@ def getChapterContent(url):
                         val lang = binding!!.bookSourceLanguage.selectedItem.toString()
                         src.lauanage = if (lang.startsWith(BookSource.Language.py.name)) {
                             BookSource.Language.py
-                        } else if (lang.startsWith(BookSource.Language.yuedu.name)) {
-                            BookSource.Language.yuedu
                         } else {
                             src.lauanage
                         }

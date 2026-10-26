@@ -71,11 +71,6 @@ class BookSource {
      */
     var lauanage: Language = Language.py
 
-    private val yueduEngine by lazy {
-        YueduEngineProxy(js)
-    }
-
-
     private suspend inline fun <reified T> execute(
         func: Func,
         param: String?,
@@ -83,32 +78,7 @@ class BookSource {
     ): T? {
 //        Log.i("调用脚本方法：${func}")
         return when (lauanage) {
-            Language.yuedu -> {
-                val result = when (func) {
-                    Func.search -> yueduEngine.search(param!!)
-                    Func.getDetails -> yueduEngine.getDetails(param!!)
-                    Func.getChapterContent -> yueduEngine.getChapterContent(param!!)
-                    Func.getSiteUrl -> yueduEngine.getSiteUrl()
-                    Func.verify -> yueduEngine.verify(param!!).toString()
-                }
-                if (T::class.java == String::class.java) {
-                    return result as T?
-                }
-                if (T::class.java == Boolean::class.java) {
-                    return result.toBoolean() as T
-                }
-                if (T::class.java == Int::class.java) {
-                    return result?.toInt() as T?
-                }
-
-                try {
-                    gson.fromJson<T>(result)
-                } catch (e: Exception) {
-                    Log.i("调用脚本方法：$func, 参数：$param, 返回结果：$result")
-                    throw e
-                }
-            }
-
+            Language.yuedu -> throw UnsupportedOperationException(YUEDU_UNSUPPORTED)
             Language.file -> throw UnsupportedOperationException("文件导入书源不支持执行脚本")
             Language.py -> py(func.name, param, param2)
         }
@@ -117,7 +87,7 @@ class BookSource {
     fun hasFunction(func: Func): Boolean {
         return when (lauanage) {
             Language.file -> false
-            Language.yuedu -> true
+            Language.yuedu -> false
             Language.py -> {
                 val py = Python.getInstance()
                 val exec = py.getModule("exec_script")
@@ -132,6 +102,11 @@ class BookSource {
     suspend fun verify(query: String): Boolean? {
         return withIo {
             try {
+                if (lauanage == Language.yuedu) {
+                    checkResult = YUEDU_UNSUPPORTED
+                    checkErrorMsg = null
+                    return@withIo null
+                }
                 if (!hasFunction(Func.verify)) {
                     return@withIo null
                 }
@@ -363,7 +338,7 @@ class BookSource {
 
     enum class Language {
         /**
-         * 阅读书源
+         * 阅读书源（已废弃：对应的书源引擎已移除，当前版本不再支持，请删除或替换为 Python 书源）
          */
         yuedu,
 
@@ -379,6 +354,9 @@ class BookSource {
     }
 
     companion object {
+        /** 阅读书源引擎已移除，使用该类书源时给用户的提示文案 */
+        const val YUEDU_UNSUPPORTED = "阅读书源已不再支持，请删除或替换为 Python 书源"
+
         val fileImportBookSource = BookSource().apply {
             id = "文件导入"
             name = "文件导入"

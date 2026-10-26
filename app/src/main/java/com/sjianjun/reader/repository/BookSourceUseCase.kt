@@ -14,7 +14,6 @@ import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.lib.icu4j.CharsetDetector
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import org.json.JSONArray
 import sjj.alog.Log
 import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
@@ -51,9 +50,7 @@ object BookSourceUseCase {
                         body = GZIPInputStream(Base64.decode(body, Base64.NO_WRAP).inputStream()).reader().readText()
                     }
                     val dest = mutableListOf<BookSource>()
-                    if (!parseYuDuSource(sourceUrl, body, dest)) {
-                        parsePySource(sourceUrl, body, dest)
-                    }
+                    parsePySource(sourceUrl, body, dest)
                     dest
                 } catch (e: Exception) {
                     Log.i("书源导入失败:${sourceUrl}:${e.message}")
@@ -126,51 +123,7 @@ fun parsePySource(sourceUrl: SourceUrl, body: String, dest: MutableList<BookSour
 }
 
 
-fun parseYuDuSource(sourceUrl: SourceUrl, body: String, dest: MutableList<BookSource>): Boolean {
-    try {
-        if (!body.contains("bookSourceUrl")) {
-            Log.i("不是阅读书源")
-            return false
-        }
-        val bookSourceArray = JSONArray(body)
-        for (i in 0 until bookSourceArray.length()) {
-            val item = bookSourceArray.getJSONObject(i)
-            try {
-                //删除发现
-                item.remove("exploreUrl")
-                item.remove("exploreScreen")
-                item.remove("ruleReview")
-                item.remove("bookSourceComment")
-                dest.add(
-                    BookSource().apply {
-                        id = item.getString("bookSourceUrl").trim()
-                        name = item.getString("bookSourceName").trim()
-                        group = sourceUrl.group
-                        js = item.toString()
-                        version = item.optLong("lastUpdateTime", -1)
-                        enable = item.optBoolean("enable", true)
-                        requestDelay = item.optLong("requestDelay", 100L)
-                        lauanage = BookSource.Language.yuedu
-                        comment = item.optString("bookSourceGroup", "")
-                    }
-                )
-                val ruleBookInfo = item.optJSONObject("ruleBookInfo")
-                val ruleToc = item.optJSONObject("ruleToc")
-                val ruleContent = item.optJSONObject("ruleContent")
-                if ((ruleBookInfo?.length() ?: 0) == 0 || (ruleToc?.length() ?: 0) == 0 || (ruleContent?.length() ?: 0) == 0) {
-                    dest.last().comment = "无效书源：缺少必要的规则"
-                }
-            } catch (e: Exception) {
-                Log.e("解析书源失败", e)
-            }
-        }
-        Log.i("解析书源成功：${sourceUrl.group}，共${dest.size}个书源")
-        return true
-    } catch (e: Exception) {
-        Log.e("解析书源失败", e)
-        return false
-    }
-}
+
 
 class Source {
     var pySource: List<PySource>? = null

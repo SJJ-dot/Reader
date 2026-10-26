@@ -15,6 +15,7 @@ import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.MessageException
 import com.sjianjun.reader.utils.name
 import com.sjianjun.reader.utils.normalizedChapterName
+import com.sjianjun.reader.utils.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -356,6 +357,11 @@ object BookUseCase {
                 if (ScriptTaskRunner.isCancelled(t)) {
                     //被更新的请求取代/页面退出：不写错误内容、不置 isLoaded，下次需要时会重新加载
                     Log.i("${chapter.title} 章节加载被取消，忽略本次结果")
+                    return@withIo chapter
+                }
+                if (js.lauanage == BookSource.Language.yuedu) {
+                    // 阅读书源引擎已移除：提示用户并放弃本次加载，不写错误内容
+                    toast(BookSource.YUEDU_UNSUPPORTED)
                     return@withIo chapter
                 }
                 throw t

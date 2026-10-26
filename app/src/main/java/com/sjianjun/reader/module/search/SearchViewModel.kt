@@ -32,6 +32,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import sjj.alog.Log
 
 class SearchViewModel : ViewModel() {
+    /** 单次会话内只提示一次"阅读书源已不支持"，避免并发搜索时重复 toast */
+    private var yueduUnsupportedTipShown = false
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     private val searchHistoryDao get() = DbFactory.db.searchHistoryDao()
     private val bookDao get() = DbFactory.db.bookDao()
@@ -143,6 +145,10 @@ class SearchViewModel : ViewModel() {
                     searchResult.bookUrl = book.url
                     searchResult
                 } catch (e: Exception) {
+                    if (it.lauanage == BookSource.Language.yuedu && !yueduUnsupportedTipShown) {
+                        yueduUnsupportedTipShown = true
+                        toast(BookSource.YUEDU_UNSUPPORTED)
+                    }
                     Log.e("获取书籍详情失败 ${it.name} url:$url", e)
                     null
                 }
@@ -215,6 +221,10 @@ class SearchViewModel : ViewModel() {
                             Log.i("search ${it.id} resultNum:${search.size}")
                         }
                     } catch (e: Exception) {
+                        if (it.lauanage == BookSource.Language.yuedu && !yueduUnsupportedTipShown) {
+                            yueduUnsupportedTipShown = true
+                            toast(BookSource.YUEDU_UNSUPPORTED)
+                        }
                         Log.e("search error ${it.id}", e)
                     }
                 }

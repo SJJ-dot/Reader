@@ -204,10 +204,5 @@ dependencies {
 //    implementation(libs.opencc)简繁转换
     //转换繁体
     implementation(libs.quick.chinese.transfer.core)
-    if (usePrebuiltLibs) {
-        implementation "com.sjianjun.reader:legado-engine:${libsVersion}"
-    } else {
-        implementation project(":legado-engine")
-    }
 
 }

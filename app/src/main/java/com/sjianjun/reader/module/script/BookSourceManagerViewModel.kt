@@ -13,6 +13,12 @@ import sjj.alog.Log
 class BookSourceManagerViewModel : ViewModel() {
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
     suspend fun check(js: BookSource, query: String) = withIo {
+        if (js.lauanage == BookSource.Language.yuedu) {
+            js.checkResult = BookSource.YUEDU_UNSUPPORTED
+            js.checkErrorMsg = null
+            bookSourceDao.insertBookSource(listOf(js))
+            return@withIo
+        }
         val very = js.verify(query)
         if (very != null) {
             return@withIo
