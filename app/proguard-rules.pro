@@ -34,7 +34,25 @@
 -keep class android.support.**{*;}
 
 -keep class org.mozilla.javascript.** { *; }
+# ============================================================
+# 应用包安全网（重要）
+# 保留整个应用包的类名与成员名。原因：项目包含 Python 书源引擎、
+# JS 引擎、WebView @JavascriptInterface、大量自定义 View 与反射调用，
+# 一旦混淆类名/字段名会导致运行期崩溃；当前 release 依赖此规则稳定运行。
+# 若后续要真正启用混淆（减小体积/防反编译），需逐类排查上述反射点，
+# 把下面这条全量 keep 替换为「只 keep 序列化/反射相关类」的精确规则。
+# ============================================================
 -keep class com.sjianjun.reader.** { *; }
+
+# —— 序列化/持久化类精确 keep（即使上面全量 keep 已覆盖，这里显式声明意图，
+#    也方便将来收紧时直接复用）——
+# Room 实体 + 所有 Gson 模型：必须保留字段名，否则列名/JSON 字段匹配失败
+-keep class com.sjianjun.reader.bean.** { *; }
+# 广告拦截旧数据模型（Gson 反序列化 MMKV 旧数据）
+-keep class com.sjianjun.reader.module.bookcity.HostStr { *; }
+# 浏览器数据迁移用的旧数据结构（Gson）
+-keep class com.sjianjun.reader.repository.BrowserDataMigration$* { *; }
+
 -keep class sjj.novel.view.reader.** { *; }
 -keep class org.jsoup.Jsoup { *; }
 -keep class org.jsoup.** { *; }
@@ -96,6 +114,5 @@ public static final int *;
 
 -keep class com.google.gson.** { *; }
 -keep class sun.misc.Unsafe { *; }
--keep class com.sjianjun.reader.** { *; }
 -keepattributes Signature
 
