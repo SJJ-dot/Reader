@@ -17,10 +17,10 @@ object BookSourceWhitelistSync {
         val newHosts = currentHosts.filter { it.isNotBlank() }.toSet()
 
         (newHosts - oldHosts).forEach { host ->
-            adBlock.addWhiteHost(HostStr(host, listOf()))
+            adBlock.addWhiteHost(host, BLOCK_MODE_DOMAIN)
         }
         (oldHosts - newHosts).forEach { host ->
-            adBlock.removeWhiteHost(HostStr(host, listOf()))
+            adBlock.removeWhiteHost(HostStr(host, listOf()).apply { mode = BLOCK_MODE_DOMAIN })
         }
         if (oldHosts != newHosts) {
             mmkv.encode(KEY_HOSTS, newHosts)

@@ -176,8 +176,8 @@ class CustomWebView @JvmOverloads constructor(
             .filter { it.isNotBlank() }
             .distinct()
             .forEach { host ->
-                if (!AdBlock.whitelist.contains(host)) {
-                    AdBlock.addWhiteHost(HostStr(host, listOf()))
+                if (AdBlock.whitelist.value?.any { it.host == host && it.mode == BLOCK_MODE_DOMAIN } != true) {
+                    AdBlock.addWhiteHost(host, BLOCK_MODE_DOMAIN)
                 }
             }
     }

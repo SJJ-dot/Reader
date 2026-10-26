@@ -18,7 +18,7 @@ class BrowserAdBlockActivity : BaseActivity() {
     private val binding by lazy { ActivityBrowserAdBlockBinding.inflate(layoutInflater) }
     private val adBlock: AdBlock = AdBlock
 
-    private lateinit var hostAdapter: BrowserPageFragment.HostListAdapter
+    private lateinit var accessAdapter: AccessRecordAdapter
     private lateinit var blackAdapter: BrowserPageFragment.BlackListAdapter
     private lateinit var whiteAdapter: BrowserPageFragment.WhiteListAdapter
 
@@ -46,18 +46,25 @@ class BrowserAdBlockActivity : BaseActivity() {
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
         }
-        hostAdapter = BrowserPageFragment.HostListAdapter(adBlock)
+        accessAdapter = AccessRecordAdapter(
+            onAddBlackDomain = { d, m -> adBlock.addBlackHost(d, m) },
+            onAddWhiteDomain = { d, m -> adBlock.addWhiteHost(d, m) },
+            onAddBlackChoice = { url, _ ->
+                showBlockScopeDialog(this, url) { v, m -> adBlock.addBlackHost(v, m) }
+            },
+            onRestore = { url -> adBlock.restoreBlocked(url) }
+        )
         blackAdapter = BrowserPageFragment.BlackListAdapter(adBlock)
         whiteAdapter = BrowserPageFragment.WhiteListAdapter(adBlock)
 
         binding.rvList.layoutManager = LinearLayoutManager(this)
-        binding.rvList.adapter = hostAdapter
+        binding.rvList.adapter = accessAdapter
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 binding.rvList.adapter = when (tab?.position) {
                     1 -> blackAdapter
                     2 -> whiteAdapter
-                    else -> hostAdapter
+                    else -> accessAdapter
                 }
             }
 
@@ -65,9 +72,8 @@ class BrowserAdBlockActivity : BaseActivity() {
             override fun onTabReselected(tab: TabLayout.Tab?) = Unit
         })
 
-        adBlock.hostList.observe(this, Observer {
-            hostAdapter.data = it
-            hostAdapter.notifyDataSetChanged()
+        adBlock.accessPages.observe(this, Observer {
+            accessAdapter.submit(adBlock.snapshot())
         })
         adBlock.blacklist.observe(this, Observer {
             blackAdapter.data = it

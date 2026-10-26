@@ -43,7 +43,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 35,
+    version = 36,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -268,6 +268,12 @@ object DbFactory {
                     db.execSQL("CREATE TABLE IF NOT EXISTS `browser_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `time` INTEGER NOT NULL)")
                     db.execSQL("CREATE TABLE IF NOT EXISTS `browser_tab` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `orderIndex` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `thumbPath` TEXT, `historyJson` TEXT NOT NULL, `historyIndex` INTEGER NOT NULL, `lastUsedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
                     db.execSQL("CREATE TABLE IF NOT EXISTS `ad_block_host` (`host` TEXT NOT NULL, `kind` TEXT NOT NULL, `typeJson` TEXT NOT NULL, `isPage` INTEGER NOT NULL, `time` TEXT NOT NULL, PRIMARY KEY(`host`, `kind`))")
+                }
+            })
+            .addMigrations(object : Migration(35, 36) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 广告拦截增加"拦截范围"：顶级域名 / 子域名 / 精确URL
+                    db.execSQL("ALTER TABLE `ad_block_host` ADD COLUMN `mode` TEXT NOT NULL DEFAULT 'domain'")
                 }
             })
             .build()

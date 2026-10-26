@@ -22,7 +22,7 @@ class ChapterListDialogFragment : Fragment() {
     private val activity: BrowserReadModeActivity?
         get() = getActivity() as? BrowserReadModeActivity
 
-    private lateinit var hostListAdapter: BrowserPageFragment.HostListAdapter
+    private lateinit var accessAdapter: AccessRecordAdapter
     private lateinit var blackListAdapter: BrowserPageFragment.BlackListAdapter
     private lateinit var whiteListAdapter: BrowserPageFragment.WhiteListAdapter
     private lateinit var historyAdapter: BrowserPageFragment.HistoryListAdapter
@@ -52,7 +52,14 @@ class ChapterListDialogFragment : Fragment() {
 
     private fun setupAdapters() {
         val act = activity ?: return
-        hostListAdapter = BrowserPageFragment.HostListAdapter(act.adBlock)
+        accessAdapter = AccessRecordAdapter(
+            onAddBlackDomain = { d, m -> act.adBlock.addBlackHost(d, m) },
+            onAddWhiteDomain = { d, m -> act.adBlock.addWhiteHost(d, m) },
+            onAddBlackChoice = { url, _ ->
+                showBlockScopeDialog(requireContext(), url) { v, m -> act.adBlock.addBlackHost(v, m) }
+            },
+            onRestore = { url -> act.adBlock.restoreBlocked(url) }
+        )
         blackListAdapter = BrowserPageFragment.BlackListAdapter(act.adBlock)
         whiteListAdapter = BrowserPageFragment.WhiteListAdapter(act.adBlock)
         chapterAdapter = ChapterListAdapter { item ->
@@ -73,9 +80,8 @@ class ChapterListDialogFragment : Fragment() {
                 renderReadModeHistory()
             }
         }
-        act.adBlock.hostList.observe(viewLifecycleOwner) {
-            hostListAdapter.data = it
-            hostListAdapter.notifyDataSetChanged()
+        act.adBlock.accessPages.observe(viewLifecycleOwner) {
+            accessAdapter.submit(act.adBlock.snapshot())
         }
         act.adBlock.blacklist.observe(viewLifecycleOwner) {
             blackListAdapter.data = it
@@ -93,7 +99,7 @@ class ChapterListDialogFragment : Fragment() {
         b.chapterListRv.adapter = when (position) {
             0 -> chapterAdapter.also { renderMappedChapterList() }
             1 -> historyAdapter.also { renderReadModeHistory() }
-            2 -> hostListAdapter
+            2 -> accessAdapter
             3 -> blackListAdapter
             4 -> whiteListAdapter
             else -> chapterAdapter.also { renderMappedChapterList() }

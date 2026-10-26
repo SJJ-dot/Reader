@@ -63,6 +63,9 @@ open class MyWebViewClient(
 
     override fun onPageFinished(webView: WebView?, url: String?) {
         webView?.isBlank = url.isNullOrBlank() || url == "about:blank"
+        if (!url.isNullOrBlank() && webView?.isBlank == false) {
+            AdBlock.updatePageMeta(url, webView.title)
+        }
         if (webView?.isBlank == false) {
             lifecycleScope?.launch {
                 delay(100.milliseconds)
@@ -88,14 +91,15 @@ open class MyWebViewClient(
             Log.i("电脑版：替换移动端跳转脚本 ${request.url}")
             return mobileRedirectScriptStub()
         }
-        val requestHost = request.url.toString().toHttpUrlOrNull()?.topPrivateDomain()
-        if (requestHost != null && AdBlock.whitelist.contains(requestHost)) {
+        val requestUrl = request.url.toString()
+        if (AdBlock.shouldAllow(requestUrl)) {
             return super.shouldInterceptRequest(view, request)
         }
 
+        val requestHost = requestUrl.toHttpUrlOrNull()?.topPrivateDomain()
         val currentHost = view?.currentHost
         val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
-        val blocked = AdBlock.blacklist.contains(requestHost) || (isCrossOrigin && crossOriginMode() == 2)
+        val blocked = AdBlock.shouldBlock(requestUrl) || (isCrossOrigin && crossOriginMode() == 2)
 
         if (blocked) {
             Log.i("拦截请求：${request.url} mainFrame=${request.isForMainFrame}")
@@ -174,12 +178,12 @@ open class MyWebViewClient(
         val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
 
         // 白名单域名直接放行
-        if (targetTop != null && AdBlock?.whitelist.contains(targetTop)) {
+        if (AdBlock?.shouldAllow(url) == true) {
             return false
         }
 
         // 若为广告黑名单，直接拦截
-        if (targetTop != null && AdBlock?.blacklist.contains(targetTop)) {
+        if (AdBlock?.shouldBlock(url) == true) {
             return true
         }
 
@@ -248,7 +252,7 @@ open class MyWebViewClient(
             }
             originBinding.btnWhitelist.setOnClickListener {
                 if (targetTop != null) {
-                    AdBlock.addWhiteHost(HostStr(targetTop, listOf()))
+                    AdBlock.addWhiteHost(targetTop, BLOCK_MODE_DOMAIN)
                 }
                 Log.i("跨域请求加入白名单：${targetTop}")
                 onAllow(url, request)
@@ -256,7 +260,7 @@ open class MyWebViewClient(
             }
             originBinding.btnBlacklist.setOnClickListener {
                 if (targetTop != null) {
-                    AdBlock.addBlackHost(HostStr(targetTop, listOf()))
+                    AdBlock.addBlackHost(targetTop, BLOCK_MODE_DOMAIN)
                 }
                 dialog.dismiss()
                 Log.i("跨域请求加入黑名单：${targetTop}")

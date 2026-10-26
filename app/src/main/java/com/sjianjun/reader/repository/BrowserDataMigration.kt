@@ -106,10 +106,10 @@ object BrowserDataMigration {
         val white = config.hostWhitelist
         val entities = mutableListOf<AdBlockHostEntity>()
         black.forEach {
-            entities.add(AdBlockHostEntity(it.host, "black", gson.toJson(it.type), it.isPage, it.time))
+            entities.add(AdBlockHostEntity(it.host, "black", gson.toJson(it.type), it.isPage, it.time, it.mode))
         }
         white.forEach {
-            entities.add(AdBlockHostEntity(it.host, "white", gson.toJson(it.type), it.isPage, it.time))
+            entities.add(AdBlockHostEntity(it.host, "white", gson.toJson(it.type), it.isPage, it.time, it.mode))
         }
         if (entities.isNotEmpty()) dao.insertAdBlock(entities)
         // 清空旧 MMKV 存储，避免重复
