@@ -10,6 +10,8 @@ import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.python.DnsWarmUp
 import com.sjianjun.reader.repository.BookUseCase
+import com.sjianjun.reader.module.bookcity.AdBlock
+import com.sjianjun.reader.repository.BrowserDataMigration
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.ChineseUtils
 import com.tencent.mmkv.MMKV
@@ -74,6 +76,8 @@ class App : Application() {
 
             2 -> ChineseUtils.preLoad(true, TransType.TRADITIONAL_TO_SIMPLE)
         }
+        BrowserDataMigration.migrateIfNeeded()
+        AdBlock.preload()
     }
 
 

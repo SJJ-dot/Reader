@@ -24,6 +24,16 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/btn_new_folder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:text="新建文件夹"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp" />
+
+        <TextView
             android:id="@+id/btn_clear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

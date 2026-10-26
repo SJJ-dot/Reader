@@ -20,9 +20,15 @@ import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.bean.WebBook
+import com.sjianjun.reader.bean.AdBlockHostEntity
+import com.sjianjun.reader.bean.BookmarkEntity
+import com.sjianjun.reader.bean.BookmarkFolderEntity
+import com.sjianjun.reader.bean.BrowserHistoryEntity
+import com.sjianjun.reader.bean.BrowserTabEntity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.dao.BookDao
 import com.sjianjun.reader.repository.dao.BookSourceDao
+import com.sjianjun.reader.repository.dao.BrowserDataDao
 import com.sjianjun.reader.repository.dao.ChapterContentDao
 import com.sjianjun.reader.repository.dao.ChapterDao
 import com.sjianjun.reader.repository.dao.ReadingRecordDao
@@ -36,8 +42,8 @@ import java.util.Date
 import java.util.Locale
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class],
-    version = 34,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
+    version = 35,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -50,6 +56,7 @@ abstract class Db : RoomDatabase() {
     abstract fun webBookDao(): WebBookDao
     abstract fun replacementRule(): ReplacementRuleDao
     abstract fun sourceUrlDao(): SourceUrlDao
+    abstract fun browserDataDao(): BrowserDataDao
 }
 
 object DbFactory {
@@ -72,7 +79,7 @@ object DbFactory {
 
     private fun buildDatabase(dbFile: String): Db {
         return Room.databaseBuilder(App.app, Db::class.java, dbFile)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigrationOnDowngrade()
             .addMigrations(object : Migration(12, 13) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE 'ChapterContent' ADD COLUMN `contentError` INTEGER NOT NULL default 0")
@@ -252,6 +259,15 @@ object DbFactory {
                                 " PRIMARY KEY(`bookId`, `chapterUrl`, `pageIndex`))"
                     )
                     db.execSQL("UPDATE `Chapter` SET `isLoaded` = 0")
+                }
+            })
+            .addMigrations(object : Migration(34, 35) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `bookmark_folder` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `parentId` TEXT NOT NULL, `builtin` INTEGER NOT NULL, `time` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `bookmark` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `folderId` TEXT NOT NULL, `orderIndex` INTEGER NOT NULL, `time` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `browser_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `time` INTEGER NOT NULL)")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `browser_tab` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `orderIndex` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `thumbPath` TEXT, `historyJson` TEXT NOT NULL, `historyIndex` INTEGER NOT NULL, `lastUsedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `ad_block_host` (`host` TEXT NOT NULL, `kind` TEXT NOT NULL, `typeJson` TEXT NOT NULL, `isPage` INTEGER NOT NULL, `time` TEXT NOT NULL, PRIMARY KEY(`host`, `kind`))")
                 }
             })
             .build()

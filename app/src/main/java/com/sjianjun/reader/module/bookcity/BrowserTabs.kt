@@ -1,7 +1,10 @@
 package com.sjianjun.reader.module.bookcity
 
 import com.google.gson.Gson
-import com.tencent.mmkv.MMKV
+import com.sjianjun.reader.bean.BrowserTabEntity
+import com.sjianjun.reader.repository.DbFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
 /** 浏览器标签页（进程内共享，供 CustomWebView 与标签页界面使用） */
 object BrowserTabs {
@@ -38,7 +41,6 @@ object BrowserTabs {
         val lastUsedAt: Long = 0L,
     )
 
-    private val mmkv = MMKV.mmkvWithID("BrowserTabs")
     private val gson = Gson()
 
     val tabs = mutableListOf<Tab>()
@@ -62,25 +64,36 @@ object BrowserTabs {
                 history, index, tab.lastUsedAt
             )
         }
-        mmkv.encode("tabs_v3", gson.toJson(saved))
-        mmkv.encode("active_v3", activeIndex)
+        val dao = DbFactory.db.browserDataDao()
+        val entities = saved.mapIndexed { i, s ->
+            BrowserTabEntity(
+                id = s.id, title = s.title, url = s.url, orderIndex = i, isActive = i == activeIndex,
+                thumbPath = s.thumbPath, historyJson = gson.toJson(s.history.orEmpty()),
+                historyIndex = s.historyIndex ?: -1, lastUsedAt = s.lastUsedAt
+            )
+        }
+        runBlocking(Dispatchers.IO) { dao.replaceAllTabs(entities) }
     }
 
     /** 启动时恢复标签元数据（WebView 在需要时重建） */
     fun restore() {
         if (tabs.isNotEmpty()) return
-        val json = mmkv.decodeString("tabs_v3", "[]") ?: "[]"
-        val saved = runCatching {
-            gson.fromJson(json, Array<SavedTab>::class.java)?.toList().orEmpty()
-        }.getOrDefault(emptyList())
-        if (saved.isEmpty()) return
+        val entities = runBlocking(Dispatchers.IO) { DbFactory.db.browserDataDao().getAllTabs() }
+        if (entities.isEmpty()) return
         runCatching {
-            tabs.addAll(saved.map { it.toTab() })
-        }.onFailure {
-            tabs.clear()
-            tabs.addAll(saved.map { it.toTab() })
+            tabs.addAll(entities.mapNotNull { entity ->
+                val history = runCatching {
+                    gson.fromJson(entity.historyJson, Array<String>::class.java)?.toList().orEmpty()
+                }.getOrDefault(emptyList())
+                val saved = SavedTab(
+                    entity.title, entity.url, entity.id, entity.thumbPath,
+                    history, entity.historyIndex, entity.lastUsedAt
+                )
+                saved.toTab()
+            })
         }
-        activeIndex = mmkv.decodeInt("active_v3", 0).coerceIn(tabs.indices)
+        activeIndex = entities.indexOfFirst { it.isActive }.coerceIn(tabs.indices)
+        if (activeIndex !in tabs.indices) activeIndex = 0
     }
 
     private fun SavedTab.toTab(): Tab {
@@ -107,8 +120,7 @@ object BrowserTabs {
     }
 
     fun clearPersisted() {
-        mmkv.removeValueForKey("tabs_v3")
-        mmkv.removeValueForKey("active_v3")
+        runBlocking(Dispatchers.IO) { DbFactory.db.browserDataDao().clearTabs() }
     }
 
     /** Activity 重建时旧 WebView 已失效，只清引用，保留标签信息 */

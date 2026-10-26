@@ -145,7 +145,7 @@
             android:paddingEnd="12dp">
 
             <LinearLayout
-                android:id="@+id/menu_desktop"
+                android:id="@+id/menu_ad_block"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -158,14 +158,14 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_browser_computer"
-                    app:tint="#5E6AD2" />
+                    android:src="@drawable/ic_menu_shield"
+                    app:tint="#E53935" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="桌面版"
+                    android:text="广告拦截"
                     android:textColor="@color/dn_text_color_black"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -195,8 +195,9 @@
                     android:textColor="@color/dn_text_color_black"
                     android:textSize="11sp" />
             </LinearLayout>
+
             <LinearLayout
-                android:id="@+id/menu_ad_block"
+                android:id="@+id/menu_desktop"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -209,14 +210,14 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_menu_shield" 
-                    app:tint="#12A67A" />
+                    android:src="@drawable/ic_browser_computer"
+                    app:tint="#5E6AD2" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="广告拦截"
+                    android:text="桌面版"
                     android:textColor="@color/dn_text_color_black"
                     android:textSize="11sp" />
             </LinearLayout>

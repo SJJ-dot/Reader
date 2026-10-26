@@ -1,7 +1,13 @@
 package com.sjianjun.reader.module.bookcity
 
 import androidx.lifecycle.MutableLiveData
-import com.sjianjun.reader.preferences.AppConfig
+import com.google.gson.Gson
+import com.sjianjun.reader.bean.AdBlockHostEntity
+import com.sjianjun.reader.repository.DbFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -30,7 +36,8 @@ fun MutableLiveData<CopyOnWriteArrayList<HostStr>>?.contains(host: String?): Boo
 }
 
 object AdBlock {
-    private val config = AppConfig("ad-blacklist1")
+    private val dao get() = DbFactory.db.browserDataDao()
+    private val gson = Gson()
 
     val blacklist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
     val whitelist = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
@@ -38,16 +45,34 @@ object AdBlock {
     // 记录所有的url
     val hostList = MutableLiveData<CopyOnWriteArrayList<HostStr>>(CopyOnWriteArrayList())
 
-    init {
-        blacklist.postValue(CopyOnWriteArrayList(config.hostBlacklist))
-        whitelist.postValue(CopyOnWriteArrayList(config.hostWhitelist))
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** APP 启动后在子线程预加载：把 DB 中的黑白名单读入内存缓存 */
+    fun preload() {
+        scope.launch { loadFromDb() }
+    }
+
+    private fun loadFromDb() {
+        val black = dao.getAdBlock("black").map { it.toHostStr() }
+        val white = dao.getAdBlock("white").map { it.toHostStr() }
+        blacklist.postValue(CopyOnWriteArrayList(black))
+        whitelist.postValue(CopyOnWriteArrayList(white))
+    }
+
+    private fun persist(kind: String, list: List<HostStr>) {
+        scope.launch {
+            dao.replaceAdBlock(kind, list.map {
+                AdBlockHostEntity(it.host, kind, gson.toJson(it.type), it.isPage, it.time)
+            })
+        }
     }
 
     fun addBlackHost(host: HostStr) {
-        if (blacklist.value?.contains(host) == false) {
-            blacklist.value?.add(0, host)
-            blacklist.postValue(blacklist.value)
-            config.hostBlacklist = blacklist.value ?: mutableListOf()
+        val list = blacklist.value ?: CopyOnWriteArrayList()
+        if (!list.contains(host)) {
+            list.add(0, host)
+            blacklist.postValue(list)
+            persist("black", list)
         }
 
         val mutableList = hostList.value as CopyOnWriteArrayList
@@ -64,14 +89,15 @@ object AdBlock {
         val list = blacklist.value as CopyOnWriteArrayList
         list.removeAll { it.host == host.host }
         blacklist.postValue(list)
-        config.hostBlacklist = blacklist.value ?: mutableListOf()
+        persist("black", list)
     }
 
     fun addWhiteHost(host: HostStr) {
-        if (whitelist.value?.contains(host) == false) {
-            whitelist.value?.add(0, host)
-            whitelist.postValue(whitelist.value)
-            config.hostWhitelist = whitelist.value ?: mutableListOf()
+        val list = whitelist.value ?: CopyOnWriteArrayList()
+        if (!list.contains(host)) {
+            list.add(0, host)
+            whitelist.postValue(list)
+            persist("white", list)
         }
 
         val mutableList = hostList.value as CopyOnWriteArrayList
@@ -88,7 +114,7 @@ object AdBlock {
         val list = whitelist.value as CopyOnWriteArrayList
         list.removeAll { it.host == host.host }
         whitelist.postValue(list)
-        config.hostWhitelist = whitelist.value ?: mutableListOf()
+        persist("white", list)
     }
 
     @Synchronized
@@ -116,5 +142,15 @@ object AdBlock {
         val hostStr = hostList.value?.firstOrNull { it.host == topHost } ?: return
         hostStr.isPage = true
         hostList.postValue(hostList.value)
+    }
+
+    private fun AdBlockHostEntity.toHostStr(): HostStr {
+        val type = runCatching {
+            gson.fromJson(typeJson, Array<String>::class.java)?.toList().orEmpty()
+        }.getOrDefault(emptyList())
+        return HostStr(host, type.toMutableList()).apply {
+            isPage = this@toHostStr.isPage
+            time = this@toHostStr.time
+        }
     }
 }

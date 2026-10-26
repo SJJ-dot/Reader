@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -25,6 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.abs
 import android.view.View
+import android.view.Gravity
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.webkit.WebChromeClient
@@ -32,6 +34,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
@@ -50,6 +54,10 @@ import com.sjianjun.reader.databinding.DialogBrowserAddressBinding
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.bean.BrowserHistoryEntity
+import com.sjianjun.reader.repository.DbFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
@@ -81,6 +89,9 @@ class CustomWebView @JvmOverloads constructor(
     var webView: MyWebView? = null
         private set
     private val skippedHistoryIndices = linkedMapOf<Int, String>()
+    private var linkMenu: PopupWindow? = null
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
 
     /** 当前主框架导航是否通过重定向/无手势跳转到达（重定向源不压栈） */
     private var pendingMainFrameRedirect = false
@@ -279,6 +290,7 @@ class CustomWebView @JvmOverloads constructor(
         binding.webViewContainer.addView(wv)
         webView = wv
         attachToolbarAutoHide(wv)
+        wv.setOnLongClickListener { showLinkContextMenu(wv) }
         return wv
     }
 
@@ -321,6 +333,8 @@ class CustomWebView @JvmOverloads constructor(
                     binding.browserBookCityToolbar.animate().cancel()
                     toolbarTouchStartY = event.rawY
                     toolbarTouchLastY = event.rawY
+                    lastTouchX = event.rawX
+                    lastTouchY = event.rawY
                     toolbarDragging = false
                     toolbarTracking = true
                 }
@@ -786,9 +800,145 @@ class CustomWebView @JvmOverloads constructor(
         context.startActivity(Intent(context, BrowserTabsActivity::class.java))
     }
 
-    /** 在新标签页打开指定 URL（供收藏夹/历史记录长按调用） */
+    /** 在新标签页打开指定 URL（前台切换，供外部调用） */
     fun openInNewTab(url: String) {
         newTab(url)
+    }
+
+    /** 后台打开：新增标签但停留在当前页（长按链接“新标签页打开”使用） */
+    private fun openInBackgroundTab(url: String) {
+        if (url.isBlank()) return
+        ensureTabCapacity()
+        val tab = BrowserTabs.Tab("新标签页", url, fromPopup = false).apply {
+            session.navigate(url)
+        }
+        BrowserTabs.tabs.add(tab)
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+        BrowserTabs.persist()
+        toast("已在后台打开")
+    }
+
+    /** 长按链接：命中超链接时弹出上下文菜单，否则交给 WebView 默认处理 */
+    private fun showLinkContextMenu(wv: MyWebView): Boolean {
+        val result = wv.hitTestResult ?: return false
+        val type = result.type
+        val isAnchor = type == WebView.HitTestResult.SRC_ANCHOR_TYPE
+        val isImageAnchor = type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+        if (!isAnchor && !isImageAnchor) return false
+        val fallback = result.extra ?: return false
+        if (fallback.isBlank()) return false
+        // 解析真实链接地址（封面等“链接包裹图片”也能取到书籍地址），再弹菜单
+        resolveLinkUrl(wv, fallback) { showLinkMenu(it) }
+        return true
+    }
+
+    /**
+     * 解析长按点的真实链接地址：优先取外层 <a> 的 href（绝对地址，
+     * 因此“链接包裹图片”的封面也能拿到书籍地址，与点击行为一致）；取不到则回退原始值。
+     */
+    private fun resolveLinkUrl(wv: MyWebView, fallback: String, onResolved: (String) -> Unit) {
+        val loc = IntArray(2)
+        wv.getLocationOnScreen(loc)
+        // MotionEvent 坐标为屏幕像素，需换算成 CSS 像素（除以设备密度），
+        // 否则高密度屏上坐标整体偏大，elementFromPoint 会偏到错误元素
+        val density = resources.displayMetrics.density
+        val cssX = ((lastTouchX - loc[0]) / density).toInt()
+        val cssY = ((lastTouchY - loc[1]) / density).toInt()
+        val js = "(function(){var e=document.elementFromPoint($cssX,$cssY);" +
+                "while(e&&e!==document.body){" +
+                "if(e.tagName==='A'&&e.href)return e.href;" +
+                "e=e.parentNode;}" +
+                "return '';})()"
+        wv.evaluateJavascript(js) { text ->
+            val href = text?.trim('"')?.takeIf { it.isNotBlank() }
+            onResolved(href ?: fallback)
+        }
+    }
+
+    private fun showLinkMenu(url: String) {
+        dismissLinkMenu()
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+        val textColor = ContextCompat.getColor(context, R.color.dn_text_color_black)
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_popup_menu)
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        fun addItem(label: String, onClick: () -> Unit) {
+            container.addView(TextView(context).apply {
+                text = label
+                textSize = 13f
+                setTextColor(textColor)
+                setPadding(dp(16), dp(10), dp(16), dp(10))
+                setOnClickListener {
+                    dismissLinkMenu()
+                    onClick()
+                }
+            })
+        }
+        addItem("新标签页打开") { openInBackgroundTab(url) }
+        addItem("复制链接") { url.copyToClipboard() }
+        addItem("复制文本") { copyLinkText(url) }
+        addItem("添加收藏") {
+            BookmarkStore.add(title = "", url = url, folderId = BookmarkStore.ROOT)
+            toast("已添加收藏")
+        }
+        val popup = PopupWindow(
+            container,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            isFocusable = true
+            isOutsideTouchable = true
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+        popup.setOnDismissListener { linkMenu = null }
+        linkMenu = popup
+        container.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val menuW = container.measuredWidth
+        val menuH = container.measuredHeight
+        val screenW = resources.displayMetrics.widthPixels
+        val screenH = resources.displayMetrics.heightPixels
+        val margin = dp(8)
+        val gap = dp(4)
+        val x = (lastTouchX - menuW / 2f).toInt()
+            .coerceIn(margin, (screenW - menuW - margin).coerceAtLeast(margin))
+        val yBelow = lastTouchY.toInt() + gap
+        val y = if (yBelow + menuH <= screenH - margin) {
+            yBelow
+        } else {
+            (lastTouchY.toInt() - menuH - gap).coerceAtLeast(margin)
+        }
+        popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
+    }
+
+    private fun dismissLinkMenu() {
+        linkMenu?.dismiss()
+        linkMenu = null
+    }
+
+    /** 通过 JS 取链接（<a>）的可见文本，供“复制文本”使用 */
+    private fun copyLinkText(url: String) {
+        val wv = webView ?: return
+        val loc = IntArray(2)
+        wv.getLocationOnScreen(loc)
+        // MotionEvent 坐标为屏幕像素，需换算成 CSS 像素（除以设备密度），
+        // 否则高密度屏上坐标整体偏大，elementFromPoint 会偏到错误元素
+        val density = resources.displayMetrics.density
+        val cssX = ((lastTouchX - loc[0]) / density).toInt()
+        val cssY = ((lastTouchY - loc[1]) / density).toInt()
+        val js = "(function(){var e=document.elementFromPoint($cssX,$cssY);" +
+                "while(e&&e.tagName!=='A'&&e!==document.body&&e.parentNode)e=e.parentNode;" +
+                "var t=e&&e.tagName==='A'?(e.textContent||e.innerText||''):'';" +
+                "return (t||'').trim();})()"
+        wv.evaluateJavascript(js) { text ->
+            val cleaned = text?.trim('"')?.takeIf { it.isNotBlank() } ?: url
+            cleaned.copyToClipboard()
+        }
     }
 
     private fun homeUrl(): String = webBook?.url ?: globalConfig.bookCityUrl
@@ -1411,8 +1561,16 @@ class CustomWebView @JvmOverloads constructor(
 }
 
 
-object History : DelegateSharedPref(MMKV.mmkvWithID("AppConfig_History")) {
-    var list by dataPref("History", listOf<HistoryItem>())
+object History {
+    var list: List<HistoryItem>
+        get() = runBlocking(Dispatchers.IO) {
+            DbFactory.db.browserDataDao().getAllHistory().map { HistoryItem(it.title, it.url, it.time) }
+        }
+        set(value) = runBlocking(Dispatchers.IO) {
+            DbFactory.db.browserDataDao().replaceAllHistory(
+                value.map { BrowserHistoryEntity(0, it.title, it.url, it.time) }
+            )
+        }
 }
 
 /** 两个时间戳是否属于同一天（用于历史记录"当天去重、不跨天去重"） */

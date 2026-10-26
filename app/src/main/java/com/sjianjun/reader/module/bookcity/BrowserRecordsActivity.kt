@@ -6,10 +6,14 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -21,6 +25,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityBrowserRecordsBinding
+import com.sjianjun.reader.databinding.ItemBrowserBookmarkFolderBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordBinding
 import com.sjianjun.reader.databinding.ItemBrowserRecordHeaderBinding
 import com.sjianjun.reader.preferences.globalConfig
@@ -28,8 +33,6 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.utils.toast
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,17 +58,28 @@ class BrowserRecordsActivity : BaseActivity() {
 
     private sealed class Item {
         data class Header(val day: String, val expanded: Boolean) : Item()
-        data class Record(val row: Row) : Item()
+        data class Folder(
+            val folder: BookmarkStore.Folder,
+            val depth: Int,
+            val expanded: Boolean,
+            val childCount: Int,
+        ) : Item()
+        data class BookmarkNode(
+            val bookmarkId: String,
+            val row: Row,
+            val depth: Int,
+            val folderId: String,
+        ) : Item()
     }
 
     private val binding by lazy { ActivityBrowserRecordsBinding.inflate(layoutInflater) }
     private val adapter = RecordsAdapter()
     private var bookmarksMode = true
     private val collapsedDays = mutableSetOf<String>()
-    private var bookmarksJob: Job? = null
-    /** 当前长按弹出的菜单（拖动开始时关闭） */
+    private val expandedFolderIds = mutableSetOf<String>()
+    private var sourceSiteRows: List<Row> = emptyList()
+    private lateinit var itemTouchHelper: ItemTouchHelper
     private var currentMenu: PopupWindow? = null
-    /** 最近一次按下的屏幕坐标（用于让长按菜单在按压位置弹出） */
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
@@ -81,6 +95,7 @@ class BrowserRecordsActivity : BaseActivity() {
         bookmarksMode = intent.getStringExtra(MODE) != HISTORY
         binding.tvTitle.text = if (bookmarksMode) "收藏夹" else "历史记录"
         binding.btnAdd.visibility = if (bookmarksMode) View.VISIBLE else View.GONE
+        binding.btnNewFolder.visibility = if (bookmarksMode) View.VISIBLE else View.GONE
         binding.rvRecords.layoutManager = LinearLayoutManager(this)
         binding.rvRecords.adapter = adapter
         attachBookmarkDragSort()
@@ -94,6 +109,7 @@ class BrowserRecordsActivity : BaseActivity() {
             toast("已收藏")
             reload()
         }
+        binding.btnNewFolder.setOnClickListener { showNewFolderDialog(BookmarkStore.ROOT) }
         binding.btnClear.setOnClickListener { confirmClear() }
         reload()
     }
@@ -103,13 +119,39 @@ class BrowserRecordsActivity : BaseActivity() {
     }
 
     private fun reloadBookmarks() {
-        val saved = BookmarkStore.list().map { Row(it.title, it.url, it.time, true) }
-        adapter.submit(saved.map { Item.Record(it) })
+        rebuildBookmarkTree()
         lifecycleScope.launch {
-            val sites = BookCityViewModel().getAllBookSourceSite().distinct()
-            val extra = sites.filter { s -> saved.none { it.url == s.url } }
-                .map { Row(it.title ?: it.url, it.url, 0, false) }
-            adapter.submit((saved + extra).map { Item.Record(it) })
+            val sites = runCatching { BookCityViewModel().getAllBookSourceSite().distinct() }
+                .getOrDefault(emptyList())
+            sourceSiteRows = sites.map { Row(it.title ?: it.url, it.url, 0, false) }
+            rebuildBookmarkTree()
+        }
+    }
+
+    private fun rebuildBookmarkTree() {
+        val items = mutableListOf<Item>()
+        buildBookmarkTree(BookmarkStore.ROOT, 0, items)
+        adapter.submit(items)
+    }
+
+    private fun buildBookmarkTree(folderId: String, depth: Int, out: MutableList<Item>) {
+        val bookmarks = BookmarkStore.bookmarksIn(folderId)
+        val sites = if (folderId == BookmarkStore.BOOK_SOURCE_FOLDER_ID) sourceSiteRows else emptyList()
+        val children = BookmarkStore.childrenFolders(folderId)
+        // 同层：用户收藏在前，书源站点随后，子文件夹最后
+        bookmarks.forEach { b ->
+            out += Item.BookmarkNode(b.id, Row(b.title, b.url, b.time, true), depth, folderId)
+        }
+        sites.forEach { r ->
+            out += Item.BookmarkNode("", r, depth, folderId)
+        }
+        children.forEach { f ->
+            val count = BookmarkStore.bookmarksIn(f.id).size +
+                (if (f.id == BookmarkStore.BOOK_SOURCE_FOLDER_ID) sourceSiteRows.size else 0) +
+                BookmarkStore.childrenFolders(f.id).size
+            val expanded = f.id in expandedFolderIds
+            out += Item.Folder(f, depth, expanded, count)
+            if (expanded) buildBookmarkTree(f.id, depth + 1, out)
         }
     }
 
@@ -123,11 +165,7 @@ class BrowserRecordsActivity : BaseActivity() {
             items.add(Item.Header(dayLabel(day), expanded))
             if (expanded) {
                 records.forEach { item ->
-                    items.add(
-                        Item.Record(
-                            Row(item.title.ifBlank { item.url }, item.url, item.time, true)
-                        )
-                    )
+                    items.add(Item.BookmarkNode("", Row(item.title.ifBlank { item.url }, item.url, item.time, true), 0, ""))
                 }
             }
         }
@@ -159,20 +197,20 @@ class BrowserRecordsActivity : BaseActivity() {
     }
 
     /** 编辑收藏项的名称与地址 */
-    private fun showEditBookmarkDialog(row: Row) {
+    private fun showEditBookmarkDialog(node: Item.BookmarkNode) {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 24, 48, 0)
         }
-        val nameInput = android.widget.EditText(this).apply {
+        val nameInput = EditText(this).apply {
             hint = "名称"
-            setText(row.title)
+            setText(node.row.title)
             setSelection(text.length)
         }
-        val urlInput = android.widget.EditText(this).apply {
+        val urlInput = EditText(this).apply {
             hint = "地址"
-            setText(row.url)
-            setSelection(row.url.length)
+            setText(node.row.url)
+            setSelection(node.row.url.length)
         }
         container.addView(nameInput)
         container.addView(urlInput)
@@ -186,7 +224,7 @@ class BrowserRecordsActivity : BaseActivity() {
                     toast("地址不能为空")
                     return@setPositiveButton
                 }
-                BookmarkStore.update(row.url, newTitle, newUrl)
+                BookmarkStore.updateById(node.bookmarkId, newTitle, newUrl)
                 toast("已保存")
                 reload()
             }
@@ -206,19 +244,17 @@ class BrowserRecordsActivity : BaseActivity() {
         val callback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
-            override fun isLongPressDragEnabled(): Boolean = bookmarksMode
+            override fun isLongPressDragEnabled(): Boolean = false
 
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
+                target: RecyclerView.ViewHolder,
             ): Boolean {
                 val from = viewHolder.bindingAdapterPosition
                 val to = target.bindingAdapterPosition
-                // 拖动开始：隐藏菜单
                 dismissRecordMenu()
                 if (!adapter.move(from, to)) return false
-                BookmarkStore.move(from, to)
                 return true
             }
 
@@ -229,10 +265,9 @@ class BrowserRecordsActivity : BaseActivity() {
                 dX: Float,
                 dY: Float,
                 actionState: Int,
-                isCurrentlyActive: Boolean
+                isCurrentlyActive: Boolean,
             ) {
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                // 手指位移超过系统拖动阈值时隐藏菜单
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG &&
                     (kotlin.math.abs(dX) > touchSlop || kotlin.math.abs(dY) > touchSlop)
                 ) {
@@ -246,20 +281,20 @@ class BrowserRecordsActivity : BaseActivity() {
                 super.onSelectedChanged(viewHolder, actionState)
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     val vh = viewHolder ?: return
-                    val pos = vh.bindingAdapterPosition
-                    val row = adapter.recordAt(pos) ?: return
-                    showRecordMenu(row, vh.itemView)
+                    val node = adapter.nodeAt(vh.bindingAdapterPosition) ?: return
+                    showRecordMenu(node, vh.itemView, useTouchPosition = true)
                 }
             }
         }
-        ItemTouchHelper(callback).attachToRecyclerView(binding.rvRecords)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper.attachToRecyclerView(binding.rvRecords)
     }
 
     /**
      * 长按菜单（非模态，避免拦截拖动）。
      * @param useTouchPosition true = 在手指按压位置弹出；false = 紧贴条目下方（拖动场景）
      */
-    private fun showRecordMenu(row: Row, anchor: View, useTouchPosition: Boolean = false) {
+    private fun showRecordMenu(node: Item.BookmarkNode, anchor: View, useTouchPosition: Boolean = false) {
         dismissRecordMenu()
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
@@ -281,22 +316,23 @@ class BrowserRecordsActivity : BaseActivity() {
                 }
             })
         }
-        if (bookmarksMode && row.removable) {
-            addItem("编辑") { showEditBookmarkDialog(row) }
+        if (bookmarksMode && node.row.removable) {
+            addItem("编辑") { showEditBookmarkDialog(node) }
+            addItem("移动到…") { showMoveToDialog(node) }
         }
         addItem("在新标签页打开") {
-            EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, row.url)
+            EventBus.post(EventKey.OPEN_BROWSER_URL_NEW_TAB, node.row.url)
             finish()
         }
         if (!bookmarksMode) {
             addItem("添加到收藏") {
-                BookmarkStore.add(row.title.ifBlank { row.url }, row.url)
+                BookmarkStore.add(node.row.title.ifBlank { node.row.url }, node.row.url)
                 toast("已收藏")
             }
         }
         addItem("设为主页") {
-            if (row.url.isNotBlank()) {
-                globalConfig.bookCityUrl = row.url
+            if (node.row.url.isNotBlank()) {
+                globalConfig.bookCityUrl = node.row.url
                 toast("已设为主页")
             }
         }
@@ -311,10 +347,60 @@ class BrowserRecordsActivity : BaseActivity() {
         }
         popup.setOnDismissListener { currentMenu = null }
         currentMenu = popup
-        // 用 showAtLocation 手动定位，避免 showAsDropDown 注册 layout 监听导致松手后自动重定位
+        showPopupAt(popup, container, anchor, useTouchPosition)
+    }
+
+    private fun showFolderMenu(folder: BookmarkStore.Folder, anchor: View, useTouchPosition: Boolean = false) {
+        dismissRecordMenu()
+        val density = resources.displayMetrics.density
+        fun dp(v: Int) = (v * density).toInt()
+        val textColor = ContextCompat.getColor(this, R.color.dn_text_color_black)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_popup_menu)
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        fun addItem(label: String, onClick: () -> Unit) {
+            container.addView(TextView(this).apply {
+                text = label
+                textSize = 13f
+                setTextColor(textColor)
+                setPadding(dp(16), dp(10), dp(16), dp(10))
+                setOnClickListener {
+                    dismissRecordMenu()
+                    onClick()
+                }
+            })
+        }
+        addItem("重命名") { showRenameFolderDialog(folder) }
+        addItem("新建子文件夹") { showNewFolderDialog(folder.id) }
+        if (!folder.builtin) {
+            addItem("删除") { showDeleteFolderConfirm(folder) }
+        }
+        val popup = PopupWindow(
+            container,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            isFocusable = true
+            isOutsideTouchable = true
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+        popup.setOnDismissListener { currentMenu = null }
+        currentMenu = popup
+        showPopupAt(popup, container, anchor, useTouchPosition)
+    }
+
+    /**
+     * 统一长按菜单位置：X 跟手（以手指水平位置居中）；Y 贴条目边缘
+     * （下方有空间就贴下边缘，否则贴下边缘会被挤出屏幕时改贴上边缘）。
+     */
+    private fun showPopupAt(popup: PopupWindow, container: View, anchor: View, useTouchPosition: Boolean) {
+        val density = resources.displayMetrics.density
+        val margin = (8 * density).toInt()
+        val gap = (4 * density).toInt()
         val loc = IntArray(2)
         anchor.getLocationOnScreen(loc)
-        // 先量出菜单尺寸，再以按压点为中心并限制在屏幕内
         container.measure(
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -323,12 +409,134 @@ class BrowserRecordsActivity : BaseActivity() {
         val menuH = container.measuredHeight
         val screenW = resources.displayMetrics.widthPixels
         val screenH = resources.displayMetrics.heightPixels
-        val margin = dp(8)
-        val rawX = if (useTouchPosition) lastTouchX.toInt() - menuW / 2 else loc[0]
-        val rawY = if (useTouchPosition) lastTouchY.toInt() else loc[1] + anchor.height + 4
+        val rawX = if (useTouchPosition) (lastTouchX - menuW / 2f).toInt() else loc[0]
+        val rawY = if (loc[1] + anchor.height + gap + menuH <= screenH - margin) {
+            loc[1] + anchor.height + gap
+        } else {
+            (loc[1] - menuH - gap).coerceAtLeast(margin)
+        }
         val x = rawX.coerceIn(margin, (screenW - menuW - margin).coerceAtLeast(margin))
         val y = rawY.coerceIn(margin, (screenH - menuH - margin).coerceAtLeast(margin))
         popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y)
+    }
+
+    private fun showNewFolderDialog(parentId: String) {
+        val input = EditText(this).apply { hint = "文件夹名称" }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("新建文件夹")
+            .setView(container)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isBlank()) {
+                    toast("名称不能为空")
+                    return@setPositiveButton
+                }
+                BookmarkStore.addFolder(name, parentId)
+                reload()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showRenameFolderDialog(folder: BookmarkStore.Folder) {
+        val input = EditText(this).apply {
+            setText(folder.name)
+            setSelection(folder.name.length)
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("重命名文件夹")
+            .setView(container)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isBlank()) {
+                    toast("名称不能为空")
+                    return@setPositiveButton
+                }
+                BookmarkStore.renameFolder(folder.id, name)
+                reload()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showDeleteFolderConfirm(folder: BookmarkStore.Folder) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("删除文件夹「${folder.name}」")
+            .setMessage("文件夹内的书签和子文件夹将一并删除")
+            .setPositiveButton("删除") { _, _ ->
+                if (BookmarkStore.removeFolder(folder.id)) reload() else toast("内置文件夹不可删除")
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** 逐级浏览文件夹选择移动目标：列表只显示当前层级的子文件夹，可“上一级”返回 */
+    private fun showMoveToDialog(node: Item.BookmarkNode) {
+        val map = BookmarkStore.folders().associateBy { it.id }
+        var currentId = BookmarkStore.ROOT
+
+        fun pathOf(id: String): String {
+            val parts = mutableListOf<String>()
+            var cur = map[id]
+            var guard = 0
+            while (cur != null && guard++ < 20) {
+                parts.add(0, cur.name)
+                cur = map[cur.parentId]
+            }
+            return if (parts.isEmpty()) "根目录" else parts.joinToString(" / ")
+        }
+
+        fun subFoldersOf(id: String) = map.values.filter { it.parentId == id }.sortedBy { it.name }
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf<String>())
+        val listView = ListView(this).apply { this.adapter = adapter }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("移动到…")
+            .setView(listView)
+            .setPositiveButton("移动到此处", null)
+            .setNegativeButton("取消", null)
+            .setNeutralButton("上一级", null)
+            .create()
+
+        fun refresh() {
+            dialog.setTitle("移动到：${pathOf(currentId)}")
+            adapter.clear()
+            adapter.addAll(subFoldersOf(currentId).map { "📁 ${it.name}" })
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = currentId != BookmarkStore.ROOT
+        }
+
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val target = subFoldersOf(currentId).getOrNull(position) ?: return@setOnItemClickListener
+            currentId = target.id
+            refresh()
+        }
+
+        dialog.setOnShowListener {
+            refresh()
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                if (currentId != BookmarkStore.ROOT) {
+                    currentId = map[currentId]?.parentId ?: BookmarkStore.ROOT
+                    refresh()
+                }
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                BookmarkStore.moveBookmark(node.bookmarkId, currentId)
+                toast("已移动到「${pathOf(currentId)}」")
+                dialog.dismiss()
+                reload()
+            }
+        }
+        dialog.show()
     }
 
     private fun dismissRecordMenu() {
@@ -345,29 +553,39 @@ class BrowserRecordsActivity : BaseActivity() {
             notifyDataSetChanged()
         }
 
-        fun recordAt(position: Int): Row? = (data.getOrNull(position) as? Item.Record)?.row
+        fun nodeAt(position: Int): Item.BookmarkNode? = (data.getOrNull(position) as? Item.BookmarkNode)
 
-        /** 拖动调整位置：只允许用户收藏（removable）之间排序 */
+        fun recordAt(position: Int): Row? = nodeAt(position)?.row
+
+        /** 拖动调整位置：仅允许同一文件夹内、用户收藏之间排序 */
         fun move(from: Int, to: Int): Boolean {
             if (from == to) return false
-            val fromItem = data.getOrNull(from) as? Item.Record ?: return false
-            val toItem = data.getOrNull(to) as? Item.Record ?: return false
+            val fromItem = data.getOrNull(from) as? Item.BookmarkNode ?: return false
+            val toItem = data.getOrNull(to) as? Item.BookmarkNode ?: return false
+            if (fromItem.folderId != toItem.folderId) return false
             if (!fromItem.row.removable || !toItem.row.removable) return false
             val item = data.removeAt(from)
             data.add(to, item)
             notifyItemMoved(from, to)
+            val ids = data.filterIsInstance<Item.BookmarkNode>()
+                .filter { it.folderId == fromItem.folderId && it.bookmarkId.isNotEmpty() }
+                .map { it.bookmarkId }
+            BookmarkStore.setOrder(ids)
             return true
         }
 
-        override fun getItemViewType(position: Int): Int =
-            if (data[position] is Item.Header) 0 else 1
+        override fun getItemViewType(position: Int): Int = when (data[position]) {
+            is Item.Header -> 0
+            is Item.BookmarkNode -> 1
+            is Item.Folder -> 2
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             val inflater = LayoutInflater.from(parent.context)
-            return if (viewType == 0) {
-                HeaderHolder(ItemBrowserRecordHeaderBinding.inflate(inflater, parent, false))
-            } else {
-                RecordHolder(ItemBrowserRecordBinding.inflate(inflater, parent, false))
+            return when (viewType) {
+                0 -> HeaderHolder(ItemBrowserRecordHeaderBinding.inflate(inflater, parent, false))
+                1 -> RecordHolder(ItemBrowserRecordBinding.inflate(inflater, parent, false))
+                else -> FolderHolder(ItemBrowserBookmarkFolderBinding.inflate(inflater, parent, false))
             }
         }
 
@@ -376,7 +594,8 @@ class BrowserRecordsActivity : BaseActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             when (val item = data[position]) {
                 is Item.Header -> (holder as HeaderHolder).bind(item)
-                is Item.Record -> (holder as RecordHolder).bind(item.row)
+                is Item.BookmarkNode -> (holder as RecordHolder).bind(item)
+                is Item.Folder -> (holder as FolderHolder).bind(item)
             }
         }
 
@@ -384,10 +603,9 @@ class BrowserRecordsActivity : BaseActivity() {
             RecyclerView.ViewHolder(binding.root) {
             fun bind(item: Item.Header) {
                 binding.tvDay.text = item.day
-                binding.tvArrow.text = if (item.expanded) "▾" else "▸"
+                binding.tvArrow.rotation = if (item.expanded) 90f else 0f
                 binding.root.setOnClickListener {
                     val key = (data[adapterPosition] as? Item.Header)?.day ?: return@setOnClickListener
-                    // 用原始日期 key 记录折叠状态
                     val rawKey = dayKeyOf(item.day)
                     if (!collapsedDays.add(rawKey)) collapsedDays.remove(rawKey)
                     reloadHistory()
@@ -397,17 +615,25 @@ class BrowserRecordsActivity : BaseActivity() {
 
         inner class RecordHolder(val binding: ItemBrowserRecordBinding) :
             RecyclerView.ViewHolder(binding.root) {
-            fun bind(row: Row) {
+            fun bind(node: Item.BookmarkNode) {
+                val density = resources.displayMetrics.density
+                val base = (10 * density).toInt()
+                // 层级缩进作用于整张卡片（含背景），而非仅内容
+                binding.root.layoutParams?.let {
+                    (it as ViewGroup.MarginLayoutParams).marginStart =
+                        (node.depth * 16 * density).toInt()
+                    binding.root.layoutParams = it
+                }
+                binding.content.setPadding(base, (8 * density).toInt(), (4 * density).toInt(), (8 * density).toInt())
+                val row = node.row
                 binding.ivIcon.setImageResource(R.drawable.ic_browser_globe)
                 runCatching { binding.ivIcon.glide(faviconOf(row.url)) }
                 binding.tvTitle.text = row.title.ifBlank { row.url }
                 binding.tvUrl.text = row.url
                 binding.root.setOnClickListener {
-                    // 复用栈内已打开的浏览器，避免新建 Activity 与全局标签共享 WebView
                     EventBus.post(EventKey.OPEN_BROWSER_URL, row.url)
                     finish()
                 }
-                // 记录按压坐标，长按菜单据此在手指附近弹出
                 binding.root.setOnTouchListener { _, event ->
                     if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                         lastTouchX = event.rawX
@@ -416,9 +642,14 @@ class BrowserRecordsActivity : BaseActivity() {
                     false
                 }
                 if (!bookmarksMode) {
-                    // 历史模式：长按弹菜单（收藏夹模式由 ItemTouchHelper 处理）
                     binding.root.setOnLongClickListener {
-                        showRecordMenu(row, binding.root, useTouchPosition = true)
+                        showRecordMenu(node, binding.root, useTouchPosition = true)
+                        true
+                    }
+                } else {
+                    binding.root.setOnLongClickListener {
+                        if (row.removable) itemTouchHelper.startDrag(this)
+                        else showRecordMenu(node, binding.root, useTouchPosition = true)
                         true
                     }
                 }
@@ -426,12 +657,46 @@ class BrowserRecordsActivity : BaseActivity() {
                 binding.btnDelete.setOnClickListener {
                     if (!row.removable) return@setOnClickListener
                     if (bookmarksMode) {
-                        BookmarkStore.remove(row.url)
+                        BookmarkStore.removeById(node.bookmarkId)
                     } else {
-                        // 历史不再去重，按「地址 + 时间」精确删除这一条
                         History.list = History.list.filterNot { it.url == row.url && it.time == row.time }
                     }
                     reload()
+                }
+            }
+        }
+
+        inner class FolderHolder(val binding: ItemBrowserBookmarkFolderBinding) :
+            RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: Item.Folder) {
+                val density = resources.displayMetrics.density
+                val base = (10 * density).toInt()
+                // 层级缩进作用于整张卡片（含背景），而非仅内容
+                binding.root.layoutParams?.let {
+                    (it as ViewGroup.MarginLayoutParams).marginStart =
+                        (item.depth * 16 * density).toInt()
+                    binding.root.layoutParams = it
+                }
+                binding.content.setPadding(base, base, base, base)
+                binding.tvArrow.rotation = if (item.expanded) 90f else 0f
+                binding.tvName.text = item.folder.name
+                binding.tvCount.text = item.childCount.toString()
+                binding.tvCount.visibility = if (item.childCount > 0) View.VISIBLE else View.GONE
+                binding.root.setOnClickListener {
+                    val f = (data[adapterPosition] as? Item.Folder)?.folder ?: return@setOnClickListener
+                    if (!expandedFolderIds.add(f.id)) expandedFolderIds.remove(f.id)
+                    rebuildBookmarkTree()
+                }
+                binding.root.setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        lastTouchX = event.rawX
+                        lastTouchY = event.rawY
+                    }
+                    false
+                }
+                binding.root.setOnLongClickListener {
+                    showFolderMenu(item.folder, binding.root, useTouchPosition = true)
+                    true
                 }
             }
         }
@@ -446,5 +711,4 @@ class BrowserRecordsActivity : BaseActivity() {
             else -> label
         }
     }
-
 }
