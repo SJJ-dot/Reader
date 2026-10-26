@@ -2,6 +2,7 @@ package com.sjianjun.reader.module.bookcity
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.ContextMenu
 import android.webkit.WebView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -53,6 +54,23 @@ class MyWebView @JvmOverloads constructor(
         private set
 
     override fun onCheckIsTextEditor(): Boolean = true
+
+    /**
+     * 屏蔽 WebView 默认的长按上下文菜单（及其“拖拽链接”效果），
+     * 链接（含链接包裹图片）的长按统一走 CustomWebView 的自定义菜单。
+     * 其它类型（图片、输入框等）仍交给默认处理。
+     */
+    override fun onCreateContextMenu(menu: ContextMenu?) {
+        val type = hitTestResult?.type ?: return super.onCreateContextMenu(menu)
+        // 链接（含链接包裹图片）的长按统一走自定义菜单，屏蔽 WebView 默认的
+        // 上下文菜单及其“拖拽链接”效果；其它类型仍交给默认处理
+        if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE ||
+            type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+        ) {
+            return
+        }
+        super.onCreateContextMenu(menu)
+    }
 
     override fun destroy() {
         super.destroy()

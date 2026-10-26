@@ -26,6 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.abs
 import android.view.View
+import android.view.GestureDetector
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -290,7 +291,6 @@ class CustomWebView @JvmOverloads constructor(
         binding.webViewContainer.addView(wv)
         webView = wv
         attachToolbarAutoHide(wv)
-        wv.setOnLongClickListener { showLinkContextMenu(wv) }
         return wv
     }
 
@@ -325,49 +325,64 @@ class CustomWebView @JvmOverloads constructor(
      * - 手指下滑：连续上移；
      * - 抬手：偏移超过一半 → 自动收起，否则回弹显示。
      */
-    private fun attachToolbarAutoHide(wv: WebView) {
-        wv.setOnTouchListener { _, event ->
-            // 设置面板展开时不联动，避免把输入框拖走
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    binding.browserBookCityToolbar.animate().cancel()
-                    toolbarTouchStartY = event.rawY
-                    toolbarTouchLastY = event.rawY
-                    lastTouchX = event.rawX
-                    lastTouchY = event.rawY
-                    toolbarDragging = false
-                    toolbarTracking = true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    if (!toolbarTracking) return@setOnTouchListener false
-                    if (!toolbarDragging) {
-                        // 超过触摸阈值才开始跟手，避免轻点/抖动导致工具栏闪动
-                        if (abs(event.rawY - toolbarTouchStartY) <= toolbarTouchSlop) {
-                            return@setOnTouchListener false
-                        }
-                        toolbarDragging = true
-                        toolbarTouchLastY = event.rawY
-                        // 上滑：先把页面铺满，工具栏再下滑，避免底部露出空白
-                        if (event.rawY < toolbarTouchStartY) {
-                            setContentInsetForToolbarPx(0)
-                        }
-                    } else {
-                        val dy = event.rawY - toolbarTouchLastY
-                        toolbarTouchLastY = event.rawY
-                        if (dy != 0f) dragToolbar(-dy)
-                    }
-                }
-
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (toolbarTracking) {
-                        toolbarTracking = false
-                        if (toolbarDragging) snapToolbar() else snapToShownIfNeeded() 
-                        toolbarDragging = false
-                    }
+    private fun attachToolbarAutoHide(wv: MyWebView) {
+        val gesture = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onLongPress(e: MotionEvent) {
+                // 用长按手势事件的坐标，比按下坐标更准确
+                lastTouchX = e.rawX
+                lastTouchY = e.rawY
+                if (showLinkContextMenu(wv)) {
+                    // 主动取消 WebView 原生长按，避免触发默认的链接拖拽 / 上下文菜单
+                    wv.cancelLongPress()
                 }
             }
+        })
+        wv.setOnTouchListener { _, event ->
+            gesture.onTouchEvent(event)
+            handleToolbarTouch(event)
             false
+        }
+    }
+
+    /** 底部工具栏跟手（仿 Edge）：上滑收起、下滑展开、抬手按阈值吸附 */
+    private fun handleToolbarTouch(event: MotionEvent) {
+        // 设置面板展开时不联动，避免把输入框拖走
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                binding.browserBookCityToolbar.animate().cancel()
+                toolbarTouchStartY = event.rawY
+                toolbarTouchLastY = event.rawY
+                lastTouchX = event.rawX
+                lastTouchY = event.rawY
+                toolbarDragging = false
+                toolbarTracking = true
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (!toolbarTracking) return
+                if (!toolbarDragging) {
+                    // 超过触摸阈值才开始跟手，避免轻点/抖动导致工具栏闪动
+                    if (abs(event.rawY - toolbarTouchStartY) <= toolbarTouchSlop) return
+                    toolbarDragging = true
+                    toolbarTouchLastY = event.rawY
+                    // 上滑：先把页面铺满，工具栏再下滑，避免底部露出空白
+                    if (event.rawY < toolbarTouchStartY) {
+                        setContentInsetForToolbarPx(0)
+                    }
+                } else {
+                    val dy = event.rawY - toolbarTouchLastY
+                    toolbarTouchLastY = event.rawY
+                    if (dy != 0f) dragToolbar(-dy)
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (toolbarTracking) {
+                    toolbarTracking = false
+                    if (toolbarDragging) snapToolbar() else snapToShownIfNeeded()
+                    toolbarDragging = false
+                }
+            }
         }
     }
 
