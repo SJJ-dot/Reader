@@ -51,6 +51,11 @@ object BrowserTabs {
     var onNew: (() -> Unit)? = null
     var onDuplicate: ((Int) -> Unit)? = null
 
+    /** 阅读模式切回浏览器时由阅读模式写入、浏览器 onResume 消费：
+     *  切到来源标签页并加载该 URL（进程内共享，避免 Intent/singleTask 时序问题） */
+    var pendingSwitchTabId: String? = null
+    var pendingSwitchUrl: String? = null
+
     /** 保存标签列表（标题/URL/前进后退栈/选中项），下次进入浏览器恢复 */
     fun persist() {
         val saved = tabs.map { tab ->

@@ -11,12 +11,12 @@
         android:layout_width="56dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="80dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/setting_container"
+        app:layout_constraintBottom_toTopOf="@+id/setting_btn_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/top_bar">
 
@@ -80,12 +80,12 @@
 
     </LinearLayout>
 
-    <com.google.android.flexbox.FlexboxLayout
-        android:id="@+id/flexbox_layout"
+    <!-- 悬浮圆形按钮行（与书源阅读器 reader_fragment_setting_view 一致，id 放在卡片上形成完整链） -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/setting_btn_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="40dp"
         android:layout_marginBottom="16dp"
-        app:justifyContent="space_around"
         app:layout_constraintBottom_toTopOf="@+id/setting_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -95,35 +95,46 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp">
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/day_night"
+            app:layout_constraintHorizontal_chainStyle="spread"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/iv_chapter_directory"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/transparent"
-                android:padding="8dp"
+                android:contentDescription="章节目录"
+                android:padding="6dp"
                 android:scaleType="fitCenter"
-                android:src="@mipmap/ic_history"
+                android:src="@drawable/ic_chapter_list"
                 app:tint="@color/dn_text_color_black" />
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/history_backward"
+            android:id="@+id/day_night"
             android:layout_width="40dp"
             android:layout_height="40dp"
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp">
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/refresh"
+            app:layout_constraintStart_toEndOf="@+id/chapter_directory"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
-                android:id="@+id/iv_history_backward"
+                android:id="@+id/iv_day_night"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/transparent"
-                android:padding="8dp"
-                android:rotation="180"
+                android:contentDescription="日间夜间切换"
+                android:padding="6dp"
                 android:scaleType="fitCenter"
-                android:src="@drawable/browser_navigation_forward" />
+                android:src="@drawable/ic_theme_dark_24px"
+                app:tint="@color/dn_text_color_black" />
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
@@ -131,55 +142,68 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp">
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/screen_rotation"
+            app:layout_constraintStart_toEndOf="@+id/day_night"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/iv_refresh"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/transparent"
-                android:padding="8dp"
+                android:contentDescription="刷新"
+                android:padding="6dp"
                 android:scaleType="fitCenter"
-                android:src="@drawable/browser_navigation_refresh"
+                android:src="@drawable/ic_refresh_white_24dp"
                 app:tint="@color/dn_text_color_black" />
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/history_forward"
+            android:id="@+id/screen_rotation"
             android:layout_width="40dp"
             android:layout_height="40dp"
             app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp">
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_browser"
+            app:layout_constraintStart_toEndOf="@+id/refresh"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
-                android:id="@+id/iv_history_forward"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/transparent"
+                android:contentDescription="横竖屏切换"
                 android:padding="8dp"
                 android:scaleType="fitCenter"
-                android:src="@drawable/browser_navigation_forward" />
-        </com.google.android.material.card.MaterialCardView>
-
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/toggle_web_view"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            app:cardBackgroundColor="@color/dn_reader_setting_btn"
-            app:cardCornerRadius="20dp">
-
-            <ImageView
-                android:id="@+id/iv_toggle_web_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/transparent"
-                android:padding="8dp"
-                android:scaleType="fitCenter"
-                android:src="@mipmap/ic_web_show"
+                android:src="@mipmap/ic_v2h"
                 app:tint="@color/dn_text_color_black" />
         </com.google.android.material.card.MaterialCardView>
-    </com.google.android.flexbox.FlexboxLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/top_bar_browser"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="@color/dn_reader_setting_btn"
+            app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/screen_rotation"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:contentDescription="使用浏览器打开"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@mipmap/ic_browser"
+                app:tint="@color/dn_text_color_black" />
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
     <LinearLayout
@@ -736,36 +760,25 @@
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
-            android:id="@+id/day_night"
+            android:id="@+id/chapter_error"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
             android:padding="9dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_theme_dark_24px"
+            android:scaleType="fitCenter"
+            android:src="@mipmap/ic_flag_error"
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
-            android:id="@+id/top_bar_home"
+            android:id="@+id/cache_chapter"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="?android:attr/selectableItemBackground"
             android:padding="9dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_browser_home"
-            app:tint="@color/dn_text_color_black" />
-
-        <ImageButton
-            android:id="@+id/screen_rotation"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="9dp"
-            android:scaleType="centerInside"
-            android:src="@mipmap/ic_v2h"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_download_24"
             app:tint="@color/dn_text_color_black" />
 
         <ImageButton
@@ -815,18 +828,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/dn_text_color_black" />
 
-        <ImageView
-            android:id="@+id/top_bar_browser"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@mipmap/ic_browser"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/dn_text_color_black" />
-
         <TextView
             android:id="@+id/book_title"
             android:layout_width="0dp"
@@ -843,7 +844,7 @@
             app:autoSizeMinTextSize="14dp"
             app:autoSizeTextType="uniform"
             app:layout_constraintBottom_toBottomOf="@+id/top_bar_back"
-            app:layout_constraintEnd_toStartOf="@+id/top_bar_browser"
+            app:layout_constraintEnd_toStartOf="@+id/top_bar_settings_more"
             app:layout_constraintStart_toEndOf="@+id/top_bar_back"
             app:layout_constraintTop_toTopOf="@+id/top_bar_back"
             tools:text="阅读模式" />

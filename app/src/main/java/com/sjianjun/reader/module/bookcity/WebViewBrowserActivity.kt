@@ -74,16 +74,38 @@ class WebViewBrowserActivity : BaseActivity() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        // 仅 App 整体退到后台时回收标签 WebView；内部页面切换不回收
+        // 仅 App 整体退到后台时回收标签 WebView；内部页面切换不回收。
+        // keepActive=true：保留当前激活标签的 WebView（进程内只留一个），切回时无需重建
         if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
             (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-                    as? BrowserPageFragment)?.onAppBackground()
+                    as? BrowserPageFragment)?.onAppBackground(keepActive = true)
         }
     }
 
     override fun onStop() {
         BrowserTabs.persist()
         super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 阅读模式切回浏览器：消费待切换，切到来源标签并加载当前阅读页（此时 Activity 已可见）
+        val tabId = BrowserTabs.pendingSwitchTabId
+        val url = BrowserTabs.pendingSwitchUrl
+        if (tabId == null || url == null) {
+            Log.i("▶SwitchBrowser onResume pending=null (tabId=$tabId url=$url) -> skip")
+            return
+        }
+        if (url.isBlank()) return
+        Log.i("▶SwitchBrowser onResume consume tabId=$tabId url=$url")
+        BrowserTabs.pendingSwitchTabId = null
+        BrowserTabs.pendingSwitchUrl = null
+        val fragment = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
+            as? BrowserPageFragment ?: run {
+                Log.i("▶SwitchBrowser onResume fragment not found -> skip")
+                return
+            }
+        fragment.switchToSourceTab(tabId, url)
     }
 
     override fun onDestroy() {

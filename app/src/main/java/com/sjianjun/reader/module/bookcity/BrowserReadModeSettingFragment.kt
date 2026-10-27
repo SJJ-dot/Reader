@@ -69,7 +69,6 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
     fun refresh() {
         refreshNavAndProgress()
-        refreshHistoryNavigationState()
         titleText = pageLoader?.curChapter?.title ?: titleText
         val url = pageLoader?.curChapter?.link ?: ""
         binding?.bookTitle?.text = (activity as? BrowserReadModeActivity)?.applyTitleReplacementRules(url, titleText) ?: titleText
@@ -117,9 +116,6 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         b.topBarBrowser.click(10) {
             (activity as? BrowserReadModeActivity)?.openInBrowser(false)
         }
-        b.topBarHome.click(10) {
-            (activity as? BrowserReadModeActivity)?.openInBrowser(true)
-        }
 
         // --- Bottom buttons ---
         // TTS
@@ -154,8 +150,6 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
         initDayNight()
         initRefresh()
-        initToggleWebView()
-        initHistoryNavigation()
         initScreenOrientationMode()
         initFontSize()
         initLineSpacing()
@@ -192,10 +186,11 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
     private fun initChapterNav() {
         val b = binding ?: return
-        b.chapterDirectory.click {
-            (activity as? BrowserReadModeActivity)?.openDrawer()
-            hideSelf()
-        }
+        // 阅读模式不支持的功能：按钮保持正常外观，点击时提示不支持
+        val unsupportedTip = "阅读模式不支持该功能"
+        b.chapterDirectory.click { toast(unsupportedTip) }
+        b.chapterError.click { toast(unsupportedTip) }
+        b.cacheChapter.click { toast(unsupportedTip) }
         b.chapterLast.click {
             if (b.chapterLast.isEnabled) {
                 (activity as? BrowserReadModeActivity)?.gotoPrevChapter()
@@ -214,20 +209,33 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         val loader = pageLoader ?: return
         titleText = loader.curChapter?.title ?: titleText
         b.bookTitle.text = titleText
-        b.chapterLast.text = "上一章"
-        b.chapterNext.text = "下一章"
+        // 按网页匹配到的导航链接文本显示：上一页/下一页 优先于 上一章/下一章（优先级在提取 JS 中处理）
+        val curData = loader.curChapterData
+        b.chapterLast.text = navLabel(curData?.prevText, "上一章")
+        b.chapterNext.text = navLabel(curData?.nextText, "下一章")
         val curPage = loader.pagePos + 1
         val totalPages = loader.curPageList?.size ?: 0
         b.chapterProgress.max = totalPages
         b.chapterProgress.progress = curPage
     }
 
+    /** 根据匹配到的链接文本决定按钮文案；匹配不到时回退到章级文案 */
+    private fun navLabel(text: String?, fallback: String): String {
+        val t = text?.trim().orEmpty()
+        val prev = fallback.startsWith("上")
+        return when {
+            t.contains("页") || t.contains("頁") -> if (prev) "上一页" else "下一页"
+            t.contains("节") || t.contains("節") -> if (prev) "上一节" else "下一节"
+            else -> fallback
+        }
+    }
+
     private fun initDayNight() {
         val b = binding ?: return
         if (appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
-            b.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
+            b.ivDayNight.setImageResource(R.drawable.ic_theme_dark_24px)
         } else {
-            b.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
+            b.ivDayNight.setImageResource(R.drawable.ic_theme_light_24px)
         }
         b.dayNight.click {
             when (appEssentials.appDayNightMode) {
@@ -261,38 +269,6 @@ class BrowserReadModeSettingFragment : BaseFragment() {
         (activity as? BrowserReadModeActivity)?.isHiddenLoading?.observe(viewLifecycleOwner) { loading ->
             b.ivRefresh.isSelected = loading == true
         }
-    }
-
-    private fun initToggleWebView() {
-        val b = binding ?: return
-        b.toggleWebView.click(10) {
-            (activity as? BrowserReadModeActivity)?.toggleHiddenWebViewVisible()
-            hideSelf()
-        }
-    }
-
-    private fun initHistoryNavigation() {
-        val b = binding ?: return
-        b.historyBackward.click(10) {
-            (activity as? BrowserReadModeActivity)?.goBackReadModeHistory()
-            refreshHistoryNavigationState()
-        }
-        b.historyForward.click(10) {
-            (activity as? BrowserReadModeActivity)?.goForwardReadModeHistory()
-            refreshHistoryNavigationState()
-        }
-        refreshHistoryNavigationState()
-    }
-
-    private fun refreshHistoryNavigationState() {
-        val b = binding ?: return
-        val act = activity as? BrowserReadModeActivity
-        val canBack = act?.canGoBackReadModeHistory() == true
-        val canForward = act?.canGoForwardReadModeHistory() == true
-        b.historyBackward.isEnabled = canBack
-        b.historyForward.isEnabled = canForward
-        b.ivHistoryBackward.isEnabled = canBack
-        b.ivHistoryForward.isEnabled = canForward
     }
 
     private fun initBrightnessSetting() {

@@ -87,8 +87,29 @@ class BrowserPageFragment : BaseFragment() {
         }.onFailure { Log.e("保存 WebView 状态失败", it) }
     }
 
-    internal fun onAppBackground() {
-        pageBinding?.customWebView?.onBackground()
+    internal fun onAppBackground(keepActive: Boolean = false) {
+        pageBinding?.customWebView?.onBackground(keepActive)
+    }
+
+    /** 阅读模式切回浏览器：切到来源标签页（找不到则加载到当前激活标签/新建）并加载当前阅读页 */
+    fun switchToSourceTab(tabId: String, url: String) {
+        val idx = BrowserTabs.tabs.indexOfFirst { it.id.toString() == tabId }
+        Log.i("▶SwitchBrowser switchToSourceTab tabId=$tabId url=$url idx=$idx activeIndexBefore=${BrowserTabs.activeIndex} tabsSize=${BrowserTabs.tabs.size}")
+        if (idx >= 0) BrowserTabs.activeIndex = idx
+        val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
+            ?: BrowserTabs.Tab("", url).also {
+                BrowserTabs.tabs.add(it)
+                BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
+            }
+        tab.session.currentUrl = url
+        tab.url = url
+        tab.lastUsedAt = System.currentTimeMillis()
+        if (tab.webView?.url == url) {
+            Log.i("▶SwitchBrowser switchToSourceTab url already shown, skip reload tabIdx=${BrowserTabs.activeIndex} url=$url")
+        } else {
+            Log.i("▶SwitchBrowser switchToSourceTab loadUrl on tabIdx=${BrowserTabs.activeIndex} url=$url webViewAlive=${tab.webView?.isDestroyed == false}")
+            pageBinding?.customWebView?.loadUrl(url)
+        }
     }
 
     override fun onStart() {

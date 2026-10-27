@@ -115,6 +115,8 @@
 
     // 3. 上一章 / 下一章 链接：优先按可见文字匹配（含校验），其次选择器，最后 id/class/aria 匹配
     var prev = '', next = '', prevText = '', nextText = '';
+    // 页级导航（上一页/下一页）独立跟踪，命中时优先于章级（上一章/下一章）
+    var prevPage = '', nextPage = '', prevPageText = '', nextPageText = '';
 
     // 诊断信息：记录每个阶段是否命中，便于排查"上滑加载下一页"等无显式链接场景
     var _debug = {
@@ -226,8 +228,11 @@
     ];
 
     // 同时覆盖单数形式 ("pre"/"nxt") 与中文常见词
-    var prevKeys = ['上頁', '上页', '上一页', '上一节', '上一頁', '上一章', '上章', 'previous', 'prev', 'pre'];
-    var nextKeys = ['下頁', '下页', '下一页', '下一节', '下一頁', '下一章', '下章', 'next', 'nxt'];
+    // 页级关键字（上一页/下一页）与章级关键字（上一章/下一章）分开跟踪，页级优先展示
+    var prevPageKeys = ['上頁', '上页', '上一页', '上一頁'];
+    var nextPageKeys = ['下頁', '下页', '下一页', '下一頁'];
+    var prevKeys = ['上一节', '上一章', '上章', 'previous', 'prev', 'pre'];
+    var nextKeys = ['下一节', '下一章', '下章', 'next', 'nxt'];
     var anchors = document.querySelectorAll('a[href]');
     _debug.anchorsTotal = anchors.length;
 
@@ -267,7 +272,8 @@
     }
 
     // 按可见文字包含匹配，命中后逐个校验原始文字，返回第一个通过校验的关键字
-    function matchTextNav(rawText, aria, keys, direction) {
+    // loose=false 时禁用宽松章级兜底（页级关键字匹配使用，避免章级语义混入页级结果）
+    function matchTextNav(rawText, aria, keys, direction, loose) {
         var t = normalize(rawText);
         for (var ki = 0; ki < keys.length; ki++) {
             var nk = normalize(keys[ki]);
@@ -275,19 +281,31 @@
                 return keys[ki];
             }
         }
-        var loose = matchLooseChapterNav(rawText, aria, direction);
-        if (loose && verifyNavText(rawText, loose)) return loose;
+        if (loose === false) return '';
+        var looseHit = matchLooseChapterNav(rawText, aria, direction);
+        if (looseHit && verifyNavText(rawText, looseHit)) return looseHit;
         return '';
     }
 
     // ===== 阶段 1：文字匹配（优先）=====
-    if (!prev || !next) {
+    // 页级（上一页/下一页）与章级（上一章/下一章）分别跟踪，页级命中后仍继续找章级，
+    // 最终按“页级优先”合并（见 setNavFromScriptTemplate 之后的合并逻辑）
+    if (!prev || !next || !prevPage || !nextPage) {
         for (var k = 0; k < anchors.length; k++) {
             var a = anchors[k];
             var rawText = linkTitleText(a.innerText || a.textContent || '');
             var aria = a.getAttribute('aria-label') || a.getAttribute('title') || '';
             var href = a.getAttribute('href') || '';
             if (!href || href === '#' || /^javascript:/i.test(href)) continue;
+            if (!prevPage) {
+                var prevPageHit = matchTextNav(rawText, aria, prevPageKeys, 'prev', false);
+                if (prevPageHit) {
+                    prevPage = abs(href); prevPageText = rawText;
+                    if (_debug.prevCandidates.length < 10) {
+                        _debug.prevCandidates.push({ text: rawText, href: abs(href), key: prevPageHit });
+                    }
+                }
+            }
             if (!prev) {
                 var prevHit = matchTextNav(rawText, aria, prevKeys, 'prev');
                 if (prevHit) {
@@ -295,6 +313,15 @@
                     _debug.prevHit = 'text'; _debug.prevKeyword = prevHit;
                     if (_debug.prevCandidates.length < 10) {
                         _debug.prevCandidates.push({ text: rawText, href: abs(href), key: prevHit });
+                    }
+                }
+            }
+            if (!nextPage) {
+                var nextPageHit = matchTextNav(rawText, aria, nextPageKeys, 'next', false);
+                if (nextPageHit) {
+                    nextPage = abs(href); nextPageText = rawText;
+                    if (_debug.nextCandidates.length < 10) {
+                        _debug.nextCandidates.push({ text: rawText, href: abs(href), key: nextPageHit });
                     }
                 }
             }
@@ -308,7 +335,7 @@
                     }
                 }
             }
-            if (prev && next) break;
+            if (prev && next && prevPage && nextPage) break;
         }
     }
 
@@ -496,6 +523,16 @@
     // 通过 inline JS 的 prevId/nextId + chapterUrl 模板兜底，并修正"已经是最后一章"这类目录误匹配。
     setNavFromScriptTemplate();
 
+    // ===== 页级导航合并：上一页/下一页 优先于 上一章/下一章 展示 =====
+    if (prevPage) {
+        prev = prevPage; prevText = prevPageText;
+        _debug.prevHit = 'text-page';
+    }
+    if (nextPage) {
+        next = nextPage; nextText = nextPageText;
+        _debug.nextHit = 'text-page';
+    }
+
     function shortText(v, maxLen) {
         var s = (v === undefined || v === null) ? '' : String(v);
         maxLen = maxLen || 180;
@@ -594,6 +631,8 @@
         content: content,
         prev: prev,
         next: next,
+        prevText: prevText,
+        nextText: nextText,
         _debug: buildDebugLines()
     });
 })();

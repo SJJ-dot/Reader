@@ -209,9 +209,12 @@ class CustomWebView @JvmOverloads constructor(
         updateForwardButton()
     }
 
-    /** 切到后台：保存每个标签的 WebView 状态并销毁，释放内存 */
-    fun onBackground() {
+    /** 切到后台：保存每个标签的 WebView 状态并销毁，释放内存。
+     *  keepActive=true 时保留当前激活标签的 WebView（进程内只留一个），切回时无需重建 */
+    fun onBackground(keepActive: Boolean = false) {
+        val keepId = if (keepActive) BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id else null
         BrowserTabs.tabs.forEach { tab ->
+            if (tab.id == keepId) return@forEach
             val wv = tab.webView ?: return@forEach
             tab.url = wv.url ?: tab.url
             tab.title = wv.title?.takeIf { it.isNotBlank() } ?: tab.title
@@ -222,14 +225,27 @@ class CustomWebView @JvmOverloads constructor(
             wv.destroy()
             tab.webView = null
         }
-        webView = null
+        if (keepId == null) webView = null
         BrowserTabs.persist()
     }
 
     /** 回到前台：只恢复当前标签，其余按需恢复 */
     fun onForeground() {
         val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return
-        if (tab.webView?.isDestroyed == false) return
+        if (tab.webView?.isDestroyed == false) {
+            val wv = tab.webView!!
+            // 保留的 WebView 仍存活，但若 tab 期望的 URL 与当前显示不一致
+            // （如阅读模式切回时已把 tab.url 更新为下一章），必须显式 reload，否则会停在旧页面
+            if (tab.url.isNotBlank() && wv.url != tab.url) {
+                Log.i("▶SwitchBrowser onForeground webView alive but url mismatch, reload tab.url=${tab.url} cur=${wv.url}")
+                wv.currentHost = tab.url
+                wv.loadUrl(tab.url)
+            } else {
+                Log.i("▶SwitchBrowser onForeground webView alive, skip reload (tab.url=${tab.url})")
+            }
+            return
+        }
+        Log.i("▶SwitchBrowser onForeground webView destroyed -> reload tab.url=${tab.url} stateNull=${tab.state == null}")
         val wv = createWebView()
         tab.webView = wv
         showOnlyWebView(wv)

@@ -25,6 +25,7 @@ import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.WEB_ID
+import com.sjianjun.reader.module.bookcity.BrowserTabs
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.bean.WebBook
@@ -76,11 +77,14 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** 等待朗读目标页码就绪的最长重试次数（100ms * 30 = 3 秒） */
 private const val MAX_TTS_FOLLOW_WAIT = 30
+private const val SOURCE_TAB_ID = "source_tab_id"
 
 class BrowserReadModeActivity : BaseActivity() {
 
     private val startUrl by lazy { intent.getStringExtra(URL) ?: "" }
     private val webBookId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
+    /** 打开阅读模式时所在浏览器标签页的 id，切回浏览器时据此回到原页面 */
+    private val sourceTabId by lazy { intent.getStringExtra(SOURCE_TAB_ID) }
 
     var webBook: WebBook? = null
     private var needRestore = true
@@ -718,8 +722,29 @@ class BrowserReadModeActivity : BaseActivity() {
             showChapter(webBook?.url ?: startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl
-            val id = webBookId.ifBlank { null }
-            WebViewBrowserActivity.startActivity(this, url = url, id = id ?: "")
+            val idx = BrowserTabs.tabs.indexOfFirst { it.id.toString() == sourceTabId }
+            Log.i("▶SwitchBrowser openInBrowser curChapterLink=$url startUrl=$startUrl sourceTabId=$sourceTabId idx=$idx tabsSize=${BrowserTabs.tabs.size} activeIndex=${BrowserTabs.activeIndex}")
+            if (idx >= 0) {
+                // 来源浏览器标签页存在：更新其 URL 与激活状态
+                val tab = BrowserTabs.tabs[idx]
+                tab.session.currentUrl = url
+                tab.url = url
+                tab.lastUsedAt = System.currentTimeMillis()
+                BrowserTabs.activeIndex = idx
+            }
+            // 始终记录待切换，浏览器回到前台（onResume，已可见）时切到来源标签并加载当前阅读页
+            BrowserTabs.pendingSwitchTabId = sourceTabId
+            BrowserTabs.pendingSwitchUrl = url
+            Log.i("▶SwitchBrowser openInBrowser pending set tabId=$sourceTabId url=$url fromBrowser=${sourceTabId != null}")
+            if (sourceTabId != null) {
+                // 来源是浏览器：阅读模式叠加在浏览器任务之上，直接 finish 即可回到浏览器，
+                // 避免用 startActivity 重新拉起 singleTask 浏览器导致只带到前台、不加载（显示原标签）
+                finish()
+            } else {
+                // 来源不是浏览器（如书架/搜索直接进）：新开浏览器页
+                WebViewBrowserActivity.startActivity(this, url = url, id = webBookId.ifBlank { "" })
+                finish()
+            }
         }
     }
 
@@ -755,13 +780,16 @@ class BrowserReadModeActivity : BaseActivity() {
     fun gotoNextChapter() {
         val currentUrl = pageLoader.curChapter?.link
         val extractedUrl = pageLoader.curChapterData?.nextUrl
+        Log.i("▶SwitchBrowser gotoNextChapter currentUrl=$currentUrl extractedNext=$extractedUrl")
         lifecycleScope.launch {
             val url = extractedUrl ?: currentUrl?.let { getMappedNextUrl(it) }
+            Log.i("▶SwitchBrowser gotoNextChapter resolved url=$url")
             if (url.isNullOrBlank()) {
                 Toast.makeText(this@BrowserReadModeActivity, "没有下一章", Toast.LENGTH_SHORT).show()
                 return@launch
             }
             showChapter(url, pagePos = 0)
+            Log.i("▶SwitchBrowser gotoNextChapter afterShow curChapter.link=${pageLoader.curChapter?.link}")
         }
     }
 
@@ -1109,6 +1137,8 @@ class BrowserReadModeActivity : BaseActivity() {
                         val content = obj.optString("content", "")
                         val prev = obj.optString("prev", "").takeIf { it.isNotBlank() }
                         val next = obj.optString("next", "").takeIf { it.isNotBlank() }
+                        val prevText = obj.optString("prevText", "").takeIf { it.isNotBlank() }
+                        val nextText = obj.optString("nextText", "").takeIf { it.isNotBlank() }
                         if (BuildConfig.DEBUG) {
                             Log.i("extractContent url=$pageUrl title=$title contentLen=${content.length} prev=$prev next=$next ")
 //                            Log.i("extractContent content=$content")
@@ -1129,7 +1159,7 @@ class BrowserReadModeActivity : BaseActivity() {
 //                                )
 //                            }
                         }
-                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next))
+                        if (cont.isActive) cont.resume(ExtractResult(title, content, prev, next, prevText, nextText))
                     } catch (t: Throwable) {
                         Log.e("extractContent err raw=$raw", t)
                         if (cont.isActive) cont.resume(ExtractResult("", "", null, null))
@@ -1328,12 +1358,15 @@ class BrowserReadModeActivity : BaseActivity() {
             return js
         }
 
-        fun startActivity(ctx: Context, url: String, webBookId: String? = null) {
+        fun startActivity(ctx: Context, url: String, webBookId: String? = null, sourceTabId: String? = null) {
             ctx.startActivity(
                 android.content.Intent(ctx, BrowserReadModeActivity::class.java).apply {
                     putExtra(URL, url)
                     if (!webBookId.isNullOrBlank()) {
                         putExtra(WEB_ID, webBookId)
+                    }
+                    if (!sourceTabId.isNullOrBlank()) {
+                        putExtra(SOURCE_TAB_ID, sourceTabId)
                     }
                 }
             )
@@ -1353,4 +1386,6 @@ data class ExtractResult(
     var content: String,
     val prevUrl: String? = null,
     val nextUrl: String? = null,
+    val prevText: String? = null,
+    val nextText: String? = null,
 )
