@@ -2,16 +2,17 @@ package com.sjianjun.reader.module.main
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.MenuItem
 import android.view.View
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.AttrRes
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
@@ -48,6 +49,7 @@ import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.BrowserDataMigration
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.ChineseUtils
+import com.sjianjun.reader.utils.isNight
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
@@ -84,6 +86,7 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ActivityManger.finishSameType(this)
+        // 初始状态栏样式（浅色背景用深色图标）；进入应用后由 applyStatusBarForBrowser 按夜间模式/书城页调整
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
         initBackPressed()
@@ -267,8 +270,11 @@ class MainActivity : BaseActivity() {
      * - 其它页面：恢复 dn_background 底色 + 白色图标（与原来的 SystemBarStyle.dark 一致）。
      */
     private fun applyStatusBarForBrowser(browser: Boolean) {
-        // 状态栏占位颜色：书城用页面底色，其它页面沿用主题的深绿（与原来的观感一致）
-        val barColor = getColor(if (browser) R.color.dn_background_card else R.color.colorPrimaryDark)
+        // 状态栏占位颜色：书城用页面底色；其它页面解析主题属性 colorPrimaryDark
+        // （日间 = 深绿 #0c7e46，夜间主题 AppTheme.Dark 已覆盖为 dn_background 深色），
+        // 不能直接取 R.color.colorPrimaryDark 资源——那是固定绿色，不会随夜间模式切换
+        val barColor = if (browser) getColor(R.color.dn_background_card)
+        else resolveThemeColor(androidx.appcompat.R.attr.colorPrimaryDark)
         binding?.statusBarBg?.setBackgroundColor(barColor)
         val bgColor = getColor(if (browser) R.color.dn_background_card else R.color.dn_background)
         window.setBackgroundDrawable(ColorDrawable(bgColor))
@@ -277,10 +283,16 @@ class MainActivity : BaseActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             window.statusBarColor = Color.TRANSPARENT
         }
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+        // 与决定主题的 isNight 保持同一来源，避免主题/状态栏外观不同步
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars =
-            browser && !night
+            browser && !isNight
+    }
+
+    /** 解析当前主题中的颜色属性（随夜间模式自动切换，如 colorPrimaryDark） */
+    private fun resolveThemeColor(@AttrRes attr: Int): Int {
+        val typedValue = TypedValue()
+        theme.resolveAttribute(attr, typedValue, true)
+        return if (typedValue.resourceId != 0) getColor(typedValue.resourceId) else typedValue.data
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

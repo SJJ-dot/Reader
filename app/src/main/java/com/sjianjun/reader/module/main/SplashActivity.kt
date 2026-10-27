@@ -3,10 +3,8 @@ package com.sjianjun.reader.module.main
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.lifecycle.lifecycleScope
 import com.sjianjun.reader.App
-import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.checkUpdate
@@ -22,10 +20,6 @@ import kotlinx.coroutines.launch
 class SplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(
-            if (appEssentials.appDayNightMode == MODE_NIGHT_YES)
-                R.style.Splash_noBackDark else R.style.Splash_noBack
-        )
         super.onCreate(savedInstanceState)
 
         if (appEssentials.consecutiveCrashes >= FALLBACK_CRASH_THRESHOLD) {
