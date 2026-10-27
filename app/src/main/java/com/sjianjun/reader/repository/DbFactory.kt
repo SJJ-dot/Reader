@@ -19,7 +19,6 @@ import com.sjianjun.reader.bean.ReadingRecord
 import com.sjianjun.reader.bean.ReplacementRule
 import com.sjianjun.reader.bean.SearchHistory
 import com.sjianjun.reader.bean.SourceUrl
-import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.bean.AdBlockHostEntity
 import com.sjianjun.reader.bean.BookmarkEntity
 import com.sjianjun.reader.bean.BookmarkFolderEntity
@@ -35,15 +34,14 @@ import com.sjianjun.reader.repository.dao.ReadingRecordDao
 import com.sjianjun.reader.repository.dao.ReplacementRuleDao
 import com.sjianjun.reader.repository.dao.SearchHistoryDao
 import com.sjianjun.reader.repository.dao.SourceUrlDao
-import com.sjianjun.reader.repository.dao.WebBookDao
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @Database(
-    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, WebBook::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 36,
+    entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
+    version = 37,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -53,7 +51,6 @@ abstract class Db : RoomDatabase() {
     abstract fun chapterContentDao(): ChapterContentDao
     abstract fun readingRecordDao(): ReadingRecordDao
     abstract fun bookSourceDao(): BookSourceDao
-    abstract fun webBookDao(): WebBookDao
     abstract fun replacementRule(): ReplacementRuleDao
     abstract fun sourceUrlDao(): SourceUrlDao
     abstract fun browserDataDao(): BrowserDataDao
@@ -274,6 +271,12 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 广告拦截增加"拦截范围"：顶级域名 / 子域名 / 精确URL
                     db.execSQL("ALTER TABLE `ad_block_host` ADD COLUMN `mode` TEXT NOT NULL DEFAULT 'domain'")
+                }
+            })
+            .addMigrations(object : Migration(36, 37) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 移除网页书架功能：删除已被废弃的 WebBook 表（实体已删除，其余数据保留）
+                    db.execSQL("DROP TABLE IF EXISTS `WebBook`")
                 }
             })
             .build()

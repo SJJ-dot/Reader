@@ -24,11 +24,9 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
-import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.module.bookcity.BrowserTabs
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
-import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.ActivityBrowserReadModeBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
@@ -82,11 +80,9 @@ private const val SOURCE_TAB_ID = "source_tab_id"
 class BrowserReadModeActivity : BaseActivity() {
 
     private val startUrl by lazy { intent.getStringExtra(URL) ?: "" }
-    private val webBookId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
     /** 打开阅读模式时所在浏览器标签页的 id，切回浏览器时据此回到原页面 */
     private val sourceTabId by lazy { intent.getStringExtra(SOURCE_TAB_ID) }
 
-    var webBook: WebBook? = null
     private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
@@ -105,7 +101,6 @@ class BrowserReadModeActivity : BaseActivity() {
     /** 已跟随的朗读位置（页面:段落序号），位置没变就不重复定位重绘 */
     private var ttsFollowKey: String = ""
 
-    private var updateWebBookJob: Job? = null
 
     /** 阅读模式本次打开后的内存历史记录，不落盘。 */
     val readModeHistory = mutableListOf<HistoryItem>()
@@ -119,7 +114,6 @@ class BrowserReadModeActivity : BaseActivity() {
     @Volatile
     private var cachedReplacementRules: List<com.sjianjun.reader.bean.ReplacementRule> = emptyList()
 
-    private val webDao get() = com.sjianjun.reader.repository.DbFactory.db.webBookDao()
 
     val pageLoader get() = binding.readModePageView.pageLoader!!
 
@@ -177,8 +171,6 @@ class BrowserReadModeActivity : BaseActivity() {
         applyPageStyle()
         applyTextSize()
         lifecycleScope.launch {
-            // 加载关联的 WebBook
-            loadWebBook()
             showChapter(startUrl)
         }
         binding.refresh.click {
@@ -195,7 +187,7 @@ class BrowserReadModeActivity : BaseActivity() {
             toggleHiddenWebViewVisible()
         }
         binding.home.click {
-            binding.hiddenWebView.loadUrl(webBook?.url ?: startUrl)
+            binding.hiddenWebView.loadUrl(startUrl)
         }
         binding.backward.click {
             showReadModePageView()
@@ -258,7 +250,7 @@ class BrowserReadModeActivity : BaseActivity() {
             forwardHistoryStack.clear()
         }
         readModeHistory.removeAll { it.url == url }
-        val title = data.title.ifBlank { webBook?.title ?: url }
+        val title = data.title.ifBlank { url }
         readModeHistory.add(HistoryItem(title, url))
         readModeHistory.sortDescending()
         while (readModeHistory.size > 100) {
@@ -414,7 +406,6 @@ class BrowserReadModeActivity : BaseActivity() {
 
                 override fun onBookRecordChange(bean: BookRecordBean) {
                     val curChapter = loader.curChapter ?: return
-                    updateWebBookProgress(curChapter.link, bean)
                     notifySettingFragmentChanged()
                 }
             })
@@ -605,41 +596,7 @@ class BrowserReadModeActivity : BaseActivity() {
 
     // ==================== Content Extraction ====================
 
-    private suspend fun loadWebBook() {
-        if (webBookId.isBlank()) return
-        try {
-            webBook = webDao.getWebBookById(webBookId).firstOrNull()
-        } catch (e: Exception) {
-            Log.e("loadWebBook error", e)
-        }
-    }
 
-    /** 如果当前 URL 与 WebBook 同域名，更新阅读进度（lastUrl/lastTitle/updateTime） */
-    private fun updateWebBookProgress(url: String, bean: BookRecordBean? = null) {
-        val book = webBook ?: return
-        val data = extractCache.get(url) ?: return
-        val urlHost = url.toHttpUrlOrNull()?.topPrivateDomain()
-        val bookHost = book.url.toHttpUrlOrNull()?.topPrivateDomain()
-        if (urlHost == null || bookHost == null || urlHost != bookHost) return
-        val offest = bean?.pagePos ?: 0
-        val scrollOffset = bean?.scrollOffset ?: 0
-        val change = (book.lastUrl != url) || (book.lastTitle != data.title) || (book.offest != offest) || (book.scrollOffset != scrollOffset)
-        if (!change) return
-        updateWebBookJob?.cancel()
-        updateWebBookJob = lifecycleScope.launch(Dispatchers.IO) {
-            book.offest = offest
-            book.scrollOffset = scrollOffset
-            book.lastUrl = url
-            book.lastTitle = data.title.ifBlank { book.lastTitle }
-            book.updateTime = System.currentTimeMillis()
-            try {
-                webDao.insertWebBook(book)
-                Log.i("updateWebBookProgress: updated webBook progress for url=$url, title=${data.title}")
-            } catch (e: Exception) {
-                Log.e("updateWebBookProgress error", e)
-            }
-        }
-    }
 
     suspend fun loadUrlForReadMode(url: String, force: Boolean = false, pagePos: Int? = null) {
         val data = if (!force) (extractCache.get(url) ?: loadExtractFromDisk(url)) else null
@@ -719,7 +676,7 @@ class BrowserReadModeActivity : BaseActivity() {
             readModeHistory.clear()
             forwardHistoryStack.clear()
             notifyChapterDialogChanged()
-            showChapter(webBook?.url ?: startUrl)
+            showChapter(startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl
             val idx = BrowserTabs.tabs.indexOfFirst { it.id.toString() == sourceTabId }
@@ -742,7 +699,7 @@ class BrowserReadModeActivity : BaseActivity() {
                 finish()
             } else {
                 // 来源不是浏览器（如书架/搜索直接进）：新开浏览器页
-                WebViewBrowserActivity.startActivity(this, url = url, id = webBookId.ifBlank { "" })
+                WebViewBrowserActivity.startActivity(this, url = url)
                 finish()
             }
         }
@@ -825,20 +782,12 @@ class BrowserReadModeActivity : BaseActivity() {
         val pageChanged = pageLoader.curChapter?.link != url
 
         val book = Book().apply {
-            this.url = webBook?.url ?: url.ifBlank { "browser://reader" }
-            this.title = webBook?.title ?: "浏览器阅读模式"
+            this.url = url.ifBlank { "browser://reader" }
+            this.title = "浏览器阅读模式"
         }
 
-        val wb = webBook
         val record = BookRecordBean()
-        if (wb?.lastUrl == url && needRestore && data != null) {
-            needRestore = false
-            record.apply {
-                this.bookId = book.id
-                this.pagePos = wb.offest
-                this.scrollOffset = wb.scrollOffset
-            }
-        } else if (pagePos != null) {
+        if (pagePos != null) {
             if (data != null) {
                 needRestore = false
             }
@@ -1358,13 +1307,10 @@ class BrowserReadModeActivity : BaseActivity() {
             return js
         }
 
-        fun startActivity(ctx: Context, url: String, webBookId: String? = null, sourceTabId: String? = null) {
+        fun startActivity(ctx: Context, url: String, sourceTabId: String? = null) {
             ctx.startActivity(
                 android.content.Intent(ctx, BrowserReadModeActivity::class.java).apply {
                     putExtra(URL, url)
-                    if (!webBookId.isNullOrBlank()) {
-                        putExtra(WEB_ID, webBookId)
-                    }
                     if (!sourceTabId.isNullOrBlank()) {
                         putExtra(SOURCE_TAB_ID, sourceTabId)
                     }

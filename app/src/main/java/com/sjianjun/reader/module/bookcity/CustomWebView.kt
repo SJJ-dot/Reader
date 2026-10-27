@@ -42,7 +42,6 @@ import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
-import com.sjianjun.reader.bean.WebBook
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.R
@@ -50,7 +49,6 @@ import com.sjianjun.reader.databinding.CustomWebViewBinding
 import com.sjianjun.reader.databinding.DialogBrowserMenuBinding
 import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
-import com.sjianjun.reader.module.shelf.WebShelfViewModel
 import com.sjianjun.reader.databinding.DialogBrowserAddressBinding
 import com.sjianjun.reader.preferences.DelegateSharedPref
 import com.sjianjun.reader.preferences.dataPref
@@ -82,7 +80,6 @@ class CustomWebView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0,
 ) : FrameLayout(context, attrs, defStyleAttr) {
     internal var lifecycleScope: LifecycleCoroutineScope? = null
-    var webBook: WebBook? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     var adBlock: AdBlock? = null
     val history = MutableLiveData<List<HistoryItem>>()
@@ -161,8 +158,7 @@ class CustomWebView @JvmOverloads constructor(
         return if (crossOriginOverride >= 0) crossOriginOverride else globalConfig.crossOriginMode
     }
 
-    fun init(owner: LifecycleOwner, adBlock: AdBlock, webBook: WebBook?) {
-        this.webBook = webBook
+    fun init(owner: LifecycleOwner, adBlock: AdBlock) {
         this.adBlock = adBlock
 
         initView()
@@ -897,6 +893,16 @@ class CustomWebView @JvmOverloads constructor(
             setBackgroundResource(R.drawable.bg_popup_menu)
             setPadding(0, dp(6), 0, dp(6))
         }
+        // 菜单顶部显示链接（单行省略），便于确认当前长按的网址
+        val linkText = TextView(context).apply {
+            text = url
+            textSize = 12f
+            setTextColor(textColor)
+            setPadding(dp(16), dp(10), dp(16), dp(4))
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        container.addView(linkText)
         fun addItem(label: String, onClick: () -> Unit) {
             container.addView(TextView(context).apply {
                 text = label
@@ -973,7 +979,7 @@ class CustomWebView @JvmOverloads constructor(
         }
     }
 
-    private fun homeUrl(): String = webBook?.url ?: globalConfig.bookCityUrl
+    private fun homeUrl(): String = globalConfig.bookCityUrl
 
     /** 标签数达到上限时，回收最久未使用（非当前）的标签，信息已随列表落盘 */
     private fun ensureTabCapacity() {
@@ -1556,7 +1562,7 @@ class CustomWebView @JvmOverloads constructor(
         binding.tabsButton.click { openTabsManager() }
         binding.home.click {
             Log.i("回到首页")
-            val home = webBook?.url ?: globalConfig.bookCityUrl
+            val home = globalConfig.bookCityUrl
             loadUrl(home)
         }
         // 长按主页：把当前页设为书城/新窗口的默认主页

@@ -44,7 +44,7 @@
     <fragment
         android:id="@+id/webShelfFragment"
         android:name="com.sjianjun.reader.module.shelf.WebShelfFragment"
-        android:label="网页"
+        android:label="标签"
         tools:layout="@layout/fragment_web_shelf" />
 
 </navigation>

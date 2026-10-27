@@ -19,9 +19,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
-import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.adapter.BaseAdapter
-import com.sjianjun.reader.bean.WebBook
 import com.sjianjun.reader.databinding.FragmentBookCityPageBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHistoryItemBinding
 import com.sjianjun.reader.databinding.FragmentBookCityPageHostItemBinding
@@ -49,7 +47,6 @@ class BrowserPageFragment : BaseFragment() {
     private val vm by viewModels<BookCityViewModel>()
     private var url: String? = null
     private val adBlock: AdBlock = AdBlock
-    private var webBook: WebBook? = null
     private var crossOriginMode: Int = -1
     private var pageBinding: FragmentBookCityPageBinding? = null
 
@@ -130,11 +127,6 @@ class BrowserPageFragment : BaseFragment() {
 
     private suspend fun init(bind: FragmentBookCityPageBinding) {
         bind.apply {
-            val webId = arguments?.getString(WEB_ID)
-            if (webId?.isNotBlank() == true) {
-                webBook = vm.getWebBookById(webId).firstOrNull()
-                url = webBook?.lastUrl ?: webBook?.url
-            }
             if (url == null) {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
@@ -149,7 +141,7 @@ class BrowserPageFragment : BaseFragment() {
             crossOriginMode = arguments?.getInt(CROSS_ORIGIN_MODE) ?: -1
 
             customWebView.crossOriginOverride = crossOriginMode
-            customWebView.init(viewLifecycleOwner, adBlock, webBook)
+            customWebView.init(viewLifecycleOwner, adBlock)
             // 菜单「退出」：独立浏览器里结束 Activity；内嵌在首页时只回到书架，避免退出整个 App
             customWebView.onExitRequest = {
                 val act = requireActivity()
@@ -295,11 +287,10 @@ class BrowserPageFragment : BaseFragment() {
         private const val KEY_RESTORE_TABS = "restore_tabs"
 
         @JvmStatic
-        fun newInstance(url: String, webId: String = "", crossOriginMode: Int = -1, restoreTabs: Boolean = false) =
+        fun newInstance(url: String, crossOriginMode: Int = -1, restoreTabs: Boolean = false) =
             BrowserPageFragment().apply {
                 arguments = Bundle().apply {
                     putString(URL, url)
-                    putString(WEB_ID, webId)
                     putInt(CROSS_ORIGIN_MODE, crossOriginMode)
                     putBoolean(KEY_RESTORE_TABS, restoreTabs)
                 }

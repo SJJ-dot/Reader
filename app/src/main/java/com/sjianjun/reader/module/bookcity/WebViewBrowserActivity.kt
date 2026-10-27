@@ -15,13 +15,11 @@ import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
 import com.sjianjun.reader.URL
-import com.sjianjun.reader.WEB_ID
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
 import sjj.alog.Log
 
 class WebViewBrowserActivity : BaseActivity() {
     private val url by lazy { intent.getStringExtra(URL) ?: "" }
-    private val webId by lazy { intent.getStringExtra(WEB_ID) ?: "" }
     private val crossOriginMode by lazy { intent.getIntExtra(CROSS_ORIGIN_MODE, -1) }
     /** 是否恢复上次的标签列表：仅书城主入口为 true，字典/搜索等外部打开为 false */
     private val restoreTabs by lazy { intent.getBooleanExtra(RESTORE_TABS, false) }
@@ -30,7 +28,7 @@ class WebViewBrowserActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (url.isBlank() && webId.isBlank()) {
+        if (url.isBlank()) {
             Log.e("URL is empty, finish activity")
             finish()
             return
@@ -66,7 +64,7 @@ class WebViewBrowserActivity : BaseActivity() {
         }
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, webId, crossOriginMode, restoreTabs))
+                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, crossOriginMode, restoreTabs))
                 .commitNowAllowingStateLoss()
         }
 
@@ -125,16 +123,21 @@ class WebViewBrowserActivity : BaseActivity() {
     companion object {
         const val RESTORE_TABS = "restore_tabs"
 
-        fun startActivity(ctx: Context, url: String = "", id: String = "", crossOriginMode: Int = -1) {
-            if (url.isEmpty() && id.isBlank()) {
+        fun startActivity(
+            ctx: Context,
+            url: String = "",
+            crossOriginMode: Int = -1,
+            restoreTabs: Boolean = false
+        ) {
+            if (url.isEmpty()) {
                 Log.e("URL is empty, cannot start BrowserReaderActivity")
                 return
             }
             ctx.startActivity(
                 Intent(ctx, WebViewBrowserActivity::class.java).apply {
                     putExtra(URL, url)
-                    putExtra(WEB_ID, id)
                     putExtra(CROSS_ORIGIN_MODE, crossOriginMode)
+                    putExtra(RESTORE_TABS, restoreTabs)
                 }
             )
         }
