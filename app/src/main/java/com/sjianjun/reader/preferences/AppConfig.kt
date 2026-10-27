@@ -2,7 +2,6 @@ package com.sjianjun.reader.preferences
 
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import com.sjianjun.reader.bean.FontInfo
-import com.sjianjun.reader.bean.ReleasesInfo
 import com.sjianjun.reader.bean.SourceUrl
 import com.sjianjun.reader.module.bookcity.HostStr
 import com.sjianjun.reader.module.reader.ReaderClickAreaAction
@@ -21,18 +20,6 @@ class AppConfig(val name: String) :
     val readerClickAreaActions by lazy {
         dataLivedata("readerClickAreaActions", ReaderClickAreaAction.defaultConfig())
     }
-
-    /**
-     * github 发布的版本信息
-     */
-    var releasesInfo by dataPref<ReleasesInfo?>("releasesInfo_new222", null)
-
-    /**
-     * 用户忽略的版本号，该版本不再自动提示更新
-     */
-    var ignoredUpdateVersion by strPref("ignoredUpdateVersion", null)
-
-    var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
 
     /**
      * 阅读器 内容字体大小 、章节名称+4

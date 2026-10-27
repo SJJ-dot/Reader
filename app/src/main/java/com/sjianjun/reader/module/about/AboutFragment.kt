@@ -20,6 +20,7 @@ import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.module.main.AppHelpActivity
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.AppInfoUtil
 import com.sjianjun.reader.utils.checkUpdate
@@ -38,7 +39,7 @@ class AboutFragment : BaseFragment() {
     private var webView: WebView? = null
 
     private val apkUrl: String
-        get() = globalConfig.releasesInfo?.downloadApkUrl?.takeIf { it.isNotBlank() } ?: ""
+        get() = appEssentials.releasesInfo?.downloadApkUrl?.takeIf { it.isNotBlank() } ?: ""
 
     override fun getLayoutRes() = R.layout.main_fragment_about
 
@@ -71,7 +72,7 @@ class AboutFragment : BaseFragment() {
 
         if (globalConfig.autoCheckUpdate.value == true) {
             launch(singleCoroutineKey = "checkUpdate") {
-                checkUpdate(requireActivity())
+                checkUpdate()
                 injectData(wv)
             }
         }
@@ -87,7 +88,7 @@ class AboutFragment : BaseFragment() {
     private fun injectData(target: WebView?) {
         target ?: return
         val currentVersion = AppInfoUtil.versionName()
-        val latestVersion = globalConfig.releasesInfo?.lastVersion ?: ""
+        val latestVersion = appEssentials.releasesInfo?.lastVersion ?: ""
         val json = JSONObject().apply {
             put("version", currentVersion)
             put("latestVersion", latestVersion)
@@ -146,7 +147,7 @@ class AboutFragment : BaseFragment() {
         fun checkUpdate() {
             requireActivity().runOnUiThread {
                 launch(singleCoroutineKey = "checkUpdate") {
-                    checkUpdate(requireActivity())
+                    checkUpdate()
                     injectData(webView)
                 }
             }

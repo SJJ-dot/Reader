@@ -13,7 +13,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.sjianjun.reader.GlideApp
 import com.sjianjun.reader.R
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.preferences.appEssentials
 import sjj.alog.Log
 
 
@@ -42,7 +42,7 @@ fun ImageView.glide(url: String?) {
                 dataSource: DataSource,
                 isFirstResource: Boolean
             ): Boolean {
-                if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                if (appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
                     val wrappedDrawable = DrawableCompat.wrap(resource)
                     val colorMatrix = ColorMatrix()
                     colorMatrix.setScale(0.5f, 0.5f, 0.5f, 1.0f)

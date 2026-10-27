@@ -68,7 +68,7 @@
             android:value="portrait|landscape" />
 
         <activity
-            android:name=".module.main.MainActivity"
+            android:name=".module.main.SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -76,6 +76,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".module.main.MainActivity"
+            android:exported="false" />
         <activity android:name=".module.script.EditJavaScriptActivity" />
         <activity
             android:name=".module.reader.activity.FileImportActivity"

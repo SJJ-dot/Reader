@@ -2,7 +2,8 @@ package com.sjianjun.reader.view
 
 import androidx.appcompat.widget.LinearLayoutCompat
 import com.sjianjun.reader.databinding.AppUpdateDialogUpdateBinding
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.preferences.appEssentials
+import com.sjianjun.reader.utils.UpdateSettleBridge
 import com.sjianjun.reader.utils.gone
 import com.sjianjun.reader.utils.activity
 
@@ -20,12 +21,16 @@ class AppUpdateDialogUpdate : LinearLayoutCompat {
         val binding = AppUpdateDialogUpdateBinding.bind(this)
         binding.ibClose.gone()
         binding.ibClose2.click {
+            // 关闭弹窗：触发收尾回调（进入主页/退出更新进程），并关闭库的弹窗 Activity
+            UpdateSettleBridge.fire()
             activity?.finish()
         }
         binding.tvIgnore.click {
-            globalConfig.releasesInfo?.lastVersion?.let {
-                globalConfig.ignoredUpdateVersion = it
+            appEssentials.releasesInfo?.lastVersion?.let {
+                appEssentials.ignoredUpdateVersion = it
             }
+            // 忽略本次更新：同样触发收尾回调，并关闭库的弹窗 Activity
+            UpdateSettleBridge.fire()
             activity?.finish()
         }
     }

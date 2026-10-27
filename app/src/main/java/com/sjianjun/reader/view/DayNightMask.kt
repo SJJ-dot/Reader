@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.utils.act
 import com.sjianjun.reader.utils.color
 
@@ -25,7 +25,7 @@ class DayNightMask @JvmOverloads constructor(
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onResume() {
-        if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+        if (appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES) {
             setBackgroundColor("#88000000".color)
         } else {
             setBackgroundColor(Color.TRANSPARENT)

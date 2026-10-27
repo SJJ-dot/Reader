@@ -24,23 +24,41 @@ import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
+import com.sjianjun.reader.handleDefaultException
+import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.bookcity.BrowserPageFragment
 import com.sjianjun.reader.module.bookcity.BrowserSession
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.python.DnsWarmUp
 import com.sjianjun.reader.repository.BookSourceUseCase
+import com.sjianjun.reader.repository.BookUseCase
+import com.sjianjun.reader.repository.BrowserDataMigration
 import com.sjianjun.reader.utils.ActivityManger
-import com.sjianjun.reader.utils.checkUpdate
+import com.sjianjun.reader.utils.ChineseUtils
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import sjj.alog.Config
+import sjj.alog.Log
+import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
+private var first = true
 
 class MainActivity : BaseActivity() {
     var binding: ActivityMainBinding? = null
@@ -68,16 +86,11 @@ class MainActivity : BaseActivity() {
         ActivityManger.finishSameType(this)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
-        if (globalConfig.autoCheckUpdate.value == true) {
-            launchIo {
-                checkUpdate(this@MainActivity, false)
-            }
-        }
         initBackPressed()
         globalConfig.privacyPolicyAccepted.observe(this) {
             if (it) {
                 globalConfig.privacyPolicyAccepted.removeObservers(this)
-                App.app.initialize()
+                initialize()
                 init()
                 launchIo {
                     BookSourceUseCase.autoImport()
@@ -91,7 +104,39 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun initialize() {
+        if (globalConfig.privacyPolicyAccepted.value != true) return
+        if (!first) return
+        first = false
+        handleDefaultException(this)
+        Config.getDefaultConfig().apply {
+            consolePrintEnable = BuildConfig.DEBUG
+            deleteOldLogFile = true
+            consolePrintAllLog = true
+            writeToFile = false
+            writeToFileDir = File(applicationContext.externalCacheDir, "alog")
+        }
+        Python.start(AndroidPlatform(applicationContext))
+        DnsWarmUp.start()
+        when (globalConfig.readerJianFanMode.value) {
+            1 -> {
+                ChineseUtils.fixT2sDict()
+                ChineseUtils.preLoad(true, TransType.SIMPLE_TO_TRADITIONAL)
+            }
 
+            2 -> ChineseUtils.preLoad(true, TransType.TRADITIONAL_TO_SIMPLE)
+        }
+        BrowserDataMigration.migrateIfNeeded()
+        AdBlock.preload()
+        App.app.appScope.launch(Dispatchers.IO) {
+            runCatching { BookUseCase.resetBookLoadingState() }
+                .onFailure { Log.e("重置书籍加载状态失败", it) }
+        }
+        App.app.appScope.launch {
+            delay(5000.milliseconds)
+            appEssentials.consecutiveCrashes = 0
+        }
+    }
     private fun init() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding?.root)
@@ -187,16 +232,16 @@ class MainActivity : BaseActivity() {
             insets
         }
         binding?.navUi?.getHeaderView(0)?.apply {
-            if (globalConfig.appDayNightMode == MODE_NIGHT_NO) {
+            if (appEssentials.appDayNightMode == MODE_NIGHT_NO) {
                 headerBinding.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
             } else {
                 headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
             }
             headerBinding.dayNight.click {
-                when (globalConfig.appDayNightMode) {
+                when (appEssentials.appDayNightMode) {
                     MODE_NIGHT_NO -> {
                         headerBinding.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
-                        globalConfig.appDayNightMode = MODE_NIGHT_YES
+                        appEssentials.appDayNightMode = MODE_NIGHT_YES
                         setDefaultNightMode(MODE_NIGHT_YES)
                         //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                         globalConfig.readerPageStyle.postValue(globalConfig.lastDarkTheme.value)
@@ -204,7 +249,7 @@ class MainActivity : BaseActivity() {
 
                     else -> {
                         headerBinding.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
-                        globalConfig.appDayNightMode = MODE_NIGHT_NO
+                        appEssentials.appDayNightMode = MODE_NIGHT_NO
                         setDefaultNightMode(MODE_NIGHT_NO)
                         //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
                         globalConfig.readerPageStyle.postValue(globalConfig.lastLightTheme.value)
@@ -274,6 +319,7 @@ class MainActivity : BaseActivity() {
     }
 
     private var lastTime = 0L
+
     fun initBackPressed() {
         setOnBackPressed {
             if (binding?.drawerLayout?.isDrawerOpen(GravityCompat.START) == true) {

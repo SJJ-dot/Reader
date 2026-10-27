@@ -50,6 +50,7 @@ import com.sjianjun.reader.event.EventBus
 import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.module.main.BookSourceListFragment
 import com.sjianjun.reader.module.reader.activity.BookReaderViewModel
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.color
@@ -666,16 +667,16 @@ class BookReaderSettingFragment : BaseFragment() {
     }
 
     private fun initDayNight() {
-        if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
+        if (appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
             binding?.ivDayNight?.setImageResource(R.drawable.ic_theme_dark_24px)
         } else {
             binding?.ivDayNight?.setImageResource(R.drawable.ic_theme_light_24px)
         }
         binding?.dayNight?.click {
-            when (globalConfig.appDayNightMode) {
+            when (appEssentials.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_light_24px)
-                    globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
+                    appEssentials.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
                     //切换成深色模式。阅读器样式自动调整为上一次的深色样式
                     globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value!!)
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -683,7 +684,7 @@ class BookReaderSettingFragment : BaseFragment() {
 
                 else -> {
 //                    day_night.setImageResource(R.drawable.ic_theme_dark_24px)
-                    globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
+                    appEssentials.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
                     //切换成浅色模式。阅读器样式自动调整为上一次的浅色样式
                     globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value!!)
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)

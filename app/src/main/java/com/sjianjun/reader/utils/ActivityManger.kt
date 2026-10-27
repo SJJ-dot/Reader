@@ -75,5 +75,7 @@ object ActivityManger {
         }
     }
 
-
+    fun getTopActivity(): Activity? {
+        return activityList.lastOrNull()
+    }
 }

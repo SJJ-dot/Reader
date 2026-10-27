@@ -33,6 +33,7 @@ import com.sjianjun.reader.tts.TtsPlaybackMode
 import com.sjianjun.reader.module.reader.ReaderClickAreaSettingDialogFragment
 import com.sjianjun.reader.module.reader.ReplacementRuleListDialogFragment
 import com.sjianjun.reader.module.reader.SettingTtsDialogFragment
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 
 import com.sjianjun.reader.utils.color
@@ -223,21 +224,21 @@ class BrowserReadModeSettingFragment : BaseFragment() {
 
     private fun initDayNight() {
         val b = binding ?: return
-        if (globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
+        if (appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_NO) {
             b.dayNight.setImageResource(R.drawable.ic_theme_dark_24px)
         } else {
             b.dayNight.setImageResource(R.drawable.ic_theme_light_24px)
         }
         b.dayNight.click {
-            when (globalConfig.appDayNightMode) {
+            when (appEssentials.appDayNightMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> {
-                    globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
+                    appEssentials.appDayNightMode = AppCompatDelegate.MODE_NIGHT_YES
                     globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value!!)
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 }
 
                 else -> {
-                    globalConfig.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
+                    appEssentials.appDayNightMode = AppCompatDelegate.MODE_NIGHT_NO
                     globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value!!)
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 }

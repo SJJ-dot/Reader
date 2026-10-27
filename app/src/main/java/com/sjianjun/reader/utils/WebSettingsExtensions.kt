@@ -10,6 +10,7 @@ import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import sjj.alog.Log
 
@@ -18,7 +19,7 @@ import sjj.alog.Log
  */
 @SuppressLint("RequiresFeature")
 fun WebSettings.setDarkening() {
-    val isNight = globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES
+    val isNight = appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         kotlin.runCatching {
             WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, isNight)

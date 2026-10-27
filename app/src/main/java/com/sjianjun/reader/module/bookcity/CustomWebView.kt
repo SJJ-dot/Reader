@@ -63,6 +63,7 @@ import com.sjianjun.reader.utils.hide
 import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.utils.copyToClipboard
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.showKeyboard
@@ -1137,7 +1138,7 @@ class CustomWebView @JvmOverloads constructor(
                     android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                     android.content.res.Configuration.UI_MODE_NIGHT_YES
             val target = if (night) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
-            globalConfig.appDayNightMode = target
+            appEssentials.appDayNightMode = target
             AppCompatDelegate.setDefaultNightMode(target)
         }
         b.menuExit.click {

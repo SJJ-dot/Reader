@@ -31,6 +31,7 @@ import com.sjianjun.reader.databinding.MainFragmentBookSourceListBinding
 import com.sjianjun.reader.databinding.MainItemBookSourceCompareBinding
 import com.sjianjun.reader.databinding.MainItemFragmentBookSourceListBinding
 import com.sjianjun.reader.module.search.SearchViewModel
+import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.fragmentCreate
@@ -291,7 +292,7 @@ class BookSourceListFragment : BaseFragment() {
                 } else {
                     binding.root.setCardBackgroundColor(R.color.dn_background_card.color(fragment.context))
                 }
-                val isNight = globalConfig.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES
+                val isNight = appEssentials.appDayNightMode == AppCompatDelegate.MODE_NIGHT_YES
                 val isCurrent = book.id == book.record?.bookId
                 if (isCurrent && !isNight) {
                     binding.bookName.setTextColor(R.color.mdr_white.color(fragment.context))
