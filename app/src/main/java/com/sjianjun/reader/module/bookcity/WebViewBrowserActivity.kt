@@ -59,7 +59,9 @@ class WebViewBrowserActivity : BaseActivity() {
         if (savedInstanceState != null) {
             // Activity 重建后旧标签的 WebView 已失效，只清引用，保留标签列表
             BrowserTabs.detachWebViews()
-        } else if (restoreTabs) {
+        } else {
+            // 始终从持久化恢复标签列表：阅读器/搜索/字典等外部打开也先恢复，
+            // 避免从空列表开始把已存的标签页覆盖或清空（标签只由用户主动新建/关闭）
             BrowserTabs.restore()
         }
         if (savedInstanceState == null) {
@@ -80,9 +82,28 @@ class WebViewBrowserActivity : BaseActivity() {
         }
     }
 
+    override fun onPause() {
+        // 提前落盘：防止被系统回收（如划掉最近任务）时丢失内存中的标签
+        BrowserTabs.persist()
+        super.onPause()
+    }
+
     override fun onStop() {
+        // 退出浏览器（返回/划掉最近任务）时先给当前激活标签截图，再落盘
+        (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
+                as? BrowserPageFragment)?.captureActiveTabThumb()
         BrowserTabs.persist()
         super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val newUrl = intent.getStringExtra(URL).orEmpty()
+        if (newUrl.isBlank()) return
+        // 浏览器已存活（singleTask）：复用当前激活标签导航到传入 URL，绝不新建标签
+        val fragment = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
+            as? BrowserPageFragment ?: return
+        fragment.openUrlInCurrentTab(newUrl)
     }
 
     override fun onResume() {

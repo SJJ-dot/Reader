@@ -183,6 +183,10 @@ class CustomWebView @JvmOverloads constructor(
         Log.i("loadUrl:$url ")
         showToolbar()
         if (BrowserTabs.tabs.isEmpty()) {
+            // 内存为空时先从持久化恢复，避免重复新建把已存标签覆盖（标签只由用户主动新建/关闭）
+            BrowserTabs.restore()
+        }
+        if (BrowserTabs.tabs.isEmpty()) {
             BrowserTabs.tabs.add(BrowserTabs.Tab("", url))
             BrowserTabs.activeIndex = 0
         }
@@ -208,15 +212,21 @@ class CustomWebView @JvmOverloads constructor(
     /** 切到后台：保存每个标签的 WebView 状态并销毁，释放内存。
      *  keepActive=true 时保留当前激活标签的 WebView（进程内只留一个），切回时无需重建 */
     fun onBackground(keepActive: Boolean = false) {
+        // 暂停前为当前可见（激活）标签截图：此时 WebView 仍存活且保留最后渲染内容，
+        // draw 出来才是真实页面（覆盖“退出浏览器/切到标签列表/切新标”等暂停时机）。
+        // 其余标签在切换/新建时已各自截过图，这里不再重截，避免 destroy 后 draw 出空白覆盖。
+        captureActiveTabThumb()
         val keepId = if (keepActive) BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id else null
         BrowserTabs.tabs.forEach { tab ->
-            if (tab.id == keepId) return@forEach
             val wv = tab.webView ?: return@forEach
             tab.url = wv.url ?: tab.url
             tab.title = wv.title?.takeIf { it.isNotBlank() } ?: tab.title
-            // 后台时不重新截图：WebView 不可见，draw 出来会是空白，覆盖之前正常的缩略图
+            // 保存状态：被销毁的标签靠它恢复页面（避免返回时重新联网加载）；
+            // keepActive 时激活标签虽不销毁，也保存一份，防止 Activity 重建后丢失而重新 loadUrl
             val state = android.os.Bundle()
             runCatching { wv.saveState(state) }.onSuccess { tab.state = state }
+            if (tab.id == keepId) return@forEach
+            // 后台时不重新截图：WebView 即将被销毁，draw 出来会是空白，覆盖之前正常的缩略图
             binding.webViewContainer.removeView(wv)
             wv.destroy()
             tab.webView = null
@@ -229,16 +239,10 @@ class CustomWebView @JvmOverloads constructor(
     fun onForeground() {
         val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return
         if (tab.webView?.isDestroyed == false) {
-            val wv = tab.webView!!
-            // 保留的 WebView 仍存活，但若 tab 期望的 URL 与当前显示不一致
-            // （如阅读模式切回时已把 tab.url 更新为下一章），必须显式 reload，否则会停在旧页面
-            if (tab.url.isNotBlank() && wv.url != tab.url) {
-                Log.i("▶SwitchBrowser onForeground webView alive but url mismatch, reload tab.url=${tab.url} cur=${wv.url}")
-                wv.currentHost = tab.url
-                wv.loadUrl(tab.url)
-            } else {
-                Log.i("▶SwitchBrowser onForeground webView alive, skip reload (tab.url=${tab.url})")
-            }
+            // WebView 仍存活：直接复用，不主动刷新页面。
+            // 阅读模式切回需要导航到新章节时由 onResume 的 pending 机制处理，这里不再主动 reload，
+            // 避免返回应用（如按概览键再回来）时被误判为 URL 不一致而刷新。
+            Log.i("▶SwitchBrowser onForeground webView alive, skip reload (tab.url=${tab.url})")
             return
         }
         Log.i("▶SwitchBrowser onForeground webView destroyed -> reload tab.url=${tab.url} stateNull=${tab.state == null}")
@@ -817,6 +821,11 @@ class CustomWebView @JvmOverloads constructor(
             bmp.recycle()
             tab.thumbPath = file.absolutePath
         }.onFailure { Log.e("标签缩略图失败", it) }
+    }
+
+    /** 暂停时为当前激活标签截图：此时 WebView 仍存活且保留最后渲染内容，draw 出来才是真实页面 */
+    fun captureActiveTabThumb() {
+        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { captureThumb(it) }
     }
 
     private fun openTabsManager() {

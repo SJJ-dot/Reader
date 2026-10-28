@@ -15,7 +15,7 @@ import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemBrowserTabBinding
 import com.sjianjun.reader.module.bookcity.BrowserTabs
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
-import com.sjianjun.reader.preferences.globalConfig
+import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.view.click
 
 /**
@@ -41,10 +41,6 @@ class WebShelfFragment : BaseFragment() {
         setHasOptionsMenu(true)
         binding?.recycleView?.layoutManager = GridLayoutManager(requireContext(), 2)
         binding?.recycleView?.adapter = adapter
-        binding?.fab?.click {
-            // 新建标签页：打开浏览器首页
-            WebViewBrowserActivity.startActivity(requireContext(), url = globalConfig.bookCityUrl)
-        }
         refresh()
     }
 
@@ -97,6 +93,7 @@ class WebShelfFragment : BaseFragment() {
             val active = position == BrowserTabs.activeIndex
             holder.binding.tvTitle.text = tab.title.ifBlank { "无标题" }
             holder.binding.tvUrl.text = tab.url
+            holder.binding.ivThumb.glide(tab.thumbPath)
             holder.binding.root.strokeWidth = if (active) 3 else 0
             holder.binding.root.strokeColor =
                 ContextCompat.getColor(holder.itemView.context, R.color.colorPrimary)

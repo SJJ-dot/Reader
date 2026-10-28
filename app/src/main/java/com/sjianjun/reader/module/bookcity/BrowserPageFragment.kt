@@ -116,6 +116,16 @@ class BrowserPageFragment : BaseFragment() {
         if (initialized) pageBinding?.customWebView?.onForeground()
     }
 
+    /** 外部（阅读器/搜索等）重新拉起浏览器时，在当前激活标签导航到传入 URL（不新建标签） */
+    fun openUrlInCurrentTab(url: String) {
+        pageBinding?.customWebView?.loadUrl(url)
+    }
+
+    /** 暂停时为当前激活标签截图（供 Activity onStop 在退出浏览器时兜底调用） */
+    fun captureActiveTabThumb() {
+        pageBinding?.customWebView?.captureActiveTabThumb()
+    }
+
     override fun onDestroyView() {
         // 离开书城页（切到其它抽屉菜单 / 宿主销毁）时释放 WebView：
         // 否则复用的 WebView 仍挂在已销毁的视图树上，下次进入会因“已有父容器”而无法重新挂载
@@ -130,11 +140,13 @@ class BrowserPageFragment : BaseFragment() {
             if (url == null) {
                 url = arguments?.getString(URL) ?: globalConfig.bookCityUrl
             }
-            // 有恢复的标签时，加载当前标签页面（仅书城主入口恢复标签；
-            // 字典/搜索等外部打开指定 URL 时不做恢复，避免覆盖传入的 URL）
-            if (arguments?.getBoolean(KEY_RESTORE_TABS, false) == true) {
-                // 进程重启后先从持久化恢复标签元数据，否则标签列表会从空开始（表现为“标签被清空”）
+            // 内存中没有标签时先恢复持久化的标签列表，否则从空列表开始会把已存标签覆盖/清空
+            if (BrowserTabs.tabs.isEmpty()) {
                 BrowserTabs.restore()
+            }
+            // 仅书城主入口（restoreTabs=true）把起始页定位到上次激活的标签；
+            // 外部（阅读器/搜索/字典）打开保持传入的 URL，并导航到当前激活标签展示
+            if (arguments?.getBoolean(KEY_RESTORE_TABS, false) == true) {
                 BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.url?.takeIf { it.isNotBlank() }
                     ?.let { url = it }
             }

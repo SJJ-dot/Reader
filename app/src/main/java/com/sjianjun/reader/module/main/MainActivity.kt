@@ -308,8 +308,9 @@ class MainActivity : BaseActivity() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         // App 整体退到后台时回收书城标签的 WebView；内部页面切换不回收
+        // keepActive=true：保留当前激活（可见）标签的 WebView，切回时无需重建/刷新页面
         if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-            currentBrowserFragment()?.onAppBackground()
+            currentBrowserFragment()?.onAppBackground(keepActive = true)
         }
     }
 
