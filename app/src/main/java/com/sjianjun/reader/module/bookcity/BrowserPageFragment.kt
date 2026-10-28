@@ -100,7 +100,6 @@ class BrowserPageFragment : BaseFragment() {
             }
         // 实际重载交由 onForeground 处理：阅读模式切回时 onForeground 会检测到
         // “WebView 仍存活但 URL 与 tab.url 不一致”而重载到阅读模式当前页，避免重复加载。
-        tab.session.currentUrl = url
         tab.url = url
         tab.lastUsedAt = System.currentTimeMillis()
         Log.i("▶SwitchBrowser switchToSourceTab done tabIdx=${BrowserTabs.activeIndex} url=$url")

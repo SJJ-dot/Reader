@@ -1,6 +1,5 @@
 package com.sjianjun.reader.module.bookcity
 
-import com.google.gson.Gson
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.BrowserTabEntity
 import com.sjianjun.reader.repository.DbFactory
@@ -18,35 +17,23 @@ object BrowserTabs {
         val id: java.util.UUID = java.util.UUID.randomUUID(),
         var thumbPath: String? = null,
         var fromPopup: Boolean = false,
+        /** WebView 原生状态快照（含前进/后退历史），切走/退出时 saveState 保存，加载时 restoreState 恢复 */
         var state: android.os.Bundle? = null,
-        val history: MutableList<String> = mutableListOf(),
-        var historyIndex: Int = -1,
-        var restored: Boolean = false,
+        /** 快照保存时所在页面 URL，用于判断快照是否与当前 tab.url 一致（阅读模式切回等场景） */
+        var stateUrl: String? = null,
         var lastUsedAt: Long = System.currentTimeMillis(),
-        /** 单一数据源：前进/后退栈与当前页都以此为准 */
-        val session: TabSession = TabSession(),
         /** 是否由“外部指定网址打开”自动创建：退出时若返回栈到底则自动关闭，否则转为普通标签 */
         var transient: Boolean = false,
-    ) {
-        fun syncToSession() {
-            session.currentUrl = url
-            session.title = title
-            session.lastUsedAt = lastUsedAt
-        }
-    }
+    )
 
     private data class SavedTab(
         val title: String,
         val url: String,
         val id: String,
         val thumbPath: String? = null,
-        val history: List<String>? = null,
-        val historyIndex: Int? = null,
         val lastUsedAt: Long = 0L,
         val transient: Boolean = false,
     )
-
-    private val gson = Gson()
 
     val tabs = mutableListOf<Tab>()
     var activeIndex: Int = 0
@@ -77,42 +64,33 @@ object BrowserTabs {
         }
     }
 
-    /** 把一个内存标签转成可持久化的实体（标题/URL/前进后退栈/缩略图/激活标记） */
+    /** 把一个内存标签转成可持久化的实体（标题/URL/缩略图/激活标记；前进后退历史随 WebView 原生快照，不入库） */
     private fun Tab.toEntity(orderIndex: Int, isActive: Boolean): BrowserTabEntity {
-        val back = session.backStack.toList()
-        val forward = session.forwardStack.toList()
-        val current = session.currentUrl.ifBlank { url }
-        val history = back + current + forward
-        val index = back.size
         return BrowserTabEntity(
             id = id.toString(),
             title = title,
-            url = current,
+            url = url,
             orderIndex = orderIndex,
             isActive = isActive,
             thumbPath = thumbPath,
-            historyJson = gson.toJson(history),
-            historyIndex = index,
+            historyJson = "",
+            historyIndex = -1,
             lastUsedAt = lastUsedAt,
             transient = transient
         )
     }
 
-    /** 启动时恢复标签元数据（WebView 在需要时重建） */
+    /** 启动时恢复标签元数据（WebView 在需要时按 tab.url 重建，原生历史在运行时由快照恢复） */
     fun restore() {
         if (tabs.isNotEmpty()) return
         val entities = runBlocking(Dispatchers.IO) { DbFactory.db.browserDataDao().getAllTabs() }
         if (entities.isEmpty()) return
         runCatching {
             tabs.addAll(entities.mapNotNull { entity ->
-                val history = runCatching {
-                    gson.fromJson(entity.historyJson, Array<String>::class.java)?.toList().orEmpty()
-                }.getOrDefault(emptyList())
-                val saved = SavedTab(
+                SavedTab(
                     entity.title, entity.url, entity.id, entity.thumbPath,
-                    history, entity.historyIndex, entity.lastUsedAt, entity.transient
-                )
-                saved.toTab()
+                    entity.lastUsedAt, entity.transient
+                ).toTab()
             })
         }
         activeIndex = entities.indexOfFirst { it.isActive }.coerceIn(tabs.indices)
@@ -120,27 +98,13 @@ object BrowserTabs {
     }
 
     private fun SavedTab.toTab(): Tab {
-        val tab = Tab(
+        return Tab(
             title, url,
             id = runCatching { java.util.UUID.fromString(id) }.getOrDefault(java.util.UUID.randomUUID()),
             thumbPath = thumbPath,
             lastUsedAt = if (lastUsedAt > 0) lastUsedAt else System.currentTimeMillis(),
+            transient = transient
         )
-        val list = history.orEmpty()
-        val idx = (historyIndex ?: -1).coerceIn(-1, list.lastIndex)
-        val back = list.take((idx + 1).coerceAtLeast(0))
-        if (back.isNotEmpty()) {
-            tab.session.backStack.addAll(back.dropLast(1))
-            tab.url = back.last()
-        }
-        tab.session.forwardStack.addAll(list.drop(back.size))
-        tab.session.currentUrl = url
-        tab.session.title = title
-        tab.restored = true
-        tab.history.addAll(list)
-        tab.historyIndex = idx
-        tab.transient = transient
-        return tab
     }
 
     fun clearPersisted() {
@@ -160,7 +124,7 @@ object BrowserTabs {
 
     /**
      * 退出独立浏览器时清理“外部指定网址自动创建（transient）”的临时标签：
-     *  - 返回栈到底（[TabSession.backStack] 为空）的临时标签 → 直接移除，实现“退出即自动关闭”；
+     *  - 返回栈到底（无原生后退历史）的临时标签 → 直接移除，实现“退出即自动关闭”；
      *  - 仍有前进历史的临时标签 → 转为普通标签（清除 transient 标记），此后与用户手动开启一致，
      *    除非手动关闭否则不再自动关闭。
      * 同时按主键删除被移除标签的库记录与缩略图，保证下次进入不会“复活”。
@@ -171,13 +135,14 @@ object BrowserTabs {
         for (i in tabs.indices.reversed()) {
             val tab = tabs[i]
             if (!tab.transient) continue
-            if (tab.session.backStack.isEmpty()) {
+            // “返回栈到底”（无原生后退历史）的临时标签退出即关闭；仍有历史的转为普通标签保留
+            if (tab.webView?.canGoBack() == true) {
+                tab.transient = false
+            } else {
                 removed.add(tab)
                 tabs.removeAt(i)
                 if (i < activeIndex) activeIndex--
                 else if (i == activeIndex) activeIndex = activeIndex.coerceAtMost(tabs.lastIndex)
-            } else {
-                tab.transient = false
             }
         }
         if (activeIndex !in tabs.indices) activeIndex = tabs.lastIndex.coerceAtLeast(0)
