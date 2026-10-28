@@ -156,7 +156,7 @@ class BrowserRecordsActivity : BaseActivity() {
     }
 
     private fun reloadHistory() {
-        val groups = History.list
+        val groups = History.list()
             .sortedByDescending { it.time }
             .groupBy { dateKey(it.time) }
         val items = mutableListOf<Item>()
@@ -189,7 +189,7 @@ class BrowserRecordsActivity : BaseActivity() {
             .setTitle("清空")
             .setMessage(if (bookmarksMode) "确定清空收藏夹？" else "确定清空历史记录？")
             .setPositiveButton("清空") { _, _ ->
-                if (bookmarksMode) BookmarkStore.clear() else History.list = emptyList()
+                if (bookmarksMode) BookmarkStore.clear() else History.clear()
                 reload()
             }
             .setNegativeButton("取消", null)
@@ -659,7 +659,7 @@ class BrowserRecordsActivity : BaseActivity() {
                     if (bookmarksMode) {
                         BookmarkStore.removeById(node.bookmarkId)
                     } else {
-                        History.list = History.list.filterNot { it.url == row.url && it.time == row.time }
+                        History.remove(row.url, row.time)
                     }
                     reload()
                 }

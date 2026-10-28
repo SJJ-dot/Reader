@@ -97,11 +97,20 @@ object AdBlock {
         whitelist.postValue(CopyOnWriteArrayList(white))
     }
 
+    /**
+     * 落库某类黑白名单：以内存列表为准，只删除「库中存在但内存已无」的规则（按 host+kind 主键），
+     * 再 upsert 现有规则。绝不清空该类表再全量覆盖。
+     */
     private fun persist(kind: String, list: List<HostStr>) {
         scope.launch {
-            dao.replaceAdBlock(kind, list.map {
+            val oldHosts = dao.getAdBlock(kind).map { it.host }.toSet()
+            val newHosts = list.map { it.host }.toSet()
+            val toDelete = (oldHosts - newHosts).toList()
+            if (toDelete.isNotEmpty()) dao.deleteAdBlockByHosts(kind, toDelete)
+            val toInsert = list.map {
                 AdBlockHostEntity(it.host, kind, gson.toJson(it.type), it.isPage, it.time, it.mode)
-            })
+            }
+            dao.insertAdBlock(toInsert)
         }
     }
 

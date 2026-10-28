@@ -100,17 +100,19 @@ interface BrowserDataDao {
     @Query("DELETE FROM browser_history WHERE url = :url")
     fun deleteHistoryByUrl(url: String)
 
+    /** 删除某条历史（按 url+time 唯一，用于单条删除） */
+    @Query("DELETE FROM browser_history WHERE url = :url AND time = :time")
+    fun deleteHistoryByUrlTime(url: String, time: Long)
+
+    /** 删除某 URL 在指定当天（[start],[end) 毫秒区间）内的历史，用于当天去重 */
+    @Query("DELETE FROM browser_history WHERE url = :url AND time >= :start AND time < :end")
+    fun deleteHistorySameDay(url: String, start: Long, end: Long)
+
     @Query("DELETE FROM browser_history")
     fun clearHistory()
 
     @Query("SELECT COUNT(*) FROM browser_history")
     fun countHistory(): Int
-
-    @Transaction
-    fun replaceAllHistory(items: List<BrowserHistoryEntity>) {
-        clearHistory()
-        insertHistories(items)
-    }
 
     /* ===================== 标签页 ===================== */
     @Query("SELECT * FROM browser_tab ORDER BY orderIndex ASC")
@@ -128,14 +130,12 @@ interface BrowserDataDao {
     @Query("DELETE FROM browser_tab")
     fun clearTabs()
 
+    /** 删除库中存在但内存已无的标签（按主键），避免"清库全量覆盖" */
+    @Query("DELETE FROM browser_tab WHERE id NOT IN (:ids)")
+    fun deleteTabsNotIn(ids: List<String>)
+
     @Query("SELECT COUNT(*) FROM browser_tab")
     fun countTabs(): Int
-
-    @Transaction
-    fun replaceAllTabs(tabs: List<BrowserTabEntity>) {
-        clearTabs()
-        insertTabs(tabs)
-    }
 
     /* ===================== 广告拦截 ===================== */
     @Query("SELECT * FROM ad_block_host WHERE kind = :kind")
@@ -147,15 +147,13 @@ interface BrowserDataDao {
     @Query("DELETE FROM ad_block_host WHERE kind = :kind")
     fun clearAdBlock(kind: String)
 
+    /** 删除某类黑白名单中不在 [hosts] 内的规则（按 host+kind 主键差量删除） */
+    @Query("DELETE FROM ad_block_host WHERE kind = :kind AND host IN (:hosts)")
+    fun deleteAdBlockByHosts(kind: String, hosts: List<String>)
+
     @Query("DELETE FROM ad_block_host")
     fun clearAllAdBlock()
 
     @Query("SELECT COUNT(*) FROM ad_block_host WHERE kind = :kind")
     fun countAdBlock(kind: String): Int
-
-    @Transaction
-    fun replaceAdBlock(kind: String, items: List<AdBlockHostEntity>) {
-        clearAdBlock(kind)
-        insertAdBlock(items)
-    }
 }

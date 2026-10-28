@@ -56,28 +56,40 @@ object BrowserTabs {
     var pendingSwitchTabId: String? = null
     var pendingSwitchUrl: String? = null
 
-    /** 保存标签列表（标题/URL/前进后退栈/选中项），下次进入浏览器恢复 */
+    /**
+     * 落库：以内存缓存为准，逐条 upsert 仍存在的标签，并删除库中存在但内存已无的标签。
+     * 绝不做"清库全量覆盖"——仅当内存本身为空（用户已关闭全部标签）时跳过写入，
+     * 此时 DB 已由各关闭操作逐条删除，不会误清导致标签页消失。
+     */
     fun persist() {
-        val saved = tabs.map { tab ->
-            val back = tab.session.backStack.toList()
-            val forward = tab.session.forwardStack.toList()
-            val current = tab.session.currentUrl.ifBlank { tab.url }
-            val history = back + current + forward
-            val index = back.size
-            SavedTab(
-                tab.title, current, tab.id.toString(), tab.thumbPath,
-                history, index, tab.lastUsedAt
-            )
-        }
+        if (tabs.isEmpty()) return
         val dao = DbFactory.db.browserDataDao()
-        val entities = saved.mapIndexed { i, s ->
-            BrowserTabEntity(
-                id = s.id, title = s.title, url = s.url, orderIndex = i, isActive = i == activeIndex,
-                thumbPath = s.thumbPath, historyJson = gson.toJson(s.history.orEmpty()),
-                historyIndex = s.historyIndex ?: -1, lastUsedAt = s.lastUsedAt
-            )
+        val present = tabs.mapIndexed { i, tab -> tab.toEntity(i, i == activeIndex) }
+        val presentIds = present.map { it.id }
+        runBlocking(Dispatchers.IO) {
+            dao.deleteTabsNotIn(presentIds)
+            present.forEach { dao.insertTab(it) }
         }
-        runBlocking(Dispatchers.IO) { dao.replaceAllTabs(entities) }
+    }
+
+    /** 把一个内存标签转成可持久化的实体（标题/URL/前进后退栈/缩略图/激活标记） */
+    private fun Tab.toEntity(orderIndex: Int, isActive: Boolean): BrowserTabEntity {
+        val back = session.backStack.toList()
+        val forward = session.forwardStack.toList()
+        val current = session.currentUrl.ifBlank { url }
+        val history = back + current + forward
+        val index = back.size
+        return BrowserTabEntity(
+            id = id.toString(),
+            title = title,
+            url = current,
+            orderIndex = orderIndex,
+            isActive = isActive,
+            thumbPath = thumbPath,
+            historyJson = gson.toJson(history),
+            historyIndex = index,
+            lastUsedAt = lastUsedAt
+        )
     }
 
     /** 启动时恢复标签元数据（WebView 在需要时重建） */

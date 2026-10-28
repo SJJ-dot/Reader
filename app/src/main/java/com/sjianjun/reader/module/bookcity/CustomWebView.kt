@@ -162,7 +162,7 @@ class CustomWebView @JvmOverloads constructor(
         this.adBlock = adBlock
 
         initView()
-        history.value = History.list.toMutableList()
+        history.value = History.list().toMutableList()
         this.lifecycleScope = owner.lifecycleScope
     }
 
@@ -764,7 +764,7 @@ class CustomWebView @JvmOverloads constructor(
         val titleColor = ContextCompat.getColor(context, R.color.dn_text_color_black)
         val density = resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
-        History.list
+        History.list()
             .filter { it.title.contains(q, true) || it.url.contains(q, true) }
             .sortedByDescending { it.time }
             .take(4)
@@ -1126,6 +1126,7 @@ class CustomWebView @JvmOverloads constructor(
             updateForwardButton()
         }
         binding.tabs.text = BrowserTabs.tabs.size.toString()
+        BrowserTabs.persist()
     }
 
     /** Edge 风格网格菜单 */
@@ -1451,18 +1452,21 @@ class CustomWebView @JvmOverloads constructor(
             }
 
             Log.i("onPageFinished ${webView?.currentHost} title:${webView?.title}")
-            val list = history.value!!.toMutableList()
             webView?.url?.let { url ->
                 val now = System.currentTimeMillis()
-                // 当天去重：同一天内同一地址只保留最新一条；跨天保留历史（昨天/前天各留一条）
+                val newItem = HistoryItem(webView.title ?: "无标题", url, now)
+                // 更新内存缓存（用于地址栏/记录页即时展示）
+                val list = history.value!!.toMutableList()
                 list.removeAll { it.url == url && isSameDay(it.time, now) }
-                list.add(HistoryItem(webView.title ?: "无标题", url, now))
+                list.add(newItem)
                 list.sortDescending()
                 // 超过上限只丢弃最旧的一条（标记项排在前面，不会被优先丢弃）
                 if (list.size > MAX_HISTORY) {
-                    list.removeAt(list.lastIndex)
+                    val removed = list.removeAt(list.lastIndex)
+                    History.remove(removed.url, removed.time)
                 }
-                History.list = list
+                // 落库：当天去重（删旧插新），不整体覆盖历史表
+                History.add(newItem)
                 history.postValue(list)
             }
         }
@@ -1608,16 +1612,48 @@ class CustomWebView @JvmOverloads constructor(
 }
 
 
+/**
+ * 浏览器历史记录：DB 为唯一真相源，内存只保留展示用缓存。
+ * 任何增删都直接落库（按主键/url+time 精准删除），禁止"内存改完再清库全量覆盖"。
+ */
 object History {
-    var list: List<HistoryItem>
-        get() = runBlocking(Dispatchers.IO) {
-            DbFactory.db.browserDataDao().getAllHistory().map { HistoryItem(it.title, it.url, it.time) }
+    private val dao get() = DbFactory.db.browserDataDao()
+
+    /** 读取全部历史（缓存缺失时从 DB 重查） */
+    fun list(): List<HistoryItem> = runBlocking(Dispatchers.IO) {
+        dao.getAllHistory().map { HistoryItem(it.title, it.url, it.time) }
+    }
+
+    /** 新增一条历史：按 URL+当天去重（不跨天），直接落库，不整体覆盖 */
+    fun add(item: HistoryItem) {
+        runBlocking(Dispatchers.IO) {
+            val (start, end) = dayRange(item.time)
+            dao.deleteHistorySameDay(item.url, start, end)
+            dao.insertHistory(BrowserHistoryEntity(0, item.title, item.url, item.time))
         }
-        set(value) = runBlocking(Dispatchers.IO) {
-            DbFactory.db.browserDataDao().replaceAllHistory(
-                value.map { BrowserHistoryEntity(0, it.title, it.url, it.time) }
-            )
-        }
+    }
+
+    /** 删除某条历史（按 url+time 唯一） */
+    fun remove(url: String, time: Long) {
+        runBlocking(Dispatchers.IO) { dao.deleteHistoryByUrlTime(url, time) }
+    }
+
+    /** 清空全部历史 */
+    fun clear() {
+        runBlocking(Dispatchers.IO) { dao.clearHistory() }
+    }
+
+    /** 返回 [time] 所在「当天 00:00」与「次日 00:00」的毫秒边界，用于当天去重 */
+    private fun dayRange(time: Long): Pair<Long, Long> {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = time }
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1)
+        return start to cal.timeInMillis
+    }
 }
 
 /** 两个时间戳是否属于同一天（用于历史记录"当天去重、不跨天去重"） */

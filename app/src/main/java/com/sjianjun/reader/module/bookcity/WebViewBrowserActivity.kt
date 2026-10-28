@@ -129,14 +129,9 @@ class WebViewBrowserActivity : BaseActivity() {
 
     override fun onDestroy() {
         if (isFinishing) {
-            if (BrowserTabs.tabs.isEmpty()) {
-                // 没有剩余标签：清空持久化，下次进入自动重建主页标签
-                BrowserTabs.clearPersisted()
-            } else {
-                // 还有剩余标签：保留，下次进入恢复
-                BrowserTabs.persist()
-            }
-            BrowserTabs.tabs.clear()
+            // 内存标签列表作为缓存保留（进程内单例），只做安全落库：
+            // 逐条 upsert 存在的标签、按主键删除已关闭的标签，绝不清库覆盖。
+            BrowserTabs.persist()
         }
         super.onDestroy()
     }
