@@ -116,9 +116,9 @@ class BrowserPageFragment : BaseFragment() {
         if (initialized) pageBinding?.customWebView?.onForeground()
     }
 
-    /** 外部（阅读器/搜索等）重新拉起浏览器时，在当前激活标签导航到传入 URL（不新建标签） */
-    fun openUrlInCurrentTab(url: String) {
-        pageBinding?.customWebView?.loadUrl(url)
+    /** 外部（阅读器/搜索等）重新拉起浏览器时，新建一个“可自动销毁”的临时标签打开传入 URL */
+    fun openExternalUrl(url: String) {
+        pageBinding?.customWebView?.openExternalUrl(url)
     }
 
     /** 暂停时为当前激活标签截图（供 Activity onStop 在退出浏览器时兜底调用） */
@@ -167,7 +167,15 @@ class BrowserPageFragment : BaseFragment() {
             val state = savedWebState
             savedWebState = null
             if (state == null || !customWebView.restoreState(state)) {
-                customWebView.loadUrl(url!!)
+                // 主页（书城主入口 restoreTabs=true，或内嵌书城无显式网址参数）走普通加载，
+                // 不新建临时标签；真正的“外部指定网址打开”才新建可自动销毁的临时标签。
+                val isHomepage = arguments?.getBoolean(KEY_RESTORE_TABS, false) == true
+                        || arguments?.getString(URL).isNullOrBlank()
+                if (isHomepage) {
+                    customWebView.loadUrl(url!!)
+                } else {
+                    customWebView.openExternalUrl(url!!)
+                }
             }
 
             EventBus.observe(EventKey.OPEN_BROWSER_URL, viewLifecycleOwner, Observer<String> {

@@ -102,10 +102,10 @@ class WebViewBrowserActivity : BaseActivity() {
         super.onNewIntent(intent)
         val newUrl = intent.getStringExtra(URL).orEmpty()
         if (newUrl.isBlank()) return
-        // 浏览器已存活（singleTask）：复用当前激活标签导航到传入 URL，绝不新建标签
+        // 浏览器已存活（singleTask）：外部再次以指定网址打开，新建一个“可自动销毁”的临时标签
         val fragment = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
             as? BrowserPageFragment ?: return
-        fragment.openUrlInCurrentTab(newUrl)
+        fragment.openExternalUrl(newUrl)
     }
 
     override fun onResume() {
@@ -131,6 +131,9 @@ class WebViewBrowserActivity : BaseActivity() {
 
     override fun onDestroy() {
         if (isFinishing) {
+            // 退出独立浏览器：先清理“外部指定网址自动创建”的临时标签
+            // （返回栈到底的自动关闭，仍有历史的转为普通标签），再安全落库。
+            BrowserTabs.finalizeTransientTabs()
             // 内存标签列表作为缓存保留（进程内单例），只做安全落库：
             // 逐条 upsert 存在的标签、按主键删除已关闭的标签，绝不清库覆盖。
             BrowserTabs.persist()

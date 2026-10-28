@@ -842,6 +842,32 @@ class CustomWebView @JvmOverloads constructor(
         newTab(url)
     }
 
+    /**
+     * 外部以指定网址打开：新建一个“可自动销毁（transient）”的临时标签并加载该网址。
+     * 后退到底再退出浏览器时自动关闭；若退出时仍有前进历史则转为普通标签保留。
+     */
+    fun openExternalUrl(url: String) {
+        if (url.isBlank()) return
+        ensureTabCapacity()
+        // 新建前先给当前标签截图，否则切走后它的卡片没有缩略图
+        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { captureThumb(it) }
+        val tab = BrowserTabs.Tab("新标签页", url).apply {
+            transient = true
+            session.navigate(url)
+        }
+        BrowserTabs.tabs.add(tab)
+        BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
+        val wv = createWebView()
+        tab.webView = wv
+        showOnlyWebView(wv)
+        webView = wv
+        binding.tabs.text = BrowserTabs.tabs.size.toString()
+        wv.currentHost = url
+        wv.loadUrl(url)
+        updateForwardButton()
+        BrowserTabs.persist()
+    }
+
     /** 后台打开：新增标签但停留在当前页（长按链接“新标签页打开”使用） */
     private fun openInBackgroundTab(url: String) {
         if (url.isBlank()) return

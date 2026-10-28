@@ -1,10 +1,12 @@
 package com.sjianjun.reader.module.bookcity
 
 import com.google.gson.Gson
+import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.BrowserTabEntity
 import com.sjianjun.reader.repository.DbFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 /** 浏览器标签页（进程内共享，供 CustomWebView 与标签页界面使用） */
 object BrowserTabs {
@@ -23,6 +25,8 @@ object BrowserTabs {
         var lastUsedAt: Long = System.currentTimeMillis(),
         /** 单一数据源：前进/后退栈与当前页都以此为准 */
         val session: TabSession = TabSession(),
+        /** 是否由“外部指定网址打开”自动创建：退出时若返回栈到底则自动关闭，否则转为普通标签 */
+        var transient: Boolean = false,
     ) {
         fun syncToSession() {
             session.currentUrl = url
@@ -39,6 +43,7 @@ object BrowserTabs {
         val history: List<String>? = null,
         val historyIndex: Int? = null,
         val lastUsedAt: Long = 0L,
+        val transient: Boolean = false,
     )
 
     private val gson = Gson()
@@ -88,7 +93,8 @@ object BrowserTabs {
             thumbPath = thumbPath,
             historyJson = gson.toJson(history),
             historyIndex = index,
-            lastUsedAt = lastUsedAt
+            lastUsedAt = lastUsedAt,
+            transient = transient
         )
     }
 
@@ -104,7 +110,7 @@ object BrowserTabs {
                 }.getOrDefault(emptyList())
                 val saved = SavedTab(
                     entity.title, entity.url, entity.id, entity.thumbPath,
-                    history, entity.historyIndex, entity.lastUsedAt
+                    history, entity.historyIndex, entity.lastUsedAt, entity.transient
                 )
                 saved.toTab()
             })
@@ -133,6 +139,7 @@ object BrowserTabs {
         tab.restored = true
         tab.history.addAll(list)
         tab.historyIndex = idx
+        tab.transient = transient
         return tab
     }
 
@@ -143,5 +150,43 @@ object BrowserTabs {
     /** Activity 重建时旧 WebView 已失效，只清引用，保留标签信息 */
     fun detachWebViews() {
         tabs.forEach { it.webView = null }
+    }
+
+    /** 删除某标签的缩略图文件（与 CustomWebView 写入路径一致） */
+    fun deleteThumb(tab: Tab) {
+        runCatching { File(App.app.cacheDir, "browser_tabs/${tab.id}.png").delete() }
+        tab.thumbPath = null
+    }
+
+    /**
+     * 退出独立浏览器时清理“外部指定网址自动创建（transient）”的临时标签：
+     *  - 返回栈到底（[TabSession.backStack] 为空）的临时标签 → 直接移除，实现“退出即自动关闭”；
+     *  - 仍有前进历史的临时标签 → 转为普通标签（清除 transient 标记），此后与用户手动开启一致，
+     *    除非手动关闭否则不再自动关闭。
+     * 同时按主键删除被移除标签的库记录与缩略图，保证下次进入不会“复活”。
+     */
+    fun finalizeTransientTabs() {
+        if (tabs.none { it.transient }) return
+        val removed = mutableListOf<Tab>()
+        for (i in tabs.indices.reversed()) {
+            val tab = tabs[i]
+            if (!tab.transient) continue
+            if (tab.session.backStack.isEmpty()) {
+                removed.add(tab)
+                tabs.removeAt(i)
+                if (i < activeIndex) activeIndex--
+                else if (i == activeIndex) activeIndex = activeIndex.coerceAtMost(tabs.lastIndex)
+            } else {
+                tab.transient = false
+            }
+        }
+        if (activeIndex !in tabs.indices) activeIndex = tabs.lastIndex.coerceAtLeast(0)
+        if (removed.isNotEmpty()) {
+            runBlocking(Dispatchers.IO) {
+                val dao = DbFactory.db.browserDataDao()
+                removed.forEach { dao.deleteTab(it.id.toString()) }
+            }
+            removed.forEach { deleteThumb(it) }
+        }
     }
 }

@@ -41,7 +41,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 37,
+    version = 38,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -277,6 +277,12 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 移除网页书架功能：删除已被废弃的 WebBook 表（实体已删除，其余数据保留）
                     db.execSQL("DROP TABLE IF EXISTS `WebBook`")
+                }
+            })
+            .addMigrations(object : Migration(37, 38) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 标签页新增“是否自动创建（可自动销毁）”标记：外部指定网址打开的临时标签
+                    db.execSQL("ALTER TABLE `browser_tab` ADD COLUMN `transient` INTEGER NOT NULL DEFAULT 0")
                 }
             })
             .build()
