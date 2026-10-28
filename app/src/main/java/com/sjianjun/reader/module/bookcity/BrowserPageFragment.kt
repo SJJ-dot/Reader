@@ -98,15 +98,12 @@ class BrowserPageFragment : BaseFragment() {
                 BrowserTabs.tabs.add(it)
                 BrowserTabs.activeIndex = BrowserTabs.tabs.lastIndex
             }
+        // 实际重载交由 onForeground 处理：阅读模式切回时 onForeground 会检测到
+        // “WebView 仍存活但 URL 与 tab.url 不一致”而重载到阅读模式当前页，避免重复加载。
         tab.session.currentUrl = url
         tab.url = url
         tab.lastUsedAt = System.currentTimeMillis()
-        if (tab.webView?.url == url) {
-            Log.i("▶SwitchBrowser switchToSourceTab url already shown, skip reload tabIdx=${BrowserTabs.activeIndex} url=$url")
-        } else {
-            Log.i("▶SwitchBrowser switchToSourceTab loadUrl on tabIdx=${BrowserTabs.activeIndex} url=$url webViewAlive=${tab.webView?.isDestroyed == false}")
-            pageBinding?.customWebView?.loadUrl(url)
-        }
+        Log.i("▶SwitchBrowser switchToSourceTab done tabIdx=${BrowserTabs.activeIndex} url=$url")
     }
 
     override fun onStart() {
@@ -158,6 +155,9 @@ class BrowserPageFragment : BaseFragment() {
             customWebView.onExitRequest = {
                 val act = requireActivity()
                 if (act is WebViewBrowserActivity) {
+                    // 退出前窗口仍可见，先抓当前激活标签缩略图（生命周期回调里 draw 易空白）
+                    Log.i("▶Thumb onExitRequest capture activeTabId=${BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id}")
+                    captureActiveTabThumb()
                     act.finish()
                 } else if (!findNavController().popBackStack(R.id.bookShelfFragment, false)) {
                     act.onBackPressedDispatcher.onBackPressed()
@@ -193,6 +193,10 @@ class BrowserPageFragment : BaseFragment() {
                     return@setOnBackPressed true
                 }
                 if (!customWebView.back()) {
+                    // 已到返回栈底部、即将退出：此时窗口仍可见，先抓当前激活标签缩略图
+                    // （onPause/onStop 里窗口表层已释放，draw 容易得到空白，反而覆盖正常图）
+                    Log.i("▶Thumb back-at-bottom capture activeTabId=${BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id}")
+                    captureActiveTabThumb()
                     false
                 } else {
                     true

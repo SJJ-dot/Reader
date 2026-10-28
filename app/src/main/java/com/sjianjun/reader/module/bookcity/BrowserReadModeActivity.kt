@@ -682,9 +682,9 @@ class BrowserReadModeActivity : BaseActivity() {
             val idx = BrowserTabs.tabs.indexOfFirst { it.id.toString() == sourceTabId }
             Log.i("▶SwitchBrowser openInBrowser curChapterLink=$url startUrl=$startUrl sourceTabId=$sourceTabId idx=$idx tabsSize=${BrowserTabs.tabs.size} activeIndex=${BrowserTabs.activeIndex}")
             if (idx >= 0) {
-                // 来源浏览器标签页存在：更新其 URL 与激活状态
+                // 来源浏览器标签页存在：更新其标题/激活等元数据（注意：不要提前改写
+                // session.currentUrl，否则切回浏览器时 switchToSourceTab 会误判“已是最新”而跳过加载）
                 val tab = BrowserTabs.tabs[idx]
-                tab.session.currentUrl = url
                 tab.url = url
                 tab.lastUsedAt = System.currentTimeMillis()
                 BrowserTabs.activeIndex = idx

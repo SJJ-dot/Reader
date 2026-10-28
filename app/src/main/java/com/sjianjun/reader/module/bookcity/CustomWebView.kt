@@ -212,10 +212,15 @@ class CustomWebView @JvmOverloads constructor(
     /** 切到后台：保存每个标签的 WebView 状态并销毁，释放内存。
      *  keepActive=true 时保留当前激活标签的 WebView（进程内只留一个），切回时无需重建 */
     fun onBackground(keepActive: Boolean = false) {
-        // 暂停前为当前可见（激活）标签截图：此时 WebView 仍存活且保留最后渲染内容，
-        // draw 出来才是真实页面（覆盖“退出浏览器/切到标签列表/切新标”等暂停时机）。
-        // 其余标签在切换/新建时已各自截过图，这里不再重截，避免 destroy 后 draw 出空白覆盖。
-        captureActiveTabThumb()
+        // 宿主正在销毁（如退出独立浏览器）时视图已处于拆卸阶段，此时 draw 易出空白，
+        // 缩略图已由 onPause 在仍可见时抓取，这里不要覆盖成空白；
+        // 仅当宿主未销毁（如内嵌书城切换抽屉菜单）时才在此处补抓。
+        if ((context as? android.app.Activity)?.isFinishing != true) {
+            Log.i("▶Thumb onBackground capture (not finishing)")
+            captureActiveTabThumb()
+        } else {
+            Log.i("▶Thumb onBackground skip (finishing, avoid blank overwrite)")
+        }
         val keepId = if (keepActive) BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id else null
         BrowserTabs.tabs.forEach { tab ->
             val wv = tab.webView ?: return@forEach
@@ -238,28 +243,37 @@ class CustomWebView @JvmOverloads constructor(
     /** 回到前台：只恢复当前标签，其余按需恢复 */
     fun onForeground() {
         val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return
-        if (tab.webView?.isDestroyed == false) {
-            // WebView 仍存活：直接复用，不主动刷新页面。
-            // 阅读模式切回需要导航到新章节时由 onResume 的 pending 机制处理，这里不再主动 reload，
-            // 避免返回应用（如按概览键再回来）时被误判为 URL 不一致而刷新。
-            Log.i("▶SwitchBrowser onForeground webView alive, skip reload (tab.url=${tab.url})")
+        val wv = tab.webView
+        val alive = wv != null && !wv.isDestroyed
+        // WebView 仍存活且已显示目标页：直接复用，不主动刷新页面
+        // （避免返回应用（如按概览键再回来）时被误判为 URL 不一致而刷新）。
+        // 但若 WebView 实际停在与 tab.url 不一致的旧页（如阅读模式用 openInBrowser 改了 tab.url
+        // 却未重载 WebView），则必须重载以加载阅读模式当前页。
+        if (alive && wv!!.url == tab.url) {
+            Log.i("▶SwitchBrowser onForeground webView alive & matches tab.url, skip reload (tab.url=${tab.url})")
             return
         }
-        Log.i("▶SwitchBrowser onForeground webView destroyed -> reload tab.url=${tab.url} stateNull=${tab.state == null}")
-        val wv = createWebView()
-        tab.webView = wv
-        showOnlyWebView(wv)
-        webView = wv
-        val state = tab.state
-        tab.state = null
-        tab.session.rollback() // 旧加载已随 WebView 销毁中断，清理残留事务
-        if (state != null) {
-            wv.restoreState(state)
-        } else if (tab.url.isNotBlank()) {
-            wv.currentHost = tab.url
-            wv.loadUrl(tab.url)
+        // 需要重载：1) WebView 已销毁（进程/页面重建）；2) 存活但停在旧页（阅读模式切回）。
+        Log.i("▶SwitchBrowser onForeground reload tab.url=${tab.url} webViewAlive=$alive webViewUrl=${wv?.url}")
+        val target = if (alive) wv!! else createWebView().also { tab.webView = it }
+        showOnlyWebView(target)
+        webView = target
+        if (!alive) {
+            // 新建 WebView（重建）：优先用保存的页面状态恢复，避免重新联网加载
+            val state = tab.state
+            tab.state = null
+            tab.session.rollback() // 旧加载已随 WebView 销毁中断，清理残留事务
+            if (state != null && target.restoreState(state) != null) {
+                Log.i("▶SwitchBrowser onForeground restoreState ok tab.url=${tab.url}")
+                return
+            }
         }
-        binding.tvUrl.text = displayUrl(wv.url ?: tab.url)
+        target.currentHost = tab.url
+        target.loadUrl(tab.url)
+        tab.session.rollback()
+        tab.session.beginNavigate(tab.url)
+        tab.lastUsedAt = System.currentTimeMillis()
+        binding.tvUrl.text = displayUrl(target.url ?: tab.url)
         updateForwardButton()
     }
 
@@ -528,14 +542,13 @@ class CustomWebView @JvmOverloads constructor(
         val tab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return false
         val target = tab.session.beginBack()
         if (target == null) {
-            // 后退到底：回滚预演，清空当前标签页会话（重置回主页），退出浏览器。
-            // 标签页本身不删除——只有用户手动才能新建/删除标签页，下次进入重建该标签页。
+            // 后退到底：退出浏览器。标签页本身不删除，也不要重置回主页/清空缩略图——
+            // 保留用户最后浏览的页面与缩略图，使书架“标签”卡片退出后仍显示该页（而非空白）。
+            // 仅回滚未完成的导航事务，并趁 WebView 仍存活先给当前页截一张缩略图，再清理 WebView。
             tab.session.rollback()
-            deleteThumb(tab)
+            captureActiveTabThumb()
             tab.session.backStack.clear()
             tab.session.forwardStack.clear()
-            tab.url = homeUrl()
-            tab.session.currentUrl = homeUrl()
             tab.webView?.let {
                 binding.webViewContainer.removeView(it)
                 it.destroy()
@@ -808,8 +821,16 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun captureThumb(tab: BrowserTabs.Tab) {
-        val wv = tab.webView ?: return
-        if (wv.width <= 0 || wv.height <= 0 || wv.isDestroyed) return
+        val wv = tab.webView
+        if (wv == null) {
+            Log.i("▶Thumb captureThumb skip: no webView tabId=${tab.id}")
+            return
+        }
+        if (wv.width <= 0 || wv.height <= 0 || wv.isDestroyed) {
+            Log.i("▶Thumb captureThumb skip: w=${wv.width}x${wv.height} destroyed=${wv.isDestroyed} tabId=${tab.id}")
+            return
+        }
+        Log.i("▶Thumb captureThumb start tabId=${tab.id} w=${wv.width}x${wv.height} url=${tab.url}")
         runCatching {
             val bmp = Bitmap.createBitmap(wv.width / 2, wv.height / 2, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
@@ -820,15 +841,23 @@ class CustomWebView @JvmOverloads constructor(
             FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.PNG, 80, it) }
             bmp.recycle()
             tab.thumbPath = file.absolutePath
-        }.onFailure { Log.e("标签缩略图失败", it) }
+            val sizeKb = file.length() / 1024
+            Log.i("▶Thumb captureThumb OK tabId=${tab.id} size=${sizeKb}KB path=${file.absolutePath}")
+        }.onFailure {
+            Log.e("▶Thumb captureThumb FAIL tabId=${tab.id}", it)
+        }
     }
 
     /** 暂停时为当前激活标签截图：此时 WebView 仍存活且保留最后渲染内容，draw 出来才是真实页面 */
     fun captureActiveTabThumb() {
-        BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.let { captureThumb(it) }
+        val idx = BrowserTabs.activeIndex
+        val tab = BrowserTabs.tabs.getOrNull(idx)
+        Log.i("▶Thumb captureActiveTabThumb activeIndex=$idx tabId=${tab?.id} url=${tab?.url}")
+        tab?.let { captureThumb(it) }
     }
 
     private fun openTabsManager() {
+        Log.i("▶Thumb openTabsManager capture activeTabId=${BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id}")
         captureThumb(BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex) ?: return)
         BrowserTabs.onSelect = { switchTab(it) }
         BrowserTabs.onClose = { closeTab(it) }
@@ -936,6 +965,9 @@ class CustomWebView @JvmOverloads constructor(
             setPadding(dp(16), dp(10), dp(16), dp(4))
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
         container.addView(linkText)
         fun addItem(label: String, onClick: () -> Unit) {
@@ -944,6 +976,9 @@ class CustomWebView @JvmOverloads constructor(
                 textSize = 13f
                 setTextColor(textColor)
                 setPadding(dp(16), dp(10), dp(16), dp(10))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                )
                 setOnClickListener {
                     dismissLinkMenu()
                     onClick()
@@ -972,10 +1007,16 @@ class CustomWebView @JvmOverloads constructor(
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
-        val menuW = container.measuredWidth
-        val menuH = container.measuredHeight
+        // 菜单宽度按内容自适应，但限制上限（约屏宽 55% 且不超过 264dp），
+        // 避免超长 URL 把菜单撑得过宽
         val screenW = resources.displayMetrics.widthPixels
         val screenH = resources.displayMetrics.heightPixels
+        val menuW = minOf(
+            container.measuredWidth,
+            dp(176),
+            (screenW * 0.37f).toInt().coerceAtLeast(dp(133))
+        )
+        val menuH = container.measuredHeight
         val margin = dp(8)
         val gap = dp(4)
         val x = (lastTouchX - menuW / 2f).toInt()
@@ -986,6 +1027,7 @@ class CustomWebView @JvmOverloads constructor(
         } else {
             (lastTouchY.toInt() - menuH - gap).coerceAtLeast(margin)
         }
+        popup.width = menuW
         popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
     }
 
@@ -1494,6 +1536,16 @@ class CustomWebView @JvmOverloads constructor(
                 // 落库：当天去重（删旧插新），不整体覆盖历史表
                 History.add(newItem)
                 history.postValue(list)
+            }
+            // 页面加载完成：给当前激活标签截图（此时已渲染，缩略图可靠）。
+            // 仅当完成加载的就是激活标签的 WebView 时才抓，避免后台标签完成时误抓。
+            val activeTab = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)
+            if (activeTab?.webView === webView && !url.isNullOrBlank() && url != "about:blank") {
+                Log.i("▶Thumb onPageFinished schedule capture activeTabId=${activeTab?.id} url=$url")
+                webView?.postDelayed({
+                    Log.i("▶Thumb onPageFinished capture now activeTabId=${activeTab?.id} url=$url")
+                    captureActiveTabThumb()
+                }, 120)
             }
         }
     }
