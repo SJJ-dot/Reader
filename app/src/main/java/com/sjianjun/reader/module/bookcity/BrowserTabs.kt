@@ -17,13 +17,13 @@ object BrowserTabs {
         val id: java.util.UUID = java.util.UUID.randomUUID(),
         var thumbPath: String? = null,
         var fromPopup: Boolean = false,
-        /** WebView 原生状态快照（含前进/后退历史），切走/退出时 saveState 保存，加载时 restoreState 恢复 */
-        var state: android.os.Bundle? = null,
-        /** 快照保存时所在页面 URL，用于判断快照是否与当前 tab.url 一致（阅读模式切回等场景） */
-        var stateUrl: String? = null,
-        var lastUsedAt: Long = System.currentTimeMillis(),
+        /** 自维护的前进/后退历史（URL 列表 + 当前索引）；退出再进甚至进程被杀都靠它恢复 */
+        var history: TabHistory = TabHistory(),
         /** 是否由“外部指定网址打开”自动创建：退出时若返回栈到底则自动关闭，否则转为普通标签 */
         var transient: Boolean = false,
+        /** 仅当前 WebView 内部导航（后退/前进/重显当前页）时置位，onPageStarted 据此不重复压栈 */
+        var suppressRecord: Boolean = false,
+        var lastUsedAt: Long = System.currentTimeMillis(),
     )
 
     private data class SavedTab(
@@ -33,6 +33,7 @@ object BrowserTabs {
         val thumbPath: String? = null,
         val lastUsedAt: Long = 0L,
         val transient: Boolean = false,
+        val historyJson: String? = null,
     )
 
     val tabs = mutableListOf<Tab>()
@@ -64,7 +65,7 @@ object BrowserTabs {
         }
     }
 
-    /** 把一个内存标签转成可持久化的实体（标题/URL/缩略图/激活标记；前进后退历史随 WebView 原生快照，不入库） */
+    /** 把一个内存标签转成可持久化的实体（标题/URL/缩略图/激活标记；前进后退历史序列化进 historyJson 落盘） */
     private fun Tab.toEntity(orderIndex: Int, isActive: Boolean): BrowserTabEntity {
         return BrowserTabEntity(
             id = id.toString(),
@@ -73,8 +74,8 @@ object BrowserTabs {
             orderIndex = orderIndex,
             isActive = isActive,
             thumbPath = thumbPath,
-            historyJson = "",
-            historyIndex = -1,
+            historyJson = history.toJson(),
+            historyIndex = history.currentIndex,
             lastUsedAt = lastUsedAt,
             transient = transient
         )
@@ -89,7 +90,7 @@ object BrowserTabs {
             tabs.addAll(entities.mapNotNull { entity ->
                 SavedTab(
                     entity.title, entity.url, entity.id, entity.thumbPath,
-                    entity.lastUsedAt, entity.transient
+                    entity.lastUsedAt, entity.transient, entity.historyJson
                 ).toTab()
             })
         }
@@ -103,7 +104,8 @@ object BrowserTabs {
             id = runCatching { java.util.UUID.fromString(id) }.getOrDefault(java.util.UUID.randomUUID()),
             thumbPath = thumbPath,
             lastUsedAt = if (lastUsedAt > 0) lastUsedAt else System.currentTimeMillis(),
-            transient = transient
+            transient = transient,
+            history = TabHistory.fromJson(historyJson) ?: TabHistory()
         )
     }
 
@@ -135,8 +137,8 @@ object BrowserTabs {
         for (i in tabs.indices.reversed()) {
             val tab = tabs[i]
             if (!tab.transient) continue
-            // “返回栈到底”（无原生后退历史）的临时标签退出即关闭；仍有历史的转为普通标签保留
-            if (tab.webView?.canGoBack() == true) {
+            // “返回栈到底”（无后退历史）的临时标签退出即关闭；仍有历史的转为普通标签保留
+            if (tab.history.canGoBack) {
                 tab.transient = false
             } else {
                 removed.add(tab)

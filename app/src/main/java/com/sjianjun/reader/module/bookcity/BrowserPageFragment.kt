@@ -50,9 +50,6 @@ class BrowserPageFragment : BaseFragment() {
     private var crossOriginMode: Int = -1
     private var pageBinding: FragmentBookCityPageBinding? = null
 
-    /** 夜间模式切换导致重建时，用来恢复 WebView 的当前页/历史 */
-    private var savedWebState: Bundle? = null
-
     /** init() 是否已完成：未完成时 onStart 不能触发 onForeground，避免与初始化抢建 WebView */
     private var initialized = false
 
@@ -66,8 +63,6 @@ class BrowserPageFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val bind = FragmentBookCityPageBinding.bind(view)
         pageBinding = bind
-        // 重建（夜间模式切换等）时优先恢复当前页，而不是回到首页
-        savedWebState = savedInstanceState?.getBundle(KEY_WEB_STATE)
         lifecycleScope.launch {
             init(bind)
         }
@@ -162,19 +157,15 @@ class BrowserPageFragment : BaseFragment() {
                     act.onBackPressedDispatcher.onBackPressed()
                 }
             }
-            // 有保存状态就恢复到当前页（夜间模式切换不跳回首页），否则正常加载
-            val state = savedWebState
-            savedWebState = null
-            if (state == null || !customWebView.restoreState(state)) {
-                // 主页（书城主入口 restoreTabs=true，或内嵌书城无显式网址参数）走普通加载，
-                // 不新建临时标签；真正的“外部指定网址打开”才新建可自动销毁的临时标签。
-                val isHomepage = arguments?.getBoolean(KEY_RESTORE_TABS, false) == true
-                        || arguments?.getString(URL).isNullOrBlank()
-                if (isHomepage) {
-                    customWebView.loadUrl(url!!)
-                } else {
-                    customWebView.openExternalUrl(url!!)
-                }
+            // 主页（书城主入口 restoreTabs=true，或内嵌书城无显式网址参数）走普通加载，
+            // 不新建临时标签；真正的“外部指定网址打开”才新建可自动销毁的临时标签。
+            // 历史栈以 JSON 随标签落盘，重进时由 CustomWebView 依据历史当前页恢复（含前进后退）。
+            val isHomepage = arguments?.getBoolean(KEY_RESTORE_TABS, false) == true
+                    || arguments?.getString(URL).isNullOrBlank()
+            if (isHomepage) {
+                customWebView.loadUrl(url!!)
+            } else {
+                customWebView.openExternalUrl(url!!)
             }
 
             EventBus.observe(EventKey.OPEN_BROWSER_URL, viewLifecycleOwner, Observer<String> {
