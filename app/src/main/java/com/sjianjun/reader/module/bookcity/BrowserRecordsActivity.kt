@@ -1,6 +1,8 @@
 package com.sjianjun.reader.module.bookcity
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -82,6 +84,7 @@ class BrowserRecordsActivity : BaseActivity() {
     private var currentMenu: PopupWindow? = null
     private var lastTouchX = 0f
     private var lastTouchY = 0f
+    private var keyword = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,6 +114,15 @@ class BrowserRecordsActivity : BaseActivity() {
         }
         binding.btnNewFolder.setOnClickListener { showNewFolderDialog(BookmarkStore.ROOT) }
         binding.btnClear.setOnClickListener { confirmClear() }
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                keyword = s?.toString()?.trim().orEmpty()
+                reload()
+            }
+
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
         reload()
     }
 
@@ -135,8 +147,12 @@ class BrowserRecordsActivity : BaseActivity() {
     }
 
     private fun buildBookmarkTree(folderId: String, depth: Int, out: MutableList<Item>) {
+        val kw = keyword
         val bookmarks = BookmarkStore.bookmarksIn(folderId)
-        val sites = if (folderId == BookmarkStore.BOOK_SOURCE_FOLDER_ID) sourceSiteRows else emptyList()
+            .filter { kw.isBlank() || it.title.contains(kw, true) || it.url.contains(kw, true) }
+        val sites = if (folderId == BookmarkStore.BOOK_SOURCE_FOLDER_ID)
+            sourceSiteRows.filter { kw.isBlank() || it.title.contains(kw, true) || it.url.contains(kw, true) }
+        else emptyList()
         val children = BookmarkStore.childrenFolders(folderId)
         // 同层：用户收藏在前，书源站点随后，子文件夹最后
         bookmarks.forEach { b ->
@@ -146,17 +162,30 @@ class BrowserRecordsActivity : BaseActivity() {
             out += Item.BookmarkNode("", r, depth, folderId)
         }
         children.forEach { f ->
-            val count = BookmarkStore.bookmarksIn(f.id).size +
-                (if (f.id == BookmarkStore.BOOK_SOURCE_FOLDER_ID) sourceSiteRows.size else 0) +
-                BookmarkStore.childrenFolders(f.id).size
-            val expanded = f.id in expandedFolderIds
-            out += Item.Folder(f, depth, expanded, count)
-            if (expanded) buildBookmarkTree(f.id, depth + 1, out)
+            if (kw.isBlank()) {
+                // 非搜索：保持原样（含子文件夹计数）
+                val count = BookmarkStore.bookmarksIn(f.id).size +
+                    (if (f.id == BookmarkStore.BOOK_SOURCE_FOLDER_ID) sourceSiteRows.size else 0) +
+                    BookmarkStore.childrenFolders(f.id).size
+                val expanded = f.id in expandedFolderIds
+                out += Item.Folder(f, depth, expanded, count)
+                if (expanded) buildBookmarkTree(f.id, depth + 1, out)
+            } else {
+                // 搜索：递归构建子内容，仅当存在匹配项时保留该文件夹并展开
+                val childItems = mutableListOf<Item>()
+                buildBookmarkTree(f.id, depth + 1, childItems)
+                if (childItems.isNotEmpty()) {
+                    out += Item.Folder(f, depth, true, childItems.size)
+                    out += childItems
+                }
+            }
         }
     }
 
     private fun reloadHistory() {
+        val kw = keyword
         val groups = History.list()
+            .filter { kw.isBlank() || it.title.contains(kw, true) || it.url.contains(kw, true) }
             .sortedByDescending { it.time }
             .groupBy { dateKey(it.time) }
         val items = mutableListOf<Item>()

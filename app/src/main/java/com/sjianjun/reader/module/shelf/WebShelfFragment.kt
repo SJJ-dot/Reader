@@ -6,6 +6,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
+import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,7 +16,6 @@ import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemBrowserTabBinding
 import com.sjianjun.reader.module.bookcity.BrowserTabs
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
-import com.sjianjun.reader.utils.glide
 import com.sjianjun.reader.view.click
 
 /**
@@ -93,7 +93,11 @@ class WebShelfFragment : BaseFragment() {
             val active = position == BrowserTabs.activeIndex
             holder.binding.tvTitle.text = tab.title.ifBlank { "无标题" }
             holder.binding.tvUrl.text = tab.url
-            holder.binding.ivThumb.glide(tab.thumbPath)
+            // 本地缩略图文件直接用 BitmapFactory 解码（与浏览器标签列表一致）；
+            // 不要用 Glide 加载裸绝对路径，会被当成 URL 加载失败显示占位图
+            holder.binding.ivThumb.setImageBitmap(
+                tab.thumbPath?.let { runCatching { BitmapFactory.decodeFile(it) }.getOrNull() }
+            )
             holder.binding.root.strokeWidth = if (active) 3 else 0
             holder.binding.root.strokeColor =
                 ContextCompat.getColor(holder.itemView.context, R.color.colorPrimary)

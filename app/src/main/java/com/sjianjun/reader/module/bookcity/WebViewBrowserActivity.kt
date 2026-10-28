@@ -83,15 +83,17 @@ class WebViewBrowserActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        // 暂停时先给当前激活标签截图：此时 WebView 仍存活且保留最后渲染，draw 出的是真实页面。
+        // 必须放在 onPause 而非 onStop：退出浏览器时，底层书架页会先于本 Activity 的 onStop 完成恢复并读取
+        // 缩略图；若放到 onStop 抓取，书架读到的还是旧/空缩略图，表现为“退出后书架标签图不显示”。
+        (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
+                as? BrowserPageFragment)?.captureActiveTabThumb()
         // 提前落盘：防止被系统回收（如划掉最近任务）时丢失内存中的标签
         BrowserTabs.persist()
         super.onPause()
     }
 
     override fun onStop() {
-        // 退出浏览器（返回/划掉最近任务）时先给当前激活标签截图，再落盘
-        (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-                as? BrowserPageFragment)?.captureActiveTabThumb()
         BrowserTabs.persist()
         super.onStop()
     }
