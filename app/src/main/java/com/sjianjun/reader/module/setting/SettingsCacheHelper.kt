@@ -1,6 +1,9 @@
 package com.sjianjun.reader.module.setting
 
+import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.os.Build
+import android.os.storage.StorageManager
 import android.webkit.WebStorage
 import android.webkit.WebView
 import com.bumptech.glide.Glide
@@ -15,9 +18,17 @@ internal data class AppCacheStats(
     val webViewBytes: Long,
     val jsBytes: Long,
     val tempBytes: Long,
+    /** 系统口径的缓存大小（StorageStats.cacheBytes，与系统"存储占用"页一致）；-1 表示获取失败 */
+    val systemBytes: Long = -1L,
+    /** 系统口径的用户数据大小（StorageStats.dataBytes，含数据库/文件/WebView数据等）；-1 表示获取失败 */
+    val userDataBytes: Long = -1L,
 ) {
     val totalBytes: Long
         get() = imageBytes + webViewBytes + jsBytes + tempBytes
+
+    /** 展示用的"当前占用"：优先系统口径，与系统设置里的"缓存"保持一致 */
+    val displayBytes: Long
+        get() = if (systemBytes >= 0) systemBytes else totalBytes
 }
 
 internal object SettingsCacheHelper {
@@ -28,12 +39,15 @@ internal object SettingsCacheHelper {
         val imageFiles = imageCacheFiles(appContext)
         val webViewFiles = webViewCacheFiles(appContext)
         val jsFiles = jsCacheFiles(appContext) + jsDownloadCacheFiles(appContext)
-        val tempFiles = otherCacheFiles(appContext, imageFiles + webViewFiles + jsFiles)
+        // 临时文件含 code_cache（系统口径把它计入"缓存"，统计与清理都覆盖）
+        val tempFiles = otherCacheFiles(appContext, imageFiles + webViewFiles + jsFiles) + codeCacheFiles(appContext)
         val stats = AppCacheStats(
             imageBytes = imageFiles.sumOf { it.safeSize() },
             webViewBytes = webViewFiles.sumOf { it.safeSize() },
             jsBytes = jsFiles.sumOf { it.safeSize() },
-            tempBytes = tempFiles.sumOf { it.safeSize() },
+            tempBytes = tempFiles.distinctByCanonicalPath().sumOf { it.safeSize() },
+            systemBytes = systemCacheBytes(appContext),
+            userDataBytes = systemDataBytes(appContext),
         )
         logCacheBreakdown(appContext, imageFiles, webViewFiles, jsFiles, tempFiles, stats)
         stats
@@ -59,6 +73,8 @@ internal object SettingsCacheHelper {
             runCatching {
                 Class.forName("io.legado.app.model.SharedJsScope").getMethod("clearCache").invoke(null)
             }
+            // code_cache 同样计入系统"缓存"，一并清理（JIT 缓存系统会自动重建）
+            runCatching { appContext.codeCacheDir.deleteRecursively() }
             jsDownloadCacheFiles(appContext).forEach { it.safeDelete() }
             otherCacheFiles(appContext, imageCacheFiles(appContext) + webViewCacheFiles(appContext) + jsCacheFiles(appContext) + jsDownloadCacheFiles(appContext))
                 .forEach { it.clearContentsOrDeleteFile() }
@@ -149,6 +165,30 @@ internal object SettingsCacheHelper {
                 Log.i("$label file size=${file.safeSize()} path=${file.safeCanonicalPath()}")
             }
         }
+    }
+
+    /** 系统口径的缓存大小：与系统设置-存储占用页显示的"缓存"一致（含 code_cache 与外部缓存） */
+    private fun systemCacheBytes(context: Context): Long {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return -1L
+        return runCatching {
+            val statsManager =
+                context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+            statsManager?.queryStatsForUid(StorageManager.UUID_DEFAULT, context.applicationInfo.uid)
+                ?.cacheBytes ?: -1L
+        }.getOrDefault(-1L)
+    }
+
+    private fun codeCacheFiles(context: Context): List<File> = listOf(context.codeCacheDir)
+
+    /** 系统口径的用户数据大小（与系统"存储占用"页的"用户数据"一致：数据库、files、WebView 数据等） */
+    private fun systemDataBytes(context: Context): Long {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return -1L
+        return runCatching {
+            val statsManager =
+                context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+            statsManager?.queryStatsForUid(StorageManager.UUID_DEFAULT, context.applicationInfo.uid)
+                ?.dataBytes ?: -1L
+        }.getOrDefault(-1L)
     }
 
     private fun cacheRoots(context: Context): List<File> {

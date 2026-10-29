@@ -139,13 +139,13 @@ class SettingsFragment : Fragment() {
 
             appCacheClear.setOnClickListener {
                 MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("清除应用缓存")
-                    .setMessage("将清除图片缓存、网页缓存/本地存储、阅读3.0规则缓存、下载缓存和临时导出/分享文件。\n不会删除书籍、章节内容、书源、设置或数据库，也不会主动清除 Cookie。\n网页和图片下次打开需要重新加载，部分站点本地状态可能重置。是否继续？")
+                    .setTitle("清除缓存")
+                    .setMessage("将清理下方『缓存数据』对应的数据，包括：\n· 图片缓存（Glide 磁盘/内存缓存）\n· 网页缓存与本地存储（WebView 缓存、localStorage 等）\n· 阅读3.0 规则缓存\n· 下载缓存与临时导出/分享文件\n· 代码缓存（code_cache）\n\n以下内容不会被删除：书籍、章节内容与阅读进度、书源、设置、Cookie，以及『用户数据』对应的数据库与文件。\n\n清除后网页和图片再次打开需重新加载，部分站点的本地状态可能重置。是否继续？")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("清除") { _, _ ->
                         viewLifecycleOwner.lifecycleScope.launch {
                             appCacheClear.isEnabled = false
-                            appCacheTotalSize.text = "当前占用：清理中..."
+                            appCacheTotalSize.text = "缓存数据：清理中..."
                             runCatching {
                                 SettingsCacheHelper.clearCaches(requireContext())
                             }.onSuccess {
@@ -184,18 +184,16 @@ class SettingsFragment : Fragment() {
     }
 
     private fun FragmentSettingsBinding.refreshAppCacheStats() {
-        appCacheTotalSize.text = "当前占用：计算中..."
-        appCacheImageSize.text = "图片缓存：计算中..."
-        appCacheWebviewSize.text = "网页缓存：计算中..."
-        appCacheJsSize.text = "阅读3.0规则缓存：计算中..."
-        appCacheTempSize.text = "临时文件：计算中..."
+        appCacheTotalSize.text = "缓存数据：计算中..."
+        appCacheUserDataSize.text = "用户数据：计算中..."
         viewLifecycleOwner.lifecycleScope.launch {
             val stats = SettingsCacheHelper.calculateStats(requireContext().applicationContext)
-            appCacheTotalSize.text = "当前占用：${formatBytes(stats.totalBytes)}"
-            appCacheImageSize.text = "图片缓存：${formatBytes(stats.imageBytes)}"
-            appCacheWebviewSize.text = "网页缓存：${formatBytes(stats.webViewBytes)}"
-            appCacheJsSize.text = "阅读3.0规则缓存：${formatBytes(stats.jsBytes)}"
-            appCacheTempSize.text = "临时文件：${formatBytes(stats.tempBytes)}"
+            appCacheTotalSize.text = "缓存数据：${formatBytes(stats.displayBytes)}"
+            appCacheUserDataSize.text = if (stats.userDataBytes >= 0) {
+                "用户数据：${formatBytes(stats.userDataBytes)}"
+            } else {
+                "用户数据：获取失败"
+            }
         }
     }
 
