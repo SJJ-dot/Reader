@@ -28,6 +28,7 @@ import com.sjianjun.reader.event.EventKey
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.color
 import com.sjianjun.reader.utils.gone
+import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.utils.setTextColorRes
 import com.sjianjun.reader.utils.show
 import com.sjianjun.reader.view.click
@@ -53,6 +54,9 @@ class BrowserPageFragment : BaseFragment() {
     /** init() 是否已完成：未完成时 onStart 不能触发 onForeground，避免与初始化抢建 WebView */
     private var initialized = false
 
+    /** 夜间模式切换导致重建时，用来恢复 WebView 的当前页/历史 */
+    private var savedWebState: Bundle? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -63,6 +67,8 @@ class BrowserPageFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val bind = FragmentBookCityPageBinding.bind(view)
         pageBinding = bind
+        // 重建（夜间模式切换等）时优先恢复当前页，而不是回到首页
+        savedWebState = savedInstanceState?.getBundle(KEY_WEB_STATE)
         lifecycleScope.launch {
             init(bind)
         }
@@ -76,11 +82,20 @@ class BrowserPageFragment : BaseFragment() {
             val state = Bundle()
             webView.saveState(state)
             outState.putBundle(KEY_WEB_STATE, state)
+            if (BuildConfig.DEBUG) android.util.Log.i("HISTBUG", "onSaveInstanceState 保存 webState url=${webView.url} canGoBack=${webView.canGoBack()}")
         }.onFailure { Log.e("保存 WebView 状态失败", it) }
     }
 
     internal fun onAppBackground(keepActive: Boolean = false) {
+        // 先在当前 WebView 仍存活时保存前进后退历史，再走 onBackground（可能销毁 WebView）
+        pageBinding?.customWebView?.saveStatesToTabs()
         pageBinding?.customWebView?.onBackground(keepActive)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 视图仍存活，先把每个标签的前进后退历史快照保存好（避免 onDestroyView 拆卸期 saveState 捕获空状态）
+        pageBinding?.customWebView?.saveStatesToTabs()
     }
 
     /** 阅读模式切回浏览器：切到来源标签页（找不到则加载到当前激活标签/新建）并加载当前阅读页 */
@@ -157,15 +172,22 @@ class BrowserPageFragment : BaseFragment() {
                     act.onBackPressedDispatcher.onBackPressed()
                 }
             }
-            // 主页（书城主入口 restoreTabs=true，或内嵌书城无显式网址参数）走普通加载，
-            // 不新建临时标签；真正的“外部指定网址打开”才新建可自动销毁的临时标签。
-            // 历史栈以 JSON 随标签落盘，重进时由 CustomWebView 依据历史当前页恢复（含前进后退）。
-            val isHomepage = arguments?.getBoolean(KEY_RESTORE_TABS, false) == true
-                    || arguments?.getString(URL).isNullOrBlank()
-            if (isHomepage) {
-                customWebView.loadUrl(url!!)
-            } else {
-                customWebView.openExternalUrl(url!!)
+            // 有保存状态就恢复到当前页（夜间模式切换不跳回首页），否则正常加载
+            val state = savedWebState
+            savedWebState = null
+            if (BuildConfig.DEBUG) android.util.Log.i("HISTBUG", "init savedWebState=${if (state != null) "non-null" else "null"} url=$url")
+            if (state == null || !customWebView.restoreState(state)) {
+                if (BuildConfig.DEBUG) android.util.Log.i("HISTBUG", "init -> 走 loadUrl/openExternalUrl 分支")
+                // 主页（书城主入口 restoreTabs=true，或内嵌书城无显式网址参数）走普通加载，
+                // 不新建临时标签；真正的“外部指定网址打开”才新建可自动销毁的临时标签。
+                // 历史快照随标签落盘，重进/冷启动时由 CustomWebView 依据快照恢复（含前进后退）。
+                val isHomepage = arguments?.getBoolean(KEY_RESTORE_TABS, false) == true
+                        || arguments?.getString(URL).isNullOrBlank()
+                if (isHomepage) {
+                    customWebView.loadUrl(url!!)
+                } else {
+                    customWebView.openExternalUrl(url!!)
+                }
             }
 
             EventBus.observe(EventKey.OPEN_BROWSER_URL, viewLifecycleOwner, Observer<String> {
