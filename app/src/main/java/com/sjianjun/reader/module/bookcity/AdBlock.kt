@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -47,7 +48,8 @@ data class AccessRequest(
     val url: String,
     val domain: String,
     var count: Int = 1,
-    var blocked: Boolean = false
+    var blocked: Boolean = false,
+    var time: Long = 0
 )
 
 /** 一个网页（主框架）的访问记录：含该网页请求到的所有 URL */
@@ -56,8 +58,41 @@ data class AccessPage(
     var time: Long,
     var title: String = "",
     var favicon: String = "",
-    val requests: MutableList<AccessRequest> = mutableListOf()
+    val requests: MutableList<AccessRequest> = mutableListOf(),
+    var loading: Boolean = false
 )
+
+// ===================== 匹配（纯函数，可单测；支持 顶级域名 / 子域名 / 精确URL / 纯IP / 端口） =====================
+
+/** 解析规则里的 host（可能带 ":端口"），返回 (纯host, 端口?)。端口仅对 IPv4/域名解析；IPv6 整体作 host。规则不含端口→null（匹配该 host 所有端口，向后兼容“屏蔽整站”）。 */
+internal fun parseRuleHost(ruleHostRaw: String): Pair<String, Int?> {
+    if (ruleHostRaw.startsWith("[") || ruleHostRaw.count { it == ':' } > 1) {
+        return ruleHostRaw to null
+    }
+    val idx = ruleHostRaw.lastIndexOf(':')
+    if (idx > 0) {
+        val port = ruleHostRaw.substring(idx + 1).toIntOrNull()
+        if (port != null && port in 1..65535) {
+            return ruleHostRaw.substring(0, idx) to port
+        }
+    }
+    return ruleHostRaw to null
+}
+
+/** 判断单条规则是否匹配该 URL：纯 IP 退化为 host；端口 URL 侧用 httpUrl.port（默认80/443），规则带端口则精确匹配。 */
+internal fun adBlockRuleMatches(e: HostStr, httpUrl: HttpUrl, top: String?, url: String): Boolean {
+    val (ruleHost, rulePort) = parseRuleHost(e.host)
+    val urlHost = httpUrl.host
+    val urlPort = httpUrl.port
+    return when (e.mode) {
+        BLOCK_MODE_URL -> e.host == url
+        BLOCK_MODE_SUBDOMAIN -> ruleHost == urlHost && (rulePort == null || rulePort == urlPort)
+        else -> {
+            val base = top ?: urlHost
+            ruleHost == base && (rulePort == null || rulePort == urlPort)
+        }
+    }
+}
 
 object AdBlock {
     private val dao get() = DbFactory.db.browserDataDao()
@@ -114,20 +149,14 @@ object AdBlock {
         }
     }
 
-    // ===================== 匹配（支持 顶级域名 / 子域名 / 精确URL） =====================
+    // ===================== 匹配（支持 顶级域名 / 子域名 / 精确URL / 纯IP / 端口） =====================
+    // 匹配核心逻辑见文件顶层 internal 函数 adBlockRuleMatches / parseRuleHost（可单测，不依赖本单例）。
 
     /** 该 URL 是否命中黑名单（命中会累计该规则命中次数） */
     fun shouldBlock(url: String): Boolean {
         val httpUrl = url.toHttpUrlOrNull() ?: return false
         val top = httpUrl.topPrivateDomain()
-        val host = httpUrl.host
-        val matched = blacklist.value?.firstOrNull { e ->
-            when (e.mode) {
-                BLOCK_MODE_URL -> e.host == url
-                BLOCK_MODE_SUBDOMAIN -> e.host == host
-                else -> e.host == top
-            }
-        }
+        val matched = blacklist.value?.firstOrNull { adBlockRuleMatches(it, httpUrl, top, url) }
         if (matched != null) recordHit(matched.host, matched.mode)
         return matched != null
     }
@@ -136,14 +165,7 @@ object AdBlock {
     fun shouldAllow(url: String): Boolean {
         val httpUrl = url.toHttpUrlOrNull() ?: return false
         val top = httpUrl.topPrivateDomain()
-        val host = httpUrl.host
-        val matched = whitelist.value?.firstOrNull { e ->
-            when (e.mode) {
-                BLOCK_MODE_URL -> e.host == url
-                BLOCK_MODE_SUBDOMAIN -> e.host == host
-                else -> e.host == top
-            }
-        }
+        val matched = whitelist.value?.firstOrNull { adBlockRuleMatches(it, httpUrl, top, url) }
         if (matched != null) recordHit(matched.host, matched.mode)
         return matched != null
     }
@@ -176,9 +198,12 @@ object AdBlock {
      * 访问记录里的 r.domain 是裸 host（如 "soduzw.org"），直接 toHttpUrlOrNull() 会因缺少
      * scheme 得到 null，导致按范围匹配时 null==null 误命中全部请求，这里统一补 scheme 再解析。
      */
-    private fun topPrivateOf(hostOrUrl: String): String? =
-        hostOrUrl.toHttpUrlOrNull()?.topPrivateDomain()
-            ?: "https://$hostOrUrl".toHttpUrlOrNull()?.topPrivateDomain()
+    /** 域名/IP 的统一匹配键：域名取顶级域名，纯 IP 或无法解析时退化为 host 本身 */
+    private fun domainKey(hostOrUrl: String): String? {
+        val u = hostOrUrl.toHttpUrlOrNull() ?: "https://$hostOrUrl".toHttpUrlOrNull()
+        val top = u?.topPrivateDomain()
+        return top ?: u?.host
+    }
 
     // ===================== 访问记录（内存，不落库） =====================
     // shouldInterceptRequest 会在 WebView 的多个线程并发回调，
@@ -198,7 +223,11 @@ object AdBlock {
                 page.time = System.currentTimeMillis()
                 list.add(0, page)
             }
+            page.loading = true
             currentPage = page
+            // 仅当前正在加载的页面显示加载中：切换页面（前进/后退/新链接）时清掉旧页面状态，
+            // 避免旧页面 loading 永远停在 true（如加载中后退再前进导致 onPageFinished 漏触发）
+            list.forEach { it.loading = it === page }
         }
         accessPages.postValue(accessPages.value)
     }
@@ -210,6 +239,23 @@ object AdBlock {
             accessPages.value?.firstOrNull { it.pageUrl == url }?.let { page ->
                 if (!title.isNullOrBlank()) page.title = title
             }
+        }
+        accessPages.postValue(accessPages.value)
+    }
+
+    /** 主框架加载完成：清除加载状态，供 UI 把转圈动画切换为完成图标 */
+    fun finishPage(url: String?) {
+        if (url.isNullOrBlank()) return
+        synchronized(recordLock) {
+            accessPages.value?.firstOrNull { it.pageUrl == url }?.loading = false
+        }
+        accessPages.postValue(accessPages.value)
+    }
+
+    /** 进度到达 100% 时的兜底：清除当前页加载状态，避免 onPageFinished 漏触发导致一直转圈 */
+    fun finishCurrentPage() {
+        synchronized(recordLock) {
+            currentPage?.loading = false
         }
         accessPages.postValue(accessPages.value)
     }
@@ -253,7 +299,7 @@ object AdBlock {
                     existing.count++
                     if (blocked) existing.blocked = true
                 } else {
-                    page.requests.add(AccessRequest(url, domain, count = 1, blocked = blocked))
+                    page.requests.add(AccessRequest(url, domain, count = 1, blocked = blocked, time = System.currentTimeMillis()))
                 }
             }
         }
@@ -265,14 +311,15 @@ object AdBlock {
      * 标记为 blocked 的请求在访问记录中显示红色“已拦截”与“恢复”按钮。
      */
     fun markBlockedInAccess(hostOrUrl: String, mode: String) {
-        val top = topPrivateOf(hostOrUrl)
+        val top = domainKey(hostOrUrl)
+        val ruleHost = parseRuleHost(hostOrUrl).first
         synchronized(recordLock) {
             accessPages.value?.forEach { page ->
                 page.requests.forEach { r ->
                     val match = when (mode) {
                         BLOCK_MODE_URL -> r.url == hostOrUrl
-                        BLOCK_MODE_SUBDOMAIN -> r.domain == hostOrUrl
-                        else -> top != null && topPrivateOf(r.domain) == top
+                        BLOCK_MODE_SUBDOMAIN -> ruleHost == r.domain
+                        else -> top != null && domainKey(r.domain) == top
                     }
                     if (match) r.blocked = true
                 }
@@ -283,14 +330,15 @@ object AdBlock {
 
     /** 移除黑名单规则后，复位访问记录里命中该规则的“已拦截”标记（用于域名行 -黑名单） */
     fun unmarkBlockedInAccess(hostOrUrl: String, mode: String) {
-        val top = topPrivateOf(hostOrUrl)
+        val top = domainKey(hostOrUrl)
+        val ruleHost = parseRuleHost(hostOrUrl).first
         synchronized(recordLock) {
             accessPages.value?.forEach { page ->
                 page.requests.forEach { r ->
                     val match = when (mode) {
                         BLOCK_MODE_URL -> r.url == hostOrUrl
-                        BLOCK_MODE_SUBDOMAIN -> r.domain == hostOrUrl
-                        else -> top != null && topPrivateOf(r.domain) == top
+                        BLOCK_MODE_SUBDOMAIN -> ruleHost == r.domain
+                        else -> top != null && domainKey(r.domain) == top
                     }
                     if (match) r.blocked = false
                 }
@@ -304,7 +352,8 @@ object AdBlock {
         accessPages.value?.map { p ->
             AccessPage(
                 p.pageUrl, p.time, p.title, p.favicon,
-                ArrayList(p.requests.map { AccessRequest(it.url, it.domain, it.count, it.blocked) })
+                ArrayList(p.requests.map { AccessRequest(it.url, it.domain, it.count, it.blocked, it.time) }),
+                p.loading
             )
         } ?: emptyList()
     }
@@ -347,11 +396,15 @@ object AdBlock {
      */
     fun restoreBlocked(url: String) {
         val httpUrl = url.toHttpUrlOrNull() ?: return
-        val top = httpUrl.topPrivateDomain()
+        val top = domainKey(url)   // 域名取顶级，纯 IP 取 IP 本身
         val host = httpUrl.host
         val list = blacklist.value
-        val hadTop = top != null && list?.any { it.host == top && it.mode == BLOCK_MODE_DOMAIN } == true
-        val hadSub = list?.any { it.host == host && it.mode == BLOCK_MODE_SUBDOMAIN } == true
+        val hadTop = top != null && list?.any {
+            parseRuleHost(it.host).first == top && it.mode == BLOCK_MODE_DOMAIN
+        } == true
+        val hadSub = list?.any {
+            parseRuleHost(it.host).first == host && it.mode == BLOCK_MODE_SUBDOMAIN
+        } == true
         if (top != null) removeBlackHost(HostStr(top, listOf()).apply { mode = BLOCK_MODE_DOMAIN })
         removeBlackHost(HostStr(host, listOf()).apply { mode = BLOCK_MODE_SUBDOMAIN })
         removeBlackHost(HostStr(url, listOf()).apply { mode = BLOCK_MODE_URL })
@@ -363,7 +416,7 @@ object AdBlock {
                 page.requests.forEach { r ->
                     val unblock = r.url == url
                             || (hadSub && r.domain == host)
-                            || (top != null && topPrivateOf(r.domain) == top)
+                            || (top != null && domainKey(r.domain) == top)
                     if (unblock) r.blocked = false
                 }
             }

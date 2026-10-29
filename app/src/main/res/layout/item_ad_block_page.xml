@@ -49,6 +49,28 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
+        <FrameLayout
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="6dp">
+
+            <ProgressBar
+                android:id="@+id/pb_loading"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="@color/colorPrimary"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_done"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_check_white"
+                app:tint="@color/colorPrimary" />
+        </FrameLayout>
+
         <ImageView
             android:id="@+id/iv_chevron"
             android:layout_width="20dp"

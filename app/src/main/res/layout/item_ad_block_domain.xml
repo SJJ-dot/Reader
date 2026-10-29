@@ -50,10 +50,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
-                android:ellipsize="middle"
+                android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="#888888"
-                android:textSize="11sp" />
+                android:textColor="@color/dn_text_color_black"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView

@@ -1594,6 +1594,8 @@ class CustomWebView @JvmOverloads constructor(
             if (newProgress == 100) {
                 binding.refresh.isSelected = false
                 binding.searchRefresh.visibility = GONE
+                // 兜底：进度满时清除当前页加载状态，避免 onPageFinished 漏触发导致一直转圈
+                adBlock?.finishCurrentPage()
             } else {
                 binding.refresh.isSelected = true
                 binding.searchRefresh.visibility = VISIBLE

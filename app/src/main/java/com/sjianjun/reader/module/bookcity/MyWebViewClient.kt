@@ -63,6 +63,7 @@ open class MyWebViewClient(
     }
 
     override fun onPageFinished(webView: WebView?, url: String?) {
+        AdBlock.finishPage(url)
         webView?.isBlank = url.isNullOrBlank() || url == "about:blank"
         if (!url.isNullOrBlank() && webView?.isBlank == false) {
             AdBlock.updatePageMeta(url, webView.title)
@@ -201,8 +202,11 @@ open class MyWebViewClient(
 
         // 若目标域与当前页主域不同，根据跨域配置处理
         val currentHost = view?.currentHost
+        val targetHost = url.toHttpUrlOrNull()?.host
         val differentSite = when {
-            currentHost == null || targetTop == null -> true
+            currentHost == null || targetHost == null -> true
+            // 纯 IP 目标：topPrivateDomain() 为 null，退化为用 host 比较，避免 IP 站点每次点击都弹窗
+            targetTop == null -> currentHost != targetHost
             else -> currentHost != targetTop
         }
 
@@ -234,8 +238,10 @@ open class MyWebViewClient(
             val context = view?.context ?: return false
             val url = request.url.toString()
             val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
+            // 纯 IP 站点 topPrivateDomain() 为 null：规则与展示退化为 host（IP）本身
+            val ruleHost = targetTop ?: url.toHttpUrlOrNull()?.host
             val originBinding = DialogCrossOriginBinding.inflate(LayoutInflater.from(context), null, false)
-            originBinding.tvDialogUrl.text = targetTop
+            originBinding.tvDialogUrl.text = ruleHost
 
             val dialog = MaterialAlertDialogBuilder(context)
                 .setView(originBinding.root)
@@ -252,19 +258,19 @@ open class MyWebViewClient(
                 dialog.dismiss()
             }
             originBinding.btnWhitelist.setOnClickListener {
-                if (targetTop != null) {
-                    AdBlock.addWhiteHost(targetTop, BLOCK_MODE_DOMAIN)
+                if (ruleHost != null) {
+                    AdBlock.addWhiteHost(ruleHost, BLOCK_MODE_DOMAIN)
                 }
-                Log.i("跨域请求加入白名单：${targetTop}")
+                Log.i("跨域请求加入白名单：${ruleHost}")
                 onAllow(url, request)
                 dialog.dismiss()
             }
             originBinding.btnBlacklist.setOnClickListener {
-                if (targetTop != null) {
-                    AdBlock.addBlackHost(targetTop, BLOCK_MODE_DOMAIN)
+                if (ruleHost != null) {
+                    AdBlock.addBlackHost(ruleHost, BLOCK_MODE_DOMAIN)
                 }
                 dialog.dismiss()
-                Log.i("跨域请求加入黑名单：${targetTop}")
+                Log.i("跨域请求加入黑名单：${ruleHost}")
                 onBlock(url, request)
             }
 

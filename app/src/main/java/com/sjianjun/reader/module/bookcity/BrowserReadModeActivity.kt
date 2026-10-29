@@ -15,7 +15,6 @@ import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -86,8 +85,6 @@ class BrowserReadModeActivity : BaseActivity() {
     private var needRestore = true
 
     private lateinit var binding: ActivityBrowserReadModeBinding
-    private var chapterFragment: ChapterListDialogFragment? = null
-
     /** 广告/跨域拦截器，与浏览器模式共享同一份配置 */
     val adBlock: AdBlock = AdBlock
 
@@ -160,7 +157,6 @@ class BrowserReadModeActivity : BaseActivity() {
         // 阅读模式仅用于内容提取，禁止跳转外部 APP / 下载文件 / 触发自定义 scheme
         binding.hiddenWebView.webViewClient = ReadModeWebViewClient()
 
-        setupChapterDrawer()
         setupInsets()
         setupPageLoader()
         setupTouchListener()
@@ -217,31 +213,6 @@ class BrowserReadModeActivity : BaseActivity() {
         }
     }
 
-    private fun setupChapterDrawer() {
-        if (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) == null) {
-            val fragment = ChapterListDialogFragment()
-            chapterFragment = fragment
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.chapter_list_drawer_container, fragment, ChapterListDialogFragment.TAG)
-                .commitNowAllowingStateLoss()
-        }
-        binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener() {
-            override fun onDrawerOpened(drawerView: View) {
-                notifyChapterDialogChanged()
-            }
-        })
-    }
-
-    /** 章节右侧抽屉是否处于打开状态 */
-    private fun isChapterDrawerOpen(): Boolean {
-        return binding.drawerLayout.isDrawerOpen(GravityCompat.END)
-    }
-
-    private fun notifyChapterDialogChanged() {
-        (supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? ChapterListDialogFragment)
-            ?.refreshCurrentTab()
-    }
-
     private fun recordReadModeHistory(url: String, data: ExtractResult?) {
         if (url.toHttpUrlOrNull() == null || data == null || data.content.isBlank() || data.content == "加载失败") {
             return
@@ -256,7 +227,6 @@ class BrowserReadModeActivity : BaseActivity() {
         while (readModeHistory.size > 100) {
             readModeHistory.removeAt(readModeHistory.lastIndex)
         }
-        notifyChapterDialogChanged()
     }
 
     fun canGoBackReadModeHistory(): Boolean = readModeHistory.size > 1
@@ -275,7 +245,6 @@ class BrowserReadModeActivity : BaseActivity() {
         isHistoryNavigation = true
         showChapter(target.url)
         isHistoryNavigation = false
-        notifyChapterDialogChanged()
         return true
     }
 
@@ -285,25 +254,7 @@ class BrowserReadModeActivity : BaseActivity() {
         isHistoryNavigation = true
         showChapter(target.url)
         isHistoryNavigation = false
-        notifyChapterDialogChanged()
         return true
-    }
-
-    fun openDrawer() {
-        var fragment = supportFragmentManager.findFragmentByTag(ChapterListDialogFragment.TAG) as? ChapterListDialogFragment
-        if (fragment == null) {
-            fragment = ChapterListDialogFragment()
-            chapterFragment = fragment
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.chapter_list_drawer_container, fragment, ChapterListDialogFragment.TAG)
-                .commitAllowingStateLoss()
-        }
-        binding.drawerLayout.openDrawer(GravityCompat.END)
-        fragment.refreshCurrentTab()
-    }
-
-    fun closeChapterDrawer() {
-        binding.drawerLayout.closeDrawer(GravityCompat.END)
     }
 
     fun isHiddenWebViewVisible(): Boolean = binding.hiddenWebView.isVisible
@@ -384,7 +335,6 @@ class BrowserReadModeActivity : BaseActivity() {
                 bottom = max(params.insetBottom, safeBottom.toFloat()),
             )
             binding.webViewContainer.setPadding(0, safeTop, 0, safeBottom)
-            binding.chapterListDrawerContainer.setPadding(0, safeTop, 0, safeBottom)
             insets
         }
     }
@@ -421,12 +371,6 @@ class BrowserReadModeActivity : BaseActivity() {
     private fun setupTouchListener() {
         binding.readModePageView.setTouchListener(object : PageView.TouchListener {
             override fun intercept(event: MotionEvent?): Boolean {
-                if (isChapterDrawerOpen()) {
-                    if (event?.action == MotionEvent.ACTION_UP) {
-                        closeChapterDrawer()
-                    }
-                    return true
-                }
                 // 隐藏设置对话框
                 return getSettingFragment()?.let {
                     if (it.isVisible && event?.action == MotionEvent.ACTION_UP) {
@@ -563,11 +507,6 @@ class BrowserReadModeActivity : BaseActivity() {
             val fragment = getSettingFragment()
             when {
 
-                isChapterDrawerOpen() -> {
-                    closeChapterDrawer()
-                    true
-                }
-
                 fragment?.isVisible == true -> {
                     supportFragmentManager.beginTransaction()
                         .hide(fragment)
@@ -602,11 +541,7 @@ class BrowserReadModeActivity : BaseActivity() {
         val data = if (!force) (extractCache.get(url) ?: loadExtractFromDisk(url)) else null
         if (data != null) {
             Log.i("loadUrlForReadMode: url=$url, force=$force, cached=true")
-            // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
             withContext(Dispatchers.Main) {
-                if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
-                    notifyChapterDialogChanged()
-                }
                 if (pageLoader.curChapter?.link == url) {
                     showChapter(url, pagePos)
                 }
@@ -653,10 +588,6 @@ class BrowserReadModeActivity : BaseActivity() {
             }
             putExtractResult(url, data)
         }
-        // 当前页面正文刚刚到位，且抽屉处于打开状态，刷新当前 Tab
-        if (pageLoader.curChapter?.link == url && isChapterDrawerOpen()) {
-            notifyChapterDialogChanged()
-        }
         if (pageLoader.curChapter?.link == url) {
             showChapter(url, pagePos)
         }
@@ -675,7 +606,6 @@ class BrowserReadModeActivity : BaseActivity() {
         if (home) {
             readModeHistory.clear()
             forwardHistoryStack.clear()
-            notifyChapterDialogChanged()
             showChapter(startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl
@@ -849,11 +779,6 @@ class BrowserReadModeActivity : BaseActivity() {
         pageLoader.chapterCategory = chapters
         pageLoader.refreshChapterList()
         notifySettingFragmentChanged()
-
-        // 切到了新页面，若抽屉打开则立刻刷新当前 Tab；尚未提取时正文加载完成后会再次刷新
-        if (pageChanged && isChapterDrawerOpen()) {
-            notifyChapterDialogChanged()
-        }
 
         // 同一页面重新渲染后页码已重置，重新定位朗读高亮
         val current = TtsPlaybackController.state.value

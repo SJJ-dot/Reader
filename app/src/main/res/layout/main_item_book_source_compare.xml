@@ -83,6 +83,15 @@
             tools:text="当前：第X章" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tv_word_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/dn_text_color_light"
+        android:textSize="13sp"
+        tools:text="本章字数：1234" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

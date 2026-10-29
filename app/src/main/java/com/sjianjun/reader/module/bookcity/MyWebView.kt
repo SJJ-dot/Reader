@@ -40,7 +40,10 @@ class MyWebView @JvmOverloads constructor(
 
     var currentHost: String? = null
         set(url) {
-            field = url?.toHttpUrlOrNull()?.topPrivateDomain()
+            val u = url?.toHttpUrlOrNull()
+            // 纯 IP 站点 topPrivateDomain() 返回 null，退化为 host（IP 本身）。
+            // 否则 currentHost 永远为 null，使站内链接在 showBlockDialog 中被误判为跨域而频繁弹窗。
+            field = u?.topPrivateDomain() ?: u?.host
         }
 
     var isBlank: Boolean? = null

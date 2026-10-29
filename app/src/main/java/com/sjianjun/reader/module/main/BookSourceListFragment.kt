@@ -91,7 +91,9 @@ class BookSourceListFragment : BaseFragment() {
             addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             setDimAmount(0.6f)
             setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.dn_background)))
-            setDecorFitsSystemWindows(false)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                setDecorFitsSystemWindows(false)
+            }
             WindowInsetsControllerCompat(this, decorView).isAppearanceLightNavigationBars = true
         }
         // 点击弹窗上方露出的空白区域（activity 区域）取消弹窗
@@ -450,6 +452,7 @@ class BookSourceListFragment : BaseFragment() {
             private fun loadContent(book: Book, force: Boolean = false) {
                 binding.tvChapterTitle.text = "正在加载…"
                 binding.tvContent.text = ""
+                binding.tvWordCount.text = ""
                 // 刷新中保持按钮可见（置灰），避免底部按钮行宽度跳动
                 binding.btnRefresh.isEnabled = false
                 binding.loading.show()
@@ -463,6 +466,7 @@ class BookSourceListFragment : BaseFragment() {
                         binding.tvChapterTitle.setTextColor(R.color.mdr_red_600.color(fragment.context))
                         binding.tvLastChapter.text = loaded?.lastChapter?.title?.let { "最新：$it" } ?: "最新：—"
                         binding.tvContent.text = loaded?.error?.takeIf { it.isNotBlank() } ?: "暂无内容"
+                        binding.tvWordCount.text = "本章字数：—"
                         binding.btnRefresh.isEnabled = true
                         binding.btnRefresh.show()
                         return@launch
@@ -475,11 +479,7 @@ class BookSourceListFragment : BaseFragment() {
                         }
                     // 按当前阅读页首行在新源正文里定位
                     val location = fragment.vm.locateInContent(text)
-                    binding.tvChapterTitle.text = if (location.hit) {
-                        "当前：$title · 定位 ${location.percent}%"
-                    } else {
-                        "当前：$title · 未定位到本页"
-                    }
+                    binding.tvChapterTitle.text = "当前：$title"
                     // 匹配到的章节名与当前阅读章节名完全相同时绿色，否则红色
                     val same = chapter.title?.trim() == fragment.vm.currentChapterTitle?.trim()
                     binding.tvChapterTitle.setTextColor(
@@ -487,6 +487,7 @@ class BookSourceListFragment : BaseFragment() {
                     )
                     binding.tvLastChapter.text = loaded.lastChapter?.title?.let { "最新：$it" } ?: "最新：—"
                     binding.tvContent.text = text.ifBlank { "（该章暂无正文）" }
+                    binding.tvWordCount.text = "本章字数：${text.count { !it.isWhitespace() }}"
                     // 自动滚到当前页对应的位置，方便左右对比；未命中回到章节开头
                     binding.tvContent.post {
                         val scroll = binding.tvContent.parent as? ScrollView ?: return@post
