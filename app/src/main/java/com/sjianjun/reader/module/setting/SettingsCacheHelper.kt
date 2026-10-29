@@ -113,7 +113,7 @@ internal object SettingsCacheHelper {
     }
 
     private fun otherCacheFiles(context: Context, knownFiles: List<File>): List<File> {
-        val known = (knownFiles + browserReadModeCacheDir(context))
+        val known = knownFiles
             .map { it.safeCanonicalPath() }
             .toSet()
         val files = mutableListOf<File>()
@@ -123,10 +123,6 @@ internal object SettingsCacheHelper {
                 ?.let(files::addAll)
         }
         return files.distinctByCanonicalPath()
-    }
-
-    private fun browserReadModeCacheDir(context: Context): File {
-        return File(context.cacheDir, "browser_read_mode")
     }
 
     private fun logCacheBreakdown(
@@ -147,7 +143,6 @@ internal object SettingsCacheHelper {
         logCacheGroup("网页缓存", webViewFiles)
         logCacheGroup("阅读3.0规则缓存", jsFiles)
         logCacheGroup("临时文件", tempFiles)
-        Log.i("阅读模式缓存 excluded ${browserReadModeCacheDir(context).safeCanonicalPath()} size=${browserReadModeCacheDir(context).safeSize()}")
     }
 
     private fun logCacheGroup(label: String, files: List<File>) {

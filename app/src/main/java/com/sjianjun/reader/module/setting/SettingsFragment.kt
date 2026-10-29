@@ -18,7 +18,6 @@ import com.hjq.permissions.permission.PermissionLists
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentSettingsBinding
-import com.sjianjun.reader.module.bookcity.BrowserReadModeActivity
 import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.utils.HttpServiceHelper
@@ -110,37 +109,10 @@ class SettingsFragment : Fragment() {
                 globalConfig.autoBrowserReadMode.postValue(isChecked)
             }
 
-            // 浏览器阅读模式缓存
-            browserReadCacheSizeInput.setText(globalConfig.browserReadModeCacheSizeMB.toString())
-            browserReadCacheSizeInput.setOnFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) commitBrowserReadCacheSize()
-            }
-            browserReadCacheClear.setOnClickListener {
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("清除阅读模式缓存")
-                    .setMessage("将清空已离线的阅读模式提取内容，下次打开需要重新加载。是否继续？")
-                    .setNegativeButton("取消", null)
-                    .setPositiveButton("清除") { _, _ ->
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            runCatching {
-                                BrowserReadModeActivity.clearDiskCache()
-                            }.onSuccess {
-                                refreshBrowserReadCacheSize()
-                                toast("已清除")
-                            }.onFailure {
-                                Log.e("清除阅读模式缓存失败", it)
-                                toast("清除失败：${it.message ?: "未知错误"}")
-                            }
-                        }
-                    }
-                    .show()
-            }
-            refreshBrowserReadCacheSize()
-
             appCacheClear.setOnClickListener {
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle("清除缓存")
-                    .setMessage("将清理下方『缓存数据』对应的数据，包括：\n· 图片缓存（Glide 磁盘/内存缓存）\n· 网页缓存与本地存储（WebView 缓存、localStorage 等）\n· 阅读3.0 规则缓存\n· 下载缓存与临时导出/分享文件\n· 代码缓存（code_cache）\n\n以下内容不会被删除：书籍、章节内容与阅读进度、书源、设置、Cookie，以及『用户数据』对应的数据库与文件。\n\n清除后网页和图片再次打开需重新加载，部分站点的本地状态可能重置。是否继续？")
+                    .setMessage("将清理下方『缓存数据』对应的数据，包括：\n· 图片缓存（Glide 磁盘/内存缓存）\n· 网页缓存与本地存储（WebView 缓存、localStorage 等）\n· 阅读3.0 规则缓存\n· 阅读模式离线正文（阅读模式提取的网页正文，不再单独保留）\n· 下载缓存与临时导出/分享文件\n· 代码缓存（code_cache）\n\n以下内容不会被删除：书籍、章节内容与阅读进度、书源、设置、Cookie，以及『用户数据』对应的数据库与文件。\n\n清除后网页和图片再次打开需重新加载，部分站点的本地状态可能重置。是否继续？")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("清除") { _, _ ->
                         viewLifecycleOwner.lifecycleScope.launch {
@@ -173,16 +145,6 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun FragmentSettingsBinding.refreshBrowserReadCacheSize() {
-        browserReadCacheCurrentSize.text = "默认 50MB，当前占用：计算中..."
-        viewLifecycleOwner.lifecycleScope.launch {
-            val size = withContext(Dispatchers.IO) {
-                BrowserReadModeActivity.diskCacheSize()
-            }
-            browserReadCacheCurrentSize.text = "默认 50MB，当前占用：${formatBytes(size)}"
-        }
-    }
-
     private fun FragmentSettingsBinding.refreshAppCacheStats() {
         appCacheTotalSize.text = "缓存数据：计算中..."
         appCacheUserDataSize.text = "用户数据：计算中..."
@@ -206,26 +168,6 @@ class SettingsFragment : Fragment() {
             bytes >= mb -> String.format(java.util.Locale.getDefault(), "%.2f MB", bytes / mb)
             bytes >= kb -> String.format(java.util.Locale.getDefault(), "%.2f KB", bytes / kb)
             else -> "${bytes} B"
-        }
-    }
-
-    private fun FragmentSettingsBinding.commitBrowserReadCacheSize() {
-        val raw = browserReadCacheSizeInput.text?.toString()?.trim().orEmpty()
-        val value = raw.toIntOrNull()
-        val current = globalConfig.browserReadModeCacheSizeMB
-        if (value == null || value < 1) {
-            toast("请输入有效的缓存大小（MB）")
-            browserReadCacheSizeInput.setText(current.toString())
-            return
-        }
-        val clamped = value.coerceIn(1, 10240)
-        if (clamped != value) {
-            browserReadCacheSizeInput.setText(clamped.toString())
-        }
-        if (clamped != current) {
-            globalConfig.browserReadModeCacheSizeMB = clamped
-            BrowserReadModeActivity.resetDiskCache()
-            toast("已保存")
         }
     }
 
