@@ -158,10 +158,7 @@ def getChapterContent(url, _depth=0):
     for a in soup.select("a[href]"):
         if a.get_text(strip=True) != "下一页":
             continue
-        full = urljoin(url, a.get("href"))
-        if full.startswith(base + "_"):
-            next_url = full
-            break
+        next_url = urljoin(url, a.get("href"))
 
     # 去掉“请点击下一页”这种污染段落
     for p in content.select("p"):
