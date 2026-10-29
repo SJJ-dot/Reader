@@ -6,7 +6,7 @@
     app:startDestination="@id/bookShelfFragment">
     <fragment
         android:id="@+id/bookShelfFragment"
-        android:name="com.sjianjun.reader.module.shelf.BookshelfFragment"
+        android:name="com.sjianjun.reader.module.shelf.BookShelfHostFragment"
         android:label="书架" />
     <fragment
         android:id="@+id/searchFragment"
@@ -40,11 +40,5 @@
         android:name="com.sjianjun.reader.module.bookcity.BrowserPageFragment"
         android:label="书城"
         tools:layout="@layout/fragment_book_city_page" />
-
-    <fragment
-        android:id="@+id/webShelfFragment"
-        android:name="com.sjianjun.reader.module.shelf.WebShelfFragment"
-        android:label="标签"
-        tools:layout="@layout/fragment_web_shelf" />
 
 </navigation>

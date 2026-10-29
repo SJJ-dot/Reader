@@ -22,7 +22,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.coroutine.launch
 import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_TITLE
-import com.sjianjun.reader.BaseFragment
+import androidx.fragment.app.Fragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
 import com.sjianjun.reader.bean.Book
@@ -52,14 +52,13 @@ import com.sjianjun.reader.utils.visible
 import kotlinx.coroutines.FlowPreview
 
 @FlowPreview
-class BookshelfFragment : BaseFragment() {
+class BookshelfFragment : Fragment() {
     private val importTxt = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
         FileImportActivity.start(activity ?: return@registerForActivityResult, uri)
     }
     private var adapter: BaseAdapter<Book>? = null
     private var bookShelfBinding: MainFragmentBookShelfBinding? = null
-    private val bookShelfTitle = BookShelfTitle()
     private val viewModel by viewModels<BookShelfViewModel>()
     private val navOptions: NavOptions
         get() = NavOptions.Builder()
@@ -92,7 +91,6 @@ class BookshelfFragment : BaseFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
-        bookShelfTitle.destroyTileView()
         bookShelfBinding = null
         adapter = null
     }
@@ -111,7 +109,7 @@ class BookshelfFragment : BaseFragment() {
 
     private fun initData() {
         viewModel.init()
-        viewModel.bookList.observeViewLifecycle {
+        viewModel.bookList.observe(viewLifecycleOwner) {
             adapter?.data?.clear()
             adapter?.data?.addAll(it)
             adapter?.notifyDataSetChanged()
@@ -122,8 +120,6 @@ class BookshelfFragment : BaseFragment() {
         inflater.inflate(R.menu.main_fragment_book_shelf_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
         updateLayoutMenuItem(menu.findItem(R.id.layout_book_shelf))
-        bookShelfTitle.initTileView(this)
-        bookShelfTitle.showSourceData(true)
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {

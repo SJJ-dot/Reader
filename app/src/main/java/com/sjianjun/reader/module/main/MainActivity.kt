@@ -151,7 +151,6 @@ class MainActivity : BaseActivity() {
         navController = findNavController(R.id.nav_host_fragment_main)
         appBarConfiguration = AppBarConfiguration.Builder(
             R.id.bookShelfFragment,
-            R.id.webShelfFragment,
             R.id.searchFragment,
             R.id.browserBookCityFragment,
             R.id.novelScriptFragment,

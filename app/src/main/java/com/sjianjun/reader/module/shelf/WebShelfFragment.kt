@@ -10,7 +10,7 @@ import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.sjianjun.reader.BaseFragment
+import androidx.fragment.app.Fragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemBrowserTabBinding
@@ -22,10 +22,9 @@ import com.sjianjun.reader.view.click
  * 原“网页书架”标签改为展示浏览器标签页列表：
  * 复用 BrowserTabs 数据，自动定位当前活跃标签，点击切换并回到浏览器，可关闭标签、新建标签。
  */
-class WebShelfFragment : BaseFragment() {
+class WebShelfFragment : Fragment() {
 
     private var binding: FragmentWebShelfBinding? = null
-    private val bookShelfTitle = BookShelfTitle()
     private val adapter = Adapter()
 
     override fun onCreateView(
@@ -52,15 +51,11 @@ class WebShelfFragment : BaseFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         setHasOptionsMenu(false)
-        bookShelfTitle.destroyTileView()
         binding = null
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
-        // 与书架“书源”tab 共用同一套分段标题，这里选中“标签”
-        bookShelfTitle.initTileView(this)
-        bookShelfTitle.showSourceData(false)
     }
 
     private fun refresh() {
