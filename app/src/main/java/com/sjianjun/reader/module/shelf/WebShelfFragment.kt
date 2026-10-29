@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.fragment.app.Fragment
@@ -15,7 +16,6 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemBrowserTabBinding
 import com.sjianjun.reader.module.bookcity.BrowserTabs
-import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.view.click
 
 /**
@@ -98,13 +98,11 @@ class WebShelfFragment : Fragment() {
                 ContextCompat.getColor(holder.itemView.context, R.color.colorPrimary)
             holder.binding.root.click {
                 BrowserTabs.activeIndex = position
-                // 写入待切换，浏览器回到前台（onResume，已可见）时切到该标签并加载
-                BrowserTabs.pendingSwitchTabId = tab.id.toString()
-                BrowserTabs.pendingSwitchUrl = tab.url
                 BrowserTabs.persist()
-                // 回到浏览器并恢复标签列表，定位到当前选择
-                WebViewBrowserActivity.startActivity(
-                    requireContext(), url = tab.url, restoreTabs = true
+                // 切到书城内已存在的对应标签页（restTabs），不要再新建标签
+                findNavController().navigate(
+                    R.id.browserBookCityFragment,
+                    Bundle().apply { putBoolean("restore_tabs", true) }
                 )
             }
             holder.binding.btnClose.click {
