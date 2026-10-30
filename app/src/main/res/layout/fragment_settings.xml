@@ -69,25 +69,34 @@
                     android:text="数据库"
                     android:textColor="@color/dn_colorAccent" />
 
-                <TextView
-                    android:id="@+id/database_location_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="当前存储位置" />
-
-                <TextView
-                    android:id="@+id/database_location_value"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="内部存储"
-                    android:textAppearance="@style/text_body2" />
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/database_location_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="位置："
+                        android:textColor="@color/dn_text_color_black" />
+
+                    <TextView
+                        android:id="@+id/database_location_value"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="内部存储"
+                        android:textAppearance="@style/text_body2"
+                        android:textColor="@color/dn_text_color_black" />
+                </LinearLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp">
+                    android:layout_marginTop="5dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/database_change_location"
