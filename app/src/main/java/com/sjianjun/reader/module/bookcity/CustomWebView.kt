@@ -21,6 +21,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -1620,7 +1621,15 @@ class CustomWebView @JvmOverloads constructor(
             toolbarImeOffset = -offset.toFloat()
             if (offset > 0) showToolbar()
             applyToolbarTranslation()
-            insets
+            // 系统栏已由外层用 padding 让位（WebViewBrowserActivity 根布局 / MainActivity#drawerContent），
+            // 但 padding 不会消费 insets：原样下发时 WebView 会把导航栏高度当作
+            // env(safe-area-inset-bottom)，带 viewport-fit=cover 的站点（如 m.qidian.com）会
+            // 在自己底部工具栏下再留一段同高的空白。这里把系统栏从下发链剥掉；
+            // IME 按"键盘实际露出高度"继续下发，保证 WebView 仍能正确滚动与聚焦。
+            WindowInsetsCompat.Builder(insets)
+                .setInsets(WindowInsetsCompat.Type.systemBars(), Insets.NONE)
+                .setInsets(WindowInsetsCompat.Type.ime(), Insets.of(0, 0, 0, offset))
+                .build()
         }
 
         // 首次布局完成后，按工具栏实际高度给网页留出底部空间
