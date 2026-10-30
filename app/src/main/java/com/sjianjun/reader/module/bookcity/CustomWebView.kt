@@ -96,6 +96,13 @@ class CustomWebView @JvmOverloads constructor(
     /** 底部工具栏是否已收起（页面上滑时收起、下滑时显示） */
     private var toolbarHidden = false
 
+    /**
+     * 当前这一轮触摸手势是否应“抑制下拉刷新”：在工具栏收起时按下，
+     * 下拉优先用于滑出工具栏，整轮手势内都不触发刷新（避免刷新在滑出过程中抢跑）。
+     * 工具栏已显示后的下一轮下拉才允许刷新。
+     */
+    private var suppressRefreshThisGesture = false
+
     private companion object {
         const val MAX_TABS = 50
 
@@ -449,6 +456,8 @@ class CustomWebView @JvmOverloads constructor(
                 lastTouchY = event.rawY
                 toolbarDragging = false
                 toolbarTracking = true
+                // 工具栏收起时按下的这一轮下拉，优先用于滑出工具栏，先抑制刷新
+                suppressRefreshThisGesture = toolbarHidden
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -475,6 +484,8 @@ class CustomWebView @JvmOverloads constructor(
                     if (toolbarDragging) snapToolbar() else snapToShownIfNeeded()
                     toolbarDragging = false
                 }
+                // 一轮手势结束，解除刷新抑制，下一轮下拉（工具栏已显示）即可刷新
+                suppressRefreshThisGesture = false
             }
         }
     }
@@ -1649,9 +1660,11 @@ class CustomWebView @JvmOverloads constructor(
             true
         }
 
-        // 下拉刷新页面：仅当当前 WebView 滚到顶部时触发
+        // 下拉刷新页面：底部工具栏收起时，下拉优先用于滑出工具栏，本轮手势内不触发刷新；
+        // 工具栏已显示后才允许下拉刷新（避免不可滚动页面上“想滑出菜单却触发刷新”的冲突）。
         binding.swipeRefresh.setOnChildScrollUpCallback { _, _ ->
-            webView?.canScrollVertically(-1) == true
+            if (suppressRefreshThisGesture) true
+            else webView?.canScrollVertically(-1) == true
         }
         binding.swipeRefresh.setOnRefreshListener {
             val wv = webView
