@@ -601,8 +601,11 @@ class CustomWebView @JvmOverloads constructor(
 
     fun back(): Boolean {
         val wv = webView ?: return false
-        if (wv.canGoBack()) {
-            wv.goBack()
+        // 跳过 about:blank、强制刷新产生的空白页、以及刷新前后重复的同一页面，
+        // 让“刷新”在前进/后退历史中保持透明（不会停在空白页或重复页）
+        val step = wv.meaningfulBackStep()
+        if (step < 0) {
+            wv.goBackOrForward(step)
             updateForwardButton()
             BrowserTabs.persist()
             return true
@@ -622,8 +625,9 @@ class CustomWebView @JvmOverloads constructor(
 
     fun goForward(): Boolean {
         val wv = webView ?: return false
-        if (wv.canGoForward()) {
-            wv.goForward()
+        val step = wv.meaningfulForwardStep()
+        if (step > 0) {
+            wv.goBackOrForward(step)
             updateForwardButton()
             return true
         }
@@ -1417,6 +1421,25 @@ class CustomWebView @JvmOverloads constructor(
             if (!samePage && !isSkippableHistoryItem(idx, u)) return step
             idx--
             step--
+        }
+        return 0
+    }
+
+    /** 返回向前最近的可用页面步数（正值），没有则返回 0。 */
+    private fun MyWebView.meaningfulForwardStep(): Int {
+        val list = copyBackForwardList()
+        pruneSkippedHistoryIndices(list.size)
+        val current = list.currentItem?.url?.substringBefore('#')?.trimEnd('/')
+        var idx = list.currentIndex + 1
+        var step = 1
+        while (idx < list.size) {
+            val u = list.getItemAtIndex(idx).url
+            val samePage = current != null && u != null &&
+                    u.substringBefore('#').trimEnd('/') == current
+            // 跳过重定向/刷新产生的“同一个 URL”历史与空白页
+            if (!samePage && !isSkippableHistoryItem(idx, u)) return step
+            idx++
+            step++
         }
         return 0
     }
