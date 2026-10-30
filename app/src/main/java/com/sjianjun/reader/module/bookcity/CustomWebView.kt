@@ -96,13 +96,6 @@ class CustomWebView @JvmOverloads constructor(
     /** 底部工具栏是否已收起（页面上滑时收起、下滑时显示） */
     private var toolbarHidden = false
 
-    /**
-     * 当前这一轮触摸手势是否应“抑制下拉刷新”：在工具栏收起时按下，
-     * 下拉优先用于滑出工具栏，整轮手势内都不触发刷新（避免刷新在滑出过程中抢跑）。
-     * 工具栏已显示后的下一轮下拉才允许刷新。
-     */
-    private var suppressRefreshThisGesture = false
-
     private companion object {
         const val MAX_TABS = 50
 
@@ -456,8 +449,6 @@ class CustomWebView @JvmOverloads constructor(
                 lastTouchY = event.rawY
                 toolbarDragging = false
                 toolbarTracking = true
-                // 工具栏收起时按下的这一轮下拉，优先用于滑出工具栏，先抑制刷新
-                suppressRefreshThisGesture = toolbarHidden
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -484,8 +475,6 @@ class CustomWebView @JvmOverloads constructor(
                     if (toolbarDragging) snapToolbar() else snapToShownIfNeeded()
                     toolbarDragging = false
                 }
-                // 一轮手势结束，解除刷新抑制，下一轮下拉（工具栏已显示）即可刷新
-                suppressRefreshThisGesture = false
             }
         }
     }
@@ -590,12 +579,11 @@ class CustomWebView @JvmOverloads constructor(
 
     /** 按"工具栏当前露出的高度"设置页面底部留白（拖动时连续更新） */
     private fun setContentInsetForToolbarPx(px: Int) {
-        // webViewContainer 被 SwipeRefreshLayout 包裹，SwipeRefreshLayout 忽略子 View 的 margin，
-        // 需改设它的 paddingBottom，才能让 WebView 底部为工具栏让位
-        val swipe = binding.swipeRefresh
+        // 直接给 WebView 容器设 paddingBottom，让页面底部为工具栏让位
+        val container = binding.webViewContainer
         val target = px.coerceIn(0, toolbarHeightPx().toInt())
-        if (swipe.paddingBottom == target) return
-        swipe.setPadding(swipe.paddingLeft, swipe.paddingTop, swipe.paddingRight, target)
+        if (container.paddingBottom == target) return
+        container.setPadding(container.paddingLeft, container.paddingTop, container.paddingRight, target)
     }
 
     private fun toolbarHeightPx(): Float {
@@ -1539,7 +1527,6 @@ class CustomWebView @JvmOverloads constructor(
                     return
                 }
             }
-            binding.swipeRefresh.isRefreshing = false
             binding.tvUrl.text = displayUrl(url)
             val tabForHistory = BrowserTabs.tabs.firstOrNull { it.webView === webView }
             tabForHistory?.apply {
@@ -1658,21 +1645,6 @@ class CustomWebView @JvmOverloads constructor(
         binding.refresh.setOnLongClickListener {
             forceReload()
             true
-        }
-
-        // 下拉刷新页面：底部工具栏收起时，下拉优先用于滑出工具栏，本轮手势内不触发刷新；
-        // 工具栏已显示后才允许下拉刷新（避免不可滚动页面上“想滑出菜单却触发刷新”的冲突）。
-        binding.swipeRefresh.setOnChildScrollUpCallback { _, _ ->
-            if (suppressRefreshThisGesture) true
-            else webView?.canScrollVertically(-1) == true
-        }
-        binding.swipeRefresh.setOnRefreshListener {
-            val wv = webView
-            if (wv == null || wv.url.isNullOrBlank() || wv.url == "about:blank") {
-                binding.swipeRefresh.isRefreshing = false
-            } else {
-                forceReload(showToast = false)
-            }
         }
 
         // 后退按钮：返回上一页（历史回退），退出浏览器用系统返回键
