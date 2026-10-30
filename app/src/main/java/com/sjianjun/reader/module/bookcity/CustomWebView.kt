@@ -1389,9 +1389,11 @@ class CustomWebView @JvmOverloads constructor(
 
     private fun updateForwardButton() {
         val wv = webView
-        // 前进/后退完全由 WebView 原生历史决定（已实测 restoreState 可恢复，并支持落盘）
-        val canGoBack = wv?.canGoBack() == true
-        val canGoForward = wv?.canGoForward() == true
+        // 按钮可用状态必须与 back()/goForward() 的实际行为一致：用“跳过空白页/刷新重复页后
+        // 是否还有有意义的目标”来判断。否则原生 canGoForward 会把 about:blank、同 URL 重复页
+        // 也算作“可前进”，导致按钮亮着却点了没反应（如 home→book→刷新→book 再前进）。
+        val canGoBack = wv?.meaningfulBackStep()?.let { it < 0 } == true
+        val canGoForward = wv?.meaningfulForwardStep()?.let { it > 0 } == true
         binding.forward.isEnabled = canGoForward
         binding.refresh.isSelected = (wv?.progress ?: 100) < 100
         // 退到底（再返回就退出浏览器）时，返回箭头切换为叉叉关闭
