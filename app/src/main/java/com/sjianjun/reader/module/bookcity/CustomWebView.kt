@@ -1410,44 +1410,30 @@ class CustomWebView @JvmOverloads constructor(
     private fun MyWebView.meaningfulBackStep(): Int {
         val list = copyBackForwardList()
         pruneSkippedHistoryIndices(list.size)
-        val current = list.currentItem?.url?.substringBefore('#')?.trimEnd('/')
-        var idx = list.currentIndex - 1
-        var step = -1
-        while (idx >= 0) {
-            val u = list.getItemAtIndex(idx).url
-            val samePage = current != null && u != null &&
-                    u.substringBefore('#').trimEnd('/') == current
-            // 跳过重定向产生的"同一个 URL"历史，否则返回会一直重新加载首页
-            if (!samePage && !isSkippableHistoryItem(idx, u)) return step
-            idx--
-            step--
+        val entries = (0 until list.size).map { i ->
+            val it = list.getItemAtIndex(i)
+            HistoryEntry(it.url, it.originalUrl)
         }
-        return 0
+        val step = computeHistorySkipStep(entries, list.currentIndex, false, skippedHistoryIndices)
+        if (com.sjianjun.reader.BuildConfig.DEBUG) {
+            Log.i("HISTSKIP back step=$step cur=${list.currentItem?.url} entries=${entries.map { it.url }}")
+        }
+        return step
     }
 
     /** 返回向前最近的可用页面步数（正值），没有则返回 0。 */
     private fun MyWebView.meaningfulForwardStep(): Int {
         val list = copyBackForwardList()
         pruneSkippedHistoryIndices(list.size)
-        val current = list.currentItem?.url?.substringBefore('#')?.trimEnd('/')
-        var idx = list.currentIndex + 1
-        var step = 1
-        while (idx < list.size) {
-            val u = list.getItemAtIndex(idx).url
-            val samePage = current != null && u != null &&
-                    u.substringBefore('#').trimEnd('/') == current
-            // 跳过重定向/刷新产生的“同一个 URL”历史与空白页
-            if (!samePage && !isSkippableHistoryItem(idx, u)) return step
-            idx++
-            step++
+        val entries = (0 until list.size).map { i ->
+            val it = list.getItemAtIndex(i)
+            HistoryEntry(it.url, it.originalUrl)
         }
-        return 0
-    }
-
-    private fun isSkippableHistoryItem(index: Int, url: String?): Boolean {
-        if (url.isNullOrBlank() || url == "about:blank") return true
-        // 索引可能因新导航被截断/复用，需同时校验 url 一致才认为是被标记跳过的条目
-        return skippedHistoryIndices[index] == url
+        val step = computeHistorySkipStep(entries, list.currentIndex, true, skippedHistoryIndices)
+        if (com.sjianjun.reader.BuildConfig.DEBUG) {
+            Log.i("HISTSKIP forward step=$step cur=${list.currentItem?.url} entries=${entries.map { it.url }}")
+        }
+        return step
     }
 
     private fun pruneSkippedHistoryIndices(historySize: Int) {
@@ -1768,6 +1754,60 @@ object History {
         cal.add(java.util.Calendar.DAY_OF_MONTH, 1)
         return start to cal.timeInMillis
     }
+}
+
+/**
+ * 历史条目（仅抽取跳过判定所需字段）。把“跳过决策”抽成不依赖 Android WebView 的纯函数，
+ * 以便 JVM 单测确定性验证（重定向中间页、空白页、刷新重复页等）。
+ */
+internal data class HistoryEntry(val url: String?, val originalUrl: String?)
+
+/** 规范化：忽略 fragment 与尾斜杠，用于“同一页面”比较 */
+private fun String?.normUrl(): String? = this?.substringBefore('#')?.trimEnd('/')
+
+/**
+ * 纯函数：计算前进/后退时应跳过的步数。
+ * - forward=true 返回正值（向 list 末端），forward=false 返回负值（向 list 头部），无可用页返回 0。
+ * 命中以下任一即跳过该条目：
+ *  1. 空白页 / about:blank；
+ *  2. 被显式标记为可跳过的条目（forceReload 源页、client 端自动重定向源等）；
+ *  3. 与当前页同 URL（刷新 A→blank→A 的前一个 A，或重定向落回同 URL）；
+ *  4. 重定向中间页：本条目 url == 下一条的 originalUrl（301/302/meta 刷新跳板）。
+ */
+internal fun computeHistorySkipStep(
+    entries: List<HistoryEntry>,
+    currentIndex: Int,
+    forward: Boolean,
+    skippedIndices: Map<Int, String>
+): Int {
+    val n = entries.size
+    if (currentIndex !in 0 until n) return 0
+    val current = entries[currentIndex].url.normUrl()
+    var idx = if (forward) currentIndex + 1 else currentIndex - 1
+    var step = if (forward) 1 else -1
+    while (if (forward) idx < n else idx >= 0) {
+        val e = entries[idx]
+        val u = e.url.normUrl()
+        val samePage = current != null && u != null && u == current
+        val skippable = u.isNullOrBlank() || u == "about:blank" || skippedIndices[idx] == e.url
+        val redirect = isRedirectIntermediate(entries, idx)
+        if (!samePage && !skippable && !redirect) return step
+        if (forward) {
+            idx++
+            step++
+        } else {
+            idx--
+            step--
+        }
+    }
+    return 0
+}
+
+private fun isRedirectIntermediate(entries: List<HistoryEntry>, idx: Int): Boolean {
+    if (idx < 0 || idx >= entries.size - 1) return false
+    val cur = entries[idx].url.normUrl() ?: return false
+    val nextOrig = entries[idx + 1].originalUrl.normUrl() ?: return false
+    return nextOrig == cur
 }
 
 /** 两个时间戳是否属于同一天（用于历史记录"当天去重、不跨天去重"） */
