@@ -38,7 +38,7 @@ import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
 import com.sjianjun.reader.handleDefaultException
 import com.sjianjun.reader.module.bookcity.AdBlock
-import com.sjianjun.reader.module.bookcity.BrowserPageFragment
+import com.sjianjun.reader.module.browser.BrowserFragment
 import com.sjianjun.reader.module.bookcity.BrowserSession
 import com.sjianjun.reader.module.bookcity.WebViewBrowserActivity
 import com.sjianjun.reader.preferences.appEssentials
@@ -309,15 +309,15 @@ class MainActivity : BaseActivity() {
         // App 整体退到后台时回收书城标签的 WebView；内部页面切换不回收
         // keepActive=true：保留当前激活（可见）标签的 WebView，切回时无需重建/刷新页面
         if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-            currentBrowserFragment()?.onAppBackground(keepActive = true)
+            currentBrowserFragment()?.onAppBackground()
         }
     }
 
     /** 当前展示中的书城 Fragment（不存在则返回 null） */
-    private fun currentBrowserFragment(): BrowserPageFragment? {
+    private fun currentBrowserFragment(): BrowserFragment? {
         val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_main) as? NavHostFragment
         return host?.childFragmentManager?.fragments
-            ?.filterIsInstance<BrowserPageFragment>()
+            ?.filterIsInstance<BrowserFragment>()
             ?.firstOrNull { it.isAdded && it.view != null }
     }
 

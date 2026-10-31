@@ -20,5 +20,6 @@ data class BrowserTabEntity(
     val historyJson: String,
     val historyIndex: Int,
     val lastUsedAt: Long,
-    @ColumnInfo(defaultValue = "0") val transient: Boolean = false
+    @ColumnInfo(defaultValue = "0") val transient: Boolean = false,
+    @ColumnInfo(defaultValue = "") val sourceTabId: String = ""
 )

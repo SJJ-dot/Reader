@@ -15,12 +15,13 @@ import androidx.fragment.app.Fragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.FragmentWebShelfBinding
 import com.sjianjun.reader.databinding.ItemBrowserTabBinding
-import com.sjianjun.reader.module.bookcity.BrowserTabs
+import com.sjianjun.reader.module.browser.BrowserTab
+import com.sjianjun.reader.module.browser.TabRepository
 import com.sjianjun.reader.view.click
 
 /**
  * 原“网页书架”标签改为展示浏览器标签页列表：
- * 复用 BrowserTabs 数据，自动定位当前活跃标签，点击切换并回到浏览器，可关闭标签、新建标签。
+ * 复用 TabRepository 数据，自动定位当前活跃标签，点击切换并回到浏览器，可关闭标签、新建标签。
  */
 class WebShelfFragment : Fragment() {
 
@@ -59,19 +60,20 @@ class WebShelfFragment : Fragment() {
     }
 
     private fun refresh() {
-        if (BrowserTabs.tabs.isEmpty()) BrowserTabs.restore()
-        val list = BrowserTabs.tabs.toList()
+        TabRepository.ensureLoaded()
+        val list = TabRepository.list
         adapter.submit(list)
-        val active = BrowserTabs.activeIndex
-        if (active in list.indices) {
-            binding?.recycleView?.post { binding?.recycleView?.scrollToPosition(active) }
+        val active = TabRepository.getActive()
+        val activePos = if (active != null) list.indexOf(active) else -1
+        if (activePos >= 0) {
+            binding?.recycleView?.post { binding?.recycleView?.scrollToPosition(activePos) }
         }
     }
 
     private inner class Adapter : RecyclerView.Adapter<Adapter.Holder>() {
-        private val data = mutableListOf<BrowserTabs.Tab>()
+        private val data = mutableListOf<BrowserTab>()
 
-        fun submit(list: List<BrowserTabs.Tab>) {
+        fun submit(list: List<BrowserTab>) {
             data.clear()
             data.addAll(list)
             notifyDataSetChanged()
@@ -85,7 +87,7 @@ class WebShelfFragment : Fragment() {
 
         override fun onBindViewHolder(holder: Holder, position: Int) {
             val tab = data[position]
-            val active = position == BrowserTabs.activeIndex
+            val active = tab.id == TabRepository.getActive()?.id
             holder.binding.tvTitle.text = tab.title.ifBlank { "无标题" }
             holder.binding.tvUrl.text = tab.url
             // 本地缩略图文件直接用 BitmapFactory 解码（与浏览器标签列表一致）；
@@ -97,21 +99,24 @@ class WebShelfFragment : Fragment() {
             holder.binding.root.strokeColor =
                 ContextCompat.getColor(holder.itemView.context, R.color.colorPrimary)
             holder.binding.root.click {
-                BrowserTabs.activeIndex = position
-                BrowserTabs.persist()
-                // 切到书城内已存在的对应标签页（restTabs），不要再新建标签
+                TabRepository.setActive(tab.id)
+                TabRepository.persist()
+                // 切到书城内已存在的对应标签页（restore_tabs），不要再新建标签
                 findNavController().navigate(
                     R.id.browserBookCityFragment,
                     Bundle().apply { putBoolean("restore_tabs", true) }
                 )
             }
             holder.binding.btnClose.click {
-                val idx = BrowserTabs.tabs.indexOf(tab).takeIf { it >= 0 } ?: position
-                BrowserTabs.tabs.removeAt(idx)
-                if (BrowserTabs.activeIndex >= BrowserTabs.tabs.size) {
-                    BrowserTabs.activeIndex = (BrowserTabs.tabs.size - 1).coerceAtLeast(0)
+                TabRepository.deleteThumb(tab)
+                TabRepository.deleteState(tab)
+                if (TabRepository.size <= 1) {
+                    TabRepository.remove(tab.id)
+                    TabRepository.add(BrowserTab(url = ""), makeActive = true)
+                } else {
+                    TabRepository.remove(tab.id)
                 }
-                BrowserTabs.persist()
+                TabRepository.persist()
                 refresh()
             }
         }

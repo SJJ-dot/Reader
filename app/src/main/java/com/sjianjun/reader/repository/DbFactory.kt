@@ -41,7 +41,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 38,
+    version = 39,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -283,6 +283,12 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 标签页新增“是否自动创建（可自动销毁）”标记：外部指定网址打开的临时标签
                     db.execSQL("ALTER TABLE `browser_tab` ADD COLUMN `transient` INTEGER NOT NULL DEFAULT 0")
+                }
+            })
+            .addMigrations(object : Migration(38, 39) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 标签页新增“来源页标签 id”：长按“新标签页打开”时记录，子标签返回退出可切回来源页
+                    db.execSQL("ALTER TABLE `browser_tab` ADD COLUMN `sourceTabId` TEXT NOT NULL DEFAULT ''")
                 }
             })
             .build()

@@ -16,6 +16,9 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.CROSS_ORIGIN_MODE
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.databinding.ActivityBrowserReaderBinding
+import com.sjianjun.reader.module.browser.BrowserFragment
+import com.sjianjun.reader.module.browser.BrowserRequest
+import com.sjianjun.reader.module.browser.TabRepository
 import sjj.alog.Log
 
 class WebViewBrowserActivity : BaseActivity() {
@@ -54,31 +57,26 @@ class WebViewBrowserActivity : BaseActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        // 重建（夜间模式切换等）时交给 FragmentManager 恢复原页面，
-        // 否则这里会重新 new 一个只带首页 URL 的 Fragment，导致回到首页
-        if (savedInstanceState != null) {
-            // Activity 重建后旧标签的 WebView 已失效，只清引用，保留标签列表
-            BrowserTabs.detachWebViews()
-        } else {
-            // 始终从持久化恢复标签列表：阅读器/搜索/字典等外部打开也先恢复，
-            // 避免从空列表开始把已存的标签页覆盖或清空（标签只由用户主动新建/关闭）
-            BrowserTabs.restore()
-        }
+        // 重建（夜间模式切换等）时交给 FragmentManager 自动恢复子 Fragment 的 WebView 与标签状态；
+        // 标签列表由 BrowserFragment 在 ensureLoaded 时从 DB 恢复，不再由这里手动 restore。
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(binding.fragmentContainerView.id, BrowserPageFragment.newInstance(url, crossOriginMode, restoreTabs))
+                .replace(
+                    binding.fragmentContainerView.id,
+                    BrowserFragment.newInstance(url, crossOriginMode, restoreTabs)
+                )
                 .commitNowAllowingStateLoss()
         }
-
     }
+
+    private val browserFragment: BrowserFragment?
+        get() = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id) as? BrowserFragment
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         // 仅 App 整体退到后台时回收标签 WebView；内部页面切换不回收。
-        // keepActive=true：保留当前激活标签的 WebView（进程内只留一个），切回时无需重建
         if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-            (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-                    as? BrowserPageFragment)?.onAppBackground(keepActive = true)
+            browserFragment?.onAppBackground()
         }
     }
 
@@ -86,18 +84,17 @@ class WebViewBrowserActivity : BaseActivity() {
         // APP 退出/切到后台时趁窗口仍可见给当前激活标签截图（缩略图可靠），
         // 覆盖返回键到底、菜单退出、最近任务划掉等所有退出路径；
         // 销毁时的 onBackground 会跳过抓取，避免用拆卸期的空白覆盖这里写好的图。
-        (supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-                as? BrowserPageFragment)?.let {
-            Log.i("▶Thumb onPause capture activeTabId=${BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id}")
+        browserFragment?.let {
+            Log.i("▶Thumb onPause capture activeTabId=${TabRepository.getActive()?.id}")
             it.captureActiveTabThumb()
         }
         // 提前落盘：防止被系统回收（如划掉最近任务）时丢失内存中的标签
-        BrowserTabs.persist()
+        TabRepository.persist()
         super.onPause()
     }
 
     override fun onStop() {
-        BrowserTabs.persist()
+        TabRepository.persist()
         super.onStop()
     }
 
@@ -106,40 +103,21 @@ class WebViewBrowserActivity : BaseActivity() {
         val newUrl = intent.getStringExtra(URL).orEmpty()
         if (newUrl.isBlank()) return
         // 浏览器已存活（singleTask）：外部再次以指定网址打开，新建一个“可自动销毁”的临时标签
-        val fragment = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-            as? BrowserPageFragment ?: return
-        fragment.openExternalUrl(newUrl)
+        BrowserRequest.open(newUrl, transient = true)
+        browserFragment?.consumePendingRequests()
     }
 
     override fun onResume() {
         super.onResume()
-        // 阅读模式切回浏览器：消费待切换，切到来源标签并加载当前阅读页（此时 Activity 已可见）
-        val tabId = BrowserTabs.pendingSwitchTabId
-        val url = BrowserTabs.pendingSwitchUrl
-        if (tabId == null || url == null) {
-            Log.i("▶SwitchBrowser onResume pending=null (tabId=$tabId url=$url) -> skip")
-            return
-        }
-        if (url.isBlank()) return
-        Log.i("▶SwitchBrowser onResume consume tabId=$tabId url=$url")
-        BrowserTabs.pendingSwitchTabId = null
-        BrowserTabs.pendingSwitchUrl = null
-        val fragment = supportFragmentManager.findFragmentById(binding.fragmentContainerView.id)
-            as? BrowserPageFragment ?: run {
-                Log.i("▶SwitchBrowser onResume fragment not found -> skip")
-                return
-            }
-        fragment.switchToSourceTab(tabId, url)
+        // 阅读模式切回浏览器：由 BrowserFragment.onResume 自行消费 BrowserRequest（切到来源标签并加载当前页）
     }
 
     override fun onDestroy() {
         if (isFinishing) {
             // 退出独立浏览器：先清理“外部指定网址自动创建”的临时标签
             // （返回栈到底的自动关闭，仍有历史的转为普通标签），再安全落库。
-            BrowserTabs.finalizeTransientTabs()
-            // 内存标签列表作为缓存保留（进程内单例），只做安全落库：
-            // 逐条 upsert 存在的标签、按主键删除已关闭的标签，绝不清库覆盖。
-            BrowserTabs.persist()
+            TabRepository.finalizeTransientTabs()
+            TabRepository.persist()
         }
         super.onDestroy()
     }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 单个标签页根布局：直接承载自包含的 CustomWebView（含自己的工具栏 + WebView 容器） -->
 <com.sjianjun.reader.module.bookcity.CustomWebView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/custom_web_view"
     android:layout_width="match_parent"

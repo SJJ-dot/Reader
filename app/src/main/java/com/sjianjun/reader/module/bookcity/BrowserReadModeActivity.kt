@@ -23,7 +23,7 @@ import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
-import com.sjianjun.reader.module.bookcity.BrowserTabs
+import com.sjianjun.reader.module.browser.BrowserRequest
 import com.sjianjun.reader.bean.Book
 import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.databinding.ActivityBrowserReadModeBinding
@@ -609,23 +609,12 @@ class BrowserReadModeActivity : BaseActivity() {
             showChapter(startUrl)
         } else {
             val url = pageLoader.curChapter?.link ?: startUrl
-            val idx = BrowserTabs.tabs.indexOfFirst { it.id.toString() == sourceTabId }
-            Log.i("▶SwitchBrowser openInBrowser curChapterLink=$url startUrl=$startUrl sourceTabId=$sourceTabId idx=$idx tabsSize=${BrowserTabs.tabs.size} activeIndex=${BrowserTabs.activeIndex}")
-            if (idx >= 0) {
-                // 来源浏览器标签页存在：更新其当前页 URL 与激活等元数据（注意：不要提前改写
-                // tab.url 为别的，否则切回浏览器时 switchToSourceTab 会误判“已是最新”而跳过加载）
-                val tab = BrowserTabs.tabs[idx]
-                tab.url = url
-                tab.lastUsedAt = System.currentTimeMillis()
-                BrowserTabs.activeIndex = idx
-            }
-            // 始终记录待切换，浏览器回到前台（onResume，已可见）时切到来源标签并加载当前阅读页
-            BrowserTabs.pendingSwitchTabId = sourceTabId
-            BrowserTabs.pendingSwitchUrl = url
-            Log.i("▶SwitchBrowser openInBrowser pending set tabId=$sourceTabId url=$url fromBrowser=${sourceTabId != null}")
-            if (sourceTabId != null) {
-                // 来源是浏览器：阅读模式叠加在浏览器任务之上，直接 finish 即可回到浏览器，
-                // 避免用 startActivity 重新拉起 singleTask 浏览器导致只带到前台、不加载（显示原标签）
+            val srcTabId = sourceTabId
+            Log.i("▶SwitchBrowser openInBrowser curChapterLink=$url startUrl=$startUrl sourceTabId=$srcTabId fromBrowser=${srcTabId != null}")
+            if (srcTabId != null) {
+                // 来源是浏览器：记录“切回来源标签并加载当前阅读页”，阅读模式叠加在浏览器任务之上，
+                // 直接 finish 即可回到浏览器；BrowserFragment.onResume 消费该请求并加载当前阅读页
+                BrowserRequest.returnToSource(srcTabId, url)
                 finish()
             } else {
                 // 来源不是浏览器（如书架/搜索直接进）：新开浏览器页

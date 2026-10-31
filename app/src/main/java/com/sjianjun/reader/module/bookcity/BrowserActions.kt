@@ -19,8 +19,8 @@ class BrowserActions(
         val wv = customWebView.webView ?: return
         val url = wv.url ?: return
         // 记录打开阅读模式的来源浏览器标签页，便于切回浏览器时回到原页面
-        val sourceTabId = BrowserTabs.tabs.getOrNull(BrowserTabs.activeIndex)?.id?.toString()
-        Log.i("▶SwitchBrowser openReadMode sourceTabId=$sourceTabId activeIndex=${BrowserTabs.activeIndex} tabsSize=${BrowserTabs.tabs.size}")
+        val sourceTabId = customWebView.tabId
+        Log.i("▶SwitchBrowser openReadMode sourceTabId=$sourceTabId")
         val scope = customWebView.lifecycleScope
         if (scope == null) {
             BrowserReadModeActivity.startActivity(context, url, sourceTabId = sourceTabId)

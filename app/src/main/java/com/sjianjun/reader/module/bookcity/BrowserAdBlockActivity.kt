@@ -29,8 +29,8 @@ class BrowserAdBlockActivity : BaseActivity() {
     private val adBlock: AdBlock = AdBlock
 
     private lateinit var accessAdapter: AccessRecordAdapter
-    private lateinit var blackAdapter: BrowserPageFragment.BlackListAdapter
-    private lateinit var whiteAdapter: BrowserPageFragment.WhiteListAdapter
+    private lateinit var blackAdapter: BlackListAdapter
+    private lateinit var whiteAdapter: WhiteListAdapter
 
     /** 白名单与书源域名同步：新增加入、删除移除 */
     private fun seedBookSourceWhitelist() {
@@ -63,8 +63,8 @@ class BrowserAdBlockActivity : BaseActivity() {
             },
             onRestore = { url -> adBlock.restoreBlocked(url) }
         )
-        blackAdapter = BrowserPageFragment.BlackListAdapter(adBlock)
-        whiteAdapter = BrowserPageFragment.WhiteListAdapter(adBlock)
+        blackAdapter = BlackListAdapter(adBlock)
+        whiteAdapter = WhiteListAdapter(adBlock)
 
         binding.rvList.layoutManager = LinearLayoutManager(this)
         binding.rvList.adapter = accessAdapter
