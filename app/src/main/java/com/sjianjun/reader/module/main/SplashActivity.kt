@@ -31,13 +31,6 @@ class SplashActivity : AppCompatActivity() {
         } else {
             // 正常：立即进入主页，不阻塞
             startMain()
-            if (globalConfig.autoCheckUpdate.value == true) {
-                // 更新检查在应用级作用域后台进行（splash 销毁也不影响）；
-                // 发现可用更新时再新拉起前台透明 Activity 承载弹窗，浮在 MainActivity 之上
-                App.app.appScope.launch {
-                    checkUpdate(fromUser = false)
-                }
-            }
         }
     }
 
@@ -53,6 +46,6 @@ class SplashActivity : AppCompatActivity() {
 
     companion object {
         /** 连续崩溃达到该次数后，下次启动进入保底模式 */
-        private const val FALLBACK_CRASH_THRESHOLD = 2
+        private const val FALLBACK_CRASH_THRESHOLD = 3
     }
 }

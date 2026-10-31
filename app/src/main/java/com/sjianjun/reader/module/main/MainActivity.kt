@@ -49,6 +49,7 @@ import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.BrowserDataMigration
 import com.sjianjun.reader.utils.ActivityManger
 import com.sjianjun.reader.utils.ChineseUtils
+import com.sjianjun.reader.utils.checkUpdate
 import com.sjianjun.reader.utils.isNight
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
@@ -103,6 +104,11 @@ class MainActivity : BaseActivity() {
                     Intent(this, AppHelpActivity::class.java)
                         .putExtra(AppHelpActivity.EXTRA_FORCE_CONFIRM, true)
                 )
+            }
+        }
+        if (globalConfig.autoCheckUpdate.value == true) {
+            App.app.appScope.launch {
+                checkUpdate(fromUser = false)
             }
         }
     }
