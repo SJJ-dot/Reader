@@ -203,7 +203,15 @@ class BrowserFragment : BaseFragment(), TabHost {
             TabRepository.persist()
             return true
         }
-        // 普通标签：关闭当前标签并直接退出浏览器（保留其余标签，清空则下次新建空白）
+        // 内嵌在书城（非独立浏览器 Activity）：返回键退底 / 工具栏叉叉退出时**不关闭当前标签页**，
+        // 仅退出到书架并保留当前标签（其 WebView 快照由 TabFragment 生命周期落盘），下次进入书城仍停留在该页。
+        if (activity !is WebViewBrowserActivity) {
+            TabRepository.persist()
+            selfExiting = true
+            requestExit()
+            return false
+        }
+        // 普通标签（独立浏览器）：关闭当前标签并直接退出浏览器（保留其余标签，清空则下次新建空白）
         TabRepository.remove(active.id)
         TabRepository.deleteThumb(active)
         TabRepository.deleteState(active)
