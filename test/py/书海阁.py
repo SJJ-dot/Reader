@@ -20,7 +20,8 @@ session = requests.Session()
 retries_strategy = Retry(
     total=3,
     backoff_factor=1,
-    status_forcelist=[500, 502, 503, 504],
+    # 429 为站点限流，一并纳入重试，避免全量翻页时被限流截断
+    status_forcelist=[429, 500, 502, 503, 504],
     raise_on_status=False,
 )
 adapter = HTTPAdapter(max_retries=retries_strategy)
@@ -34,6 +35,9 @@ session.headers.update({
 
 # 目录分页安全阀，避免异常时死循环
 _MAX_PAGE = 200
+
+# 目录每页章节数（站点固定 100 条/页），用于由「共N章」推算总页数
+_PAGE_SIZE = 100
 
 
 def getSiteUrl():
@@ -118,8 +122,49 @@ def _parse_chapters_from_html(html, book_id):
     return chapters
 
 
+def _index_page_url(book_id, page):
+    """目录分页 URL：第 1 页为 /book/indexList-{id}.html，第 n 页为 /book/indexList/{id}/{n}.html"""
+    if page <= 1:
+        return f"{BASE}/book/indexList-{book_id}.html"
+    return f"{BASE}/book/indexList/{book_id}/{page}.html"
+
+
+def _parse_total_chapters(html):
+    """从目录页解析总章节数，页面内含「第1页，共171章」"""
+    m = re.search(r"共\s*(\d+)\s*章", html)
+    return int(m.group(1)) if m else 0
+
+
+def _parse_current_page(html):
+    """解析当前分页页码，页面内含「第7页，共658章」"""
+    m = re.search(r"第\s*(\d+)\s*页", html)
+    return int(m.group(1)) if m else 1
+
+
+def _load_page(book_id, page):
+    """加载目录指定分页，返回该页章节列表（请求失败时抛异常）"""
+    html = _get_html(_index_page_url(book_id, page))
+    return _parse_chapters_from_html(html, book_id)
+
+
+def _page_total(html, book_id):
+    """推算目录总页数
+
+    站点每页固定 _PAGE_SIZE 条，配合「共N章」向上取整；
+    同时与页面里出现的最大分页页码取较大值兜底（站点调整每页条数时也不会漏页）。
+    注意不能用「当前页条数」当每页大小：末页往往是残页，会算出偏大的页数。
+    """
+    nums = [int(x) for x in re.findall(rf"/book/indexList/{book_id}/(\d+)\.html", html)]
+    by_links = max(nums) if nums else 0
+    total = _parse_total_chapters(html)
+    if not total:
+        return by_links or 1
+    by_total = max(1, -(-total // _PAGE_SIZE))  # 向上取整
+    return max(by_total, by_links)
+
+
 def _get_all_chapters(book_id):
-    """全量抓取目录：/book/indexList-{id}.html 为第 1 页，后续为 /book/indexList/{id}/{n}.html
+    """全量抓取目录：从第 1 页顺序翻到末页
 
     末页之后继续翻页会返回 404，遇到请求失败或本页无新增章节即停止。
     """
@@ -127,18 +172,12 @@ def _get_all_chapters(book_id):
     seen_ids = set()
     curr = 1
     while curr <= _MAX_PAGE:
-        if curr == 1:
-            url = f"{BASE}/book/indexList-{book_id}.html"
-        else:
-            url = f"{BASE}/book/indexList/{book_id}/{curr}.html"
-
         try:
-            html = _get_html(url)
+            page = _load_page(book_id, curr)
         except Exception as e:
             log(f"书海阁 目录第 {curr} 页获取失败，停止翻页: {e}")
             break
 
-        page = _parse_chapters_from_html(html, book_id)
         if not page:
             break
 
@@ -160,18 +199,59 @@ def _get_all_chapters(book_id):
 
 
 def _get_latest_chapters(book_id, last_chapter_url):
-    """增量更新：返回本地最新章节之后的新增章节（旧->新排序）"""
+    """增量更新：从目录末页往前加载，返回最新章节所在分页及其后所有分页的完整数据（旧->新排序）
+
+    目录加载原则：
+    1. 目录可一次性加载完成（仅 1 页）时，无论全量还是增量都返回全部章节；
+    2. 分页目录从最后一页往前逐页加载，直到某页出现给定的最新章节（锚点）：
+       - 找到：返回该页（完整数据）及其后所有分页的完整数据（旧->新）；
+       - 一直翻到第一页都没找到（本地记录可能已失效）：循环结束时整份目录已加载完，
+         直接返回累计的整份目录（即全量），无需再单独补取。
+
+    日常更新只需从末页向前几页请求，不必每次全量翻页。
+    """
     anchor = _chapter_index_id(last_chapter_url)
-    all_chapters = _get_all_chapters(book_id)
+
+    def _ids_of(page):
+        return {_chapter_index_id(c["url"]) for c in page}
+
+    # 先加载第 1 页以推算总页数（同时为全量回退时复用，避免重复请求）
+    try:
+        first_html = _get_html(_index_page_url(book_id, 1))
+    except Exception as e:
+        log(f"书海阁 目录首页获取失败，回退全量加载: {e}")
+        return _get_all_chapters(book_id)
+
+    total_pages = _page_total(first_html, book_id)
+
+    # 单页目录：一次性加载完成，直接返回全部章节
+    if total_pages <= 1:
+        return _parse_chapters_from_html(first_html, book_id)
+
+    # 从最后一页往前加载
     result = []
     found = False
-    for ch in all_chapters:
-        if _chapter_index_id(ch["url"]) == anchor:
+    for p in range(total_pages, 0, -1):
+        # 复用首页探针，避免重复请求
+        if p == 1:
+            page = _parse_chapters_from_html(first_html, book_id)
+        else:
+            try:
+                page = _load_page(book_id, p)
+            except Exception as e:
+                log(f"书海阁 目录第 {p} 页获取失败，跳过: {e}")
+                continue
+            if not page:
+                continue
+
+        # 保持旧->新顺序：当前页拼到已收集章节的前面
+        result = page + result
+
+        if anchor in _ids_of(page):
             found = True
-            continue
-        if found:
-            result.append(ch)
-    # 本地记录可能已失效（未找到锚点），返回空列表表示无更新
+            break
+
+    # found 为 False 时循环已推进到第 1 页，result 即为完整目录（全量），直接返回
     return result
 
 
@@ -179,7 +259,8 @@ def getDetails(url, lastChapterUrl=None):
     """获取书籍详情 + 目录
 
     :param lastChapterUrl: 本地已缓存的最新章节链接（可选）。
-        传入时执行更新检查，仅返回本地最新章节之后的新增章节。
+        传入时执行更新检查，返回本地最新章节所在分页及其后所有分页的完整数据
+        （增量加载，无需每次全量翻页，详见 _get_latest_chapters）。
     """
     book_id = _get_book_id(url)
     html = _get_html(f"{BASE}/book/{book_id}.html")
