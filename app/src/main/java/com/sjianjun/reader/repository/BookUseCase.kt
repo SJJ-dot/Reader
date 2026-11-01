@@ -273,6 +273,11 @@ object BookUseCase {
                 }
             }
             updateDetails(bookDetails, keepUpToIndex)
+            // 章节结构有变化（插入/删除/重排）时通知阅读页按索引重建缓存，
+            // 否则中间插入新章导致索引平移后，阅读页按旧索引取的章节/分页会错位
+            if (bookDetails.chapterList != null) {
+                EventBus.post(EventKey.BOOK_CHAPTERS_UPDATED, book.id)
+            }
             // 整本重载后章节链接可能变化：作废朗读的段落缓存，避免按旧链接读到旧正文
             if (forceFull) TtsPlayerHolder.invalidateBook(book.id)
         } catch (e: CancellationException) {

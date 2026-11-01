@@ -68,6 +68,11 @@ class BookReaderViewModel : ViewModel() {
         this@BookReaderViewModel.chapterList.postValue(this@BookReaderViewModel.book.value?.chapterList ?: emptyList())
     }
 
+    /** 从 DB 重新读取最新章节列表（章节结构变化后阅读页用来重建内存缓存） */
+    suspend fun getChaptersFromDb(bookId: String): List<Chapter> = withIo {
+        chapterDao.getChapterListByBookId(bookId).first()
+    }
+
     fun saveRecord(bean: BookRecordBean) {
         val record = book.value?.record ?: return
         if (bean.chapter != record.chapterIndex ||

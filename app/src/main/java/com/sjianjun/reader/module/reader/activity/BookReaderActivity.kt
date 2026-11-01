@@ -335,6 +335,11 @@ class BookReaderActivity : BaseActivity() {
         observe<String>(EventKey.CHAPTER_LIST) {
             binding?.drawerLayout!!.openDrawer(GravityCompat.END)
         }
+        observe<String>(EventKey.BOOK_CHAPTERS_UPDATED) { updatedBookId ->
+            // 仅处理当前书籍：章节结构变化（插入/删除/重排）后，按索引重建内存章节列表与分页缓存，
+            // 否则中间插入新章导致索引平移，阅读页按旧索引取到的章节/分页会错位
+            if (updatedBookId == bookId) rebuildChapterCategory()
+        }
         observe<String>(EventKey.BROWSER_OPEN) {
             //使用浏览器打开书籍链接
             val chapterIdx = mPageLoader?.curChapter?.chapterIndex ?: -1
@@ -894,6 +899,32 @@ class BookReaderActivity : BaseActivity() {
             TtsPlaybackController.state.value?.takeIf { it.active }?.let { onTtsStateChanged(it) }
             // 从朗读播放卡片左侧按钮进来：直接唤起菜单（里面是播放卡片）
             handleShowTtsPlayCard()
+        }
+    }
+
+    /**
+     * 章节结构变化（如书源在中间插入新章导致索引平移）后，重新从 DB 拉取并以最新章节列表
+     * 重建 [NetPageLoader.chapterCategory]（按位置缓存的章节对象），同时清空 [ChapterPageCache]
+     * （按章节索引缓存的分页结果），让阅读页按最新索引取章节，避免显示旧的标题/正文。
+     */
+    private fun rebuildChapterCategory() {
+        val loader = mPageLoader ?: return
+        // 书籍尚未打开（章节列表为空）时不处理，交给打开流程
+        if (loader.chapterCategory.isNullOrEmpty()) return
+        launch(singleCoroutineKey = "rebuildChapterCategory") {
+            val chapters = viewModel.getChaptersFromDb(bookId)
+            if (chapters.isEmpty()) return@launch
+            loader.mCollBook = viewModel.book.value
+            loader.chapterCategory = chapters.map { c ->
+                TxtChapter().apply {
+                    this.bookId = viewModel.book.value?.url ?: ""
+                    this.link = c.url
+                    this.title = c.title
+                    this.chapterIndex = c.index
+                }
+            }
+            ChapterPageCache.reset()
+            loader.reloadPages()
         }
     }
 

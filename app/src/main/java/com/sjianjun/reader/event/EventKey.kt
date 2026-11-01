@@ -10,6 +10,9 @@ object EventKey {
     /** 阅读页打开章节列表 */
     val CHAPTER_LIST = "CHAPTER_LIST"
 
+    /** 书籍章节结构发生变化（插入/删除/重排），通知阅读页按索引重建章节内存缓存 */
+    val BOOK_CHAPTERS_UPDATED = "BOOK_CHAPTERS_UPDATED"
+
     /** 阅读页开始缓存章节 */
     val CHAPTER_LIST_CAHE = "CHAPTER_LIST_CACHE"
 
