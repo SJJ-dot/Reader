@@ -1,5 +1,7 @@
 package com.sjianjun.reader.module.browser
 
+import android.webkit.WebView
+
 /**
  * 跨标签操作的宿主接口。
  * CustomWebView（每个标签自包含）只管“本标签”的 WebView 与 UI；凡是涉及其它标签或整个浏览器容器的动作
@@ -16,6 +18,13 @@ interface TabHost {
     /** 新建一个标签并打开 [url]（空则主页）；transient=true 表示外部自动创建的临时标签；
      *  [sourceTabId] 非空时记录来源页（长按“新标签页打开”使用），子标签返回退出可切回来源页 */
     fun newTab(url: String = "", transient: Boolean = false, sourceTabId: String = "")
+
+    /**
+     * 网页 window.open / target=_blank 创建的新标签：复用系统经由内部 Message（[android.webkit.WebView.WebViewTransport]）
+     * 交付的弹窗 WebView（[popupWebView]），并登记来源页 [sourceTabId]，使新标签与来源页保持归属关系。
+     * 新标签据此接管 [popupWebView]（保活 JS 窗口，避免被反复重开）；来源页与子标签的归属关系在浏览器退出时由 [TabRepository.unlinkAll] 中断。
+     */
+    fun newTabForPopup(sourceTabId: String, popupWebView: WebView)
 
     /** 关闭指定标签 */
     fun closeTab(id: String)

@@ -106,6 +106,16 @@ class CustomWebView @JvmOverloads constructor(
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
+    /** 网页弹窗（window.open）交付的 WebView：新标签据此接管，保活 JS 窗口；非弹窗标签为 null */
+    private var injectedWebView: WebView? = null
+
+    /** 本次 loadInitial 是否接管了弹窗 WebView（true 时不主动 loadUrl，交由系统经内部 Message 自动加载目标） */
+    private var adoptedPopup = false
+
+    fun setInjectedWebView(wv: WebView?) {
+        injectedWebView = wv
+    }
+
     /** 底部工具栏是否已收起（页面上滑时收起、下滑时显示） */
     private var toolbarHidden = false
 
@@ -193,7 +203,17 @@ class CustomWebView @JvmOverloads constructor(
     fun loadInitial() {
         Log.i("loadInitial tabId=${tab.id} url=${tab.url}")
         showToolbar()
-        val wv = createWebView()
+        val wv = acquireWebView()
+        if (adoptedPopup) {
+            // 接管的是网页弹窗 WebView：系统已通过内部 Message（WebView.WebViewTransport）把目标地址
+            // 交给它自动加载，这里绝不能再次 loadUrl（此时 tab.url 为空，误加载主页会覆盖真实目标）。
+            // 目标地址由 webViewClient.onPageStarted 回写 tab.url。
+            Log.i("loadInitial adopt popup, skip load; target loads via transport")
+            binding.tabs.text = tabHost.tabCount.toString()
+            updateForwardButton()
+            tabHost.notifyTabChanged()
+            return
+        }
         val state = TabStateStore.read(context, tab.id)
         if (state != null && wv.restoreState(state) != null) {
             tab.url = wv.url ?: tab.url
@@ -249,16 +269,39 @@ class CustomWebView @JvmOverloads constructor(
         webView = null
     }
 
-    private fun createWebView(): MyWebView {
-        val wv = MyWebView(context).apply {
+    /** 按标准配置构建一个标签 WebView（开启多窗口以支持 window.open / target=_blank） */
+    private fun buildWebView(): MyWebView {
+        return MyWebView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
-            // 禁止网页自动创建新标签（广告 window.open / target=_blank 一律不响应）
-            settings.setSupportMultipleWindows(false)
-            settings.javaScriptCanOpenWindowsAutomatically = false
+            // 允许网页通过 target=_blank / window.open 自动创建新标签页（onCreateWindow 中处理）
+            settings.setSupportMultipleWindows(true)
+            settings.javaScriptCanOpenWindowsAutomatically = true
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
         }
+    }
+
+    /** 取得本标签要使用的 WebView：若有待接管的弹窗 WebView 则用之（并重绑客户端到本标签），否则新建 */
+    private fun acquireWebView(): MyWebView {
+        adoptedPopup = false
+        val injected = injectedWebView as? MyWebView
+        if (injected != null) {
+            injectedWebView = null
+            adoptedPopup = true
+            webView = injected
+            if (injected.parent == null) binding.webViewContainer.addView(injected)
+            // 接管弹窗 WebView：重绑客户端到本标签（原客户端绑定来源标签，避免归属错乱/跨标签污染）
+            injected.webChromeClient = createWebChromeClient()
+            injected.webViewClient = createWebViewClient()
+            attachToolbarAutoHide(injected)
+            return injected
+        }
+        return createWebView()
+    }
+
+    private fun createWebView(): MyWebView {
+        val wv = buildWebView()
         binding.webViewContainer.addView(wv)
         webView = wv
         attachToolbarAutoHide(wv)
@@ -1254,15 +1297,23 @@ class CustomWebView @JvmOverloads constructor(
     }
 
     private fun createWebChromeClient() = object : WebChromeClient() {
-        /** 网页里 target=_blank / window.open：在新标签页打开，而不是丢弃 */
+        /** 网页里 target=_blank / window.open：自动在浏览器新建标签页打开，新标签接管弹窗 WebView 并保活 */
         override fun onCreateWindow(
             view: WebView?,
             isDialog: Boolean,
             isUserGesture: Boolean,
             resultMsg: Message?,
         ): Boolean {
-            // 统一禁止网页自动创建新标签：直接忽略 window.open / target=_blank
-            return false
+            // 构建一个真实、长期存活的 WebView 作为弹窗窗口，通过系统内部 Message
+            // （WebView.WebViewTransport）交付给 JS，使 window.open 拿到的窗口引用持续存活
+            // （否则站点检测到 popup.closed 会反复重开，表现为一连串重定向/新标签）。
+            // 同时新建一个来源页为本页的标签，新标签据此接管该弹窗 WebView（二者保持归属关系）。
+            val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+            val popup = buildWebView()
+            transport.webView = popup
+            resultMsg.sendToTarget()
+            tabHost.newTabForPopup(tab.id, popup)
+            return true
         }
 
         override fun onProgressChanged(view: WebView?, newProgress: Int) {

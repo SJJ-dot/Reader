@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.browser
 
 import android.os.Bundle
+import android.webkit.WebView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +46,9 @@ class TabFragment : BaseFragment(), TabHost {
     override fun newTab(url: String, transient: Boolean, sourceTabId: String) =
         host?.newTab(url, transient, sourceTabId) ?: Unit
 
+    override fun newTabForPopup(sourceTabId: String, popupWebView: WebView) =
+        host?.newTabForPopup(sourceTabId, popupWebView) ?: Unit
+
     override fun closeTab(id: String) = host?.closeTab(id) ?: Unit
 
     override fun closeActiveTab(): Boolean = host?.closeActiveTab() ?: false
@@ -85,6 +89,9 @@ class TabFragment : BaseFragment(), TabHost {
         cwv.attach(tab, this)
         cwv.crossOriginOverride = crossOriginMode
         cwv.init(viewLifecycleOwner, AdBlock)
+        // 若为网页弹窗（window.open）创建的新标签：接管系统经由内部 Message 交付的弹窗 WebView，保活 JS 窗口
+        val pending = TabRepository.consumePendingPopup(boundTabId)
+        if (pending != null) cwv.setInjectedWebView(pending)
         cwv.loadInitial()
     }
 

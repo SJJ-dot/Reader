@@ -1,5 +1,6 @@
 package com.sjianjun.reader.module.browser
 
+import android.webkit.WebView
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.BrowserTabEntity
 import com.sjianjun.reader.repository.DbFactory
@@ -19,6 +20,20 @@ object TabRepository {
     private val tabs = mutableListOf<BrowserTab>()
     var activeId: String? = null
         private set
+
+    /** 网页弹窗（window.open）创建的 WebView 暂存处：键为新标签 id，待新标签创建后取用并接管，避免游离 WebView 泄漏 */
+    private val pendingPopups = mutableMapOf<String, WebView>()
+
+    fun putPendingPopup(tabId: String, wv: WebView) {
+        pendingPopups[tabId] = wv
+    }
+
+    fun consumePendingPopup(tabId: String): WebView? = pendingPopups.remove(tabId)
+
+    fun clearPendingPopups() {
+        pendingPopups.values.forEach { runCatching { it.destroy() } }
+        pendingPopups.clear()
+    }
 
     @Volatile
     private var loaded = false

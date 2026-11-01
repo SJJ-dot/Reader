@@ -87,7 +87,7 @@ fun WebView.init(headerMap: Map<String, String>? = null) {
         setSupportZoom(true)
         builtInZoomControls = true
         displayZoomControls = false
-        setSupportMultipleWindows(false) // 支持 window.open()
+        setSupportMultipleWindows(true) // 支持 window.open() / target=_blank 自动开新标签
         val customUa = headerMap?.get("User-Agent")
         userAgentString = when {
             customUa != null -> customUa

@@ -1,6 +1,7 @@
 package com.sjianjun.reader.module.browser
 
 import android.os.Bundle
+import android.webkit.WebView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -142,6 +143,12 @@ class BrowserFragment : BaseFragment(), TabHost {
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // 退出浏览器：回收全部子标签 WebView 及暂存的弹窗 WebView，避免游离 WebView 泄漏
+        TabRepository.clearPendingPopups()
+    }
+
     /** 切到后台：激活标签的 TabFragment 自身 onPause/onSaveInstanceState 已落盘 WebView 快照；此处仅兜底触发一次并落库元数据 */
     fun onAppBackground() {
         currentTabFragment()?.saveStateToDisk()
@@ -167,6 +174,20 @@ class BrowserFragment : BaseFragment(), TabHost {
             return
         }
         addTab(url, transient, sourceTabId)
+    }
+
+    override fun newTabForPopup(sourceTabId: String, popupWebView: WebView) {
+        if (tabCount >= MAX_TABS) {
+            toast("标签页数量已达上限")
+            runCatching { popupWebView.destroy() }
+            return
+        }
+        // 新标签 id 由 BrowserTab 生成；先把弹窗 WebView 暂存，待 TabFragment 创建后接管（保活 JS 窗口）
+        val tab = BrowserTab(sourceTabId = sourceTabId)
+        TabRepository.putPendingPopup(tab.id, popupWebView)
+        TabRepository.add(tab, makeActive = true)
+        syncFragments()
+        TabRepository.persist()
     }
 
     override fun closeTab(id: String) {
@@ -292,23 +313,52 @@ class BrowserFragment : BaseFragment(), TabHost {
     }
 
     /**
-     * 同步子 Fragment 与 TabRepository：仅保留“激活标签”对应的 Fragment，
-     * 其它标签 Fragment 一律销毁（切换标签 = 销毁重建），WebView 不常驻。
+     * 保活集合：激活标签 + 其归属链（来源页祖先、子标签后代）。
+     * 按标准浏览器做法，关联标签的 WebView 持续存活（不销毁、后台继续运行），
+     * 使新标签与来源页保持归属关系且网页（视频/定时器）正常工作。
+     */
+    private fun keepAliveTabIds(): Set<String> {
+        val active = TabRepository.getActive() ?: return emptySet()
+        val ids = linkedSetOf(active.id)
+        var cur = active
+        while (cur.sourceTabId.isNotBlank()) {
+            val p = TabRepository.get(cur.sourceTabId) ?: break
+            if (!ids.add(p.id)) break
+            cur = p
+        }
+        val all = TabRepository.list
+        var changed = true
+        while (changed) {
+            changed = false
+            for (t in all) {
+                if (t.sourceTabId.isNotBlank() && t.sourceTabId in ids && ids.add(t.id)) changed = true
+            }
+        }
+        return ids
+    }
+
+    /**
+     * 同步子 Fragment 与 TabRepository：保留“激活标签”及其归属链（保活）对应的 Fragment，
+     * 仅销毁其余标签的 Fragment（切换即销毁重建，WebView 不常驻）。
+     * 保活标签的 Fragment 仅设为 GONE（视图隐藏、WebView 继续存活），激活标签为 VISIBLE。
      * 标签页数据由 TabFragment 自身生命周期落盘/恢复。
-     * 若激活标签 Fragment 已存在则保持不变，避免从标签网格返回 / 旋转时不必要的重建重载。
      */
     private fun syncFragments() {
         val fm = childFragmentManager
         val active = TabRepository.getActive() ?: return
         val activeTag = tagFor(active.id)
+        val keep = keepAliveTabIds()
         val tx = fm.beginTransaction()
         var activeExists = false
         for (f in fm.fragments.toList()) {
             val id = f.tag?.removePrefix(TAG_PREFIX) ?: continue
-            if (id == active.id) {
-                activeExists = true
-            } else {
-                tx.remove(f) // 销毁非激活标签（切换即销毁重建）
+            when {
+                id == active.id -> {
+                    activeExists = true
+                    f.view?.visibility = View.VISIBLE
+                }
+                id in keep -> f.view?.visibility = View.GONE
+                else -> tx.remove(f) // 销毁非保活标签（切换即销毁重建），保活标签仅隐藏、WebView 继续存活
             }
         }
         if (!activeExists) {
