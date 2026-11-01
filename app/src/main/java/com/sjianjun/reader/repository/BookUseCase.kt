@@ -28,8 +28,16 @@ import kotlinx.coroutines.sync.withLock
 import sjj.alog.Log
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
+import kotlin.math.max
 
 object BookUseCase {
+    /**
+     * 非全量加载（增量更新）时，传给脚本的“末尾倒数第 N 章”锚点偏移。
+     * 脚本会从该章开始返回（重同步末尾 N 章并补全其后新增章节），而非只返回最新一章。
+     * 列表不足 N 章时取首章（index 0），避免越界。
+     */
+    private const val UPDATE_ANCHOR_OFFSET = 8
+
     private val contentDao get() = db.chapterContentDao()
     private val bookDao get() = db.bookDao()
     private val chapterDao get() = db.chapterDao()
@@ -164,8 +172,15 @@ object BookUseCase {
             val script = bookSourceDao.getBookSourceById(book.bookSourceId) ?: throw MessageException("未找到对应书籍书源")
             book.isLoading = true
             bookDao.updateBook(book)
-            //本地已有的最新章节链接，没有时传空串。脚本可据此只返回最新章节，加速检查更新
-            val lastChapterUrl = if (forceFull) "" else chapterDao.getLastChapterByBookId(book.id)?.url ?: ""
+            //非全量加载：以“末尾倒数第 N 章”的 url 作为锚点交给脚本。
+            //脚本会从该章开始返回（重同步末尾 N 章并补全其后新增章节），而非只返回最新一章。
+            //列表不足 N 章时取首章（index 0），避免越界；forceFull 时传空串走全量。
+            val localChapters = chapterDao.getChapterListByBookId(book.id).first()
+            val lastChapterUrl = if (forceFull) {
+                ""
+            } else {
+                localChapters.getOrNull(max(0, localChapters.size - UPDATE_ANCHOR_OFFSET))?.url ?: ""
+            }
             val bookDetails = script.getDetails(book.url, lastChapterUrl)!!
             //本次调用已被更新的调用取代（或页面已退出）：结果直接丢弃，不写库、不改状态
             if (!ScriptCallTargets.isLatest(target, generation)) {
@@ -182,7 +197,6 @@ object BookUseCase {
                 bookDetails.url = book.url
             }
             val chapterList = bookDetails.chapterList!!
-            val localChapters = chapterDao.getChapterListByBookId(book.id).first()
             var fullChapterList: List<Chapter> = localChapters
             var keepUpToIndex: Int? = null
             if (chapterList.isEmpty()) {
