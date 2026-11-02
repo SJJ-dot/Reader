@@ -390,8 +390,12 @@ object BookUseCase {
             chapter.content = mutableListOf(content)
             // 抓取失败（contentError）不算"已缓存"：否则目录会显示成已缓存，且下次不会再重试
             chapter.isLoaded = !content.contentError
-            chapterDao.insert(chapter)
             contentDao.insert(content)
+            // 回写 Chapter 行以持久化 isLoaded：章节列表的"已加载"标记依赖它随正文加载实时刷新。
+            // 数据完整性由阅读页章节列表同步(BUG2)保证：内存列表已持续与 DB 一致，
+            // 此处 chapter.index 即为该 url 在 DB 中的真实序号，REPLACE 只会命中正确行，
+            // 不会再像旧 BUG1 那样用陈旧 index 顶掉合并后属于其他章节的行。
+            chapterDao.insert(chapter)
 
             // 强制重新加载后，朗读的段落缓存也要作废，否则朗读仍会读到旧正文
             if (force == 1 && !content.contentError) {

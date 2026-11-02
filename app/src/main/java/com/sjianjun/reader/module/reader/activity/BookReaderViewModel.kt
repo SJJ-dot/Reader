@@ -13,10 +13,10 @@ import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory
 import com.sjianjun.reader.tts.v2.load.NovelChapterLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import sjj.alog.Log
 import sjj.novel.view.reader.bean.BookRecordBean
 import sjj.novel.view.reader.page.TxtChapter
 
@@ -32,6 +32,9 @@ class BookReaderViewModel : ViewModel() {
     private val chapterDao get() = DbFactory.db.chapterDao()
     private val bookSourceDao get() = DbFactory.db.bookSourceDao()
 
+    /** 章节列表跟随 DB 的收集任务：重新 init（换书/换源）时取消上一个，避免叠加多个收集器 */
+    private var chapterListCollectJob: Job? = null
+
     suspend fun init(bookId: String): Book? = withIo {
         val book = bookDao.getBookById(bookId) ?: return@withIo null
         book.record = readingRecordDao.getReadingRecord(book.title).firstOrNull() ?: ReadingRecord(book.title)
@@ -43,6 +46,17 @@ class BookReaderViewModel : ViewModel() {
         withMain {
             this@BookReaderViewModel.book.value = book
             this@BookReaderViewModel.chapterList.value = chapterList
+        }
+        // 阅读页章节列表持续跟随 DB：增量更新/抽屉编辑后，内存不再停留于进页时的陈旧快照
+        // （修复“应显示 97.5 却一直显示 98”——阅读页按陈旧 index→url 映射取章）
+        chapterListCollectJob?.cancel()
+        chapterListCollectJob = viewModelScope.launch(Dispatchers.IO) {
+            chapterDao.getChapterListByBookId(book.id).collect { list ->
+                withMain {
+                    this@BookReaderViewModel.chapterList.value = list
+                    this@BookReaderViewModel.book.value?.chapterList = list
+                }
+            }
         }
         return@withIo book
     }

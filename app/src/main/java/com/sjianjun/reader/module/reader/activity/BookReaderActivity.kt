@@ -97,6 +97,9 @@ class BookReaderActivity : BaseActivity() {
     /** 下一章预加载任务：当前章加载成功后触发；切章时取消，避免和当前章抢资源 */
     private var prefetchJob: Job? = null
 
+    /** 章节列表跟随 DB 同步后重建目录/重定位任务：退出阅读页时取消，避免协程持有 Activity */
+    private var syncChapterListJob: Job? = null
+
     /** 预加载是由哪一章触发的（同一章翻页不重复触发） */
     private var prefetchFromChapter = -1
 
@@ -154,6 +157,9 @@ class BookReaderActivity : BaseActivity() {
         initData()
         initView()
         initBackPressed()
+        // 章节列表跟随 DB 的观察者只注册一次（initData 可被 onCreate/onNewIntent/换源 多次调用，
+        // 若放在 initData 内会叠加多个观察者）。syncReaderChapterList 内部已处理 loader 尚未就绪的情况。
+        viewModel.chapterList.observe(this) { syncReaderChapterList(it) }
     }
 
     override fun onResume() {
@@ -176,6 +182,8 @@ class BookReaderActivity : BaseActivity() {
         chapterRequestJob = null
         prefetchJob?.cancel()
         prefetchJob = null
+        syncChapterListJob?.cancel()
+        syncChapterListJob = null
         //退出阅读页时书籍可能还在加载中（章节列表上拉检查更新／书籍信息加载）：
         //上面的协程取消会连带取消正在跑的脚本调用，加载流程自己会恢复"加载中"状态
         super.onDestroy()
@@ -894,6 +902,51 @@ class BookReaderActivity : BaseActivity() {
             TtsPlaybackController.state.value?.takeIf { it.active }?.let { onTtsStateChanged(it) }
             // 从朗读播放卡片左侧按钮进来：直接唤起菜单（里面是播放卡片）
             handleShowTtsPlayCard()
+        }
+    }
+
+    /**
+     * 章节列表跟随 DB 同步：增量更新/抽屉编辑后重建 PageLoader 目录并按当前 chapterPos 重定位，
+     * 修复“阅读页一直显示进页时的陈旧章节（应显示 97.5 却显示 98）”。
+     * 仅当“当前阅读位置的章节”确实变化时才重建，避免无关更新反复重开当前章。
+     */
+    private fun syncReaderChapterList(list: List<Chapter>?) {
+        val loader = mPageLoader ?: return
+        val chapters = list ?: return
+        if (chapters.isEmpty()) return
+        val pos = loader.chapterPos
+        val oldCategory = loader.chapterCategory
+        val oldChapter = oldCategory?.getOrNull(pos)
+        val newChapter = chapters.getOrNull(pos)
+        // 目录始终与 DB 同步（保证翻页/跳转用到的 url 正确），但这一步只换映射，不改变当前页
+        viewModel.book.value?.chapterList = chapters
+        loader.chapterCategory = chapters.map { chapter ->
+            TxtChapter().apply {
+                this.bookId = viewModel.book.value?.url
+                this.link = chapter.url
+                this.title = chapter.title
+                this.chapterIndex = chapter.index
+            }
+        }
+        // 首次（目录尚未建立）只更新数据，交给 initData 打开，避免重复打开/位置错乱
+        if (oldCategory == null) return
+        // 当前阅读位置对应章节未变：仅目录已同步，不打断当前阅读页码
+        if (oldChapter?.link == newChapter?.url) return
+        // 当前阅读章变化：参照“强制刷新”逻辑重载当前章内容并 reloadPages() 保留页码，
+        // 不再调用 openChapter()（它已打开章节时会 mCurPage=getCurPage(0) 重置到第一页）。
+        syncChapterListJob = launch("SYNC_READER_CHAPTER_LIST") {
+            loader.curChapter?.let { curChapter ->
+                val chapter = viewModel.chapterList.value?.getOrNull(curChapter.chapterIndex) ?: return@let
+                viewModel.getChapterContent(chapter, 0)
+                curChapter.content = chapter.content?.joinToString("\n") { it.format() }
+                if (chapter.content?.firstOrNull()?.contentError == true) {
+                    curChapter.title = chapter.title + "(章节内容错误)"
+                } else {
+                    curChapter.title = chapter.title
+                }
+                // reloadPages() 内部 ChapterPageCache.reset() 并保留 mCurPage 位置重新分页
+                loader.reloadPages()
+            }
         }
     }
 
