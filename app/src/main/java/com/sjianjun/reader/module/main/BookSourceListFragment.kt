@@ -22,6 +22,7 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_READ_ONLY
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.CHAPTER_INDEX
+import com.sjianjun.reader.KEEP_NAV_BAR_HEIGHT
 import com.sjianjun.reader.PAGE_FIRST_LINE
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
@@ -433,7 +434,8 @@ class BookSourceListFragment : BaseFragment() {
                         BOOK_TITLE to book.title,
                         BOOK_ID to book.id,
                         BOOK_READ_ONLY to "true",
-                        CHAPTER_INDEX to (book.readChapter?.index?.toString() ?: "")
+                        CHAPTER_INDEX to (book.readChapter?.index?.toString() ?: ""),
+                        KEEP_NAV_BAR_HEIGHT to "true"
                     ).show(fragment.childFragmentManager, "ChapterListFragment-${book.id}")
                 }
                 binding.btnRefresh.click { loadContent(book, force = true) }

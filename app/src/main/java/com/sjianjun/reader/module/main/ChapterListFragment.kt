@@ -20,6 +20,7 @@ import com.sjianjun.reader.BOOK_ID
 import com.sjianjun.reader.BOOK_READ_ONLY
 import com.sjianjun.reader.BOOK_TITLE
 import com.sjianjun.reader.CHAPTER_INDEX
+import com.sjianjun.reader.KEEP_NAV_BAR_HEIGHT
 import com.sjianjun.reader.BaseFragment
 import com.sjianjun.reader.R
 import com.sjianjun.reader.adapter.BaseAdapter
@@ -44,6 +45,10 @@ class ChapterListFragment : BaseFragment() {
     val bookTitle: String get() = requireArguments().getString(BOOK_TITLE)!!
     val bookId: String? get() = requireArguments().getString(BOOK_ID)
     private val readOnly: Boolean get() = requireArguments().getString(BOOK_READ_ONLY)?.toBoolean() ?: false
+    /** 是否保留底部导航栏高度：默认 false 保持现状；true 时给列表加导航栏 inset padding，
+     *  用于换源内容对比里叠加的「目录」弹窗，避免被导航栏压住。 */
+    private val keepNavBarHeight: Boolean
+        get() = requireArguments().getString(KEEP_NAV_BAR_HEIGHT)?.toBoolean() ?: false
     /** 换源内容对比里定位到的章节序号；非空时优先用它高亮/滚动，而不是阅读记录里的序号 */
     private val targetChapterIndex: Int? get() = requireArguments().getString(CHAPTER_INDEX)?.toIntOrNull()
     private val adapter = ChapterListAdapter(this)
@@ -83,11 +88,12 @@ class ChapterListFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = MainFragmentBookChapterListBinding.bind(view)
-        // 窗口已 edge-to-edge 延伸到导航栏下方，底部按导航栏高度加 padding，避免内容被遮挡
-        ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(0, 0, 0, systemBars.bottom)
-            insets
+        if (keepNavBarHeight) {
+            ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                v.setPadding(0, 0, 0, systemBars.bottom)
+                insets
+            }
         }
         binding?.recycleViewChapterList?.adapter = adapter
         initRefresh()
