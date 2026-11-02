@@ -108,6 +108,9 @@ class ChapterListFragment : BaseFragment() {
     /**
      * 章节列表：下拉「重新加载」（全量更新章节列表），上拉「检查更新」（增量拉取最新章节）
      */
+    /** 跟踪本轮是否由我们启动了刷新/加载动画，仅据此收尾，避免依赖 isRefreshing/isLoading（animationOnly 不置标记） */
+    private var refreshAnimating = false
+
     private fun initRefresh() {
         val refresh = binding?.chapterRefresh ?: return
         //记录动画是哪个手势拉起来的，收尾时按对应方式收
@@ -129,13 +132,17 @@ class ChapterListFragment : BaseFragment() {
         //此后下拉、上拉全部失效；页面退出时加载状态会被重置，动画也随之收掉
         viewModel.bookIsLoadingLiveData.observeViewLifecycle { loading ->
             if (loading == true) {
-                if (!refresh.isRefreshing && !refresh.isLoading) {
-                    if (fromLoadMore) refresh.autoLoadMoreAnimationOnly()
-                    else refresh.autoRefreshAnimationOnly()
+                if (!refreshAnimating) {
+                    refreshAnimating = true
+                    if (!refresh.isRefreshing && !refresh.isLoading) {
+                        if (fromLoadMore) refresh.autoLoadMoreAnimationOnly()
+                        else refresh.autoRefreshAnimationOnly()
+                    }
                 }
-            } else {
-                if (refresh.isRefreshing) refresh.finishRefresh()
-                if (refresh.isLoading) refresh.finishLoadMore()
+            } else if (refreshAnimating) {
+                refreshAnimating = false
+                refresh.finishRefresh()
+                refresh.finishLoadMore()
             }
         }
     }

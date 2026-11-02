@@ -122,6 +122,9 @@ class BookDetailsFragment : BaseAsyncFragment() {
         }
     }
 
+    /** 跟踪本轮是否由我们启动了刷新/加载动画，仅据此收尾，避免依赖 isRefreshing（animationOnly 不置该标记） */
+    private var refreshAnimating = false
+
     @SuppressLint("SetTextI18n")
     private fun fillView(book: Book?) {
         binding?.bookCover?.glide(book?.record?.bookCover ?: book?.cover)
@@ -166,11 +169,18 @@ class BookDetailsFragment : BaseAsyncFragment() {
         //加载中显示刷新动画（含其他入口触发的加载），加载结束收起
         binding?.detailsRefreshLayout?.let { refresh ->
             if (book?.isLoading == true) {
-                if (!refresh.isRefreshing) {
-                    refresh.autoRefreshAnimationOnly()
+                //autoRefreshAnimationOnly 只播动画、不改刷新状态(isRefreshing 恒为 false)，
+                //用自有标志跟踪本轮是否起了动画，避免"加载结束但收尾分支永远不成立"导致一直转圈
+                if (!refreshAnimating) {
+                    refreshAnimating = true
+                    if (!refresh.isRefreshing && !refresh.isLoading) {
+                        refresh.autoRefreshAnimationOnly()
+                    }
                 }
-            } else if (refresh.isRefreshing) {
+            } else if (refreshAnimating) {
+                refreshAnimating = false
                 refresh.finishRefresh()
+                refresh.finishLoadMore()
             }
         }
         binding?.reading?.click {
