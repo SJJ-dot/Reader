@@ -1,37 +1,24 @@
 package com.sjianjun.reader.module.verification
 
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.graphics.Bitmap
-import android.net.http.SslError
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.text.InputType
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View.GONE
-import android.view.View.VISIBLE
-import android.view.ViewGroup
-import android.webkit.SslErrorHandler
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.EditText
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityVerificationBinding
-import com.sjianjun.reader.http.WebViewPool
+import com.sjianjun.reader.module.bookcity.AdBlock
+import com.sjianjun.reader.module.bookcity.CustomWebView
+import com.sjianjun.reader.module.browser.BrowserTab
+import com.sjianjun.reader.module.browser.TabHost
 import com.sjianjun.reader.python.ScriptTaskCancelledException
 import com.sjianjun.reader.python.ScriptTaskRegistry
 import com.sjianjun.reader.utils.gson
-import com.sjianjun.reader.utils.init
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -42,7 +29,15 @@ import sjj.alog.Log
 import java.lang.ref.WeakReference
 import java.util.UUID
 
-class WebViewVerificationActivity : BaseActivity() {
+/**
+ * 人机验证页：直接承载浏览器的 [CustomWebView]（含其底部工具栏 / 地址栏 / 菜单），
+ * 因此与书城独立浏览器外观完全统一；顶部额外提供一个“完成”按钮用于结束验证并把当前页面 HTML 回传脚本。
+ *
+ * 验证的“阻塞等待 + 回传 HTML + 脚本取消即关闭”语义全部保留在本次活动里（[resultMap] / [waitForResult] /
+ * [ScriptTaskRegistry] 取消动作），未触碰 [com.sjianjun.reader.module.browser.TabRepository]，
+ * 仅用一个本地 [BrowserTab] + [TabHost] 桩驱动 [CustomWebView]，不会污染用户的浏览器标签库。
+ */
+class WebViewVerificationActivity : BaseActivity(), TabHost {
     private lateinit var binding: ActivityVerificationBinding
     private val url: String by lazy { intent.getStringExtra(KEY_URL) ?: "" }
     private val headerMap: Map<String, String> by lazy {
@@ -55,9 +50,9 @@ class WebViewVerificationActivity : BaseActivity() {
 
     @Volatile
     private var destroyed = false
-    private var historyCleared = false
-    private var pooled: WebViewPool.PooledWebView? = null
-    private val webView: WebView? get() = pooled?.webView
+
+    /** 当前承载验证的本地标签（不入库，活动销毁即丢弃） */
+    private var currentTab: BrowserTab? = null
 
     private val finishFallback by lazy {
         Runnable {
@@ -89,30 +84,26 @@ class WebViewVerificationActivity : BaseActivity() {
             return
         }
 
-        // 从共享池借用一个长驻 WebView，复用 cookie/会话，避免每次请求新建/销毁。
-        GlobalScope.launch(Dispatchers.Main) {
-            if (destroyed) return@launch
-            val pw = WebViewPool.acquire()
-            if (destroyed) {
-                pw.release()
-                return@launch
-            }
-            pooled = pw
-            setupWebView(pw.webView, url, headerMap)
-            startLoading(pw.webView)
-        }
+        setupVerificationWebView()
     }
 
-    private fun startLoading(webView: WebView) {
-        if (postData != null) {
-            webView.postUrl(url, postData!!)
-            Log.i("WebViewVerificationActivity loading URL with POST")
-        } else {
-            webView.loadUrl(url, headerMap)
-            Log.i("WebViewVerificationActivity loading URL with GET")
+    private fun setupVerificationWebView() {
+        val cwv = binding.customWebView
+        val tab = BrowserTab(url = url, transient = true)
+        currentTab = tab
+        cwv.attach(tab, this)
+        // CustomWebView 自带工具栏 / 地址栏 / 菜单，与书城浏览器完全统一；生命周期作用域用活动自身
+        cwv.init(this, AdBlock)
+        cwv.loadInitial()
+        // loadInitial 会按 tab.url 发起一次 GET；如调用方要求 POST / 自定义请求头，则用对应方式覆盖
+        val wv = cwv.webView
+        val post = postData
+        when {
+            post != null -> wv?.postUrl(url, post)
+            headerMap.isNotEmpty() -> wv?.loadUrl(url, headerMap)
         }
-        webView.clearHistory()
-        updateNavButtons(webView)
+        runnable = EvalJsRunnable(cwv, url)
+        mHandler.postDelayed(runnable!!, 500)
     }
 
     override fun onDestroy() {
@@ -125,192 +116,33 @@ class WebViewVerificationActivity : BaseActivity() {
         mHandler.removeCallbacks(finishFallback)
         val result = resultMap[intent.getStringExtra(KEY_RESULT)]
         result?.finished = true
-        releasePooled()
+        // 销毁 CustomWebView 内的 WebView，避免泄漏（cookie 由全局 CookieManager 保留，不影响会话）
+        binding.customWebView.destroyWebView()
     }
 
     override fun onPause() {
         super.onPause()
-        pooled?.webView?.onPause()
+        binding.customWebView.webView?.onPause()
     }
 
     override fun onResume() {
         super.onResume()
-        pooled?.webView?.onResume()
-    }
-
-    private fun releasePooled() {
-        val pw = pooled ?: return
-        pooled = null
-        val wv = pw.webView
-        (wv.parent as? ViewGroup)?.removeView(wv)
-        try {
-            wv.stopLoading()
-        } catch (_: Exception) {
-        }
-        runnable?.let { mHandler.removeCallbacks(it) }
-        // 仅归还到池中复用，不销毁
-        pw.release()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.verification_menu, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_done -> {
-                // 处理完成按钮点击事件
-                finishWithCurrentContent()
-                true
-            }
-
-            else -> super.onOptionsItemSelected(item)
-        }
+        binding.customWebView.webView?.onResume()
     }
 
     private fun initView() {
-        binding.refresh.click {
-            val wv = webView ?: return@click
-            if (binding.refresh.isSelected) {
-                wv.stopLoading()
-            } else {
-                wv.stopLoading()
-                wv.loadUrl(wv.url ?: "")
-            }
-        }
-        binding.backward.click {
-            Log.i("后退")
-            val wv = webView
-            if (wv != null && wv.canGoBack()) {
-                wv.goBack()
-            } else {
-                Log.w("没有后退页面，退出")
-            }
-        }
-        binding.forward.click {
-            Log.i("前进")
-            val wv = webView
-            if (wv != null && wv.canGoForward()) {
-                wv.goForward()
-            } else {
-                Log.w("没有前进页面")
-            }
-        }
-        binding.settings.click {
-            showSettingsDialog()
-        }
-        binding.complete.click {
+        binding.btnDone.click {
             finishWithCurrentContent()
         }
-        setSupportActionBar(binding.toolbar)
         setOnBackPressed {
-            if (webView?.canGoBack() == true) {
-                webView?.goBack()
-                return@setOnBackPressed true
-            }
-            finishWithCurrentContent()
-            true
-        }
-    }
-
-    /**
-     * 设置菜单：标题显示当前网页标题，URL 可编辑并跳转。
-     */
-    private fun showSettingsDialog() {
-        val wv = webView ?: return
-        val title = wv.title.orEmpty()
-        val currentUrl = wv.url.orEmpty()
-        val input = EditText(this).apply {
-            setText(currentUrl)
-            setSelection(currentUrl.length)
-            inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT
-            setSingleLine(true)
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(if (title.isNotBlank()) title else "网页设置")
-            .setView(input)
-            .setPositiveButton("跳转") { _, _ ->
-                val target = input.text.toString().trim()
-                if (target.isNotEmpty()) {
-                    wv.loadUrl(target)
-                }
-            }
-            .setNegativeButton("取消", null)
-            .show()
-    }
-
-    /**
-     * 根据当前 WebView 状态刷新底部导航按钮：
-     * - 可后退时显示后退箭头；不可后退时切换为退出图标，点击退出当前页。
-     * - 前进按钮按是否可前进启用/禁用。
-     */
-    private fun updateNavButtons(webView: WebView) {
-        if (destroyed) return
-        binding.backward.isEnabled = webView.canGoBack()
-        binding.forward.isEnabled = webView.canGoForward()
-    }
-
-    private fun setupWebView(webView: WebView, url: String, headerMap: Map<String, String>) {
-        (webView.parent as? ViewGroup)?.removeView(webView)
-        binding.webViewContainer.removeAllViews()
-        binding.webViewContainer.addView(webView)
-        // 重新挂载后恢复渲染（借用的实例可能处于 onPause 暂停态）
-        webView.onResume()
-        webView.init(headerMap)
-        historyCleared = false
-        runnable = EvalJsRunnable(webView, url)
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView, newProgress: Int) {
-                Log.i("progress:${newProgress} ")
-                binding.searchRefresh.progress = newProgress
-                updateNavButtons(view)
-                if (newProgress == 100) {
-                    binding.refresh.isSelected = false
-                    binding.searchRefresh.visibility = GONE
-                } else {
-                    binding.refresh.isSelected = true
-                    binding.searchRefresh.visibility = VISIBLE
-                }
+            if (binding.customWebView.webView?.canGoBack() == true) {
+                binding.customWebView.webView?.goBack()
+                true
+            } else {
+                finishWithCurrentContent()
+                true
             }
         }
-        webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                Log.i("shouldOverrideUrlLoading:${request?.url}")
-                if (url.endsWith(".apk")) {
-                    return true
-                }
-                if (request?.url?.scheme == "http" || request?.url?.scheme == "https") {
-                    // 处理 http 和 https 的链接
-                    return false // 返回 false 以让 WebView 加载该链接
-                }
-                return true // 返回 true 以阻止 WebView 加载其他类型的链接
-            }
-
-            @SuppressLint("WebViewClientOnReceivedSslError")
-            override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-                handler?.proceed()
-            }
-
-            override fun onPageFinished(view: WebView?, url: String) {
-                super.onPageFinished(view, url)
-                // 借用的 WebView 可能带有上一次请求的页面历史，首次加载完成后清掉，避免用户后退到无关页面
-                if (!historyCleared) {
-                    historyCleared = true
-                    view?.clearHistory()
-                }
-                view?.let { updateNavButtons(it) }
-                runnable?.let { r ->
-                    mHandler.removeCallbacks(r)
-                    mHandler.postDelayed(r, 100)
-                }
-            }
-
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            }
-
-        }
-        updateNavButtons(webView)
     }
 
     /**
@@ -322,7 +154,7 @@ class WebViewVerificationActivity : BaseActivity() {
         if (finishing) return
         finishing = true
         val resultKey = intent.getStringExtra(KEY_RESULT)
-        val wv = webView
+        val wv = binding.customWebView.webView
         if (wv == null) {
             resultMap[resultKey]?.finished = true
             mHandler.removeCallbacks(finishFallback)
@@ -344,6 +176,55 @@ class WebViewVerificationActivity : BaseActivity() {
     private fun parseJsString(raw: String?): String {
         if (raw.isNullOrBlank() || raw == "null") return ""
         return StringEscapeUtils.unescapeJson(raw).replace(QUOTE_REGEX, "")
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // TabHost 桩：验证页只承载单个标签，跨标签动作（新建/管理/退出等）在此按“单标签验证”语义处理。
+    // 其中退出类动作等价于“完成验证”；其余多标签动作无操作，避免把验证页变成完整浏览器。
+    // -----------------------------------------------------------------------------------------
+    override val tabId: String get() = currentTab?.id ?: ""
+    override val tabCount: Int get() = 1
+
+    override fun newTab(url: String, transient: Boolean, sourceTabId: String) {
+        // 验证页不支持多标签，忽略
+    }
+
+    override fun newTabForPopup(sourceTabId: String, popupWebView: WebView) {
+        // 验证页忽略弹窗新标签
+    }
+
+    override fun closeTab(id: String) {
+        // 单标签验证页，忽略
+    }
+
+    override fun closeActiveTab(): Boolean {
+        // 验证页只有单个标签，关闭（底部后退键退到栈底变成的叉叉）即退出验证并把当前页面内容回传脚本。
+        // 语义上“关掉的是最后一个标签，浏览器已退出”，返回 false。
+        finishWithCurrentContent()
+        return false
+    }
+
+    override fun selectTab(id: String) {
+    }
+
+    override fun duplicateTab(id: String) {
+    }
+
+    override fun showTabsManager() {
+    }
+
+    override fun requestExit() {
+        finishWithCurrentContent()
+    }
+
+    override fun activeExit() {
+        finishWithCurrentContent()
+    }
+
+    override fun notifyTabChanged() {
+    }
+
+    override fun persistTabs() {
     }
 
     companion object {
@@ -467,15 +348,15 @@ class WebViewVerificationActivity : BaseActivity() {
     }
 
     private inner class EvalJsRunnable(
-        webView: WebView,
+        private val customWebView: CustomWebView,
         private val url: String,
         private val mJavaScript: String = "document.documentElement.outerHTML"
     ) : Runnable {
         var retry = 0
-        private val mWebView: WeakReference<WebView> = WeakReference(webView)
+
         override fun run() {
             if (destroyed) return
-            mWebView.get()?.evaluateJavascript(mJavaScript) {
+            customWebView.webView?.evaluateJavascript(mJavaScript) {
                 handleResult(it)
             }
         }
@@ -485,12 +366,13 @@ class WebViewVerificationActivity : BaseActivity() {
             if (!result.isBlank() && result != "null") {
                 val content = parseJsString(result)
                 Log.i("js执行结果获取成功：$url")
-                val result = resultMap[intent.getStringExtra(KEY_RESULT)]
-                result?.url = url
-                result?.html = content
+                val resultKey = intent.getStringExtra(KEY_RESULT)
+                val res = resultMap[resultKey]
+                res?.url = url
+                res?.html = content
                 val verificationKey: String by lazy { intent.getStringExtra(KEY_VERIFICATION_KEY) ?: "" }
                 if (verificationKey.isNotBlank() && content.contains(verificationKey)) {
-                    result?.finished = true
+                    res?.finished = true
                     finish()
                 }
                 return@launch
