@@ -165,8 +165,8 @@ class ChapterListFragment : BaseFragment() {
                 val index = adapter.data.indexOfFirst {
                     it.index == adapter.readingChapterIndex
                 }
-                if (index > 0)
-                    binding?.recycleViewChapterList?.scrollToPosition(index)
+                if (index >= 0)
+                    scrollReadingChapterToThirdPosition(index)
             }
         }
         viewModel.readingRecord.observeViewLifecycle {
@@ -176,13 +176,25 @@ class ChapterListFragment : BaseFragment() {
             val index = adapter.data.indexOfFirst {
                 it.index == adapter.readingChapterIndex
             }
-            if (index > 0)
-                binding?.recycleViewChapterList?.scrollToPosition(index)
+            if (index >= 0)
+                scrollReadingChapterToThirdPosition(index)
         }
         // 净化规则变更后，重新加载章节列表以刷新标题
         EventBus.observe(EventKey.REPLACEMENT_RULES_CHANGED, viewLifecycleOwner, androidx.lifecycle.Observer<String> {
             viewModel.init(bookTitle, bookId)
         })
+    }
+
+    /**
+     * 把当前正在阅读的章节滚动到「从上到下第3」的位置：让其上方保留 2 条章节。
+     * 上拉加载导致章节数变化后，当前阅读章节的相对位置不变，但滚动位置需要重新定位到这里。
+     * 若当前章节位于列表最前两项，则尽量靠顶（其上不足 2 条）。
+     */
+    private fun scrollReadingChapterToThirdPosition(index: Int) {
+        val rv = binding?.recycleViewChapterList ?: return
+        val lm = rv.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
+        val target = (index - 2).coerceAtLeast(0)
+        lm.scrollToPositionWithOffset(target, 0)
     }
 
     private class ChapterListAdapter(val fragment: ChapterListFragment) : BaseAdapter<Chapter>() {
