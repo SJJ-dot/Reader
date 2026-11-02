@@ -142,6 +142,13 @@ def clear_current_task(key):
         # 只摘掉自己那一份，如果已经被 abort() 摘走了就别动新下来的
         if _task_states.get(state.key) is state:
             _task_states.pop(state.key, None)
+        # 任务彻底结束：清掉所有登记在本状态上的线程（含脚本自建线程 / 池化复用线程），
+        # 否则这些线程的 _thread_keys 陈旧条目仍指向已死的 state。被别的任务复用该线程时，
+        # 会误读到本任务的“已取消”标记（跨任务污染），且 abort 也清不掉它们（一直不取消）。
+        # 用 list() 快照遍历，并加 `is state` 兜底，避免误删别的任务、或并发改写时删错条目。
+        for tid in list(state.thread_ids):
+            if _thread_keys.get(tid) is state:
+                _thread_keys.pop(tid, None)
     state.sockets.clear()
     state.thread_ids.clear()
 
