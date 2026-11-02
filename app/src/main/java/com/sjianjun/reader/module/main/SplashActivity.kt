@@ -35,10 +35,14 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun startMain() {
-        // NEW_TASK + CLEAR_TOP：保证 MainActivity 单例复用，不堆叠实例
+        // 进入主页并复用已有实例、不堆叠：CLEAR_TOP 在本任务内复用已存在的 MainActivity。
+        // 注意：这里【不要】用 FLAG_ACTIVITY_NEW_TASK —— SplashActivity 是 LAUNCHER 且自身会 finish()，
+        // 加 NEW_TASK 会让系统把“启动器任务”的根记为 SplashActivity；进程被系统回收后再从桌面图标恢复时，
+        // 会重建 SplashActivity 又立刻 finish()，容易留下空任务导致“图标闪一下就退出、要再点一次”。
+        // 从 Activity 上下文启动本就不需要 NEW_TASK。
         startActivity(
             Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         )
         finish()
