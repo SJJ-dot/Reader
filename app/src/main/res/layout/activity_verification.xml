@@ -23,18 +23,33 @@
             android:paddingStart="12dp"
             android:paddingEnd="4dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="人机验证"
-                android:textColor="@color/dn_text_color_black"
-                android:textSize="16sp" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="人机验证"
+                    android:textColor="@color/dn_text_color_black"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="关闭时的页面内容会自动回传并解析"
+                    android:textColor="@color/text_primary_color"
+                    android:textSize="12dp" />
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btnDone"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="40dp"
                 android:minWidth="0dp"
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp"
