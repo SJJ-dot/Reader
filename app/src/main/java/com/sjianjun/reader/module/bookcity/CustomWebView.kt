@@ -39,6 +39,7 @@ import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
@@ -118,6 +119,12 @@ class CustomWebView @JvmOverloads constructor(
 
     /** 底部工具栏是否已收起（页面上滑时收起、下滑时显示） */
     private var toolbarHidden = false
+
+    /**
+     * 是否允许在浏览器菜单中切换夜间模式。
+     * 人机验证页会将其置为 false，验证期间禁止用户切换夜间模式（避免触发重建/脚本取消导致验证页退出）。
+     */
+    var nightModeSwitchAllowed = true
 
     private companion object {
         /** 浏览器历史记录上限（不去重，超出后丢弃最旧的） */
@@ -1009,6 +1016,11 @@ class CustomWebView @JvmOverloads constructor(
         )
         b.menuNightMode.click {
             dialog.dismiss()
+            if (!nightModeSwitchAllowed) {
+                // 人机验证期间禁止切换颜色模式：提示并中止
+                Toast.makeText(context, "禁止切换颜色模式", Toast.LENGTH_SHORT).show()
+                return@click
+            }
             val night = (resources.configuration.uiMode and
                     android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                     android.content.res.Configuration.UI_MODE_NIGHT_YES

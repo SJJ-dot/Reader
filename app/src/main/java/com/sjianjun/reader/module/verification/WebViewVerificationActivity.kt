@@ -89,6 +89,8 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
 
     private fun setupVerificationWebView() {
         val cwv = binding.customWebView
+        // 人机验证期间禁止用户切换夜间模式（避免触发重建/脚本取消导致验证页退出）
+        cwv.nightModeSwitchAllowed = false
         val tab = BrowserTab(url = url, transient = true)
         currentTab = tab
         cwv.attach(tab, this)
