@@ -6,12 +6,12 @@ import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.graphics.drawable.DrawableCompat
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
-import com.sjianjun.reader.GlideApp
 import com.sjianjun.reader.R
 import com.sjianjun.reader.preferences.appEssentials
 import sjj.alog.Log
@@ -21,7 +21,7 @@ import sjj.alog.Log
  * @param host fragment or activity
  */
 fun ImageView.glide(url: String?) {
-    GlideApp.with(this)
+    Glide.with(this)
         .applyDefaultRequestOptions(RequestOptions.placeholderOf(R.mipmap.ic_xue_xi).centerCrop())
         .load(url)
         .listener(object : RequestListener<Drawable> {

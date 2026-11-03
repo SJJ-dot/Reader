@@ -166,7 +166,7 @@ dependencies {
     //cookie
     implementation(libs.persistentCookieJar)
     implementation(libs.glide)
-    kapt(libs.glideCompiler)
+    ksp(libs.glide.ksp)
     implementation(libs.flexbox)
     implementation(libs.material)
     //下拉刷新（两级下拉：一级检查更新，继续下拉重新加载）

@@ -26,7 +26,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BOOK_ID
-import com.sjianjun.reader.GlideApp
+import com.bumptech.glide.Glide
 import com.sjianjun.reader.R
 import com.sjianjun.reader.SHOW_TTS_CARD
 import com.sjianjun.reader.URL
@@ -663,7 +663,7 @@ class TtsNotificationService : Service() {
             val bitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
                 var target: com.bumptech.glide.request.FutureTarget<android.graphics.Bitmap>? = null
                 try {
-                    target = GlideApp.with(applicationContext)
+                    target = Glide.with(applicationContext)
                         .asBitmap()
                         .override(COVER_SIZE, COVER_SIZE)
                         .centerCrop()
@@ -675,7 +675,7 @@ class TtsNotificationService : Service() {
                     Log.e("$TAG 加载封面失败：$cover", e)
                     null
                 } finally {
-                    runCatching { target?.let { GlideApp.with(applicationContext).clear(it) } }
+                    runCatching { target?.let { Glide.with(applicationContext).clear(it) } }
                 }
             }
             if (bitmap == null) return@launch
