@@ -277,14 +277,8 @@ class BackstageWebView(
  * （如 Cloudflare "Just a moment"、各类"安全验证/机器人检查"）即视为需要人工介入。
  */
 private fun isHumanVerificationPage(html: String, url: String?): Boolean {
-    val lowUrl = url?.lowercase().orEmpty()
-    if (lowUrl.contains("captcha") || lowUrl.contains("verify") || lowUrl.contains("challenge") ||
-        lowUrl.contains("recaptcha") || lowUrl.contains("hcaptcha") || lowUrl.contains("turnstile") ||
-        lowUrl.contains("cloudflare") || lowUrl.contains("robot") || lowUrl.contains("ddos") ||
-        lowUrl.contains("antibot") || lowUrl.contains("waf")
-    ) {
-        return true
-    }
+    // 仅依据页面内容判定，避免对 URL 含 captcha/verify/cloudflare/robot/waf 等常见词的
+    // 正常页面产生误触发（例如 /api/verify-email、cloudflare 加速的正常站点、带 robot 的文档页）。
     val low = html.lowercase()
     val markers = arrayOf(
         "recaptcha", "grecaptcha", "hcaptcha", "cf-mitigated", "cf-chl", "jschl",
@@ -292,7 +286,8 @@ private fun isHumanVerificationPage(html: String, url: String?): Boolean {
         "verify you are a human", "are you a robot", "robot check", "人机验证",
         "安全验证", "请完成安全验证", "complete the security check", "attention required",
         "enable javascript and cookies", "ddos protection", "datadome",
-        "px-captcha", "perimeterx", "incapsula", "unusual traffic"
+        "px-captcha", "perimeterx", "incapsula", "unusual traffic",
+        "access denied", "browser check", "why am i seeing this", "you are being rate limited"
     )
     return markers.any { it in low }
 }
