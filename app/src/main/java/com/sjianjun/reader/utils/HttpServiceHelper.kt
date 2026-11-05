@@ -79,7 +79,15 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
             when (uri) {
                 "/web_get" -> {
                     val data = gson.fromJson<WebGet>(requestBody)!!
-                    val res = WebViewClient.get(data.url!!, data.headers ?: emptyMap(), data.javaScript, data.timeout)
+                    // 只发一次网络请求：人机验证的判定与前台展示都在这一次请求的 WebView 内完成
+                    val res = WebViewClient.get(
+                        url = data.url!!,
+                        headers = data.headers ?: emptyMap(),
+                        javaScript = data.javaScript,
+                        timeout = data.timeout,
+                        autoHumanVerify = data.autoHumanVerify,
+                        verificationKey = data.verificationKey ?: ""
+                    )
                     newFixedLengthResponse(res)
                 }
 
@@ -90,7 +98,9 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
                         postData = data.postData ?: "",
                         javaScript = data.javaScript,
                         timeout = data.timeout,
-                        encoding = data.encoding ?: "UTF_8"
+                        encoding = data.encoding ?: "UTF_8",
+                        autoHumanVerify = data.autoHumanVerify,
+                        verificationKey = data.verificationKey ?: ""
                     )
                     newFixedLengthResponse(res)
                 }
@@ -134,6 +144,9 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         var headers: Map<String, String>? = null
         var javaScript: String = "document.documentElement.outerHTML"
         var timeout = 20000L
+        var verificationKey: String? = null
+        /** 命中人机验证页时，是否把同一个 WebView 提升到前台由人工处理（默认开启） */
+        var autoHumanVerify: Boolean = true
     }
 
     class WebPost {
@@ -142,6 +155,9 @@ class LocalHttpServer(port: Int) : NanoHTTPD(port) {
         var javaScript: String = "document.documentElement.outerHTML"
         var timeout = 20000L
         var encoding: String? = null
+        var verificationKey: String? = null
+        /** 同 [WebGet.autoHumanVerify] */
+        var autoHumanVerify: Boolean = true
     }
 
 }
