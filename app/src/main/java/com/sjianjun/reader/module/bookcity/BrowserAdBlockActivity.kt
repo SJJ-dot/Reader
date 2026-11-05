@@ -16,10 +16,12 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.sjianjun.reader.BaseActivity
 import com.sjianjun.reader.R
 import com.sjianjun.reader.databinding.ActivityBrowserAdBlockBinding
+import com.sjianjun.reader.view.click
 import kotlinx.coroutines.launch
 
 /** 广告拦截独立列表页：拦截记录 / 黑名单 / 白名单 */
@@ -29,8 +31,8 @@ class BrowserAdBlockActivity : BaseActivity() {
     private val adBlock: AdBlock = AdBlock
 
     private lateinit var accessAdapter: AccessRecordAdapter
-    private lateinit var blackAdapter: BlackListAdapter
-    private lateinit var whiteAdapter: WhiteListAdapter
+    private lateinit var blackAdapter: HostListAdapter
+    private lateinit var whiteAdapter: HostListAdapter
 
     /** 白名单与书源域名同步：新增加入、删除移除 */
     private fun seedBookSourceWhitelist() {
@@ -49,6 +51,7 @@ class BrowserAdBlockActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        adBlockLog { "activity onCreate hasSavedState=${savedInstanceState != null}" }
         enableEdgeToEdge()
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
@@ -56,16 +59,13 @@ class BrowserAdBlockActivity : BaseActivity() {
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
         }
-        accessAdapter = AccessRecordAdapter(
-            onAddWhiteDomain = { d, m -> adBlock.addWhiteHost(d, m) },
-            onAddBlackChoice = { url, _ ->
-                showBlockScopeDialog(this, url) { v, m -> adBlock.addBlackHost(v, m) }
-            },
-            onRestore = { url -> adBlock.restoreBlocked(url) }
-        )
-        blackAdapter = BlackListAdapter(adBlock)
-        whiteAdapter = WhiteListAdapter(adBlock)
+        // 三级（顶级域名/子域名/URL）各自直接增删本级规则，不再经过范围选择弹窗
+        accessAdapter = AccessRecordAdapter()
+        blackAdapter = HostListAdapter("black", adBlock) { adBlock.removeBlackHosts(it) }
+        whiteAdapter = HostListAdapter("white", adBlock) { adBlock.removeWhiteHosts(it) }
 
+        binding.btnClear.click { confirmClearAll() }
+        binding.btnClear.visibility = View.VISIBLE
         binding.rvList.layoutManager = LinearLayoutManager(this)
         binding.rvList.adapter = accessAdapter
         binding.filterScroll.visibility = View.VISIBLE
@@ -76,7 +76,7 @@ class BrowserAdBlockActivity : BaseActivity() {
                     2 -> whiteAdapter
                     else -> accessAdapter
                 }
-                // 筛选栏仅在访问记录 tab 显示
+                // 筛选栏仅在访问记录 tab 显示；清空按钮三个 tab 常显
                 binding.filterScroll.visibility = if (tab?.position == 0) View.VISIBLE else View.GONE
             }
 
@@ -85,17 +85,41 @@ class BrowserAdBlockActivity : BaseActivity() {
         })
 
         adBlock.accessPages.observe(this, Observer {
+            adBlockLog { "activity accessPages 通知 pages=${adBlock.accessPages.value?.size}" }
             accessAdapter.submit(adBlock.snapshot())
             updateFilterChips()
         })
-        adBlock.blacklist.observe(this, Observer {
-            blackAdapter.data = it
-            blackAdapter.notifyDataSetChanged()
-        })
-        adBlock.whitelist.observe(this, Observer {
-            whiteAdapter.data = it
-            whiteAdapter.notifyDataSetChanged()
-        })
+        adBlock.blacklist.observe(this, Observer { blackAdapter.submit(it) })
+        adBlock.whitelist.observe(this, Observer { whiteAdapter.submit(it) })
+    }
+
+    /** 清空当前 tab 的数据：弹窗二次确认，避免误删 */
+    private fun confirmClearAll() {
+        val tab = binding.tabLayout.selectedTabPosition
+        val label = when (tab) {
+            1 -> "黑名单"
+            2 -> "白名单"
+            else -> "访问记录"
+        }
+        val count = when (tab) {
+            1 -> adBlock.blacklist.value?.size
+            2 -> adBlock.whitelist.value?.size
+            else -> adBlock.accessPages.value?.size
+        }
+        adBlockLog { "confirmClearAll 弹窗 tab=$tab label=$label count=$count" }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("清空$label")
+            .setMessage("确定清空全部${label}（共 ${count ?: 0} 条）？")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("清空") { _, _ ->
+                adBlockLog { "confirmClearAll 用户确认 tab=$tab" }
+                when (tab) {
+                    1 -> adBlock.clearBlack()
+                    2 -> adBlock.clearWhite()
+                    else -> adBlock.clearAccessRecords()
+                }
+            }
+            .show()
     }
 
     /** 筛选可选类型（与 AccessRecordAdapter.resourceCategory 的分类一致） */

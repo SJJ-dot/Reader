@@ -5,82 +5,83 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.coorchice.library.SuperTextView
 import com.sjianjun.reader.R
-import com.sjianjun.reader.databinding.DialogAdBlockScopeBinding
 import com.sjianjun.reader.databinding.ItemAdBlockDomainBinding
 import com.sjianjun.reader.databinding.ItemAdBlockPageBinding
 import com.sjianjun.reader.databinding.ItemAdBlockUrlBinding
 import com.sjianjun.reader.utils.glide
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+
+/** 黑白名单按钮互斥时的可见性：返回 (黑名单按钮可见, 白名单按钮可见) */
+internal fun adBlockRuleButtonsVisible(hasBlack: Boolean, hasWhite: Boolean): Pair<Boolean, Boolean> =
+    (hasBlack || !hasWhite) to (hasWhite || !hasBlack)
 
 /**
- * 访问记录适配器：按网页分组（仿收藏夹 item），网页内再按
- * 顶级域名 → 子域名 → URL 三级分组，每层都可折叠、逐级缩进、子项均为卡片样式。
- * 注意：MaterialCardView 的内容缩进必须用 setContentPadding，setPadding 对卡片无效。
- * - 网页行：图标 + 标题 + url（默认折叠）；
- * - 顶级域名 / 子域名行：折叠箭头 + 中文标签 + 域名值 + 子项数量与命中次数 + 黑/白名单按钮；
- * - URL 行：单行中间缩略号 + 命中次数 + 被拦截标记（红色描边/文字）+ 操作按钮。
- *   · 正常请求：显示“+黑名单”；
- *   · 被拦截请求：显示“恢复”（移除对应黑名单规则，便于误拦截恢复）。
+ * 访问记录：网页 → 顶级域名 → 子域名 → URL 三级分组，每层可折叠、逐级缩进。
+ * - 顶级域名：值为注册域（如 example.com，不含协议/端口），规则用 BLOCK_MODE_DOMAIN，
+ *   匹配该域下所有子域名与所有协议、端口；
+ * - 子域名：值为 "scheme://host:port"（如 https://ads.example.com:443），规则用 BLOCK_MODE_SUBDOMAIN，
+ *   协议与端口都参与匹配；显式端口相同但协议不同仍是两条独立规则；
+ * - URL：值为完整 URL，规则用 BLOCK_MODE_URL，字符串精确匹配。
+ *
+ * 三级各有 +黑名单/-黑名单、+白名单/-白名单 按钮，点击即设置/移除本级规则，不弹范围选择框。
+ * 注意：MaterialCardView 的内容缩进必须用 setContentPadding，setPadding 对卡片无效；
+ * 这里改用的是整卡 marginStart，让卡片边框一起缩进。
  */
-class AccessRecordAdapter(
-    private val onAddWhiteDomain: (domain: String, mode: String) -> Unit,
-    private val onAddBlackChoice: (url: String, domain: String) -> Unit,
-    private val onRestore: (url: String) -> Unit
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AccessRecordAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TYPE_PAGE = 0
         private const val TYPE_NODE = 1
         private const val TYPE_URL = 2
-    }
 
-    private var source: List<AccessPage> = emptyList()
-    private val expanded = mutableSetOf<String>()
+        /**
+         * 展开状态放在静态域：广告拦截页按返回键会被销毁重建（hasSavedState=false，
+         * onSaveInstanceState 不会走），若只存在 adapter 实例里，重进后全部折叠、列表看起来像空。
+         */
+        private val expandedState = mutableSetOf<String>()
+    }
 
     private sealed class Row {
         data class Page(val page: AccessPage) : Row()
+
+        /**
+         * [level] 1=顶级域名 2=子域名；[value] 为新增规则值，[ruleValues] 为状态查询/移除用的规则值集合；
+         * [blockedCount] 为本级下实际被拦截的请求数（含父级规则造成的拦截），用于显示继承的「已拦截」。
+         */
         data class Node(
             val level: Int,
-            val pageUrl: String,
             val value: String,
             val mode: String,
             val count: Int,
             val hits: Int,
-            val key: String
+            val key: String,
+            val ruleValues: List<String>,
+            val blockedCount: Int
         ) : Row()
 
-        data class Url(val pageUrl: String, val req: AccessRequest, val key: String) : Row()
+        data class Url(val req: AccessRequest) : Row()
     }
 
+    private var source: List<AccessPage> = emptyList()
+    private val expanded: MutableSet<String> get() = expandedState
     private var rows: List<Row> = emptyList()
-
-    fun submit(list: List<AccessPage>) {
-        source = list
-        rebuild()
-    }
-
-    /** 从完整 URL 解析成 "host:port"（携带端口，纯 IP 退化为 "IP:port"），便于按端口区分与匹配 */
-    private fun hostPortOf(url: String): String {
-        val u = url.toHttpUrlOrNull() ?: return url
-        return "${u.host}:${u.port}"
-    }
-
-    /** 注册域（不含端口）；纯 IP 退化为 IP 本身。修复 topPrivateDomain() 对 IP 返回 null 导致空白的问题 */
-    private fun registrableOf(host: String): String {
-        val h = parseRuleHost(host).first
-        val u = "https://$h".toHttpUrlOrNull() ?: return h
-        return u.topPrivateDomain() ?: h
-    }
 
     /** 当前类型筛选：null=全部；否则只显示该类别（图片/脚本/样式/字体/视频/音频/其他）的请求 */
     private var filterType: String? = null
 
+    fun submit(list: List<AccessPage>) {
+        adBlockLog { "adapter.submit pages=${list.size} reqs=${list.sumOf { it.requests.size }} filterType=$filterType expanded=${expanded.size}" }
+        source = list
+        rebuild()
+    }
+
     /** 设置类型筛选；category 与筛选栏 chip 的 tag 一致（null=全部） */
     fun setTypeFilter(category: String?) {
+        adBlockLog { "adapter.setTypeFilter $filterType → $category" }
         filterType = category
         rebuild()
     }
@@ -112,26 +113,56 @@ class AccessRecordAdapter(
             // 类型筛选：仅保留选中类别的请求；筛选生效且无匹配时整页隐藏
             val pageReqs = if (filterType == null) page.requests
             else page.requests.filter { resourceCategory(it.url) == filterType }
-            val hpGroups = pageReqs.groupBy { hostPortOf(it.url) }
+            // 一级：顶级域名（不含协议、端口）
+            val domainGroups = pageReqs.groupBy { adBlockTopOf(it.url) }
                 .toList()
                 .sortedBy { (_, reqs) -> reqs.minOf { it.time } }
-            if (filterType != null && hpGroups.isEmpty()) continue
+            if (filterType != null && domainGroups.isEmpty()) continue
             flat.add(Row.Page(page))
-            if (page.pageUrl in expanded) {
-                for ((hp, reqs) in hpGroups) {
-                    val hostOnly = parseRuleHost(hp).first
-                    val reg = registrableOf(hostOnly)
-                    val isTop = reg == hostOnly
-                    val key = "${page.pageUrl}\t$hp"
-                    // 顶级域名与子域名同缩进（level=1），拦截范围模式由 mode 区分
-                    flat.add(Row.Node(1, page.pageUrl, hp, if (isTop) BLOCK_MODE_DOMAIN else BLOCK_MODE_SUBDOMAIN, reqs.size, reqs.sumOf { it.count }, key))
-                    if (key in expanded) {
-                        for (r in reqs) flat.add(Row.Url(page.pageUrl, r, ""))
-                    }
+            if (page.pageUrl !in expanded) continue
+            for ((top, domainReqs) in domainGroups) {
+                val domainKey = "${page.pageUrl}\tD\t$top"
+                flat.add(
+                    Row.Node(
+                        level = 1,
+                        value = top,
+                        mode = BLOCK_MODE_DOMAIN,
+                        count = domainReqs.size,
+                        hits = domainReqs.sumOf { it.count },
+                        key = domainKey,
+                        // 兼容历史「整站加黑」拆成 :80/:443 两条的旧规则，状态与移除一并覆盖
+                        ruleValues = listOf(top, "$top:80", "$top:443"),
+                        blockedCount = domainReqs.count { it.blocked }
+                    )
+                )
+                if (domainKey !in expanded) continue
+                // 二级：子域名 scheme://host:port（同时区分协议、端口）
+                val subGroups = domainReqs.groupBy { adBlockSubdomainOf(it.url) }
+                    .toList()
+                    .sortedBy { (_, reqs) -> reqs.minOf { it.time } }
+                for ((subValue, subReqs) in subGroups) {
+                    val subKey = "${page.pageUrl}\tS\t$top\t$subValue"
+                    flat.add(
+                        Row.Node(
+                            level = 2,
+                            value = subValue,
+                            mode = BLOCK_MODE_SUBDOMAIN,
+                            count = subReqs.size,
+                            hits = subReqs.sumOf { it.count },
+                            key = subKey,
+                            // 兼容历史不带协议的 "host:port" 规则（状态与移除一并覆盖）
+                            ruleValues = listOf(subValue, subValue.substringAfter("://")).distinct(),
+                            blockedCount = subReqs.count { it.blocked }
+                        )
+                    )
+                    if (subKey !in expanded) continue
+                    // 三级：精确 URL
+                    for (r in subReqs) flat.add(Row.Url(r))
                 }
             }
         }
         rows = flat
+        adBlockLog { "adapter.rebuild rows=${rows.size} pages=${source.size} filterType=$filterType expanded=$expanded" }
         notifyDataSetChanged()
     }
 
@@ -161,7 +192,7 @@ class AccessRecordAdapter(
     }
 
     private fun indentPx(level: Int, context: Context): Int =
-        ((8 + level * 16) * context.resources.displayMetrics.density).toInt()
+        ((4 + level * 12) * context.resources.displayMetrics.density).toInt()
 
     /** 由 URL 提取资源类型（文件扩展名，如 jpg/js/css/php），无扩展名返回"资源" */
     private fun resourceType(url: String): String {
@@ -173,10 +204,67 @@ class AccessRecordAdapter(
     }
 
     /** 整卡缩进：把缩进量设置到卡片自身的 marginStart（卡片边框跟着缩进，而非仅内容） */
-    private fun indentCard(view: android.view.View, level: Int) {
+    private fun indentCard(view: View, level: Int) {
         val lp = view.layoutParams as? ViewGroup.MarginLayoutParams ?: return
         lp.marginStart = indentPx(level, view.context)
         view.layoutParams = lp
+    }
+
+    /** 三级共用的状态标签：只反映本级规则，不因父级/子级规则而上溯或下推 */
+    private fun showState(tv: TextView, hasWhite: Boolean, hasBlack: Boolean) {
+        when {
+            hasWhite -> {
+                tv.visibility = View.VISIBLE
+                tv.text = "已放行"
+                tv.setTextColor(Color.parseColor("#2E7D32"))
+            }
+            hasBlack -> {
+                tv.visibility = View.VISIBLE
+                tv.text = "已拦截"
+                tv.setTextColor(Color.parseColor("#E53935"))
+            }
+            else -> tv.visibility = View.GONE
+        }
+    }
+
+    /**
+     * 三级共用的黑/白名单按钮，二者互斥：本级已有黑名单时不再提供「+白名单」，
+     * 必须先点「-黑名单」移除；已有白名单时同理反过来。
+     * [addValue] 是新增时使用的规则值；[queryValues] 是状态查询与移除时覆盖的规则值
+     * （顶级域名额外兼容历史带 80/443 端口的旧规则）。
+     */
+    private fun bindRuleButtons(
+        blackBtn: SuperTextView,
+        whiteBtn: SuperTextView,
+        addValue: String,
+        queryValues: List<String>,
+        mode: String
+    ) {
+        val hasBlack = queryValues.any { AdBlock.hasBlackRule(it, mode) }
+        val hasWhite = queryValues.any { AdBlock.hasWhiteRule(it, mode) }
+        // 对方已有规则时隐藏自己的「+」入口；两者都有（历史脏数据）时保留两个「-」以便清理
+        val (showBlack, showWhite) = adBlockRuleButtonsVisible(hasBlack, hasWhite)
+        blackBtn.visibility = if (showBlack) View.VISIBLE else View.GONE
+        whiteBtn.visibility = if (showWhite) View.VISIBLE else View.GONE
+        blackBtn.setSolid(ContextCompat.getColor(blackBtn.context, R.color.colorPrimary))
+        whiteBtn.setSolid(Color.parseColor("#03A9F4"))
+
+        blackBtn.text = if (hasBlack) "-黑名单" else "+黑名单"
+        blackBtn.setOnClickListener {
+            if (hasBlack) {
+                queryValues.forEach { AdBlock.removeBlackHost(HostStr(it).apply { this.mode = mode }) }
+            } else {
+                AdBlock.addBlackHost(addValue, mode)
+            }
+        }
+        whiteBtn.text = if (hasWhite) "-白名单" else "+白名单"
+        whiteBtn.setOnClickListener {
+            if (hasWhite) {
+                queryValues.forEach { AdBlock.removeWhiteHost(HostStr(it).apply { this.mode = mode }) }
+            } else {
+                AdBlock.addWhiteHost(addValue, mode)
+            }
+        }
     }
 
     private inner class PageVH(val b: ItemAdBlockPageBinding) : RecyclerView.ViewHolder(b.root) {
@@ -186,7 +274,6 @@ class AccessRecordAdapter(
             b.tvUrl.text = page.pageUrl
             b.ivIcon.setImageResource(R.drawable.ic_browser_globe)
             runCatching { b.ivIcon.glide(page.favicon) }
-            // 加载中显示转圈动画，加载完成切换为完成图标
             if (page.loading) {
                 b.pbLoading.visibility = View.VISIBLE
                 b.ivDone.visibility = View.GONE
@@ -205,77 +292,23 @@ class AccessRecordAdapter(
 
     private inner class NodeVH(val b: ItemAdBlockDomainBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(row: Row.Node) {
-            // 去掉“顶级域名/子域名”标题：标题位置改显示 子项数量·命中次数（主题色）
-            b.tvLabel.text = "${row.count} 项 · 命中 ${row.hits} 次"
+            val levelLabel = if (row.level == 1) "顶级域名" else "子域名"
+            b.tvLabel.text = "$levelLabel · ${row.count} 项 · ${row.hits} 次"
             b.tvLabel.setTextColor(ContextCompat.getColor(b.root.context, R.color.colorPrimary))
             b.tvValue.text = row.value
             b.tvCount.visibility = View.GONE
             b.ivChevron.rotation = if (row.key in expanded) 90f else 0f
-            // 整卡缩进：缩进量加到卡片 marginStart，卡片边框随之右移
             indentCard(b.root, row.level)
             b.root.setOnClickListener {
                 if (row.key in expanded) expanded.remove(row.key) else expanded.add(row.key)
                 rebuild()
             }
-            // 规则状态标记：白名单优先（与实际放行逻辑一致），子域名继承顶级域名规则。
-            // 这样点顶级域名“+黑名单”后，真正承载规则的域名行会显示红色“已拦截”。
-            val ownMode = row.mode
-            val topOfValue = registrableOf(parseRuleHost(row.value).first)
-            val isTop = ownMode == BLOCK_MODE_DOMAIN
-            val whitelisted = if (isTop) {
-                AdBlock.hasWhiteRule(row.value, ownMode)
-            } else {
-                AdBlock.hasWhiteRule(row.value, ownMode)
-                        || AdBlock.hasWhiteRule(topOfValue, BLOCK_MODE_DOMAIN)
-            }
-            // 整站/子域 快捷加若无端口，按“默认端口”拆成 80、443 两条带端口规则，
-            // 以满足“每条规则都必须带端口”（HTTP=80、HTTPS=443）。
-            val rawHost = row.value
-            val blackHosts = if (parseRuleHost(rawHost).second == null) {
-                listOf("$rawHost:80", "$rawHost:443")
-            } else {
-                listOf(rawHost)
-            }
-            val parentHost = parseRuleHost(topOfValue).first
-            val hasBlack = blackHosts.any { AdBlock.hasBlackRule(it, ownMode) }
-                    || (!isTop && listOf("$parentHost:80", "$parentHost:443")
-                .any { AdBlock.hasBlackRule(it, BLOCK_MODE_DOMAIN) })
-            val blacklisted = hasBlack
-            when {
-                whitelisted -> {
-                    b.tvState.visibility = View.VISIBLE
-                    b.tvState.text = "已放行"
-                    b.tvState.setTextColor(Color.parseColor("#2E7D32"))
-                }
-                blacklisted -> {
-                    b.tvState.visibility = View.VISIBLE
-                    b.tvState.text = "已拦截"
-                    b.tvState.setTextColor(Color.parseColor("#E53935"))
-                }
-                else -> b.tvState.visibility = View.GONE
-            }
-            // 按钮：已有规则时显示“-移除”（含 80/443 两条），否则显示“+加入”
-            if (hasBlack) {
-                b.btnBlack.text = "-黑名单"
-                b.btnBlack.setOnClickListener {
-                    blackHosts.forEach { AdBlock.removeBlackHost(HostStr(it, listOf()).apply { mode = ownMode }) }
-                    AdBlock.unmarkBlockedInAccess(rawHost, ownMode)
-                }
-            } else {
-                b.btnBlack.text = "+黑名单"
-                b.btnBlack.setOnClickListener {
-                    blackHosts.forEach { AdBlock.addBlackHost(it, ownMode) }
-                }
-            }
-            if (AdBlock.hasWhiteRule(row.value, ownMode)) {
-                b.btnWhite.text = "-白名单"
-                b.btnWhite.setOnClickListener {
-                    AdBlock.removeWhiteHost(HostStr(row.value, listOf()).apply { mode = ownMode })
-                }
-            } else {
-                b.btnWhite.text = "+白名单"
-                b.btnWhite.setOnClickListener { onAddWhiteDomain(row.value, ownMode) }
-            }
+            // 状态标签反映实际生效结果：除本级规则外，父级（顶级域名）规则拦下的请求
+            // 也要让子域名节点显示「已拦截」；按钮状态仍严格按本级规则，避免出现点不动的「-」。
+            val ownWhite = row.ruleValues.any { AdBlock.hasWhiteRule(it, row.mode) }
+            val ownBlack = row.ruleValues.any { AdBlock.hasBlackRule(it, row.mode) }
+            showState(b.tvState, ownWhite, ownBlack || row.blockedCount > 0)
+            bindRuleButtons(b.btnBlack, b.btnWhite, row.value, row.ruleValues, row.mode)
         }
     }
 
@@ -283,7 +316,7 @@ class AccessRecordAdapter(
         fun bind(row: Row.Url) {
             val req = row.req
             b.tvUrl.text = req.url
-            indentCard(b.root, 2)
+            indentCard(b.root, 3)
 
             // 资源类型 + 图片缩略图（便于判断是否为广告）
             val type = resourceType(req.url)
@@ -295,7 +328,7 @@ class AccessRecordAdapter(
                 b.ivThumb.visibility = View.GONE
             }
 
-            // 命中次数 + 被拦截标记
+            // 实际是否被某条黑名单规则拦截（由 AdBlock.recomputeBlockedMarks 精确重算）
             val blockedColor = Color.parseColor("#E53935")
             val grayColor = Color.parseColor("#888888")
             b.tvCount.text = if (req.blocked) "已拦截 ×${req.count}" else "×${req.count}"
@@ -304,66 +337,8 @@ class AccessRecordAdapter(
             b.root.strokeColor = if (req.blocked) blockedColor else 0
             b.root.strokeWidth = if (req.blocked) (1 * density).toInt() else 0
 
-            // 操作按钮：正常请求→加黑名单；被拦截→恢复（移除对应规则）
-            if (req.blocked) {
-                b.btnBlack.text = "恢复"
-                b.btnBlack.setSolid(ContextCompat.getColor(b.root.context, R.color.colorAccent))
-                b.btnBlack.setOnClickListener { onRestore(req.url) }
-            } else {
-                b.btnBlack.text = "+黑名单"
-                b.btnBlack.setSolid(ContextCompat.getColor(b.root.context, R.color.colorPrimary))
-                b.btnBlack.setOnClickListener { onAddBlackChoice(req.url, req.domain) }
-            }
+            // 本级按钮：直接增删「精确URL」规则，不再弹范围选择框
+            bindRuleButtons(b.btnBlack, b.btnWhite, req.url, listOf(req.url), BLOCK_MODE_URL)
         }
     }
-}
-
-/**
- * 加入黑名单的“拦截范围”选择弹窗（自定义布局，比系统单选列表更好看）：
- * 顶级域名（含所有子域名）/ 子域名 / 精确URL，默认选顶级域名；
- * 各选项的值单行中间缩略号显示，确认后回调 value+mode。
- */
-fun showBlockScopeDialog(
-    context: Context,
-    url: String,
-    onConfirm: (value: String, mode: String) -> Unit
-) {
-    val httpUrl = url.toHttpUrlOrNull()
-    // 纯 IP 站点 topPrivateDomain() 返回 null，退化为 host（即 IP 本身），避免“顶级域名”选项为空
-    val top = httpUrl?.topPrivateDomain() ?: httpUrl?.host.orEmpty()
-    val host = httpUrl?.host.orEmpty()
-    // 自动采用传入链接的端口：链接用 80 就记 :80、443 就记 :443、显式 :8080 就记 :8080，
-    // 无需用户手填，且能精确区分端口（如屏蔽 example.com:80 而放行 :443）。
-    // 精确URL 选项直接用原 URL（含端口或不含，按字符串精确匹配）。
-    val port = httpUrl?.port
-    val topVal = if (port != null) "$top:$port" else top
-    val subVal = if (port != null) "$host:$port" else host
-    val options = listOf(
-        Triple("顶级域名（含所有子域名）", topVal, BLOCK_MODE_DOMAIN),
-        Triple("子域名", subVal, BLOCK_MODE_SUBDOMAIN),
-        Triple("精确URL", url, BLOCK_MODE_URL)
-    )
-    val view = DialogAdBlockScopeBinding.inflate(LayoutInflater.from(context))
-    view.tvDomainVal.text = topVal
-    view.tvSubVal.text = subVal
-    view.tvUrlVal.text = url
-
-    var checked = 0
-    val radios = listOf(view.rbDomain, view.rbSub, view.rbUrl)
-    val opts = listOf(view.optDomain, view.optSub, view.optUrl)
-    fun updateSelection(index: Int) {
-        checked = index
-        radios.forEachIndexed { i, rb -> rb.isChecked = i == index }
-    }
-    opts.forEachIndexed { i, v -> v.setOnClickListener { updateSelection(i) } }
-    updateSelection(0)
-
-    val dialog = MaterialAlertDialogBuilder(context).setView(view.root).create()
-    view.btnCancel.setOnClickListener { dialog.dismiss() }
-    view.btnOk.setOnClickListener {
-        val (_, value, mode) = options[checked]
-        if (value.isNotBlank()) onConfirm(value, mode)
-        dialog.dismiss()
-    }
-    dialog.show()
 }

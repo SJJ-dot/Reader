@@ -1379,7 +1379,8 @@ class CustomWebView @JvmOverloads constructor(
 
             // 直接 reload 在渲染状态损坏时不会重绘（一直白屏）；
             // 走"先 about:blank 再加载目标"，强制重建文档，刷新才能恢复画面
-            forceReload(showToast = false)
+//            forceReload(showToast = false)
+            wv.loadUrl(url)
         }
         binding.refresh.setOnLongClickListener {
             forceReload()

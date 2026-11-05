@@ -32,7 +32,7 @@ open class MyWebViewClient(
      */
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         super.doUpdateVisitedHistory(view, url, isReload)
-//        Log.i("doUpdateVisitedHistory: $url isReload=$isReload ${view?.title}")
+        adBlockLog { "history url=$url isReload=$isReload" }
         if (url != null) {
             view?.currentHost = url
             // URL 变化即视为“页面成为可见页”，刷新最后显示时间（后退/前进/SPA 也能命中），用于访问记录排序
@@ -44,9 +44,11 @@ open class MyWebViewClient(
         view: WebView?,
         request: WebResourceRequest,
     ): Boolean {
+        val url = request.url.toString()
+        adBlockLog { "override 入口 url=$url isForMainFrame=${request.isForMainFrame}" }
         val showBlockDialog = showBlockDialog(view, request)
+        adBlockLog { "override 结果 url=$url intercept=$showBlockDialog" }
         if (!showBlockDialog) {
-            val url = request.url.toString()
             view?.currentHost = url
             // 放行后交给 WebView 原生导航，避免手动 loadUrl 导致重定向历史异常。
             return false
@@ -57,7 +59,7 @@ open class MyWebViewClient(
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
         view?.currentHost = url
-        Log.i("onPageStarted:${view?.currentHost} ")
+        adBlockLog { "pageStarted url=$url currentHost=${view?.currentHost}" }
         view?.isBlank = url.isNullOrBlank() || url == "about:blank"
         AdBlock.markPage(url)
     }
@@ -94,24 +96,29 @@ open class MyWebViewClient(
             return mobileRedirectScriptStub()
         }
         val requestUrl = request.url.toString()
-        if (AdBlock.shouldAllow(requestUrl)) {
+        // 按「精确URL > 子域名 > 顶级域名」判定一次，后续拦/放与记录都复用这个结果
+        val hit = AdBlock.resolve(requestUrl)
+        adBlockLog { "intercept 入口 url=$requestUrl mainFrame=${request.isForMainFrame} hit=${hit?.kind}:${hit?.rule?.host}:${hit?.rule?.mode} allowed=${hit?.allowed}" }
+        if (hit?.allowed == true) {
+            adBlockLog { "intercept 放行规则→不记录 url=$requestUrl" }
             return super.shouldInterceptRequest(view, request)
         }
 
         val requestHost = requestUrl.toHttpUrlOrNull()?.topPrivateDomain()
         val currentHost = view?.currentHost
         val isCrossOrigin = requestHost != null && currentHost != null && requestHost != currentHost
-        val blocked = AdBlock.shouldBlock(requestUrl) || (isCrossOrigin && crossOriginMode() == 2)
+        val blocked = (hit != null && !hit.allowed) || (isCrossOrigin && crossOriginMode() == 2)
+        adBlockLog { "intercept 判定 url=$requestUrl blocked=$blocked isCrossOrigin=$isCrossOrigin crossMode=${crossOriginMode()} currentHost=$currentHost requestHost=$requestHost" }
 
         if (blocked) {
-            Log.i("拦截请求：${request.url} mainFrame=${request.isForMainFrame}")
+            adBlockLog { "intercept 拦截分支→addUrl(true) url=$requestUrl mainFrame=${request.isForMainFrame}" }
+            // 被拦截的请求同样计入访问记录（含同域、跨域与主框架），便于查看拦截效果与误拦恢复
+            AdBlock.addUrl(requestUrl, true)
             if (request.isForMainFrame) {
+                adBlockLog { "intercept 主框架被拦→返回回退HTML url=$requestUrl" }
                 // 主框架被拦截时不能返回空内容（会变成空白页且 URL 已变），
                 // 返回一段立即回退的 HTML，把页面恢复到上一页。
                 return mainFrameBlockedResponse()
-            }
-            if (isCrossOrigin) {
-                AdBlock.addUrl(request.url.toString())
             }
             return WebResourceResponse(
                 "text/plain",
@@ -120,7 +127,8 @@ open class MyWebViewClient(
             )
         }
 
-        AdBlock.addUrl(request.url.toString())
+        adBlockLog { "intercept 正常分支→addUrl(false) url=$requestUrl" }
+        AdBlock.addUrl(requestUrl, false)
         return super.shouldInterceptRequest(view, request)
     }
 
@@ -174,18 +182,25 @@ open class MyWebViewClient(
      */
     fun showBlockDialog(view: WebView?, request: WebResourceRequest): Boolean {
         val url = request.url.toString()
+        adBlockLog { "showBlockDialog 入口 url=$url" }
         if (url.endsWith(".apk")) {
+            adBlockLog { "showBlockDialog .apk→拦截 url=$url" }
             return true
         }
         val targetTop = url.toHttpUrlOrNull()?.topPrivateDomain()
 
-        // 白名单域名直接放行
-        if (AdBlock?.shouldAllow(url) == true) {
+        // 按层级优先级判定一次：放行规则直接放行，拦截规则直接拦截
+        val hit = AdBlock.resolve(url)
+        adBlockLog { "showBlockDialog 规则判定 url=$url hit=${hit?.kind}:${hit?.rule?.host}:${hit?.rule?.mode} allowed=${hit?.allowed}" }
+        if (hit?.allowed == true) {
+            adBlockLog { "showBlockDialog 放行规则→return false url=$url" }
             return false
         }
-
-        // 若为广告黑名单，直接拦截
-        if (AdBlock?.shouldBlock(url) == true) {
+        if (hit?.allowed == false) {
+            adBlockLog { "showBlockDialog 拦截规则→return true(导航被拦,补记访问记录) url=$url" }
+            // 导航在这里被拦掉，不会触发 onPageStarted / shouldInterceptRequest，
+            // 手动补一条记录，保证「被拦截的请求也要显示在访问记录」。
+            AdBlock.addUrl(url, true)
             return true
         }
 
@@ -210,8 +225,10 @@ open class MyWebViewClient(
             else -> currentHost != targetTop
         }
 
+        adBlockLog { "showBlockDialog 跨域判断 url=$url differentSite=$differentSite currentHost=$currentHost targetHost=$targetHost targetTop=$targetTop crossMode=${crossOriginMode()}" }
         if (!differentSite) {
             // 同主域，允许加载
+            adBlockLog { "showBlockDialog 同主域→return false url=$url" }
             return false
         }
 

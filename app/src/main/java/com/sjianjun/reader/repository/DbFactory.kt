@@ -41,7 +41,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 39,
+    version = 40,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -289,6 +289,12 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 标签页新增“来源页标签 id”：长按“新标签页打开”时记录，子标签返回退出可切回来源页
                     db.execSQL("ALTER TABLE `browser_tab` ADD COLUMN `sourceTabId` TEXT NOT NULL DEFAULT ''")
+                }
+            })
+            .addMigrations(object : Migration(39, 40) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 黑白名单规则新增“最近命中时间”：用于按最近命中时间倒序、按月分组
+                    db.execSQL("ALTER TABLE `ad_block_host` ADD COLUMN `lastHitTime` INTEGER NOT NULL DEFAULT 0")
                 }
             })
             .build()

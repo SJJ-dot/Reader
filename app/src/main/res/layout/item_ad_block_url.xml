@@ -75,12 +75,24 @@
             android:id="@+id/btn_black"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="4dp"
             android:padding="4dp"
             android:text="+黑名单"
             android:textColor="@color/mdr_white"
-            android:textSize="12sp"
+            android:textSize="11sp"
             app:stv_corner="5dp"
             app:stv_solid="@color/colorPrimary" />
+
+        <com.coorchice.library.SuperTextView
+            android:id="@+id/btn_white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:padding="4dp"
+            android:text="+白名单"
+            android:textColor="@color/mdr_white"
+            android:textSize="11sp"
+            app:stv_corner="5dp"
+            app:stv_solid="#03A9F4" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

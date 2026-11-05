@@ -147,6 +147,10 @@ interface BrowserDataDao {
     @Query("DELETE FROM ad_block_host WHERE kind = :kind")
     fun clearAdBlock(kind: String)
 
+    /** 命中时异步写回单条规则的最近命中时间（避免高频全量 upsert） */
+    @Query("UPDATE ad_block_host SET lastHitTime = :time WHERE kind = :kind AND host = :host")
+    fun updateAdBlockHitTime(kind: String, host: String, time: Long)
+
     /** 删除某类黑白名单中不在 [hosts] 内的规则（按 host+kind 主键差量删除） */
     @Query("DELETE FROM ad_block_host WHERE kind = :kind AND host IN (:hosts)")
     fun deleteAdBlockByHosts(kind: String, hosts: List<String>)

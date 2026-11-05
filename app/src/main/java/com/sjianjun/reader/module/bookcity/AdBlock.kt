@@ -14,6 +14,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import com.sjianjun.reader.BuildConfig
+import sjj.alog.Log
+
+/** 排查用操作日志：统一前缀 ▶AdBlock，release 不输出（DEBUG 为编译期常量，lambda 不会执行） */
+internal inline fun adBlockLog(block: () -> String) {
+    if (BuildConfig.DEBUG) Log.i("▶AdBlock ${block()}")
+}
 
 /** 拦截范围：顶级域名（含所有子域名） */
 const val BLOCK_MODE_DOMAIN = "domain"
@@ -32,6 +39,10 @@ class HostStr @JvmOverloads constructor(
     var time: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(System.currentTimeMillis())
     /** 拦截/放行范围：顶级域名 / 子域名 / 精确URL（见 BLOCK_MODE_*） */
     var mode: String = BLOCK_MODE_DOMAIN
+
+    /** 最近一次命中时间（毫秒，0 = 从未命中）；落库，用于列表按最近命中时间倒序并按月分组 */
+    @Volatile
+    var lastHitTime: Long = 0
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -79,14 +90,30 @@ internal fun parseRuleHost(ruleHostRaw: String): Pair<String, Int?> {
     return ruleHostRaw to null
 }
 
-/** 判断单条规则是否匹配该 URL：纯 IP 退化为 host；端口 URL 侧用 httpUrl.port（默认80/443），规则带端口则精确匹配。 */
+/** 子域名规则解析结果：[scheme] 为 null 表示旧格式规则（不带协议，匹配该 host:port 的所有协议） */
+internal data class SubdomainRule(val scheme: String?, val host: String, val port: Int?)
+
+/** 解析子域名规则值：新格式 "scheme://host:port"（同时区分协议与端口），兼容旧格式 "host:port" / "host" */
+internal fun parseSubdomainRule(raw: String): SubdomainRule {
+    val scheme = if ("://" in raw) raw.substringBefore("://").lowercase() else null
+    val hostPort = if (scheme != null) raw.substringAfter("://") else raw
+    val (host, port) = parseRuleHost(hostPort)
+    return SubdomainRule(scheme, host, port)
+}
+
+/** 判断单条规则是否匹配该 URL：纯 IP 退化为 host；端口 URL 侧用 httpUrl.port（默认80/443），规则带端口则精确匹配；子域名规则带协议时协议也须一致。 */
 internal fun adBlockRuleMatches(e: HostStr, httpUrl: HttpUrl, top: String?, url: String): Boolean {
     val (ruleHost, rulePort) = parseRuleHost(e.host)
     val urlHost = httpUrl.host
     val urlPort = httpUrl.port
     return when (e.mode) {
         BLOCK_MODE_URL -> e.host == url
-        BLOCK_MODE_SUBDOMAIN -> ruleHost == urlHost && (rulePort == null || rulePort == urlPort)
+        BLOCK_MODE_SUBDOMAIN -> {
+            val sub = parseSubdomainRule(e.host)
+            sub.host == urlHost
+                    && (sub.port == null || sub.port == urlPort)
+                    && (sub.scheme == null || sub.scheme == httpUrl.scheme.lowercase())
+        }
         else -> {
             val base = top ?: urlHost
             ruleHost == base && (rulePort == null || rulePort == urlPort)
@@ -94,7 +121,88 @@ internal fun adBlockRuleMatches(e: HostStr, httpUrl: HttpUrl, top: String?, url:
     }
 }
 
+/** 从完整 URL 取 "host:port"（未写端口时按协议取 80/443），用于顶级域名解析与旧规则兼容 */
+internal fun adBlockHostPortOf(url: String): String {
+    val u = url.toHttpUrlOrNull() ?: return url
+    return "${u.host}:${u.port}"
+}
+
+/**
+ * 三级规则值：从完整 URL 取 "scheme://host:port"，用于子域名级。
+ * 显式端口相同但协议不同也算两条不同规则，例如
+ * http://ads.example.com:12345、http://ads.example.com:12346、https://ads.example.com:12345 互不相同。
+ */
+internal fun adBlockSubdomainOf(url: String): String {
+    val u = url.toHttpUrlOrNull() ?: return url
+    return "${u.scheme}://${u.host}:${u.port}"
+}
+
+/** 三级规则值：从完整 URL 取顶级域名（不含协议、端口），用于顶级域名级（不区分协议、端口）；纯 IP 退化为 IP 本身 */
+internal fun adBlockTopOf(url: String): String {
+    val host = parseRuleHost(adBlockHostPortOf(url)).first
+    val u = "https://$host".toHttpUrlOrNull() ?: return host
+    return u.topPrivateDomain() ?: host
+}
+
+/** 一次规则判定的结果：[rule] 为实际生效的规则，[kind] 为 "black"/"white" */
+data class AdBlockHit(val rule: HostStr, val kind: String) {
+    val allowed: Boolean get() = kind == "white"
+}
+
+/**
+ * 规则优先级：**精确URL > 子域名 > 顶级域名**。
+ * 逐级检查该级是否有匹配当前请求的黑/白名单规则，命中即返回，不再看更低优先级级别；
+ * 同级黑白名单互斥，故同级先白后黑不影响结果。
+ * 顶级域名级同时容纳历史未知/空 mode 的规则（与 adBlockRuleMatches 的 else 分支一致）。
+ */
+internal fun adBlockResolve(
+    u: HttpUrl,
+    url: String,
+    top: String?,
+    blackRules: Collection<HostStr>,
+    whiteRules: Collection<HostStr>
+): AdBlockHit? {
+    // 1) 精确 URL
+    whiteRules.firstOrNull { it.mode == BLOCK_MODE_URL && adBlockRuleMatches(it, u, top, url) }
+        ?.let { return AdBlockHit(it, "white") }
+    blackRules.firstOrNull { it.mode == BLOCK_MODE_URL && adBlockRuleMatches(it, u, top, url) }
+        ?.let { return AdBlockHit(it, "black") }
+    // 2) 子域名（scheme://host:port）
+    whiteRules.firstOrNull { it.mode == BLOCK_MODE_SUBDOMAIN && adBlockRuleMatches(it, u, top, url) }
+        ?.let { return AdBlockHit(it, "white") }
+    blackRules.firstOrNull { it.mode == BLOCK_MODE_SUBDOMAIN && adBlockRuleMatches(it, u, top, url) }
+        ?.let { return AdBlockHit(it, "black") }
+    // 3) 顶级域名
+    whiteRules.firstOrNull {
+        it.mode != BLOCK_MODE_URL && it.mode != BLOCK_MODE_SUBDOMAIN && adBlockRuleMatches(it, u, top, url)
+    }?.let { return AdBlockHit(it, "white") }
+    blackRules.firstOrNull {
+        it.mode != BLOCK_MODE_URL && it.mode != BLOCK_MODE_SUBDOMAIN && adBlockRuleMatches(it, u, top, url)
+    }?.let { return AdBlockHit(it, "black") }
+    return null
+}
+
+/**
+ * 按当前规则判断某 URL 是否应被拦截（走与运行时一致的层级优先级）。
+ * [top] 由调用方传入（运行时取 httpUrl.topPrivateDomain()，纯 JVM 单测可硬编码以避开公共后缀库）。
+ */
+internal fun adBlockIsBlocked(
+    url: String,
+    blackRules: List<HostStr>,
+    whiteRules: List<HostStr>,
+    top: String?
+): Boolean {
+    val u = url.toHttpUrlOrNull() ?: return false
+    return adBlockResolve(u, url, top, blackRules, whiteRules)?.allowed == false
+}
+
 object AdBlock {
+    /** 命中时间写库节流：同一规则 30 秒内最多写一次 */
+    private const val HIT_PERSIST_INTERVAL_MS = 30_000L
+
+    /** 命中后列表重排通知节流 */
+    private const val HIT_NOTIFY_INTERVAL_MS = 1_000L
+
     private val dao get() = DbFactory.db.browserDataDao()
     private val gson = Gson()
 
@@ -134,16 +242,22 @@ object AdBlock {
 
     /**
      * 落库某类黑白名单：以内存列表为准，只删除「库中存在但内存已无」的规则（按 host+kind 主键），
-     * 再 upsert 现有规则。绝不清空该类表再全量覆盖。
+     * 再 upsert 现有规则；列表为空时（用户点了清空）整类清表。
      */
     private fun persist(kind: String, list: List<HostStr>) {
+        // 同步拍快照：内存列表是就地修改的，异步落库期间若被后续增删改动会导致写入结果错乱
+        val snapshot = list.toList()
         scope.launch {
+            if (snapshot.isEmpty()) {
+                dao.clearAdBlock(kind)
+                return@launch
+            }
             val oldHosts = dao.getAdBlock(kind).map { it.host }.toSet()
-            val newHosts = list.map { it.host }.toSet()
+            val newHosts = snapshot.map { it.host }.toSet()
             val toDelete = (oldHosts - newHosts).toList()
             if (toDelete.isNotEmpty()) dao.deleteAdBlockByHosts(kind, toDelete)
-            val toInsert = list.map {
-                AdBlockHostEntity(it.host, kind, gson.toJson(it.type), it.isPage, it.time, it.mode)
+            val toInsert = snapshot.map {
+                AdBlockHostEntity(it.host, kind, gson.toJson(it.type), it.isPage, it.time, it.mode, it.lastHitTime)
             }
             dao.insertAdBlock(toInsert)
         }
@@ -152,34 +266,54 @@ object AdBlock {
     // ===================== 匹配（支持 顶级域名 / 子域名 / 精确URL / 纯IP / 端口） =====================
     // 匹配核心逻辑见文件顶层 internal 函数 adBlockRuleMatches / parseRuleHost（可单测，不依赖本单例）。
 
-    /** 该 URL 是否命中黑名单（命中会累计该规则命中次数） */
-    fun shouldBlock(url: String): Boolean {
-        val httpUrl = url.toHttpUrlOrNull() ?: return false
-        val top = httpUrl.topPrivateDomain()
-        val matched = blacklist.value?.firstOrNull { adBlockRuleMatches(it, httpUrl, top, url) }
-        if (matched != null) recordHit(matched.host, matched.mode)
-        return matched != null
+    /**
+     * 按「精确URL > 子域名 > 顶级域名」判定一次请求，返回实际生效的规则（无规则命中返回 null），
+     * 并累计该规则的命中次数与最近命中时间。一次请求只判定一次，避免重复计数。
+     */
+    fun resolve(url: String): AdBlockHit? {
+        val httpUrl = url.toHttpUrlOrNull() ?: return null
+        val hit = adBlockResolve(
+            httpUrl, url, httpUrl.topPrivateDomain(),
+            blacklist.value ?: emptyList(),
+            whitelist.value ?: emptyList()
+        ) ?: return null
+        recordHit(hit.kind, hit.rule)
+        return hit
     }
 
-    /** 该 URL 是否命中白名单（命中会累计该规则命中次数） */
-    fun shouldAllow(url: String): Boolean {
-        val httpUrl = url.toHttpUrlOrNull() ?: return false
-        val top = httpUrl.topPrivateDomain()
-        val matched = whitelist.value?.firstOrNull { adBlockRuleMatches(it, httpUrl, top, url) }
-        if (matched != null) recordHit(matched.host, matched.mode)
-        return matched != null
-    }
-
-    // ===================== 命中次数统计（内存，重启清零） =====================
+    // ===================== 命中统计（次数内存累计 / 最近命中时间落库） =====================
 
     private val hitCounts = ConcurrentHashMap<String, Int>()
 
+    /** 每条规则最近一次落库的命中时间，用于节流写库 */
+    private val persistedHitAt = ConcurrentHashMap<String, Long>()
+
+    @Volatile
+    private var lastHitNotify = 0L
+
     private fun hitKey(host: String, mode: String) = "$host#$mode"
 
-    /** 累计某条黑白名单规则的命中次数 */
-    private fun recordHit(host: String, mode: String) {
-        val key = hitKey(host, mode)
+    /**
+     * 累计一次命中：更新内存中的命中次数与规则的最近命中时间，
+     * 并节流地写库、通知列表重排（网络请求是高频回调，不能每次都落库/刷新）。
+     */
+    private fun recordHit(kind: String, entry: HostStr) {
+        val now = System.currentTimeMillis()
+        entry.lastHitTime = now
+        val key = hitKey(entry.host, entry.mode)
         hitCounts[key] = (hitCounts[key] ?: 0) + 1
+
+        val persistKey = "$kind#$key"
+        if (now - (persistedHitAt[persistKey] ?: 0L) >= HIT_PERSIST_INTERVAL_MS) {
+            persistedHitAt[persistKey] = now
+            val host = entry.host
+            scope.launch { runCatching { dao.updateAdBlockHitTime(kind, host, now) } }
+        }
+        if (now - lastHitNotify >= HIT_NOTIFY_INTERVAL_MS) {
+            lastHitNotify = now
+            if (kind == "black") blacklist.postValue(blacklist.value)
+            else whitelist.postValue(whitelist.value)
+        }
     }
 
     /** 读取某条规则的命中次数（供黑白名单列表展示） */
@@ -212,13 +346,16 @@ object AdBlock {
     /** 标记一个新的网页访问（主框架加载），作为后续请求的归属分组 */
     fun markPage(url: String?) {
         if (url.isNullOrBlank()) return
+        adBlockLog { "markPage 入口 url=$url pagesBefore=${accessPages.value?.size}" }
         synchronized(recordLock) {
             val list = accessPages.value ?: mutableListOf()
             var page = list.firstOrNull { it.pageUrl == url }
             if (page == null) {
+                adBlockLog { "markPage 新建分组 url=$url" }
                 page = AccessPage(url, System.currentTimeMillis(), favicon = faviconOf(url))
                 list.add(0, page)
             } else {
+                adBlockLog { "markPage 复用分组 url=$url reqs=${page.requests.size}" }
                 list.remove(page)
                 page.time = System.currentTimeMillis()
                 list.add(0, page)
@@ -229,6 +366,7 @@ object AdBlock {
             // 避免旧页面 loading 永远停在 true（如加载中后退再前进导致 onPageFinished 漏触发）
             list.forEach { it.loading = it === page }
         }
+        adBlockLog { "markPage 完成 url=$url pages=${accessPages.value?.size} currentPage=${currentPage?.pageUrl}" }
         accessPages.postValue(accessPages.value)
     }
 
@@ -283,79 +421,54 @@ object AdBlock {
 
     /**
      * 记录一次网络请求，归入当前网页分组。
-     * - 命中白名单：放行，不计入访问记录；
-     * - 命中黑名单：仍计入访问记录并标记 blocked=true（累计命中次数，便于误拦截时恢复）；
-     * - 其余：正常计入访问记录。
+     * [blocked] 是本次请求是否被实际拦截（黑名单规则或跨域拦截都算）；**被拦截的请求同样计入记录**，
+     * 以便查看拦截效果和做误拦恢复。白名单放行的请求由调用方提前返回，不调用本方法。
      */
-    fun addUrl(url: String) {
+    fun addUrl(url: String, blocked: Boolean) {
         val httpUrl = url.toHttpUrlOrNull() ?: return
-        if (shouldAllow(url)) return
-        val blocked = shouldBlock(url)
         val domain = httpUrl.host
+        adBlockLog { "addUrl 入口 url=$url blocked=$blocked currentPage=${currentPage?.pageUrl} pages=${accessPages.value?.size}" }
         synchronized(recordLock) {
-            currentPage?.let { page ->
+            val page = currentPage
+            if (page == null) {
+                adBlockLog { "addUrl 丢弃：currentPage=null url=$url" }
+            } else {
                 val existing = page.requests.firstOrNull { it.url == url }
                 if (existing != null) {
                     existing.count++
                     if (blocked) existing.blocked = true
+                    adBlockLog { "addUrl 累加 url=$url count=${existing.count} blocked=${existing.blocked}" }
                 } else {
                     page.requests.add(AccessRequest(url, domain, count = 1, blocked = blocked, time = System.currentTimeMillis()))
+                    adBlockLog { "addUrl 新增 url=$url page=${page.pageUrl} reqs=${page.requests.size}" }
                 }
             }
         }
         maybeFlush()
     }
 
-    /**
-     * 加入黑名单后，把访问记录里命中的请求标记为“已拦截”（保留记录用于误拦截恢复），而非删除。
-     * 标记为 blocked 的请求在访问记录中显示红色“已拦截”与“恢复”按钮。
-     */
-    fun markBlockedInAccess(hostOrUrl: String, mode: String) {
-        val top = domainKey(hostOrUrl)
-        val ruleHost = parseRuleHost(hostOrUrl).first
-        synchronized(recordLock) {
-            accessPages.value?.forEach { page ->
-                page.requests.forEach { r ->
-                    val match = when (mode) {
-                        BLOCK_MODE_URL -> r.url == hostOrUrl
-                        BLOCK_MODE_SUBDOMAIN -> ruleHost == r.domain
-                        else -> top != null && domainKey(r.domain) == top
-                    }
-                    if (match) r.blocked = true
-                }
-            }
-        }
-        accessPages.postValue(accessPages.value)
-    }
-
-    /** 移除黑名单规则后，复位访问记录里命中该规则的“已拦截”标记（用于域名行 -黑名单） */
-    fun unmarkBlockedInAccess(hostOrUrl: String, mode: String) {
-        val top = domainKey(hostOrUrl)
-        val ruleHost = parseRuleHost(hostOrUrl).first
-        synchronized(recordLock) {
-            accessPages.value?.forEach { page ->
-                page.requests.forEach { r ->
-                    val match = when (mode) {
-                        BLOCK_MODE_URL -> r.url == hostOrUrl
-                        BLOCK_MODE_SUBDOMAIN -> ruleHost == r.domain
-                        else -> top != null && domainKey(r.domain) == top
-                    }
-                    if (match) r.blocked = false
-                }
-            }
-        }
-        accessPages.postValue(accessPages.value)
-    }
-
     /** 生成访问记录的只读快照（深拷贝，含命中次数/拦截标记），供 UI 线程安全地遍历展示 */
     fun snapshot(): List<AccessPage> = synchronized(recordLock) {
-        accessPages.value?.map { p ->
+        val pages = accessPages.value
+        adBlockLog { "snapshot pages=${pages?.size} reqs=${pages?.sumOf { it.requests.size }}" }
+        pages?.map { p ->
             AccessPage(
                 p.pageUrl, p.time, p.title, p.favicon,
                 ArrayList(p.requests.map { AccessRequest(it.url, it.domain, it.count, it.blocked, it.time) }),
                 p.loading
             )
         } ?: emptyList()
+    }
+
+    /** 清空访问记录（仅内存、不落库；UI 弹窗确认后调用），黑白名单规则不受影响 */
+    fun clearAccessRecords() {
+        adBlockLog { "clearAccessRecords 调用 pagesBefore=${accessPages.value?.size} currentPage=${currentPage?.pageUrl}" }
+        synchronized(recordLock) {
+            accessPages.value?.clear()
+            currentPage = null
+        }
+        adBlockLog { "clearAccessRecords 完成 pagesAfter=${accessPages.value?.size}" }
+        accessPages.postValue(accessPages.value)
     }
 
     /** UI 刷新节流：高频网络请求下避免每请求都重建适配器 */
@@ -367,24 +480,56 @@ object AdBlock {
         }
     }
 
+    /**
+     * 通知访问记录列表重绘。访问记录里的“+白名单/-白名单”“+黑名单/-黑名单”状态
+     * 取决于黑白名单，名单变化时必须同时通知，否则点了按钮当前列表不刷新，
+     * 要切到别的 tab 再切回来（重新 setAdapter 触发重绑）才看得到变化。
+     */
+    private fun notifyAccessChanged() {
+        accessPages.postValue(accessPages.value)
+    }
+
+    /** 黑/白名单规则变更后，按当前规则优先级重算访问记录里每条请求的“已拦截”标记 */
+    private fun recomputeBlockedMarks() {
+        val blackRules = blacklist.value?.toList().orEmpty()
+        val whiteRules = whitelist.value?.toList().orEmpty()
+        synchronized(recordLock) {
+            accessPages.value?.forEach { page ->
+                page.requests.forEach { r ->
+                    // 被白名单放行的请求即使命中黑名单规则，也不能再显示“已拦截”
+                    r.blocked = adBlockIsBlocked(
+                        r.url, blackRules, whiteRules,
+                        r.url.toHttpUrlOrNull()?.topPrivateDomain()
+                    )
+                }
+            }
+        }
+        notifyAccessChanged()
+    }
+
     // ===================== 黑名单 / 白名单（落库永久保存） =====================
 
     fun addBlackHost(host: String, mode: String = BLOCK_MODE_DOMAIN) {
         if (host.isBlank()) return
+        // 黑白名单互斥：同一规则值不能同时存在，先撤掉对方的同值规则
+        removeWhiteHost(HostStr(host, listOf()).apply { this.mode = mode })
         val list = blacklist.value ?: CopyOnWriteArrayList()
         if (list.none { it.host == host && it.mode == mode }) {
             list.add(0, HostStr(host, listOf()).apply { this.mode = mode })
             blacklist.postValue(list)
             persist("black", list)
         }
-        markBlockedInAccess(host, mode)
+        // 按当前全部黑名单规则精确重算拦截标记：加「精确URL」规则只标记该 URL，
+        // 不会像旧的按范围批量标记那样把整个顶级域名及其下所有 URL 都标成已拦截。
+        recomputeBlockedMarks()
     }
 
     fun removeBlackHost(hostStr: HostStr) {
         val list = blacklist.value ?: CopyOnWriteArrayList()
-        list.removeAll { it.host == hostStr.host && it.mode == hostStr.mode }
+        if (!list.removeAll { it.host == hostStr.host && it.mode == hostStr.mode }) return
         blacklist.postValue(list)
         persist("black", list)
+        recomputeBlockedMarks()
     }
 
     /**
@@ -426,20 +571,59 @@ object AdBlock {
 
     fun addWhiteHost(host: String, mode: String = BLOCK_MODE_DOMAIN) {
         if (host.isBlank()) return
+        // 黑白名单互斥：同一规则值不能同时存在，先撤掉对方的同值规则
+        removeBlackHost(HostStr(host, listOf()).apply { this.mode = mode })
         val list = whitelist.value ?: CopyOnWriteArrayList()
         if (list.none { it.host == host && it.mode == mode }) {
             list.add(0, HostStr(host, listOf()).apply { this.mode = mode })
             whitelist.postValue(list)
             persist("white", list)
         }
+        // 白名单优先，新增放行会改变“是否被拦截”的实际结果：
+        // 同时重算访问记录标记并刷新按钮状态（否则当前列表无变化，要切 tab 回来重绑才显示）
+        recomputeBlockedMarks()
     }
 
     fun removeWhiteHost(hostStr: HostStr) {
         val list = whitelist.value ?: CopyOnWriteArrayList()
-        list.removeAll { it.host == hostStr.host && it.mode == hostStr.mode }
+        if (!list.removeAll { it.host == hostStr.host && it.mode == hostStr.mode }) return
         whitelist.postValue(list)
         persist("white", list)
+        recomputeBlockedMarks()
     }
+
+    /**
+     * 批量移除规则，[entries] 为 null 时清空该类全部。
+     * 用于「清空整个黑名单/白名单」与「按月清空」两个入口，删除后同步刷新访问记录标记。
+     */
+    private fun removeHosts(kind: String, entries: Collection<HostStr>?) {
+        val live = if (kind == "black") blacklist else whitelist
+        val list = live.value ?: return
+        if (entries == null) {
+            if (list.isEmpty()) return
+            list.clear()
+        } else {
+            if (entries.isEmpty()) return
+            val keys = entries.mapTo(HashSet()) { it.host to it.mode }
+            if (!list.removeAll { (it.host to it.mode) in keys }) return
+        }
+        live.postValue(list)
+        persist(kind, list)
+        // 清空/按月删除黑白名单都会改变实际拦截结果，统一重算访问记录标记
+        recomputeBlockedMarks()
+    }
+
+    /** 清空整个黑名单（UI 弹窗确认后调用） */
+    fun clearBlack() = removeHosts("black", null)
+
+    /** 清空整个白名单（UI 弹窗确认后调用） */
+    fun clearWhite() = removeHosts("white", null)
+
+    /** 按月份清空黑名单中的指定规则 */
+    fun removeBlackHosts(entries: Collection<HostStr>) = removeHosts("black", entries)
+
+    /** 按月份清空白名单中的指定规则 */
+    fun removeWhiteHosts(entries: Collection<HostStr>) = removeHosts("white", entries)
 
     private fun AdBlockHostEntity.toHostStr(): HostStr {
         val type = runCatching {
@@ -449,6 +633,7 @@ object AdBlock {
             isPage = this@toHostStr.isPage
             time = this@toHostStr.time
             mode = this@toHostStr.mode
+            lastHitTime = this@toHostStr.lastHitTime
         }
     }
 }
