@@ -4,11 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.View
-import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.App
@@ -57,16 +54,6 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
     /** 当前承载验证的本地标签（不入库，活动销毁即丢弃） */
     private var currentTab: BrowserTab? = null
 
-    /** true = 承载从后台 web_get 提升上来的、已加载好的 WebView（不再发起任何网络请求） */
-    private val isHandoff: Boolean by lazy { intent.getBooleanExtra(KEY_HANDOFF, false) }
-
-    /** handoff 模式下被提升到前台的那个 WebView 实例 */
-    private var handoffWebView: WebView? = null
-
-    /** 当前实际承载验证的 WebView */
-    private val activeWebView: WebView?
-        get() = handoffWebView ?: if (::binding.isInitialized) binding.customWebView.webView else null
-
     private val finishFallback by lazy {
         Runnable {
             val result = resultMap[intent.getStringExtra(KEY_RESULT)]
@@ -101,10 +88,6 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
     }
 
     private fun setupVerificationWebView() {
-        if (isHandoff) {
-            setupHandoffWebView()
-            return
-        }
         val cwv = binding.customWebView
         // 人机验证期间禁止用户切换夜间模式（避免触发重建/脚本取消导致验证页退出）
         cwv.nightModeSwitchAllowed = false
@@ -121,36 +104,7 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
             post != null -> wv?.postUrl(url, post)
             headerMap.isNotEmpty() -> wv?.loadUrl(url, headerMap)
         }
-        runnable = EvalJsRunnable(cwv.webView, url)
-        mHandler.postDelayed(runnable!!, 500)
-    }
-
-    /**
-     * 直接把后台那次请求已加载好的 WebView 显示到前台，**不加载任何 URL**，
-     * 用户在这个实例上完成人机验证后点击"完成"，页面内容原样回传给那次 web_get 请求。
-     */
-    private fun setupHandoffWebView() {
-        // 用 peek 而非取走：配置变更（旋转等）重建活动时仍能拿到同一个 WebView 继续显示，
-        // 静态槽位由 showHandoffAndWaitHtml 在等待结束后统一清空。
-        val wv = pendingHandoffWebView
-        if (wv == null) {
-            Log.e("WebViewVerificationActivity handoff WebView 不可用，直接结束验证")
-            resultMap[intent.getStringExtra(KEY_RESULT)]?.finished = true
-            finish()
-            return
-        }
-        handoffWebView = wv
-        binding.customWebView.visibility = View.GONE
-        (wv.parent as? ViewGroup)?.removeView(wv)
-        val lp = ConstraintLayout.LayoutParams(
-            ConstraintLayout.LayoutParams.MATCH_PARENT, 0
-        ).apply {
-            topToBottom = binding.appBarLayout.id
-            bottomToBottom = binding.main.id
-        }
-        binding.main.addView(wv, lp)
-        runCatching { wv.onResume() }
-        runnable = EvalJsRunnable(wv, url)
+        runnable = EvalJsRunnable(cwv, url)
         mHandler.postDelayed(runnable!!, 500)
     }
 
@@ -162,31 +116,20 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         destroyed = true
         runnable?.let { mHandler.removeCallbacks(it) }
         mHandler.removeCallbacks(finishFallback)
-        // 配置变更重建时不要把这次验证判为"已结束"，否则等待中的脚本会被提前放行、
-        // 同一个 WebView 也就无法挂到新活动上继续验证。
-        val rebuilding = isChangingConfigurations
         val result = resultMap[intent.getStringExtra(KEY_RESULT)]
-        if (!rebuilding) result?.finished = true
-        if (isHandoff) {
-            if (!rebuilding) {
-                // 这个 WebView 属于后台请求，只从视图树摘下，销毁/回收由 BackstageWebView 统一处理
-                handoffWebView?.let { (it.parent as? ViewGroup)?.removeView(it) }
-            }
-            handoffWebView = null
-        } else {
-            // 销毁 CustomWebView 内的 WebView，避免泄漏（cookie 由全局 CookieManager 保留，不影响会话）
-            binding.customWebView.destroyWebView()
-        }
+        result?.finished = true
+        // 销毁 CustomWebView 内的 WebView，避免泄漏（cookie 由全局 CookieManager 保留，不影响会话）
+        binding.customWebView.destroyWebView()
     }
 
     override fun onPause() {
         super.onPause()
-        runCatching { activeWebView?.onPause() }
+        binding.customWebView.webView?.onPause()
     }
 
     override fun onResume() {
         super.onResume()
-        runCatching { activeWebView?.onResume() }
+        binding.customWebView.webView?.onResume()
     }
 
     private fun initView() {
@@ -194,9 +137,8 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
             finishWithCurrentContent()
         }
         setOnBackPressed {
-            val wv = activeWebView
-            if (wv?.canGoBack() == true) {
-                wv.goBack()
+            if (binding.customWebView.webView?.canGoBack() == true) {
+                binding.customWebView.webView?.goBack()
                 true
             } else {
                 finishWithCurrentContent()
@@ -214,30 +156,21 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         if (finishing) return
         finishing = true
         val resultKey = intent.getStringExtra(KEY_RESULT)
-        val wv = activeWebView
+        val wv = binding.customWebView.webView
         if (wv == null) {
             resultMap[resultKey]?.finished = true
             mHandler.removeCallbacks(finishFallback)
             if (!isFinishing && !isDestroyed) finish()
             return
         }
-        val ok = runCatching {
-            wv.evaluateJavascript("document.documentElement.outerHTML") { raw ->
-                val content = parseJsString(raw)
-                resultMap[resultKey]?.let {
-                    if (content.isNotEmpty()) it.html = content
-                    it.finished = true
-                }
-                mHandler.removeCallbacks(finishFallback)
-                if (!isFinishing && !isDestroyed) finish()
+        wv.evaluateJavascript("document.documentElement.outerHTML") { raw ->
+            val content = parseJsString(raw)
+            resultMap[resultKey]?.let {
+                if (content.isNotEmpty()) it.html = content
+                it.finished = true
             }
-        }.isSuccess
-        if (!ok) {
-            // WebView 可能已被脚本取消流程销毁，直接放行等待，避免卡住脚本线程
-            resultMap[resultKey]?.finished = true
             mHandler.removeCallbacks(finishFallback)
             if (!isFinishing && !isDestroyed) finish()
-            return
         }
         mHandler.postDelayed(finishFallback, 1500)
     }
@@ -303,12 +236,7 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         private val KEY_POST_DATA = "post_data"
         private val KEY_VERIFICATION_KEY = "VerificationKey"
         private val KEY_RESULT = "result"
-        private val KEY_HANDOFF = "handoff"
         private val resultMap = mutableMapOf<String, Result>()
-
-        /** 待提升到前台的后台 WebView。View 不能跨 Intent 传递，用静态槽位交接；取走即清空。 */
-        @Volatile
-        private var pendingHandoffWebView: WebView? = null
 
         /** 当前正在运行的验证页实例，脚本任务被取消时用它关掉页面 */
         @Volatile
@@ -349,56 +277,6 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
                 Log.i("WebViewVerificationActivity result for $url is done")
                 gson.toJson(Response(result.url, result.html))
             }
-
-        /**
-         * 把后台 web_get 已加载好的 WebView 提升到前台由人工处理，阻塞等待完成后返回最终页面 HTML。
-         *
-         * 与 [startAndWaitResult] 的区别：这里**不重新加载 URL**，前台展示的就是那次请求
-         * 的同一个 WebView 实例，因此整个过程只发生一次网络请求，脚本的 web_get 也不会中断。
-         * 必须在子线程调用（会阻塞等待用户操作）。
-         */
-        @JvmStatic
-        fun showHandoffAndWaitHtml(
-            webView: WebView,
-            url: String,
-            verificationKey: String = ""
-        ): String? = synchronized(verificationLock) {
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                throw IllegalStateException("showHandoffAndWaitHtml 必须在子线程中调用")
-            }
-            ScriptTaskRegistry.throwIfCurrentCancelled()
-            Log.i("WebViewVerificationActivity showHandoffAndWaitHtml URL: $url")
-            val keyResult = UUID.randomUUID().toString()
-            val intent = Intent(App.app, WebViewVerificationActivity::class.java).apply {
-                putExtra(KEY_URL, url)
-                putExtra(KEY_RESULT, keyResult)
-                putExtra(KEY_VERIFICATION_KEY, verificationKey)
-                putExtra(KEY_HANDOFF, true)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            val result = Result(url)
-            resultMap[keyResult] = result
-            pendingHandoffWebView = webView
-            GlobalScope.launch(Dispatchers.Main) {
-                // 等待开始前就被取消（例如脚本任务已取消）：不要再弹出验证页
-                if (result.finished) return@launch
-                Log.i("WebViewVerificationActivity handoff start for $url")
-                App.app.startActivity(intent)
-            }
-            try {
-                waitForResult(result, url)
-                Log.i("WebViewVerificationActivity handoff done for $url")
-                result.html
-            } catch (_: ScriptTaskCancelledException) {
-                // 脚本任务被取消：不能把异常抛进 GlobalScope 协程（会变成未捕获异常导致崩溃），
-                // 由 BackstageWebView 的取消流程统一收尾。
-                Log.i("WebViewVerificationActivity handoff cancelled for $url")
-                null
-            } finally {
-                pendingHandoffWebView = null
-                resultMap.remove(keyResult)
-            }
-        }
 
         @JvmStatic
         fun startAndWaitResult(url: String, headerMap: Map<String, String> = mapOf(), verificationKey: String = ""): String? =
@@ -472,7 +350,7 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
     }
 
     private inner class EvalJsRunnable(
-        private val webView: WebView?,
+        private val customWebView: CustomWebView,
         private val url: String,
         private val mJavaScript: String = "document.documentElement.outerHTML"
     ) : Runnable {
@@ -480,34 +358,30 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
 
         override fun run() {
             if (destroyed) return
-            // 脚本取消时 WebView 可能已被后台流程销毁，此处不能让异常冒泡
-            runCatching {
-                webView?.evaluateJavascript(mJavaScript) { handleResult(it) }
+            customWebView.webView?.evaluateJavascript(mJavaScript) {
+                handleResult(it)
             }
         }
 
         private fun handleResult(result: String) = GlobalScope.launch {
             if (destroyed) return@launch
-            val res = resultMap[intent.getStringExtra(KEY_RESULT)]
-            if (res?.finished == true) return@launch
             if (!result.isBlank() && result != "null") {
                 val content = parseJsString(result)
                 Log.i("js执行结果获取成功：$url")
+                val resultKey = intent.getStringExtra(KEY_RESULT)
+                val res = resultMap[resultKey]
                 res?.url = url
-                if (content.isNotEmpty()) res?.html = content
-                val verificationKey = intent.getStringExtra(KEY_VERIFICATION_KEY) ?: ""
+                res?.html = content
+                val verificationKey: String by lazy { intent.getStringExtra(KEY_VERIFICATION_KEY) ?: "" }
                 if (verificationKey.isNotBlank() && content.contains(verificationKey)) {
                     res?.finished = true
-                    mHandler.post {
-                        if (!isFinishing && !isDestroyed) finish()
-                    }
-                    return@launch
+                    finish()
                 }
-                // handoff 模式下用户操作会引发页面跳转，需持续轮询才能自动命中 verificationKey；
-                // 非 handoff 模式保持原有"取到一次结果即停"的行为。
-                if (!isHandoff) return@launch
+                return@launch
             }
-            if (isDestroyed || destroyed) return@launch
+            if (isDestroyed || destroyed) {
+                return@launch
+            }
             retry++
             mHandler.postDelayed(this@EvalJsRunnable, 1000)
         }

@@ -22,8 +22,6 @@ object WebViewClient {
         headers: Map<String, String>? = null,
         javaScript: String = "document.documentElement.outerHTML",
         timeout: Long = 20000L,
-        autoHumanVerify: Boolean = true,
-        verificationKey: String = "",
     ): String {
         checkThread()
         // 调用前拦截：脚本任务已取消时不再新建 WebView，直接抛取消异常
@@ -34,9 +32,7 @@ object WebViewClient {
                 url = url,
                 headerMap = headers,
                 javaScript = javaScript,
-                timeout = timeout,
-                autoHumanVerify = autoHumanVerify,
-                verificationKey = verificationKey
+                timeout = timeout
             ).getResponse()
         }
     }
@@ -47,9 +43,7 @@ object WebViewClient {
         postData: String = "",
         javaScript: String = "document.documentElement.outerHTML",
         timeout: Long = 20000L,
-        encoding: String = "UTF-8",
-        autoHumanVerify: Boolean = true,
-        verificationKey: String = "",
+        encoding: String = "UTF-8"
     ): String {
         checkThread()
         // 调用前拦截：脚本任务已取消时不再新建 WebView，直接抛取消异常
@@ -62,8 +56,6 @@ object WebViewClient {
                 timeout = timeout,
                 postData = postData,
                 encoding = encoding,
-                autoHumanVerify = autoHumanVerify,
-                verificationKey = verificationKey,
             ).getResponse()
         }
     }
