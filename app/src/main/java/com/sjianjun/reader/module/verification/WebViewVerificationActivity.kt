@@ -7,7 +7,6 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
-import java.util.concurrent.ConcurrentHashMap
 import androidx.activity.enableEdgeToEdge
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
@@ -305,7 +304,7 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         private val KEY_VERIFICATION_KEY = "VerificationKey"
         private val KEY_RESULT = "result"
         private val KEY_HANDOFF = "handoff"
-        private val resultMap = ConcurrentHashMap<String, Result>()
+        private val resultMap = mutableMapOf<String, Result>()
 
         /** 待提升到前台的后台 WebView。View 不能跨 Intent 传递，用静态槽位交接；取走即清空。 */
         @Volatile
@@ -320,9 +319,6 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
 
         /** activity 启动兜底超时：若届时 activity 仍未起来（如后台启动受限），放行后续请求，避免永久阻塞。 */
         private const val VERIFICATION_START_TIMEOUT_MS = 15 * 1000L
-
-        /** 前台人工验证的最长等待：超过则关闭验证页并放行，避免 web_get 请求被永久挂起。 */
-        private const val HANDOFF_MAX_WAIT_MS = 10 * 60 * 1000L
 
         fun postAndWaitResult(url: String, postData: String, verificationKey: String = ""): String? =
             synchronized(verificationLock) {
@@ -458,20 +454,9 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
             task?.addCancelAction(cancelAction)
             try {
                 val startDeadline = System.currentTimeMillis() + VERIFICATION_START_TIMEOUT_MS
-                val maxDeadline = System.currentTimeMillis() + HANDOFF_MAX_WAIT_MS
                 while (!result.finished) {
                     if (!result.started && System.currentTimeMillis() > startDeadline) {
                         Log.e("WebViewVerificationActivity not started within timeout for $url")
-                        break
-                    }
-                    if (result.started && System.currentTimeMillis() > maxDeadline) {
-                        Log.e("WebViewVerificationActivity not finished within max wait for $url")
-                        // 兜底：超过最长等待仍无结果，关闭验证页放行，避免 web_get 请求被永久挂起
-                        activeActivity?.get()?.let { activity ->
-                            if (!activity.isFinishing && !activity.isDestroyed) {
-                                activity.finish()
-                            }
-                        }
                         break
                     }
                     Thread.sleep(500)
