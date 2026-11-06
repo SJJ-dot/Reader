@@ -11,6 +11,9 @@ _server_port = None
 
 def init():
     global _server_ip, _server_port
+    # 一次脚本运行只发现一次服务，避免每个请求都做 mDNS 查询
+    if _server_ip and _server_port:
+        return
     log("获取接口，需要APP打开测试开关")
     _server_ip, _server_port = discover_services()
     log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
@@ -22,7 +25,7 @@ def web_get(url, headers=None, javaScript="document.documentElement.outerHTML", 
     # POST请求的数据
     data = {'url': url, 'headers': headers, 'javaScript': javaScript, 'timeout': timeout}
     # 发送POST请求
-    response = requests.post(server_url, json=data)
+    response = requests.post(server_url, json=data, timeout=30)
     response.encoding = 'utf-8'
     return response.text
 
@@ -32,7 +35,7 @@ def web_post(url, postData=None, javaScript="document.documentElement.outerHTML"
     # POST请求的数据
     data = {'url': url, 'postData': postData,'javaScript': javaScript, 'timeout': timeout, 'encoding': encoding}
     # 发送POST请求
-    response = requests.post(server_url, json=data)
+    response = requests.post(server_url, json=data, timeout=30)
     response.encoding = 'utf-8'
     return response.text
 

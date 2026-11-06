@@ -9,6 +9,9 @@ _server_port = None
 
 def init():
     global _server_ip, _server_port
+    # 一次脚本运行只发现一次服务，避免每个请求都做 mDNS 查询
+    if _server_ip and _server_port:
+        return
     _server_ip, _server_port = discover_services()
     log(f"Initialized with server IP: {_server_ip}, Port: {_server_port}")
 
