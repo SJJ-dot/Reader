@@ -115,3 +115,22 @@ def getChapterContent(url):
             return content.prettify()
 
     return ""
+
+if __name__ == '__main__':
+    print(verify(""))
+    # print("\n========== 详情 ==========")
+    # book = getDetails("http://www.dzsjob.com/268474_268474325/")
+    # chapters = book.get("chapterList") or []
+    # print("书名:", book.get("title"))
+    # print("作者:", book.get("author"))
+    # print("章节数:", len(chapters))
+    # if chapters:
+    #     print("首章:", chapters[0])
+    #     print("末章:", chapters[-1])
+    #
+    # if chapters:
+    #     print("\n========== 正文 ==========")
+    #     content = getChapterContent(chapters[0]["url"])
+    #     print("正文长度:", len(content))
+    #     print("预览:", content[:200])
+    #     print(content[-200:])
