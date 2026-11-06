@@ -3,7 +3,6 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from log import log
 
 _UA = ("Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36")
@@ -124,3 +123,22 @@ def getChapterContent(url):
         current = next_url
 
     return "\n".join(parts)
+
+
+if __name__ == '__main__':
+    print("\n========== 详情 ==========")
+    book = getDetails("http://www.bisge.cc/read/129463.html")
+    chapters = book.get("chapterList") or []
+    print("书名:", book.get("title"))
+    print("作者:", book.get("author"))
+    print("章节数:", len(chapters))
+    if chapters:
+        print("首章:", chapters[0])
+        print("末章:", chapters[-1])
+
+    if chapters:
+        print("\n========== 正文 ==========")
+        content = getChapterContent(chapters[0]["url"])
+        print("正文长度:", len(content))
+        print("预览:", content[:200])
+        print("末尾:", content[-200:])
