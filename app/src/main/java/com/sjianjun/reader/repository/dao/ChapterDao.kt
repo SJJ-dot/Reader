@@ -33,6 +33,27 @@ interface ChapterDao {
     @Query("select * from Chapter where bookId=:bookId and `index` =:index")
     fun getChapterByIndex(bookId: String, index: Int): Chapter?
 
+    /**
+     * 批量取多本书各自的最新章节（index 最大）。一次性 IN 查询，替代按书逐本查询的 N+1 瓶颈。
+     */
+    @Query("SELECT * FROM Chapter c WHERE c.bookId IN (:bookIds) AND c.`index` = (SELECT MAX(`index`) FROM Chapter WHERE bookId = c.bookId)")
+    fun getLastChapterByBookIds(bookIds: List<String>): List<Chapter>
+
+    /**
+     * 批量取多本书的"已读章节"（与阅读记录 bookId+chapterIndex 对应），并附带所属书名。
+     * 一次性 JOIN 查询，替代按书逐本按 (bookId, index) 查询。
+     */
+    @Query(
+        """
+        SELECT c.bookId AS bookId, c.url AS url, c.title AS title, c.isLoaded AS isLoaded,
+               c.`index` AS `index`, r.bookTitle AS recordTitle
+        FROM Chapter c
+        INNER JOIN ReadingRecord r ON c.bookId = r.bookId AND c.`index` = r.chapterIndex
+        WHERE r.bookTitle IN (:titles)
+        """
+    )
+    fun getReadChapterByTitles(titles: List<String>): List<ReadChapterRow>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertChapter(chapterList: List<Chapter>): List<Long>
 
@@ -67,3 +88,15 @@ interface ChapterDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(chapter: Chapter)
 }
+
+/**
+ * [getReadChapterByTitles] 的返回项：已读章节（来自 Chapter）及其所属书名（来自 ReadingRecord）。
+ */
+data class ReadChapterRow(
+    val bookId: String,
+    val url: String,
+    val title: String?,
+    val isLoaded: Boolean,
+    val index: Int,
+    val recordTitle: String,
+)

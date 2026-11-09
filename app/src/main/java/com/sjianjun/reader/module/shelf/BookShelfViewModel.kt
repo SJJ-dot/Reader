@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.sjianjun.coroutine.withIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.bean.Book
+import com.sjianjun.reader.bean.Chapter
 import com.sjianjun.reader.repository.BookUseCase
 import com.sjianjun.reader.repository.DbFactory.db
 import com.sjianjun.reader.utils.asFlow
@@ -70,37 +71,63 @@ class BookShelfViewModel : ViewModel() {
     fun init() {
         viewModelScope.launch(Dispatchers.IO) {
             bookDao.getAllReadingBook().flatMapLatest { books ->
-                val flows = books.map { book ->
-                    val lastChapter = chapterDao.getLastChapterByBookId(book.id)
-                    book.lastChapter = lastChapter
-                    val record = recordDao.getReadingRecord(book.title).firstOrNull()
-                    book.record = record
-                    val readChapter = chapterDao.getChapterByIndex(record?.bookId ?: "", record?.chapterIndex ?: -1)
-                    book.readChapter = readChapter
-                    book.bookSourceCount = bookDao.getBookBookSourceNum(book.title)
-                    book.bookSource = bookSourceDao.getBookSourceById(book.bookSourceId)
-                    book.unreadChapterCount = (book.lastChapter?.index ?: 0) - (book.readChapter?.index ?: 0)
-                    if (book.record?.isEnd != true) {
-                        book.unreadChapterCount += 1
-                    }
-                    if (readChapter?.isLoaded == true) {
-                        chapterContentDao.getChapterContent(readChapter.bookId, readChapter.url).mapLatest {
-                            readChapter.content = it.toMutableList()
-                            book
-                        }
-                    } else {
-                        book.asFlow()
-                    }
-                }
-
-                if (flows.isEmpty()) {
+                if (books.isEmpty()) {
                     flowOf(emptyList())
                 } else {
-                    combine(flows) {
-                        it.toList()
-                    }
-                }
+                    // 一次性批量查询，替代对每本书串行发起 5~6 条 SQL。
+                    // 书多时原先是 N×5 次数据库往返（N+1 瓶颈），这是启动列表变慢的主因。
+                    val titles = books.map { it.title }
 
+                    val lastChapterMap = chapterDao.getLastChapterByBookIds(books.map { it.id })
+                        .associateBy { it.bookId }
+                    val recordMap = recordDao.getReadingRecordsByTitles(titles)
+                        .associateBy { it.bookTitle }
+                    val readChapterMap = chapterDao.getReadChapterByTitles(titles)
+                        .associate { row ->
+                            val chapter = Chapter().apply {
+                                bookId = row.bookId
+                                url = row.url
+                                title = row.title
+                                isLoaded = row.isLoaded
+                                index = row.index
+                            }
+                            row.recordTitle to chapter
+                        }
+                    val sourceCountMap = bookDao.getBookSourceCountByTitles(titles)
+                        .associate { it.title to it.cnt }
+                    val sourceMap = bookSourceDao.getBookSourcesByIds(books.map { it.bookSourceId })
+                        .associateBy { it.id }
+
+                    books.forEach { book ->
+                        val record = recordMap[book.title]
+                        val readChapter = readChapterMap[book.title]
+                        book.lastChapter = lastChapterMap[book.id]
+                        book.record = record
+                        book.readChapter = readChapter
+                        book.bookSourceCount = sourceCountMap[book.title] ?: 0
+                        book.bookSource = sourceMap[book.bookSourceId]
+                        book.unreadChapterCount =
+                            (book.lastChapter?.index ?: 0) - (readChapter?.index ?: 0)
+                        if (record?.isEnd != true) {
+                            book.unreadChapterCount += 1
+                        }
+                    }
+
+                    // 已读章节内容：仅对已加载的做内容观察，保留原有实时刷新语义；
+                    // 同书名多书源会共享同一已读章节对象，按 (bookId,url) 去重避免重复加载。
+                    val loaded = mutableSetOf<String>()
+                    val contentFlows = books.mapNotNull { book ->
+                        val rc = book.readChapter ?: return@mapNotNull null
+                        if (!rc.isLoaded) return@mapNotNull null
+                        val key = rc.bookId + "\u0000" + rc.url
+                        if (!loaded.add(key)) return@mapNotNull null
+                        chapterContentDao.getChapterContent(rc.bookId, rc.url).mapLatest { content ->
+                            rc.content = content.toMutableList()
+                            book
+                        }
+                    }
+                    if (contentFlows.isEmpty()) flowOf(books) else combine(contentFlows) { books }
+                }
             }.debounce(300).collectLatest { books ->
                 bookList.postValue(books.sortedWith(bookComparator))
             }

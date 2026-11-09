@@ -12,6 +12,12 @@ public interface ReadingRecordDao {
     @Query("select * from ReadingRecord where bookTitle=:bookTitle")
     fun getReadingRecord(bookTitle: String): Flow<ReadingRecord?>
 
+    /**
+     * 批量取多本书的阅读记录。一次性 IN 查询，替代按书名逐本查询。
+     */
+    @Query("select * from ReadingRecord where bookTitle in (:bookTitles)")
+    fun getReadingRecordsByTitles(bookTitles: List<String>): List<ReadingRecord>
+
     @Query("select * from ReadingRecord where bookTitle=:bookTitle")
     fun getReadingRecordSync(bookTitle: String): ReadingRecord?
 

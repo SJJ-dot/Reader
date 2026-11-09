@@ -41,6 +41,12 @@ interface BookDao {
     @Query("select count(*) from Book where title=:title")
     fun getBookBookSourceNum(title: String): Int
 
+    /**
+     * 批量统计同书名书籍数量（书源数）。一次性 IN 查询，替代按书名逐本 count。
+     */
+    @Query("select title, count(*) as cnt from Book where title in (:titles) group by title")
+    fun getBookSourceCountByTitles(titles: List<String>): List<TitleCount>
+
     @Query("select * from Book where title=:title order by bookSourceId")
     fun getBookByTitleAndAuthor(title: String): Flow<List<Book>>
 
@@ -75,3 +81,11 @@ interface BookDao {
     @Query("update Book set isLoading=0 where isLoading=1 and title=:title")
     fun resetBookLoadingStateByTitle(title: String): Int
 }
+
+/**
+ * [getBookSourceCountByTitles] 的返回项：书名 + 该书名下的书籍数量。
+ */
+data class TitleCount(
+    val title: String,
+    val cnt: Int,
+)
