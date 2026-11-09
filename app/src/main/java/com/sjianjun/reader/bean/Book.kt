@@ -2,11 +2,12 @@ package com.sjianjun.reader.bean
 
 import androidx.room.Entity
 import androidx.room.Ignore
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.Expose
 
 //以书籍名、作者、来源 3者确定书籍的唯一性
-@Entity
+@Entity(indices = [Index("title")])
 class Book {
     @PrimaryKey
     var id: String = ""

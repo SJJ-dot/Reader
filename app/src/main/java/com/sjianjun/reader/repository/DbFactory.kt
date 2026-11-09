@@ -41,7 +41,7 @@ import java.util.Locale
 
 @Database(
     entities = [Book::class, SearchHistory::class, Chapter::class, ChapterContent::class, ReadingRecord::class, BookSource::class, ReplacementRule::class, SourceUrl::class, BookmarkFolderEntity::class, BookmarkEntity::class, BrowserHistoryEntity::class, BrowserTabEntity::class, AdBlockHostEntity::class],
-    version = 40,
+    version = 41,
     exportSchema = false
 )
 abstract class Db : RoomDatabase() {
@@ -295,6 +295,15 @@ object DbFactory {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     // 黑白名单规则新增“最近命中时间”：用于按最近命中时间倒序、按月分组
                     db.execSQL("ALTER TABLE `ad_block_host` ADD COLUMN `lastHitTime` INTEGER NOT NULL DEFAULT 0")
+                }
+            })
+            .addMigrations(object : Migration(40, 41) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // 书架启动批量查询按书名聚合（getBookSourceCountByTitles）与
+                    // getAllReadingBook 的子查询（where id in (select bookId from ReadingRecord)）
+                    // 都依赖这两列；书多时缺索引会退化成全表扫描。建索引后改为索引查找，启动更快。
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Book_title` ON `Book` (`title`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_ReadingRecord_bookId` ON `ReadingRecord` (`bookId`)")
                 }
             })
             .build()

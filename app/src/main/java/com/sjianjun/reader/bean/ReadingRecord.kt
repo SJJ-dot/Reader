@@ -1,8 +1,9 @@
 package com.sjianjun.reader.bean
 
 import androidx.room.Entity
+import androidx.room.Index
 
-@Entity(primaryKeys = ["bookTitle"])
+@Entity(primaryKeys = ["bookTitle"], indices = [Index("bookId")])
 class ReadingRecord(
     var bookTitle: String,
     var bookId: String = ""
