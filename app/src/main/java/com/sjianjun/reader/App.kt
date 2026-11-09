@@ -11,6 +11,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import sjj.alog.Log
 
 class App : Application() {
     /**
@@ -27,6 +28,7 @@ class App : Application() {
         super.onCreate()
         app = this
         MMKV.initialize(this)
+        Log.i("▶Launch App.onCreate 进程启动 consecutiveCrashes ${appEssentials.consecutiveCrashes} -> ${appEssentials.consecutiveCrashes + 1}")
         appEssentials.consecutiveCrashes += 1
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(appEssentials.appDayNightMode)

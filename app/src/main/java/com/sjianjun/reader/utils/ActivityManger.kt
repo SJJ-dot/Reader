@@ -32,13 +32,16 @@ object ActivityManger {
 
     fun finishSameType(activity: Activity) {
         val target = activity::class.java
+        val snapshot = activityList.toList()
+        sjj.alog.Log.i("▶Launch finishSameType 新实例=${activity.javaClass.simpleName}@${activity.hashCode()} 栈=${snapshot.joinToString { it.javaClass.simpleName + "@" + it.hashCode() }}")
         var find = false
-        activityList.toList().forEach {
+        snapshot.forEach {
             if (it::class.java == target && it != activity) {
                 find = true
             }
             if (find) {
                 if (!it.isFinishing && !it.isDestroyed && it != activity) {
+                    sjj.alog.Log.i("▶Launch finishSameType finish ${it.javaClass.simpleName}@${it.hashCode()}")
                     it.finish()
                 }
             }

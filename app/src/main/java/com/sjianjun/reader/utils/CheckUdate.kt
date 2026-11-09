@@ -64,6 +64,7 @@ suspend fun getReleaseInfo(): ReleasesInfo? = withIo {
 }
 
 suspend fun checkUpdate(fromUser: Boolean = true) = withIo {
+    Log.i("▶Launch checkUpdate 开始 fromUser=$fromUser thread=${Thread.currentThread().name}")
     var releasesInfo = getReleaseInfo()
     if (releasesInfo == null) {
         releasesInfo = appEssentials.releasesInfo
@@ -74,15 +75,24 @@ suspend fun checkUpdate(fromUser: Boolean = true) = withIo {
     Log.i("版本更新信息：${releasesInfo}")
     if (releasesInfo == null) {
         toast("版本信息加载失败", Toast.LENGTH_SHORT)
+        Log.i("▶Launch checkUpdate 版本信息为空，提前 return（crashes 不清零）")
         return@withIo
     }
     if (releasesInfo.isUpgradeable()) {
         if (!fromUser && appEssentials.ignoredUpdateVersion == releasesInfo.lastVersion) {
             Log.i("用户已忽略版本：${releasesInfo.lastVersion}，不再自动提示更新")
+            Log.i("▶Launch checkUpdate 已忽略版本，提前 return（crashes 不清零）")
             return@withIo
         }
         suspendCancellableCoroutine { coroutine ->
-            showUpdateDialog(ActivityManger.getTopActivity() ?: return@suspendCancellableCoroutine, releasesInfo) {
+            val top = ActivityManger.getTopActivity()
+            Log.i("▶Launch checkUpdate 挂起等待更新弹窗收尾 topActivity=$top")
+            if (top == null) {
+                Log.e("▶Launch checkUpdate topActivity 为 null，协程将永不 resume，startMain 不会执行！")
+                return@suspendCancellableCoroutine
+            }
+            showUpdateDialog(top, releasesInfo) {
+                Log.i("▶Launch checkUpdate 弹窗收尾，resume")
                 coroutine.resume(Unit)
             }
         }
@@ -92,6 +102,7 @@ suspend fun checkUpdate(fromUser: Boolean = true) = withIo {
         }
     }
     Log.e("检查更新完成")
+    Log.i("▶Launch checkUpdate 正常结束，清零 crashes")
     appEssentials.consecutiveCrashes = 0
 }
 
