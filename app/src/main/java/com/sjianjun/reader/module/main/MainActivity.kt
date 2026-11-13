@@ -31,7 +31,6 @@ import com.github.liuyueyi.quick.transfer.constants.TransType
 import com.sjianjun.coroutine.launchIo
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
-import com.sjianjun.reader.BuildConfig
 import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.databinding.ActivityMainBinding
@@ -56,9 +55,7 @@ import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import sjj.alog.Config
 import sjj.alog.Log
-import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 
 private var first = true
@@ -117,14 +114,7 @@ class MainActivity : BaseActivity() {
         if (globalConfig.privacyPolicyAccepted.value != true) return
         if (!first) return
         first = false
-        handleDefaultException(this)
-        Config.getDefaultConfig().apply {
-            consolePrintEnable = BuildConfig.DEBUG
-            deleteOldLogFile = true
-            consolePrintAllLog = true
-            writeToFile = true
-            writeToFileDir = File(applicationContext.externalCacheDir, "alog")
-        }
+        // alog 配置已提前到 App.onCreate（必须在进程内首次 Log 调用之前，否则日志文件不会生成）
         Python.start(AndroidPlatform(applicationContext))
         DnsWarmUp.start()
         when (globalConfig.readerJianFanMode.value) {
