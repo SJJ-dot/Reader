@@ -72,7 +72,9 @@ activity = "1.11.0"
 lifecycle = "2.9.4"
 recyclerview = "1.2.0"
 viewpager2 = "1.0.0"
-firebaseBom = "35.2.0"
+umengCommonVersion = "10.0.1"
+umengAsmsVersion = "1.8.7.2"
+umengApmVersion = "2.1.0"
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -142,9 +144,9 @@ appcompat-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "
 core-core = { module = "androidx.core:core", version.ref = "core" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
-firebaseBomLibrary = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-perf = { module = "com.google.firebase:firebase-perf" }
-firebaseCrashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+umengCommon = { module = "com.umeng.umsdk:common", version.ref = "umengCommonVersion" }
+umengAsms = { module = "com.umeng.umsdk:asms", version.ref = "umengAsmsVersion" }
+umengApm = { module = "com.umeng.umsdk:apm", version.ref = "umengApmVersion" }
 fragment-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "fragment" }

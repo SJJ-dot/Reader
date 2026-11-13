@@ -1,7 +1,7 @@
 *.iml
 .gradle
 /local.properties
-# 本地放真实 google-services.json；CI 由 Secret 注入，避免假配置或凭据进仓库
+# 已迁移至友盟 U-APM，保留忽略规则避免遗留的 Firebase 配置被误提交
 /app/google-services.json
 .idea
 .DS_Store

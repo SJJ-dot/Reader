@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.sjianjun.reader.preferences.appEssentials
 import com.sjianjun.reader.utils.ActivityManger
 import com.tencent.mmkv.MMKV
@@ -31,8 +30,8 @@ class App : Application() {
         super.onCreate()
         app = this
         MMKV.initialize(this)
-        // 每次启动先关闭崩溃收集，待用户同意隐私说明后由 initCrashReporter() 开启
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+        // 友盟合规流程：预初始化不采集设备信息、不上报；同意隐私后由 initCrashReporter() 正式初始化
+        preInitCrashReporter()
         // 必须在进程内第一次 Log.* 调用之前配置 alog：
         // Log.get() 首次调用会用 Config.getDefaultConfig() 构造 Logger/LogUtils，
         // 而 LogUtils 只在构造那一刻按 writeToFile 决定是否创建 LogFile（之后改配置也补不回来，

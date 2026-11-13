@@ -114,7 +114,7 @@ class MainActivity : BaseActivity() {
         if (globalConfig.privacyPolicyAccepted.value != true) return
         if (!first) return
         first = false
-        // 用户已同意隐私说明：开启崩溃上报（App.onCreate 中已默认关闭）
+        // 用户已同意隐私说明：正式初始化友盟 SDK，开始收集崩溃信息（App.onCreate 中仅做了不采集的预初始化）
         initCrashReporter()
         // alog 配置已提前到 App.onCreate（必须在进程内首次 Log 调用之前，否则日志文件不会生成）
         Python.start(AndroidPlatform(applicationContext))

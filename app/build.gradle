@@ -4,8 +4,6 @@ plugins {
     alias(libs.plugins.chaquoPython)
     alias(libs.plugins.kspPlugin)
     alias(libs.plugins.kotlinKapt)
-    id("com.google.gms.google-services") version "4.6.0"
-    id("com.google.firebase.crashlytics") version "3.0.8"
 }
 
 def commitCont = 'git rev-list HEAD --count'.execute().text.trim().toInteger() + 16
@@ -56,6 +54,12 @@ android {
         // 第三方服务配置统一从 local.properties 读取（不进版本库）
         buildConfigField "String", "PGY_API_KEY", "\"${properties.getProperty('pgy.apiKey', '')}\""
         buildConfigField "String", "PGY_APP_KEY", "\"${properties.getProperty('pgy.appKey', '')}\""
+        // 友盟 U-APM：AppKey/渠道从 local.properties 读取，CI 用 Secret 注入；
+        // 未配置时回退到项目历史接入的 AppKey，避免空值导致 SDK 不工作
+        def umengAppKey = properties.getProperty('umeng.appKey', '').trim() ?: ''
+        def umengChannel = properties.getProperty('umeng.channel', '').trim() ?: 'default'
+        buildConfigField "String", "UMENG_APP_KEY", "\"$umengAppKey\""
+        buildConfigField "String", "UMENG_CHANNEL", "\"$umengChannel\""
     }
     buildFeatures {
         viewBinding true
@@ -173,9 +177,10 @@ dependencies {
     //下拉刷新（两级下拉：一级检查更新，继续下拉重新加载）
     implementation(libs.smartRefreshLayout)
 
-    // Firebase Crashlytics：崩溃信息上报。默认关闭收集，用户同意隐私说明后由 initCrashReporter() 开启
-    implementation(platform(libs.firebaseBomLibrary))
-    implementation(libs.firebaseCrashlytics)
+    // 友盟 U-APM：收集崩溃/ANR 信息。preInit 在 App.onCreate，正式 init 在用户同意隐私说明后
+    implementation(libs.umengCommon)
+    implementation(libs.umengAsms)
+    implementation(libs.umengApm)
 //    implementation "com.victor:lib:1.0.4"
 
 //    implementation project(":refreshbar")

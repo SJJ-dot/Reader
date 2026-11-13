@@ -28,9 +28,11 @@
     volatile <fields>;
 }
 
-# Firebase Crashlytics：保留源码文件名与行号，保证混淆后的崩溃堆栈可读
+# 崩溃堆栈保留源码文件名与行号（友盟 U-APM 上报需要）
 -keepattributes SourceFile,LineNumberTable
--dontwarn com.google.firebase.crashlytics.**
+# 友盟 U-APM SDK 混淆规则（com.umeng / org.repackage 规则已在下方）
+-keep class com.uc.** { *; }
+-keep class com.efs.** { *; }
 
 -keep class android.support.**{*;}
 
