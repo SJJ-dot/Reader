@@ -28,9 +28,6 @@ persistentCookieJar = "v1.0.1"
 glide = "5.0.9"
 flexbox = "3.0.0"
 material = "1.14.0"
-# 固定版本，避免 latest.release 每次构建重新解析（产物不可复现、依赖缓存不稳定）
-# 注意：免费 crashreport 无官方 16KB 对齐版本，其原生库已在 packagingOptions 排除（见 app/build.gradle）
-bugly = "4.1.9.3"
 superTextView = "v3.2.7"
 circleimageview = "3.1.0"
 mmkvStatic = "2.4.3"
@@ -75,7 +72,7 @@ activity = "1.11.0"
 lifecycle = "2.9.4"
 recyclerview = "1.2.0"
 viewpager2 = "1.0.0"
-firebaseBom = "33.2.0"
+firebaseBom = "35.2.0"
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -84,7 +81,6 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinKapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kspPlugin = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 chaquoPython = { id = "com.chaquo.python", version.ref = "chaquoPython" }
-google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 room = { id = "androidx.room", version.ref = "androidxRoom" }
 download = { id = "de.undercouch.download", version = "5.6.0" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
@@ -118,7 +114,6 @@ glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
-buglyCrashreport = { module = "com.tencent.bugly:crashreport", version.ref = "bugly" }
 superTextView = { module = "com.github.chenBingX:SuperTextView", version.ref = "superTextView" }
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
 mmkvStatic = { module = "com.tencent:mmkv-static", version.ref = "mmkvStatic" }
@@ -147,9 +142,9 @@ appcompat-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "
 core-core = { module = "androidx.core:core", version.ref = "core" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.6.1" }
-firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebaseBomLibrary = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-perf = { module = "com.google.firebase:firebase-perf" }
+firebaseCrashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 fragment-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "fragment" }

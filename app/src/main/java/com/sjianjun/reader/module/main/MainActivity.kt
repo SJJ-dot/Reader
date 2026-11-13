@@ -35,7 +35,7 @@ import com.sjianjun.reader.R
 import com.sjianjun.reader.URL
 import com.sjianjun.reader.databinding.ActivityMainBinding
 import com.sjianjun.reader.databinding.MainMenuNavHeaderBinding
-import com.sjianjun.reader.handleDefaultException
+import com.sjianjun.reader.initCrashReporter
 import com.sjianjun.reader.module.bookcity.AdBlock
 import com.sjianjun.reader.module.browser.BrowserFragment
 import com.sjianjun.reader.module.bookcity.BrowserSession
@@ -114,6 +114,8 @@ class MainActivity : BaseActivity() {
         if (globalConfig.privacyPolicyAccepted.value != true) return
         if (!first) return
         first = false
+        // 用户已同意隐私说明：开启崩溃上报（App.onCreate 中已默认关闭）
+        initCrashReporter()
         // alog 配置已提前到 App.onCreate（必须在进程内首次 Log 调用之前，否则日志文件不会生成）
         Python.start(AndroidPlatform(applicationContext))
         DnsWarmUp.start()

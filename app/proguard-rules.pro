@@ -28,8 +28,9 @@
     volatile <fields>;
 }
 
--dontwarn com.tencent.bugly.**
--keep public class com.tencent.bugly.**{*;}
+# Firebase Crashlytics：保留源码文件名与行号，保证混淆后的崩溃堆栈可读
+-keepattributes SourceFile,LineNumberTable
+-dontwarn com.google.firebase.crashlytics.**
 
 -keep class android.support.**{*;}
 

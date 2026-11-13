@@ -58,9 +58,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      # google-services.json 不进仓库：占位配置会让打出的包"能编译但崩溃不上报"，
+      # 因此 CI 必须用 Firebase 控制台下载的真实文件，通过 Secret 注入。
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "::error::缺少 Secret GOOGLE_SERVICES_JSON（google-services.json 的 base64 内容）"
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+          # release 的 applicationId 必须有对应 client，否则 processReleaseGoogleServices 会失败
+          grep -q '"com.sjianjun.reader"' app/google-services.json || {
+            echo "::error::google-services.json 缺少 com.sjianjun.reader 的 client 条目"
+            exit 1
+          }
+
       - name: Create local.properties
         run: |
-          echo "bugly.appId=${{ secrets.BUGLY_APP_ID }}" >> local.properties
           echo "pgy.apiKey=${{ secrets.PGY_KEY }}" >> local.properties
           echo "pgy.appKey=${{ secrets.PGY_APP_KEY }}" >> local.properties
           echo "sign.storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties

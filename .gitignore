@@ -1,6 +1,8 @@
 *.iml
 .gradle
 /local.properties
+# 本地放真实 google-services.json；CI 由 Secret 注入，避免假配置或凭据进仓库
+/app/google-services.json
 .idea
 .DS_Store
 /build
