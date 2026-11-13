@@ -87,7 +87,6 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i("▶Launch MainActivity.onCreate 开始 first=$first isTaskRoot=$isTaskRoot flags=${Integer.toHexString(intent.flags)} taskId=$taskId savedInstanceState=${savedInstanceState != null}")
-        ActivityManger.finishSameType(this)
         // 初始状态栏样式（浅色背景用深色图标）；进入应用后由 applyStatusBarForBrowser 按夜间模式/书城页调整
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         super.onCreate(savedInstanceState)

@@ -134,7 +134,6 @@ class BrowserReadModeActivity : BaseActivity() {
             finish()
             return
         }
-        ActivityManger.finishSameType(this)
         binding = ActivityBrowserReadModeBinding.inflate(layoutInflater)
         val pageStyle = PageStyle.getStyle(globalConfig.readerPageStyle.value)
         enableEdgeToEdge(pageStyle.isDark)
