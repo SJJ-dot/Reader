@@ -20,6 +20,8 @@ import sjj.alog.Log
  */
 class SplashActivity : AppCompatActivity() {
 
+    var needFinish = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -49,12 +51,19 @@ class SplashActivity : AppCompatActivity() {
         Log.i("▶Launch startMain 调用 isTaskRoot=$isTaskRoot isFinishing=$isFinishing")
         startActivity(Intent(this, MainActivity::class.java))
         Log.i("▶Launch startMain startActivity 已返回，finish Splash")
-        finish()
+        needFinish = true
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.i("▶Launch Splash.onNewIntent flags=${Integer.toHexString(intent.flags)} isTaskRoot=$isTaskRoot")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (needFinish) {
+            finish()
+        }
     }
 
     companion object {
