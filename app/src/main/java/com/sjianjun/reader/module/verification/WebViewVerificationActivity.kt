@@ -1,12 +1,17 @@
 package com.sjianjun.reader.module.verification
 
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sjianjun.reader.App
 import com.sjianjun.reader.BaseActivity
@@ -70,6 +75,19 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         enableEdgeToEdge()
         binding = ActivityVerificationBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        // 适配夜间模式：按当前夜间状态设置导航栏颜色与图标反色，并兜底窗口/根布局背景，
+        // 避免夜间模式下窗口与导航栏仍为浅色。验证页本身不动态切换夜间模式（nightModeSwitchAllowed=false）。
+        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        val barColor = ContextCompat.getColor(this, R.color.dn_background_card)
+        window.navigationBarColor = barColor
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = !night
+        window.setBackgroundDrawable(ColorDrawable(barColor))
+        binding.main.setBackgroundColor(barColor)
         ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)

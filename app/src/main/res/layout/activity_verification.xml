@@ -44,7 +44,7 @@
                     android:layout_marginTop="2dp"
                     android:lineSpacingExtra="2dp"
                     android:text="关闭时的页面内容会自动回传并解析"
-                    android:textColor="@color/text_primary_color"
+                    android:textColor="@color/dn_text_color_black"
                     android:textSize="12dp" />
             </LinearLayout>
 
