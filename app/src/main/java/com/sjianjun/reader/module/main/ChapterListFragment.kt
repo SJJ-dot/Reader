@@ -54,6 +54,8 @@ class ChapterListFragment : BaseFragment() {
     private val adapter = ChapterListAdapter(this)
     private var binding: MainFragmentBookChapterListBinding? = null
     private val viewModel by viewModels<ChapterListViewModel>()
+    /** 手动点击章节切换的标记：点击后会更新阅读记录并触发定位滚动，此处抑制该次自动定位 */
+    private var manualSwitching = false
 
     override fun getLayoutRes() = R.layout.main_fragment_book_chapter_list
 
@@ -166,7 +168,7 @@ class ChapterListFragment : BaseFragment() {
                     it.index == adapter.readingChapterIndex
                 }
                 if (index >= 0)
-                    scrollReadingChapterToThirdPosition(index)
+                    maybeScrollToReadingChapter(index)
             }
         }
         viewModel.readingRecord.observeViewLifecycle {
@@ -177,7 +179,7 @@ class ChapterListFragment : BaseFragment() {
                 it.index == adapter.readingChapterIndex
             }
             if (index >= 0)
-                scrollReadingChapterToThirdPosition(index)
+                maybeScrollToReadingChapter(index)
         }
         // 净化规则变更后，重新加载章节列表以刷新标题
         EventBus.observe(EventKey.REPLACEMENT_RULES_CHANGED, viewLifecycleOwner, androidx.lifecycle.Observer<String> {
@@ -190,6 +192,18 @@ class ChapterListFragment : BaseFragment() {
      * 上拉加载导致章节数变化后，当前阅读章节的相对位置不变，但滚动位置需要重新定位到这里。
      * 若当前章节位于列表最前两项，则尽量靠顶（其上不足 2 条）。
      */
+    /**
+     * 把当前正在阅读的章节滚动到「从上到下第3」位置；手动点击切换章节时跳过（避免点击后列表自动定位回跳）。
+     * 仅首个触发者消费 [manualSwitching] 标记，重置以保证后续正常定位（如刷新/换源）不受影响。
+     */
+    private fun maybeScrollToReadingChapter(index: Int) {
+        if (manualSwitching) {
+            manualSwitching = false
+            return
+        }
+        scrollReadingChapterToThirdPosition(index)
+    }
+
     private fun scrollReadingChapterToThirdPosition(index: Int) {
         val rv = binding?.recycleViewChapterList ?: return
         val lm = rv.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
@@ -232,6 +246,8 @@ class ChapterListFragment : BaseFragment() {
                         //如果是当前章节，直接返回
                         return@click
                     }
+                    // 手动切换章节：标记本次，避免更新阅读记录后列表自动回滚定位
+                    fragment.manualSwitching = true
                     fragment.launch {
                         //如果不是当前章节，更新阅读记录
                         fragment.viewModel.saveRecord(c)
