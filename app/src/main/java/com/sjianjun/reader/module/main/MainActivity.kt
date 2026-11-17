@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -108,6 +109,21 @@ class MainActivity : BaseActivity() {
                 checkUpdate(fromUser = false)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.i("▶Launch MainActivity.onResume hasWindowFocus=${hasWindowFocus()} isFinishing=$isFinishing isTaskRoot=$isTaskRoot")
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        Log.i("▶Launch MainActivity.onWindowFocusChanged hasFocus=$hasFocus isFinishing=$isFinishing isTaskRoot=$isTaskRoot")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.i("▶Launch MainActivity.onStop isFinishing=$isFinishing")
     }
 
     private fun initialize() {
@@ -208,6 +224,15 @@ class MainActivity : BaseActivity() {
         // addOnDestinationChangedListener 不会为初始目的地回调，这里补一次
         applyStatusBarForBrowser(navController?.currentDestination?.id == R.id.browserBookCityFragment)
         binding?.root?.requestApplyInsets()
+
+        // 首帧绘制完成后通知 Splash 退出：主页窗口已画好，避免 Splash 空档。
+        // 用 doOnPreDraw 只执行一次，不依赖 onStop 这类系统回调时机。
+        binding?.root?.doOnPreDraw {
+            Log.i("▶Launch MainActivity 首帧 doOnPreDraw isTaskRoot=$isTaskRoot taskId=$taskId")
+            val splash = ActivityManger.activityList.filterIsInstance<SplashActivity>().firstOrNull()
+            Log.i("▶Launch MainActivity 首帧找到 Splash=${splash?.javaClass?.simpleName} isFinishing=${splash?.isFinishing}")
+            splash?.finishFromMain()
+        }
     }
 
     @SuppressLint("SetTextI18n")

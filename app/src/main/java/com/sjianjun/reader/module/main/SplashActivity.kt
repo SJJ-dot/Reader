@@ -20,7 +20,8 @@ import sjj.alog.Log
  */
 class SplashActivity : AppCompatActivity() {
 
-    var needFinish = false
+    /** 是否已经响应过首帧通知，避免多个 MainActivity 首帧重复触发 finish */
+    private var finishTriggered = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +51,30 @@ class SplashActivity : AppCompatActivity() {
         // 重复实例的收敛交给 MainActivity.onCreate 的 ActivityManger.finishSameType 处理。
         Log.i("▶Launch startMain 调用 isTaskRoot=$isTaskRoot isFinishing=$isFinishing")
         startActivity(Intent(this, MainActivity::class.java))
-        Log.i("▶Launch startMain startActivity 已返回，finish Splash")
-        needFinish = true
+        Log.i("▶Launch startMain startActivity 已返回，等待 MainActivity 首帧通知")
+    }
+
+    /**
+     * 由 MainActivity 首帧绘制完成后调用。
+     * 相比 onStop（系统回调，时机不可控），首帧是本进程可观测的确定时刻：
+     * 主页窗口已经画好，此时 Splash 再退出不会留下空档。
+     */
+    fun finishFromMain() {
+        Log.i("▶Launch Splash.finishFromMain 收到首帧通知 finishTriggered=$finishTriggered isFinishing=$isFinishing")
+        if (finishTriggered || isFinishing || isDestroyed) return
+        finishTriggered = true
+        Log.i("▶Launch Splash.finishFromMain 执行 finish")
+        finish()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.i("▶Launch Splash.onResume hasWindowFocus=${hasWindowFocus()} isFinishing=$isFinishing")
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        Log.i("▶Launch Splash.onWindowFocusChanged hasFocus=$hasFocus isFinishing=$isFinishing")
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -61,9 +84,7 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (needFinish) {
-            finish()
-        }
+        Log.i("▶Launch Splash.onStop finishTriggered=$finishTriggered isFinishing=$isFinishing")
     }
 
     companion object {
