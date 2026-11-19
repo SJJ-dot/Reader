@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
 import androidx.core.view.GravityCompat
-import androidx.core.view.doOnPreDraw
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -92,8 +91,16 @@ class MainActivity : BaseActivity() {
         globalConfig.privacyPolicyAccepted.observe(this) {
             if (it) {
                 globalConfig.privacyPolicyAccepted.removeObservers(this)
-                initialize()
+                // 友盟合规初始化轻量且要求主线程，保留同步；UI 先 inflate 让首屏尽快出现，
+                // 重初始化延后到首帧之后（见 scheduleHeavyInit），不再阻塞 onCreate→首帧。
+                initCrashReporter()
                 init()
+                scheduleHeavyInit()
+                // "存活 5 秒视为本次启动成功"：从进入主页开始计时，不受重初始化延后影响
+                App.app.appScope.launch {
+                    delay(5000.milliseconds)
+                    appEssentials.consecutiveCrashes = 0
+                }
                 launchIo {
                     BookSourceUseCase.autoImport()
                 }
@@ -126,32 +133,52 @@ class MainActivity : BaseActivity() {
         Log.i("▶Launch MainActivity.onStop isFinishing=$isFinishing")
     }
 
-    private fun initialize() {
-        if (globalConfig.privacyPolicyAccepted.value != true) return
+    override fun onDestroy() {
+        super.onDestroy()
+        // 兜底：任何把 MainActivity 关掉的路径（系统返回、外部 finish 等）都顺带清掉栈底的 Splash，
+        // 避免"退出应用却退回闪屏"。配置变更导致的重建不清理。
+        if (isFinishing && !isChangingConfigurations) {
+            Log.i("▶Launch MainActivity.onDestroy isFinishing → 兜底清理残留 Splash")
+            ActivityManger.activityList.forEach { activity ->
+                if (activity is SplashActivity && !activity.isFinishing && !activity.isDestroyed) {
+                    activity.finish()
+                }
+            }
+        }
+    }
+
+    /**
+     * 重初始化延后到首帧绘制完成之后执行，避免阻塞 onCreate→首帧（冷启动最慢的一段）。
+     * - Python.start：放在主线程 post 回调里同步执行。此时首帧已绘制、界面已可见，
+     *   不再拖慢界面出现；同时用户点击也要排队等主线程，杜绝"Python 未就绪就被脚本调用"的竞态。
+     * - DnsWarmUp/简繁字典/DB 迁移/广告拦截：放到 IO 协程，与后续渲染并行；
+     *   其中 DnsWarmUp 内部会懒加载 execModule（依赖 Python.getInstance），必须排在 Python.start 之后。
+     */
+    private fun scheduleHeavyInit() {
         if (!first) return
         first = false
-        // 用户已同意隐私说明：正式初始化友盟 SDK，开始收集崩溃信息（App.onCreate 中仅做了不采集的预初始化）
-        initCrashReporter()
-        // alog 配置已提前到 App.onCreate（必须在进程内首次 Log 调用之前，否则日志文件不会生成）
-        Python.start(AndroidPlatform(applicationContext))
-        DnsWarmUp.start()
-        when (globalConfig.readerJianFanMode.value) {
-            1 -> {
-                ChineseUtils.fixT2sDict()
-                ChineseUtils.preLoad(true, TransType.SIMPLE_TO_TRADITIONAL)
-            }
+        binding?.root?.post {
+            val t0 = System.currentTimeMillis()
+            Log.i("▶Launch HeavyInit 开始（首帧后）")
+            Python.start(AndroidPlatform(applicationContext))
+            Log.i("▶Launch Python.start 完成 耗时=${System.currentTimeMillis() - t0}ms")
 
-            2 -> ChineseUtils.preLoad(true, TransType.TRADITIONAL_TO_SIMPLE)
-        }
-        BrowserDataMigration.migrateIfNeeded()
-        AdBlock.preload()
-        App.app.appScope.launch(Dispatchers.IO) {
-            runCatching { BookUseCase.resetBookLoadingState() }
-                .onFailure { Log.e("重置书籍加载状态失败", it) }
-        }
-        App.app.appScope.launch {
-            delay(5000.milliseconds)
-            appEssentials.consecutiveCrashes = 0
+            App.app.appScope.launch(Dispatchers.IO) {
+                DnsWarmUp.start()
+                when (globalConfig.readerJianFanMode.value) {
+                    1 -> {
+                        ChineseUtils.fixT2sDict()
+                        ChineseUtils.preLoad(true, TransType.SIMPLE_TO_TRADITIONAL)
+                    }
+
+                    2 -> ChineseUtils.preLoad(true, TransType.TRADITIONAL_TO_SIMPLE)
+                }
+                BrowserDataMigration.migrateIfNeeded()
+                AdBlock.preload()
+                runCatching { BookUseCase.resetBookLoadingState() }
+                    .onFailure { Log.e("重置书籍加载状态失败", it) }
+                Log.i("▶Launch HeavyInit 全部完成 耗时=${System.currentTimeMillis() - t0}ms")
+            }
         }
     }
     private fun init() {
@@ -224,15 +251,6 @@ class MainActivity : BaseActivity() {
         // addOnDestinationChangedListener 不会为初始目的地回调，这里补一次
         applyStatusBarForBrowser(navController?.currentDestination?.id == R.id.browserBookCityFragment)
         binding?.root?.requestApplyInsets()
-
-        // 首帧绘制完成后通知 Splash 退出：主页窗口已画好，避免 Splash 空档。
-        // 用 doOnPreDraw 只执行一次，不依赖 onStop 这类系统回调时机。
-        binding?.root?.doOnPreDraw {
-            Log.i("▶Launch MainActivity 首帧 doOnPreDraw isTaskRoot=$isTaskRoot taskId=$taskId")
-            val splash = ActivityManger.activityList.filterIsInstance<SplashActivity>().firstOrNull()
-            Log.i("▶Launch MainActivity 首帧找到 Splash=${splash?.javaClass?.simpleName} isFinishing=${splash?.isFinishing}")
-            splash?.finishFromMain()
-        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -367,7 +385,10 @@ class MainActivity : BaseActivity() {
                         lastTime = System.currentTimeMillis()
                         true
                     } else {
-                        finishAfterTransition()
+                        // 不能只 finish MainActivity：Splash 作为 LAUNCHER 且启动时故意不 finish，
+                        // 会残留在栈底，只关 MainActivity 会退回闪屏。exitApp 会连同 Splash 一起清栈。
+                        Log.i("▶Launch MainActivity 双击退出 → exitApp 清理整栈（含 Splash）")
+                        ActivityManger.exitApp()
                         true
                     }
                 } else {
