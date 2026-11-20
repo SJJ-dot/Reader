@@ -53,10 +53,8 @@ import com.sjianjun.reader.utils.isNight
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sjj.alog.Log
-import kotlin.time.Duration.Companion.milliseconds
 
 private var first = true
 
@@ -96,11 +94,6 @@ class MainActivity : BaseActivity() {
                 initCrashReporter()
                 init()
                 scheduleHeavyInit()
-                // "存活 5 秒视为本次启动成功"：从进入主页开始计时，不受重初始化延后影响
-                App.app.appScope.launch {
-                    delay(5000.milliseconds)
-                    appEssentials.consecutiveCrashes = 0
-                }
                 launchIo {
                     BookSourceUseCase.autoImport()
                 }
@@ -131,20 +124,6 @@ class MainActivity : BaseActivity() {
     override fun onStop() {
         super.onStop()
         Log.i("▶Launch MainActivity.onStop isFinishing=$isFinishing")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // 兜底：任何把 MainActivity 关掉的路径（系统返回、外部 finish 等）都顺带清掉栈底的 Splash，
-        // 避免"退出应用却退回闪屏"。配置变更导致的重建不清理。
-        if (isFinishing && !isChangingConfigurations) {
-            Log.i("▶Launch MainActivity.onDestroy isFinishing → 兜底清理残留 Splash")
-            ActivityManger.activityList.forEach { activity ->
-                if (activity is SplashActivity && !activity.isFinishing && !activity.isDestroyed) {
-                    activity.finish()
-                }
-            }
-        }
     }
 
     /**

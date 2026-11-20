@@ -20,7 +20,4 @@ class AppEssentials : DelegateSharedPref(MMKV.mmkvWithID("AppEssentials", MMKV.M
 
     /** 日间/夜间模式 */
     var appDayNightMode by intPref("appDayNightMode", MODE_NIGHT_NO)
-
-    /** 连续崩溃次数（启动闪屏页据此决定是否进入保底更新模式） */
-    var consecutiveCrashes by intPref("consecutiveCrashes", 0)
 }

@@ -45,8 +45,7 @@ class App : Application() {
             writeToFileDir = alogDir
         }
 
-        Log.i("▶Launch App.onCreate 日志目录=$alogDir 进程启动 consecutiveCrashes ${appEssentials.consecutiveCrashes} -> ${appEssentials.consecutiveCrashes + 1}")
-        appEssentials.consecutiveCrashes += 1
+        Log.i("▶Launch App.onCreate 日志目录=$alogDir")
         ActivityManger.init(this)
         AppCompatDelegate.setDefaultNightMode(appEssentials.appDayNightMode)
     }
