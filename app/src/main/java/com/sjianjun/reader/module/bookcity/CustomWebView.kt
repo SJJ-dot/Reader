@@ -67,6 +67,7 @@ import com.sjianjun.reader.preferences.globalConfig
 import com.sjianjun.reader.utils.hideKeyboard
 import com.sjianjun.reader.utils.showKeyboard
 import com.sjianjun.reader.utils.webUserAgent
+import com.sjianjun.reader.utils.resolveRequestUserAgent
 import com.sjianjun.reader.utils.toast
 import com.sjianjun.reader.view.click
 import com.tencent.mmkv.MMKV
@@ -97,6 +98,14 @@ class CustomWebView @JvmOverloads constructor(
     internal var lifecycleScope: LifecycleCoroutineScope? = null
     val binding: CustomWebViewBinding = CustomWebViewBinding.inflate(LayoutInflater.from(context), this, true)
     var adBlock: AdBlock? = null
+
+    /**
+     * 请求头 UA 覆盖：仅人机验证页设置（脚本传来的 headerMap）。
+     * 让验证页 WebView 的 WebSettings.userAgentString 与后台 web_get 一致，
+     * 使 JS 指纹（navigator.userAgent）前后台统一，避免人机验证反复触发。
+     * null 表示不覆盖，普通标签仍走 webUaMode 默认逻辑。
+     */
+    var requestHeaderMap: Map<String, String>? = null
     val history = MutableLiveData<List<HistoryItem>>()
 
     /** 本标签唯一的 WebView 实例 */
@@ -281,6 +290,11 @@ class CustomWebView @JvmOverloads constructor(
         return MyWebView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             init()
+            // 仅人机验证页：有传入 UA 用传入、否则固定手机 UA，与后台 web_get 的 JS 指纹保持一致（不受 webUaMode 影响）。
+            // 普通书城标签 requestHeaderMap 为 null，不覆盖，保留 init() 里 webUserAgent() 的电脑版切换。
+            if (requestHeaderMap != null) {
+                settings.userAgentString = resolveRequestUserAgent(requestHeaderMap)
+            }
             // 允许网页通过 target=_blank / window.open 自动创建新标签页（onCreateWindow 中处理）
             settings.setSupportMultipleWindows(true)
             settings.javaScriptCanOpenWindowsAutomatically = true

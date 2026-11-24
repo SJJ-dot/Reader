@@ -65,6 +65,13 @@ const val DESKTOP_USER_AGENT =
 /** 返回当前 UA 模式应使用的 User-Agent；返回 null 表示使用 WebView 默认（移动端）UA。 */
 fun webUserAgent(): String? = if (globalConfig.webUaMode == 1) DESKTOP_USER_AGENT else null
 
+/**
+ * 后台请求 / 人机验证页的 UA 解析：传了 UA 就用传入值，否则固定使用手机 UA（返回 null 即 WebView 默认移动 UA）。
+ * 不受 webUaMode（书城电脑版切换）影响——UA 切换只在书城生效，避免验证页与后台 JS 指纹不一致。
+ */
+fun resolveRequestUserAgent(headerMap: Map<String, String>?): String? =
+    headerMap?.get("User-Agent")
+
 fun WebView.init(headerMap: Map<String, String>? = null) {
     if (first) {
         first = false
@@ -88,12 +95,7 @@ fun WebView.init(headerMap: Map<String, String>? = null) {
         builtInZoomControls = true
         displayZoomControls = false
         setSupportMultipleWindows(true) // 支持 window.open() / target=_blank 自动开新标签
-        val customUa = headerMap?.get("User-Agent")
-        userAgentString = when {
-            customUa != null -> customUa
-            globalConfig.webUaMode == 1 -> DESKTOP_USER_AGENT
-            else -> null
-        }
+        userAgentString = webUserAgent()
         blockNetworkImage = false // 设置图片加载方式，默认true，表示不加载图片
         loadsImagesAutomatically = true // 支持自动加载图片
         setBackForwardCacheEnabled()

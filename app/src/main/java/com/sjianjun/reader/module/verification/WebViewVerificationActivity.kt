@@ -109,6 +109,9 @@ class WebViewVerificationActivity : BaseActivity(), TabHost {
         val cwv = binding.customWebView
         // 人机验证期间禁止用户切换夜间模式（避免触发重建/脚本取消导致验证页退出）
         cwv.nightModeSwitchAllowed = false
+        // 用脚本请求头的 UA 构建验证页 WebView，使 navigator.userAgent 与后台 web_get 一致；
+        // 必须在 loadInitial()（首次加载）之前设置，否则首次加载仍用默认移动 UA。
+        cwv.requestHeaderMap = headerMap
         val tab = BrowserTab(url = url, transient = true)
         currentTab = tab
         cwv.attach(tab, this)

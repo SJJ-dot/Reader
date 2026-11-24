@@ -12,6 +12,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.sjianjun.reader.utils.gson
 import com.sjianjun.reader.utils.init
+import com.sjianjun.reader.utils.resolveRequestUserAgent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Runnable
@@ -83,6 +84,8 @@ class BackstageWebView(
         val webView = pw.webView
         try {
             webView.init(headerMap)
+            // 后台请求 UA：有传入用传入，否则固定手机 UA；不受书城 UA 切换（webUaMode）影响
+            webView.settings.userAgentString = resolveRequestUserAgent(headerMap)
             webView.webViewClient = HtmlWebViewClient()
             when {
                 postData != null -> webView.postUrl(url!!, postData.toByteArray(charset(encoding?.uppercase() ?: "UTF-8")))
