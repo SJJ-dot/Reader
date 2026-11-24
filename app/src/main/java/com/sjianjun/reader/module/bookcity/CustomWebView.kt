@@ -1026,6 +1026,13 @@ class CustomWebView @JvmOverloads constructor(
                     android.content.res.Configuration.UI_MODE_NIGHT_YES
             val target = if (night) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
             appEssentials.appDayNightMode = target
+            // 与其他两个切换入口保持一致：全局日/夜切换时，把阅读器配色同步为对应的上次配置，
+            // 否则从阅读器切到夜间再在这里切回日间，阅读器正文会停留在深色而菜单变亮色。
+            if (target == AppCompatDelegate.MODE_NIGHT_YES) {
+                globalConfig.readerPageStyle.setValue(globalConfig.lastDarkTheme.value)
+            } else {
+                globalConfig.readerPageStyle.setValue(globalConfig.lastLightTheme.value)
+            }
             AppCompatDelegate.setDefaultNightMode(target)
         }
         b.menuExit.click {
